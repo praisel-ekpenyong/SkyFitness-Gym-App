@@ -6,8 +6,12 @@
 
 **Status:** ready-for-agent
 
-- [ ] `git init` in the repo root
-- [ ] A sensible `.gitignore` exists before commit 1 so `node_modules`-style artifacts can never be tracked (upstream ships one; extend only if needed)
-- [ ] Commit 1 contains exactly the pristine upstream tree
-- [ ] Commit 2 contains exactly the agent-config and tracker additions
-- [ ] Working tree clean after both commits; no remote configured
+- [x] `git init` in the repo root
+- [x] A sensible `.gitignore` exists before commit 1 so `node_modules`-style artifacts can never be tracked (upstream ships one; extend only if needed)
+- [x] Commit 1 contains exactly the pristine upstream tree
+- [x] Commit 2 contains exactly the agent-config and tracker additions
+- [x] Working tree clean after both commits; no remote configured
+
+## Comments
+
+Done. `77bcae7` is the pristine upstream baseline (276 files, upstream `.gitignore` already covers `node_modules`, so no ignore changes needed); `26be443` adds only `AGENTS.md`, `docs/agents/*` and `.scratch/sky/*`. Tree clean, no remote. Repo-local identity set to the upstream author's GitLab noreply address — tell me if you want a different name/email.
