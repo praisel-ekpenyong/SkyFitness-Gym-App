@@ -30,6 +30,15 @@ export async function nativeSave(state) {
   } catch (e) { /* keep the localStorage copy */ }
 }
 
+// The persistence adapter handed to lib/storage.js on mobile builds (registered in main.jsx):
+// every debounced drain lands the snapshot in the private data directory and keeps the
+// reminder schedule in step with the plan. Boot-time read and seed stay on
+// nativeLoad/nativeSave, which storage.js's load() calls directly.
+export const nativeSink = {
+  id: 'native',
+  write(state) { nativeSave(state); syncReminder(state) },
+}
+
 // (Re)schedule the workout-day reminder: one repeating notification per weekday that has a
 // routine in the weekly plan. Cheap enough to run after any state change — the plan or the
 // reminder time may just have been edited. `interactive` gates the OS permission prompt to

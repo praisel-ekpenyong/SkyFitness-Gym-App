@@ -7,7 +7,14 @@ import { useStore, DEF } from './store/useStore.js'
 import { buildCompletedWorkout } from './lib/finish-workout.js'
 import { fatigueOf, strengthOf } from './lib/recovery.js'
 
-vi.mock('./lib/sound.js', () => ({ beep: vi.fn(), vibrate: vi.fn() }))
+vi.mock('./lib/sound.js', () => ({
+  beep: vi.fn(),
+  vibrate: vi.fn(),
+  playSetComplete: vi.fn(),
+  playTimerWarning: vi.fn(),
+  playTimerComplete: vi.fn(),
+  playWorkoutComplete: vi.fn(),
+}))
 vi.mock('./lib/mobile.js', () => ({
   MOBILE: false,
   nativeLoad: vi.fn(async () => null),

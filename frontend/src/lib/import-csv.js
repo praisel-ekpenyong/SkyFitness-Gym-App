@@ -21,6 +21,7 @@
 import { EXDB, EXIDX } from './exercises.js'
 import { uid } from './format.js'
 import { isWarmupRow } from './workout-model.js'
+import { heaviestForEntry, mergeExWeight } from './active-workout.js'
 
 /* ----------------------------------------------------------------- CSV ---- */
 
@@ -530,10 +531,12 @@ export function mergeImport(S, parsed) {
   const customs = parsed.customEx.filter(c => used.has(c.id) && !EXIDX[c.id])
   S.customEx = [...(S.customEx || []), ...customs]
   S.workouts = [...S.workouts, ...fresh].sort((a, b) => (a.d < b.d ? -1 : 1))
-  // seed the weight suggestions from the newest imported set of each lift
+  // seed the weight suggestions — single monotonic-max policy shared with
+  // the live workout lifecycle (lib/active-workout.js). Warm-ups excluded,
+  // only done work sets + topW count, and a weight never lowers the stored best.
   fresh.forEach(w => w.entries.forEach(e => {
-    const mx = Math.max(0, ...e.sets.map(s => s.w || 0), e.topW || 0)
-    if (mx > 0) { const cur = S.exWeights[e.id]; if (!cur || w.d >= cur.d) S.exWeights[e.id] = { w: mx, d: w.d } }
+    const mx = heaviestForEntry(e)
+    if (mx > 0) mergeExWeight(S, e.id, mx, w.d)
   }))
   return { added: fresh.length, skipped: parsed.workouts.length - fresh.length }
 }

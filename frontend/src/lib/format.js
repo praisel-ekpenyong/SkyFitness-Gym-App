@@ -1,5 +1,6 @@
-// Formatting + date helpers (ported from the vanilla app, unit taken from the store where needed).
 import { dateLocale, t } from './i18n-core.js'
+import { modeOf, isBw, isPerSide, sideReps } from './workout-model.js'
+import { EFFORT } from './effort.js'
 export const todayISO = () => {
   const d = new Date()
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')
@@ -45,3 +46,48 @@ export const localTZ = () => { try { return Intl.DateTimeFormat().resolvedOption
 
 export const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7)
 export const ACCENTS = { lime: '#30d158', sky: '#0a84ff', orange: '#ff9f0a', violet: '#bf5af2', pink: '#ff375f', red: '#ff453a', teal: '#40c8e0', gold: '#ffd60a' }
+
+// mm:ss for a work duration — seconds alone read badly past a minute ("90 s" vs "1:30").
+export function fmtSec(sec) {
+  const n = Math.max(0, Math.round(Number(sec) || 0))
+  return Math.floor(n / 60) + ':' + String(n % 60).padStart(2, '0')
+}
+
+// The "(RIR 2)" / "(RPE 8)" tail on a set summary, empty when nothing was logged.
+const effortTail = s => {
+  const k = s?.rir != null ? 'rir' : s?.rpe != null ? 'rpe' : null
+  return k && EFFORT[k] ? ` (${EFFORT[k].hd} ${fmtNum(s[k])})` : ''
+}
+
+// One-line summary of a logged set. `cfg` carries the mode when the caller has it (a routine
+// entry or a workout entry); passing an id alone keeps the old body-part behaviour.
+export function setLabel(id, s, cfg) {
+  const c = cfg || { id }
+  const mode = modeOf(c)
+  if (mode === 'cardio') return `${s.min || 0} min @ ${fmtNum(s.speed || 0)} km/h`
+  if (mode === 'time') return fmtSec(s.sec) + (s.w > 0 ? ` · ${fmtNum(s.w)}` : '')
+  // Bodyweight reads as what you did — "12", or "+10 × 12" once there is a belt involved —
+  // rather than "0×12", which says a set was performed with no weight and means nothing.
+  // A per-side set needs no mark here: the number logged is the total, the same as every
+  // other set in the app.
+  const reps = s.r || 0
+  if (isBw({ ...c, id: c.id ?? id })) {
+    const load = s.w > 0 ? `+${fmtNum(s.w)} × ` : ''
+    return `${load}${reps}` + effortTail(s)
+  }
+  return `${fmtNum(s.w || 0)}×${reps}` + effortTail(s)
+}
+
+// One-line summary of a planned exercise ("3 × 10 · 60 kg"), shared by the routine editor
+// and the plan export so a mode is described the same way everywhere.
+export function exLine(cfg, unit) {
+  const mode = modeOf(cfg)
+  const n = cfg.sets || 1
+  // Added weight reads as added: "+10 kg" on a dip belt, "60 kg" on a barbell.
+  const load = cfg.weight ? ' · ' + (isBw(cfg) ? '+' : '') + fmtNum(cfg.weight) + ' ' + unit : ''
+  if (mode === 'cardio') return `${n} × ${cfg.min || 20} min @ ${fmtNum(cfg.speed || 8)} km/h`
+  if (mode === 'time') return `${n} × ${fmtSec(cfg.sec || 45)}${load}`
+  // This is the line with room for it, so the split is spelled out: "3 × 16 · 8/side".
+  const split = isPerSide(cfg) ? ' · ' + t('{0}/side', fmtNum(sideReps(cfg.reps))) : ''
+  return `${n} × ${cfg.reps}${load}${split}`
+}

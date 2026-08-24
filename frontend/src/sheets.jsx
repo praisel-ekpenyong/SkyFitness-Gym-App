@@ -3,8 +3,8 @@ import { useStore, sanitizeDisplayName } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
 import { EXDB, EXIDX, BODYPARTS, isCardio, isBodyweightEq, allExercises, equipmentOf, smOf } from './lib/exercises.js'
 import { fmtDate, fmtNum, fmtVol, fmtDur, durPart, todayISO, uid, exCount, DAYN, MONTHS_LONG, ACCENTS } from './lib/format.js'
-import { lastEntryFor, bestWeightFor, buildSets, effectiveRoutineId, workoutVolume, setsDone, setsDoneActive, lastBW, supersetUnits, unitOf, setLabel, defaultConfig, cleanupSg, modeOf, effortOf, isBw, isPerSide, sideReps, workSetsDone } from './lib/history.js'
-import { beep, vibrate } from './lib/sound.js'
+import { lastEntryFor, effectiveRoutineId, setsDone, setsDoneActive, lastBW, supersetUnits, unitOf, setLabel, defaultConfig, cleanupSg, modeOf, effortOf, isBw, isPerSide, sideReps, workSetsDone, bestWeightFor } from './lib/history.js'
+import { beep, vibrate, playWorkoutComplete } from './lib/sound.js'
 import { t, instrFor } from './lib/i18n.js'
 import { nav } from './lib/nav.js'
 import { starterRoutines } from './lib/starter.js'
@@ -12,16 +12,15 @@ import Media, { Thumb } from './components/Media.jsx'
 import Stepper from './components/Stepper.jsx'
 import Icon from './components/Icon.jsx'
 import { Button, Slider, Switch, Segmented, SelectRow, Row } from './components/ui.jsx'
-import { glyphOf, GLYPH_GROUPS, DEFAULT_GLYPH } from './lib/glyphs.js'
 import BodyMap from './components/BodyMap.jsx'
-import { exerciseMuscleSnapshot, loadOfWorkouts } from './lib/muscles.js'
+import { glyphOf, GLYPH_GROUPS, DEFAULT_GLYPH } from './lib/glyphs.js'
+import { loadOfWorkouts, exerciseMuscleSnapshot } from './lib/muscles.js'
 import { parseImport, mergeImport } from './lib/import-csv.js'
 import { buildPlanBundle, parsePlan, mergePlan, printPlan } from './lib/plan-share.js'
-import { estimate1RM, best1RM, is1RMRecord, REP_CAP } from './lib/onerm.js'
-import { nextPrescription, applyPrescription, policyFor, defaultIncrement, POLICIES_FOR, POLICY_NAME, POLICY_DESC, MAX_BW_SETS } from './lib/progression.js'
+import { estimate1RM, best1RM, REP_CAP } from './lib/onerm.js'
+import { policyFor, defaultIncrement, POLICIES_FOR, POLICY_NAME, POLICY_DESC, MAX_BW_SETS } from './lib/progression.js'
 import { MOBILE, shareExport } from './lib/mobile.js'
-import { buildCompletedWorkout } from './lib/finish-workout.js'
-import { isWarmupRow } from './lib/workout-model.js'
+import { bestKnownWeight, heaviestSetWeight } from './lib/active-workout.js'
 
 const S = () => useStore.getState().S
 const update = (...a) => useStore.getState().update(...a)
@@ -869,18 +868,9 @@ export function startFlow(routineId) {
   bwSheet({ required: true, onDone: bw => beginWorkout(routineId, bw) })
 }
 export function beginWorkout(routineId, bw) {
-  const st = S()
-  const r = routineId ? st.routines.find(x => x.id === routineId) : null
-  // The prescription is applied as the session is built, so you walk up to the bar with the
-  // right weight already on the screen instead of being told about it afterwards. `plan` is
-  // kept on the entry purely so the workout can explain the number it chose.
-  const entries = (r ? r.ex : []).map(cfg => {
-    const plan = nextPrescription(st, cfg, r)
-    return { id: cfg.id, sg: cfg.sg, target: { ...cfg }, plan, sets: applyPrescription(buildSets(st, cfg), plan) }
-  })
-  update(s => {
-    s.active = { id: uid(), d: todayISO(), start: Date.now(), routineId, name: r ? r.name : t('Freestyle'), bw: bw || null, cur: 0, entries }
-  })
+  // Thin caller over the deep lifecycle seam — prescription, target freezing
+  // and set construction live in lib/active-workout.js, not in the sheet.
+  useStore.getState().beginSession(routineId, bw)
   useUI.getState().stopRest()
   nav('/workout')
 }
@@ -894,8 +884,8 @@ function TopWeight({ entryIdx, close }) {
   // to sit after every one of them.
   const entry = A ? A.entries[entryIdx] : null
   const ex = entry && EXIDX[entry.id]
-  const maxSet = entry ? Math.max(0, ...entry.sets.filter(s => s.done && !isWarmupRow(s)).map(s => s.w || 0)) : 0
-  const prevBest = entry ? Math.max((st.exWeights[entry.id] || {}).w || 0, bestWeightFor(st, entry.id)) : 0
+  const maxSet = entry ? heaviestSetWeight(entry) : 0
+  const prevBest = entry ? bestKnownWeight(st, entry.id) : 0
   const [v, setV] = useState(entry ? (Math.max(maxSet, prevBest) || entry.target.weight || 0) : 0)
   useEffect(() => { if (!entry) close() }, [!entry])
 
@@ -909,16 +899,12 @@ function TopWeight({ entryIdx, close }) {
   const commit = advance => {
     const n = Math.round((v || 0) * 10) / 10
     if (!isFinite(n) || n < 0) { toast(t('Enter a valid weight')); return }
-    update(s => {
-      s.active.entries[entryIdx].topW = n
-      const cur = s.exWeights[entry.id]
-      s.exWeights[entry.id] = { w: Math.max(n, cur ? cur.w : 0), d: todayISO() }
-    })
+    useStore.getState().recordWorkingWeight(entryIdx, n)
     close()
     if (advance && unitDone) {
       if (isLastUnit) workoutCompleteSheet()               // whole workout done → finish/continue prompt
       else update(s => { s.active.cur = units[unitIdx + 1][0] })
-    } else toast(t('Tracked — next time starts at {0}', fmtNum(S().exWeights[entry.id].w) + ' ' + st.unit))
+    } else toast(t('Tracked — next time starts at {0}', fmtNum((S().exWeights[entry.id] || {}).w ?? n) + ' ' + st.unit))
   }
   return <>
     <h3 className="capitalize row" style={{ gap: 8 }}><Icon name="checkCircle" style={{ color: 'var(--acc)' }} />{t('{0} done', ex.n)}</h3>
@@ -978,34 +964,10 @@ export function finishWorkout() {
   doFinishWorkout()
 }
 function doFinishWorkout() {
-  const st = S()
-  const A = st.active
-  if (!A) return
-  const prs = []
-  const e1prs = []
-  A.entries.forEach(e => {
-    const mx = Math.max(0, ...e.sets.filter(s => s.done && !isWarmupRow(s)).map(s => s.w))
-    if (mx > 0 && mx > bestWeightFor(st, e.id)) prs.push(e.id)
-    // A heavier estimate without a heavier top set is its own kind of progress —
-    // same weight for more reps. Reported separately so it can't be read as a load PR.
-    const rec = is1RMRecord(st, e.id, e)
-    if (rec && !prs.includes(e.id)) e1prs.push({ id: e.id, ...rec })
-  })
-  const w = buildCompletedWorkout(A, {
-    end: Date.now(),
-    prs,
-    snapshotFor: e => EXIDX[e.id]?.custom ? exerciseMuscleSnapshot(EXIDX[e.id]) : null,
-  })
-  w.vol = workoutVolume(w)
-  update(s => {
-    w.entries.forEach(e => {
-      const mx = Math.max(0, ...e.sets.filter(x => x.done && !isWarmupRow(x)).map(x => x.w || 0), e.topW || 0)
-      if (mx > 0) { const cur = s.exWeights[e.id]; if (!cur || mx > cur.w) s.exWeights[e.id] = { w: mx, d: w.d } }
-    })
-    s.workouts.push(w)
-    s.active = null
-  })
+  const result = useStore.getState().finishSession()
+  if (!result) return
+  const { workout: w, prs, e1prs } = result
   useUI.getState().stopRest()
-  beep(snd(), 880, 0.15); beep(snd(), 1100, 0.15, 0.18); beep(snd(), 1320, 0.3, 0.36)
+  playWorkoutComplete(snd())
   ui().openSheet(close => <FinishSummary w={w} prs={prs} e1prs={e1prs} close={close} />, { kind: 'center', locked: true })
 }
