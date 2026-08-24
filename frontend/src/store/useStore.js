@@ -2,8 +2,9 @@ import { create } from 'zustand'
 import { localTZ } from '../lib/format.js'
 import { registerCustom } from '../lib/exercises.js'
 import { MOBILE, nativeLoad, nativeSave, syncReminder } from '../lib/mobile.js'
+import { idbLoad, idbSave, loadLocal, pickNewest, LOCAL_KEY } from '../lib/storage.js'
 
-const KEY = 'gym_state_v1'
+const KEY = LOCAL_KEY   // single definition lives in lib/storage.js
 export const DEF = {
   unit: 'kg', restSec: 90, sound: true, keepAwake: true, lang: 'en',
   theme: 'light', accent: 'lime', body: 'male', targetW: null,
@@ -13,7 +14,10 @@ export const DEF = {
   // that a profile which never chose (loaded state is overlaid on DEF, on every path: local
   // load or backup import) still falls back to the `showRir` boolean this replaced and
   // keeps the column it had. See effortOf.
-  reminder: { on: false, time: '08:00', tz: null }, effort: null
+  reminder: { on: false, time: '08:00', tz: null }, effort: null,
+  // Timestamp of the last successful JSON export — drives the backup nag in Settings.
+  // null, not absent, so a fresh install reads as "never exported" like any old profile.
+  lastExport: null
 }
 const clone = o => JSON.parse(JSON.stringify(o))
 
@@ -29,6 +33,7 @@ const hasData = st => !!((st.workouts || []).length || (st.routines || []).lengt
 
 export const useStore = create((set, get) => {
   let saveTm = null
+  let idbTm = null   // debounce for the IndexedDB mirror (web twin of saveTm)
 
   // Mobile build: mirror the state into a file in the app's data directory (survives WebView
   // storage eviction) and keep the native reminder schedule in step with the weekly plan.
@@ -42,6 +47,9 @@ export const useStore = create((set, get) => {
     registerCustom(S.customEx)
     localStorage.setItem(KEY, JSON.stringify(S))
     set({ S })
+    // The IndexedDB mirror rides along on every save — same debounce as the mobile file copy.
+    clearTimeout(idbTm)
+    idbTm = setTimeout(() => { idbTm = null; idbSave(S) }, 800)
     if (MOBILE) nativePersist()
   }
 
@@ -55,6 +63,11 @@ export const useStore = create((set, get) => {
       clearTimeout(saveTm)
       saveTm = null
       nativeSave(get().S)
+    }
+    if (idbTm) {
+      clearTimeout(idbTm)
+      idbTm = null
+      idbSave(get().S)
     }
   })
 
@@ -70,8 +83,9 @@ export const useStore = create((set, get) => {
     },
     replaceState(S) { persist(clone(S)) },
 
-    // Boot: restore the mobile file mirror when it is the newer copy, re-stamp the reminder's
-    // timezone, and go straight in — there is no server to ask anything of.
+    // Boot: restore whichever stored copy is newest (mobile file mirror / IndexedDB mirror,
+    // each raced against what localStorage already loaded), re-stamp the reminder's timezone,
+    // and go straight in — there is no server to ask anything of.
     async boot() {
       if (MOBILE) {
         const saved = await nativeLoad()
@@ -82,7 +96,25 @@ export const useStore = create((set, get) => {
           nativeSave(S)   // first run after an update from a file-less version: seed the mirror
         }
         syncReminder(get().S)
+      } else {
+        // Web: localStorage and the IndexedDB mirror race on timestamps; pickNewest decides.
+        // No winner means no history anywhere — the empty defaults already loaded stand.
+        // (The mobile branch above restores on a >= tie; here a tie keeps the copy already
+        // running — swapping for an equal one would only churn both storages.)
+        const snap = x => ({ ts: x._ts, state: Object.assign(clone(DEF), x) })
+        const raw = loadLocal()
+        const local = raw ? snap(raw) : null
+        const stored = await idbLoad()
+        const mirror = stored ? snap(stored) : null
+        const winner = pickNewest(local, mirror)
+        const S = get().S
+        if (winner && (!hasData(S) || (winner._ts || 0) > (S._ts || 0))) {
+          persist(winner)   // also refreshes both storages under one fresh timestamp
+        } else if (!mirror && hasData(S)) {
+          idbSave(S)   // first boot with the mirror, or its storage was cleared: seed it
+        }
       }
+
       // Re-stamp the reminder's timezone on every load — keeps it correct if you're travelling,
       // without needing to revisit Settings.
       const tz = localTZ()
