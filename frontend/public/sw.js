@@ -1,6 +1,6 @@
-/* openGym service worker — runtime caching (works with Vite's hashed asset names).
+/* Sky service worker — runtime caching (works with Vite's hashed asset names).
    Media (img/gif) cache-first; everything else network-first with offline fallback. */
-const CACHE = 'opengym-rt-v1'
+const CACHE = 'sky-rt-v1'
 
 self.addEventListener('install', () => self.skipWaiting())
 self.addEventListener('activate', e => {
@@ -8,28 +8,12 @@ self.addEventListener('activate', e => {
     Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
   ).then(() => self.clients.claim()))
 })
-self.addEventListener('push', e => {
-  const data = e.data ? e.data.json() : {}
-  e.waitUntil(self.registration.showNotification(data.title || 'openGym', {
-    body: data.body || '',
-    icon: 'icon-512.png',
-    badge: 'icon-180.png',
-    tag: data.tag || 'opengym',
-    renotify: true
-  }))
-})
-self.addEventListener('notificationclick', e => {
-  e.notification.close()
-  e.waitUntil(self.clients.matchAll({ type: 'window' }).then(clients => {
-    const c = clients.find(c => 'focus' in c)
-    return c ? c.focus() : self.clients.openWindow('./')
-  }))
-})
+// Rest-timer reminders go through reg.showNotification() from useUI.js directly — there is no
+// push: Sky has no server to push from.
 
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url)
   if (e.request.method !== 'GET' || url.origin !== location.origin) return
-  if (url.pathname.startsWith('/api/')) return    // never cache auth/data
 
   const isMedia = url.pathname.includes('/img/') || url.pathname.includes('/gif/')
   if (isMedia) {
