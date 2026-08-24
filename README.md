@@ -113,80 +113,41 @@ device except requests for exercise media to a public CDN — no analytics, no t
 
 ## Roadmap
 
-Rough, community-driven — ideas and PRs welcome:
+Rough — a personal log, so it grows when training demands it:
 
-- [x] Standalone mobile app — Android APK to sideload ([download](https://opengym.duarte-santos.ch)); on iOS as a self-hosted PWA (no store listings planned)
 - [x] Automatic progression programs (linear, Greyskull LP, double progression) with stalls and deloads
 - [x] Estimated 1RM per exercise
-- [ ] Percentage / training-max programming (5/3/1-style) on top of the progression engine
-- [ ] More starter plans (upper/lower, full-body, 5×5)
 - [x] Importers from FitNotes / Strong / Hevy (including the RPE they record), and body weight from Apple Health
 - [x] Effort per set — RIR or RPE, whichever scale you think in
+- [ ] Percentage / training-max programming (5/3/1-style) on top of the progression engine
+- [ ] More starter plans (upper/lower, full-body, 5×5)
 - [ ] Body measurements (waist, arms…) alongside weight
 - [ ] Per-exercise notes & plate calculator
-- [ ] Exercise instructions in German & Portuguese (UI is translated; upstream dataset doesn't ship these yet)
 
 ## Tech
 
-React 19 + Vite (React Router, Zustand) · Node (no framework) · nginx · Docker Compose ·
-WebAuthn · exercise data from [hasaneyldrm/exercises-dataset](https://github.com/hasaneyldrm/exercises-dataset)
-(MIT metadata and instructions; media © Gym visual — see [License](#license)).
-No database server, no cloud dependencies — the frontend builds inside Docker, so self-hosting
-stays a one-command `docker compose up`.
+React 19 + Vite (React Router, Zustand), plus exercise metadata and instruction text from
+[hasaneyldrm/exercises-dataset](https://github.com/hasaneyldrm/exercises-dataset)
+(MIT; media © Gym visual — see [License](#license)). No database, no server, no cloud
+dependencies — `npm run build` emits plain static files.
 
 The training logic — progression rules, 1RM estimation, how a logged session is read back —
 lives in pure functions under `frontend/src/lib/` with tests next to them: `npm test` in
-`frontend/`. Vitest is a dev dependency; the app itself ships no runtime dependencies beyond
-React, the router and Zustand.
+`frontend/`. Vitest is a dev dependency; the app ships no runtime dependencies beyond React,
+the router and Zustand.
 
-The same pure helpers power an optional MCP server (`mcp/`) that lets an LLM client like
-Claude Desktop read your data over stdio — see [mcp/README.md](mcp/README.md). Opt-in, not
-in the Docker build.
+## Provenance
 
-## Community
-
-- **[Discord](https://discord.gg/e62jY6fwVb)** — release announcements, self-hosting help and
-  the back-and-forth that would be a slow issue thread. Quickest way to get an answer.
-- **[Issues](https://gitlab.com/DuarteSantos8/opengym/-/issues)** — bugs, questions, self-hosting
-  help and ideas. There are no Discussions here, so it all lives in one tracker: label a question
-  `question` and an idea `idea`, and it gets treated as one rather than as agreed-on work. Use
-  an issue over the Discord for anything the next person should be able to find by searching.
-- **Login trouble?** Most of it is an `RP_ID`/`ORIGIN` mismatch — check
-  [docs/SELF_HOSTING.md](docs/SELF_HOSTING.md) before opening an issue.
-- **Merge requests** — [open one on GitLab](https://gitlab.com/DuarteSantos8/opengym/-/merge_requests); see
-  [CONTRIBUTING.md](CONTRIBUTING.md).
-
-> **On the GitHub repo:** `github.com/DuarteSantos8/openGym` is offline because the account was
-> suspended. **GitLab is the home of the project** — same history, same tags, same releases, and
-> the CI that builds the images and the APK runs there. (gitea.com/DuarteSantos/openGym was the
-> first stopgap and is now only a mirror.) Old GitHub issue and PR numbers in
-> [CHANGELOG.md](CHANGELOG.md) are kept as plain references; they don't map onto GitLab's
-> numbering.
-
-## Contributing
-
-Issues and PRs welcome — see [CONTRIBUTING.md](CONTRIBUTING.md). Good first issues: more starter
-plans, exercise-data languages, import from other trackers. **A ⭐ helps more people find it.**
-
-openGym is free and stays free: AGPL, no subscription, no paid tier, nothing held back for
-sponsors. If it replaced a paid tracker for you and you want to chip in, there's a coffee button
-below (and a badge at the top) — a star, a bug report or a merge request is worth just as much.
-
-<!-- GitLab has no Sponsor button the way GitHub's FUNDING.yml gave one, so the link has to
-     stand on its own here. .github/FUNDING.yml stays put for the day that account returns. -->
-
-<a href="https://buymeacoffee.com/duartesantos" target="_blank">
-  <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png"
-       alt="Buy Me A Coffee"
-       style="height: 60px !important;width: 217px !important;">
-</a>
+Sky is not developed in public and takes no contributions; it exists to serve one person's
+training. Bugs or ideas aimed at openGym itself belong in its
+[issue tracker](https://gitlab.com/DuarteSantos8/opengym/-/issues).
 
 ## License
 
-**openGym's own code** is [GNU AGPL v3.0](LICENSE) — free and open source. You can self-host,
-use, modify and share it; if you run a modified version as a network service, you must offer that
-version's source under the same license. Nobody can turn openGym into a closed, proprietary
-product.
+**Sky inherits the [GNU AGPL v3.0](LICENSE)** from upstream openGym: free and open source
+software you can use, study, modify and share. If a modified version is ever run as a network
+service, its source must be offered under the same license — a duty this fork accepts for every
+change it makes, and one that keeps both openGym and Sky out of closed, proprietary hands.
 
 **Third-party content is not, and openGym cannot sublicense it.** The exercise metadata and
 instruction text originate from [ExerciseDB v1](https://exercisedb.dev/) and reach openGym through

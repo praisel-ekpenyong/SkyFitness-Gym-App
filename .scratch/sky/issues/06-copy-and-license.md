@@ -6,8 +6,20 @@
 
 **Status:** ready-for-agent
 
-- [ ] About screen accurately describes Sky and its origin as an openGym fork
-- [ ] AGPL license notice present and readable in About
-- [ ] No user-visible references to login, accounts, server sync, admin dashboard or demo mode remain
-- [ ] Upstream promo links (GitLab, Discord, coffee fund) removed or replaced with Sky-appropriate text
-- [ ] Grep for upstream branding finds no stale user-facing strings outside license/attribution context
+- [x] About screen accurately describes Sky and its origin as an openGym fork
+- [x] AGPL license notice present and readable in About
+- [x] No user-visible references to login, accounts, server sync, admin dashboard or demo mode remain
+- [x] Upstream promo links (GitLab, Discord, coffee fund) removed or replaced with Sky-appropriate text
+- [x] Grep for upstream branding finds no stale user-facing strings outside license/attribution context
+
+## Comments
+
+**2026-08-24 — implemented.** Copy-only surgery, no functional changes; `Status:` left as-is per house convention.
+
+- **About** (`views/Settings.jsx`): footer replaced with a Sky block — "Sky · free & open source (AGPL v3)", "a personal fork of" openGym linking the upstream GitLab repo purely as attribution/provenance, plus the exercise-data MIT note and the Gym visual © link. Tip copy now says "to install Sky as a full-screen app." Backup filename renamed to `sky-backup-<date>.json`; restore-side error reworded to "not a Sky backup" (old openGym backups still accepted — same shape).
+- **Plan sharing** (`lib/plan-share.js`, `sheets.jsx`): print kicker "Sky", footer "Made with Sky" (upstream site URL dropped), share-file error "this isn’t a Sky plan file", sheet export renamed to `sky-plan-<date>.json`, intro copy says recipients import into their own Sky. Wire-format marker `opengym_plan` unchanged on purpose (ticket 07 owns wire compatibility).
+- **ErrorBoundary**: console tag "Sky render error:", button "Reload Sky".
+- **README**: rewritten end to end for a backend-free single-user fork — static quick start (`npm run dev` / `npm run build`), features pruned of login/passkeys/admin/push/12-languages/MCP/APK download, storage-durability and English-only bullets added, "How it works" describes the single React app, new **Provenance** section replaces Community/Contributing, License opening states Sky inherits GNU AGPL v3 from upstream while the third-party media paragraphs (ExerciseDB MIT metadata; disputed Gym visual media; NOTICE.md pointer) are preserved verbatim.
+- **Note on landing**: the frontend copy edits above were sitting in the working tree when ticket 05 was committed, so they rode along inside fe6c424 (its message flags the interleave); this ticket's own commit carries the README rewrite.
+- **Allowed residues**: wire-format ids (`opengym_plan`, `openGymSheet` pushState token, `opengym-state.json` native mirror), attribution contexts (About footer, README License/Provenance), NOTICE.md/CHANGELOG.md history, internal dev comments, and the dead service-worker push handler whose strings await ticket 03/07 cleanup.
+- **Verification**: full Vitest suite 322/322 across 21 files; production build clean.
