@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useStore } from './store/useStore.js'
+import { useStore, sanitizeDisplayName } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
 import { EXDB, EXIDX, BODYPARTS, isCardio, isBodyweightEq, allExercises, equipmentOf, smOf } from './lib/exercises.js'
 import { fmtDate, fmtNum, fmtVol, fmtDur, durPart, todayISO, uid, exCount, DAYN, MONTHS_LONG, ACCENTS } from './lib/format.js'
@@ -252,6 +252,45 @@ function GoalSheet({ close }) {
   </>
 }
 export const goalSheet = () => ui().openSheet(close => <GoalSheet close={close} />)
+
+/* ============================ profile display name ============================ */
+function DisplayNameSheet({ close }) {
+  const st = S()
+  const [v, setV] = useState(st.displayName || '')
+  const trimmed = v.trim()
+  const canSave = trimmed.length > 0 && trimmed.length <= 24
+  const canClear = !!st.displayName
+  const save = () => {
+    const s = sanitizeDisplayName(v)
+    if (s === null) { toast(t('Enter a name')); return }
+    update(s0 => { s0.displayName = s })
+    close()
+    toast(t('Name saved'))
+  }
+  const clear = () => {
+    update(s0 => { s0.displayName = null })
+    close()
+    toast(t('Name cleared'))
+  }
+  return <>
+    <h3>{t('Your name')}</h3>
+    <div className="muted small" style={{ marginBottom: 12 }}>{t('Shown as “Hi, {0}” on Home. Only on this device.', trimmed || 'there')}</div>
+    <input
+      className="input"
+      placeholder={t('Enter your name')}
+      value={v}
+      maxLength={24}
+      autoFocus
+      onChange={e => setV(e.target.value)}
+      onKeyDown={e => { if (e.key === 'Enter') save() }}
+    />
+    <div className="small dim" style={{ textAlign: 'right', marginTop: 6 }}>{v.trim().length}/24</div>
+    <div style={{ height: 14 }} />
+    <Button variant="primary" onClick={save} disabled={!canSave}>{t('Save')}</Button>
+    {canClear && <><div style={{ height: 8 }} /><Button variant="ghost" onClick={clear}>{t('Clear name')}</Button></>}
+  </>
+}
+export const displayNameSheet = () => ui().openSheet(close => <DisplayNameSheet close={close} />)
 
 /* ============================ exercise detail ============================ */
 // Estimated 1RM for one exercise (issue #18): what the log already implies, plus a calculator

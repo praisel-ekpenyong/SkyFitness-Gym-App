@@ -19,7 +19,10 @@ export const DEF = {
   reminder: { on: false, time: '08:00', tz: null }, effort: null,
   // Timestamp of the last successful JSON export — drives the backup nag in Settings.
   // null, not absent, so a fresh install reads as "never exported" like any old profile.
-  lastExport: null
+  lastExport: null,
+  // Profile display name — optional name shown as "Hi {name}" on Home (CONTEXT.md: Profile display name).
+  // null = not set; merged via DEF so old backups / stored snapshots get it for free.
+  displayName: null
 }
 const clone = o => JSON.parse(JSON.stringify(o))
 
@@ -32,6 +35,14 @@ function loadState() {
 }
 
 const hasData = st => !!((st.workouts || []).length || (st.routines || []).length || (st.bodyweight || []).length)
+
+export function sanitizeDisplayName(v) {
+  if (v == null) return null
+  const s = String(v).trim()
+  if (!s) return null
+  // 1–24 chars, keep as-entered — rendering capitalizes first grapheme
+  return s.slice(0, 24)
+}
 
 export const useStore = create((set, get) => {
   let saveTm = null

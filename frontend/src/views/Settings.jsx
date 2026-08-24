@@ -8,7 +8,7 @@ import { wakeLockSupported } from '../lib/wakelock.js'
 import { t } from '../lib/i18n.js'
 import { MOBILE, shareExport, syncReminder } from '../lib/mobile.js'
 import { backupDue } from '../lib/storage.js'
-import { loadStarterPlan, confirmSheet, importFromApp } from '../sheets.jsx'
+import { loadStarterPlan, confirmSheet, importFromApp, displayNameSheet } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
 import { Section, Row, SelectRow, Switch, Segmented } from '../components/ui.jsx'
 
@@ -68,6 +68,11 @@ export default function Settings() {
           subtitle={t("It's been a while since your last export — take one so a lost phone can't take your log with it.")}
           accessory="chevron" onClick={doExport} />
       )}
+    </Section>
+    <Section title={t('Profile')}>
+      <Row icon="person" iconTint="var(--acc)" title={t('Display name')}
+        subtitle={S.displayName ? t('Hi {0}', S.displayName) : t('Not set — shown on Home as “Hi, there”')}
+        value={S.displayName || ''} accessory="chevron" onClick={displayNameSheet} />
     </Section>
     {/* ---------- general (language row removed with the non-English locales — English is
          the only option, so there is nothing left to pick) ---------- */}
