@@ -1,6 +1,7 @@
-# Exercise media — fetched on first `docker compose up` (or via scripts/fetch-media.sh)
+# Exercise media — fetched on first `docker compose up` (or via scripts/fetch-media.mjs)
 media/img/
 media/gif/
+frontend/public/media/
 
 # Runtime data — users, passkeys, per-user state, session secret
 data/
