@@ -1,8 +1,8 @@
+import { existsSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-
-const backend = process.env.API_TARGET || 'http://127.0.0.1:3000'
-const media = process.env.MEDIA_TARGET || 'http://127.0.0.1:8888'
 
 // Optional web analytics (Umami). Injected only when BOTH vars are set at build time,
 // so a plain `npm run build` — and every self-hosted install — stays telemetry-free.
@@ -22,15 +22,28 @@ const umami = {
   }
 }
 
+const frontendDir = dirname(fileURLToPath(import.meta.url))
+
+// Exercise media (~140 MB) is fetched out-of-band (`npm run media:fetch`) into public/media/,
+// gitignored, and copied verbatim into dist/ whenever present. It is served as plain static
+// files and cached at runtime by sw.js — never precached or processed by the bundler — so no
+// build-time asset-size limit applies to it. Building without it is fine: Media.jsx falls
+// back to the pinned CDN per asset.
+const mediaNotice = {
+  name: 'sky-media-notice',
+  buildStart() {
+    const bundled = existsSync(resolve(frontendDir, 'public', 'media', 'images'))
+    console.log(bundled
+      ? '[media] local exercise media found in public/media/ — bundling into dist/'
+      : '[media] public/media/ not fetched — animations will stream from the CDN (npm run media:fetch to bundle)')
+  }
+}
+
 export default defineConfig({
-  plugins: [react(), umami],
+  plugins: [react(), umami, mediaNotice],
   base: './',
-  server: {
-    proxy: {
-      '/api': { target: backend, changeOrigin: true },
-      '/img': { target: media, changeOrigin: true },
-      '/gif': { target: media, changeOrigin: true }
-    }
-  },
-  build: { chunkSizeWarningLimit: 1500 }
+  build: { chunkSizeWarningLimit: 1500 },
+  test: {
+    include: ['src/**/*.{test,spec}.?(c|m)[jt]s?(x)', '../scripts/**/*.{test,spec}.?(c|m)[jt]s?(x)']
+  }
 })

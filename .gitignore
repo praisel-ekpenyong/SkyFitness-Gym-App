@@ -1,6 +1,4 @@
-# Exercise media — fetched on first `docker compose up` (or via scripts/fetch-media.mjs)
-media/img/
-media/gif/
+# Exercise media (~140 MB) — fetched locally via `npm run media:fetch`, never committed
 frontend/public/media/
 
 # Runtime data — users, passkeys, per-user state, session secret
@@ -14,4 +12,3 @@ frontend/dist/
 node_modules/
 *.log
 .DS_Store
-node_modules

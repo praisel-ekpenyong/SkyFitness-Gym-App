@@ -136,4 +136,27 @@ describe('Media component', () => {
     })
     expect(img.getAttribute('src')).toBe('media/videos/0002-3hQgomO.gif')
   })
+
+  it('resets playing state to autoplay when ex prop changes', async () => {
+    const ex1 = { id: '0001', n: '3/4 sit-up', img: '0001-2gPfomN.jpg', gif: '0001-2gPfomN.gif' }
+    const ex2 = { id: '0002', n: '45° side bend', img: '0002-3hQgomO.jpg', gif: '0002-3hQgomO.gif' }
+
+    await act(async () => {
+      root.render(<Media ex={ex1} />)
+    })
+    const mediaDiv = container.querySelector('.exmedia')
+    const img = container.querySelector('.exmedia img')
+
+    // Tap to pause (switches to still image)
+    await act(async () => {
+      mediaDiv.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    expect(img.getAttribute('src')).toBe('media/images/0001-2gPfomN.jpg')
+
+    // Switching exercise should reset back to playing GIF
+    await act(async () => {
+      root.render(<Media ex={ex2} />)
+    })
+    expect(img.getAttribute('src')).toBe('media/videos/0002-3hQgomO.gif')
+  })
 })

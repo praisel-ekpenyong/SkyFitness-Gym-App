@@ -79,4 +79,52 @@ describe('Sky Service Worker (sw.js)', () => {
     const result = await respondedWithPromise
     expect(result).toBe(cachedResponse)
   })
+
+  describe('exercise media routing', () => {
+    const res = body => ({ ok: true, body, clone() { return this } })
+    const hit = async url => {
+      let responded
+      listeners['fetch']({
+        request: { method: 'GET', url },
+        respondWith: p => { responded = p },
+      })
+      return { responded, result: await responded }
+    }
+
+    beforeEach(() => {
+      globalThis.fetch = vi.fn(() => Promise.reject(new TypeError('network disabled')))
+    })
+
+    it('serves local exercise media cache-first', async () => {
+      loadServiceWorker()
+
+      const img = res('jpg-bytes')
+      const gif = res('gif-bytes')
+      cacheStore['https://sky.app/media/images/0027.jpg'] = img
+      cacheStore['https://sky.app/media/videos/0027.gif'] = gif
+
+      expect((await hit('https://sky.app/media/images/0027.jpg')).result).toBe(img)
+      expect((await hit('https://sky.app/media/videos/0027.gif')).result).toBe(gif)
+      expect(globalThis.fetch).not.toHaveBeenCalled()
+    })
+
+    it('fetches and caches local exercise media on first sight', async () => {
+      loadServiceWorker()
+
+      const fresh = res('gif-bytes')
+      globalThis.fetch = vi.fn(() => Promise.resolve(fresh))
+
+      const { result } = await hit('https://sky.app/media/videos/0499.gif')
+      expect(result).toBe(fresh)
+      expect(cacheStore['https://sky.app/media/videos/0499.gif']).toBe(fresh)
+    })
+
+    it('leaves cross-origin media (CDN fallback) untouched', async () => {
+      loadServiceWorker()
+
+      const cdnUrl = 'https://cdn.jsdelivr.net/gh/exercises-dataset@abc/images/0027.jpg'
+      const { responded } = await hit(cdnUrl)
+      expect(responded).toBeUndefined()
+    })
+  })
 })

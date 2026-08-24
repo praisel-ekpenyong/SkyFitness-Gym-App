@@ -195,7 +195,7 @@ export async function downloadAndExtractMedia(options = {}) {
     url = DEFAULT_ARCHIVE_URL,
     sourceFile = null,
     targetDir = getDefaultMediaDir(),
-    isGzip = true,
+    isGzip = !url.endsWith('.tar'),
     fetch = globalThis.fetch,
     onProgress = null,
     dryRun = false,
@@ -267,7 +267,8 @@ Options:
       options = { ...options, sourceFile: arg, isGzip }
     } else if (arg && (arg.startsWith('http://') || arg.startsWith('https://'))) {
       console.log(`Using custom URL: ${arg}`)
-      options = { ...options, url: arg }
+      const isGzip = !arg.endsWith('.tar')
+      options = { ...options, url: arg, isGzip }
     }
 
     const result = await downloadAndExtractMedia({

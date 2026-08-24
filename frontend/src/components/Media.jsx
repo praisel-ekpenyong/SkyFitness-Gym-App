@@ -15,6 +15,7 @@ export default function Media({ ex, id, compact, minimizable }) {
   const [lastId, setLastId] = useState(ex?.id)
   if (ex?.id !== lastId) {
     setLastId(ex?.id)
+    setPlaying(true)
     setFailed({ gif: false, img: false })
   }
 
@@ -24,13 +25,13 @@ export default function Media({ ex, id, compact, minimizable }) {
   const mini = minimizable && gifSize === 'mini'
   const toggleSize = e => { e.stopPropagation(); update(s => { s.gifSize = mini ? 'full' : 'mini' }) }
 
-  const mode = playing ? 'gif' : 'img'
-  const currentSrc = mediaSrc(ex, { playing, fallback: failed[mode] })
+  const format = playing ? 'gif' : 'img'
+  const currentSrc = mediaSrc(ex, { playing, fallback: failed[format] })
   const fallbackSrc = mediaSrc(ex, { playing, fallback: true })
 
   const handleError = () => {
-    if (!failed[mode] && fallbackSrc) {
-      setFailed(f => ({ ...f, [mode]: true }))
+    if (!failed[format] && fallbackSrc) {
+      setFailed(f => ({ ...f, [format]: true }))
     }
   }
 
