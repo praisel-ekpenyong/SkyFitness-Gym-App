@@ -20,4 +20,4 @@ Single-context layout: root `CONTEXT.md` + `docs/adr/`. See `docs/agents/domain.
 
 - `frontend/` — React 19 + Vite PWA. This is the only part Sky keeps.
 - `frontend/src/lib/` — pure training logic (progression, 1RM, recovery) with Vitest tests next to the code. `npm test` in `frontend/`.
-- Server-side parts of upstream (`api/`, `web/`, `mcp/`, Docker/CI configs) are slated for removal; Sky is a static build only.
+- Server-side parts of upstream (`api/`, `web/`, `mcp/`, Docker/CI configs) have been removed; Sky is a static build only.

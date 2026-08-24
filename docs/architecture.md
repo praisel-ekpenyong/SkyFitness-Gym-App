@@ -61,13 +61,15 @@ Warm-up rows carry `phase: 'warmup'` (legacy rows may have `warmup: true`; `isWa
 
 ## Persistence protocol
 
-Web build: every `persist()` writes the whole `S` to localStorage synchronously. Mobile (Capacitor) build additionally mirrors to a native file (`opengym-state.json` in `Directory.Data`, via `lib/mobile.js`):
+Web build: every `persist()` writes `S` synchronously to `localStorage` (`gym_state_v1`) and mirrors it to IndexedDB (`sky-state` db, `state` store) via `lib/storage.js` on an 800 ms debounce (flushed immediately on `visibilitychange → hidden`). At boot, `pickNewest` compares timestamps (`_ts`) and loads whichever stored snapshot is newer, falling back to empty defaults if neither exists. Settings displays a gentle backup reminder when `backupDue` detects that the last successful JSON export (`S.lastExport`) is older than 14 days.
+
+Mobile (Capacitor) build additionally mirrors state to a native file (`opengym-state.json` in `Directory.Data`, via `lib/mobile.js`):
 
 1. Native writes are debounced 800 ms after each persist.
 2. `visibilitychange → hidden` flushes the debounce immediately — backgrounding is often the last event before the OS kills the app.
 3. At boot, whichever copy has the newer `_ts` wins; a file copy also beats an empty localStorage. First run after upgrading from a file-less version seeds the mirror.
 
-Why the mirror exists: iOS can evict WebView localStorage under storage pressure. Ticket 04 will harden this into a dual-write localStorage + IndexedDB module with newest-timestamp-wins reconciliation — see [ADR 0004](adr/0004-dual-write-storage.md).
+Why the web mirror exists: iOS Safari can evict WebView localStorage under storage pressure, so dual-write ensures your training log survives even if localStorage is cleared — see [ADR 0004](adr/0004-dual-write-storage.md).
 
 ## Training logic
 
@@ -101,7 +103,7 @@ Sky ships English only ([ADR 0003](adr/0003-english-only.md)). English strings a
 ## Build, PWA, mobile shells
 
 - `vite.config.js`: `base: './'` so the build runs from any static path; there are no dev proxies — Sky has no server, and local media is served straight from `public/`; an Umami analytics script is injected only when both `VITE_UMAMI_SRC`/`VITE_UMAMI_ID` are set — plain builds are telemetry-free.
-- `public/sw.js`: hand-written runtime service worker. Exercise media (`/media/images/`, `/media/videos/`) cache-first; everything else network-first with cache fallback; final fallback is the cached SPA shell.
+- `public/sw.js`: hand-written runtime service worker. Exercise media (`/media/images/`, `/media/videos/`) cache-first; everything else network-first with cache fallback; final fallback is the cached SPA shell. Rest timer notifications use the Notification API directly.
 - Exercise media: fetched out-of-band into gitignored `frontend/public/media/` via `npm run media:fetch` (cross-platform `scripts/fetch-media.mjs`); Vite copies it verbatim into `dist/` when present, and the app falls back to the pinned CDN per asset when not.
 - Generated artifacts: `lib/exercises-data.js` (dataset of 1,324 exercises) and `lib/body-paths.js` (muscle-map SVG geometry) are generated/pinned — do not edit. Exercise images/GIFs stream from a pinned jsDelivr commit (`VITE_IMG_BASE`/`VITE_GIF_BASE`); they are licensed media and are never committed.
 - Mobile shells (`frontend/android/`, `frontend/ios/`) are stock Capacitor wrappers around `dist/`; `npm run build:mobile` rebuilds with `VITE_MOBILE=1`, pins CDN media bases, then runs `cap sync`.

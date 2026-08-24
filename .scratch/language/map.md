@@ -18,6 +18,15 @@ Every audited conflict between `CONTEXT.md`'s ubiquitous language and the code/U
 
 ## Decisions so far
 
+- **01 Gate: Sky surgery complete** — Resolved. All 8 Sky surgery issues in `.scratch/sky/issues/` verified complete. Gate lifted.
+- **02 `cfg` vs `target`** — Resolved. Code wins; `target` is the persisted field, `cfg` is the in-memory parameter. CONTEXT.md updated.
+- **03 `row` vs `set` helpers** — Resolved. Code wins; `Set` is the domain concept, `Row` is the UI table presentation. CONTEXT.md updated.
+- **04 Rescheduled copy vs day override** — Resolved. Code copy wins; "Rescheduled" is lifter-facing copy for day overrides. CONTEXT.md updated.
+- **05 `ok` vs `hit`/`miss`** — Resolved. Code wins; `Hit / Miss` is the domain concept, `.ok` is the boolean property on evaluated sessions. CONTEXT.md updated.
+- **06 Import merge vs replace** — Resolved. Glossary amended; defined **Restore** (replaces full database on confirmation) vs **Import** (merges plan files, CSV histories). CONTEXT.md updated.
+- **07 Sky rebrand execution** — Resolved. Rebranded user-visible strings, PWA manifest, HTML titles, backup/plan export filenames, package metadata, and about/license footers. Verified against test suite and production build.
+- **08 Compile rename plan** — Resolved. All language items adjudicated via CONTEXT.md updates; no invasive code renames needed. Effort complete.
+
 ## Not yet specified
 
 - Further glossary/code conflicts surfacing while enumerating signatures and call sites during adjudication — expected, since the audit sampled rather than swept. Each new finding graduates into its own ticket (case-by-case applies to it too) rather than silently folding into an existing one.

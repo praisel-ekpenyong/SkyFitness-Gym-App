@@ -1,5 +1,5 @@
 name: Bug report
-description: Something in openGym is broken or not working as expected
+description: Something in Sky is broken or not working as expected
 labels: ["bug"]
 body:
   - type: textarea
@@ -32,10 +32,13 @@ body:
   - type: dropdown
     id: setup
     attributes:
-      label: How are you running openGym?
+      label: How are you running Sky?
       options:
-        - Self-hosted (docker compose)
-        - Frontend dev server (npm run dev)
+        - Installed PWA (Home screen)
+        - Mobile browser (Safari / Chrome)
+        - Desktop browser
+        - Capacitor native app
+        - Local dev server (npm run dev)
         - Other / not sure
     validations:
       required: true
@@ -44,17 +47,7 @@ body:
     id: environment
     attributes:
       label: Browser & OS
-      placeholder: e.g. Safari 17 on iOS 18, Chrome 126 on Android
+      placeholder: e.g. Safari 18 on iOS 18, Chrome 126 on Android, macOS Safari
     validations:
       required: true
 
-  - type: checkboxes
-    id: passkey
-    attributes:
-      label: Is this about login / passkeys?
-      description: >
-        Most login issues are an `RP_ID`/`ORIGIN` mismatch — check your `.env` against the
-        domain you're accessing openGym from before reporting. See the
-        [self-hosting guide](../../docs/SELF_HOSTING.md).
-      options:
-        - label: Yes, this is a login/passkey issue and I've already checked RP_ID/ORIGIN

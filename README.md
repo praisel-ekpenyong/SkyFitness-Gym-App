@@ -138,9 +138,7 @@ the router and Zustand.
 
 ## Provenance
 
-Sky is not developed in public and takes no contributions; it exists to serve one person's
-training. Bugs or ideas aimed at openGym itself belong in its
-[issue tracker](https://gitlab.com/DuarteSantos8/opengym/-/issues).
+Sky is maintained as a personal fork and does not take public contributions.
 
 ## License
 

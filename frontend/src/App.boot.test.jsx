@@ -19,6 +19,7 @@ vi.mock('./lib/mobile.js', () => ({
 }))
 // Any fetch that slips through fails the test: a static build has no backend to call.
 beforeEach(() => {
+  globalThis.IS_REACT_ACT_ENVIRONMENT = true
   localStorage.clear()
   globalThis.fetch = vi.fn(() => Promise.reject(new Error('network disabled in tests')))
 })
