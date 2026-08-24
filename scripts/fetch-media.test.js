@@ -1,5 +1,4 @@
-import { describe, it, beforeEach, afterEach } from 'node:test'
-import assert from 'node:assert/strict'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { Readable } from 'node:stream'
 import { mkdtempSync, rmSync, existsSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -72,17 +71,17 @@ describe('fetch-media script', () => {
     it('parses valid ustar header with name, size and typeflag', () => {
       const header = buildTarHeader('images/0001.jpg', 1234, '0', 'repo-root')
       const parsed = parseTarHeader(header)
-      assert.notEqual(parsed, null)
-      assert.equal(parsed.name, 'images/0001.jpg')
-      assert.equal(parsed.prefix, 'repo-root')
-      assert.equal(parsed.fullName, 'repo-root/images/0001.jpg')
-      assert.equal(parsed.size, 1234)
-      assert.equal(parsed.typeflag, '0')
+      expect(parsed).not.toBeNull()
+      expect(parsed.name).toBe('images/0001.jpg')
+      expect(parsed.prefix).toBe('repo-root')
+      expect(parsed.fullName).toBe('repo-root/images/0001.jpg')
+      expect(parsed.size).toBe(1234)
+      expect(parsed.typeflag).toBe('0')
     })
 
     it('returns null for zeroed EOF blocks', () => {
       const empty = Buffer.alloc(512, 0)
-      assert.equal(parseTarHeader(empty), null)
+      expect(parseTarHeader(empty)).toBeNull()
     })
   })
 
@@ -103,20 +102,20 @@ describe('fetch-media script', () => {
         onProgress: p => progress.push(p),
       })
 
-      assert.equal(result.imagesCount, 2)
-      assert.equal(result.videosCount, 1)
+      expect(result.imagesCount).toBe(2)
+      expect(result.videosCount).toBe(1)
 
       const imgPath = join(testDir, 'images', '0001-test.jpg')
       const img2Path = join(testDir, 'images', '0002-test.jpg')
       const gifPath = join(testDir, 'videos', '0001-test.gif')
       const jsonPath = join(testDir, 'data', 'exercises.json')
 
-      assert.equal(existsSync(imgPath), true)
-      assert.equal(readFileSync(imgPath, 'utf8'), 'fake-jpg-content')
-      assert.equal(existsSync(img2Path), true)
-      assert.equal(existsSync(gifPath), true)
-      assert.equal(readFileSync(gifPath, 'utf8'), 'fake-gif-content')
-      assert.equal(existsSync(jsonPath), false)
+      expect(existsSync(imgPath)).toBe(true)
+      expect(readFileSync(imgPath, 'utf8')).toBe('fake-jpg-content')
+      expect(existsSync(img2Path)).toBe(true)
+      expect(existsSync(gifPath)).toBe(true)
+      expect(readFileSync(gifPath, 'utf8')).toBe('fake-gif-content')
+      expect(existsSync(jsonPath)).toBe(false)
     })
 
     it('supports dryRun without creating files on disk', async () => {
@@ -131,19 +130,18 @@ describe('fetch-media script', () => {
         dryRun: true,
       })
 
-      assert.equal(result.imagesCount, 1)
-      assert.equal(result.videosCount, 1)
-      assert.equal(existsSync(join(testDir, 'images', 'sample.jpg')), false)
+      expect(result.imagesCount).toBe(1)
+      expect(result.videosCount).toBe(1)
+      expect(existsSync(join(testDir, 'images', 'sample.jpg'))).toBe(false)
     })
 
     it('throws error when stream is truncated mid-file', async () => {
       const header = buildTarHeader('images/0001.jpg', 5000)
       const stream = Readable.from([header, Buffer.alloc(100, 1)])
 
-      await assert.rejects(
-        extractMediaFromTarStream(stream, { targetDir: testDir }),
-        /Truncated tar archive/i
-      )
+      await expect(
+        extractMediaFromTarStream(stream, { targetDir: testDir })
+      ).rejects.toThrow(/Truncated tar archive/i)
     })
   })
 
@@ -167,10 +165,10 @@ describe('fetch-media script', () => {
         fetch: mockFetch,
       })
 
-      assert.equal(result.imagesCount, 1)
-      assert.equal(result.videosCount, 1)
-      assert.equal(existsSync(join(testDir, 'images', '0003-test.jpg')), true)
-      assert.equal(existsSync(join(testDir, 'videos', '0003-test.gif')), true)
+      expect(result.imagesCount).toBe(1)
+      expect(result.videosCount).toBe(1)
+      expect(existsSync(join(testDir, 'images', '0003-test.jpg'))).toBe(true)
+      expect(existsSync(join(testDir, 'videos', '0003-test.gif'))).toBe(true)
     })
 
     it('throws when fetch fails with non-ok status', async () => {
@@ -180,14 +178,13 @@ describe('fetch-media script', () => {
         statusText: 'Not Found',
       })
 
-      await assert.rejects(
+      await expect(
         downloadAndExtractMedia({
           url: 'https://example.com/media.tar.gz',
           targetDir: testDir,
           fetch: mockFetch,
-        }),
-        /Download failed: HTTP 404/
-      )
+        })
+      ).rejects.toThrow(/Download failed: HTTP 404/)
     })
   })
 })

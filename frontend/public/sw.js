@@ -1,5 +1,6 @@
 /* Sky service worker — runtime caching (works with Vite's hashed asset names).
-   Media (img/gif) cache-first; everything else network-first with offline fallback. */
+   Exercise media (/media/images/, /media/videos/) cache-first; everything else
+   network-first with offline fallback. */
 const CACHE = 'sky-rt-v1'
 
 self.addEventListener('install', () => self.skipWaiting())
@@ -15,7 +16,9 @@ self.addEventListener('fetch', e => {
   const url = new URL(e.request.url)
   if (e.request.method !== 'GET' || url.origin !== location.origin) return
 
-  const isMedia = url.pathname.includes('/img/') || url.pathname.includes('/gif/')
+  // Local bundles live under public/media/ (see npm run media:fetch); CDN mirrors keep
+  // the same /media/images|videos shape via VITE_IMG_BASE/VITE_GIF_BASE overrides.
+  const isMedia = url.pathname.includes('/media/images/') || url.pathname.includes('/media/videos/')
   if (isMedia) {
     e.respondWith(caches.open(CACHE).then(c => c.match(e.request).then(hit =>
       hit || fetch(e.request).then(res => { if (res.ok) c.put(e.request, res.clone()); return res })
