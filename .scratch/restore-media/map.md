@@ -14,6 +14,7 @@ Restore all 1,324 exercise thumbnails (JPG) and animated demos (GIF) to work loc
 ## Decisions so far
 
 - **Cross-platform media fetch script**: Implemented `scripts/fetch-media.mjs` using pure Node standard libraries (streaming gunzip + tar parser) to unpack 1,324 JPG images into `frontend/public/media/images/` and 1,324 GIFs into `frontend/public/media/videos/` from the pinned dataset commit without OS-specific dependencies. Callable via `npm run media:fetch` from `frontend/`. See [01-media-fetch-script.md](issues/01-media-fetch-script.md).
+- **Local-first media resolution & CDN fallback**: `exercises.js` (`imgSrc` and `gifSrc`) defaults to relative paths (`media/images/` and `media/videos/`) with `VITE_IMG_BASE`/`VITE_GIF_BASE` override support and exported CDN helpers (`cdnImgSrc`, `cdnGifSrc`). `<Media />` and `<Thumb />` in `Media.jsx` catch image loading errors via `onError` and seamlessly fall back to the pinned jsDelivr CDN. See [02-local-first-resolver.md](issues/02-local-first-resolver.md).
 
 ## Not yet specified
 

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { imgSrc, gifSrc } from '../lib/exercises.js'
+import { mediaSrc } from '../lib/exercises.js'
 import { useStore } from '../store/useStore.js'
 import { t } from '../lib/i18n.js'
 import Icon from './Icon.jsx'
@@ -11,14 +11,32 @@ import Icon from './Icon.jsx'
 // future workouts (issue #12).
 export default function Media({ ex, id, compact, minimizable }) {
   const [playing, setPlaying] = useState(true)
+  const [failed, setFailed] = useState({ gif: false, img: false })
+  const [lastId, setLastId] = useState(ex?.id)
+  if (ex?.id !== lastId) {
+    setLastId(ex?.id)
+    setFailed({ gif: false, img: false })
+  }
+
   const gifSize = useStore(s => s.S.gifSize)
   const update = useStore(s => s.update)
-  if (!ex.gif) return null
+  if (!ex?.gif) return null
   const mini = minimizable && gifSize === 'mini'
   const toggleSize = e => { e.stopPropagation(); update(s => { s.gifSize = mini ? 'full' : 'mini' }) }
+
+  const mode = playing ? 'gif' : 'img'
+  const currentSrc = mediaSrc(ex, { playing, fallback: failed[mode] })
+  const fallbackSrc = mediaSrc(ex, { playing, fallback: true })
+
+  const handleError = () => {
+    if (!failed[mode] && fallbackSrc) {
+      setFailed(f => ({ ...f, [mode]: true }))
+    }
+  }
+
   return (
     <div className={'exmedia' + (compact ? ' compact' : '') + (mini ? ' mini' : '')} id={id} onClick={() => setPlaying(p => !p)}>
-      <img decoding="async" src={playing ? gifSrc(ex) : imgSrc(ex)} alt={ex.n} />
+      <img decoding="async" src={currentSrc} onError={handleError} alt={ex.n} />
       {minimizable && (
         <button className="giftoggle" onClick={toggleSize}>
           <Icon name={mini ? 'expand' : 'minimize'} />{mini ? t('Expand') : t('Minimize')}
@@ -34,6 +52,24 @@ export default function Media({ ex, id, compact, minimizable }) {
 }
 
 export function Thumb({ ex }) {
-  if (!ex.img) return <div className="thumb thumb-x"><Icon name="dumbbell" /></div>
-  return <img className="thumb" loading="lazy" decoding="async" src={imgSrc(ex)} alt="" />
+  const [failed, setFailed] = useState(false)
+  const [lastId, setLastId] = useState(ex?.id)
+  if (ex?.id !== lastId) {
+    setLastId(ex?.id)
+    setFailed(false)
+  }
+
+  if (!ex?.img) return <div className="thumb thumb-x"><Icon name="dumbbell" /></div>
+  const currentSrc = mediaSrc(ex, { fallback: failed })
+
+  return (
+    <img
+      className="thumb"
+      loading="lazy"
+      decoding="async"
+      src={currentSrc}
+      onError={() => { if (!failed) setFailed(true) }}
+      alt=""
+    />
+  )
 }

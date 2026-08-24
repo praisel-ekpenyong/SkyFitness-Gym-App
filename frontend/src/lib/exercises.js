@@ -46,17 +46,28 @@ export function registerCustom(list) {
 // Full searchable catalogue — customs first so your own exercises are easy to find.
 export const allExercises = st => [...(st.customEx || []), ...EXDB]
 
-// Sky ships no media set (the ~140 MB of licensed images/GIFs are never committed), so by
-// default both stream from the pinned jsDelivr commit — same source build:mobile pins. A build
-// that provides media itself overrides this with VITE_IMG_BASE / VITE_GIF_BASE (e.g. a
-// self-hosted mirror); there is deliberately no relative default, since nothing serves /img/
-// or /gif/ next to a static dist/ anymore. `import.meta.env` is undefined in plain Node; the
-// guard keeps this module loadable without Vite.
-const ENV = import.meta.env || {}
-const IMG_BASE = ENV.VITE_IMG_BASE || 'https://cdn.jsdelivr.net/gh/hasaneyldrm/exercises-dataset@7455efae41b330c265e7cd4b78dfa848e7ce5ebd/images/'
-const GIF_BASE = ENV.VITE_GIF_BASE || 'https://cdn.jsdelivr.net/gh/hasaneyldrm/exercises-dataset@7455efae41b330c265e7cd4b78dfa848e7ce5ebd/videos/'
-export const imgSrc = ex => IMG_BASE + ex.img
-export const gifSrc = ex => GIF_BASE + ex.gif
+// Pinned upstream dataset release for media streaming and CDN fallbacks.
+export const PINNED_DATASET_COMMIT = '7455efae41b330c265e7cd4b78dfa848e7ce5ebd'
+export const CDN_IMG_BASE = `https://cdn.jsdelivr.net/gh/hasaneyldrm/exercises-dataset@${PINNED_DATASET_COMMIT}/images/`
+export const CDN_GIF_BASE = `https://cdn.jsdelivr.net/gh/hasaneyldrm/exercises-dataset@${PINNED_DATASET_COMMIT}/videos/`
+
+// Sky does not commit 140 MB of media to git; relative defaults serve local assets bundled
+// via `npm run media:fetch`, while CDN fallbacks keep fresh clones and missing assets functional.
+const ENV = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : {}
+const IMG_BASE = (ENV.VITE_IMG_BASE || 'media/images/').replace(/\/?$/, '/')
+const GIF_BASE = (ENV.VITE_GIF_BASE || 'media/videos/').replace(/\/?$/, '/')
+
+export const imgSrc = ex => (ex?.img ? IMG_BASE + ex.img : '')
+export const gifSrc = ex => (ex?.gif ? GIF_BASE + ex.gif : '')
+export const cdnImgSrc = ex => (ex?.img ? CDN_IMG_BASE + ex.img : '')
+export const cdnGifSrc = ex => (ex?.gif ? CDN_GIF_BASE + ex.gif : '')
+
+export const mediaSrc = (ex, { playing = false, fallback = false } = {}) => {
+  if (playing) {
+    return fallback ? cdnGifSrc(ex) : gifSrc(ex)
+  }
+  return fallback ? cdnImgSrc(ex) : imgSrc(ex)
+}
 
 // Cardio exercises log time + speed instead of weight × reps.
 export const isCardio = idOrEx => (typeof idOrEx === 'string' ? EXIDX[idOrEx] : idOrEx)?.bp === 'cardio'
