@@ -17,9 +17,13 @@ _Avoid_: offline mode, anonymous mode
 **Export**:
 A complete copy of the profile as one file, for safekeeping or moving devices.
 
+**Restore**:
+Loading a full JSON backup file. Replaces the current profile state wholesale on confirmation.
+_Avoid_: sync
+
 **Import**:
-Bringing outside data in. Backups and CSV histories merge rather than replace — existing days win, so importing twice never duplicates a workout.
-_Avoid_: restore (a flavour of import), sync
+Bringing partial or outside data in (shared plan files, CSV histories from FitNotes/Strong/Hevy, Apple Health weigh-ins). Imports merge rather than replace — existing routines gain new IDs and existing days win, so importing never duplicates a workout.
+_Avoid_: sync
 
 **Static build**:
 Sky ships as a static frontend only; there is no backend to fall back on. Every feature must work from local data alone.
@@ -33,9 +37,9 @@ _Avoid_: plan, template, program, split
 **Week schedule**:
 Which routine belongs to each weekday.
 
-**Day override**:
-A one-off replacement (or declared rest) for what the week schedule says on one specific date.
-_Avoid_: rescheduling
+**Day override (Rescheduled)**:
+A one-off replacement (or declared rest) for what the week schedule says on one specific date. In lifter-facing UI copy and badges, this is presented as "Rescheduled" (e.g. `todayOvr` indicators).
+_Avoid_: re-planning
 
 **Plan file**:
 The shareable bundle: routines, the week schedule, and the custom exercises those routines use. Never carries workouts, weigh-ins or settings; importing it adds fresh routines, never overwrites yours.
@@ -60,8 +64,8 @@ _Avoid_: missing exercise
 ### Logging a session
 
 **Target**:
-What was prescribed for an exercise before training: sets × reps/seconds/minutes, weight, and how it's logged. Finished workouts keep the target they were trained against, so history can be read back honestly.
-_Avoid_: config, plan (for a single exercise)
+What was prescribed for an exercise before training: sets × reps/seconds/minutes, weight, and how it's logged. Finished workouts keep the target they were trained against, so history can be read back honestly. In-memory helper functions receive this configuration shape as `cfg`.
+_Avoid_: plan (for a single exercise)
 
 **Active workout**:
 The one session currently in progress. At most one exists; it survives closing the app.
@@ -74,8 +78,7 @@ _Avoid_: session (fine in prose, never as the noun for the record)
 One exercise within a routine or a workout; holds its sets.
 
 **Set**:
-One performance of an exercise — weight × reps, held seconds, or minutes × speed — plus whether it was performed (checked off). An unchecked set counts as not having happened, everywhere.
-_Avoid_: row
+One performance of an exercise — weight × reps, held seconds, or minutes × speed — plus whether it was performed (checked off). An unchecked set counts as not having happened, everywhere. In UI presentation components and row manipulation helpers (`insertWarmupRow`, `removeRowAt`), a set on screen is referred to as a **Row**.
 
 **Work set**:
 Any set that is not a warm-up. All metrics, judgements and policies read work sets only.
@@ -126,7 +129,7 @@ _Avoid_: using "hard" informally for heavy
 ### Judging & progression
 
 **Hit / Miss**:
-How a session is judged against its target. A performed set that reached its target is a hit; fewer reps, an unticked set, or sets that were never added are misses. A session that fell apart cannot advance the load.
+How a session is judged against its target. A performed set that reached its target is a hit; fewer reps, an unticked set, or sets that were never added are misses. A session that fell apart cannot advance the load. In the progression engine and session evaluators (`readSession`, `stallCount`), this boolean judgement is represented as `.ok`.
 
 **Progression policy**:
 The named rule that derives the next target from history: off, linear, Greyskull LP, double progression, add-time. Policies are pure readings of the log — fixing a mistyped set immediately changes the next prescription.

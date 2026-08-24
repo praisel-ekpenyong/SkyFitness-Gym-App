@@ -60,10 +60,8 @@ and the instruction sentences are identical apart from stripped `Step:N ` prefix
 ### Metadata & instruction text
 
 The exercise names, attributes and instructions (English in `frontend/src/lib/exercises-data.js`,
-other languages in `frontend/src/instr/`, regenerated via `scripts/build-instructions.mjs`)
-originate from ExerciseDB v1 and reach openGym through the dataset above, which distributes them
-under the MIT license reproduced below. The translations into languages other than English are
-openGym's own derivative work and are covered by openGym's AGPL.
+originally regenerated via `scripts/build-instructions.mjs`) originate from ExerciseDB v1 and
+reach Sky through the dataset above, which distributes them under the MIT license reproduced below.
 
 ```
 MIT License
