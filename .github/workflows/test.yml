@@ -7,7 +7,7 @@ on:
       - 'frontend/**'
       - '.github/workflows/test.yml'
   push:
-    branches: [main]
+    branches: [main, master]
     paths:
       - 'frontend/**'
       - '.github/workflows/test.yml'
