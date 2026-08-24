@@ -18,18 +18,30 @@ The production output is emitted to `frontend/dist/`. Because Vite is configured
 
 ## 2. Deployment Options
 
-### Option A — GitHub Pages / Cloudflare Pages / GitLab Pages
+### Option A — Cloudflare Pages (Recommended for Free Subdomain & Zero Limits)
+
+1. Connect your GitHub repository in the **Cloudflare Pages** dashboard (**Compute (Workers & Pages) → Create application → Pages → Connect to Git**).
+2. Configure build settings:
+   - **Framework preset:** `Vite` (or `None`)
+   - **Root directory:** `frontend`
+   - **Build command:** `npm run build`
+   - **Build output directory:** `dist`
+   - **Environment variables:** Set `NODE_VERSION` to `22` (or `20`)
+3. Choose your project name (e.g. `skyfitness` gives `https://skyfitness.pages.dev`).
+4. Static SPA fallback (`_redirects`) and cache headers (`_headers`) in `frontend/public/` are automatically applied by Cloudflare Pages to ensure instant updates for `index.html`/`sw.js` and long-term immutable caching for assets.
+
+### Option B — GitHub Pages / GitLab Pages
 
 1. Push your repository to your Git provider.
 2. Configure Pages to publish the `frontend/dist` directory (or configure a static build step `cd frontend && npm install && npm run build`).
 3. Your site is served over HTTPS automatically.
 
-### Option B — Netlify / Vercel
+### Option C — Netlify / Vercel
 
 - **Build command:** `cd frontend && npm install && npm run build`
 - **Publish directory:** `frontend/dist`
 
-### Option C — Caddy (Automatic HTTPS)
+### Option D — Caddy (Automatic HTTPS)
 
 ```caddy
 sky.example.com {
@@ -39,7 +51,7 @@ sky.example.com {
 }
 ```
 
-### Option D — Nginx
+### Option E — Nginx
 
 ```nginx
 server {
@@ -55,7 +67,7 @@ server {
 }
 ```
 
-### Option E — Local static preview
+### Option F — Local static preview
 
 To test the production build locally:
 
@@ -77,7 +89,7 @@ Sky is installable as a Progressive Web App (PWA):
 ## 4. Exercise Media & Offline Support
 
 - **Exercise Media:** Exercise thumbnails and animated demonstration GIFs stream on-demand from a pinned CDN dataset ([hasaneyldrm/exercises-dataset](https://github.com/hasaneyldrm/exercises-dataset)). The ~140 MB media library does not need to be hosted on your server.
-- **Offline Logging:** The service worker caches the application shell. Workout logging, plan management, fatigue calculations, and history work fully offline.
+- **Offline Logging:** The service worker caches the application shell. Workout logging, routine management, fatigue calculations, and history work fully offline.
 
 ## 5. Backups & Portability
 
