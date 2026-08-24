@@ -16,9 +16,8 @@
 //   · fewer sets than prescribed                       → miss
 // So a session that fell apart can never advance the load as though it had succeeded.
 
-import { modeOf, repStep } from './history.js'
 import { EXIDX } from './exercises.js'
-import { isWarmupRow } from './workout-model.js'
+import { isWarmupRow, modeOf, repStep, makeRow, modeForSet } from './workout-model.js'
 
 export const POLICIES = ['off', 'linear', 'greyskull', 'double', 'time']
 
@@ -272,7 +271,8 @@ export function applyPrescription(sets, p) {
     // would both invent work and never terminate the loop. Leave the entry untouched.
     if (!workRows.length) return out
     const seed = workRows[workRows.length - 1]
-    while (out.filter(s => !isWarmupRow(s)).length < p.sets) out.push({ ...seed, done: false })
+    const seedMode = modeForSet(seed, {})
+    while (out.filter(s => !isWarmupRow(s)).length < p.sets) out.push(makeRow(seedMode, {}, { prev: seed }))
   }
   return out
 }

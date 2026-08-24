@@ -4,9 +4,13 @@ How Sky works under the hood: the persisted data model, where it lives, and the 
 
 ## The big picture
 
-Sky is a single-page React 19 app with **no backend**. One zustand store (`frontend/src/store/useStore.js`) holds the entire app state as one serializable object `S`; every mutation goes through `update(mut)`, which deep-clones, applies the mutator, and persists. Views read from `S` and never talk to a server. Pure training logic lives in `frontend/src/lib/` beside its Vitest tests; UI lives in `views/` (pages), `sheets.jsx` (~18 bottom-sheet/dialog flows), and `components/` (custom control set in `ui.jsx`, chart/map/media primitives).
+Sky is a single-page React 19 app with **no backend**. One zustand store (`frontend/src/store/useStore.js`) holds the entire app state as one serializable object `S`; every mutation goes through `update(mut)` (or the named lifecycle actions `beginSession`/`recordWorkingWeight`/`finishSession` behind `lib/active-workout.js`), which deep-clones, applies the mutator, and persists. Views read from `S` and never talk to a server. Pure training logic lives in `frontend/src/lib/` beside its Vitest tests; UI lives in `views/` (pages), `sheets.jsx` (~18 bottom-sheet/dialog flows), and `components/` (custom control set in `ui.jsx`, chart/map/media primitives).
 
 Navigation is a HashRouter over `/home /plan /plan/r/:id /workout /stats /history /library /settings`. There are no context providers: cross-cutting ephemeral state (sheet stack, toasts, rest/work countdowns) lives in a second store, `store/useUI.js`.
+
+## Active-workout lifecycle (`lib/active-workout.js`)
+
+The riskiest writes — building the Active workout, confirming working weight, finishing a Workout with Record/e1RM detection and the heaviest-ever weight cache (`exWeights`) — are the one deep module behind named store actions `beginSession` / `recordWorkingWeight` / `finishSession` and the read seam `bestKnownWeight(S,id)`. The module owns target freezing, `nextPrescription`/`buildSets`/`applyPrescription`, a single monotonic `mergeExWeight` (heavier wins, warm-ups and unticked sets excluded, `topW` included only for the merge, history import reuses the same policy), and the superset-agnostic PR scan. Sheets and Workout are thin callers — see [ADR 0006](adr/0006-active-workout-lifecycle.md).
 
 ## Persisted data model (`gym_state_v1`)
 
@@ -57,7 +61,7 @@ Set shape varies by logged mode (`modeForSet` in `lib/workout-model.js` resolves
 - time: `{ sec, w, done }`
 - cardio: `{ min, speed, done }`
 
-Warm-up rows carry `phase: 'warmup'` (legacy rows may have `warmup: true`; `isWarmupRow` accepts both). Optional effort/weight fields are key-**deleted** when cleared, not set to null — cleared ≠ zero, and backups stay minimal.
+Warm-up rows carry `phase: 'warmup'` (legacy rows may have `warmup: true`; `isWarmupRow` accepts both). Optional effort/weight fields are key-**deleted** when cleared, not set to null — cleared ≠ zero, and backups stay minimal. Row shape and fallback defaults (`20 min` / `8 km/h` / `45 sec` / `3×10`) live once in `lib/workout-model.js` as `ROW_DEFAULTS`/`SETS_DEFAULTS` behind `makeRow(mode,target,{prev,warmup})` — see [ADR 0007](adr/0007-row-construction-single-home.md); `buildSets`, `insertWarmupRow`, `Workout addSet` and the `applyPrescription` growth path all delegate there, and the superset `hasWork`/`setProgressHighWater` path counts work sets only (`!isWarmupRow`).
 
 ## Persistence protocol
 

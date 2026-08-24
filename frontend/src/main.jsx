@@ -1,8 +1,13 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App.jsx'
-import { MOBILE } from './lib/mobile.js'
+import { MOBILE, nativeSink } from './lib/mobile.js'
+import { registerSink } from './lib/storage.js'
 import './index.css'
+
+// Mobile builds mirror every save into the app's data directory (survives WebView storage
+// eviction). Registered before anything renders, so no persist can outrun it.
+if (MOBILE) registerSink(nativeSink)
 
 createRoot(document.getElementById('root')).render(
   <StrictMode><App /></StrictMode>
