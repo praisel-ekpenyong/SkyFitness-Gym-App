@@ -11,6 +11,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:fatigue-probe": "node scripts/fatigue-monotonic-probe.mjs",
+    "test:preview": "node scripts/test-deploy-preview.mjs",
     "media:fetch": "node ../scripts/fetch-media.mjs"
   },
   "license": "AGPL-3.0-or-later",
