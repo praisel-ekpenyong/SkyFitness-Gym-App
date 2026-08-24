@@ -1,12 +1,13 @@
 import { useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useStore, DEF } from '../store/useStore.js'
+import { useStore, DEF, hasData } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { ACCENTS, todayISO, localTZ } from '../lib/format.js'
 import { effortOf } from '../lib/history.js'
 import { wakeLockSupported } from '../lib/wakelock.js'
 import { t, LANGS, INSTR_LANGS } from '../lib/i18n.js'
 import { MOBILE, shareExport, syncReminder } from '../lib/mobile.js'
+import { backupDue } from '../lib/storage.js'
 import { loadStarterPlan, confirmSheet, importFromApp } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
 import { Section, Row, SelectRow, Switch, Segmented } from '../components/ui.jsx'
@@ -21,17 +22,20 @@ export default function Settings() {
   const wakeOK = wakeLockSupported()
   const IS_ANDROID = /android/i.test(navigator.userAgent)
 
+  // The backup nag reads this stamp — set it only once an export actually went out.
+  const stampExported = () => update(s => { s.lastExport = Date.now() })
   const doExport = async () => {
     const json = JSON.stringify(S, null, 2)
     const name = 'opengym-backup-' + todayISO() + '.json'
     // WKWebView can't download blob URLs — the native build hands the file to the share sheet.
     if (MOBILE) {
-      try { await shareExport(json, name); toast(t('Backup exported')) } catch (e) { /* share sheet dismissed */ }
+      try { await shareExport(json, name); toast(t('Backup exported')); stampExported() } catch (e) { /* share sheet dismissed */ }
       return
     }
     const blob = new Blob([json], { type: 'application/json' })
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); URL.revokeObjectURL(a.href)
     toast(t('Backup exported'))
+    stampExported()
   }
   const doImport = ev => {
     const f = ev.target.files[0]; if (!f) return
@@ -56,6 +60,13 @@ export default function Settings() {
     <Section title={t('Your data')}>
       <Row icon="lock" iconTint="var(--acc)" title={t('All data stays on this device')}
         subtitle={t('No account, no cloud — back it up anytime with Export below.')} />
+      {/* Gentle nag: only when there is history worth saving and the last export has gone
+          stale. Tapping it exports straight away, which clears the row. */}
+      {hasData(S) && backupDue(S.lastExport, Date.now()) && (
+        <Row icon="shield" iconTint="var(--yellow)" title={t('Time for a backup?')}
+          subtitle={t("It's been a while since your last export — take one so a lost phone can't take your log with it.")}
+          accessory="chevron" onClick={doExport} />
+      )}
     </Section>
     {/* ---------- general ---------- */}
     <Section title={t('General')} footer={t('Note: switching units only changes the label — logged numbers are not converted.')}>
