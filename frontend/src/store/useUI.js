@@ -1,8 +1,9 @@
 import { create } from 'zustand'
 import { uid } from '../lib/format.js'
-import { beep, vibrate } from '../lib/sound.js'
+import { playTimerComplete, playTimerWarning, vibrate } from '../lib/sound.js'
 import { t } from '../lib/i18n.js'
 import { useStore } from './useStore.js'
+
 
 const notificationsSupported = () => typeof window !== 'undefined' && 'Notification' in window
 let requestRestNotificationPermissionP = null
@@ -80,10 +81,9 @@ export const useUI = create((set, get) => ({
       if (left === tm.left) return
       const snd = useStore.getState().S.sound
       if (left <= 0) {
-        beep(snd, 880, 0.15); beep(snd, 880, 0.15, 0.25); beep(snd, 1320, 0.4, 0.5)
-        vibrate([200, 100, 200]); maybeRestNotification(); get().toast(t('Rest over — next set!')); get().stopRest(); return
+        playTimerComplete(snd); maybeRestNotification(); get().toast(t('Rest over — next set!')); get().stopRest(); return
       }
-      if (left <= 3) beep(snd, 660, 0.1)
+      if (left <= 3) playTimerWarning(snd)
       set({ timer: { ...tm, left } })
     }
     timerInt = setInterval(timerTick, 1000)
@@ -126,14 +126,13 @@ export const useUI = create((set, get) => ({
       if (left === wk.left) return
       const snd = useStore.getState().S.sound
       if (left <= 0) {
-        beep(snd, 880, 0.15); beep(snd, 880, 0.15, 0.25); beep(snd, 1320, 0.4, 0.5)
-        vibrate([200, 100, 200])
+        playTimerComplete(snd)
         const done = workDone
         get().stopWork()
         if (done) done(wk.total)
         return
       }
-      if (left <= 3) beep(snd, 660, 0.1)
+      if (left <= 3) playTimerWarning(snd)
       set({ work: { ...wk, left } })
     }
     workInt = setInterval(workTick, 1000)

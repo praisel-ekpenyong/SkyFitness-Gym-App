@@ -29,6 +29,12 @@ export const STRENGTH_HALF_LIFE_MS = 2419200000
 /** Minimum retained-strength value for an untrained or fully detrained muscle. */
 export const STRENGTH_FLOOR = 0.5
 
+/** Threshold separating 'ready' from 'recovering' fatigue states. */
+export const FATIGUE_THRESHOLD_READY = 0.25
+
+/** Threshold above which a muscle is considered 'fatigued'. */
+export const FATIGUE_THRESHOLD_FATIGUED = 0.5
+
 /**
  * Stable labels for consumer fatigue buckets: values below 0.25 are ready, values from 0.25
  * through 0.5 are recovering, and values above 0.5 are fatigued.
@@ -344,7 +350,7 @@ export function strengthOf(workouts, now, opts = {}) {
  */
 export function fatiguedMuscles(workouts, now, opts = {}) {
   return Object.entries(fatigueOf(workouts, now, opts))
-    .filter(([, value]) => value > 0.5)
+    .filter(([, value]) => value > FATIGUE_THRESHOLD_FATIGUED)
     .map(([slug]) => slug)
 }
 
@@ -362,4 +368,21 @@ export function detrainedMuscles(workouts, now, opts = {}) {
   return Object.entries(strengthOf(workouts, now, opts))
     .filter(([, value]) => value < 1)
     .map(([slug]) => slug)
+}
+
+/**
+ * Select the consumer-facing fatigue state for one numeric recovery value.
+ * Values below .25 are ready, .25 through .5 are recovering, and values above .5 are fatigued.
+ * Keeping this boundary selector in production code prevents views and tests from drifting apart.
+ *
+ * @param {number} value Numeric fatigue value from fatigueOf().
+ * @returns {'ready'|'recovering'|'fatigued'} The stable state label for the UI.
+ */
+export function fatigueStateOf(value) {
+  if (value == null || !Number.isFinite(value) || value < FATIGUE_THRESHOLD_READY) {
+    return FATIGUE_STATES.READY
+  }
+  return value <= FATIGUE_THRESHOLD_FATIGUED
+    ? FATIGUE_STATES.RECOVERING
+    : FATIGUE_STATES.FATIGUED
 }

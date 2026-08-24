@@ -15,10 +15,10 @@ import {
   fatigueOf,
   halfLifeDecay,
   strengthOf,
+  fatigueStateOf,
 } from './recovery.js'
 import { EXDB, registerCustom } from './exercises.js'
 import { MUSCLES, musclesOf } from './muscles.js'
-import { fatigueStateOf } from './recovery-view.js'
 
 const HOUR = 60 * 60 * 1000
 const DAY = 24 * HOUR

@@ -7,7 +7,14 @@ import Workout, { removeActiveExercise } from './Workout.jsx'
 import { DEF, useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 
-vi.mock('../lib/sound.js', () => ({ beep: vi.fn(), vibrate: vi.fn() }))
+vi.mock('../lib/sound.js', () => ({
+  beep: vi.fn(),
+  vibrate: vi.fn(),
+  playSetComplete: vi.fn(),
+  playTimerWarning: vi.fn(),
+  playTimerComplete: vi.fn(),
+  playWorkoutComplete: vi.fn(),
+}))
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true
 const clone = value => JSON.parse(JSON.stringify(value))

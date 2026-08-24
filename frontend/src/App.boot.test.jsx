@@ -8,7 +8,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App.jsx'
 import { useStore } from './store/useStore.js'
 
-vi.mock('./lib/sound.js', () => ({ beep: vi.fn(), vibrate: vi.fn() }))
+vi.mock('./lib/sound.js', () => ({
+  beep: vi.fn(),
+  vibrate: vi.fn(),
+  playSetComplete: vi.fn(),
+  playTimerWarning: vi.fn(),
+  playTimerComplete: vi.fn(),
+  playWorkoutComplete: vi.fn(),
+}))
 // The native mirror is a Capacitor plugin behind the MOBILE flag; in tests it is simply absent.
 vi.mock('./lib/mobile.js', () => ({
   MOBILE: false,

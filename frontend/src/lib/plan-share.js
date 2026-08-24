@@ -9,8 +9,8 @@
 //     a page break — each exercise, and each routine that fits, stays in one place.
 
 import { EXIDX, isBodyweightEq } from './exercises.js'
-import { modeOf, fmtSec, isBw, isPerSide, sideReps } from './history.js'
-import { uid, todayISO, DAYN, fmtNum, exCount } from './format.js'
+import { modeOf, isBw, isPerSide, sideReps } from './workout-model.js'
+import { uid, todayISO, DAYN, fmtNum, exCount, fmtSec } from './format.js'
 import { t } from './i18n-core.js'
 
 const PLAN_FMT = 1

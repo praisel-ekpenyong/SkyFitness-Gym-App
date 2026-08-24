@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { FATIGUE_STATES, fatigueOf, strengthOf } from './recovery.js'
-import { fatigueStateOf } from './recovery-view.js'
+import { FATIGUE_STATES, fatigueOf, strengthOf, fatigueStateOf } from './recovery.js'
 import { MUSCLES, levelsOf } from './muscles.js'
 
 const FATIGUE_BANDS = [
@@ -28,6 +27,9 @@ describe('production recovery view selectors', () => {
     expect(fatigueStateOf(0.25)).toBe(FATIGUE_STATES.RECOVERING)
     expect(fatigueStateOf(0.5)).toBe(FATIGUE_STATES.RECOVERING)
     expect(fatigueStateOf(0.5001)).toBe(FATIGUE_STATES.FATIGUED)
+    expect(fatigueStateOf(null)).toBe(FATIGUE_STATES.READY)
+    expect(fatigueStateOf(undefined)).toBe(FATIGUE_STATES.READY)
+    expect(fatigueStateOf(NaN)).toBe(FATIGUE_STATES.READY)
   })
 
   it('renders fatigue bands on a fixed absolute scale rather than relative to the map maximum', () => {

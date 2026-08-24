@@ -3,8 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { Window } from 'happy-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MUSCLES, levelsOf } from '../lib/muscles.js'
-import { FATIGUE_STATES, STRENGTH_FLOOR } from '../lib/recovery.js'
-import { fatigueStateOf } from '../lib/recovery-view.js'
+import { FATIGUE_STATES, STRENGTH_FLOOR, fatigueStateOf } from '../lib/recovery.js'
 import Stats from './Stats.jsx'
 
 const DAY = 86400000

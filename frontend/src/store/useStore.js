@@ -1,10 +1,10 @@
 import { create } from 'zustand'
 import { localTZ } from '../lib/format.js'
 import { registerCustom } from '../lib/exercises.js'
-import { MOBILE, nativeLoad, nativeSave, syncReminder } from '../lib/mobile.js'
-import { idbLoad, idbSave, loadLocal, pickNewest, LOCAL_KEY } from '../lib/storage.js'
+import { MOBILE, syncReminder } from '../lib/mobile.js'
+import { flush, load, loadLocal, save } from '../lib/storage.js'
+import { createActiveSession, applyWorkingWeight, completeActiveSession } from '../lib/active-workout.js'
 
-const KEY = LOCAL_KEY   // single definition lives in lib/storage.js
 export const DEF = {
   // No lang key — Sky is English-only (ticket 05) and nothing reads S.lang. Profiles that
   // still carry one from upstream keep it in storage harmlessly.
@@ -27,11 +27,8 @@ export const DEF = {
 const clone = o => JSON.parse(JSON.stringify(o))
 
 function loadState() {
-  try {
-    const raw = localStorage.getItem(KEY)
-    if (raw) return Object.assign(clone(DEF), JSON.parse(raw))
-  } catch (e) { /* ignore */ }
-  return clone(DEF)
+  const raw = loadLocal()
+  return raw ? Object.assign(clone(DEF), raw) : clone(DEF)
 }
 
 const hasData = st => !!((st.workouts || []).length || (st.routines || []).length || (st.bodyweight || []).length)
@@ -45,43 +42,18 @@ export function sanitizeDisplayName(v) {
 }
 
 export const useStore = create((set, get) => {
-  let saveTm = null
-  let idbTm = null   // debounce for the IndexedDB mirror (web twin of saveTm)
-
-  // Mobile build: mirror the state into a file in the app's data directory (survives WebView
-  // storage eviction) and keep the native reminder schedule in step with the weekly plan.
-  const nativePersist = () => {
-    clearTimeout(saveTm)
-    saveTm = setTimeout(() => { saveTm = null; nativeSave(get().S); syncReminder(get().S) }, 800)
-  }
-
   const persist = S => {
-    S._ts = Date.now()
     registerCustom(S.customEx)
-    localStorage.setItem(KEY, JSON.stringify(S))
+    save(S)   // stamps _ts, writes localStorage now, mirrors on the storage module's debounce
     set({ S })
-    // The IndexedDB mirror rides along on every save — same debounce as the mobile file copy.
-    clearTimeout(idbTm)
-    idbTm = setTimeout(() => { idbTm = null; idbSave(S) }, 800)
-    if (MOBILE) nativePersist()
   }
 
   // A setting changed right before switching away/closing the tab must not get lost mid-debounce
-  // (e.g. setting the reminder time then immediately backgrounding to test it). On mobile the
-  // same applies to the file mirror — backgrounding is often the last thing before the OS
-  // kills the app.
+  // (e.g. setting the reminder time then immediately backgrounding to test it). The drain
+  // policy lives behind the storage seam; this listener only tells it "now".
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState !== 'hidden') return
-    if (MOBILE && saveTm) {
-      clearTimeout(saveTm)
-      saveTm = null
-      nativeSave(get().S)
-    }
-    if (idbTm) {
-      clearTimeout(idbTm)
-      idbTm = null
-      idbSave(get().S)
-    }
+    flush()
   })
 
   return {
@@ -96,37 +68,37 @@ export const useStore = create((set, get) => {
     },
     replaceState(S) { persist(clone(S)) },
 
-    // Boot: restore whichever stored copy is newest (mobile file mirror / IndexedDB mirror,
-    // each raced against what localStorage already loaded), re-stamp the reminder's timezone,
-    // and go straight in — there is no server to ask anything of.
+    // --- Active-workout lifecycle (deep seam: lib/active-workout.js) ---
+    // Sheets and views call these; the single heaviest-weight policy,
+    // target freezing and Record detection all live behind the seam.
+    beginSession(routineId, bw) {
+      const active = createActiveSession(get().S, routineId, bw)
+      get().update(s => { s.active = active })
+      return active
+    },
+    recordWorkingWeight(entryIdx, weight) {
+      let ok = false
+      get().update(s => { ok = applyWorkingWeight(s, entryIdx, weight) })
+      return ok
+    },
+    finishSession() {
+      let result = null
+      get().update(s => { result = completeActiveSession(s) })
+      return result
+    },
+
+    // Boot: let the storage module race its copies and hand back the newest snapshot
+    // (mobile file mirror / IndexedDB mirror, each against what localStorage loaded),
+    // re-stamp the reminder's timezone, and go straight in — there is no server to ask
+    // anything of.
     async boot() {
-      if (MOBILE) {
-        const saved = await nativeLoad()
-        const S = get().S
-        if (saved && (!hasData(S) || (saved._ts || 0) >= (S._ts || 0))) {
-          persist(Object.assign(clone(DEF), saved))
-        } else if (hasData(S)) {
-          nativeSave(S)   // first run after an update from a file-less version: seed the mirror
-        }
-        syncReminder(get().S)
-      } else {
-        // Web: localStorage and the IndexedDB mirror race on timestamps; pickNewest decides.
-        // No winner means no history anywhere — the empty defaults already loaded stand.
-        // (The mobile branch above restores on a >= tie; here a tie keeps the copy already
-        // running — swapping for an equal one would only churn both storages.)
-        const snap = x => ({ ts: x._ts, state: Object.assign(clone(DEF), x) })
-        const raw = loadLocal()
-        const local = raw ? snap(raw) : null
-        const stored = await idbLoad()
-        const mirror = stored ? snap(stored) : null
-        const winner = pickNewest(local, mirror)
-        const S = get().S
-        if (winner && (!hasData(S) || (winner._ts || 0) > (S._ts || 0))) {
-          persist(winner)   // also refreshes both storages under one fresh timestamp
-        } else if (!mirror && hasData(S)) {
-          idbSave(S)   // first boot with the mirror, or its storage was cleared: seed it
-        }
-      }
+      const winner = await load({
+        running: get().S,
+        hasData,
+        overlay: x => Object.assign(clone(DEF), x),
+      })
+      if (winner) persist(winner)   // also refreshes every storage under one fresh timestamp
+      if (MOBILE) syncReminder(get().S)
 
       // Re-stamp the reminder's timezone on every load — keeps it correct if you're travelling,
       // without needing to revisit Settings.
