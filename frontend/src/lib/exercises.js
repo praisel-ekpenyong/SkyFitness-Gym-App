@@ -46,18 +46,15 @@ export function registerCustom(list) {
 // Full searchable catalogue — customs first so your own exercises are easy to find.
 export const allExercises = st => [...(st.customEx || []), ...EXDB]
 
-// Media normally sits next to the app (img/ and gif/, mounted into the web container).
-// A build can point them somewhere else — the demo build pulls them off a CDN instead of
-// shipping ~140 MB of images into the deployment. `import.meta.env` is undefined in plain
-// Node; the guard keeps this module loadable without Vite.
-// The defaults are absolute on purpose (issue #79). A bare 'img/' resolves against the
-// current document's directory, so on the one two-segment route in the app, /plan/r/:id,
-// every request went to /plan/r/img/… and 404'd — and nginx's extension block has no
-// try_files, so it 404s rather than falling through to index.html, leaving a blank image
-// and nothing in the console.
+// Sky ships no media set (the ~140 MB of licensed images/GIFs are never committed), so by
+// default both stream from the pinned jsDelivr commit — same source build:mobile pins. A build
+// that provides media itself overrides this with VITE_IMG_BASE / VITE_GIF_BASE (e.g. a
+// self-hosted mirror); there is deliberately no relative default, since nothing serves /img/
+// or /gif/ next to a static dist/ anymore. `import.meta.env` is undefined in plain Node; the
+// guard keeps this module loadable without Vite.
 const ENV = import.meta.env || {}
-const IMG_BASE = ENV.VITE_IMG_BASE || '/img/'
-const GIF_BASE = ENV.VITE_GIF_BASE || '/gif/'
+const IMG_BASE = ENV.VITE_IMG_BASE || 'https://cdn.jsdelivr.net/gh/hasaneyldrm/exercises-dataset@7455efae41b330c265e7cd4b78dfa848e7ce5ebd/images/'
+const GIF_BASE = ENV.VITE_GIF_BASE || 'https://cdn.jsdelivr.net/gh/hasaneyldrm/exercises-dataset@7455efae41b330c265e7cd4b78dfa848e7ce5ebd/videos/'
 export const imgSrc = ex => IMG_BASE + ex.img
 export const gifSrc = ex => GIF_BASE + ex.gif
 
