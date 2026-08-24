@@ -4,7 +4,7 @@ import { useStore } from '../store/useStore.js'
 import { effectiveRoutine, effectiveRoutineId, streakWeeks, lastBW, setsDoneActive } from '../lib/history.js'
 import { fmtNum, fmtDate, todayISO, isoOf, weekKey, DAYS } from '../lib/format.js'
 import { t, dateLocale } from '../lib/i18n.js'
-import { bwSheet, goalSheet, dayOverrideSheet, calendarSheet, startFlow, loadStarterPlan, bwDeltaColor } from '../sheets.jsx'
+import { bwSheet, goalSheet, dayOverrideSheet, calendarSheet, startFlow, loadStarterPlan, bwDeltaColor, displayNameSheet } from '../sheets.jsx'
 import LineChart from '../components/LineChart.jsx'
 import Icon from '../components/Icon.jsx'
 import { Button } from '../components/ui.jsx'
@@ -44,10 +44,29 @@ export default function Home() {
   // today's session shown right under the week strip
   const onToday = () => { if (S.active) nav('/workout'); else if (routine) startFlow(routine.id); else dayOverrideSheet(todayISO()) }
 
+  const displayName = (S.displayName || '').trim()
+  const hasName = !!displayName
+  const initial = hasName ? [...displayName][0].toUpperCase() : '?'
+
   return <div className="narrow">
-    <div className="hdr">
-      <div><h1>Sky</h1><div className="sub">{today.toLocaleDateString(dateLocale(), { weekday: 'long', day: 'numeric', month: 'long' })}</div></div>
-      <button className="iconbtn" onClick={() => nav('/settings')} aria-label={t('Settings')}><Icon name="gear" /></button>
+    <div className="hdr" style={{ alignItems: 'center' }}>
+      <div style={{ minWidth: 0 }}><h1 style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{hasName ? t('Hi {0}', displayName) : t('Hi there')}</h1><div className="sub">{today.toLocaleDateString(dateLocale(), { weekday: 'long', day: 'numeric', month: 'long' })}</div></div>
+      <div className="row" style={{ gap: 8, flex: 'none' }}>
+        {hasName && (
+          <button className="profile-pill" onClick={displayNameSheet} aria-label={t('Edit name')}>
+            <span className="profile-pill-avatar">{initial}</span>
+            <span className="profile-pill-name">{displayName}</span>
+            <Icon name="chevronDown" style={{ fontSize: 12, color: 'var(--label-3)' }} />
+          </button>
+        )}
+        {!hasName && (
+          <button className="profile-pill profile-pill--empty" onClick={displayNameSheet} aria-label={t('Set name')}>
+            <Icon name="person" style={{ fontSize: 14 }} />
+            <span>{t('Set name')}</span>
+          </button>
+        )}
+        <button className="iconbtn" onClick={() => nav('/settings')} aria-label={t('Settings')}><Icon name="gear" /></button>
+      </div>
     </div>
 
     <div className="card">

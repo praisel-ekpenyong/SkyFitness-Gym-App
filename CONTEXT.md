@@ -10,6 +10,10 @@ A single-user, no-login gym and body-weight tracker: plan routines, log workouts
 One person's data — settings, routines, week schedule, history, weigh-ins, custom exercises.
 _Avoid_: user, account
 
+**Profile display name**:
+The optional name stored on the device shown in greetings on Home. Not an identity, login, or multi-person switch.
+_Avoid_: user name, username, account name
+
 **Guest mode**:
 Using Sky without signing in anywhere; the profile exists only on this device.
 _Avoid_: offline mode, anonymous mode
