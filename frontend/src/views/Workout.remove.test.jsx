@@ -99,7 +99,10 @@ describe('active-session exercise removal', () => {
   })
 })
 
-describe('remove-exercise locale coverage', () => {
+// Sky ships English only (ticket 05-english-only): the locale packs are deleted, so the prompts
+// above render through t()'s English fallback. This replaces the old assertion that the five
+// strings existed in all eleven packs — it still pins them to the file that renders them.
+describe('remove-exercise prompt strings', () => {
   const required = [
     'Remove {0}?',
     'The sets you logged for this exercise in this session will be lost.',
@@ -107,12 +110,15 @@ describe('remove-exercise locale coverage', () => {
     'Remove',
     'Which exercise in this superset do you want to remove?'
   ]
-  const packs = import.meta.glob('../locales/*.js', { eager: true, import: 'default' })
+  const strings = import.meta.glob('./Workout.jsx', { eager: true, query: '?raw', import: 'default' })
 
-  it('defines every new prompt in all eleven locale packs', () => {
-    expect(Object.keys(packs)).toHaveLength(11)
-    Object.entries(packs).forEach(([path, pack]) => {
-      required.forEach(key => expect(pack, `${path} is missing ${key}`).toHaveProperty(key))
+  it('keeps every remove-flow string in the source that renders it', () => {
+    expect(Object.keys(strings)).toHaveLength(1)
+    const src = Object.values(strings)[0]
+    required.forEach(key => {
+      // Quote-style agnostic: matches 'key', "key" or `key`, so reformatting doesn't break it.
+      const esc = key.replace(/[{}?]/g, '\\$&')
+      expect(src).toMatch(new RegExp(`['"\`]${esc}['"\`]`))
     })
   })
 })
