@@ -3,13 +3,12 @@
   "extends": ["config:recommended", ":semanticCommitsDisabled"],
 
   "_comment": [
-    "Dependency updates, deliberately quiet — the GitLab counterpart of .github/dependabot.yml,",
-    "with the same policy behind it. openGym is dependency-light on purpose: the frontend is",
-    "React + Router + Zustand, api/ has two runtime dependencies. A default setup would still",
-    "open an MR per package per week, which on a solo project means the MRs stop being read —",
-    "the opposite of what this is for. So: monthly, everything in an ecosystem grouped into one",
-    "MR, and a low cap on open MRs.",
-    "Run by the `renovate` job in .gitlab-ci.yml, which fires only on *scheduled* pipelines."
+    "Dependency updates, deliberately quiet — the counterpart of .github/dependabot.yml, with",
+    "the same policy behind it. Sky is dependency-light on purpose: the frontend is React +",
+    "Router + Zustand. A default setup would still open an MR per package per week, which on a",
+    "solo project means the MRs stop being read — the opposite of what this is for. So:",
+    "monthly, everything in an ecosystem grouped into one update, and a low cap on open MRs.",
+    "Historical note: this ran only via the `renovate` job in .gitlab-ci.yml (scheduled pipelines), which was deleted with the server era; it fires again only if a CI home is chosen. Managers and rules for api/, web/ Dockerfiles and GitLab CI went with them."
   ],
 
   "timezone": "Europe/Zurich",
@@ -26,18 +25,18 @@
     "packages. Bumping them independently desyncs the two and breaks the mobile build; they",
     "follow the npm update instead."
   ],
-  "enabledManagers": ["npm", "dockerfile", "gitlabci"],
+  "enabledManagers": ["npm"],
 
   "packageRules": [
     {
-      "description": "Frontend routine bumps arrive as one MR. Runtime and build tooling move together anyway (a Vite bump usually wants its plugin bumped), and splitting them doubles the review without splitting the risk.",
+      "description": "Frontend routine bumps arrive as one update. Runtime and build tooling move together anyway (a Vite bump usually wants its plugin bumped), and splitting them doubles the review without splitting the risk.",
       "matchManagers": ["npm"],
       "matchFileNames": ["frontend/package.json"],
       "matchUpdateTypes": ["minor", "patch"],
       "groupName": "frontend"
     },
     {
-      "description": "Frontend majors get their own MR. The first grouped run on GitHub bundled a Capacitor 7 → 8 migration in with six siblings, where it read as housekeeping — and CI would have gone green on it, because the test job builds the web app and never touches the mobile flavour. A major that lands alone is at least obviously a decision.",
+      "description": "Frontend majors get their own update. The first grouped run on GitHub bundled a Capacitor 7 → 8 migration in with six siblings, where it read as housekeeping — and CI would have gone green on it, because the test job builds the web app and never touches the mobile flavour. A major that lands alone is at least obviously a decision.",
       "matchManagers": ["npm"],
       "matchFileNames": ["frontend/package.json"],
       "matchUpdateTypes": ["major"],
@@ -48,36 +47,6 @@
       "matchPackageNames": ["@capacitor/**"],
       "matchUpdateTypes": ["major"],
       "enabled": false
-    },
-    {
-      "description": "Backend, api/package.json (@simplewebauthn/server, web-push).",
-      "matchManagers": ["npm"],
-      "matchFileNames": ["api/package.json"],
-      "matchUpdateTypes": ["minor", "patch"],
-      "groupName": "api"
-    },
-    {
-      "description": "Two dependencies, but one of them verifies passkeys — a major there is worth reading on its own rather than alongside anything else.",
-      "matchManagers": ["npm"],
-      "matchFileNames": ["api/package.json"],
-      "matchUpdateTypes": ["major"],
-      "groupName": "api-major"
-    },
-    {
-      "description": "Base images in api/Dockerfile and web/Dockerfile.",
-      "matchManagers": ["dockerfile"],
-      "groupName": "base images"
-    },
-    {
-      "description": "Odd-numbered Node majors are 'Current', never LTS — they stop getting fixes in about six months. Dependabot's first run offered 22 → 25, which for something other people self-host is a stability downgrade for nothing. Even majors (22 → 24 → 26) are still proposed, which is the move actually worth reviewing.",
-      "matchDatasources": ["docker"],
-      "matchPackageNames": ["node"],
-      "allowedVersions": "/^(\\d*[02468])\\./"
-    },
-    {
-      "description": "The images the pipeline itself runs on. Same reasoning as the GitHub-Actions rule this replaces: these jobs publish the container images and build the signed APK, so the blast radius is real — but they move in lockstep and none is worth an MR of its own.",
-      "matchManagers": ["gitlabci"],
-      "groupName": "ci images"
     }
   ],
 
