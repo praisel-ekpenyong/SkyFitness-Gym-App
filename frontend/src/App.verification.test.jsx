@@ -27,6 +27,7 @@ async function boot() {
 }
 
 beforeEach(() => {
+  globalThis.IS_REACT_ACT_ENVIRONMENT = true
   localStorage.clear()
   globalThis.fetch = vi.fn(() => Promise.reject(new Error('network disabled in tests')))
 })
