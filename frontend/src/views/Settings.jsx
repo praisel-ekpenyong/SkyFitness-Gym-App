@@ -5,7 +5,7 @@ import { useUI } from '../store/useUI.js'
 import { ACCENTS, todayISO, localTZ } from '../lib/format.js'
 import { effortOf } from '../lib/history.js'
 import { wakeLockSupported } from '../lib/wakelock.js'
-import { t, LANGS, INSTR_LANGS } from '../lib/i18n.js'
+import { t } from '../lib/i18n.js'
 import { MOBILE, shareExport, syncReminder } from '../lib/mobile.js'
 import { backupDue } from '../lib/storage.js'
 import { loadStarterPlan, confirmSheet, importFromApp } from '../sheets.jsx'
@@ -26,7 +26,7 @@ export default function Settings() {
   const stampExported = () => update(s => { s.lastExport = Date.now() })
   const doExport = async () => {
     const json = JSON.stringify(S, null, 2)
-    const name = 'opengym-backup-' + todayISO() + '.json'
+    const name = 'sky-backup-' + todayISO() + '.json'   // renamed from opengym-backup- at the Sky rebrand
     // WKWebView can't download blob URLs — the native build hands the file to the share sheet.
     if (MOBILE) {
       try { await shareExport(json, name); toast(t('Backup exported')); stampExported() } catch (e) { /* share sheet dismissed */ }
@@ -43,7 +43,8 @@ export default function Settings() {
     rd.onload = () => {
       try {
         const data = JSON.parse(rd.result)
-        if (!data.workouts || !data.routines) throw new Error('not an openGym backup')
+        // Accepts old openGym backups too — same shape, only the name changed.
+        if (!data.workouts || !data.routines) throw new Error('not a Sky backup')
         confirmSheet({ title: t('Import backup?'), message: t('This replaces all current data with the backup file.'), confirmText: t('Import'), danger: true, onConfirm: () => { replaceState(Object.assign(JSON.parse(JSON.stringify(DEF)), data)); toast(t('Backup imported')) } })
       } catch (e) { toast(t('Import failed: {0}', e.message)) }
     }
@@ -68,16 +69,9 @@ export default function Settings() {
           accessory="chevron" onClick={doExport} />
       )}
     </Section>
-    {/* ---------- general ---------- */}
+    {/* ---------- general (language row removed with the non-English locales — English is
+         the only option, so there is nothing left to pick) ---------- */}
     <Section title={t('General')} footer={t('Note: switching units only changes the label — logged numbers are not converted.')}>
-      <SelectRow
-        icon="globe" iconTint="var(--blue)" title={t('Language')}
-        value={S.lang || 'en'} onChange={v => update(s => { s.lang = v })}
-        options={Object.entries(LANGS).map(([k, name]) => ({
-          value: k, label: name,
-          subtitle: INSTR_LANGS.includes(k) ? null : t("Exercise instructions aren't available in this language yet — they stay in English."),
-        }))}
-      />
       <Row icon="scale" iconTint="var(--teal)" title={t('Weight unit')}>
         <Segmented className="seg-inline"
           options={[{ value: 'kg', label: 'kg' }, { value: 'lb', label: 'lb' }]}
@@ -161,12 +155,15 @@ export default function Settings() {
     {!MOBILE && <Section title={t('Tip')}>
       <Row icon="lightbulb" iconTint="var(--yellow)"
         title={IS_ANDROID ? t('In Chrome: ⋮ menu → Add to Home screen') : t('In Safari: Share → Add to Home Screen')}
-        subtitle={t('to install openGym as a full-screen app.') + ' ' + t('Your data never leaves this device — export a backup now and then!')} />
+        subtitle={t('to install Sky as a full-screen app.') + ' ' + t('Your data never leaves this device — export a backup now and then!')} />
     </Section>}
 
+    {/* About — the one place that says what Sky is and where it came from. AGPL §4–5
+        attribution lives here, so it must survive every future rewrite of the copy. */}
     <div className="dim small" style={{ textAlign: 'center', marginTop: 4, lineHeight: 1.6 }}>
-      openGym · {t('free & open source (AGPL v3)')}<br />
-      <a href="https://gitlab.com/DuarteSantos8/opengym" target="_blank" rel="noopener">source code</a> · exercise data: hasaneyldrm/exercises-dataset (MIT)<br />
+      Sky · {t('free & open source (AGPL v3)')}<br />
+      {t('a personal fork of')}{' '}<a href="https://gitlab.com/DuarteSantos8/opengym" target="_blank" rel="noopener">openGym</a> ({t('source code')})<br />
+      exercise data: hasaneyldrm/exercises-dataset (MIT)<br />
       exercise images and animations © <a href="https://gymvisual.com/" target="_blank" rel="noopener">Gym visual</a>
     </div>
   </div>

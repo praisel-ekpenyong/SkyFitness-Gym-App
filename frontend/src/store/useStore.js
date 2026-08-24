@@ -6,7 +6,9 @@ import { idbLoad, idbSave, loadLocal, pickNewest, LOCAL_KEY } from '../lib/stora
 
 const KEY = LOCAL_KEY   // single definition lives in lib/storage.js
 export const DEF = {
-  unit: 'kg', restSec: 90, sound: true, keepAwake: true, lang: 'en',
+  // No lang key — Sky is English-only (ticket 05) and nothing reads S.lang. Profiles that
+  // still carry one from upstream keep it in storage harmlessly.
+  unit: 'kg', restSec: 90, sound: true, keepAwake: true,
   theme: 'light', accent: 'lime', body: 'male', targetW: null,
   bodyweight: [], routines: [], week: {}, dayPlan: {},
   exWeights: {}, workouts: [], active: null, customEx: [], gifSize: 'full',
