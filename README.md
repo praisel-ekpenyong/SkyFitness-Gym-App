@@ -2,12 +2,12 @@
 
 # Sky
 
-**A personal, backend-free fork of [openGym](https://gitlab.com/DuarteSantos8/opengym)** — a gym &
-body-weight tracker that lives entirely on your device.
+**A personal, backend-free gym and body-weight tracker.**
 
-Plan your week, run guided workouts, track every set and your body weight over time.
-No login, no accounts, no server, no sync: everything stays in your browser's storage,
-with one-tap JSON export/import as the escape hatch. Installable as a home-screen PWA.
+Plan your training week, log guided workouts, and track your body weight over time.
+No user accounts, no login, no server, and no cloud sync exist.
+All data stays on your local device.
+You can install Sky as a progressive web application on your phone.
 
 <br>
 
@@ -19,143 +19,193 @@ with one-tap JSON export/import as the escape hatch. Installable as a home-scree
 
 </div>
 
-> **What is this?** A single-user fork of [openGym](https://gitlab.com/DuarteSantos8/opengym)
-> (upstream v1.2.9) with the whole server era stripped out: login/passkeys/accounts, sync,
-> admin dashboard, push notifications, demo data, Docker/nginx/CI packaging and all but the
-> English locale are gone. What remains boots straight into an empty log and never talks to
-> a network except to load exercise media from a CDN. Sky's own code inherits upstream's
-> **GNU AGPL v3** — see [License](#license).
-
 <br>
 
 <div align="center">
 <table>
 <tr>
-<td align="center"><img src="assets/screenshots/home.png" alt="Home" width="230"><br><sub><b>Home</b> — today's workout & weight</sub></td>
-<td align="center"><img src="assets/screenshots/workout.png" alt="Workout" width="230"><br><sub><b>Guided workout</b> — animated demos & sets</sub></td>
-<td align="center"><img src="assets/screenshots/stats.png" alt="Stats" width="230"><br><sub><b>Stats</b> — heatmap, charts & PRs</sub></td>
+<td align="center"><img src="assets/screenshots/home.png" alt="Home Screen" width="145"><br><sub><b>Home</b><br>Daily session & weight</sub></td>
+<td align="center"><img src="assets/screenshots/plan.png" alt="Plan Screen" width="145"><br><sub><b>Plan</b><br>Weekly routine schedule</sub></td>
+<td align="center"><img src="assets/screenshots/workout.png" alt="Workout Screen" width="145"><br><sub><b>Workout</b><br>Guided set logging</sub></td>
+<td align="center"><img src="assets/screenshots/stats.png" alt="Stats Screen" width="145"><br><sub><b>Stats</b><br>Muscle maps & charts</sub></td>
+<td align="center"><img src="assets/screenshots/library.png" alt="Library Screen" width="145"><br><sub><b>Library</b><br>1,324 exercise demos</sub></td>
 </tr>
 </table>
 </div>
 
-## Why
+## Overview
 
-Most workout apps lock your data behind a login on their servers, nag you to upgrade, or
-disappear when the startup does. Sky keeps openGym's opposite instinct and points it at one
-person: **the data stays on your device, in storage you control, exportable any time**, and
-the app itself is small enough to hold in your head. It still feels modern — installable as
-a home-screen app with offline support.
+Sky is an offline fitness tracker for one person.
+You do not need to create an account.
+Your training history stays in your browser storage.
+The application sends no tracking data and makes no background network calls.
+It only connects to the internet to download exercise demonstration media.
 
-## Features
+## Key Features
 
-- ⚖️ **Body-weight tracking** — interactive chart with a goal line you set, gains/losses colored by whether they move toward it
-- 🏋️ **Weekly plan** — a routine per weekday, over a library of **1,324 exercises** (searchable, with animated demos)
-- 🗓️ **Reschedule any day** — sick, missed a session, or fewer gym days this week? Move a workout to another day without touching your weekly plan
-- ▶️ **Guided workouts** — it knows what day it is and starts today's session; asks your body weight first, pre-fills your weights from last time, rest timer, PR detection, per-exercise weight tracking
-- ☀️ **The screen stays awake while you train** — no unlocking the phone and finding your place again between every set. On for as long as a workout is running, released the moment you finish it, and switchable off in Settings
-- 🔗 **Supersets** — plan them into a routine or pair two exercises *mid-session* with “make superset with previous/next”, then work through the group back-to-back with a single rest at the end of each round. Unpair at any time; a group of one dissolves itself
-- 🔥 **Warm-up sets** — mark the ramp-up rows as warm-ups and they stay out of the numbers that should not see them: no effect on your estimated 1RM, your progression, or the fatigue map, while still being there in the session where you need them. A weight change cascades down the rows that share their phase, not across the divide
-- ➖ **Change your mind mid-session** — add an exercise you decided to do, or remove one you didn't, without ending the workout. Removing a member of a superset asks which one
-- ⏱️ **Timed exercises** — planks, hangs, wall sits and loaded carries are logged by time, not reps, with a work timer that counts the set itself (separate from the rest timer) and logs the time you actually held. They can carry weight too
-- 📈 **Progression that follows a rule** — pick one per routine, override it per exercise: linear, **Greyskull LP** (AMRAP top set, double jumps, 10 % resets), double progression through a rep range, or adding time. Your weights are already right when the session opens, and every target says *why* it's that number. Missed reps never advance the load, stalls trigger a deload, and bodyweight exercises progress in reps instead
-- 💪 **Estimated 1RM** — per exercise, from your best eligible set (it names which one), with its own progress curve and a calculator for sets you haven't done. Won't guess above 12 reps
-- 🎯 **Effort per set, in your scale** — an optional third column rating how hard a set was, as **RIR** (reps left in the tank) or **RPE** (the same judgement on a 10-point scale). Off by default; each set keeps the scale it was logged with, and nothing else reads the value — your progression and 1RM are unaffected
-- 💪 **Bodyweight exercises, logged as bodyweight** — push-ups, pull-ups, dips and 300-odd others arrive knowing they carry no load, so there's no weight column and no working-weight prompt: one stepper, log the reps. Add a dip belt and it reads as an addition, and progression goes back to following the weight. Without one, reps climb — and past a ceiling you set, a set is added instead of a rep, up to the point where the honest advice is load or a harder variation
-- ↔️ **Reps per side** — for lunges, single-arm rows and the rest. You log the total, the app shows the split ("8 per side"), and the target steps in twos so it never lands on a number one side can't have
-- 🎲 **Freestyle sessions** — train without a plan and pick exercises as you go. Each one arrives prefilled from the last time you did it — same sets, same reps and weight by position — so an unplanned session doesn't start by asking you to retype last week
-- 🏃 **Cardio** — log time + speed, not just weight × reps
-- 📤 **Share a plan** — send someone your routines and week schedule as a small file (no workouts, no weigh-ins), or print it as a clean PDF. Importing merges, so their plan is never overwritten
-- 🔧 **Filter by equipment** — narrow the library to what you actually own; the options adapt to what you've picked, so every combination on screen has results behind it
-- ✨ **Your own exercises** — a name and a body part is enough; they behave like built-in ones everywhere, with an optional description instead of an animation
-- 🟩 **Activity heatmap** — a GitHub-style year view, shaded by time spent training
-- 💪 **Muscle map, three ways** — a front-and-back body diagram you can read as **Balance** (where the volume went, over a week, a month or all time — naming the muscles you *haven't* trained), **Fatigue** (what is still recovering, weighted by how close each set was to your maximum, decaying smoothly rather than expiring at a window edge) or **Strength** (how long since you trained each muscle, and behind every one the exercises that built it with their estimated 1RM). It previews what a routine hits while you build it, and shows what you just trained when you finish. Male or female figure, your pick
-- 🎨 **Designed, not assembled** — light/dark themes and 8 accent colors saved locally, over a hand-drawn icon set instead of emoji, so it looks the same on every phone
-- 🌍 **English only** — one language shipped means a smaller bundle and less surface to maintain
-- 📥 **Bring your history with you** — import from **FitNotes** (Android and iOS), **Strong** and **Hevy**, or body weight straight out of an **Apple Health** export. Exercise names are matched against the library and anything unrecognised becomes one of your own exercises, so nothing in the file is dropped
-- 📦 **Durable by design** — every save mirrors localStorage into IndexedDB and boot keeps whichever copy is newer, so storage pressure on iOS can't quietly take your log; Settings nudges you when an export is overdue
-- 📤 **Yours to keep** — one-tap JSON export/import, **no telemetry**, no network calls beyond the exercise-media CDN
+### 1. Routine Planning and Week Schedule
+- **Weekly Schedule**: Assign a routine to each day of the week.
+- **Day Rescheduling**: Move a workout to a different day without changing your weekly plan.
+- **Custom Routines**: Create routines with custom exercise lists and target sets.
+- **Exercise Catalogue**: Search 1,324 built-in exercises with muscle group filters.
+- **Custom Exercises**: Add your own exercises with a name and a target body part.
 
-## Quick start
+### 2. Guided Workout Sessions
+- **Automatic Load Fill**: Pre-fills weights and reps from your last session.
+- **Keep Screen Awake**: Keeps your phone display on while you train.
+- **Rest Timer**: Counts down rest time between sets with audio beeps.
+- **Timed Exercises**: Tracks duration for planks, hangs, and holds with a dedicated timer.
+- **Supersets**: Pair adjacent exercises to perform them back-to-back.
+- **Warm-Up Sets**: Mark warm-up rows to exclude them from progression and fatigue statistics.
+- **Freestyle Sessions**: Train without a routine and select exercises during your workout.
 
-No Docker, no server, no environment file:
+### 3. Automatic Progression Rules
+Sky calculates your next target weight and reps from your logged history:
+- **Linear Progression**: Increases weight after all target reps are complete.
+- **Greyskull LP**: Uses an AMRAP final set and resets weight after a missed session.
+- **Double Progression**: Increases reps across a rep range before adding weight.
+- **Add Time**: Increases target hold duration after successful timed sets.
+- **Bodyweight Progression**: Adds reps up to a limit, then adds sets.
+
+### 4. Strength and 1RM Tracking
+- **Estimated 1RM**: Estimates your one-rep maximum using the Epley formula (up to 12 reps).
+- **Personal Records**: Detects new load and 1RM records automatically when you finish a workout.
+- **Current Strength Decay**: Estimates retained strength based on days elapsed since your last workout.
+
+### 5. Effort Rating (RIR and RPE)
+- **Optional Rating**: Rate how hard a set was after completion.
+- **Two Scales**: Choose Reps In Reserve (RIR) or Rate of Perceived Exertion (RPE).
+- **Effort Histogram**: Visualizes your set distribution across effort levels in Stats.
+
+### 6. Visual Muscle Maps
+Read your training through three front-and-back body diagrams:
+- **Balance Map**: Shows training volume across 18 muscle groups and highlights untrained areas.
+- **Fatigue Map**: Shows current muscle fatigue using a 36-hour half-life recovery model.
+- **Strength Map**: Shows retained strength decay and lists the exercises that trained each muscle.
+
+### 7. Body-Weight Tracking
+- **Interactive Chart**: Track daily weigh-ins with a 30-day moving comparison.
+- **Target Goal**: Set a target weight line to track your progress.
+- **Workout Weigh-In**: Prompts for your body weight before each session.
+
+## Data Control and Privacy
+
+### Your Data Stays on Your Device
+- Sky writes data to `localStorage` and mirrors it into `IndexedDB`.
+- The application compares timestamps at startup to keep the newest data snapshot.
+- No personal data or workout logs ever go to a server.
+
+### Backup and Restore
+- **Export Backup**: Save a complete `sky-backup-<date>.json` file from Settings.
+- **Restore Backup**: Load a backup file to restore your full profile.
+- **Backup Reminder**: Settings reminds you if you have not exported a backup for 14 days.
+
+### Import History from Other Apps
+You can import your previous workout history into Sky:
+- **FitNotes** (Android and iOS CSV exports).
+- **Strong** (CSV exports).
+- **Hevy** (CSV exports).
+- **Apple Health** (Body weight records from `export.xml`).
+
+Importing merges data with your existing profile.
+It matches exercise names automatically and never duplicates workouts on the same date.
+
+### Share and Print Plans
+- **Export Plan File**: Share a routine bundle with a friend without sending your workout history.
+- **Print / Save as PDF**: Create a clean, formatted PDF of your routines and weekly schedule.
+
+## How to Install and Run
+
+### Option 1: Install as a Mobile Web App (PWA)
+You can install Sky directly on your phone:
+
+#### On iPhone (Safari)
+1. Open your Sky website URL in Safari.
+2. Tap the **Share** button.
+3. Tap **Add to Home Screen**.
+
+#### On Android (Chrome)
+1. Open your Sky website URL in Chrome.
+2. Tap the menu button (**⋮**).
+3. Tap **Install app** or **Add to Home screen**.
+
+---
+
+### Option 2: Run Locally on Your Computer
+
+#### Prerequisites
+- [Node.js](https://nodejs.org/) version 20 or newer.
+
+#### Steps
+1. Go to the frontend directory:
+   ```bash
+   cd frontend
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Start the local development server:
+   ```bash
+   npm run dev
+   ```
+4. Open the displayed URL (default: `http://localhost:5173`) in your browser.
+
+---
+
+### Option 3: Build Static Files for Hosting
+To build static production files:
 
 ```bash
 cd frontend
-npm install
-npm run dev        # local dev server
+npm run build
 ```
 
-For production, `npm run build` emits plain static files under `dist/` (relative paths, so they
-deploy unchanged to any host or subdirectory — GitHub Pages, Netlify, a folder on a stick).
-On iPhone: serve it over HTTPS and use Safari's **Share → Add to Home Screen**.
+The output files are saved in `frontend/dist/`.
+You can upload these static files to any web host (such as Cloudflare Pages, GitHub Pages, Netlify, or Nginx).
 
-Exercise animations stream from a CDN at runtime (the ~140 MB media set is never bundled);
-logging, planning and stats work fully offline.
+For complete hosting guides, see [docs/SELF_HOSTING.md](docs/SELF_HOSTING.md).
 
-## How it works
+---
 
-A single-page React 19 + Vite app with **no backend**. One store holds the entire state;
-every change persists locally and mirrors into IndexedDB.
+## Exercise Media
 
-- **frontend/src/store/** — the whole profile as one serializable object, saved debounced to
-  localStorage and IndexedDB on every change
-- **frontend/src/lib/** — training logic (progression, estimated 1RM, recovery, imports) as pure
-  functions, tested with Vitest
-- **boot** — restores whichever stored copy has the newer timestamp, so a partially evicted
-  storage cannot silently roll history back
+Exercise demonstration images and animations stream from a public CDN on demand.
+The ~140 MB media package is not bundled in the repository.
 
-## Your data
+To download all media files for offline local hosting:
 
-Lives in your browser: localStorage (`gym_state_v1`) mirrored into IndexedDB; boot keeps the
-newer of the two. **Export backup** writes a complete `sky-backup-<date>.json`; importing one
-restores it. Importers from other apps merge instead of overwrite. Nothing ever leaves the
-device except requests for exercise media to a public CDN — no analytics, no telemetry.
+```bash
+cd frontend
+npm run media:fetch
+```
 
-## Roadmap
+The script downloads and extracts 1,324 exercise thumbnails and GIF animations into `frontend/public/media/`.
 
-Rough — a personal log, so it grows when training demands it:
+## Testing
 
-- [x] Automatic progression programs (linear, Greyskull LP, double progression) with stalls and deloads
-- [x] Estimated 1RM per exercise
-- [x] Importers from FitNotes / Strong / Hevy (including the RPE they record), and body weight from Apple Health
-- [x] Effort per set — RIR or RPE, whichever scale you think in
-- [ ] Percentage / training-max programming (5/3/1-style) on top of the progression engine
-- [ ] More starter plans (upper/lower, full-body, 5×5)
-- [ ] Body measurements (waist, arms…) alongside weight
-- [ ] Per-exercise notes & plate calculator
+To run the automated test suite:
 
-## Tech
+```bash
+cd frontend
+npm test
+```
 
-React 19 + Vite (React Router, Zustand), plus exercise metadata and instruction text from
-[hasaneyldrm/exercises-dataset](https://github.com/hasaneyldrm/exercises-dataset)
-(MIT; media © Gym visual — see [License](#license)). No database, no server, no cloud
-dependencies — `npm run build` emits plain static files.
+To run the fatigue calculation property test:
 
-The training logic — progression rules, 1RM estimation, how a logged session is read back —
-lives in pure functions under `frontend/src/lib/` with tests next to them: `npm test` in
-`frontend/`. Vitest is a dev dependency; the app ships no runtime dependencies beyond React,
-the router and Zustand.
+```bash
+cd frontend
+npm run test:fatigue-probe
+```
 
-## Provenance
+## Provenance and License
 
-Sky is maintained as a personal fork and does not take public contributions.
+Sky is a personal fork of [openGym](https://gitlab.com/DuarteSantos8/opengym) (v1.2.9).
+Public server features (user accounts, server sync, push server, and admin panels) were removed.
 
-## License
+- **Source Code**: Licensed under the **[GNU AGPL v3.0](LICENSE)**.
+- **Exercise Dataset**: Distributed under the **MIT License** (from `hasaneyldrm/exercises-dataset`, derived from ExerciseDB).
+- **Body Diagram Geometry**: Distributed under the **MIT License** (from Melih Colpan's MuscleMap).
+- **Exercise Media**: Images and animations are third-party content (© Gym visual).
 
-**Sky inherits the [GNU AGPL v3.0](LICENSE)** from upstream openGym: free and open source
-software you can use, study, modify and share. If a modified version is ever run as a network
-service, its source must be offered under the same license — a duty this fork accepts for every
-change it makes, and one that keeps both openGym and Sky out of closed, proprietary hands.
-
-**Third-party content is not, and openGym cannot sublicense it.** The exercise metadata and
-instruction text originate from [ExerciseDB v1](https://exercisedb.dev/) and reach openGym through
-[hasaneyldrm/exercises-dataset](https://github.com/hasaneyldrm/exercises-dataset) under the
-**MIT** license. The exercise images and animations are third-party content covered by neither
-that license nor the AGPL, and their ownership is **currently unresolved** — the upstream dataset
-attributes them to [Gym visual](https://gymvisual.com/) under a non-transferable permission, while
-[ExerciseDB/AscendAPI](https://exercisedb.io/faq) claims to be their creator and owner. A
-clarification has been requested. openGym does not redistribute them (your instance fetches them
-at first run) and does not relicense them. To reuse that media yourself, clear it with the rights
-holder first.
-
-Full third-party notices, including the body-diagram geometry: **[NOTICE.md](NOTICE.md)**.
+For complete legal notices, see **[NOTICE.md](NOTICE.md)**.
