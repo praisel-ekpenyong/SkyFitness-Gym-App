@@ -326,6 +326,7 @@ export function ExerciseDetail({ ex, close }) {
   const best = bestWeightFor(st, ex.id)
   const favs = st.favorites || []
   const isFav = favs.includes(ex.id)
+  const isCardioEx = isCardio(ex)
   const primary = primaryMuscleOf(ex)
   const primaryName = (primary && MUSCLE_NAME[primary]) || (ex.tg && (MUSCLE_NAME[ex.tg] || ex.tg)) || ex.bp
   const secondaries = secondaryMusclesOf(ex)
@@ -348,9 +349,13 @@ export function ExerciseDetail({ ex, close }) {
     </div>
     <Media ex={ex} />
     <div className="row" style={{ gap: 6, flexWrap: 'wrap', margin: '10px 0' }}>
-      {primaryName && <span className="tag acc"><Icon name="target" />{t('Primary: {0}', primaryName)}</span>}
+      {isCardioEx ? (
+        <span className="tag acc"><Icon name="figureRun" />{t('Cardio')}</span>
+      ) : (
+        primaryName && <span className="tag acc"><Icon name="target" />{t('Primary: {0}', primaryName)}</span>
+      )}
       {ex.eq && <span className="tag"><Icon name="dumbbell" />{t(ex.eq)}</span>}
-      {secondaries.map((s, i) => <span key={i} className="tag">{t('Secondary: {0}', MUSCLE_NAME[s] || s)}</span>)}
+      {!isCardioEx && secondaries.map((s, i) => <span key={i} className="tag">{t('Secondary: {0}', MUSCLE_NAME[s] || s)}</span>)}
     </div>
     {ex.desc && <div className="exnote">{ex.desc}</div>}
     {best > 0 && <div className="small row" style={{ marginBottom: 6, gap: 5 }}><Icon name="trophy" style={{ fontSize: 14, color: 'var(--yellow)' }} />{t('Best:')} <b className="accent">{fmtNum(best)} {st.unit}</b>{last ? ` · ${t('last')} ${fmtDate(last.d)}: ${last.sets.map(s => setLabel(ex.id, s, last.target)).join(', ')}` : ''}</div>}
@@ -402,7 +407,7 @@ export const addToRoutineSheet = ex => ui().openSheet(close => <AddToRoutine ex=
 // Name + primary muscle is all it takes — the exercise then behaves like any built-in one
 // (planning, logging, PRs, stats), just without an animation.
 export function CustomExForm({ existing, prefill, onDone, close }) {
-  const [n, setN] = useState(existing ? existing.n : (prefill || ''))
+  const [name, setName] = useState(existing ? existing.n : (prefill || ''))
   const [primary, setPrimary] = useState(() => existing ? (primaryMuscleOf(existing) || '') : '')
   const [secondaries, setSecondaries] = useState(() => existing ? (secondaryMusclesOf(existing) || []) : [])
   const [desc, setDesc] = useState(existing ? (existing.desc || '') : '')
@@ -417,29 +422,29 @@ export function CustomExForm({ existing, prefill, onDone, close }) {
   }
 
   const toggleSecondary = m => {
-    if (m === primary || primary === 'cardio') return
+    if (!primary || m === primary || primary === 'cardio') return
     setSecondaries(prev => prev.includes(m) ? prev.filter(s => s !== m) : [...prev, m])
   }
 
   const save = () => {
-    const name = n.trim()
-    if (!name) { toast(t('Give it a name')); return }
+    const trimmedName = name.trim()
+    if (!trimmedName) { toast(t('Give it a name')); return }
     if (!primary) { toast(t('Pick a primary muscle')); return }
-    const dup = allExercises(S()).find(e => e.n.toLowerCase() === name.toLowerCase() && e.id !== (existing || {}).id)
+    const dup = allExercises(S()).find(e => e.n.toLowerCase() === trimmedName.toLowerCase() && e.id !== (existing || {}).id)
     if (dup) { toast(t('“{0}” already exists', dup.n)); return }
-    const d = desc.trim().slice(0, 1000)
+    const trimmedDesc = desc.trim().slice(0, 1000)
     const derivedBp = bodypartForMuscle(primary)
     const finalSm = primary === 'cardio' ? [] : secondaries
     let id = existing && existing.id
     if (existing) {
       update(s => {
-        const c = (s.customEx || []).find(x => x.id === id)
-        if (c) {
-          c.n = name
-          c.tg = primary
-          c.sm = finalSm
-          c.bp = derivedBp
-          c.desc = d
+        const customEntry = (s.customEx || []).find(x => x.id === id)
+        if (customEntry) {
+          customEntry.n = trimmedName
+          customEntry.tg = primary
+          customEntry.sm = finalSm
+          customEntry.bp = derivedBp
+          customEntry.desc = trimmedDesc
         }
       })
     } else {
@@ -447,25 +452,25 @@ export function CustomExForm({ existing, prefill, onDone, close }) {
       update(s => {
         (s.customEx = s.customEx || []).push({
           id,
-          n: name,
+          n: trimmedName,
           bp: derivedBp,
           tg: primary,
           sm: finalSm,
-          desc: d,
+          desc: trimmedDesc,
           eq: 'custom',
           custom: true,
         })
       })
     }
     close()
-    toast(existing ? t('Saved') : t('“{0}” created', name))
+    toast(existing ? t('Saved') : t('“{0}” created', trimmedName))
     onDone && onDone(EXIDX[id])
   }
 
   return <>
     <h3>{existing ? t('Edit custom exercise') : t('Create your own exercise')}</h3>
-    <div className="muted small" style={{ marginBottom: 12 }}>{t('Name it and pick its target muscles — it behaves like any other exercise, just without an animation.')}</div>
-    <input className="input" placeholder={t('Exercise name')} value={n} onChange={e => setN(e.target.value)} />
+    <div className="muted small" style={{ marginBottom: 12 }}>{t('Name it and pick its primary and secondary muscles — it behaves like any other exercise, just without an animation.')}</div>
+    <input className="input" placeholder={t('Exercise name')} value={name} onChange={e => setName(e.target.value)} />
     
     <div className="small muted" style={{ margin: '12px 0 6px' }}>{t('Primary muscle')}</div>
     <div className="chips" style={{ margin: '0 0 10px' }}>
@@ -485,7 +490,7 @@ export function CustomExForm({ existing, prefill, onDone, close }) {
         <Icon name="figureRun" style={{ fontSize: 13 }} />
         {t('Cardio exercises log time + speed instead of weight × reps.')}
       </div>
-    ) : (
+    ) : primary ? (
       <>
         <div className="small muted" style={{ margin: '10px 0 6px' }}>{t('Secondary muscles (optional)')}</div>
         <div className="chips" style={{ margin: '0 0 12px' }}>
@@ -503,7 +508,7 @@ export function CustomExForm({ existing, prefill, onDone, close }) {
           })}
         </div>
       </>
-    )}
+    ) : null}
 
     <textarea className="input" rows={4} maxLength={1000} placeholder={t('Description (optional) — setup, cues, anything you want to remember')}
       value={desc} onChange={e => setDesc(e.target.value)} />

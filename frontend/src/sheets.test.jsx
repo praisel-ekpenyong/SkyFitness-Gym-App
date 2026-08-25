@@ -544,7 +544,7 @@ describe('ExerciseDetail primary and secondary muscle tags', () => {
     expect(tagTexts).toContain('Secondary: Triceps')
   })
 
-  it('displays Primary: Cardio for cardio exercises without secondary tags', async () => {
+  it('displays Cardio for cardio exercises without secondary tags', async () => {
     const cardioEx = {
       id: '1160',
       n: 'stationary bike walk',
@@ -562,7 +562,8 @@ describe('ExerciseDetail primary and secondary muscle tags', () => {
 
     const primaryTag = tags.find(t => t.classList.contains('acc'))
     expect(primaryTag).toBeTruthy()
-    expect(primaryTag.textContent).toContain('Primary: Cardio')
+    expect(primaryTag.textContent).toContain('Cardio')
+    expect(primaryTag.textContent).not.toContain('Primary: Cardio')
     expect(tagTexts.some(t => t.startsWith('Secondary:'))).toBe(false)
   })
 
@@ -615,13 +616,16 @@ describe('ExerciseDetail primary and secondary muscle tags', () => {
 })
 
 describe('CustomExForm canonical muscle selection and editing', () => {
-  it('renders all 18 canonical muscles plus Cardio in anatomical order for primary muscle selection', async () => {
+  it('renders all 18 canonical muscles plus Cardio in anatomical order for primary muscle selection and gates secondaries until primary is chosen', async () => {
     await act(async () => {
       root.render(<CustomExForm onDone={vi.fn()} close={vi.fn()} />)
     })
 
     const title = container.querySelector('h3')
     expect(title.textContent).toBe('Create your own exercise')
+
+    // Initially only 1 row of chips (primary), no secondary chips row
+    expect(container.querySelectorAll('.chips').length).toBe(1)
 
     const primaryChipContainer = container.querySelectorAll('.chips')[0]
     const primaryChips = Array.from(primaryChipContainer.querySelectorAll('button.chip')).map(c => c.textContent.trim())
