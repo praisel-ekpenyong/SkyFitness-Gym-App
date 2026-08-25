@@ -471,30 +471,34 @@ function usageMap(st) {
   st.workouts.forEach(w => w.entries.forEach(e => { u[e.id] = (u[e.id] || 0) + 1 }))
   return u
 }
-function ExercisePicker({ onPick, close }) {
+export function ExercisePicker({ onPick, close }) {
   const st = useStore(s => s.S)
+  const update = useStore(s => s.update)
   const usage = usageMap(st)
+  const favs = st.favorites || []
   const [q, setQ] = useState('')
-  const [bp, setBp] = useState('')          // '' = all, '★' = chosen, else a body part
+  const [bp, setBp] = useState('')          // '' = all, 'favorites' = favorites, '★' = chosen, else a body part
   const [eq, setEq] = useState('')          // '' = any equipment
   const [shown, setShown] = useState(50)
   const ql = q.toLowerCase().trim()
   const all = allExercises(st)
   let base = all.filter(e =>
-    (bp === '★' ? usage[e.id] : (!bp || e.bp === bp)) &&
+    (bp === 'favorites' ? favs.includes(e.id) : bp === '★' ? usage[e.id] : (!bp || e.bp === bp)) &&
     (!ql || e.n.toLowerCase().includes(ql) || e.tg.includes(ql) || e.eq.includes(ql) || (e.desc || '').toLowerCase().includes(ql)))
   if (bp === '★') base = [...base].sort((a, b) => (usage[b.id] - usage[a.id]) || (a.n < b.n ? -1 : 1))
   const eqOpts = equipmentOf(base)
   // Drop the equipment filter if the search narrowed it away, so you never hit a dead end.
   const eqOn = eqOpts.includes(eq) ? eq : ''
   const f = eqOn ? base.filter(e => e.eq === eqOn) : base
+  const favCount = favs.length
   const chosenCount = Object.keys(usage).length
   return <>
     <h3>{t('Add exercise')}</h3>
     <div className="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></svg>
       <input className="input" placeholder={t('Search {0} exercises…', all.length)} value={q} onChange={e => { setQ(e.target.value); setShown(50) }} /></div>
     <div className="chips" style={{ margin: eqOpts.length > 1 ? '10px 0 6px' : '10px 0' }}>
-      {chosenCount > 0 && <button className={'chip' + (bp === '★' ? ' on' : '')} onClick={() => { setBp('★'); setEq(''); setShown(50) }}><Icon name="starFill" style={{ fontSize: 12, display: 'inline-block', marginRight: 4, verticalAlign: '-1px' }} />{t('Chosen')} ({chosenCount})</button>}
+      {(favCount > 0 || bp === 'favorites') && <button className={'chip' + (bp === 'favorites' ? ' on' : '')} onClick={() => { setBp('favorites'); setEq(''); setShown(50) }}><Icon name="starFill" style={{ fontSize: 12, display: 'inline-block', marginRight: 4, verticalAlign: '-1px' }} />{t('Favorites')} ({favCount})</button>}
+      {(chosenCount > 0 || bp === '★') && <button className={'chip' + (bp === '★' ? ' on' : '')} onClick={() => { setBp('★'); setEq(''); setShown(50) }}><Icon name="starFill" style={{ fontSize: 12, display: 'inline-block', marginRight: 4, verticalAlign: '-1px' }} />{t('Chosen')} ({chosenCount})</button>}
       <button className={'chip nocap' + (!bp ? ' on' : '')} onClick={() => { setBp(''); setEq(''); setShown(50) }}>{t('All')}</button>
       {BODYPARTS.map(b => <button key={b} className={'chip' + (bp === b ? ' on' : '')} onClick={() => { setBp(b); setEq(''); setShown(50) }}>{t(b)}</button>)}
     </div>
@@ -507,11 +511,30 @@ function ExercisePicker({ onPick, close }) {
         <div className="thumb thumb-x"><Icon name="sparkles" /></div>
         <div className="grow"><div className="tt">{t('Create your own exercise')}</div><div className="ss">{t('name + body part, no animation')}</div></div><Icon name="plus" className="chev" />
       </div>}
-      {f.slice(0, shown).map(e => <div key={e.id} className="item" onClick={() => onPick(e)}>
-        <Thumb ex={e} /><div className="grow"><div className="tt capitalize">{e.n}</div><div className="ss capitalize">{t(e.tg || e.bp)} · {t(e.eq)}</div></div>
-        {usage[e.id] && <span className="tag acc"><Icon name="starFill" /></span>}<Icon name="plus" className="chev" />
-      </div>)}
-      {f.length === 0 && bp === '★' && <div className="empty">{t('Nothing chosen yet — add exercises and they’ll show up here.')}</div>}
+      {f.slice(0, shown).map(e => {
+        const isFav = favs.includes(e.id)
+        return <div key={e.id} className="item" onClick={() => onPick(e)}>
+          <Thumb ex={e} /><div className="grow"><div className="tt capitalize">{e.n}</div><div className="ss capitalize">{t(e.tg || e.bp)} · {t(e.eq)}</div></div>
+          <button
+            className={'iconbtn' + (isFav ? ' on-ss' : '')}
+            style={{ width: 34, height: 34, fontSize: 16, color: isFav ? 'var(--acc)' : 'var(--label-3)' }}
+            aria-label={isFav ? t('Remove from favorites') : t('Add to favorites')}
+            onClick={ev => {
+              ev.stopPropagation()
+              update(s => {
+                const cur = s.favorites || []
+                s.favorites = cur.includes(e.id) ? cur.filter(id => id !== e.id) : [...cur, e.id]
+              })
+            }}
+          >
+            <Icon name={isFav ? 'starFill' : 'star'} />
+          </button>
+          <Icon name="plus" className="chev" />
+        </div>
+      })}
+      {f.length === 0 && bp === 'favorites' && favCount === 0 && <div className="empty">{t('No favorites yet — star exercises and they’ll show up here.')}</div>}
+      {f.length === 0 && bp === '★' && chosenCount === 0 && <div className="empty">{t('Nothing chosen yet — add exercises and they’ll show up here.')}</div>}
+      {f.length === 0 && (bp !== 'favorites' || favCount > 0) && (bp !== '★' || chosenCount > 0) && <div className="empty"><div className="ico"><Icon name="magnifier" /></div>{t('No match')}</div>}
     </div>
     {f.length > shown && <><div style={{ height: 8 }} /><Button onClick={() => setShown(s => s + 50)}>{t('Show more')}</Button></>}
   </>
