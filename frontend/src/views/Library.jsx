@@ -7,7 +7,7 @@ import { t } from '../lib/i18n.js'
 import { Thumb } from '../components/Media.jsx'
 import { exerciseDetailSheet, addToRoutineSheet, customExSheet } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
-import { Button } from '../components/ui.jsx'
+import { Button, SearchField } from '../components/ui.jsx'
 
 export default function Library() {
   const S = useStore(s => s.S)
@@ -30,8 +30,13 @@ export default function Library() {
 
   return <>
     <div className="hdr"><div><h1>{t('Exercises')}</h1><div className="sub">{t('{0} exercises with animations', EXDB.length)}</div></div></div>
-    <div className="search" style={{ marginBottom: 10 }}><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></svg>
-      <input className="input" placeholder={t('Search…')} value={q} onChange={e => { setQ(e.target.value); setShown(40) }} /></div>
+    <SearchField
+      style={{ marginBottom: 10 }}
+      placeholder={t('Search…')}
+      value={q}
+      onChange={e => { setQ(e.target.value); setShown(40) }}
+      onClear={() => { setQ(''); setShown(40) }}
+    />
     <div className="chips" style={{ marginBottom: eqOpts.length > 1 ? 8 : 12 }}>
       {favs.length > 0 && <button className={'chip' + (activeBp === 'favorites' ? ' on' : '')} onClick={() => { setBp('favorites'); setEq(''); setShown(40) }}><Icon name="starFill" style={{ fontSize: 12, display: 'inline-block', marginRight: 4, verticalAlign: '-1px' }} />{t('Favorites')} ({favs.length})</button>}
       <button className={'chip nocap' + (!activeBp ? ' on' : '')} onClick={() => { setBp(''); setEq(''); setShown(40) }}>{t('All')}</button>

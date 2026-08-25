@@ -60,13 +60,13 @@ export function TextArea({ className = '', ...rest }) {
   return <textarea className={'field area ' + className} {...rest} />
 }
 
-export function SearchField({ value, onChange, onClear, ...rest }) {
+export function SearchField({ value, onChange, onClear, className = '', style, ...rest }) {
   return (
-    <div className="searchf">
+    <div className={'search searchf ' + className} style={style}>
       <Icon name="magnifier" className="lead" />
-      <input className="field" value={value} onChange={onChange} {...rest} />
+      <input className="field input" value={value} onChange={onChange} {...rest} />
       {!!value && (
-        <button className="clear" onClick={onClear} aria-label="Clear">
+        <button type="button" className="clear" onClick={onClear} aria-label="Clear">
           <Icon name="xmark" />
         </button>
       )}
