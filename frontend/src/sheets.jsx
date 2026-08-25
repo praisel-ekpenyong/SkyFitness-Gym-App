@@ -328,7 +328,7 @@ export function ExerciseDetail({ ex, close }) {
   const isFav = favs.includes(ex.id)
   const isCardioEx = isCardio(ex)
   const primary = primaryMuscleOf(ex)
-  const primaryName = (primary && MUSCLE_NAME[primary]) || (ex.tg && (MUSCLE_NAME[ex.tg] || ex.tg)) || ex.bp
+  const primaryName = primary ? (MUSCLE_NAME[primary] || primary) : null
   const secondaries = secondaryMusclesOf(ex)
   return <>
     <div className="row between" style={{ marginBottom: 14 }}>
@@ -364,7 +364,7 @@ export function ExerciseDetail({ ex, close }) {
       <Button icon="pencil" style={{ flex: 1 }} onClick={() => { close(); customExSheet(ex) }}>{t('Edit')}</Button>
       <Button variant="danger" icon="trash" style={{ flex: 1 }} onClick={() => deleteCustomEx(ex, close)}>{t('Delete')}</Button>
     </div>}
-    {!isCardio(ex) && <OneRM ex={ex} />}
+    {!isCardioEx && <OneRM ex={ex} />}
     {instrFor(ex).length > 0 && <><h4 className="sec">{t('How to')}</h4><ol className="steps-list">{instrFor(ex).map((s, i) => <li key={i}>{s}</li>)}</ol></>}
   </>
 }

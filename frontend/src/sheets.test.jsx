@@ -613,6 +613,56 @@ describe('ExerciseDetail primary and secondary muscle tags', () => {
     expect(tagTexts).toContain('Secondary: Hamstrings')
     expect(tagTexts).toContain('Secondary: Glutes')
   })
+
+  it('displays only Primary and Equipment tags for pure isolation exercises without secondaries', async () => {
+    const isolationEx = {
+      id: '0031',
+      n: 'dumbbell bicep curl',
+      bp: 'upper arms',
+      tg: 'biceps',
+      sm: [],
+      eq: 'dumbbell',
+    }
+
+    await act(async () => {
+      root.render(<ExerciseDetail ex={isolationEx} close={vi.fn()} />)
+    })
+
+    const tags = Array.from(container.querySelectorAll('.row .tag'))
+    const tagTexts = tags.map(t => t.textContent.trim())
+
+    const primaryTag = tags.find(t => t.classList.contains('acc'))
+    expect(primaryTag).toBeTruthy()
+    expect(primaryTag.textContent).toContain('Primary: Biceps')
+    expect(tagTexts).toContain('dumbbell')
+    expect(tagTexts.some(t => t.startsWith('Secondary:'))).toBe(false)
+  })
+
+  it('displays dedicated Cardio tag and equipment for custom cardio exercises', async () => {
+    const customCardio = {
+      id: 'c-treadmill',
+      n: 'Sprint Intervals',
+      bp: 'cardio',
+      tg: 'cardio',
+      sm: [],
+      eq: 'custom',
+      custom: true,
+    }
+
+    await act(async () => {
+      root.render(<ExerciseDetail ex={customCardio} close={vi.fn()} />)
+    })
+
+    const tags = Array.from(container.querySelectorAll('.row .tag'))
+    const tagTexts = tags.map(t => t.textContent.trim())
+
+    const primaryTag = tags.find(t => t.classList.contains('acc'))
+    expect(primaryTag).toBeTruthy()
+    expect(primaryTag.textContent).toContain('Cardio')
+    expect(primaryTag.textContent).not.toContain('Primary:')
+    expect(tagTexts).toContain('custom')
+    expect(tagTexts.some(t => t.startsWith('Secondary:'))).toBe(false)
+  })
 })
 
 describe('CustomExForm canonical muscle selection and editing', () => {

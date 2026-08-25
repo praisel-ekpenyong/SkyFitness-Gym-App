@@ -70,7 +70,13 @@ export const mediaSrc = (ex, { playing = false, fallback = false } = {}) => {
 }
 
 // Cardio exercises log time + speed instead of weight × reps.
-export const isCardio = idOrEx => (typeof idOrEx === 'string' ? EXIDX[idOrEx] : idOrEx)?.bp === 'cardio'
+export const isCardio = idOrEx => {
+  const ex = typeof idOrEx === 'string' ? EXIDX[idOrEx] : idOrEx
+  if (!ex) return false
+  if (ex.bp === 'cardio') return true
+  const tg = String(ex.tg || '').toLowerCase().trim()
+  return tg === 'cardio' || tg === 'cardiovascular system'
+}
 
 // Exercises the dataset already knows carry no external load (issue #32) — a quarter of the
 // catalogue. This seeds the `bw` flag on a fresh config so a push-up never asks for a weight
