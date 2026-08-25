@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useStore } from '../store/useStore.js'
 import { EXDB, allExercises, equipmentOf } from '../lib/exercises.js'
-import { FILTER_MUSCLES, MUSCLE_NAME, matchesMuscleFilter, isSecondaryMuscleMatch, matchesExerciseSearch } from '../lib/muscles.js'
+import { FILTER_MUSCLES, MUSCLE_NAME, primaryMuscleOf, matchesMuscleFilter, isSecondaryMuscleMatch, secondaryMatchForQuery, resolveMuscleSlug, matchesExerciseSearch } from '../lib/muscles.js'
 import { bestWeightFor } from '../lib/history.js'
 import { fmtNum } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
@@ -61,14 +61,18 @@ export default function Library() {
       {f.slice(0, shown).map(e => {
         const best = bestWeightFor(S, e.id)
         const isFav = favs.includes(e.id)
-        const isSecondary = !isFavFilter && isSecondaryMuscleMatch(e, activeFilter)
+        const primary = primaryMuscleOf(e)
+        const primaryLabel = (primary && MUSCLE_NAME[primary]) || e.tg || e.bp
+        const secFilterMatch = !isFavFilter && isSecondaryMuscleMatch(e, activeFilter)
+        const secQueryMatch = !activeFilter && secondaryMatchForQuery(e, q)
+        const secondaryMuscle = secFilterMatch ? resolveMuscleSlug(activeFilter) : secQueryMatch
         return <div key={e.id} className="item" onClick={() => exerciseDetailSheet(e)}>
           <Thumb ex={e} />
           <div className="grow">
             <div className="tt capitalize">{e.n}</div>
             <div className="ss capitalize">
-              {t(e.tg || e.bp)} · {t(e.eq)}
-              {isSecondary && <span className="tag" style={{ marginLeft: 6, fontSize: 11, padding: '1px 5px', verticalAlign: 'middle' }}>{t('Secondary: {0}', MUSCLE_NAME[activeFilter] || activeFilter)}</span>}
+              {t(primaryLabel)} · {t(e.eq)}
+              {secondaryMuscle && <span className="tag" style={{ marginLeft: 6, fontSize: 11, padding: '1px 5px', verticalAlign: 'middle' }}>{t('Secondary: {0}', MUSCLE_NAME[secondaryMuscle] || secondaryMuscle)}</span>}
             </div>
           </div>
           {best > 0 && <span className="tag acc">{fmtNum(best)}</span>}

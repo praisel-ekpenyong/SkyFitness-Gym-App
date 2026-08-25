@@ -139,14 +139,28 @@ export function hasExplicitMuscleMetadata(ex) {
 
 export function canonicalMuscle(value) {
   const name = String(value || '').toLowerCase().trim()
-  if (name === 'cardio') return 'cardio'
+  if (name === 'cardio' || name === 'cardiovascular system') return 'cardio'
   if (MUSCLES.includes(name)) return name
   return ALIAS[name] || null
 }
 
+/** Resolves any input (name, alias, slug) to a canonical slug with safe fallback string. */
+export function resolveMuscleSlug(value) {
+  const slug = canonicalMuscle(value)
+  if (slug) return slug
+  return String(value || '').toLowerCase().trim() || null
+}
+
+function isCardioSource(source) {
+  if (!source || typeof source !== 'object') return false
+  if (source.bp === 'cardio') return true
+  const tg = String(source.tg || '').toLowerCase().trim()
+  return tg === 'cardio' || tg === 'cardiovascular system'
+}
+
 /** Derive legacy coarse body part from a canonical muscle group or cardio. */
 export function bodypartForMuscle(muscle) {
-  const slug = canonicalMuscle(muscle) || String(muscle || '').toLowerCase().trim()
+  const slug = resolveMuscleSlug(muscle)
   return MUSCLE_TO_BODYPART[slug] || (BY_BODYPART[slug] ? slug : 'chest')
 }
 
@@ -155,7 +169,7 @@ export function primaryMuscleOf(idOrEx) {
   const ex = typeof idOrEx === 'string' ? EXIDX[idOrEx] : idOrEx
   if (!ex || typeof ex !== 'object') return null
   const source = metadataOf(ex)
-  if (source.bp === 'cardio' || source.tg === 'cardio' || source.tg === 'cardiovascular system') return 'cardio'
+  if (isCardioSource(source)) return 'cardio'
   const explicit = explicitGroupsOf(source)
   if (explicit && explicit.length > 0) {
     const first = canonicalMuscle(explicit[0])
@@ -174,7 +188,7 @@ export function secondaryMusclesOf(idOrEx) {
   const ex = typeof idOrEx === 'string' ? EXIDX[idOrEx] : idOrEx
   if (!ex || typeof ex !== 'object') return []
   const source = metadataOf(ex)
-  if (source.bp === 'cardio' || source.tg === 'cardio' || source.tg === 'cardiovascular system') return []
+  if (isCardioSource(source)) return []
   const primary = primaryMuscleOf(source)
   const explicit = explicitGroupsOf(source)
   const out = []
@@ -206,7 +220,7 @@ export function secondaryMusclesOf(idOrEx) {
 /** True when an exercise trains the requested muscle filter (as primary or secondary) or cardio. */
 export function matchesMuscleFilter(idOrEx, filter) {
   if (!filter) return true
-  const target = canonicalMuscle(filter) || String(filter).toLowerCase().trim()
+  const target = resolveMuscleSlug(filter)
   if (!target) return true
   const ex = typeof idOrEx === 'string' ? EXIDX[idOrEx] : idOrEx
   if (!ex) return false
@@ -223,11 +237,37 @@ export function matchesMuscleFilter(idOrEx, filter) {
 /** True when the active muscle filter matched as a secondary target rather than primary. */
 export function isSecondaryMuscleMatch(idOrEx, filter) {
   if (!filter || filter === 'cardio' || filter === 'favorites') return false
-  const target = canonicalMuscle(filter) || String(filter).toLowerCase().trim()
+  const target = resolveMuscleSlug(filter)
   if (!target || target === 'cardio') return false
   const primary = primaryMuscleOf(idOrEx)
   if (primary === target) return false
   return secondaryMusclesOf(idOrEx).includes(target)
+}
+
+/** Returns the secondary muscle that matched a search query when the query did not match the primary target. */
+export function secondaryMatchForQuery(idOrEx, query) {
+  const q = String(query || '').toLowerCase().trim()
+  if (!q) return null
+  const ex = typeof idOrEx === 'string' ? EXIDX[idOrEx] : idOrEx
+  if (!ex) return null
+  const primary = primaryMuscleOf(ex)
+  const primaryName = (primary && MUSCLE_NAME[primary]) || ''
+  if ((ex.n || '').toLowerCase().includes(q) || (ex.tg || '').toLowerCase().includes(q) || (primary || '').toLowerCase().includes(q) || primaryName.toLowerCase().includes(q)) {
+    return null
+  }
+  const querySlug = canonicalMuscle(q)
+  const secondaries = secondaryMusclesOf(ex)
+  if (querySlug && secondaries.includes(querySlug)) {
+    return querySlug
+  }
+  const matchedSlug = secondaries.find(m =>
+    m.toLowerCase().includes(q) || (MUSCLE_NAME[m] || '').toLowerCase().includes(q)
+  )
+  if (matchedSlug) return matchedSlug
+  const rawSm = smOf(ex)
+  const matchedRaw = rawSm.find(s => s.toLowerCase().includes(q))
+  if (matchedRaw) return canonicalMuscle(matchedRaw)
+  return null
 }
 
 /** True when an exercise matches a search query across names, muscles, aliases, and equipment. */
