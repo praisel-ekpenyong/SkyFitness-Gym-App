@@ -56,13 +56,14 @@ describe('Ticket 08 — Full verification smoke pass', () => {
     expect(useStore.getState().ready).toBe(true)
     expect(useStore.getState().S.workouts).toHaveLength(0)
     expect(useStore.getState().S.routines).toHaveLength(0)
+    expect(useStore.getState().S.favorites).toEqual([])
     expect(document.querySelector('#tabbar')).toBeTruthy()
 
     // Verify navigation across tabs
     const navButtons = document.querySelectorAll('#tabbar button')
     expect(navButtons.length).toBeGreaterThan(0)
     
-    // 2. Create routine
+    // 2. Create routine & bookmark favorite exercises
     const routine = {
       id: 'routine-push-1',
       name: 'Push Day',
@@ -73,10 +74,12 @@ describe('Ticket 08 — Full verification smoke pass', () => {
     act(() => {
       useStore.getState().update(s => {
         s.routines.push(routine)
+        s.favorites = ['0025', '0047']
       })
     })
     expect(useStore.getState().S.routines).toHaveLength(1)
     expect(useStore.getState().S.routines[0].name).toBe('Push Day')
+    expect(useStore.getState().S.favorites).toEqual(['0025', '0047'])
 
     // 3. Log a workout
     const completedWorkout = buildCompletedWorkout({
@@ -125,6 +128,7 @@ describe('Ticket 08 — Full verification smoke pass', () => {
     expect(useStore.getState().S.lastExport).toBeGreaterThan(0)
     expect(exportedState.routines).toHaveLength(1)
     expect(exportedState.workouts).toHaveLength(1)
+    expect(exportedState.favorites).toEqual(['0025', '0047'])
 
     // 6. Wipe storage
     act(() => {
@@ -132,8 +136,9 @@ describe('Ticket 08 — Full verification smoke pass', () => {
     })
     expect(useStore.getState().S.workouts).toHaveLength(0)
     expect(useStore.getState().S.routines).toHaveLength(0)
+    expect(useStore.getState().S.favorites).toEqual([])
 
-    // 7. Import JSON restores data
+    // 7. Import JSON restores data including favorites
     act(() => {
       useStore.getState().replaceState(Object.assign(JSON.parse(JSON.stringify(DEF)), exportedState))
     })
@@ -141,6 +146,19 @@ describe('Ticket 08 — Full verification smoke pass', () => {
     expect(useStore.getState().S.workouts[0].name).toBe('Push Day')
     expect(useStore.getState().S.routines).toHaveLength(1)
     expect(useStore.getState().S.routines[0].name).toBe('Push Day')
+    expect(useStore.getState().S.favorites).toEqual(['0025', '0047'])
+
+    // 7b. Legacy JSON restore without favorites field defaults gracefully to []
+    const legacyBackup = {
+      workouts: [{ id: 'w-legacy' }],
+      routines: [{ id: 'r-legacy', name: 'Legacy' }],
+      // notice 'favorites' is absent
+    }
+    act(() => {
+      useStore.getState().replaceState(Object.assign(JSON.parse(JSON.stringify(DEF)), legacyBackup))
+    })
+    expect(useStore.getState().S.favorites).toEqual([])
+    expect(useStore.getState().S.routines).toHaveLength(1)
 
     // 8. Theme toggle
     expect(document.documentElement.dataset.theme).toBe('light')
