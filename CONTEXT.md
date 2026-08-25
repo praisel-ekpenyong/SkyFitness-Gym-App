@@ -56,11 +56,22 @@ The built-in exercise dataset — each entry has a name, body part, equipment, t
 _Avoid_: library (that's the browsing screen), exercise DB
 
 **Custom exercise**:
-An exercise you created yourself, kept in the profile and treated as part of the catalogue everywhere.
+An exercise you created yourself with a primary target muscle and optional secondary muscles, kept in the profile and treated as part of the catalogue everywhere.
 
 **Favorite exercise**:
 An exercise explicitly starred by the lifter for quick access across the library and exercise pickers.
 _Avoid_: bookmark, starred lift, saved exercise, chosen (which is derived from history)
+
+**Primary muscle**:
+The main muscle an exercise is designed to train, receiving full (100%) training stimulus and driving the default muscle categorization.
+_Avoid_: target muscle, main muscle
+
+**Secondary muscle**:
+A supporting or assisting muscle recruited during a movement, receiving partial (40%) training load against the muscle map.
+_Avoid_: auxiliary muscle, helper muscle
+
+**Muscle filter**:
+The 18 canonical anatomical muscle groups (matching the body map) plus cardio, used to filter exercises in the library and exercise pickers.
 
 **Body part**:
 The coarse grouping of catalogue exercises (chest, back, waist…); also the fallback muscle mapping for customs that name no muscles.
