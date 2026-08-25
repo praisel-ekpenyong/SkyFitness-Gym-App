@@ -207,5 +207,28 @@ describe('canonical muscle filter taxonomy & extraction helpers', () => {
     expect(matchesExerciseSearch('0025', 'deltoids')).toBe(true)
     expect(matchesExerciseSearch(bench, 'squat')).toBe(false)
   })
+
+  it('extracts matching secondary muscle slug for search queries', async () => {
+    const { secondaryMatchForQuery } = await import('./muscles.js')
+    const bench = EXIDX['0025'] // primary: chest, secondary: triceps, deltoids
+
+    // Matches secondary triceps when query is "triceps"
+    expect(secondaryMatchForQuery(bench, 'triceps')).toBe('triceps')
+    expect(secondaryMatchForQuery('0025', 'triceps')).toBe('triceps')
+    // Matches secondary deltoids when query is "delts"
+    expect(secondaryMatchForQuery(bench, 'delts')).toBe('deltoids')
+    // Returns null when query matches primary or exercise name
+    expect(secondaryMatchForQuery(bench, 'bench')).toBeNull()
+    expect(secondaryMatchForQuery(bench, 'chest')).toBeNull()
+    expect(secondaryMatchForQuery(bench, 'biceps')).toBeNull()
+  })
+
+  it('normalizes cardio target strings case-insensitively', async () => {
+    const { primaryMuscleOf, secondaryMusclesOf, canonicalMuscle } = await import('./muscles.js')
+    expect(canonicalMuscle('Cardiovascular System')).toBe('cardio')
+    expect(canonicalMuscle('Cardio')).toBe('cardio')
+    expect(primaryMuscleOf({ id: 'c1', tg: 'Cardiovascular System' })).toBe('cardio')
+    expect(secondaryMusclesOf({ id: 'c1', tg: 'Cardiovascular System' })).toEqual([])
+  })
 })
 
