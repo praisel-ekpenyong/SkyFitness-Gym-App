@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useStore } from '../store/useStore.js'
-import { EXDB, BODYPARTS, allExercises, equipmentOf } from '../lib/exercises.js'
+import { EXDB, allExercises, equipmentOf } from '../lib/exercises.js'
+import { FILTER_MUSCLES, MUSCLE_NAME, matchesMuscleFilter, isSecondaryMuscleMatch, matchesExerciseSearch } from '../lib/muscles.js'
 import { bestWeightFor } from '../lib/history.js'
 import { fmtNum } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
@@ -13,16 +14,22 @@ export default function Library() {
   const S = useStore(s => s.S)
   const update = useStore(s => s.update)
   const [q, setQ] = useState('')
-  const [bp, setBp] = useState('')
+  const [filter, setFilter] = useState('')
   const [eq, setEq] = useState('')
   const [shown, setShown] = useState(40)
-  const ql = q.toLowerCase().trim()
   const favs = S.favorites || []
   // If the user unstars their last favorite while on the Favorites filter,
   // gracefully fall back to All ('') so they aren't trapped in an empty state.
-  const activeBp = (bp === 'favorites' && favs.length === 0) ? '' : bp
-  const isFavFilter = activeBp === 'favorites'
-  const base = allExercises(S).filter(e => (!activeBp ? true : isFavFilter ? favs.includes(e.id) : e.bp === activeBp) && (!ql || e.n.toLowerCase().includes(ql) || e.tg.includes(ql) || e.eq.includes(ql) || (e.desc || '').toLowerCase().includes(ql)))
+  const activeFilter = (filter === 'favorites' && favs.length === 0) ? '' : filter
+  const isFavFilter = activeFilter === 'favorites'
+  const base = allExercises(S).filter(e => {
+    if (isFavFilter) {
+      if (!favs.includes(e.id)) return false
+    } else if (activeFilter) {
+      if (!matchesMuscleFilter(e, activeFilter)) return false
+    }
+    return matchesExerciseSearch(e, q)
+  })
   const eqOpts = equipmentOf(base)
   // Drop the equipment filter if the search narrowed it away, so you never hit a dead end.
   const eqOn = eqOpts.includes(eq) ? eq : ''
@@ -38,9 +45,9 @@ export default function Library() {
       onClear={() => { setQ(''); setShown(40) }}
     />
     <div className="chips" style={{ marginBottom: eqOpts.length > 1 ? 8 : 12 }}>
-      {favs.length > 0 && <button className={'chip' + (activeBp === 'favorites' ? ' on' : '')} onClick={() => { setBp('favorites'); setEq(''); setShown(40) }}><Icon name="starFill" style={{ fontSize: 12, display: 'inline-block', marginRight: 4, verticalAlign: '-1px' }} />{t('Favorites')} ({favs.length})</button>}
-      <button className={'chip nocap' + (!activeBp ? ' on' : '')} onClick={() => { setBp(''); setEq(''); setShown(40) }}>{t('All')}</button>
-      {BODYPARTS.map(b => <button key={b} className={'chip' + (activeBp === b ? ' on' : '')} onClick={() => { setBp(b); setEq(''); setShown(40) }}>{t(b)}</button>)}
+      {favs.length > 0 && <button className={'chip' + (activeFilter === 'favorites' ? ' on' : '')} onClick={() => { setFilter('favorites'); setEq(''); setShown(40) }}><Icon name="starFill" style={{ fontSize: 12, display: 'inline-block', marginRight: 4, verticalAlign: '-1px' }} />{t('Favorites')} ({favs.length})</button>}
+      <button className={'chip nocap' + (!activeFilter ? ' on' : '')} onClick={() => { setFilter(''); setEq(''); setShown(40) }}>{t('All')}</button>
+      {FILTER_MUSCLES.map(m => <button key={m} className={'chip' + (activeFilter === m ? ' on' : '')} onClick={() => { setFilter(m); setEq(''); setShown(40) }}>{t(MUSCLE_NAME[m] || m)}</button>)}
     </div>
     {eqOpts.length > 1 && <div className="chips" style={{ marginBottom: 12 }}>
       <button className={'chip nocap' + (!eqOn ? ' on' : '')} onClick={() => { setEq(''); setShown(40) }}>{t('Any equipment')}</button>
@@ -54,9 +61,16 @@ export default function Library() {
       {f.slice(0, shown).map(e => {
         const best = bestWeightFor(S, e.id)
         const isFav = favs.includes(e.id)
+        const isSecondary = !isFavFilter && isSecondaryMuscleMatch(e, activeFilter)
         return <div key={e.id} className="item" onClick={() => exerciseDetailSheet(e)}>
           <Thumb ex={e} />
-          <div className="grow"><div className="tt capitalize">{e.n}</div><div className="ss capitalize">{t(e.tg || e.bp)} · {t(e.eq)}</div></div>
+          <div className="grow">
+            <div className="tt capitalize">{e.n}</div>
+            <div className="ss capitalize">
+              {t(e.tg || e.bp)} · {t(e.eq)}
+              {isSecondary && <span className="tag" style={{ marginLeft: 6, fontSize: 11, padding: '1px 5px', verticalAlign: 'middle' }}>{t('Secondary: {0}', MUSCLE_NAME[activeFilter] || activeFilter)}</span>}
+            </div>
+          </div>
           {best > 0 && <span className="tag acc">{fmtNum(best)}</span>}
           <button
             className={'iconbtn' + (isFav ? ' on-ss' : '')}

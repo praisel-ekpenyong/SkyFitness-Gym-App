@@ -270,6 +270,78 @@ describe('Library view smoke tests', () => {
     expect(allChip?.classList.contains('on')).toBe(true)
     expect(container.querySelectorAll('.list .item').length).toBe(41)
   })
+
+  it('renders all 18 canonical muscle filter chips plus Cardio in anatomical head-to-toe order', async () => {
+    await act(async () => {
+      root.render(<Library />)
+    })
+
+    const firstChipsRow = container.querySelectorAll('.chips')[0]
+    const chips = Array.from(firstChipsRow.querySelectorAll('button.chip')).map(c => c.textContent.trim())
+    // Expected order: All, Traps, Shoulders, Chest, Upper back, Serratus, Biceps, Triceps, Forearms, Abs, Obliques, Lower back, Glutes, Quads, Hamstrings, Adductors, Hip flexors, Calves, Shins, Cardio
+    const expected = [
+      'All', 'Traps', 'Shoulders', 'Chest', 'Upper back', 'Serratus',
+      'Biceps', 'Triceps', 'Forearms', 'Abs', 'Obliques', 'Lower back',
+      'Glutes', 'Quads', 'Hamstrings', 'Adductors', 'Hip flexors',
+      'Calves', 'Shins', 'Cardio',
+    ]
+    expect(chips).toEqual(expected)
+  })
+
+  it('surfaces secondary compound movements with inline secondary badges when a muscle filter is selected', async () => {
+    await act(async () => {
+      root.render(<Library />)
+    })
+
+    // Filter by Triceps
+    const tricepsChip = Array.from(container.querySelectorAll('.chips button.chip'))
+      .find(b => b.textContent.trim() === 'Triceps')
+    expect(tricepsChip).toBeTruthy()
+
+    await act(async () => {
+      tricepsChip.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    const items = Array.from(container.querySelectorAll('.list .item'))
+    // Find bench press (which has chest as primary and triceps as secondary)
+    const benchItem = items.find(it => it.textContent.toLowerCase().includes('bench press'))
+    expect(benchItem).toBeTruthy()
+
+    // Bench press should display the secondary badge: "Secondary: Triceps"
+    const secondaryBadge = benchItem.querySelector('.ss .tag')
+    expect(secondaryBadge).toBeTruthy()
+    expect(secondaryBadge.textContent).toContain('Secondary: Triceps')
+
+    // An exercise with Triceps as primary (e.g. pushdown or dip) should NOT have the secondary badge
+    const primaryTricepItem = items.find(it => it.textContent.toLowerCase().includes('pushdown') || it.textContent.toLowerCase().includes('triceps dip') || it.textContent.toLowerCase().includes('triceps'))
+    if (primaryTricepItem && !primaryTricepItem.textContent.toLowerCase().includes('bench press')) {
+      const isSec = primaryTricepItem.querySelector('.ss .tag')
+      // If its primary muscle is triceps, it should not have a secondary badge for Triceps
+      if (primaryTricepItem.textContent.toLowerCase().includes('triceps ·')) {
+        expect(isSec).toBeNull()
+      }
+    }
+  })
+
+  it('searches exercises matching primary and secondary muscle names', async () => {
+    await act(async () => {
+      root.render(<Library />)
+    })
+
+    const searchInput = container.querySelector('input.input')
+    // Search for "triceps"
+    await act(async () => {
+      const nativeSetter = Object.getOwnPropertyDescriptor(globalThis.HTMLInputElement.prototype, 'value').set
+      nativeSetter.call(searchInput, 'triceps')
+      searchInput.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+
+    const items = Array.from(container.querySelectorAll('.list .item'))
+    expect(items.length).toBeGreaterThan(5)
+    // Matches primary tricep exercises and compound movements with secondary triceps
+    const names = items.map(it => it.textContent.toLowerCase())
+    expect(names.some(n => n.includes('pushdown') || n.includes('extension'))).toBe(true)
+  })
 })
 
 

@@ -30,6 +30,33 @@ export const MUSCLE_NAME = {
   abs: 'Abs', obliques: 'Obliques', 'lower-back': 'Lower back', gluteal: 'Glutes',
   quadriceps: 'Quads', hamstring: 'Hamstrings', adductors: 'Adductors',
   'hip-flexors': 'Hip flexors', calves: 'Calves', tibialis: 'Shins',
+  cardio: 'Cardio',
+}
+
+// Filter taxonomy: the 18 canonical anatomical muscle groups in head-to-toe order plus cardio.
+export const FILTER_MUSCLES = [...MUSCLES, 'cardio']
+
+// Mapping from canonical muscle slug (or cardio) to legacy body part string.
+const MUSCLE_TO_BODYPART = {
+  trapezius: 'neck',
+  deltoids: 'shoulders',
+  chest: 'chest',
+  'upper-back': 'back',
+  serratus: 'chest',
+  biceps: 'upper arms',
+  triceps: 'upper arms',
+  forearm: 'lower arms',
+  abs: 'waist',
+  obliques: 'waist',
+  'lower-back': 'back',
+  gluteal: 'upper legs',
+  quadriceps: 'upper legs',
+  hamstring: 'upper legs',
+  adductors: 'upper legs',
+  'hip-flexors': 'upper legs',
+  calves: 'lower legs',
+  tibialis: 'lower legs',
+  cardio: 'cardio',
 }
 
 // Every spelling that occurs in the dataset's `tg` and `sm` fields. null = not drawable.
@@ -110,10 +137,118 @@ export function hasExplicitMuscleMetadata(ex) {
   return [source.tg, source.mg, ...arrayOf(source.sm)].some(value => canonicalMuscle(value))
 }
 
-function canonicalMuscle(value) {
+export function canonicalMuscle(value) {
   const name = String(value || '').toLowerCase().trim()
+  if (name === 'cardio') return 'cardio'
   if (MUSCLES.includes(name)) return name
   return ALIAS[name] || null
+}
+
+/** Derive legacy coarse body part from a canonical muscle group or cardio. */
+export function bodypartForMuscle(muscle) {
+  const slug = canonicalMuscle(muscle) || String(muscle || '').toLowerCase().trim()
+  return MUSCLE_TO_BODYPART[slug] || (BY_BODYPART[slug] ? slug : 'chest')
+}
+
+/** Primary target muscle slug for an exercise (canonical anatomical muscle group or 'cardio'). */
+export function primaryMuscleOf(idOrEx) {
+  const ex = typeof idOrEx === 'string' ? EXIDX[idOrEx] : idOrEx
+  if (!ex || typeof ex !== 'object') return null
+  const source = metadataOf(ex)
+  if (source.bp === 'cardio' || source.tg === 'cardio' || source.tg === 'cardiovascular system') return 'cardio'
+  const explicit = explicitGroupsOf(source)
+  if (explicit && explicit.length > 0) {
+    const first = canonicalMuscle(explicit[0])
+    if (first) return first
+  }
+  if (source.tg) {
+    const slug = canonicalMuscle(source.tg)
+    if (slug) return slug
+  }
+  const bpMuscles = Object.keys(BY_BODYPART[source.bp] || {})
+  return bpMuscles[0] || null
+}
+
+/** Secondary supporting muscle slugs for an exercise (canonical anatomical muscle groups). */
+export function secondaryMusclesOf(idOrEx) {
+  const ex = typeof idOrEx === 'string' ? EXIDX[idOrEx] : idOrEx
+  if (!ex || typeof ex !== 'object') return []
+  const source = metadataOf(ex)
+  if (source.bp === 'cardio' || source.tg === 'cardio' || source.tg === 'cardiovascular system') return []
+  const primary = primaryMuscleOf(source)
+  const explicit = explicitGroupsOf(source)
+  const out = []
+  const add = val => {
+    const slug = canonicalMuscle(val)
+    if (slug && slug !== 'cardio' && slug !== primary && !out.includes(slug)) {
+      out.push(slug)
+    }
+  }
+  if (explicit) {
+    explicit.slice(1).forEach(add)
+    return out
+  }
+  const rawSm = smOf(source)
+  const hasSm = Array.isArray(source.sm) || source.sm != null
+  const hasMg = source.mg != null
+  if (hasSm || hasMg || rawSm.length > 0) {
+    if (source.mg) add(source.mg)
+    rawSm.forEach(add)
+    return out
+  }
+  // Fallback for legacy custom exercises that have only bp and no explicit tg/sm
+  if (!source.tg && source.bp && BY_BODYPART[source.bp]) {
+    Object.keys(BY_BODYPART[source.bp]).forEach(add)
+  }
+  return out
+}
+
+/** True when an exercise trains the requested muscle filter (as primary or secondary) or cardio. */
+export function matchesMuscleFilter(idOrEx, filter) {
+  if (!filter) return true
+  const target = canonicalMuscle(filter) || String(filter).toLowerCase().trim()
+  if (!target) return true
+  const ex = typeof idOrEx === 'string' ? EXIDX[idOrEx] : idOrEx
+  if (!ex) return false
+  if (target === 'cardio') {
+    return ex.bp === 'cardio' || primaryMuscleOf(ex) === 'cardio'
+  }
+  const primary = primaryMuscleOf(ex)
+  if (primary === target) return true
+  const secondaries = secondaryMusclesOf(ex)
+  if (secondaries.includes(target)) return true
+  return false
+}
+
+/** True when the active muscle filter matched as a secondary target rather than primary. */
+export function isSecondaryMuscleMatch(idOrEx, filter) {
+  if (!filter || filter === 'cardio' || filter === 'favorites') return false
+  const target = canonicalMuscle(filter) || String(filter).toLowerCase().trim()
+  if (!target || target === 'cardio') return false
+  const primary = primaryMuscleOf(idOrEx)
+  if (primary === target) return false
+  return secondaryMusclesOf(idOrEx).includes(target)
+}
+
+/** True when an exercise matches a search query across names, muscles, aliases, and equipment. */
+export function matchesExerciseSearch(idOrEx, query) {
+  const q = String(query || '').toLowerCase().trim()
+  if (!q) return true
+  const ex = typeof idOrEx === 'string' ? EXIDX[idOrEx] : idOrEx
+  if (!ex) return false
+  const primary = primaryMuscleOf(ex)
+  const secondaries = secondaryMusclesOf(ex)
+  const primaryName = (primary && MUSCLE_NAME[primary]) || ''
+  const rawSm = smOf(ex)
+  return (ex.n || '').toLowerCase().includes(q) ||
+    (ex.tg || '').toLowerCase().includes(q) ||
+    (primary || '').toLowerCase().includes(q) ||
+    primaryName.toLowerCase().includes(q) ||
+    secondaries.some(m => m.toLowerCase().includes(q) || (MUSCLE_NAME[m] || '').toLowerCase().includes(q)) ||
+    rawSm.some(s => s.toLowerCase().includes(q)) ||
+    (ex.eq || '').toLowerCase().includes(q) ||
+    (ex.bp || '').toLowerCase().includes(q) ||
+    (ex.desc || '').toLowerCase().includes(q)
 }
 
 /** Canonical unique muscle groups, accepting both new arrays and legacy single fields. */
@@ -124,7 +259,7 @@ export function muscleGroupsOf(ex) {
   const out = []
   source.forEach(value => {
     const slug = canonicalMuscle(value)
-    if (slug && !out.includes(slug)) out.push(slug)
+    if (slug && MUSCLES.includes(slug) && !out.includes(slug)) out.push(slug)
   })
   if (!out.length && explicit == null) Object.keys(BY_BODYPART[sourceEx?.bp] || {}).forEach(slug => { if (!out.includes(slug)) out.push(slug) })
   return out
@@ -156,7 +291,7 @@ export function musclesOf(ex) {
   const out = {}
   const add = (name, w) => {
     const slug = canonicalMuscle(name)
-    if (slug) out[slug] = Math.max(out[slug] || 0, w)
+    if (slug && MUSCLES.includes(slug)) out[slug] = Math.max(out[slug] || 0, w)
   }
   const explicit = explicitGroupsOf(ex)
   if (explicit) explicit.forEach(m => add(m, 1))
