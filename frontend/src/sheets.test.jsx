@@ -589,6 +589,29 @@ describe('ExerciseDetail primary and secondary muscle tags', () => {
     expect(primaryTag.textContent).toContain('Primary: Biceps')
     expect(tagTexts).toContain('Secondary: Forearms')
   })
+
+  it('displays Primary and Secondary tags for legacy custom exercises via bodypart fallbacks', async () => {
+    const legacyEx = {
+      id: 'c-legacy-legs',
+      n: 'Old Squat Variation',
+      bp: 'upper legs',
+      eq: 'custom',
+      custom: true,
+    }
+
+    await act(async () => {
+      root.render(<ExerciseDetail ex={legacyEx} close={vi.fn()} />)
+    })
+
+    const tags = Array.from(container.querySelectorAll('.row .tag'))
+    const tagTexts = tags.map(t => t.textContent.trim())
+
+    const primaryTag = tags.find(t => t.classList.contains('acc'))
+    expect(primaryTag).toBeTruthy()
+    expect(primaryTag.textContent).toContain('Primary: Quads')
+    expect(tagTexts).toContain('Secondary: Hamstrings')
+    expect(tagTexts).toContain('Secondary: Glutes')
+  })
 })
 
 describe('CustomExForm canonical muscle selection and editing', () => {
@@ -865,6 +888,58 @@ describe('CustomExForm canonical muscle selection and editing', () => {
     // Secondary chips should all be unselected
     const secChips = Array.from(container.querySelectorAll('.chips')[1].querySelectorAll('button.chip'))
     expect(secChips.some(c => c.classList.contains('on'))).toBe(false)
+  })
+
+  it('pre-fills primary and secondary muscles from multi-muscle bodypart fallback when editing legacy custom exercise', async () => {
+    const legacyLegEx = {
+      id: 'c-legacy-legs-2',
+      n: 'Old Leg Extension',
+      bp: 'upper legs',
+      desc: 'Machine seat position 3',
+      eq: 'custom',
+      custom: true,
+    }
+
+    useStore.getState().update(s => {
+      s.customEx = [legacyLegEx]
+    })
+
+    await act(async () => {
+      root.render(<CustomExForm existing={legacyLegEx} onDone={vi.fn()} close={vi.fn()} />)
+    })
+
+    // Primary 'Quads' should be selected via bodypart fallback
+    const quadsPrimary = Array.from(container.querySelectorAll('.chips')[0].querySelectorAll('button.chip'))
+      .find(c => c.textContent.trim() === 'Quads')
+    expect(quadsPrimary?.classList.contains('on')).toBe(true)
+
+    // Secondary 'Hamstrings' and 'Glutes' should be active via bodypart fallback
+    const secChips = Array.from(container.querySelectorAll('.chips')[1].querySelectorAll('button.chip'))
+    const hamstringsSec = secChips.find(c => c.textContent.trim() === 'Hamstrings')
+    const glutesSec = secChips.find(c => c.textContent.trim() === 'Glutes')
+    expect(hamstringsSec?.classList.contains('on')).toBe(true)
+    expect(glutesSec?.classList.contains('on')).toBe(true)
+
+    // Modify secondaries: deselect Glutes, select Adductors
+    await act(async () => {
+      glutesSec.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    const secChipsAfter = Array.from(container.querySelectorAll('.chips')[1].querySelectorAll('button.chip'))
+    const adductorsSec = secChipsAfter.find(c => c.textContent.trim() === 'Adductors')
+    await act(async () => {
+      adductorsSec.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    const saveBtn = container.querySelector('button.btn.primary')
+    await act(async () => {
+      saveBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    const updated = useStore.getState().S.customEx.find(c => c.id === 'c-legacy-legs-2')
+    expect(updated.tg).toBe('quadriceps')
+    expect(updated.sm).toEqual(['hamstring', 'adductors'])
+    expect(updated.bp).toBe('upper legs')
   })
 
   it('validates input and prevents saving when name or primary muscle is missing, or name is duplicate', async () => {
