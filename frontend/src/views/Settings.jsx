@@ -166,10 +166,7 @@ export default function Settings() {
     {/* About — the one place that says what Sky is and where it came from. AGPL §4–5
         attribution lives here, so it must survive every future rewrite of the copy. */}
     <div className="dim small" style={{ textAlign: 'center', marginTop: 4, lineHeight: 1.6 }}>
-      Sky · {t('free & open source (AGPL v3)')}<br />
-      {t('a personal fork of')}{' '}<a href="https://gitlab.com/DuarteSantos8/opengym" target="_blank" rel="noopener">openGym</a> ({t('source code')})<br />
-      exercise data: hasaneyldrm/exercises-dataset (MIT)<br />
-      exercise images and animations © <a href="https://gymvisual.com/" target="_blank" rel="noopener">Gym visual</a>
+      Sky · {t('free & open source (AGPL v3)')}
     </div>
   </div>
 }
