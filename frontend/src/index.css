@@ -916,6 +916,83 @@ h4.sec{
 .ss-ex{position:relative}
 .ss-amp{text-align:center;font-size:15px;font-weight:600;color:var(--acc);margin:14px 0 8px}
 
+/* --- home: refactored hero & dashboard components --- */
+.home-hero{
+  background:var(--surface);border-radius:var(--r-card);
+  padding:16px;margin-bottom:12px;position:relative;overflow:hidden;
+  border:var(--hair) solid var(--sep-op);
+  transition:border-color var(--fast),background var(--fast);
+}
+.home-hero.hero-active{
+  border-color:color-mix(in srgb,var(--orange) 42%,transparent);
+  background:linear-gradient(180deg,color-mix(in srgb,var(--orange) 10%,var(--surface)) 0%,var(--surface) 100%);
+}
+.home-hero.hero-scheduled{
+  border-color:color-mix(in srgb,var(--acc) 38%,transparent);
+  background:linear-gradient(180deg,color-mix(in srgb,var(--acc) 8%,var(--surface)) 0%,var(--surface) 100%);
+}
+.home-hero-head{
+  display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;
+}
+.home-badge{
+  display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:99px;
+  font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;
+}
+.home-badge.active{
+  background:color-mix(in srgb,var(--orange) 18%,transparent);color:var(--orange);
+}
+.home-badge.scheduled{background:var(--acc-soft);color:var(--acc)}
+.home-badge.done{
+  background:color-mix(in srgb,var(--green) 18%,transparent);color:var(--green);
+}
+.home-badge.rest{background:var(--surface-2);color:var(--label-2)}
+.home-badge-dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex:none}
+.home-badge.active .home-badge-dot{animation:ping 1.8s var(--ease) infinite}
+
+.home-hero-main{
+  display:flex;align-items:center;gap:13px;margin-bottom:14px;
+}
+.home-hero-icon{
+  width:46px;height:46px;border-radius:12px;flex:none;
+  display:flex;align-items:center;justify-content:center;font-size:22px;
+  background:var(--surface-2);color:var(--label);
+}
+.home-hero-icon.acc{background:var(--acc);color:var(--on-acc)}
+.home-hero-icon.orange{background:var(--orange);color:#000}
+.home-hero-title{
+  font-size:20px;font-weight:700;letter-spacing:-.022em;line-height:1.2;
+  color:var(--label);text-transform:capitalize;
+}
+.home-hero-meta{
+  font-size:13px;color:var(--label-2);margin-top:3px;display:flex;align-items:center;gap:6px;
+}
+
+/* week navigation polish */
+.week-nav{
+  display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;
+}
+.week-reset-btn{
+  font-size:11px;font-weight:600;padding:3px 8px;border-radius:99px;
+  background:var(--surface-2);color:var(--acc);text-transform:uppercase;letter-spacing:.03em;
+  transition:background var(--fast);
+}
+.week-reset-btn:active{background:var(--surface-3)}
+
+/* streak progress bar */
+.streak-bar-track{
+  width:100%;height:5px;background:var(--surface-2);border-radius:99px;overflow:hidden;margin-top:10px;
+}
+.streak-bar-fill{
+  height:100%;background:var(--acc);border-radius:99px;transition:width var(--med) var(--ease);
+}
+.delta-pill{
+  display:inline-flex;align-items:center;gap:2px;font-size:12px;font-weight:600;
+  padding:2px 6px;border-radius:6px;
+}
+.goal-row{
+  display:flex;align-items:center;gap:5px;font-size:13px;color:var(--yellow);margin-top:4px;
+}
+
 /* --- home: today's session row --- */
 .today-row{
   display:flex;align-items:center;justify-content:space-between;gap:10px;
