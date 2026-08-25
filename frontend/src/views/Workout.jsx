@@ -110,10 +110,12 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onAddSet, onRemov
       <button aria-label="Increase" onClick={() => bump(s, i, col, 1)}><Icon name="plus" /></button>
     </div>
   )
+  const currentSetIdx = entry.sets.findIndex(s => !s.done)
+
   return <>
     <Media ex={ex} key={entry.id} compact={compact} minimizable />
     <div className="row between" style={{ marginBottom: 6 }}>
-      <div style={{ fontSize: compact ? 17 : 20, fontWeight: 600, letterSpacing: '-.02em', textTransform: 'capitalize', lineHeight: 1.2 }}>{ex.n}</div>
+      <div style={{ fontSize: compact ? 17 : 20, fontWeight: 700, letterSpacing: '-.02em', textTransform: 'capitalize', lineHeight: 1.2 }}>{ex.n}</div>
       <button className="iconbtn" aria-label={t('Details')} onClick={() => exerciseDetailSheet(ex)}><Icon name="info" /></button>
     </div>
     {!compact && (onPairPrev || onPairNext) && <div className="row" style={{ gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
@@ -143,11 +145,13 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onAddSet, onRemov
         const isFirstWarmup = warm && !warmBefore
         // Numbering restarts per phase: with two warm-ups the first work set reads 1, not 3.
         const phaseNum = entry.sets.slice(0, i + 1).filter(x => isWarmupRow(x) === warm).length
+        const isCurrent = i === currentSetIdx
+
         return <div key={i}>
           {isFirstWarmup && <div className="setph">{t('Warm-up')}</div>}
           {!warm && warmBefore && <div className="setsep" />}
-          <div className={'setrow' + (s.done ? ' done' : '') + (col3 ? ' eff3' : '')}>
-            <div className="n">{phaseNum}</div>
+          <div className={'setrow' + (s.done ? ' done' : '') + (isCurrent ? ' current' : '') + (col3 ? ' eff3' : '')}>
+            <div className={'n' + (warm ? ' warmup' : '')}>{warm ? `W${phaseNum}` : phaseNum}</div>
             {cell(s, i, col1, 'w')}
             {col2 && cell(s, i, col2, 'r')}
             {col3 && cell(s, i, col3, 'eff')}
@@ -155,17 +159,24 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onAddSet, onRemov
                 set off itself. The checkbox stays for anyone who timed it on their own watch. */}
             {timed && <button className="setgo" aria-label={t('Start set')} disabled={s.done || !!working}
               onClick={() => onStartTimed(i)}><Icon name="play" /></button>}
-            {warm && <button className="iconbtn" style={{ fontSize: 13 }} aria-label={t('Remove set')}
+            {warm && <button className="iconbtn" style={{ fontSize: 13, width: 28, height: 28 }} aria-label={t('Remove set')}
               disabled={entry.sets.length <= 1} onClick={() => onRemoveSetAt(i)}><Icon name="xmark" /></button>}
             <Check checked={s.done} onChange={() => onToggle(i)} />
           </div>
         </div>
       })}
-      <div style={{ height: 8 }} />
-      <div className="row" style={{ flexWrap: 'wrap' }}>
-        <Button size="sm" icon="flame" onClick={onAddWarmup}>{t('Add warm-up set')}</Button>
-        <Button size="sm" icon="minus" disabled={entry.sets.length <= 1} onClick={onRemoveSet}>{t('Remove set')}</Button>
-        <Button size="sm" icon="plus" onClick={onAddSet}>{t('Add set')}</Button>
+      <div className="set-actions-bar">
+        <button className="set-act-btn accent" onClick={onAddSet}>
+          <Icon name="plus" /><span>{t('Add set')}</span>
+        </button>
+        <button className="set-act-btn" onClick={onAddWarmup}>
+          <Icon name="flame" /><span>{t('Warm-up')}</span>
+        </button>
+        {entry.sets.length > 1 && (
+          <button className="set-act-btn danger" style={{ marginLeft: 'auto' }} onClick={onRemoveSet}>
+            <Icon name="minus" /><span>{t('Remove')}</span>
+          </button>
+        )}
       </div>
     </div>
   </>
@@ -358,15 +369,26 @@ function ActiveWorkout() {
   }
 
   return <div className="narrow">
-    <div className="hdr">
+    <div className="hdr" style={{ alignItems: 'center', marginBottom: 10 }}>
       <button className="iconbtn" aria-label={t('Discard')} onClick={() => confirmSheet({ title: t('Discard workout?'), message: t('The sets you logged in this session will be lost.'), confirmText: t('Discard'), danger: true, onConfirm: () => { update(s => { s.active = null }); stopRest(); nav('/home') } })}><Icon name="xmark" /></button>
-      <div style={{ textAlign: 'center' }}><div style={{ fontWeight: 600 }}>{A.name}</div><div className="sub"><Elapsed start={A.start} /> · {t('{0} sets', done + '/' + total)}</div></div>
-      <button className="iconbtn" style={{ color: 'var(--acc)' }} aria-label={t('Finish')} onClick={finishWorkout}><Icon name="check" /></button>
+      <div style={{ textAlign: 'center', minWidth: 0 }}>
+        <div style={{ fontWeight: 700, fontSize: 18, letterSpacing: '-.018em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{A.name}</div>
+        <div className="sub" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 13, marginTop: 2 }}>
+          <Elapsed start={A.start} />
+          <span style={{ color: 'var(--sep)' }}>·</span>
+          <span style={{ fontWeight: 600, color: 'var(--label)' }}>{done}/{total} {t('sets')}</span>
+        </div>
+      </div>
+      <button className="iconbtn" style={{ background: 'var(--acc-soft)', color: 'var(--acc)' }} aria-label={t('Finish')} onClick={finishWorkout}><Icon name="check" /></button>
     </div>
     <div className="wprog"><i style={{ width: (total ? done / total * 100 : 0) + '%' }} /></div>
 
     {A.entries.length ? <>
-      <div className="muted small" style={{ marginBottom: 6 }}>{isSuperset ? t('Superset {0} / {1}', unitIdx + 1, units.length) : t('Exercise {0} / {1}', unitIdx + 1, units.length)}</div>
+      <div className="row between" style={{ marginBottom: 8 }}>
+        <div className="muted small" style={{ fontWeight: 600, letterSpacing: '-.005em' }}>
+          {isSuperset ? t('Superset {0} / {1}', unitIdx + 1, units.length) : t('Exercise {0} / {1}', unitIdx + 1, units.length)}
+        </div>
+      </div>
       {isSuperset ? (
         <div className="ss-card">
           <div className="ss-hd" style={{ justifyContent: 'space-between' }}>
@@ -384,7 +406,7 @@ function ActiveWorkout() {
       )}
     </> : <div className="empty"><div className="ico"><Icon name="shuffle" /></div>{t('Freestyle workout — add your first exercise.')}</div>}
 
-    <div style={{ height: 12 }} />
+    <div style={{ height: 14 }} />
     <div className="row">
       <Button icon="chevronLeft" disabled={unitIdx <= 0} onClick={() => update(s => { s.active.cur = units[unitIdx - 1][0] })}>{t('Prev')}</Button>
       <Button trailingIcon="chevronRight" disabled={unitIdx < 0 || unitIdx >= units.length - 1} onClick={() => update(s => { s.active.cur = units[unitIdx + 1][0] })}>{t('Next')}</Button>
@@ -410,7 +432,7 @@ function ActiveWorkout() {
         <Button size="sm" icon="minus" style={{ color: 'var(--red)' }} disabled={!!work} onClick={removeExerciseSheet}>{t('Remove exercise')}</Button>
       </div>
     </>}
-    <div style={{ height: 10 }} />
+    <div style={{ height: 12 }} />
     {(() => {
       const exDone = A.entries.filter(e => e.sets.length && e.sets.every(s => s.done)).length
       const allDone = A.entries.length > 0 && exDone === A.entries.length
