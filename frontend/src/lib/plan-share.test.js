@@ -49,6 +49,32 @@ describe('plan-share engine', () => {
 
       expect(bundle.week).toEqual({ 1: 'r1', 3: 'r1' })
     })
+
+    it('excludes favorites array from the exported shareable plan bundle payload', () => {
+      const S = {
+        routines: [
+          {
+            id: 'r1',
+            name: 'Push Day',
+            ex: [{ id: BARBELL_BENCH, sets: 3, reps: 10, weight: 60 }],
+          },
+        ],
+        customEx: [],
+        week: { 1: 'r1' },
+        favorites: [BARBELL_BENCH, 'custom-1', '0047'],
+      }
+
+      const bundle = buildPlanBundle(S, 'Favorites-Excluded Plan')
+      expect(bundle.favorites).toBeUndefined()
+      expect(Object.keys(bundle).sort()).toEqual([
+        'customEx',
+        'exported',
+        'name',
+        'opengym_plan',
+        'routines',
+        'week',
+      ])
+    })
   })
 
   describe('parsePlan', () => {
@@ -153,6 +179,25 @@ describe('plan-share engine', () => {
       mergePlan(state, bundle, { schedule: true })
       const newRoutineId = state.routines.find(r => r.name === 'Full Body').id
       expect(state.week).toEqual({ 3: newRoutineId, 5: newRoutineId })
+    })
+
+    it('preserves existing favorites in receiver state untouched', () => {
+      const state = {
+        routines: [{ id: 'r0', name: 'My Leg Day', ex: [] }],
+        customEx: [],
+        week: { 1: 'r0' },
+        favorites: ['0025', '0047'],
+      }
+
+      const bundle = {
+        name: 'Friend Plan',
+        routines: [{ id: 'foreign-r1', name: 'Full Body', ex: [] }],
+        customEx: [],
+        week: { 3: 'foreign-r1' },
+      }
+
+      mergePlan(state, bundle, { schedule: false })
+      expect(state.favorites).toEqual(['0025', '0047'])
     })
   })
 
