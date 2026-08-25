@@ -320,12 +320,29 @@ function OneRM({ ex }) {
   </>
 }
 
-function ExerciseDetail({ ex, close }) {
+export function ExerciseDetail({ ex, close }) {
   const st = useStore(s => s.S)
   const last = lastEntryFor(st, ex.id)
   const best = bestWeightFor(st, ex.id)
+  const favs = st.favorites || []
+  const isFav = favs.includes(ex.id)
   return <>
-    <h3 className="capitalize">{ex.n}</h3>
+    <div className="row between" style={{ marginBottom: 14 }}>
+      <h3 className="capitalize" style={{ margin: 0 }}>{ex.n}</h3>
+      <button
+        className={'iconbtn' + (isFav ? ' on-ss' : '')}
+        style={{ width: 34, height: 34, fontSize: 18, color: isFav ? 'var(--acc)' : 'var(--label-3)' }}
+        aria-label={isFav ? t('Remove from favorites') : t('Add to favorites')}
+        onClick={() => {
+          update(s => {
+            const cur = s.favorites || []
+            s.favorites = cur.includes(ex.id) ? cur.filter(id => id !== ex.id) : [...cur, ex.id]
+          })
+        }}
+      >
+        <Icon name={isFav ? 'starFill' : 'star'} />
+      </button>
+    </div>
     <Media ex={ex} />
     <div className="row" style={{ gap: 6, flexWrap: 'wrap', margin: '10px 0' }}>
       <span className="tag acc">{t(ex.bp)}</span>
@@ -438,6 +455,7 @@ export function deleteCustomEx(ex, afterDelete) {
         s.customEx = (s.customEx || []).filter(x => x.id !== ex.id)
         s.routines.forEach(r => { r.ex = r.ex.filter(e => e.id !== ex.id); cleanupSg(r.ex) })
         delete s.exWeights[ex.id]
+        s.favorites = (s.favorites || []).filter(id => id !== ex.id)
       })
       toast(t('Exercise deleted'))
       afterDelete && afterDelete()
