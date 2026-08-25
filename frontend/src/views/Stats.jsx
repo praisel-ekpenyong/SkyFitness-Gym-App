@@ -128,7 +128,7 @@ function MuscleBalance({ S }) {
   // into "where did the stimulus go" — a muscle can lead on sets and still never be trained
   // hard. Offered only when the window holds ratings at all, since with none the hard map
   // would just be empty and read as "you trained nothing".
-  const rated = inWin.some(w => w.entries.some(e => e.sets.some(s => s.done && isHardSet(s))))
+  const rated = inWin.some(w => (w.entries || []).some(e => (e.sets || []).some(s => s.done && isHardSet(s))))
   const on = hard && rated
   const load = loadOfWorkouts(inWin, on ? isHardSet : null)
   const volWin = S.workouts.filter(w => (w.start || new Date(w.d).getTime()) > now - 90 * 86400000)
@@ -315,10 +315,10 @@ export default function Stats() {
   const workouts = S.workouts
   const monthW = workouts.filter(w => String(w.d || '').slice(0, 7) === todayISO().slice(0, 7)).length
 
-  const nameOf = id => EXIDX[id]?.n || workouts.flatMap(w => w.entries).find(e => e.id === id)?.n || id
+  const nameOf = id => EXIDX[id]?.n || workouts.flatMap(w => w.entries || []).find(e => e.id === id)?.n || id
   const currentOf = id => {
     for (let i = workouts.length - 1; i >= 0; i--) {
-      const en = workouts[i].entries.find(e => e.id === id)
+      const en = (workouts[i].entries || []).find(e => e.id === id)
       if (!en) continue
       const mode = metricModeForEntry(en) || modeOf({ id })
       const rows = metricRowsForEntry(en, mode)
@@ -327,7 +327,7 @@ export default function Stats() {
     }
     return { mx: 0, unit: S.unit }
   }
-  const exHist = [...new Set(workouts.flatMap(w => w.entries.map(e => e.id)))].filter(id => EXIDX[id] || nameOf(id) !== id)
+  const exHist = [...new Set(workouts.flatMap(w => (w.entries || []).map(e => e.id)))].filter(id => EXIDX[id] || nameOf(id) !== id)
   const exCurrent = Object.fromEntries(exHist.map(id => [id, currentOf(id)]))
   exHist.sort((a, b) => exCurrent[b].mx - exCurrent[a].mx || nameOf(a).localeCompare(nameOf(b)))
   const curEx = exId && exHist.includes(exId) ? exId : exHist[0] || null
@@ -335,7 +335,7 @@ export default function Stats() {
   // target also contains timed/cardio work. Entries without reps rows use their selected mode.
   const curMode = curEx ? (() => {
     for (let i = workouts.length - 1; i >= 0; i--) {
-      const en = workouts[i].entries.find(e => e.id === curEx)
+      const en = (workouts[i].entries || []).find(e => e.id === curEx)
       if (en) {
         const mode = metricModeForEntry(en)
         if (mode) return mode
@@ -350,7 +350,7 @@ export default function Stats() {
   let exPts = [], exList = [], exBest = 0
   if (curEx) {
     workouts.forEach(w => {
-      const en = w.entries.find(e => e.id === curEx)
+      const en = (w.entries || []).find(e => e.id === curEx)
       if (en) {
         const loggedMode = metricModeForEntry(en)
         if (loggedMode !== curMode) return
