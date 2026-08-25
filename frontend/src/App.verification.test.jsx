@@ -123,44 +123,37 @@ describe('Ticket 05 — End-to-End Integration & Stats Diagram Parity', () => {
     expect(chipLabels).toContain('Forearms')
     expect(chipLabels).toContain('Cardio')
 
+    // Helper to click filter chips
+    const clickChip = async (scope, label) => {
+      const chip = Array.from(scope.querySelectorAll('.chips button.chip')).find(c => c.textContent.trim() === label)
+      expect(chip, `Expected chip with label ${label}`).toBeTruthy()
+      await act(async () => {
+        chip.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      })
+    }
+
     // Filter by Biceps -> c-incline-curl appears as primary match (no secondary badge)
-    const bicepsChip = filterChips.find(c => c.textContent.trim() === 'Biceps')
-    expect(bicepsChip).toBeTruthy()
-    await act(async () => {
-      bicepsChip.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    await clickChip(document, 'Biceps')
     const bicepsListItems = Array.from(document.querySelectorAll('.list .item'))
     const inclineItemPrimary = bicepsListItems.find(it => it.textContent.includes('Incline Hammer Curl'))
     expect(inclineItemPrimary).toBeTruthy()
     expect(inclineItemPrimary.querySelector('.ss .tag')).toBeNull()
 
     // Filter by Forearms -> c-incline-curl appears with inline secondary badge
-    const forearmsChip = Array.from(document.querySelectorAll('.chips button.chip')).find(c => c.textContent.trim() === 'Forearms')
-    expect(forearmsChip).toBeTruthy()
-    await act(async () => {
-      forearmsChip.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    await clickChip(document, 'Forearms')
     const forearmsListItems = Array.from(document.querySelectorAll('.list .item'))
     const inclineItemSecondary = forearmsListItems.find(it => it.textContent.includes('Incline Hammer Curl'))
     expect(inclineItemSecondary).toBeTruthy()
     expect(inclineItemSecondary.querySelector('.ss .tag')?.textContent).toContain('Secondary: Forearms')
 
     // Filter by Cardio -> c-sprint-hiit appears
-    const cardioChip = Array.from(document.querySelectorAll('.chips button.chip')).find(c => c.textContent.trim() === 'Cardio')
-    expect(cardioChip).toBeTruthy()
-    await act(async () => {
-      cardioChip.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    await clickChip(document, 'Cardio')
     const cardioListItems = Array.from(document.querySelectorAll('.list .item'))
     const sprintItem = cardioListItems.find(it => it.textContent.includes('Sprint Intervals'))
     expect(sprintItem).toBeTruthy()
 
     // Filter by Quads -> neither appears
-    const quadsChip = Array.from(document.querySelectorAll('.chips button.chip')).find(c => c.textContent.trim() === 'Quads')
-    expect(quadsChip).toBeTruthy()
-    await act(async () => {
-      quadsChip.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    await clickChip(document, 'Quads')
     const quadsListItems = Array.from(document.querySelectorAll('.list .item'))
     expect(quadsListItems.some(it => it.textContent.includes('Incline Hammer Curl'))).toBe(false)
     expect(quadsListItems.some(it => it.textContent.includes('Sprint Intervals'))).toBe(false)
@@ -175,20 +168,12 @@ describe('Ticket 05 — End-to-End Integration & Stats Diagram Parity', () => {
     })
 
     // Filter picker by Biceps
-    const pickerBicepsChip = Array.from(pickerContainer.querySelectorAll('.chips button.chip')).find(c => c.textContent.trim() === 'Biceps')
-    expect(pickerBicepsChip).toBeTruthy()
-    await act(async () => {
-      pickerBicepsChip.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    await clickChip(pickerContainer, 'Biceps')
     const pickerBicepsItems = Array.from(pickerContainer.querySelectorAll('.list .item'))
     expect(pickerBicepsItems.some(it => it.textContent.includes('Incline Hammer Curl'))).toBe(true)
 
     // Filter picker by Forearms -> secondary badge rendered
-    const pickerForearmsChip = Array.from(pickerContainer.querySelectorAll('.chips button.chip')).find(c => c.textContent.trim() === 'Forearms')
-    expect(pickerForearmsChip).toBeTruthy()
-    await act(async () => {
-      pickerForearmsChip.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    await clickChip(pickerContainer, 'Forearms')
     const pickerForearmsItems = Array.from(pickerContainer.querySelectorAll('.list .item'))
     const pickerInclineSec = pickerForearmsItems.find(it => it.textContent.includes('Incline Hammer Curl'))
     expect(pickerInclineSec).toBeTruthy()
