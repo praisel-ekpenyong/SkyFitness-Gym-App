@@ -2,7 +2,7 @@
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { ExerciseDetail, deleteCustomEx, ExercisePicker } from './sheets.jsx'
+import { ExerciseDetail, deleteCustomEx, ExercisePicker, CustomExForm } from './sheets.jsx'
 import { useStore, DEF } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
 
@@ -371,4 +371,404 @@ describe('ExercisePicker favorites integration', () => {
     expect(items).toEqual(['3/4 sit-up', 'barbell bench press'])
   })
 })
+
+describe('ExerciseDetail primary and secondary muscle tags', () => {
+  it('displays Primary and Secondary tags for compound movements', async () => {
+    // 0025: Barbell bench press (tg: 'pectorals', sm: ['shoulders', 'triceps'], eq: 'barbell')
+    const benchEx = {
+      id: '0025',
+      n: 'barbell bench press',
+      bp: 'chest',
+      tg: 'pectorals',
+      sm: ['shoulders', 'triceps'],
+      eq: 'barbell',
+    }
+
+    await act(async () => {
+      root.render(<ExerciseDetail ex={benchEx} close={vi.fn()} />)
+    })
+
+    const tags = Array.from(container.querySelectorAll('.row .tag'))
+    const tagTexts = tags.map(t => t.textContent.trim())
+
+    // Primary tag should have class 'tag acc' with 'Primary: Chest'
+    const primaryTag = tags.find(t => t.classList.contains('acc'))
+    expect(primaryTag).toBeTruthy()
+    expect(primaryTag.textContent).toContain('Primary: Chest')
+
+    // Equipment tag
+    expect(tagTexts).toContain('barbell')
+
+    // Secondary tags
+    expect(tagTexts).toContain('Secondary: Shoulders')
+    expect(tagTexts).toContain('Secondary: Triceps')
+  })
+
+  it('displays Primary: Cardio for cardio exercises without secondary tags', async () => {
+    const cardioEx = {
+      id: '1160',
+      n: 'stationary bike walk',
+      bp: 'cardio',
+      tg: 'cardiovascular system',
+      eq: 'leverage machine',
+    }
+
+    await act(async () => {
+      root.render(<ExerciseDetail ex={cardioEx} close={vi.fn()} />)
+    })
+
+    const tags = Array.from(container.querySelectorAll('.row .tag'))
+    const tagTexts = tags.map(t => t.textContent.trim())
+
+    const primaryTag = tags.find(t => t.classList.contains('acc'))
+    expect(primaryTag).toBeTruthy()
+    expect(primaryTag.textContent).toContain('Primary: Cardio')
+    expect(tagTexts.some(t => t.startsWith('Secondary:'))).toBe(false)
+  })
+
+  it('displays Primary and Secondary tags for custom exercises', async () => {
+    const customEx = {
+      id: 'c-101',
+      n: 'Hammer Preacher Curl',
+      bp: 'upper arms',
+      tg: 'biceps',
+      sm: ['forearm'],
+      eq: 'custom',
+      custom: true,
+    }
+
+    await act(async () => {
+      root.render(<ExerciseDetail ex={customEx} close={vi.fn()} />)
+    })
+
+    const tags = Array.from(container.querySelectorAll('.row .tag'))
+    const tagTexts = tags.map(t => t.textContent.trim())
+
+    const primaryTag = tags.find(t => t.classList.contains('acc'))
+    expect(primaryTag).toBeTruthy()
+    expect(primaryTag.textContent).toContain('Primary: Biceps')
+    expect(tagTexts).toContain('Secondary: Forearms')
+  })
+})
+
+describe('CustomExForm canonical muscle selection and editing', () => {
+  it('renders all 18 canonical muscles plus Cardio in anatomical order for primary muscle selection', async () => {
+    await act(async () => {
+      root.render(<CustomExForm onDone={vi.fn()} close={vi.fn()} />)
+    })
+
+    const title = container.querySelector('h3')
+    expect(title.textContent).toBe('Create your own exercise')
+
+    const primaryChipContainer = container.querySelectorAll('.chips')[0]
+    const primaryChips = Array.from(primaryChipContainer.querySelectorAll('button.chip')).map(c => c.textContent.trim())
+    const expected = [
+      'Traps', 'Shoulders', 'Chest', 'Upper back', 'Serratus',
+      'Biceps', 'Triceps', 'Forearms', 'Abs', 'Obliques', 'Lower back',
+      'Glutes', 'Quads', 'Hamstrings', 'Adductors', 'Hip flexors',
+      'Calves', 'Shins', 'Cardio',
+    ]
+    expect(primaryChips).toEqual(expected)
+  })
+
+  it('allows selecting a primary muscle and multiple secondary muscles, deriving bp', async () => {
+    const onDone = vi.fn()
+    const close = vi.fn()
+
+    await act(async () => {
+      root.render(<CustomExForm onDone={onDone} close={close} />)
+    })
+
+    // Name
+    const nameInput = container.querySelector('input.input')
+    await act(async () => {
+      const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set
+      nativeSetter.call(nameInput, 'Incline Hammer Curl')
+      nameInput.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+
+    // Select Primary muscle: Biceps
+    const primaryChips = Array.from(container.querySelectorAll('.chips')[0].querySelectorAll('button.chip'))
+    const bicepsPrimary = primaryChips.find(c => c.textContent.trim() === 'Biceps')
+    expect(bicepsPrimary).toBeTruthy()
+
+    await act(async () => {
+      bicepsPrimary.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    expect(bicepsPrimary.classList.contains('on')).toBe(true)
+
+    // Secondary chips row should now exist and NOT contain Biceps
+    const chipRows = container.querySelectorAll('.chips')
+    expect(chipRows.length).toBe(2)
+    const secondaryChips = Array.from(chipRows[1].querySelectorAll('button.chip'))
+    expect(secondaryChips.map(c => c.textContent.trim())).not.toContain('Biceps')
+    expect(secondaryChips.length).toBe(17)
+
+    // Select Secondary muscles: Forearms and Upper back
+    const forearmsSec = secondaryChips.find(c => c.textContent.trim() === 'Forearms')
+    expect(forearmsSec).toBeTruthy()
+    await act(async () => {
+      forearmsSec.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    const secondaryChipsAfter = Array.from(container.querySelectorAll('.chips')[1].querySelectorAll('button.chip'))
+    const upperBackSec = secondaryChipsAfter.find(c => c.textContent.trim() === 'Upper back')
+    expect(upperBackSec).toBeTruthy()
+    await act(async () => {
+      upperBackSec.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    // Description
+    const descInput = container.querySelector('textarea.input')
+    await act(async () => {
+      const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set
+      nativeSetter.call(descInput, 'Strict form, palms facing each other')
+      descInput.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+
+    // Save
+    const saveBtn = Array.from(container.querySelectorAll('button')).find(b => b.textContent.includes('Create exercise'))
+    expect(saveBtn).toBeTruthy()
+
+    await act(async () => {
+      saveBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    // Assert custom exercise is created in store
+    const state = useStore.getState().S
+    expect(state.customEx.length).toBe(1)
+    const created = state.customEx[0]
+    expect(created.n).toBe('Incline Hammer Curl')
+    expect(created.tg).toBe('biceps')
+    expect(created.sm).toEqual(['forearm', 'upper-back'])
+    expect(created.bp).toBe('upper arms') // derived from biceps
+    expect(created.desc).toBe('Strict form, palms facing each other')
+    expect(created.eq).toBe('custom')
+    expect(created.custom).toBe(true)
+
+    expect(close).toHaveBeenCalledTimes(1)
+    expect(onDone).toHaveBeenCalledTimes(1)
+  })
+
+  it('switching primary muscle removes it from secondary muscles if previously selected', async () => {
+    await act(async () => {
+      root.render(<CustomExForm onDone={vi.fn()} close={vi.fn()} />)
+    })
+
+    const primaryChips = () => Array.from(container.querySelectorAll('.chips')[0].querySelectorAll('button.chip'))
+    const chestPrimary = primaryChips().find(c => c.textContent.trim() === 'Chest')
+    await act(async () => {
+      chestPrimary.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    // Select secondary: Shoulders and Triceps
+    let secondaryChips = Array.from(container.querySelectorAll('.chips')[1].querySelectorAll('button.chip'))
+    const shouldersSec = secondaryChips.find(c => c.textContent.trim() === 'Shoulders')
+    await act(async () => {
+      shouldersSec.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    const secondaryChipsAfter = Array.from(container.querySelectorAll('.chips')[1].querySelectorAll('button.chip'))
+    const tricepsSec = secondaryChipsAfter.find(c => c.textContent.trim() === 'Triceps')
+    await act(async () => {
+      tricepsSec.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    // Now change primary to Shoulders
+    const shouldersPrimary = primaryChips().find(c => c.textContent.trim() === 'Shoulders')
+    await act(async () => {
+      shouldersPrimary.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    // Secondary row should now have Triceps selected, but not Shoulders
+    secondaryChips = Array.from(container.querySelectorAll('.chips')[1].querySelectorAll('button.chip'))
+    const tricepsSecAfter = secondaryChips.find(c => c.textContent.trim() === 'Triceps')
+    expect(tricepsSecAfter?.classList.contains('on')).toBe(true)
+    expect(secondaryChips.some(c => c.textContent.trim() === 'Shoulders')).toBe(false)
+  })
+
+  it('selecting Cardio hides secondary muscle chips and clears existing secondaries', async () => {
+    const onDone = vi.fn()
+    const close = vi.fn()
+
+    await act(async () => {
+      root.render(<CustomExForm onDone={onDone} close={close} />)
+    })
+
+    const primaryChips = () => Array.from(container.querySelectorAll('.chips')[0].querySelectorAll('button.chip'))
+    const chestPrimary = primaryChips().find(c => c.textContent.trim() === 'Chest')
+    await act(async () => {
+      chestPrimary.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    // Select secondary Triceps
+    const tricepsSec = Array.from(container.querySelectorAll('.chips')[1].querySelectorAll('button.chip')).find(c => c.textContent.trim() === 'Triceps')
+    await act(async () => {
+      tricepsSec.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    // Now select Cardio as primary
+    const cardioPrimary = primaryChips().find(c => c.textContent.trim() === 'Cardio')
+    await act(async () => {
+      cardioPrimary.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    // Only 1 chips row should exist (primary), no secondary chips
+    expect(container.querySelectorAll('.chips').length).toBe(1)
+    // Cardio helper text is visible
+    expect(container.textContent).toContain('Cardio exercises log time + speed')
+
+    // Name and save
+    const nameInput = container.querySelector('input.input')
+    await act(async () => {
+      const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set
+      nativeSetter.call(nameInput, 'Rowing Machine Sprint')
+      nameInput.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+
+    const saveBtn = Array.from(container.querySelectorAll('button')).find(b => b.textContent.includes('Create exercise'))
+    await act(async () => {
+      saveBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    const state = useStore.getState().S
+    const created = state.customEx.find(c => c.n === 'Rowing Machine Sprint')
+    expect(created).toBeTruthy()
+    expect(created.tg).toBe('cardio')
+    expect(created.sm).toEqual([])
+    expect(created.bp).toBe('cardio')
+  })
+
+  it('pre-fills primary and secondary muscles when editing an existing custom exercise', async () => {
+    const existing = {
+      id: 'c-test-99',
+      n: 'My Custom Deadlift',
+      bp: 'back',
+      tg: 'lower-back',
+      sm: ['gluteal', 'hamstring'],
+      desc: 'Neutral grip handles',
+      eq: 'custom',
+      custom: true,
+    }
+
+    useStore.getState().update(s => {
+      s.customEx = [existing]
+    })
+
+    await act(async () => {
+      root.render(<CustomExForm existing={existing} onDone={vi.fn()} close={vi.fn()} />)
+    })
+
+    expect(container.querySelector('h3')?.textContent).toBe('Edit custom exercise')
+    expect(container.querySelector('input.input')?.value).toBe('My Custom Deadlift')
+    expect(container.querySelector('textarea.input')?.value).toBe('Neutral grip handles')
+
+    // Primary 'Lower back' should be active
+    const lowerBackPrimary = Array.from(container.querySelectorAll('.chips')[0].querySelectorAll('button.chip'))
+      .find(c => c.textContent.trim() === 'Lower back')
+    expect(lowerBackPrimary?.classList.contains('on')).toBe(true)
+
+    // Secondary 'Glutes' and 'Hamstrings' should be active
+    const secChips = Array.from(container.querySelectorAll('.chips')[1].querySelectorAll('button.chip'))
+    const glutesSec = secChips.find(c => c.textContent.trim() === 'Glutes')
+    const hamstringsSec = secChips.find(c => c.textContent.trim() === 'Hamstrings')
+    expect(glutesSec?.classList.contains('on')).toBe(true)
+    expect(hamstringsSec?.classList.contains('on')).toBe(true)
+
+    // Toggle off Hamstrings
+    await act(async () => {
+      hamstringsSec.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    // Toggle on Quads
+    const secChipsAfter = Array.from(container.querySelectorAll('.chips')[1].querySelectorAll('button.chip'))
+    const quadsSec = secChipsAfter.find(c => c.textContent.trim() === 'Quads')
+    await act(async () => {
+      quadsSec.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    const saveBtn = container.querySelector('button.btn.primary')
+    expect(saveBtn).toBeTruthy()
+    await act(async () => {
+      saveBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    const updated = useStore.getState().S.customEx.find(c => c.id === 'c-test-99')
+    expect(updated.tg).toBe('lower-back')
+    expect(updated.sm).toEqual(['gluteal', 'quadriceps'])
+    expect(updated.bp).toBe('back')
+  })
+
+  it('pre-fills primary muscle from bodypart fallback when editing legacy custom exercise without explicit tg/sm', async () => {
+    const legacyEx = {
+      id: 'c-legacy-1',
+      n: 'Old School Pushup',
+      bp: 'chest',
+      desc: '',
+      eq: 'custom',
+      custom: true,
+    }
+
+    useStore.getState().update(s => {
+      s.customEx = [legacyEx]
+    })
+
+    await act(async () => {
+      root.render(<CustomExForm existing={legacyEx} onDone={vi.fn()} close={vi.fn()} />)
+    })
+
+    // Chest primary chip should be selected via bodypart fallback
+    const chestPrimary = Array.from(container.querySelectorAll('.chips')[0].querySelectorAll('button.chip'))
+      .find(c => c.textContent.trim() === 'Chest')
+    expect(chestPrimary?.classList.contains('on')).toBe(true)
+
+    // Secondary chips should all be unselected
+    const secChips = Array.from(container.querySelectorAll('.chips')[1].querySelectorAll('button.chip'))
+    expect(secChips.some(c => c.classList.contains('on'))).toBe(false)
+  })
+
+  it('validates input and prevents saving when name or primary muscle is missing, or name is duplicate', async () => {
+    useStore.getState().update(s => {
+      s.customEx = [{ id: 'c-existing', n: 'Existing Move', bp: 'chest', tg: 'chest', sm: [], custom: true }]
+    })
+
+    await act(async () => {
+      root.render(<CustomExForm onDone={vi.fn()} close={vi.fn()} />)
+    })
+
+    const nameInput = container.querySelector('input.input')
+    const saveBtn = Array.from(container.querySelectorAll('button')).find(b => b.textContent.includes('Create exercise'))
+
+    // 1. Missing name
+    await act(async () => {
+      saveBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    expect(useUI.getState().toastMsg).toBe('Give it a name')
+    expect(useStore.getState().S.customEx.length).toBe(1)
+
+    // 2. Missing primary muscle
+    await act(async () => {
+      const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set
+      nativeSetter.call(nameInput, 'New Move')
+      nameInput.dispatchEvent(new Event('input', { bubbles: true }))
+      saveBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    expect(useUI.getState().toastMsg).toBe('Pick a primary muscle')
+    expect(useStore.getState().S.customEx.length).toBe(1)
+
+    // 3. Duplicate name
+    const bicepsPrimary = Array.from(container.querySelectorAll('.chips')[0].querySelectorAll('button.chip'))
+      .find(c => c.textContent.trim() === 'Biceps')
+    await act(async () => {
+      bicepsPrimary.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set
+      nativeSetter.call(nameInput, 'Existing Move')
+      nameInput.dispatchEvent(new Event('input', { bubbles: true }))
+      saveBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    expect(useUI.getState().toastMsg).toBe('“Existing Move” already exists')
+    expect(useStore.getState().S.customEx.length).toBe(1)
+  })
+})
+
 
