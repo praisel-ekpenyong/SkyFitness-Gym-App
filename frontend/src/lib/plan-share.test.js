@@ -24,7 +24,7 @@ describe('plan-share engine', () => {
           },
         ],
         customEx: [
-          { id: 'custom-1', n: 'Special Plank', bp: 'abs', desc: 'Hold tight' },
+          { id: 'custom-1', n: 'Special Plank', bp: 'waist', tg: 'abs', sm: ['obliques'], desc: 'Hold tight', eq: 'custom', custom: true },
           { id: 'custom-unreferenced', n: 'Ignored', bp: 'legs' },
         ],
         week: {
@@ -42,10 +42,12 @@ describe('plan-share engine', () => {
       expect(bundle.routines[0].ex[1].sec).toBe(45)
       expect(bundle.routines[0].ex[2].side).toBe(true)
 
-      // Only referenced custom exercises should be included
+      // Only referenced custom exercises should be included with muscle metadata preserved
       expect(bundle.customEx.length).toBe(1)
       expect(bundle.customEx[0].id).toBe('custom-1')
       expect(bundle.customEx[0].n).toBe('Special Plank')
+      expect(bundle.customEx[0].tg).toBe('abs')
+      expect(bundle.customEx[0].sm).toEqual(['obliques'])
 
       expect(bundle.week).toEqual({ 1: 'r1', 3: 'r1' })
     })
@@ -137,7 +139,7 @@ describe('plan-share engine', () => {
         ],
         customEx: [
           { id: 'foreign-c1', n: 'plate pinch', bp: 'forearms' }, // duplicate (case-insensitive + same bp)
-          { id: 'foreign-c2', n: 'Towel Pull Up', bp: 'back' },   // new custom
+          { id: 'foreign-c2', n: 'Towel Pull Up', bp: 'back', tg: 'upper-back', sm: ['forearm', 'biceps'] },   // new custom
         ],
         week: { 2: 'foreign-r1' },
       }
@@ -153,6 +155,8 @@ describe('plan-share engine', () => {
       expect(state.customEx.length).toBe(2)
       const addedCustom = state.customEx.find(c => c.n === 'Towel Pull Up')
       expect(addedCustom).toBeDefined()
+      expect(addedCustom.tg).toBe('upper-back')
+      expect(addedCustom.sm).toEqual(['forearm', 'biceps'])
 
       // Merged routine rewired to use existing-c1 and newly generated custom ID
       expect(state.routines[1].ex[0].id).toBe('existing-c1')

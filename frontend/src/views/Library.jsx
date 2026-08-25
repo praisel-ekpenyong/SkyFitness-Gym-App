@@ -56,7 +56,7 @@ export default function Library() {
     <div className="list">
       <div className="item" onClick={() => customExSheet(null, ex => exerciseDetailSheet(ex), q.trim())}>
         <div className="thumb thumb-x"><Icon name="sparkles" /></div>
-        <div className="grow"><div className="tt">{t('Create your own exercise')}</div><div className="ss">{t('name + body part, no animation')}</div></div><Icon name="plus" className="chev" />
+        <div className="grow"><div className="tt">{t('Create your own exercise')}</div><div className="ss">{t('name + target muscles, no animation')}</div></div><Icon name="plus" className="chev" />
       </div>
       {f.slice(0, shown).map(e => {
         const best = bestWeightFor(S, e.id)

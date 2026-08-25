@@ -56,7 +56,16 @@ export function buildPlanBundle(S, name) {
   const usedIds = new Set(routines.flatMap(r => r.ex.map(e => e.id)))
   const customEx = (S.customEx || [])
     .filter(c => usedIds.has(c.id))
-    .map(c => ({ id: c.id, n: c.n, bp: c.bp, ...(c.desc ? { desc: c.desc } : {}) }))
+    .map(c => ({
+      id: c.id,
+      n: c.n,
+      bp: c.bp,
+      ...(c.tg ? { tg: c.tg } : {}),
+      ...(Array.isArray(c.sm) ? { sm: c.sm } : {}),
+      ...(c.desc ? { desc: c.desc } : {}),
+      ...(c.eq ? { eq: c.eq } : {}),
+      ...(c.custom ? { custom: c.custom } : {}),
+    }))
   const week = {}
   WEEK_ORDER.forEach(d => { if (S.week?.[d]) week[d] = S.week[d] })
   return { opengym_plan: PLAN_FMT, exported: todayISO(), name: name || '', week, routines, customEx }
@@ -114,7 +123,16 @@ export function mergePlan(s, bundle, { schedule } = {}) {
     if (same) { exIdMap[c.id] = same.id; return }
     const nid = uid()
     exIdMap[c.id] = nid
-    s.customEx.push({ id: nid, n: c.n, bp: c.bp, ...(c.desc ? { desc: c.desc } : {}) })
+    s.customEx.push({
+      id: nid,
+      n: c.n,
+      bp: c.bp,
+      ...(c.tg ? { tg: c.tg } : {}),
+      ...(Array.isArray(c.sm) ? { sm: c.sm } : {}),
+      ...(c.desc ? { desc: c.desc } : {}),
+      eq: c.eq || 'custom',
+      custom: true,
+    })
   })
   const ridMap = {}
   bundle.routines.forEach(r => {

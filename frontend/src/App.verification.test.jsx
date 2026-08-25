@@ -79,7 +79,7 @@ describe('Ticket 08 & 04 — Full verification smoke pass', () => {
       custom: true,
     }
 
-    // 2b. Create routine with built-in and custom exercises & bookmark favorites
+    // 2b. Create routine with built-in and custom exercises & star favorite exercises
     const routine = {
       id: 'routine-push-pull-1',
       name: 'Push Pull Day',
@@ -181,7 +181,7 @@ describe('Ticket 08 & 04 — Full verification smoke pass', () => {
     expect(useStore.getState().S.favorites).toEqual([])
     expect(useStore.getState().S.customEx).toEqual([])
 
-    // 7. Import JSON restores data including favorites and custom exercise tg/sm fields
+    // 7. Restore JSON backup to recreate data including favorites and custom exercise tg/sm fields
     act(() => {
       useStore.getState().replaceState(Object.assign(JSON.parse(JSON.stringify(DEF)), exportedState))
     })
