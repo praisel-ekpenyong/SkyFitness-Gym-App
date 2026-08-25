@@ -71,7 +71,7 @@ A supporting or assisting muscle recruited during a movement, receiving partial 
 _Avoid_: auxiliary muscle, helper muscle
 
 **Muscle filter**:
-The 18 canonical anatomical muscle groups (matching the body map) plus cardio, used to filter exercises in the library and exercise pickers.
+The 19 canonical anatomical muscle groups (matching the body map) plus cardio, used to filter exercises in the library and exercise pickers.
 
 **Body part**:
 The coarse grouping of catalogue exercises (chest, back, waist…); also the fallback muscle mapping for customs that name no muscles.
@@ -196,4 +196,4 @@ How much of a muscle's trainedness remains: full for 14 days after the last work
 _Avoid_: detraining as a negative verdict — below-full-retention muscles are simply the ones worth training
 
 **Muscle map**:
-The eighteen drawable muscles in head-to-toe order (also the order of any derived list). Dataset spellings collapse onto them via aliases; anything undrawable is dropped, not guessed. Inert regions (head, hands, joints) are drawn but never shaded.
+The nineteen drawable muscles in head-to-toe order (also the order of any derived list). Dataset spellings collapse onto them via aliases; anything undrawable is dropped, not guessed. Inert regions (head, hands, joints) are drawn but never shaded.

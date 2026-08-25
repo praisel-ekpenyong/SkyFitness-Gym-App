@@ -373,7 +373,7 @@ describe('ExercisePicker favorites integration', () => {
 })
 
 describe('ExercisePicker canonical muscle filtering and search', () => {
-  it('renders all 18 canonical muscle filter chips plus Cardio in anatomical head-to-toe order', async () => {
+  it('renders all 19 canonical muscle filter chips plus Cardio in anatomical head-to-toe order', async () => {
     useStore.getState().update(s => {
       s.favorites = ['0001']
       s.routines = [{ id: 'r1', name: 'R1', emoji: '💪', ex: [{ id: '0025', sets: 3, reps: 10 }] }]
@@ -387,7 +387,7 @@ describe('ExercisePicker canonical muscle filtering and search', () => {
     const chips = Array.from(firstChipsRow.querySelectorAll('button.chip')).map(c => c.textContent.trim())
     const expected = [
       'Favorites (1)', 'Chosen (1)', 'All',
-      'Traps', 'Shoulders', 'Chest', 'Upper back', 'Serratus',
+      'Traps', 'Shoulders', 'Chest', 'Upper back', 'Lats', 'Serratus',
       'Biceps', 'Triceps', 'Forearms', 'Abs', 'Obliques', 'Lower back',
       'Glutes', 'Quads', 'Hamstrings', 'Adductors', 'Hip flexors',
       'Calves', 'Shins', 'Cardio',
@@ -666,7 +666,7 @@ describe('ExerciseDetail primary and secondary muscle tags', () => {
 })
 
 describe('CustomExForm canonical muscle selection and editing', () => {
-  it('renders all 18 canonical muscles plus Cardio in anatomical order for primary muscle selection and gates secondaries until primary is chosen', async () => {
+  it('renders all 19 canonical muscles plus Cardio in anatomical order for primary muscle selection and gates secondaries until primary is chosen', async () => {
     await act(async () => {
       root.render(<CustomExForm onDone={vi.fn()} close={vi.fn()} />)
     })
@@ -680,7 +680,7 @@ describe('CustomExForm canonical muscle selection and editing', () => {
     const primaryChipContainer = container.querySelectorAll('.chips')[0]
     const primaryChips = Array.from(primaryChipContainer.querySelectorAll('button.chip')).map(c => c.textContent.trim())
     const expected = [
-      'Traps', 'Shoulders', 'Chest', 'Upper back', 'Serratus',
+      'Traps', 'Shoulders', 'Chest', 'Upper back', 'Lats', 'Serratus',
       'Biceps', 'Triceps', 'Forearms', 'Abs', 'Obliques', 'Lower back',
       'Glutes', 'Quads', 'Hamstrings', 'Adductors', 'Hip flexors',
       'Calves', 'Shins', 'Cardio',
@@ -719,7 +719,7 @@ describe('CustomExForm canonical muscle selection and editing', () => {
     expect(chipRows.length).toBe(2)
     const secondaryChips = Array.from(chipRows[1].querySelectorAll('button.chip'))
     expect(secondaryChips.map(c => c.textContent.trim())).not.toContain('Biceps')
-    expect(secondaryChips.length).toBe(17)
+    expect(secondaryChips.length).toBe(18)
 
     // Select Secondary muscles: Forearms and Upper back
     const forearmsSec = secondaryChips.find(c => c.textContent.trim() === 'Forearms')

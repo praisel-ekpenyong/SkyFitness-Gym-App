@@ -3,7 +3,7 @@
 // The exercise dataset names muscles in free text and is not consistent about it:
 // "shoulders", "deltoids" and "delts" are the same thing, so are "quads" and
 // "quadriceps", "lats" and "latissimus dorsi", "core" and "abdominals". Nineteen
-// primary and forty secondary spellings collapse onto the eighteen muscles the body
+// primary and forty secondary spellings collapse onto the nineteen muscles the body
 // map can actually draw, via ALIAS below. Anything genuinely undrawable (hands,
 // ankles, "cardiovascular system") maps to null and is dropped rather than guessed at.
 
@@ -13,7 +13,7 @@ import { EXIDX, smOf, isCardio } from './exercises.js'
 // The muscles a map can shade, in head-to-toe order — also the order of any list
 // built from them, so "what am I neglecting" reads top-down like a body.
 export const MUSCLES = [
-  'trapezius', 'deltoids', 'chest', 'upper-back', 'serratus',
+  'trapezius', 'deltoids', 'chest', 'upper-back', 'lats', 'serratus',
   'biceps', 'triceps', 'forearm',
   'abs', 'obliques', 'lower-back',
   'gluteal', 'quadriceps', 'hamstring', 'adductors', 'hip-flexors',
@@ -26,14 +26,14 @@ export const INERT = ['head', 'hair', 'neck', 'hands', 'feet', 'knees', 'ankles'
 // English display names; these strings are the i18n keys (see lib/i18n.js).
 export const MUSCLE_NAME = {
   trapezius: 'Traps', deltoids: 'Shoulders', chest: 'Chest', 'upper-back': 'Upper back',
-  serratus: 'Serratus', biceps: 'Biceps', triceps: 'Triceps', forearm: 'Forearms',
+  lats: 'Lats', serratus: 'Serratus', biceps: 'Biceps', triceps: 'Triceps', forearm: 'Forearms',
   abs: 'Abs', obliques: 'Obliques', 'lower-back': 'Lower back', gluteal: 'Glutes',
   quadriceps: 'Quads', hamstring: 'Hamstrings', adductors: 'Adductors',
   'hip-flexors': 'Hip flexors', calves: 'Calves', tibialis: 'Shins',
   cardio: 'Cardio',
 }
 
-// Filter taxonomy: the 18 canonical anatomical muscle groups in head-to-toe order plus cardio.
+// Filter taxonomy: the 19 canonical anatomical muscle groups in head-to-toe order plus cardio.
 export const FILTER_MUSCLES = [...MUSCLES, 'cardio']
 
 // Mapping from canonical muscle slug (or cardio) to legacy body part string.
@@ -42,6 +42,7 @@ const MUSCLE_TO_BODYPART = {
   deltoids: 'shoulders',
   chest: 'chest',
   'upper-back': 'back',
+  lats: 'back',
   serratus: 'chest',
   biceps: 'upper arms',
   triceps: 'upper arms',
@@ -63,7 +64,7 @@ const MUSCLE_TO_BODYPART = {
 const ALIAS = {
   // primaries
   abs: 'abs', pectorals: 'chest', biceps: 'biceps', glutes: 'gluteal', delts: 'deltoids',
-  triceps: 'triceps', 'upper back': 'upper-back', lats: 'upper-back', calves: 'calves',
+  triceps: 'triceps', 'upper back': 'upper-back', lats: 'lats', calves: 'calves',
   quads: 'quadriceps', forearms: 'forearm', hamstrings: 'hamstring', spine: 'lower-back',
   traps: 'trapezius', adductors: 'adductors', 'serratus anterior': 'serratus',
   abductors: 'gluteal', 'levator scapulae': 'trapezius', 'cardiovascular system': null,
@@ -72,19 +73,19 @@ const ALIAS = {
   'rotator cuff': 'deltoids', quadriceps: 'quadriceps', core: 'abs', abdominals: 'abs',
   'lower abs': 'abs', chest: 'chest', 'upper chest': 'chest', 'hip flexors': 'hip-flexors',
   obliques: 'obliques', 'lower back': 'lower-back', rhomboids: 'upper-back',
-  trapezius: 'trapezius', back: 'upper-back', 'latissimus dorsi': 'upper-back',
+  trapezius: 'trapezius', back: 'upper-back', 'latissimus dorsi': 'lats',
   brachialis: 'biceps', soleus: 'calves', shins: 'tibialis', wrists: 'forearm',
   'wrist flexors': 'forearm', 'wrist extensors': 'forearm', 'grip muscles': 'forearm',
   groin: 'adductors', 'inner thighs': 'adductors',
   ankles: null, feet: null, hands: null, 'ankle stabilizers': null,
   sternocleidomastoid: null,
 }
-
 // Custom exercises carry only a body part, so they fall back to it. Weights inside a
 // group sum to 1 — "upper legs" spreads over three muscles rather than counting triple.
+// Back splits across three muscles with editorial weights lats 0.50 / upper-back 0.35 / lower-back 0.15.
 const BY_BODYPART = {
   chest: { chest: 1 },
-  back: { 'upper-back': 0.75, 'lower-back': 0.25 },
+  back: { lats: 0.50, 'upper-back': 0.35, 'lower-back': 0.15 },
   shoulders: { deltoids: 1 },
   'upper arms': { biceps: 0.5, triceps: 0.5 },
   'lower arms': { forearm: 1 },
@@ -94,7 +95,6 @@ const BY_BODYPART = {
   neck: { trapezius: 1 },
   cardio: {},
 }
-
 const SECONDARY = 0.4   // a supporting muscle counts this much against a primary
 
 const arrayOf = value => Array.isArray(value) ? value : value == null || value === '' ? [] : [value]
