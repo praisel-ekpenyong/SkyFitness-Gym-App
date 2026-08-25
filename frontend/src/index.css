@@ -551,13 +551,13 @@ h4.sec{
 .ck.on svg{stroke:var(--on-acc)}
 
 /* ------------------------------------------------------------- workout --- */
-.wprog{height:4px;background:var(--surface-2);border-radius:99px;overflow:hidden;margin-bottom:16px}
+.wprog{height:4px;background:var(--surface-2);border-radius:99px;overflow:hidden;margin-bottom:14px}
 .wprog i{display:block;height:100%;background:var(--acc);border-radius:99px;transition:width var(--med) var(--ease)}
 .exmedia{position:relative;border-radius:var(--r-lg);overflow:hidden;background:#fff;margin-bottom:12px}
-.exmedia img{width:100%;height:320px;object-fit:contain;display:block}
+.exmedia img{width:100%;height:220px;object-fit:contain;display:block}
 .exmedia .gifhint,.exmedia .giftoggle{
   position:absolute;bottom:9px;display:inline-flex;align-items:center;gap:4px;
-  background:rgba(0,0,0,.45);color:#fff;border-radius:99px;padding:5px 11px;
+  background:rgba(0,0,0,.55);color:#fff;border-radius:99px;padding:5px 11px;
   font-size:12px;font-weight:500;
   backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
 }
@@ -566,34 +566,67 @@ h4.sec{
 .exmedia .gifhint .icn,.exmedia .giftoggle .icn{font-size:13px}
 /* superset: both exercises are on screen together, so the animations have to give way —
    at 180px you had to scroll a full screen between two exercises done back-to-back */
-.exmedia.compact img{height:120px}
-.exmedia.mini img{height:84px}
+.exmedia.compact img{height:110px}
+.exmedia.mini img{height:76px}
 
 .sethead{
   display:flex;align-items:center;gap:8px;padding:0 0 6px;
-  font-size:11px;color:var(--label-3);font-weight:500;text-transform:uppercase;letter-spacing:.045em;
+  font-size:11px;color:var(--label-3);font-weight:600;text-transform:uppercase;letter-spacing:.045em;
 }
-.sethead .n-sp{width:24px;flex:none}
+.sethead .n-sp{width:26px;flex:none}
 .sethead .w-sp{flex:1.4;text-align:center}
 .sethead .r-sp{flex:1;text-align:center}
 .sethead .eff-sp{text-align:center}
 .sethead .ck-sp{width:30px;flex:none}
-.setrow{display:flex;align-items:center;gap:8px;padding:7px 0;position:relative}
-.setrow+.setrow::before{
-  content:'';position:absolute;left:32px;right:0;top:0;height:var(--hair);background:var(--sep);
+.setrow{
+  display:flex;align-items:center;gap:8px;padding:6px 0;position:relative;
+  transition:background var(--fast),box-shadow var(--fast);
 }
-.setph{margin:8px 0 2px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);display:flex;align-items:center;gap:10px}
+.setrow+.setrow::before{
+  content:'';position:absolute;left:34px;right:0;top:0;height:var(--hair);background:var(--sep);
+}
+.setrow.current{
+  background:color-mix(in srgb,var(--acc) 10%,transparent);
+  border-radius:var(--r-sm);padding:6px 6px;margin:2px -6px;
+  box-shadow:inset 3px 0 0 var(--acc);
+}
+.setrow.current+.setrow::before,.setrow+.setrow.current::before{display:none}
+.setph{margin:8px 0 3px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);display:flex;align-items:center;gap:10px;font-weight:600}
 .setph::after{content:'';flex:1;height:1px;background:var(--sep)}
-.setsep{height:1px;background:var(--sep);margin:9px 0}
+.setsep{height:1px;background:var(--sep);margin:8px 0}
 .setrow .n{
-  width:24px;height:24px;border-radius:50%;background:var(--surface-2);color:var(--label-2);
-  display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;flex:none;
+  width:26px;height:26px;border-radius:50%;background:var(--surface-2);color:var(--label-2);
+  display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex:none;
   transition:background var(--fast),color var(--fast);
 }
+.setrow .n.warmup{
+  background:color-mix(in srgb,var(--orange) 16%,transparent);color:var(--orange);font-size:11px;
+}
+.setrow.current .n{background:var(--acc);color:var(--on-acc);font-weight:700}
+.setrow.done .n{background:var(--acc);color:var(--on-acc)}
+.setrow.done .n.warmup{background:var(--acc);color:var(--on-acc)}
+.setrow.done{opacity:.45}
 .setrow .stp.w{flex:1.4;min-width:0}
 .setrow .stp.r{flex:1;min-width:0}
 .setrow .stp.eff{flex:1.1;min-width:0}
 .setrow .stp button{width:32px;height:40px}
+.setrow .stp .num{font-weight:600}
+.setrow.current .stp{background:var(--surface-2);box-shadow:0 0 0 var(--hair) var(--sep)}
+
+.set-actions-bar{
+  display:flex;align-items:center;gap:8px;margin-top:10px;padding-top:10px;
+  border-top:var(--hair) solid var(--sep);flex-wrap:wrap;
+}
+.set-act-btn{
+  display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:8px;
+  background:var(--surface-2);color:var(--label);font-size:13px;font-weight:500;
+  letter-spacing:-.006em;transition:background var(--fast),transform var(--fast);
+}
+.set-act-btn:active{background:var(--surface-3);transform:scale(.96)}
+.set-act-btn .icn{font-size:14px}
+.set-act-btn.danger{color:var(--red);background:color-mix(in srgb,var(--red) 12%,transparent)}
+.set-act-btn.accent{color:var(--acc);background:var(--acc-soft)}
+
 /* a 3rd stepper (RIR) needs narrower buttons and a tighter row gap to fit next to weight+reps
    on narrow phones, same technique as the exercise-config sheet's three-steppers-in-a-row
    (.cfgrow below) — RIR's own value is short ("1.5") so its buttons shrink the most, weight/reps
@@ -606,11 +639,10 @@ h4.sec{
 .setrow.eff3 .stp button{width:23px}
 .setrow.eff3 .stp.eff button{width:20px}
 .setrow.eff3 .stp .num{font-size:14px}
-.setrow.done .n{background:var(--acc);color:var(--on-acc)}
-.setrow.done{opacity:.45}
+
 /* why the next target is what it is (issue #17) */
 .progline{
-  display:flex;align-items:flex-start;gap:7px;margin:6px 0 2px;
+  display:flex;align-items:flex-start;gap:7px;margin:6px 0 4px;
   font-size:13px;line-height:1.38;color:var(--acc);
 }
 .progline.warn{color:var(--yellow)}
