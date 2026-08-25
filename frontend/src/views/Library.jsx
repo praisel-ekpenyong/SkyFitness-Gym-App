@@ -11,12 +11,15 @@ import { Button } from '../components/ui.jsx'
 
 export default function Library() {
   const S = useStore(s => s.S)
+  const update = useStore(s => s.update)
   const [q, setQ] = useState('')
   const [bp, setBp] = useState('')
   const [eq, setEq] = useState('')
   const [shown, setShown] = useState(40)
   const ql = q.toLowerCase().trim()
-  const base = allExercises(S).filter(e => (!bp || e.bp === bp) && (!ql || e.n.toLowerCase().includes(ql) || e.tg.includes(ql) || e.eq.includes(ql) || (e.desc || '').toLowerCase().includes(ql)))
+  const favs = S.favorites || []
+  const isFavFilter = bp === 'favorites'
+  const base = allExercises(S).filter(e => (!bp ? true : isFavFilter ? favs.includes(e.id) : e.bp === bp) && (!ql || e.n.toLowerCase().includes(ql) || e.tg.includes(ql) || e.eq.includes(ql) || (e.desc || '').toLowerCase().includes(ql)))
   const eqOpts = equipmentOf(base)
   // Drop the equipment filter if the search narrowed it away, so you never hit a dead end.
   const eqOn = eqOpts.includes(eq) ? eq : ''
@@ -27,6 +30,7 @@ export default function Library() {
     <div className="search" style={{ marginBottom: 10 }}><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></svg>
       <input className="input" placeholder={t('Search…')} value={q} onChange={e => { setQ(e.target.value); setShown(40) }} /></div>
     <div className="chips" style={{ marginBottom: eqOpts.length > 1 ? 8 : 12 }}>
+      {favs.length > 0 && <button className={'chip' + (bp === 'favorites' ? ' on' : '')} onClick={() => { setBp('favorites'); setEq(''); setShown(40) }}><Icon name="starFill" style={{ fontSize: 12, display: 'inline-block', marginRight: 4, verticalAlign: '-1px' }} />{t('Favorites')} ({favs.length})</button>}
       <button className={'chip nocap' + (!bp ? ' on' : '')} onClick={() => { setBp(''); setEq(''); setShown(40) }}>{t('All')}</button>
       {BODYPARTS.map(b => <button key={b} className={'chip' + (bp === b ? ' on' : '')} onClick={() => { setBp(b); setEq(''); setShown(40) }}>{t(b)}</button>)}
     </div>
@@ -41,10 +45,25 @@ export default function Library() {
       </div>
       {f.slice(0, shown).map(e => {
         const best = bestWeightFor(S, e.id)
+        const isFav = favs.includes(e.id)
         return <div key={e.id} className="item" onClick={() => exerciseDetailSheet(e)}>
           <Thumb ex={e} />
           <div className="grow"><div className="tt capitalize">{e.n}</div><div className="ss capitalize">{t(e.tg || e.bp)} · {t(e.eq)}</div></div>
           {best > 0 && <span className="tag acc">{fmtNum(best)}</span>}
+          <button
+            className={'iconbtn' + (isFav ? ' on-ss' : '')}
+            style={{ width: 34, height: 34, fontSize: 16, color: isFav ? 'var(--acc)' : 'var(--label-3)' }}
+            aria-label={isFav ? t('Remove from favorites') : t('Add to favorites')}
+            onClick={ev => {
+              ev.stopPropagation()
+              update(s => {
+                const cur = s.favorites || []
+                s.favorites = cur.includes(e.id) ? cur.filter(id => id !== e.id) : [...cur, e.id]
+              })
+            }}
+          >
+            <Icon name={isFav ? 'starFill' : 'star'} />
+          </button>
           <Button size="sm" variant="tinted" icon="plus" onClick={ev => { ev.stopPropagation(); addToRoutineSheet(e) }}>{t('Plan')}</Button>
         </div>
       })}
