@@ -271,16 +271,16 @@ describe('Library view smoke tests', () => {
     expect(container.querySelectorAll('.list .item').length).toBe(41)
   })
 
-  it('renders all 18 canonical muscle filter chips plus Cardio in anatomical head-to-toe order', async () => {
+  it('renders all 19 canonical muscle filter chips plus Cardio in anatomical head-to-toe order', async () => {
     await act(async () => {
       root.render(<Library />)
     })
 
     const firstChipsRow = container.querySelectorAll('.chips')[0]
     const chips = Array.from(firstChipsRow.querySelectorAll('button.chip')).map(c => c.textContent.trim())
-    // Expected order: All, Traps, Shoulders, Chest, Upper back, Serratus, Biceps, Triceps, Forearms, Abs, Obliques, Lower back, Glutes, Quads, Hamstrings, Adductors, Hip flexors, Calves, Shins, Cardio
+    // Expected order: All, Traps, Shoulders, Chest, Upper back, Lats, Serratus, Biceps, Triceps, Forearms, Abs, Obliques, Lower back, Glutes, Quads, Hamstrings, Adductors, Hip flexors, Calves, Shins, Cardio
     const expected = [
-      'All', 'Traps', 'Shoulders', 'Chest', 'Upper back', 'Serratus',
+      'All', 'Traps', 'Shoulders', 'Chest', 'Upper back', 'Lats', 'Serratus',
       'Biceps', 'Triceps', 'Forearms', 'Abs', 'Obliques', 'Lower back',
       'Glutes', 'Quads', 'Hamstrings', 'Adductors', 'Hip flexors',
       'Calves', 'Shins', 'Cardio',

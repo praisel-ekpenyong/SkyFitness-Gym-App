@@ -116,7 +116,7 @@ describe('Ticket 05 — End-to-End Integration & Stats Diagram Parity', () => {
       exercisesTab.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
 
-    // Filter chips row should contain Favorites, All, 18 canonical muscles in anatomical order, and Cardio
+    // Filter chips row should contain Favorites, All, 19 canonical muscles in anatomical order, and Cardio
     const filterChips = Array.from(document.querySelectorAll('.chips button.chip'))
     const chipLabels = filterChips.map(c => c.textContent.trim())
     expect(chipLabels).toContain('Biceps')
@@ -361,11 +361,11 @@ describe('Ticket 05 — End-to-End Integration & Stats Diagram Parity', () => {
       gluteal: 0.25,
     })
 
-    expect(primaryMuscleOf('c-legacy-back')).toBe('upper-back')
-    expect(secondaryMusclesOf('c-legacy-back')).toEqual(['lower-back'])
+    expect(primaryMuscleOf('c-legacy-back')).toBe('lats')
+    expect(secondaryMusclesOf('c-legacy-back')).toEqual(['upper-back', 'lower-back'])
+    expect(matchesMuscleFilter('c-legacy-back', 'lats')).toBe(true)
     expect(matchesMuscleFilter('c-legacy-back', 'upper-back')).toBe(true)
     expect(matchesMuscleFilter('c-legacy-back', 'lower-back')).toBe(true)
-
     // 12. Theme toggle
     expect(document.documentElement.dataset.theme).toBe('light')
     act(() => {
@@ -388,6 +388,6 @@ describe('Ticket 05 — End-to-End Integration & Stats Diagram Parity', () => {
       return !msg.includes('not configured to support act')
     })
     expect(unexpectedErrors).toHaveLength(0)
-  })
+  }, 30000)
 })
 

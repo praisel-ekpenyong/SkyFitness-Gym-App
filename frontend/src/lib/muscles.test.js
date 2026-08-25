@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { EXIDX, EXDB, smOf } from './exercises.js'
-import { loadOfWorkouts, musclesOf } from './muscles.js'
+import { loadOfWorkouts, musclesOf, loadOf } from './muscles.js'
 
 // The catalogue keeps the source dataset's secondary-muscle spellings; musclesOf maps
 // those aliases to the canonical body-map slugs and applies the 0.4 support weight.
@@ -62,11 +62,22 @@ describe('map load with warm-up phases', () => {
 })
 
 describe('canonical muscle filter taxonomy & extraction helpers', () => {
-  it('defines FILTER_MUSCLES with 18 anatomical muscles in head-to-toe order plus cardio', async () => {
+  it('defines FILTER_MUSCLES with 19 anatomical muscles in head-to-toe order plus cardio', async () => {
     const { MUSCLES, FILTER_MUSCLES, MUSCLE_NAME } = await import('./muscles.js')
-    expect(FILTER_MUSCLES).toHaveLength(19)
-    expect(FILTER_MUSCLES.slice(0, 18)).toEqual(MUSCLES)
-    expect(FILTER_MUSCLES[18]).toBe('cardio')
+    expect(MUSCLES).toEqual([
+      'trapezius', 'deltoids', 'chest', 'upper-back', 'lats', 'serratus',
+      'biceps', 'triceps', 'forearm',
+      'abs', 'obliques', 'lower-back',
+      'gluteal', 'quadriceps', 'hamstring', 'adductors', 'hip-flexors',
+      'calves', 'tibialis',
+    ])
+    expect(MUSCLES).toHaveLength(19)
+    expect(MUSCLES.indexOf('lats')).toBe(MUSCLES.indexOf('upper-back') + 1)
+    expect(MUSCLES.indexOf('serratus')).toBe(MUSCLES.indexOf('lats') + 1)
+    expect(MUSCLE_NAME['lats']).toBe('Lats')
+    expect(FILTER_MUSCLES).toHaveLength(20)
+    expect(FILTER_MUSCLES.slice(0, 19)).toEqual(MUSCLES)
+    expect(FILTER_MUSCLES[19]).toBe('cardio')
     FILTER_MUSCLES.forEach(slug => {
       expect(MUSCLE_NAME[slug]).toBeTruthy()
     })
@@ -84,8 +95,8 @@ describe('canonical muscle filter taxonomy & extraction helpers', () => {
     expect(primaryMuscleOf({ id: 'c1', n: 'Incline Curl', tg: 'biceps', bp: 'upper arms' })).toBe('biceps')
     // Custom exercise with alias tg
     expect(primaryMuscleOf({ id: 'c2', n: 'Leg Extension', tg: 'quads', bp: 'upper legs' })).toBe('quadriceps')
-    // Legacy custom exercise without tg falls back to first muscle in bodypart map
-    expect(primaryMuscleOf({ id: 'c3', n: 'Pullup', bp: 'back' })).toBe('upper-back')
+    // Legacy custom exercise without tg falls back to first muscle in bodypart map (now lats for back)
+    expect(primaryMuscleOf({ id: 'c3', n: 'Pullup', bp: 'back' })).toBe('lats')
     expect(primaryMuscleOf({ id: 'c4', n: 'Bench', bp: 'chest' })).toBe('chest')
     // Cardio exercise
     expect(primaryMuscleOf({ id: 'c5', n: 'Treadmill', bp: 'cardio' })).toBe('cardio')
@@ -119,10 +130,11 @@ describe('canonical muscle filter taxonomy & extraction helpers', () => {
     // Cardio exercise has no secondary muscles
     expect(secondaryMusclesOf({ id: 'c5', bp: 'cardio' })).toEqual([])
 
-    // Legacy custom exercise without explicit tg/sm falls back to secondary bodypart muscles
+    // Legacy custom exercise without explicit tg/sm falls back to secondary bodypart muscles (3-way for back)
     const legacyBackSm = secondaryMusclesOf({ id: 'c3', bp: 'back' })
+    expect(legacyBackSm).toContain('upper-back')
     expect(legacyBackSm).toContain('lower-back')
-    expect(legacyBackSm).not.toContain('upper-back')
+    expect(legacyBackSm).not.toContain('lats')
   })
 
   it('matches muscle filter for primary, secondary, and cardio movements', async () => {
@@ -160,6 +172,8 @@ describe('canonical muscle filter taxonomy & extraction helpers', () => {
     expect(bodypartForMuscle('deltoids')).toBe('shoulders')
     expect(bodypartForMuscle('chest')).toBe('chest')
     expect(bodypartForMuscle('upper-back')).toBe('back')
+    expect(bodypartForMuscle('lats')).toBe('back')
+    expect(bodypartForMuscle('LATS')).toBe('back')
     expect(bodypartForMuscle('serratus')).toBe('chest')
     expect(bodypartForMuscle('biceps')).toBe('upper arms')
     expect(bodypartForMuscle('triceps')).toBe('upper arms')
@@ -232,6 +246,85 @@ describe('canonical muscle filter taxonomy & extraction helpers', () => {
   })
 })
 
+describe('lats taxonomy expansion', () => {
+  it('resolves lats aliases to lats and keeps rhomboids on upper-back', async () => {
+    const { canonicalMuscle, resolveMuscleSlug } = await import('./muscles.js')
+    expect(canonicalMuscle('lats')).toBe('lats')
+    expect(canonicalMuscle('LATS')).toBe('lats')
+    expect(canonicalMuscle('Latissimus Dorsi')).toBe('lats')
+    expect(canonicalMuscle('latissimus dorsi')).toBe('lats')
+    expect(resolveMuscleSlug('LATS')).toBe('lats')
+    expect(resolveMuscleSlug('LATISSIMUS DORSI')).toBe('lats')
+    expect(canonicalMuscle('rhomboids')).toBe('upper-back')
+    expect(canonicalMuscle('RHOMBOIDS')).toBe('upper-back')
+    expect(canonicalMuscle('upper back')).toBe('upper-back')
+    expect(canonicalMuscle('back')).toBe('upper-back')
+    expect(resolveMuscleSlug('back')).toBe('upper-back')
+  })
+
+  it('distributes legacy { bp: back } across three muscles with documented weights', async () => {
+    const { musclesOf } = await import('./muscles.js')
+    const legacy = { id: 'c-back', n: 'Old Pull', bp: 'back' }
+    const m = musclesOf(legacy)
+    expect(m).toEqual({ lats: 0.50, 'upper-back': 0.35, 'lower-back': 0.15 })
+    const sum = Object.values(m).reduce((a, b) => a + b, 0)
+    expect(sum).toBeCloseTo(1.0, 5)
+  })
+
+  // placeholder to hold sum check variable scope - actual test above covers distribution
+  it('correctly handles lat-dominant and upper-back-dominant catalogue entries with cross-credit', async () => {
+    const { primaryMuscleOf, secondaryMusclesOf, matchesMuscleFilter, isSecondaryMuscleMatch, musclesOf, loadOf } = await import('./muscles.js')
+    // lat-dominant catalogue entry: alternate lateral pulldown (id 0007) tg lats, sm biceps + rhomboids
+    const latEx = EXIDX['0007']
+    expect(primaryMuscleOf(latEx)).toBe('lats')
+    const latSm = secondaryMusclesOf(latEx)
+    expect(latSm).toContain('biceps')
+    expect(latSm).toContain('upper-back')
+    expect(latSm).not.toContain('lats')
+    expect(musclesOf(latEx)).toEqual({ lats: 1, 'upper-back': 0.4, biceps: 0.4 })
+    expect(matchesMuscleFilter(latEx, 'lats')).toBe(true)
+    expect(matchesMuscleFilter(latEx, 'upper-back')).toBe(true)
+    expect(isSecondaryMuscleMatch(latEx, 'upper-back')).toBe(true)
+    expect(isSecondaryMuscleMatch(latEx, 'lats')).toBe(false)
+
+    // upper-back-dominant entry: barbell bent over row
+    const rowEx = EXIDX['0027']
+    expect(primaryMuscleOf(rowEx)).toBe('upper-back')
+    const rowSm = secondaryMusclesOf(rowEx)
+    expect(rowSm).not.toContain('upper-back')
+    expect(musclesOf(rowEx)).toMatchObject({ 'upper-back': 1 })
+    expect(matchesMuscleFilter(rowEx, 'upper-back')).toBe(true)
+    expect(matchesMuscleFilter(rowEx, 'lats')).toBe(false)
+
+    // intentional secondary cross-credit: lat primary listing rhomboids as secondary
+    const latWithRhomboids = { id: 'c-lat', n: 'Custom Pulldown', tg: 'lats', sm: ['rhomboids'], bp: 'back' }
+    expect(primaryMuscleOf(latWithRhomboids)).toBe('lats')
+    expect(secondaryMusclesOf(latWithRhomboids)).toEqual(['upper-back'])
+    expect(musclesOf(latWithRhomboids)).toEqual({ lats: 1, 'upper-back': 0.4 })
+    // deduplication excludes primary slug
+    const dup = { id: 'c-dup', n: 'Dup', tg: 'lats', sm: ['lats', 'latissimus dorsi'], bp: 'back' }
+    expect(secondaryMusclesOf(dup)).toEqual([])
+    expect(musclesOf(dup)).toEqual({ lats: 1 })
+
+    // loadOf for legacy back exercise uses three-way split
+    const legacyBack = { id: 'c-back', n: 'Old Pull', bp: 'back' }
+    const legacyLoad = loadOf([{ id: 'c-back', ex: legacyBack, sets: 2 }])
+    expect(legacyLoad).toEqual({ lats: 1.0, 'upper-back': 0.7, 'lower-back': 0.3 })
+  })
+
+  it('handles case-insensitive lats slug via canonicalMuscle and resolveMuscleSlug', async () => {
+    const { canonicalMuscle, resolveMuscleSlug, bodypartForMuscle } = await import('./muscles.js')
+    expect(canonicalMuscle('Lats')).toBe('lats')
+    expect(canonicalMuscle('LATS')).toBe('lats')
+    expect(canonicalMuscle('LaTs')).toBe('lats')
+    expect(resolveMuscleSlug('Lats')).toBe('lats')
+    expect(resolveMuscleSlug('LATS')).toBe('lats')
+    expect(bodypartForMuscle('lats')).toBe('back')
+    expect(bodypartForMuscle('Lats')).toBe('back')
+    expect(bodypartForMuscle('LATS')).toBe('back')
+  })
+})
+
 describe('legacy custom exercises and BY_BODYPART fallbacks', () => {
   it('resolves primary and secondary muscles across all 10 legacy body parts', async () => {
     const { primaryMuscleOf, secondaryMusclesOf, matchesMuscleFilter, isSecondaryMuscleMatch, musclesOf } = await import('./muscles.js')
@@ -244,13 +337,15 @@ describe('legacy custom exercises and BY_BODYPART fallbacks', () => {
     expect(musclesOf(legacyChest)).toEqual({ chest: 1 })
 
     const legacyBack = { id: 'c-back', n: 'Old Pull', bp: 'back' }
-    expect(primaryMuscleOf(legacyBack)).toBe('upper-back')
-    expect(secondaryMusclesOf(legacyBack)).toEqual(['lower-back'])
+    expect(primaryMuscleOf(legacyBack)).toBe('lats')
+    expect(secondaryMusclesOf(legacyBack)).toEqual(['upper-back', 'lower-back'])
+    expect(matchesMuscleFilter(legacyBack, 'lats')).toBe(true)
     expect(matchesMuscleFilter(legacyBack, 'upper-back')).toBe(true)
     expect(matchesMuscleFilter(legacyBack, 'lower-back')).toBe(true)
-    expect(isSecondaryMuscleMatch(legacyBack, 'upper-back')).toBe(false)
+    expect(isSecondaryMuscleMatch(legacyBack, 'lats')).toBe(false)
+    expect(isSecondaryMuscleMatch(legacyBack, 'upper-back')).toBe(true)
     expect(isSecondaryMuscleMatch(legacyBack, 'lower-back')).toBe(true)
-    expect(musclesOf(legacyBack)).toEqual({ 'upper-back': 0.75, 'lower-back': 0.25 })
+    expect(musclesOf(legacyBack)).toEqual({ lats: 0.50, 'upper-back': 0.35, 'lower-back': 0.15 })
 
     const legacyShoulders = { id: 'c-sh', n: 'Old Press', bp: 'shoulders' }
     expect(primaryMuscleOf(legacyShoulders)).toBe('deltoids')
@@ -331,5 +426,3 @@ describe('legacy custom exercises and BY_BODYPART fallbacks', () => {
     expect(secondaryMusclesOf(explicitBicepIsolation)).toEqual([])
   })
 })
-
-
