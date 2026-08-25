@@ -64,7 +64,7 @@ describe('Library view smoke tests', () => {
     expect(filteredItems.length).toBeGreaterThan(1)
   })
 
-  it('searches exercises by keyword and updates list', async () => {
+  it('searches exercises by keyword, updates list, and clears via clear button', async () => {
     await act(async () => {
       root.render(<Library />)
     })
@@ -72,14 +72,30 @@ describe('Library view smoke tests', () => {
     const searchInput = container.querySelector('input.input')
     expect(searchInput).toBeTruthy()
 
+    // Clear button should not exist when search query is empty
+    expect(container.querySelector('.searchf button.clear')).toBeNull()
+
     await act(async () => {
-      searchInput.value = 'bench press'
+      const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set
+      nativeSetter.call(searchInput, 'bench press')
       searchInput.dispatchEvent(new Event('input', { bubbles: true }))
       searchInput.dispatchEvent(new Event('change', { bubbles: true }))
     })
 
     const items = container.querySelectorAll('.list .item')
     expect(items.length).toBeGreaterThan(1)
+
+    // Clear button should now be visible
+    const clearBtn = container.querySelector('.searchf button.clear')
+    expect(clearBtn).toBeTruthy()
+
+    // Clicking clear button resets search query and restores full list
+    await act(async () => {
+      clearBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    expect(searchInput.value).toBe('')
+    expect(container.querySelectorAll('.list .item').length).toBe(41)
   })
 
   it('initializes favorites as an empty array in DEF schema', () => {

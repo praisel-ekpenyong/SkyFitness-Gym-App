@@ -11,7 +11,7 @@ import { starterRoutines } from './lib/starter.js'
 import Media, { Thumb } from './components/Media.jsx'
 import Stepper from './components/Stepper.jsx'
 import Icon from './components/Icon.jsx'
-import { Button, Slider, Switch, Segmented, SelectRow, Row } from './components/ui.jsx'
+import { Button, Slider, Switch, Segmented, SelectRow, Row, SearchField } from './components/ui.jsx'
 import BodyMap from './components/BodyMap.jsx'
 import { glyphOf, GLYPH_GROUPS, DEFAULT_GLYPH } from './lib/glyphs.js'
 import { loadOfWorkouts, exerciseMuscleSnapshot } from './lib/muscles.js'
@@ -494,8 +494,12 @@ export function ExercisePicker({ onPick, close }) {
   const chosenCount = Object.keys(usage).length
   return <>
     <h3>{t('Add exercise')}</h3>
-    <div className="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></svg>
-      <input className="input" placeholder={t('Search {0} exercises…', all.length)} value={q} onChange={e => { setQ(e.target.value); setShown(50) }} /></div>
+    <SearchField
+      placeholder={t('Search {0} exercises…', all.length)}
+      value={q}
+      onChange={e => { setQ(e.target.value); setShown(50) }}
+      onClear={() => { setQ(''); setShown(50) }}
+    />
     <div className="chips" style={{ margin: eqOpts.length > 1 ? '10px 0 6px' : '10px 0' }}>
       {(favCount > 0 || bp === 'favorites') && <button className={'chip' + (bp === 'favorites' ? ' on' : '')} onClick={() => { setBp('favorites'); setEq(''); setShown(50) }}><Icon name="starFill" style={{ fontSize: 12, display: 'inline-block', marginRight: 4, verticalAlign: '-1px' }} />{t('Favorites')} ({favCount})</button>}
       {(chosenCount > 0 || bp === '★') && <button className={'chip' + (bp === '★' ? ' on' : '')} onClick={() => { setBp('★'); setEq(''); setShown(50) }}><Icon name="starFill" style={{ fontSize: 12, display: 'inline-block', marginRight: 4, verticalAlign: '-1px' }} />{t('Chosen')} ({chosenCount})</button>}

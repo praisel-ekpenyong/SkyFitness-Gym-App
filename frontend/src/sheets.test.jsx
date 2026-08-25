@@ -358,6 +358,17 @@ describe('ExercisePicker favorites integration', () => {
 
     items = Array.from(container.querySelectorAll('.list .item .tt')).slice(1).map(el => el.textContent)
     expect(items).toEqual(['3/4 sit-up'])
+
+    // Click the clear button on the SearchField
+    const clearBtn = container.querySelector('.searchf button.clear')
+    expect(clearBtn).toBeTruthy()
+    await act(async () => {
+      clearBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    expect(searchInput.value).toBe('')
+    items = Array.from(container.querySelectorAll('.list .item .tt')).slice(1).map(el => el.textContent)
+    expect(items).toEqual(['3/4 sit-up', 'barbell bench press'])
   })
 })
 
