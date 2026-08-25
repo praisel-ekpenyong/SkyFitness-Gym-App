@@ -215,6 +215,46 @@ describe('Library view smoke tests', () => {
     expect(cableItems.length).toBe(2) // 1 prompt + 1 cable exercise (alternate lateral pulldown)
     expect(cableItems[1].textContent.toLowerCase()).toContain('alternate lateral pulldown')
   })
+
+  it('gracefully falls back to All when the last favorite is unstarred while on the Favorites filter', async () => {
+    // Start with 1 favorite
+    useStore.getState().update(s => { s.favorites = ['0001'] })
+
+    await act(async () => {
+      root.render(<Library />)
+    })
+
+    // Click Favorites chip
+    const favChip = Array.from(container.querySelectorAll('.chips button.chip'))
+      .find(b => b.textContent.includes('Favorites'))
+    expect(favChip).toBeTruthy()
+
+    await act(async () => {
+      favChip.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    // On favorites filter: shows 1 favorite + prompt
+    expect(container.querySelectorAll('.list .item').length).toBe(2)
+
+    // Unstar the single favorite exercise via in-row star button
+    const favRow = container.querySelectorAll('.list .item')[1]
+    const starBtn = favRow.querySelector('button.iconbtn')
+    expect(starBtn).toBeTruthy()
+
+    await act(async () => {
+      starBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    // Favorites is now empty
+    expect(useStore.getState().S.favorites).toEqual([])
+
+    // Active filter automatically falls back to All, so All chip is highlighted and full exercise list is shown
+    const allChip = Array.from(container.querySelectorAll('.chips button.chip'))
+      .find(b => b.textContent.trim() === 'All')
+    expect(allChip?.classList.contains('on')).toBe(true)
+    expect(container.querySelectorAll('.list .item').length).toBe(41)
+  })
 })
+
 
 

@@ -18,8 +18,11 @@ export default function Library() {
   const [shown, setShown] = useState(40)
   const ql = q.toLowerCase().trim()
   const favs = S.favorites || []
-  const isFavFilter = bp === 'favorites'
-  const base = allExercises(S).filter(e => (!bp ? true : isFavFilter ? favs.includes(e.id) : e.bp === bp) && (!ql || e.n.toLowerCase().includes(ql) || e.tg.includes(ql) || e.eq.includes(ql) || (e.desc || '').toLowerCase().includes(ql)))
+  // If the user unstars their last favorite while on the Favorites filter,
+  // gracefully fall back to All ('') so they aren't trapped in an empty state.
+  const activeBp = (bp === 'favorites' && favs.length === 0) ? '' : bp
+  const isFavFilter = activeBp === 'favorites'
+  const base = allExercises(S).filter(e => (!activeBp ? true : isFavFilter ? favs.includes(e.id) : e.bp === activeBp) && (!ql || e.n.toLowerCase().includes(ql) || e.tg.includes(ql) || e.eq.includes(ql) || (e.desc || '').toLowerCase().includes(ql)))
   const eqOpts = equipmentOf(base)
   // Drop the equipment filter if the search narrowed it away, so you never hit a dead end.
   const eqOn = eqOpts.includes(eq) ? eq : ''
@@ -30,9 +33,9 @@ export default function Library() {
     <div className="search" style={{ marginBottom: 10 }}><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></svg>
       <input className="input" placeholder={t('Search…')} value={q} onChange={e => { setQ(e.target.value); setShown(40) }} /></div>
     <div className="chips" style={{ marginBottom: eqOpts.length > 1 ? 8 : 12 }}>
-      {favs.length > 0 && <button className={'chip' + (bp === 'favorites' ? ' on' : '')} onClick={() => { setBp('favorites'); setEq(''); setShown(40) }}><Icon name="starFill" style={{ fontSize: 12, display: 'inline-block', marginRight: 4, verticalAlign: '-1px' }} />{t('Favorites')} ({favs.length})</button>}
-      <button className={'chip nocap' + (!bp ? ' on' : '')} onClick={() => { setBp(''); setEq(''); setShown(40) }}>{t('All')}</button>
-      {BODYPARTS.map(b => <button key={b} className={'chip' + (bp === b ? ' on' : '')} onClick={() => { setBp(b); setEq(''); setShown(40) }}>{t(b)}</button>)}
+      {favs.length > 0 && <button className={'chip' + (activeBp === 'favorites' ? ' on' : '')} onClick={() => { setBp('favorites'); setEq(''); setShown(40) }}><Icon name="starFill" style={{ fontSize: 12, display: 'inline-block', marginRight: 4, verticalAlign: '-1px' }} />{t('Favorites')} ({favs.length})</button>}
+      <button className={'chip nocap' + (!activeBp ? ' on' : '')} onClick={() => { setBp(''); setEq(''); setShown(40) }}>{t('All')}</button>
+      {BODYPARTS.map(b => <button key={b} className={'chip' + (activeBp === b ? ' on' : '')} onClick={() => { setBp(b); setEq(''); setShown(40) }}>{t(b)}</button>)}
     </div>
     {eqOpts.length > 1 && <div className="chips" style={{ marginBottom: 12 }}>
       <button className={'chip nocap' + (!eqOn ? ' on' : '')} onClick={() => { setEq(''); setShown(40) }}>{t('Any equipment')}</button>
