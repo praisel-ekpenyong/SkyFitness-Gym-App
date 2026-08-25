@@ -372,6 +372,146 @@ describe('ExercisePicker favorites integration', () => {
   })
 })
 
+describe('ExercisePicker canonical muscle filtering and search', () => {
+  it('renders all 18 canonical muscle filter chips plus Cardio in anatomical head-to-toe order', async () => {
+    useStore.getState().update(s => {
+      s.favorites = ['0001']
+      s.routines = [{ id: 'r1', name: 'R1', emoji: '💪', ex: [{ id: '0025', sets: 3, reps: 10 }] }]
+    })
+
+    await act(async () => {
+      root.render(<ExercisePicker onPick={vi.fn()} close={vi.fn()} />)
+    })
+
+    const firstChipsRow = container.querySelectorAll('.chips')[0]
+    const chips = Array.from(firstChipsRow.querySelectorAll('button.chip')).map(c => c.textContent.trim())
+    const expected = [
+      'Favorites (1)', 'Chosen (1)', 'All',
+      'Traps', 'Shoulders', 'Chest', 'Upper back', 'Serratus',
+      'Biceps', 'Triceps', 'Forearms', 'Abs', 'Obliques', 'Lower back',
+      'Glutes', 'Quads', 'Hamstrings', 'Adductors', 'Hip flexors',
+      'Calves', 'Shins', 'Cardio',
+    ]
+    expect(chips).toEqual(expected)
+  })
+
+  it('surfaces secondary compound movements with inline secondary badges when a muscle filter is selected', async () => {
+    await act(async () => {
+      root.render(<ExercisePicker onPick={vi.fn()} close={vi.fn()} />)
+    })
+
+    // Filter by Triceps
+    const tricepsChip = Array.from(container.querySelectorAll('.chips button.chip'))
+      .find(b => b.textContent.trim() === 'Triceps')
+    expect(tricepsChip).toBeTruthy()
+
+    await act(async () => {
+      tricepsChip.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    const items = Array.from(container.querySelectorAll('.list .item'))
+    // Find bench press (which has chest as primary and triceps as secondary)
+    const benchItem = items.find(it => it.textContent.toLowerCase().includes('bench press'))
+    expect(benchItem).toBeTruthy()
+
+    // Bench press should display the secondary badge: "Secondary: Triceps"
+    const secondaryBadge = benchItem.querySelector('.ss .tag')
+    expect(secondaryBadge).toBeTruthy()
+    expect(secondaryBadge.textContent).toContain('Secondary: Triceps')
+  })
+
+  it('searches exercises matching primary and secondary muscle names in picker', async () => {
+    await act(async () => {
+      root.render(<ExercisePicker onPick={vi.fn()} close={vi.fn()} />)
+    })
+
+    const searchInput = container.querySelector('input.input')
+    await act(async () => {
+      const nativeSetter = Object.getOwnPropertyDescriptor(globalThis.HTMLInputElement.prototype, 'value').set
+      nativeSetter.call(searchInput, 'triceps')
+      searchInput.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+
+    const items = Array.from(container.querySelectorAll('.list .item'))
+    expect(items.length).toBeGreaterThan(5)
+
+    const benchItem = items.find(it => it.textContent.toLowerCase().includes('bench press'))
+    expect(benchItem).toBeTruthy()
+    expect(benchItem.querySelector('.ss .tag')?.textContent).toContain('Secondary: Triceps')
+    expect(benchItem.querySelector('.ss')?.textContent.toLowerCase()).toContain('chest')
+  })
+
+  it('filters exercises by Cardio chip and allows equipment filtering within muscle filter', async () => {
+    await act(async () => {
+      root.render(<ExercisePicker onPick={vi.fn()} close={vi.fn()} />)
+    })
+
+    // Filter by Cardio
+    const cardioChip = Array.from(container.querySelectorAll('.chips button.chip'))
+      .find(b => b.textContent.trim() === 'Cardio')
+    expect(cardioChip).toBeTruthy()
+
+    await act(async () => {
+      cardioChip.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    let items = Array.from(container.querySelectorAll('.list .item')).slice(1)
+    expect(items.length).toBeGreaterThan(0)
+    expect(items.every(it => it.textContent.toLowerCase().includes('cardio'))).toBe(true)
+
+    // Filter by Chest
+    const chestChip = Array.from(container.querySelectorAll('.chips button.chip'))
+      .find(b => b.textContent.trim() === 'Chest')
+    expect(chestChip).toBeTruthy()
+
+    await act(async () => {
+      chestChip.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    // Filter by dumbbell equipment
+    const eqChips = Array.from(container.querySelectorAll('.chips')[1].querySelectorAll('button.chip'))
+    const dumbbellChip = eqChips.find(b => b.textContent.toLowerCase().includes('dumbbell'))
+    expect(dumbbellChip).toBeTruthy()
+
+    await act(async () => {
+      dumbbellChip.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    items = Array.from(container.querySelectorAll('.list .item')).slice(1)
+    expect(items.length).toBeGreaterThan(0)
+    expect(items.every(it => it.textContent.toLowerCase().includes('dumbbell'))).toBe(true)
+  })
+
+  it('filters by Chosen chip and shows exercises in usage order', async () => {
+    useStore.getState().update(s => {
+      s.routines = [
+        { id: 'r1', name: 'R1', emoji: '💪', ex: [{ id: '0025', sets: 3, reps: 10 }, { id: '0001', sets: 3, reps: 10 }] },
+        { id: 'r2', name: 'R2', emoji: '🔥', ex: [{ id: '0025', sets: 4, reps: 8 }] },
+      ]
+    })
+
+    await act(async () => {
+      root.render(<ExercisePicker onPick={vi.fn()} close={vi.fn()} />)
+    })
+
+    const chosenChip = Array.from(container.querySelectorAll('.chips button.chip'))
+      .find(b => b.textContent.includes('Chosen'))
+    expect(chosenChip).toBeTruthy()
+    expect(chosenChip.textContent).toContain('Chosen (2)')
+
+    await act(async () => {
+      chosenChip.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    // On Chosen filter, custom exercise prompt at index 0 is not rendered
+    const items = Array.from(container.querySelectorAll('.list .item'))
+    expect(items.length).toBe(2)
+    // 0025 has usage count 2, 0001 has usage count 1 -> 0025 comes first
+    expect(items[0].textContent.toLowerCase()).toContain('barbell bench press')
+    expect(items[1].textContent.toLowerCase()).toContain('3/4 sit-up')
+  })
+})
+
 describe('ExerciseDetail primary and secondary muscle tags', () => {
   it('displays Primary and Secondary tags for compound movements', async () => {
     // 0025: Barbell bench press (tg: 'pectorals', sm: ['shoulders', 'triceps'], eq: 'barbell')

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useStore, sanitizeDisplayName } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
-import { EXDB, EXIDX, BODYPARTS, isCardio, isBodyweightEq, allExercises, equipmentOf, smOf } from './lib/exercises.js'
+import { EXDB, EXIDX, isCardio, isBodyweightEq, allExercises, equipmentOf, smOf } from './lib/exercises.js'
 import { fmtDate, fmtNum, fmtVol, fmtDur, durPart, todayISO, uid, exCount, DAYN, MONTHS_LONG, ACCENTS } from './lib/format.js'
 import { lastEntryFor, effectiveRoutineId, setsDone, setsDoneActive, lastBW, supersetUnits, unitOf, setLabel, defaultConfig, cleanupSg, modeOf, effortOf, isBw, isPerSide, sideReps, workSetsDone, bestWeightFor } from './lib/history.js'
 import { beep, vibrate, playWorkoutComplete } from './lib/sound.js'
@@ -14,7 +14,7 @@ import Icon from './components/Icon.jsx'
 import { Button, Slider, Switch, Segmented, SelectRow, Row, SearchField } from './components/ui.jsx'
 import BodyMap from './components/BodyMap.jsx'
 import { glyphOf, GLYPH_GROUPS, DEFAULT_GLYPH } from './lib/glyphs.js'
-import { FILTER_MUSCLES, MUSCLES, MUSCLE_NAME, primaryMuscleOf, secondaryMusclesOf, bodypartForMuscle, loadOfWorkouts, exerciseMuscleSnapshot } from './lib/muscles.js'
+import { FILTER_MUSCLES, MUSCLES, MUSCLE_NAME, primaryMuscleOf, secondaryMusclesOf, bodypartForMuscle, loadOfWorkouts, exerciseMuscleSnapshot, matchesMuscleFilter, isSecondaryMuscleMatch, secondaryMatchForQuery, resolveMuscleSlug, matchesExerciseSearch } from './lib/muscles.js'
 import { parseImport, mergeImport } from './lib/import-csv.js'
 import { buildPlanBundle, parsePlan, mergePlan, printPlan } from './lib/plan-share.js'
 import { estimate1RM, best1RM, REP_CAP } from './lib/onerm.js'
@@ -550,19 +550,26 @@ function usageMap(st) {
 }
 export function ExercisePicker({ onPick, close }) {
   const st = useStore(s => s.S)
-  const update = useStore(s => s.update)
   const usage = usageMap(st)
   const favs = st.favorites || []
   const [q, setQ] = useState('')
-  const [bp, setBp] = useState('')          // '' = all, 'favorites' = favorites, '★' = chosen, else a body part
-  const [eq, setEq] = useState('')          // '' = any equipment
+  const [filter, setFilter] = useState('')          // '' = all, 'favorites' = favorites, '★' = chosen, else a canonical muscle slug or cardio
+  const [eq, setEq] = useState('')              // '' = any equipment
   const [shown, setShown] = useState(50)
-  const ql = q.toLowerCase().trim()
   const all = allExercises(st)
-  let base = all.filter(e =>
-    (bp === 'favorites' ? favs.includes(e.id) : bp === '★' ? usage[e.id] : (!bp || e.bp === bp)) &&
-    (!ql || e.n.toLowerCase().includes(ql) || e.tg.includes(ql) || e.eq.includes(ql) || (e.desc || '').toLowerCase().includes(ql)))
-  if (bp === '★') base = [...base].sort((a, b) => (usage[b.id] - usage[a.id]) || (a.n < b.n ? -1 : 1))
+  const isFavFilter = filter === 'favorites'
+  const isChosenFilter = filter === '★'
+  let base = all.filter(e => {
+    if (isFavFilter) {
+      if (!favs.includes(e.id)) return false
+    } else if (isChosenFilter) {
+      if (!usage[e.id]) return false
+    } else if (filter) {
+      if (!matchesMuscleFilter(e, filter)) return false
+    }
+    return matchesExerciseSearch(e, q)
+  })
+  if (isChosenFilter) base = [...base].sort((a, b) => (usage[b.id] - usage[a.id]) || (a.n < b.n ? -1 : 1))
   const eqOpts = equipmentOf(base)
   // Drop the equipment filter if the search narrowed it away, so you never hit a dead end.
   const eqOn = eqOpts.includes(eq) ? eq : ''
@@ -578,24 +585,37 @@ export function ExercisePicker({ onPick, close }) {
       onClear={() => { setQ(''); setShown(50) }}
     />
     <div className="chips" style={{ margin: eqOpts.length > 1 ? '10px 0 6px' : '10px 0' }}>
-      {(favCount > 0 || bp === 'favorites') && <button className={'chip' + (bp === 'favorites' ? ' on' : '')} onClick={() => { setBp('favorites'); setEq(''); setShown(50) }}><Icon name="starFill" style={{ fontSize: 12, display: 'inline-block', marginRight: 4, verticalAlign: '-1px' }} />{t('Favorites')} ({favCount})</button>}
-      {(chosenCount > 0 || bp === '★') && <button className={'chip' + (bp === '★' ? ' on' : '')} onClick={() => { setBp('★'); setEq(''); setShown(50) }}><Icon name="starFill" style={{ fontSize: 12, display: 'inline-block', marginRight: 4, verticalAlign: '-1px' }} />{t('Chosen')} ({chosenCount})</button>}
-      <button className={'chip nocap' + (!bp ? ' on' : '')} onClick={() => { setBp(''); setEq(''); setShown(50) }}>{t('All')}</button>
-      {BODYPARTS.map(b => <button key={b} className={'chip' + (bp === b ? ' on' : '')} onClick={() => { setBp(b); setEq(''); setShown(50) }}>{t(b)}</button>)}
+      {(favCount > 0 || filter === 'favorites') && <button className={'chip' + (filter === 'favorites' ? ' on' : '')} onClick={() => { setFilter('favorites'); setEq(''); setShown(50) }}><Icon name="starFill" style={{ fontSize: 12, display: 'inline-block', marginRight: 4, verticalAlign: '-1px' }} />{t('Favorites')} ({favCount})</button>}
+      {(chosenCount > 0 || filter === '★') && <button className={'chip' + (filter === '★' ? ' on' : '')} onClick={() => { setFilter('★'); setEq(''); setShown(50) }}><Icon name="starFill" style={{ fontSize: 12, display: 'inline-block', marginRight: 4, verticalAlign: '-1px' }} />{t('Chosen')} ({chosenCount})</button>}
+      <button className={'chip nocap' + (!filter ? ' on' : '')} onClick={() => { setFilter(''); setEq(''); setShown(50) }}>{t('All')}</button>
+      {FILTER_MUSCLES.map(m => <button key={m} className={'chip' + (filter === m ? ' on' : '')} onClick={() => { setFilter(m); setEq(''); setShown(50) }}>{t(MUSCLE_NAME[m] || m)}</button>)}
     </div>
     {eqOpts.length > 1 && <div className="chips" style={{ marginBottom: 10 }}>
       <button className={'chip nocap' + (!eqOn ? ' on' : '')} onClick={() => { setEq(''); setShown(50) }}>{t('Any equipment')}</button>
       {eqOpts.map(x => <button key={x} className={'chip' + (eqOn === x ? ' on' : '')} onClick={() => { setEq(x); setShown(50) }}>{t(x)}</button>)}
     </div>}
     <div className="list">
-      {bp !== '★' && <div className="item" onClick={() => customExSheet(null, ex => onPick(ex), q.trim())}>
+      {filter !== '★' && <div className="item" onClick={() => customExSheet(null, ex => onPick(ex), q.trim())}>
         <div className="thumb thumb-x"><Icon name="sparkles" /></div>
         <div className="grow"><div className="tt">{t('Create your own exercise')}</div><div className="ss">{t('name + body part, no animation')}</div></div><Icon name="plus" className="chev" />
       </div>}
       {f.slice(0, shown).map(e => {
         const isFav = favs.includes(e.id)
+        const primary = primaryMuscleOf(e)
+        const primaryLabel = (primary && MUSCLE_NAME[primary]) || e.tg || e.bp
+        const isSpecialFilter = isFavFilter || isChosenFilter
+        const secFilterMatch = !isSpecialFilter && isSecondaryMuscleMatch(e, filter)
+        const secQueryMatch = (isSpecialFilter || !filter) && secondaryMatchForQuery(e, q)
+        const secondaryMuscle = secFilterMatch ? resolveMuscleSlug(filter) : secQueryMatch
         return <div key={e.id} className="item" onClick={() => onPick(e)}>
-          <Thumb ex={e} /><div className="grow"><div className="tt capitalize">{e.n}</div><div className="ss capitalize">{t(e.tg || e.bp)} · {t(e.eq)}</div></div>
+          <Thumb ex={e} />
+          <div className="grow">
+            <div className="tt capitalize">{e.n}</div>
+            <div className="ss capitalize">
+              {t(primaryLabel)} · {t(e.eq)}
+              {secondaryMuscle && <span className="tag" style={{ marginLeft: 6, fontSize: 11, padding: '1px 5px', verticalAlign: 'middle' }}>{t('Secondary: {0}', MUSCLE_NAME[secondaryMuscle] || secondaryMuscle)}</span>}
+            </div>
+          </div>
           <button
             className={'iconbtn' + (isFav ? ' on-ss' : '')}
             style={{ width: 34, height: 34, fontSize: 16, color: isFav ? 'var(--acc)' : 'var(--label-3)' }}
@@ -613,9 +633,9 @@ export function ExercisePicker({ onPick, close }) {
           <Icon name="plus" className="chev" />
         </div>
       })}
-      {f.length === 0 && bp === 'favorites' && favCount === 0 && <div className="empty">{t('No favorites yet — star exercises and they’ll show up here.')}</div>}
-      {f.length === 0 && bp === '★' && chosenCount === 0 && <div className="empty">{t('Nothing chosen yet — add exercises and they’ll show up here.')}</div>}
-      {f.length === 0 && (bp !== 'favorites' || favCount > 0) && (bp !== '★' || chosenCount > 0) && <div className="empty"><div className="ico"><Icon name="magnifier" /></div>{t('No match')}</div>}
+      {f.length === 0 && filter === 'favorites' && favCount === 0 && <div className="empty">{t('No favorites yet — star exercises and they’ll show up here.')}</div>}
+      {f.length === 0 && filter === '★' && chosenCount === 0 && <div className="empty">{t('Nothing chosen yet — add exercises and they’ll show up here.')}</div>}
+      {f.length === 0 && (filter !== 'favorites' || favCount > 0) && (filter !== '★' || chosenCount > 0) && <div className="empty"><div className="ico"><Icon name="magnifier" /></div>{t('No match')}</div>}
     </div>
     {f.length > shown && <><div style={{ height: 8 }} /><Button onClick={() => setShown(s => s + 50)}>{t('Show more')}</Button></>}
   </>
