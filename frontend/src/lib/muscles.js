@@ -203,9 +203,9 @@ export function secondaryMusclesOf(idOrEx) {
     return out
   }
   const rawSm = smOf(source)
-  const hasSm = Array.isArray(source.sm) || source.sm != null
+  const hasSm = Array.isArray(source.sm) ? source.sm.length > 0 : source.sm != null
   const hasMg = source.mg != null
-  if (hasSm || hasMg || rawSm.length > 0) {
+  if (source.tg || hasSm || hasMg || rawSm.length > 0) {
     if (source.mg) add(source.mg)
     rawSm.forEach(add)
     return out

@@ -232,3 +232,104 @@ describe('canonical muscle filter taxonomy & extraction helpers', () => {
   })
 })
 
+describe('legacy custom exercises and BY_BODYPART fallbacks', () => {
+  it('resolves primary and secondary muscles across all 10 legacy body parts', async () => {
+    const { primaryMuscleOf, secondaryMusclesOf, matchesMuscleFilter, isSecondaryMuscleMatch, musclesOf } = await import('./muscles.js')
+
+    const legacyChest = { id: 'c-chest', n: 'Old Fly', bp: 'chest' }
+    expect(primaryMuscleOf(legacyChest)).toBe('chest')
+    expect(secondaryMusclesOf(legacyChest)).toEqual([])
+    expect(matchesMuscleFilter(legacyChest, 'chest')).toBe(true)
+    expect(isSecondaryMuscleMatch(legacyChest, 'chest')).toBe(false)
+    expect(musclesOf(legacyChest)).toEqual({ chest: 1 })
+
+    const legacyBack = { id: 'c-back', n: 'Old Pull', bp: 'back' }
+    expect(primaryMuscleOf(legacyBack)).toBe('upper-back')
+    expect(secondaryMusclesOf(legacyBack)).toEqual(['lower-back'])
+    expect(matchesMuscleFilter(legacyBack, 'upper-back')).toBe(true)
+    expect(matchesMuscleFilter(legacyBack, 'lower-back')).toBe(true)
+    expect(isSecondaryMuscleMatch(legacyBack, 'upper-back')).toBe(false)
+    expect(isSecondaryMuscleMatch(legacyBack, 'lower-back')).toBe(true)
+    expect(musclesOf(legacyBack)).toEqual({ 'upper-back': 0.75, 'lower-back': 0.25 })
+
+    const legacyShoulders = { id: 'c-sh', n: 'Old Press', bp: 'shoulders' }
+    expect(primaryMuscleOf(legacyShoulders)).toBe('deltoids')
+    expect(secondaryMusclesOf(legacyShoulders)).toEqual([])
+    expect(matchesMuscleFilter(legacyShoulders, 'deltoids')).toBe(true)
+    expect(musclesOf(legacyShoulders)).toEqual({ deltoids: 1 })
+
+    const legacyUpperArms = { id: 'c-arms', n: 'Old Arm Lift', bp: 'upper arms' }
+    expect(primaryMuscleOf(legacyUpperArms)).toBe('biceps')
+    expect(secondaryMusclesOf(legacyUpperArms)).toEqual(['triceps'])
+    expect(matchesMuscleFilter(legacyUpperArms, 'biceps')).toBe(true)
+    expect(matchesMuscleFilter(legacyUpperArms, 'triceps')).toBe(true)
+    expect(isSecondaryMuscleMatch(legacyUpperArms, 'biceps')).toBe(false)
+    expect(isSecondaryMuscleMatch(legacyUpperArms, 'triceps')).toBe(true)
+    expect(musclesOf(legacyUpperArms)).toEqual({ biceps: 0.5, triceps: 0.5 })
+
+    const legacyLowerArms = { id: 'c-larms', n: 'Old Wrist Roll', bp: 'lower arms' }
+    expect(primaryMuscleOf(legacyLowerArms)).toBe('forearm')
+    expect(secondaryMusclesOf(legacyLowerArms)).toEqual([])
+    expect(matchesMuscleFilter(legacyLowerArms, 'forearm')).toBe(true)
+    expect(musclesOf(legacyLowerArms)).toEqual({ forearm: 1 })
+
+    const legacyWaist = { id: 'c-waist', n: 'Old Crunch', bp: 'waist' }
+    expect(primaryMuscleOf(legacyWaist)).toBe('abs')
+    expect(secondaryMusclesOf(legacyWaist)).toEqual(['obliques'])
+    expect(matchesMuscleFilter(legacyWaist, 'abs')).toBe(true)
+    expect(matchesMuscleFilter(legacyWaist, 'obliques')).toBe(true)
+    expect(isSecondaryMuscleMatch(legacyWaist, 'abs')).toBe(false)
+    expect(isSecondaryMuscleMatch(legacyWaist, 'obliques')).toBe(true)
+    expect(musclesOf(legacyWaist)).toEqual({ abs: 0.7, obliques: 0.3 })
+
+    const legacyUpperLegs = { id: 'c-ulegs', n: 'Old Leg Move', bp: 'upper legs' }
+    expect(primaryMuscleOf(legacyUpperLegs)).toBe('quadriceps')
+    expect(secondaryMusclesOf(legacyUpperLegs)).toEqual(['hamstring', 'gluteal'])
+    expect(matchesMuscleFilter(legacyUpperLegs, 'quadriceps')).toBe(true)
+    expect(matchesMuscleFilter(legacyUpperLegs, 'hamstring')).toBe(true)
+    expect(matchesMuscleFilter(legacyUpperLegs, 'gluteal')).toBe(true)
+    expect(isSecondaryMuscleMatch(legacyUpperLegs, 'quadriceps')).toBe(false)
+    expect(isSecondaryMuscleMatch(legacyUpperLegs, 'hamstring')).toBe(true)
+    expect(isSecondaryMuscleMatch(legacyUpperLegs, 'gluteal')).toBe(true)
+    expect(musclesOf(legacyUpperLegs)).toEqual({ quadriceps: 0.4, hamstring: 0.35, gluteal: 0.25 })
+
+    const legacyLowerLegs = { id: 'c-llegs', n: 'Old Calf Raise', bp: 'lower legs' }
+    expect(primaryMuscleOf(legacyLowerLegs)).toBe('calves')
+    expect(secondaryMusclesOf(legacyLowerLegs)).toEqual(['tibialis'])
+    expect(matchesMuscleFilter(legacyLowerLegs, 'calves')).toBe(true)
+    expect(matchesMuscleFilter(legacyLowerLegs, 'tibialis')).toBe(true)
+    expect(isSecondaryMuscleMatch(legacyLowerLegs, 'calves')).toBe(false)
+    expect(isSecondaryMuscleMatch(legacyLowerLegs, 'tibialis')).toBe(true)
+    expect(musclesOf(legacyLowerLegs)).toEqual({ calves: 0.8, tibialis: 0.2 })
+
+    const legacyNeck = { id: 'c-neck', n: 'Old Shrug', bp: 'neck' }
+    expect(primaryMuscleOf(legacyNeck)).toBe('trapezius')
+    expect(secondaryMusclesOf(legacyNeck)).toEqual([])
+    expect(matchesMuscleFilter(legacyNeck, 'trapezius')).toBe(true)
+    expect(musclesOf(legacyNeck)).toEqual({ trapezius: 1 })
+
+    const legacyCardio = { id: 'c-cardio', n: 'Old Run', bp: 'cardio' }
+    expect(primaryMuscleOf(legacyCardio)).toBe('cardio')
+    expect(secondaryMusclesOf(legacyCardio)).toEqual([])
+    expect(matchesMuscleFilter(legacyCardio, 'cardio')).toBe(true)
+    expect(musclesOf(legacyCardio)).toEqual({})
+  })
+
+  it('keeps explicit empty secondary muscles when tg is set, without falling back to bodypart secondaries', async () => {
+    const { primaryMuscleOf, secondaryMusclesOf } = await import('./muscles.js')
+
+    const explicitBicepIsolation = {
+      id: 'c-iso-1',
+      n: 'Strict Preacher Curl',
+      tg: 'biceps',
+      sm: [],
+      bp: 'upper arms',
+    }
+
+    expect(primaryMuscleOf(explicitBicepIsolation)).toBe('biceps')
+    // Should be empty array, NOT ['triceps']
+    expect(secondaryMusclesOf(explicitBicepIsolation)).toEqual([])
+  })
+})
+
+
