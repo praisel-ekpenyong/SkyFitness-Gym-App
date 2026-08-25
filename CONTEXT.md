@@ -58,6 +58,10 @@ _Avoid_: library (that's the browsing screen), exercise DB
 **Custom exercise**:
 An exercise you created yourself, kept in the profile and treated as part of the catalogue everywhere.
 
+**Favorite exercise**:
+An exercise explicitly starred by the lifter for quick access across the library and exercise pickers.
+_Avoid_: bookmark, starred lift, saved exercise, chosen (which is derived from history)
+
 **Body part**:
 The coarse grouping of catalogue exercises (chest, back, waist…); also the fallback muscle mapping for customs that name no muscles.
 
