@@ -8,7 +8,7 @@
 // ankles, "cardiovascular system") maps to null and is dropped rather than guessed at.
 
 import { isWarmupRow } from './workout-model.js'
-import { EXIDX, smOf } from './exercises.js'
+import { EXIDX, smOf, isCardio } from './exercises.js'
 
 // The muscles a map can shade, in head-to-toe order — also the order of any list
 // built from them, so "what am I neglecting" reads top-down like a body.
@@ -151,13 +151,6 @@ export function resolveMuscleSlug(value) {
   return String(value || '').toLowerCase().trim() || null
 }
 
-function isCardioSource(source) {
-  if (!source || typeof source !== 'object') return false
-  if (source.bp === 'cardio') return true
-  const tg = String(source.tg || '').toLowerCase().trim()
-  return tg === 'cardio' || tg === 'cardiovascular system'
-}
-
 /** Derive legacy coarse body part from a canonical muscle group or cardio. */
 export function bodypartForMuscle(muscle) {
   const slug = resolveMuscleSlug(muscle)
@@ -169,7 +162,7 @@ export function primaryMuscleOf(idOrEx) {
   const ex = typeof idOrEx === 'string' ? EXIDX[idOrEx] : idOrEx
   if (!ex || typeof ex !== 'object') return null
   const source = metadataOf(ex)
-  if (isCardioSource(source)) return 'cardio'
+  if (isCardio(source)) return 'cardio'
   const explicit = explicitGroupsOf(source)
   if (explicit && explicit.length > 0) {
     const first = canonicalMuscle(explicit[0])
@@ -188,7 +181,7 @@ export function secondaryMusclesOf(idOrEx) {
   const ex = typeof idOrEx === 'string' ? EXIDX[idOrEx] : idOrEx
   if (!ex || typeof ex !== 'object') return []
   const source = metadataOf(ex)
-  if (isCardioSource(source)) return []
+  if (isCardio(source)) return []
   const primary = primaryMuscleOf(source)
   const explicit = explicitGroupsOf(source)
   const out = []
