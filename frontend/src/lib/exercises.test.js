@@ -111,6 +111,9 @@ describe('exercise dataset integrity and helpers', () => {
     const cardioEx = EXIDX['3220'] // astride jumps (cardio)
     expect(isCardio(cardioEx)).toBe(true)
     expect(isCardio(cardioEx.id)).toBe(true)
+    expect(isCardio({ id: 'c-cardio', tg: 'cardio' })).toBe(true)
+    expect(isCardio({ id: 'c-cv', tg: 'cardiovascular system' })).toBe(true)
+    expect(isCardio({ id: 'c-bench', tg: 'pectorals', bp: 'chest' })).toBe(false)
   })
 
   it('provides safe fallback for unknown exercise IDs via exOr', () => {
