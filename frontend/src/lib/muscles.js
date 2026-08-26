@@ -73,7 +73,7 @@ const ALIAS = {
   'rotator cuff': 'deltoids', quadriceps: 'quadriceps', core: 'abs', abdominals: 'abs',
   'lower abs': 'abs', chest: 'chest', 'upper chest': 'chest', 'hip flexors': 'hip-flexors',
   obliques: 'obliques', 'lower back': 'lower-back', rhomboids: 'upper-back',
-  trapezius: 'trapezius', back: 'upper-back', 'latissimus dorsi': 'lats',
+  trapezius: 'trapezius', back: 'upper-back', 'latissimus dorsi': 'lats', latissimus: 'lats',
   brachialis: 'biceps', soleus: 'calves', shins: 'tibialis', wrists: 'forearm',
   'wrist flexors': 'forearm', 'wrist extensors': 'forearm', 'grip muscles': 'forearm',
   groin: 'adductors', 'inner thighs': 'adductors',
@@ -249,6 +249,7 @@ export function secondaryMatchForQuery(idOrEx, query) {
     return null
   }
   const querySlug = canonicalMuscle(q)
+  if (querySlug && querySlug === primary) return null
   const secondaries = secondaryMusclesOf(ex)
   if (querySlug && secondaries.includes(querySlug)) {
     return querySlug
@@ -273,6 +274,11 @@ export function matchesExerciseSearch(idOrEx, query) {
   const secondaries = secondaryMusclesOf(ex)
   const primaryName = (primary && MUSCLE_NAME[primary]) || ''
   const rawSm = smOf(ex)
+  const querySlug = canonicalMuscle(q)
+  if (querySlug) {
+    if (primary === querySlug) return true
+    if (secondaries.includes(querySlug)) return true
+  }
   return (ex.n || '').toLowerCase().includes(q) ||
     (ex.tg || '').toLowerCase().includes(q) ||
     (primary || '').toLowerCase().includes(q) ||
