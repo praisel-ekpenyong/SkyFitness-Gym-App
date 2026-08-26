@@ -92,7 +92,7 @@ Policy resolution: exercise override → routine default → mode default (`line
 Fatigue per session: intensity-weighted tonnage `load × reps × (load / bestEpley)^1.5` distributed over muscles by snapshot weights (cardio counts minutes × 50 kg proxy). Sessions are normalized against a causal EWMA reference built only from *earlier* sessions, then accumulated with a half-life of `FATIGUE_HALF_LIFE_MS` (36 h) through saturating `1 − e^−v`, scanned over `FATIGUE_SCAN_MS` (30 days). Deleting a workout can therefore never raise fatigue. Strength retention holds at full for `STRENGTH_FULL_MS` (14 days) then decays with a `STRENGTH_HALF_LIFE_MS` (28-day) half-life toward a 0.5 floor. The monotonicity invariant is enforced as a property test by `scripts/fatigue-monotonic-probe.mjs` (`npm run test:fatigue-probe`).
 
 ### Muscle mapping (`lib/muscles.js`)
-Effective-set weights: target 1.0, synergist/secondary 0.4. Free-text muscle names collapse onto 18 drawable slugs via a curated alias table; customs without metadata fall back to by-bodypart distributions.
+Effective-set weights: target 1.0, synergist/secondary 0.4. Free-text muscle names collapse onto 19 drawable slugs via a curated alias table; customs without metadata fall back to by-bodypart distributions.
 
 ## Import / export
 
