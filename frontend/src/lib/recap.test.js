@@ -173,11 +173,13 @@ describe('monthRecap', () => {
     expect(feb.durationMs).toBe(60000) // only second workout
   })
 
-  it('slices yearMonth correctly', () => {
+  it('deduplicates PRs across multiple workouts in the same month', () => {
     const workouts = [
-      mkWorkout({ d: '2026-02-15', start: 1000, entries: [mkEntry('bench', [s(100, 5)])] }),
+      mkWorkout({ d: '2026-02-05', start: 1000, entries: [mkEntry('bench', [s(100, 5)])], prs: ['bench'] }),
+      mkWorkout({ d: '2026-02-15', start: 2000, entries: [mkEntry('bench', [s(105, 5)])], prs: ['bench'] }),
+      mkWorkout({ d: '2026-02-20', start: 3000, entries: [mkEntry('squat', [s(120, 5)])], prs: ['squat'] }),
     ]
-    const feb = monthRecap(workouts, 'kg', '2026-02-15') // passing full iso should still work via slice 0,7
-    expect(feb.workouts).toBe(1)
+    const feb = monthRecap(workouts, 'kg', '2026-02')
+    expect(feb.prs).toEqual(['bench', 'squat'])
   })
 })

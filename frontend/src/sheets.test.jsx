@@ -1086,7 +1086,7 @@ describe('RecapSheet', () => {
     expect(rows[3].textContent).toContain('1')
 
     // Records section should list the PR and Estimated 1RM record
-    expect(container.textContent).toContain('Records')
+    expect(container.textContent).toContain('Personal records')
     expect(container.textContent).toContain('Estimated 1RM records')
 
     // Month navigation: click previous month
