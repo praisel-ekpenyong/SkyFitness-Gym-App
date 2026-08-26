@@ -4,6 +4,7 @@ import { Window } from 'happy-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MUSCLES, levelsOf } from '../lib/muscles.js'
 import { FATIGUE_STATES, STRENGTH_FLOOR, fatigueStateOf } from '../lib/recovery.js'
+import { recapSheet } from '../sheets.jsx'
 import Stats from './Stats.jsx'
 
 const DAY = 86400000
@@ -24,7 +25,7 @@ vi.mock('../store/useStore.js', () => ({
 }))
 vi.mock('react-router-dom', () => ({ useNavigate: () => () => {} }))
 vi.mock('../sheets.jsx', () => ({
-  bwSheet: () => {}, goalSheet: () => {}, calendarSheet: () => {}, workoutDetailSheet: () => {},
+  bwSheet: () => {}, goalSheet: () => {}, calendarSheet: () => {}, recapSheet: vi.fn(), workoutDetailSheet: () => {},
   WorkoutRow: () => React.createElement('div'), bwDeltaColor: () => 'inherit',
 }))
 vi.mock('../components/LineChart.jsx', () => ({ default: () => React.createElement('div') }))
@@ -269,5 +270,15 @@ describe('Stats muscle recovery view runtime', () => {
     expect(Object.values(strengthMap.load).every(value => value < 1)).toBe(true)
     expect(Math.min(...Object.values(strengthMap.load))).toBe(STRENGTH_FLOOR)
     expect(strengthMap.thresholds.at(-1)).toEqual({ at: 1, level: 4 })
+  })
+
+  it('tapping This month tile opens the monthly recap sheet', async () => {
+    await mountStats()
+    const monthTile = [...container.querySelectorAll('.tile')].find(tile =>
+      tile.textContent.includes('This month')
+    )
+    expect(monthTile).toBeTruthy()
+    await click(monthTile)
+    expect(recapSheet).toHaveBeenCalled()
   })
 })

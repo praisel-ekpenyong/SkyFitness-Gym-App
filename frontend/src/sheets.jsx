@@ -999,7 +999,7 @@ function Calendar({ start, close }) {
 export const calendarSheet = start => ui().openSheet(close => <Calendar start={start} close={close} />)
 
 /* ============================ monthly recap ============================ */
-function RecapSheet({ start, close }) {
+export function RecapSheet({ start, close }) {
   const st = useStore(s => s.S)
   const [cur, setCur] = useState(() => {
     const d = start ? new Date(String(start).slice(0, 7) + '-01T12:00:00') : new Date()
