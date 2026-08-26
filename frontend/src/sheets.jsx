@@ -1030,7 +1030,7 @@ export function RecapSheet({ start, close }) {
     return <span className="delta-pill" style={{ color, background: 'color-mix(in srgb, currentColor 14%, transparent)' }}>{label}</span>
   }
 
-  const Row = ({ label, value, deltaKey }) => (
+  const MetricRow = ({ label, value, deltaKey }) => (
     <div className="lrow" style={{ justifyContent: 'space-between' }}>
       <div className="lrow-m"><div className="lrow-t">{label}</div></div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 12, flexShrink: 0 }}>
@@ -1041,26 +1041,25 @@ export function RecapSheet({ start, close }) {
   )
 
   return <>
-    <div className="row between" style={{ marginBottom: 4 }}>
+    <div className="row between" style={{ marginBottom: viewedEmpty ? 4 : 12 }}>
       <button className="iconbtn" onClick={() => setCur(new Date(y, mo - 1, 1))} aria-label={t('Previous month')}><Icon name="chevronLeft" /></button>
       <h3 style={{ margin: 0, textAlign: 'center' }}>{t(MONTHS_LONG[mo])} {y}{isCurrent ? ' ' + t('so far') : ''}</h3>
       <button className="iconbtn" onClick={() => setCur(new Date(y, mo + 1, 1))} aria-label={t('Next month')}><Icon name="chevronRight" /></button>
     </div>
-    {viewedEmpty
-      ? <div className="small muted" style={{ textAlign: 'center', marginBottom: 8 }}>{t('No workouts in {0}', `${t(MONTHS_LONG[mo])} ${y}`)}</div>
-      : <div className="small muted" style={{ textAlign: 'center', marginBottom: 8 }}>{t('{0} workouts', rec.workouts) + ' · ' + (rec.durationMs ? fmtDur(rec.durationMs) : '0 min') + ' · ' + fmtVol(rec.vol, st.unit)}</div>
-    }
+    {viewedEmpty && (
+      <div className="small muted" style={{ textAlign: 'center', marginBottom: 12 }}>{t('No workouts in {0}', `${t(MONTHS_LONG[mo])} ${y}`)}</div>
+    )}
     <div className="sect-b" style={{ maxWidth: 360, margin: '0 auto' }}>
-      <Row label={t('Workouts')} value={String(rec.workouts)} deltaKey="workouts" />
-      <Row label={t('Time trained')} value={rec.durationMs ? fmtDur(rec.durationMs) : '—'} deltaKey="durationMs" />
-      <Row label={t('Volume')} value={fmtVol(rec.vol, st.unit)} deltaKey="vol" />
-      <Row label={t('Sets')} value={fmtNum(rec.sets)} deltaKey="sets" />
+      <MetricRow label={t('Workouts')} value={String(rec.workouts)} deltaKey="workouts" />
+      <MetricRow label={t('Time trained')} value={rec.durationMs ? fmtDur(rec.durationMs) : '—'} deltaKey="durationMs" />
+      <MetricRow label={t('Volume')} value={fmtVol(rec.vol, st.unit)} deltaKey="vol" />
+      <MetricRow label={t('Sets')} value={fmtNum(rec.sets)} deltaKey="sets" />
     </div>
     {(rec.prs.length > 0 || rec.e1prs.length > 0) && (
       <div style={{ marginTop: 14, maxWidth: 360, marginLeft: 'auto', marginRight: 'auto' }}>
         {rec.prs.length > 0 && (
           <>
-            <h4 className="sec" style={{ margin: '10px 0 6px' }}><Icon name="trophy" style={{ fontSize: 14, color: 'var(--yellow)', marginRight: 6 }} />{t('Records')}</h4>
+            <h4 className="sec" style={{ margin: '10px 0 6px' }}><Icon name="trophy" style={{ fontSize: 14, color: 'var(--yellow)', marginRight: 6 }} />{t('Personal records')}</h4>
             <div className="sect-b">
               {rec.prs.map(id => {
                 const name = EXIDX[id]?.n || id

@@ -408,7 +408,7 @@ export default function Stats() {
         <div className="stats-tile-sub"><Icon name="chevronRight" style={{ fontSize: 11 }} />{t('View history')}</div>
       </div>
 
-      <div className="tile tappable" onClick={() => recapSheet()}>
+      <div className="tile tappable" onClick={() => recapSheet(todayISO())}>
         <div className="stats-tile-head">
           <span className="l">{t('This month')}</span>
           <span className="stats-tile-icon blue"><Icon name="calendar" /></span>

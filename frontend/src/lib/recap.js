@@ -46,7 +46,9 @@ function metricsFor(workouts) {
       if (Number.isFinite(dur) && dur > 0) durationMs += dur
     }
     if (Array.isArray(w.prs)) {
-      for (const id of w.prs) if (id) prs.push(id)
+      for (const id of w.prs) {
+        if (id && !prs.includes(id)) prs.push(id)
+      }
     }
   }
 
@@ -59,10 +61,10 @@ function metricsFor(workouts) {
   }
 }
 
-function e1RecordsFor(allWorkouts, yearMonth) {
+function e1RecordsByMonth(allWorkouts) {
   const sorted = sortedWorkouts(allWorkouts)
   const bestByEx = new Map()
-  const records = []
+  const byMonth = new Map()
   for (const w of sorted) {
     const wMonth = monthKey(w)
     for (const e of (w.entries || [])) {
@@ -73,21 +75,20 @@ function e1RecordsFor(allWorkouts, yearMonth) {
       const prevBest = bestByEx.get(exId)
       if (prevBest == null || best.est > prevBest) {
         bestByEx.set(exId, best.est)
-        if (wMonth === yearMonth) {
-          records.push({
-            id: exId,
-            est: best.est,
-            w: best.w,
-            r: best.r,
-            d: w.d,
-            t: w.start,
-            prev: prevBest ?? 0,
-          })
-        }
+        if (!byMonth.has(wMonth)) byMonth.set(wMonth, [])
+        byMonth.get(wMonth).push({
+          id: exId,
+          est: best.est,
+          w: best.w,
+          r: best.r,
+          d: w.d,
+          t: w.start,
+          prev: prevBest ?? 0,
+        })
       }
     }
   }
-  return records
+  return byMonth
 }
 
 /**
@@ -106,19 +107,20 @@ export function monthRecap(workouts = [], unit = 'kg', yearMonth) {
 
   const cur = metricsFor(curWs)
   const prev = metricsFor(prevWs)
-  const e1prs = e1RecordsFor(workouts, ym)
+  const allE1Records = e1RecordsByMonth(workouts)
+  const e1prs = allE1Records.get(ym) || []
 
-  // prev object exposed for UI deltas; keep numeric plus prs/e1prs for completeness but minimal contract is numeric
   const prevOut = {
     vol: prev.vol,
     sets: prev.sets,
     workouts: prev.workouts,
     durationMs: prev.durationMs,
     prs: prev.prs,
-    e1prs: e1RecordsFor(workouts, prevYm),
+    e1prs: allE1Records.get(prevYm) || [],
   }
 
   const viewedEmpty = cur.workouts === 0
+  const prevEmpty = prev.workouts === 0
 
   const deltas = {}
   for (const k of ['vol', 'sets', 'workouts', 'durationMs']) {
@@ -126,9 +128,11 @@ export function monthRecap(workouts = [], unit = 'kg', yearMonth) {
     const p = prev[k]
     if (viewedEmpty) {
       deltas[k] = null
-    } else if (p === 0 || p == null) {
-      // absolute delta when previous empty: absolute value equals current (cur - 0)
+    } else if (prevEmpty) {
+      // absolute delta when previous month has no workouts: delta is current value
       deltas[k] = c
+    } else if (p === 0 || p == null) {
+      deltas[k] = c === 0 ? 0 : c
     } else {
       deltas[k] = ((c - p) / p) * 100
     }
