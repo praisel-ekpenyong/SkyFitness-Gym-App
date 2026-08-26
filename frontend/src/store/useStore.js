@@ -3,7 +3,12 @@ import { localTZ } from '../lib/format.js'
 import { registerCustom } from '../lib/exercises.js'
 import { MOBILE, syncReminder } from '../lib/mobile.js'
 import { flush, load, loadLocal, save } from '../lib/storage.js'
-import { createActiveSession, applyWorkingWeight, completeActiveSession } from '../lib/active-workout.js'
+import {
+  createActiveSession, applyWorkingWeight, completeActiveSession,
+  addActiveExercise, removeActiveExercise, toggleActiveSet,
+  updateActiveSetField, addActiveSet, removeActiveSet, addActiveWarmup,
+  pairActiveSuperset, unpairActiveSuperset, setActiveIndex, discardActiveSession
+} from '../lib/active-workout.js'
 
 export const DEF = {
   // No lang key — Sky is English-only (ticket 05) and nothing reads S.lang. Profiles that
@@ -71,15 +76,70 @@ export const useStore = create((set, get) => {
 
     // --- Active-workout lifecycle (deep seam: lib/active-workout.js) ---
     // Sheets and views call these; the single heaviest-weight policy,
-    // target freezing and Record detection all live behind the seam.
+    // target freezing, set toggles, and Record detection all live behind the seam.
     beginSession(routineId, bw) {
       const active = createActiveSession(get().S, routineId, bw)
       get().update(s => { s.active = active })
       return active
     },
+    addActiveExercise(exId, targetCfg) {
+      let entry = null
+      get().update(s => { entry = addActiveExercise(s, exId, targetCfg) })
+      return entry
+    },
+    removeActiveExercise(idx) {
+      let ok = false
+      get().update(s => { ok = removeActiveExercise(s, idx) })
+      return ok
+    },
+    toggleActiveSet(entryIdx, setIdx, opts = {}) {
+      let outcome = null
+      get().update(s => { outcome = toggleActiveSet(s, entryIdx, setIdx, opts) })
+      return outcome
+    },
+    updateActiveSetField(entryIdx, setIdx, field, value) {
+      let ok = false
+      get().update(s => { ok = updateActiveSetField(s, entryIdx, setIdx, field, value) })
+      return ok
+    },
+    addActiveSet(entryIdx) {
+      let ok = false
+      get().update(s => { ok = addActiveSet(s, entryIdx) })
+      return ok
+    },
+    removeActiveSet(entryIdx, setIdx = null) {
+      let ok = false
+      get().update(s => { ok = removeActiveSet(s, entryIdx, setIdx) })
+      return ok
+    },
+    addActiveWarmup(entryIdx) {
+      let ok = false
+      get().update(s => { ok = addActiveWarmup(s, entryIdx) })
+      return ok
+    },
+    pairActiveSuperset(firstIdx, secondIdx) {
+      let ok = false
+      get().update(s => { ok = pairActiveSuperset(s, firstIdx, secondIdx) })
+      return ok
+    },
+    unpairActiveSuperset(entryIdx) {
+      let ok = false
+      get().update(s => { ok = unpairActiveSuperset(s, entryIdx) })
+      return ok
+    },
     recordWorkingWeight(entryIdx, weight) {
       let ok = false
       get().update(s => { ok = applyWorkingWeight(s, entryIdx, weight) })
+      return ok
+    },
+    setActiveIndex(idx) {
+      let ok = false
+      get().update(s => { ok = setActiveIndex(s, idx) })
+      return ok
+    },
+    discardSession() {
+      let ok = false
+      get().update(s => { ok = discardActiveSession(s) })
       return ok
     },
     finishSession() {

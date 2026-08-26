@@ -1,4 +1,4 @@
-import { workSetsDone, isWarmupRow } from './workout-model.js'
+import { workSetsDone, workoutVolume } from './workout-model.js'
 import { bestSetOf } from './onerm.js'
 
 function monthKey(workout) {
@@ -37,20 +37,7 @@ function metricsFor(workouts) {
   const prs = []
 
   for (const w of workouts || []) {
-    // tonnage: w.r * w.w for done non-warmup sets (warm-ups excluded)
-    for (const e of (w.entries || [])) {
-      for (const s of (e.sets || [])) {
-        if (!s?.done) continue
-        if (isWarmupRow(s)) continue
-        const wv = Number(s.w)
-        const rv = Number(s.r)
-        if (Number.isFinite(wv) && Number.isFinite(rv) && wv !== 0 && rv !== 0) {
-          vol += wv * rv
-        } else if (Number.isFinite(wv) && Number.isFinite(rv)) {
-          vol += (Number.isFinite(wv) ? wv : 0) * (Number.isFinite(rv) ? rv : 0)
-        }
-      }
-    }
+    vol += workoutVolume(w)
     sets += workSetsDone(w)
     const start = Number(w.start)
     const end = Number(w.end)

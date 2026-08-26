@@ -4,6 +4,12 @@ import { parseHTML } from 'linkedom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import Workout from './Workout.jsx'
 
+import {
+  toggleActiveSet, updateActiveSetField, removeActiveExercise,
+  addActiveExercise, addActiveSet, removeActiveSet, addActiveWarmup,
+  pairActiveSuperset, unpairActiveSuperset, setActiveIndex, discardActiveSession
+} from '../lib/active-workout.js'
+
 const mocks = vi.hoisted(() => {
   const state = {
     S: null,
@@ -13,8 +19,18 @@ const mocks = vi.hoisted(() => {
   }
   state.storeSnapshot = () => ({
     S: state.S,
-    user: null,
     update: mut => mut(state.S),
+    toggleActiveSet: (entryIdx, setIdx, opts) => toggleActiveSet(state.S, entryIdx, setIdx, opts),
+    updateActiveSetField: (entryIdx, setIdx, field, value) => updateActiveSetField(state.S, entryIdx, setIdx, field, value),
+    removeActiveExercise: idx => removeActiveExercise(state.S, idx),
+    addActiveExercise: (exId, cfg) => addActiveExercise(state.S, exId, cfg),
+    addActiveSet: entryIdx => addActiveSet(state.S, entryIdx),
+    removeActiveSet: (entryIdx, setIdx) => removeActiveSet(state.S, entryIdx, setIdx),
+    addActiveWarmup: entryIdx => addActiveWarmup(state.S, entryIdx),
+    pairActiveSuperset: (firstIdx, secondIdx) => pairActiveSuperset(state.S, firstIdx, secondIdx),
+    unpairActiveSuperset: entryIdx => unpairActiveSuperset(state.S, entryIdx),
+    setActiveIndex: idx => setActiveIndex(state.S, idx),
+    discardSession: () => discardActiveSession(state.S),
   })
   state.uiSnapshot = () => ({
     work: null,

@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import { describe, it, expect } from 'vitest'
 import {
   bestKnownWeight, heaviestSetWeight, heaviestForEntry, mergeExWeight,
@@ -8,9 +7,16 @@ import {
   pairActiveSuperset, unpairActiveSuperset, toggleActiveSet,
   setActiveIndex, discardActiveSession
 } from './active-workout.js'
-import { DEF } from '../store/useStore.js'
 
 const clone = o => JSON.parse(JSON.stringify(o))
+
+// Minimal Profile shape for tests that start from a blank slate. Deliberately not imported
+// from ../store/useStore.js — pulling in the store registers document listeners and would
+// force this DOM-free suite into a DOM environment.
+const blankProfile = () => ({
+  unit: 'kg', sound: 'off', restSec: 90,
+  routines: [], workouts: [], exWeights: {}, bodyweight: [], week: {}, dayPlan: {},
+})
 
 describe('active-workout lifecycle seam', () => {
   it('bestKnownWeight merges history best and exWeights mirror', () => {
@@ -50,8 +56,7 @@ describe('active-workout lifecycle seam', () => {
   })
 
   it('createActiveSession freezes target and builds prescription sets', () => {
-    const S = clone(DEF)
-    S.unit = 'kg'
+    const S = blankProfile()
     S.routines = [{ id: 'r1', name: 'Push', ex: [{ id: '0025', sets: 3, reps: 8, weight: 50 }] }]
     S.workouts = []
     S.exWeights = {}
@@ -65,7 +70,7 @@ describe('active-workout lifecycle seam', () => {
   })
 
   it('addActiveExercise handles routine progression and freestyle seeding', () => {
-    const S = clone(DEF)
+    const S = blankProfile()
     S.routines = [{ id: 'r1', name: 'Push', ex: [{ id: '0025', sets: 3, reps: 8, weight: 50, prog: 'linear', inc: 2.5 }] }]
     S.workouts = [
       { d: '2026-08-10', entries: [{ id: '0025', sets: [{ w: 50, r: 8, done: true }, { w: 50, r: 8, done: true }, { w: 50, r: 8, done: true }], target: { sets: 3, reps: 8, weight: 50, prog: 'linear', inc: 2.5 } }] }
@@ -80,7 +85,7 @@ describe('active-workout lifecycle seam', () => {
     expect(entry.sets[0].w).toBe(52.5)
 
     // In freestyle mode, seeds from last history
-    const S_free = clone(DEF)
+    const S_free = blankProfile()
     S_free.workouts = [
       { d: '2026-08-10', entries: [{ id: '0025', sets: [{ w: 60, r: 10, done: true }] }] }
     ]
@@ -211,12 +216,23 @@ describe('active-workout lifecycle seam', () => {
     expect(r2.workoutDone).toBe(true)
     expect(r2.exJustDone).toBe(true)
     expect(r2.newHighWater).toBe(2)
+    expect(r2.shouldStopRest).toBe(true)
 
     // Unchecking does not re-trigger completion or askTop
     const r3 = toggleActiveSet(S, 0, 1, { highWater: 2 })
     expect(r3.checked).toBe(false)
     expect(r3.askTop).toBe(false)
     expect(r3.workoutDone).toBe(false)
+    expect(r3.shouldStopRest).toBe(false)
+    expect(r3.shouldRest).toBe(false)
+
+    // Re-checking finished work is not new progress: no rest side effects either way,
+    // so fixing a mistaken untick can't cut a running rest timer short.
+    const r4 = toggleActiveSet(S, 0, 1, { highWater: 2 })
+    expect(r4.checked).toBe(true)
+    expect(r4.newHighWater).toBe(2)
+    expect(r4.shouldStopRest).toBe(false)
+    expect(r4.shouldRest).toBe(false)
   })
 
   it('applyWorkingWeight sets topW and merges exWeights', () => {

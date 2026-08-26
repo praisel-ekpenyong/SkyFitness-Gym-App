@@ -9,7 +9,7 @@ import { useStore, DEF } from './store/useStore.js'
 import { EXIDX } from './lib/exercises.js'
 import { MUSCLES, FILTER_MUSCLES, MUSCLE_NAME, primaryMuscleOf, secondaryMusclesOf, matchesMuscleFilter, isSecondaryMuscleMatch, loadOf, loadOfWorkouts, levelsOf, rankOf } from './lib/muscles.js'
 import { buildPlanBundle, parsePlan, mergePlan } from './lib/plan-share.js'
-import { buildCompletedWorkout } from './lib/finish-workout.js'
+import { buildCompletedWorkout } from './lib/active-workout.js'
 
 vi.mock('./lib/sound.js', () => ({
   beep: vi.fn(),

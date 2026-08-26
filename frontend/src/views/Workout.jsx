@@ -3,19 +3,17 @@ import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { exOr } from '../lib/exercises.js'
-import { effectiveRoutine, lastEntryFor, buildSets, freestyleConfig, defaultConfig, setsDoneActive, supersetUnits, unitOf, setLabel, modeOf, isBw, isPerSide, sideReps, repStep, EFFORT, effortOf, stepEffort, capEffort, cascadeWeight, insertWarmupRow, removeRowAt, pairAdjacent, unpairSuperset, cleanupSg } from '../lib/history.js'
+import { effectiveRoutine, lastEntryFor, freestyleConfig, defaultConfig, setsDoneActive, supersetUnits, unitOf, setLabel, modeOf, isBw, isPerSide, sideReps, repStep, EFFORT, effortOf, stepEffort, capEffort } from '../lib/history.js'
 import { bestKnownWeight } from '../lib/active-workout.js'
 import { fmtNum, fmtDate, todayISO, exCount, DAYN } from '../lib/format.js'
 import { playSetComplete } from '../lib/sound.js'
 import { t } from '../lib/i18n.js'
-import { setProgressHighWater, supersetFlowStep } from '../lib/supersetFlow.js'
 import Media from '../components/Media.jsx'
 import { startFlow, exercisePicker, exConfigSheet, exerciseDetailSheet, topWeightSheet, finishWorkout, workoutCompleteSheet, confirmSheet } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
 import { Button, Check, NumberField } from '../components/ui.jsx'
-import { nextPrescription, applyPrescription } from '../lib/progression.js'
 import { glyphOf } from '../lib/glyphs.js'
-import { isWarmupRow, makeRow } from '../lib/workout-model.js'
+import { isWarmupRow } from '../lib/workout-model.js'
 
 /* ---------- start chooser (no active workout) ---------- */
 function StartChooser() {
@@ -176,20 +174,12 @@ export function removeActiveExercise(idx) {
   // Clear the work callback before indexes can shift. This also protects a confirmation sheet
   // that was opened first and confirmed after a timed hold started.
   useUI.getState().stopWork()
-  useStore.getState().update(s => {
-    if (!s.active || !Array.isArray(s.active.entries)) return
-    if (idx < 0 || idx >= s.active.entries.length) return
-    s.active.entries.splice(idx, 1)
-    cleanupSg(s.active.entries)
-    if (idx < s.active.cur) s.active.cur--
-    if (s.active.cur >= s.active.entries.length) s.active.cur = Math.max(0, s.active.entries.length - 1)
-  })
+  useStore.getState().removeActiveExercise(idx)
 }
 
 function ActiveWorkout() {
   const nav = useNavigate()
   const S = useStore(s => s.S)
-  const update = useStore(s => s.update)
   const { startRest, stopRest, work } = useUI()
   const A = S.active
   const units = supersetUnits(A.entries)
@@ -217,35 +207,13 @@ function ActiveWorkout() {
   const total = A.entries.reduce((n, e) => n + e.sets.length, 0)
   const done = setsDoneActive(A)
 
-  const mutEntry = (idx, fn) => update(s => { fn(s.active.entries[idx]) })
-  // Clearing an optional field drops the key rather than storing null, so a set only carries
-  // what was actually logged — in the session, in history and in a backup.
-  const setField = (idx, i, field, v) => mutEntry(idx, e => {
-    if (v == null) delete e.sets[i][field]; else e.sets[i][field] = v
-    // Changing a weight cascades to the following sets of the same phase, so a
-    // heavier bar carries through the set instead of retyping every row.
-    if (field === 'w') {
-      e.sets = cascadeWeight(e.sets, i, v)
-    }
-  })
-  const modeAt = idx => modeOf({ ...(A.entries[idx].target || {}), id: A.entries[idx].id })
-  const addSet = idx => mutEntry(idx, e => {
-    const l = e.sets[e.sets.length - 1] || null
-    const m = modeOf({ ...(e.target || {}), id: e.id })
-    e.sets.push(makeRow(m, e.target || {}, { prev: l }))
-  })
-  const removeSet = idx => mutEntry(idx, e => { if (e.sets.length > 1) e.sets.pop() })
-  const addWarmup = idx => mutEntry(idx, e => {
-    const m = modeOf({ ...(e.target || {}), id: e.id })
-    e.sets = insertWarmupRow(e.sets, m, e.target || {})
-  })
-  const removeSetAt = (idx, i) => mutEntry(idx, e => { e.sets = removeRowAt(e.sets, i) })
-  const pairAt = (first, second) => update(s => {
-    s.active.entries = pairAdjacent(s.active.entries, first, second)
-  })
-  const unpairAt = idx => update(s => {
-    s.active.entries = unpairSuperset(s.active.entries, idx)
-  })
+  const setField = (idx, i, field, v) => useStore.getState().updateActiveSetField(idx, i, field, v)
+  const addSet = idx => useStore.getState().addActiveSet(idx)
+  const removeSet = idx => useStore.getState().removeActiveSet(idx)
+  const addWarmup = idx => useStore.getState().addActiveWarmup(idx)
+  const removeSetAt = (idx, i) => useStore.getState().removeActiveSet(idx, i)
+  const pairAt = (first, second) => useStore.getState().pairActiveSuperset(first, second)
+  const unpairAt = idx => useStore.getState().unpairActiveSuperset(idx)
   const onPairPrev = !isSuperset && cur > 0 ? () => pairAt(cur - 1, cur) : null
   const onPairNext = !isSuperset && cur < A.entries.length - 1 ? () => pairAt(cur, cur + 1) : null
 
@@ -288,78 +256,39 @@ function ActiveWorkout() {
   const startTimed = (idx, i) => {
     const e = A.entries[idx]
     useUI.getState().startWork(e.sets[i].sec || 45, exOr(e.id).n, elapsed => {
-      mutEntry(idx, en => { en.sets[i].sec = elapsed })
-      if (!useStore.getState().S.active.entries[idx].sets[i].done) toggle(idx, i)
+      useStore.getState().updateActiveSetField(idx, i, 'sec', elapsed)
+      if (!useStore.getState().S.active?.entries?.[idx]?.sets?.[i]?.done) toggle(idx, i)
     })
   }
 
   const toggle = (idx, i) => {
-    const m = modeAt(idx)
-    const cardioEntry = m === 'cardio'
-    const isLastUnit = unitIdx >= units.length - 1
-    let askTop = false, exJustDone = false, workoutDone = false, checked = false
-    mutEntry(idx, e => {
-      e.sets[i].done = !e.sets[i].done
-      checked = e.sets[i].done
-      if (e.sets[i].done) {
-        playSetComplete(S.sound)
-        const unitDone = unit.every(ui => (ui === idx ? e : A.entries[ui]).sets.every(x => x.done))
-        if (unitDone && isLastUnit) workoutDone = true      // last exercise's last set → done
-        // Only loaded reps training has a "working weight" worth confirming — a bodyweight
-        // plank has nothing to put in that slider, and neither does a set of push-ups
-        // (issue #32: the fewest taps that still record what happened).
-        const loaded = m === 'reps' && !(isBw({ ...(e.target || {}), id: e.id }) && !e.sets.some(x => x.w > 0))
-        if (e.sets.every(x => x.done)) { exJustDone = true; if (loaded && !e.asked) { e.asked = true; askTop = true } }
-      }
+    const res = useStore.getState().toggleActiveSet(idx, i, {
+      highWater: progressHighWater.current[idx] || 0
     })
-    // reps: topWeight first (it chains into the finish/continue prompt on the last unit).
-    // cardio/timed or already-confirmed: go straight to the prompt.
-    if (askTop) topWeightSheet(idx)
-    else if (workoutDone) workoutCompleteSheet()
-    else if (exJustDone && cardioEntry) useUI.getState().toast(t('Cardio logged'))
-    else if (exJustDone && m === 'time') useUI.getState().toast(t('Hold logged'))
+    if (!res) return
 
-    // Only progress beyond this exercise's high-water mark may navigate or change rest. This
-    // prevents an uncheck/re-check of finished work from replaying the flow side effects.
-    const fresh = useStore.getState().S.active
-    if (fresh && checked && fresh.entries[idx]) {
-      const progress = setProgressHighWater(fresh.entries[idx], progressHighWater.current[idx] || 0)
-      progressHighWater.current[idx] = progress.highWater
-      if (!progress.isNew) return
-
-      const freshUnits = supersetUnits(fresh.entries)
-      const freshUnit = freshUnits.find(u => u.includes(idx))
-      const freshUnitIdx = freshUnits.indexOf(freshUnit)
-      const freshLastUnit = freshUnitIdx >= freshUnits.length - 1
-      const freshUnitDone = freshUnit?.every(ui => fresh.entries[ui].sets.every(x => x.done))
-
-      // Singleton units are ordinary exercises: preserve their historical between-set rest,
-      // while final sets finish quietly and never enter superset navigation.
-      if (freshUnitDone) stopRest()
-      if (!freshUnit || freshUnit.length <= 1) {
-        if (!freshUnitDone) startRest(S.restSec)
-        return
-      }
-
-      const step = supersetFlowStep(fresh.entries, freshUnit, idx)
-      if (!step) return
-      if (step.unitDone) {
-        if (!freshLastUnit) {
-          const nextUnit = freshUnits[freshUnitIdx + 1]
-          // The top-weight sheet's explicit "Just close" path owns the choice not to advance.
-          if (!askTop && nextUnit?.length) update(s => { if (s.active) s.active.cur = nextUnit[0] })
-          startRest(S.restSec)
-        }
-      } else {
-        if (step.nextIdx != null) update(s => { if (s.active) s.active.cur = step.nextIdx })
-        if (step.roundDone) startRest(S.restSec)
-      }
+    if (res.newHighWater != null) {
+      progressHighWater.current[idx] = res.newHighWater
     }
+
+    if (res.checked) {
+      playSetComplete(S.sound)
+    }
+
+    if (res.askTop) topWeightSheet(idx)
+    else if (res.workoutDone) workoutCompleteSheet()
+    else if (res.exJustDone && res.cardioEntry) useUI.getState().toast(t('Cardio logged'))
+    else if (res.exJustDone && res.timedEntry) useUI.getState().toast(t('Hold logged'))
+
+    // Rest timer coordination — gated on new progress like every other flow effect,
+    // so an uncheck/re-check of finished work can't cut a running rest short.
+    if (res.shouldStopRest) stopRest()
+    if (res.shouldRest) startRest(S.restSec)
   }
 
   return <div className="narrow">
     <div className="hdr">
-      <button className="iconbtn" aria-label={t('Discard')} onClick={() => confirmSheet({ title: t('Discard workout?'), message: t('The sets you logged in this session will be lost.'), confirmText: t('Discard'), danger: true, onConfirm: () => { update(s => { s.active = null }); stopRest(); nav('/home') } })}><Icon name="xmark" /></button>
+      <button className="iconbtn" aria-label={t('Discard')} onClick={() => confirmSheet({ title: t('Discard workout?'), message: t('The sets you logged in this session will be lost.'), confirmText: t('Discard'), danger: true, onConfirm: () => { useStore.getState().discardSession(); stopRest(); nav('/home') } })}><Icon name="xmark" /></button>
       <div style={{ textAlign: 'center' }}><div style={{ fontWeight: 600 }}>{A.name}</div><div className="sub"><Elapsed start={A.start} /> · {t('{0} sets', done + '/' + total)}</div></div>
       <button className="iconbtn" style={{ color: 'var(--acc)' }} aria-label={t('Finish')} onClick={finishWorkout}><Icon name="check" /></button>
     </div>
@@ -386,23 +315,17 @@ function ActiveWorkout() {
 
     <div style={{ height: 12 }} />
     <div className="row">
-      <Button icon="chevronLeft" disabled={unitIdx <= 0} onClick={() => update(s => { s.active.cur = units[unitIdx - 1][0] })}>{t('Prev')}</Button>
-      <Button trailingIcon="chevronRight" disabled={unitIdx < 0 || unitIdx >= units.length - 1} onClick={() => update(s => { s.active.cur = units[unitIdx + 1][0] })}>{t('Next')}</Button>
+      <Button icon="chevronLeft" disabled={unitIdx <= 0} onClick={() => useStore.getState().setActiveIndex(units[unitIdx - 1][0])}>{t('Prev')}</Button>
+      <Button trailingIcon="chevronRight" disabled={unitIdx < 0 || unitIdx >= units.length - 1} onClick={() => useStore.getState().setActiveIndex(units[unitIdx + 1][0])}>{t('Next')}</Button>
     </div>
     <div style={{ height: 10 }} />
     <Button onClick={() => exercisePicker(ex => {
       const routine = S.routines.find(r => r.id === A.routineId)
       const freestyle = !A.routineId
-      // Freestyle has no routine prescription to apply: show the last target in the config
-      // sheet and carry its completed rows forward. A planned session keeps its existing path.
       const seed = freestyle ? freestyleConfig(S, { id: ex.id, ...defaultConfig(ex.id) }) : null
-      exConfigSheet(ex, null, cfg => update(s => {
-        const full = { ...cfg, id: ex.id }
-        const plan = freestyle ? null : nextPrescription(s, full, s.routines.find(r => r.id === s.active.routineId))
-        const sets = buildSets(s, full, freestyle ? { preferLast: true } : undefined)
-        s.active.entries.push({ id: ex.id, target: { ...cfg }, plan, sets: freestyle ? sets : applyPrescription(sets, plan) })
-        s.active.cur = s.active.entries.length - 1
-      }), null, routine, seed)
+      exConfigSheet(ex, null, cfg => {
+        useStore.getState().addActiveExercise(ex.id, cfg)
+      }, null, routine, seed)
     })} icon="plus">{t('Add exercise')}</Button>
     {A.entries.length > 0 && <>
       <div style={{ height: 6 }} />

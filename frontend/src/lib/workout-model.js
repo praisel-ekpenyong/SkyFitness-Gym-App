@@ -181,7 +181,7 @@ export function buildSets(S, cfg, options = {}) {
 
 export function workoutVolume(w) {
   let v = 0
-  ;(w?.entries || []).forEach(e => (e.sets || []).forEach(s => { if (s.done) v += (s.w || 0) * (s.r || 0) }))
+  ;(w?.entries || []).forEach(e => (e.sets || []).forEach(s => { if (s.done && !isWarmupRow(s)) v += (s.w || 0) * (s.r || 0) }))
   return v
 }
 

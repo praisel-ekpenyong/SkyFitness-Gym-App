@@ -4,7 +4,7 @@ import { createRoot } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App.jsx'
 import { useStore, DEF } from './store/useStore.js'
-import { buildCompletedWorkout } from './lib/finish-workout.js'
+import { buildCompletedWorkout } from './lib/active-workout.js'
 import { fatigueOf, strengthOf } from './lib/recovery.js'
 import { EXIDX } from './lib/exercises.js'
 import {
