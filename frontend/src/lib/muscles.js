@@ -325,7 +325,18 @@ export function musclesOf(ex) {
       const weight = Number(ex.muscleWeights[slug])
       if (Number.isFinite(weight) && weight > 0) snapshot[slug] = weight
     })
-    if (Object.keys(snapshot).length) return snapshot
+    if (Object.keys(snapshot).length) {
+      // Historic reinterpret: old 2-way back snapshots (upper-back 0.75 / lower-back 0.25)
+      // lack lats and were derived via BY_BODYPART fallback. Per spec 05, historic
+      // workouts reinterpret live under the new 3-way split (no stored migration),
+      // so stale snapshots must be ignored and re-derived via current BY_BODYPART.
+      const isStaleBackSnapshot =
+        !('lats' in snapshot) &&
+        ex.bp === 'back' &&
+        !explicitGroupsOf(ex) &&
+        !hasExplicitMuscleMetadata(ex)
+      if (!isStaleBackSnapshot) return snapshot
+    }
   }
   const out = {}
   const add = (name, w) => {

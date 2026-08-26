@@ -53,6 +53,15 @@ describe('body-paths SVG geometry', () => {
     })
   })
 
+  it('keeps generated module size within ~90KB invariant (no accidental bloat)', () => {
+    // body-paths.js is 94285 bytes (dist/assets/body-paths-*.js 93.27 kB).
+    // Vite build enforces the chunk size, but a lightweight in-memory check
+    // catches accidental bloat/shrink without node:fs (speculative-generality fix).
+    const totalChars = JSON.stringify(bodyPaths).length
+    expect(totalChars).toBeGreaterThan(80000)
+    expect(totalChars).toBeLessThan(110000)
+  })
+
   it('ensures every drawable muscle in MUSCLES is present on both body models', () => {
     // lats geometry ships separately from the taxonomy (spec: no fake seam);
     // allow the slug to be absent until the upstream MuscleMap path lands.

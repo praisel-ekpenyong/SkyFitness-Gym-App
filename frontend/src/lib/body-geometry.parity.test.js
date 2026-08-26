@@ -31,16 +31,25 @@ describe('lats vs upper-back visual parity (gated)', () => {
       expect(d.trim()).toMatch(/^[Mm]/)
     }
   }
-  it('produces distinct heat levels for isolated lats vs upper-back loads', () => {
+  const assertIsolatedLevels = () => {
     const latLoad = levelsOf({ lats: 10, 'upper-back': 0 })
     const rowLoad = levelsOf({ lats: 0, 'upper-back': 10 })
-    const bothLoad = levelsOf({ lats: 5, 'upper-back': 5 })
-
-    // levelsOf is relative to max within the load object, so isolated should be 4 vs 0
     expect(latLoad.lats).toBe(4)
     expect(latLoad['upper-back']).toBe(0)
     expect(rowLoad['upper-back']).toBe(4)
     expect(rowLoad.lats).toBe(0)
+  }
+  const gatedSkipIfNoLats = () => {
+    if (!hasLatsAny) {
+      assertNoFakeSeam()
+      return true
+    }
+    return false
+  }
+  it('produces distinct heat levels for isolated lats vs upper-back loads', () => {
+    assertIsolatedLevels()
+    const bothLoad = levelsOf({ lats: 5, 'upper-back': 5 })
+
     // when both present and equal, both should be hot
     expect(bothLoad.lats).toBe(4)
     expect(bothLoad['upper-back']).toBe(4)
@@ -50,10 +59,7 @@ describe('lats vs upper-back visual parity (gated)', () => {
   })
 
   it('exposes independent back paths when lats geometry is present (gated)', () => {
-    if (!hasLatsAny) {
-      assertNoFakeSeam()
-      return
-    }
+    if (gatedSkipIfNoLats()) return
 
     for (const model of ['male', 'female']) {
       const back = bodyPaths[model].back
@@ -94,14 +100,14 @@ describe('lats vs upper-back visual parity (gated)', () => {
     // {MUSCLES.map(slug => (view.p[slug] || []).map(... className={'bm-m l'+(levels[slug]||0)+(selected===slug?' sel':'')) ... <title>{MUSCLE_NAME[slug]}</title>)}
     // When lats path is present, levels[lats] vs levels[upper-back] produce distinct classes (l4 vs l0 etc).
     // When absent, the fallback is documented and no fake seam is invented.
-    if (!hasLatsAny) {
-      assertNoFakeSeam()
+    if (gatedSkipIfNoLats()) {
       // Module remains generated with header intact; size invariant (~90KB) is
       // enforced by vite build artifact `dist/assets/body-paths-*.js 93.27 kB`
-      // and `body-paths.js` 94285 bytes — not re-checked via node:fs here.
+      // and `body-paths.js` 94285 bytes — verified by body-paths.test.js size check.
       expect(MUSCLES).toContain('lats')
       return
     }
+    assertIsolatedLevels()
     // If geometry has landed, the DOM rendering would contain two distinct selectable regions;
     // that is verified by the previous test's path existence + mutual exclusivity.
     expect(hasLatsAny).toBe(true)

@@ -323,6 +323,32 @@ describe('lats taxonomy expansion', () => {
     expect(bodypartForMuscle('Lats')).toBe('back')
     expect(bodypartForMuscle('LATS')).toBe('back')
   })
+
+  it('reinterprets historic 2-way back snapshots live as 3-way lats split (no migration)', async () => {
+    const { musclesOf, loadOfWorkouts } = await import('./muscles.js')
+    // Old snapshot stored before lats taxonomy: back 0.75/0.25 without lats
+    const staleSnapshot = { n: 'Old Back Lift', bp: 'back', muscleWeights: { 'upper-back': 0.75, 'lower-back': 0.25 } }
+    expect(musclesOf(staleSnapshot)).toEqual({ lats: 0.5, 'upper-back': 0.35, 'lower-back': 0.15 })
+    // New snapshot with lats is preserved verbatim
+    const freshSnapshot = { n: 'New Back Lift', bp: 'back', muscleWeights: { lats: 0.5, 'upper-back': 0.35, 'lower-back': 0.15 } }
+    expect(musclesOf(freshSnapshot)).toEqual({ lats: 0.5, 'upper-back': 0.35, 'lower-back': 0.15 })
+    // Explicit primary snapshot (e.g., row) is never reinterpreted
+    const explicitSnapshot = { n: 'Row', bp: 'back', muscleWeights: { 'upper-back': 1, biceps: 0.4 }, muscleGroups: ['upper-back', 'biceps'] }
+    expect(musclesOf(explicitSnapshot)).toEqual({ 'upper-back': 1, biceps: 0.4 })
+    // Bare latissimus alias (User Story 11) resolves to lats
+    const { canonicalMuscle } = await import('./muscles.js')
+    expect(canonicalMuscle('latissimus')).toBe('lats')
+
+    // loadOfWorkouts with stale muscleSnapshot in historic entry reinterprets
+    const histW = {
+      id: 'w-hist', d: '2026-01-01', start: Date.UTC(2026, 0, 1, 10), unit: 'kg',
+      entries: [{ id: 'c-old', sets: [{ done: true, w: 50, r: 10 }, { done: true, w: 50, r: 10 }], muscleSnapshot: staleSnapshot }],
+    }
+    const load = loadOfWorkouts([histW], null)
+    expect(load.lats).toBeCloseTo(1.0, 5)
+    expect(load['upper-back']).toBeCloseTo(0.7, 5)
+    expect(load['lower-back']).toBeCloseTo(0.3, 5)
+  })
 })
 
 describe('legacy custom exercises and BY_BODYPART fallbacks', () => {

@@ -48,20 +48,26 @@ function getChip(scope, label) {
   return Array.from(scope.querySelectorAll('.chips button.chip')).find(b => b.textContent.trim() === label)
 }
 
+// Shared head-to-toe order for 19 muscles + cardio, per CONTEXT.md / muscles.js MUSCLES
+const HEAD_TO_TOE_DISPLAY = ['Traps', 'Shoulders', 'Chest', 'Upper back', 'Lats', 'Serratus', 'Biceps', 'Triceps', 'Forearms', 'Abs', 'Obliques', 'Lower back', 'Glutes', 'Quads', 'Hamstrings', 'Adductors', 'Hip flexors', 'Calves', 'Shins', 'Cardio']
+const EXPECTED_LIBRARY_CHIPS = ['Favorites (1)', 'All', ...HEAD_TO_TOE_DISPLAY]
+
+function expectIsolatedLatsLevels() {
+  const pureLat = levelsOf({ lats: 10, 'upper-back': 0 })
+  const pureUpper = levelsOf({ lats: 0, 'upper-back': 10 })
+  expect(pureLat.lats).toBe(4)
+  expect(pureLat['upper-back']).toBe(0)
+  expect(pureUpper['upper-back']).toBe(4)
+  expect(pureUpper.lats).toBe(0)
+}
+
 describe('Ticket 03 — Library and Picker filters plus Exercise Detail presentation', () => {
   it('Library renders 19 muscle chips plus Cardio in head-to-toe order with Lats after Upper back; Favorites/All preserved', async () => {
     useStore.getState().update(s => { s.favorites = ['0001'] })
     await act(async () => { root.render(<Library />) })
     const firstChipsRow = container.querySelectorAll('.chips')[0]
     const chips = Array.from(firstChipsRow.querySelectorAll('button.chip')).map(c => c.textContent.trim())
-    const expected = [
-      'Favorites (1)', 'All',
-      'Traps', 'Shoulders', 'Chest', 'Upper back', 'Lats', 'Serratus',
-      'Biceps', 'Triceps', 'Forearms', 'Abs', 'Obliques', 'Lower back',
-      'Glutes', 'Quads', 'Hamstrings', 'Adductors', 'Hip flexors',
-      'Calves', 'Shins', 'Cardio',
-    ]
-    expect(chips).toEqual(expected)
+    expect(chips).toEqual(EXPECTED_LIBRARY_CHIPS)
     // Ensure Lats immediately after Upper back and before Serratus
     expect(chips.indexOf('Lats')).toBe(chips.indexOf('Upper back') + 1)
     expect(chips.indexOf('Serratus')).toBe(chips.indexOf('Lats') + 1)
@@ -128,8 +134,7 @@ describe('Ticket 03 — Library and Picker filters plus Exercise Detail presenta
     const firstChipsRow = container.querySelectorAll('.chips')[0]
     const chips = Array.from(firstChipsRow.querySelectorAll('button.chip')).map(c => c.textContent.trim())
     // Picker has Favorites, Chosen? Without routines, Chosen not present. So check core muscles sequence
-    const muscleSequence = ['Traps', 'Shoulders', 'Chest', 'Upper back', 'Lats', 'Serratus', 'Biceps', 'Triceps', 'Forearms', 'Abs', 'Obliques', 'Lower back', 'Glutes', 'Quads', 'Hamstrings', 'Adductors', 'Hip flexors', 'Calves', 'Shins', 'Cardio']
-    muscleSequence.forEach(m => expect(chips).toContain(m))
+    HEAD_TO_TOE_DISPLAY.forEach(m => expect(chips).toContain(m))
     expect(chips.indexOf('Lats')).toBe(chips.indexOf('Upper back') + 1)
     // Filter Picker by Lats and by Upper back same as Library
     const latsChip = getChip(container, 'Lats')
@@ -335,13 +340,7 @@ describe('Ticket 05 — Stats Muscle Balance integration', () => {
     const rowLevels = levelsOf(rowLoad)
     expect(latLevels.lats).toBe(4)
     expect(latLevels['upper-back']).toBe(2) // 0.8/2*4=1.6 ceil 2 with cross-credit
-    // Use synthetic pure isolation for parity
-    const pureLat = levelsOf({ lats: 10, 'upper-back': 0 })
-    const pureUpper = levelsOf({ lats: 0, 'upper-back': 10 })
-    expect(pureLat.lats).toBe(4)
-    expect(pureLat['upper-back']).toBe(0)
-    expect(pureUpper['upper-back']).toBe(4)
-    expect(pureUpper.lats).toBe(0)
+    expectIsolatedLatsLevels()
   })
 
   it('rankOf orders Lats and Upper back independently and missed retains head-to-toe order', () => {
