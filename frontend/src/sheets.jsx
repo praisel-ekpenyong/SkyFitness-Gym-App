@@ -18,6 +18,7 @@ import { FILTER_MUSCLES, MUSCLES, MUSCLE_NAME, primaryMuscleOf, secondaryMuscles
 import { parseImport, mergeImport } from './lib/import-csv.js'
 import { buildPlanBundle, parsePlan, mergePlan, printPlan } from './lib/plan-share.js'
 import { estimate1RM, best1RM, REP_CAP } from './lib/onerm.js'
+import { monthRecap } from './lib/recap.js'
 import { policyFor, defaultIncrement, POLICIES_FOR, POLICY_NAME, POLICY_DESC, MAX_BW_SETS } from './lib/progression.js'
 import { MOBILE, shareExport } from './lib/mobile.js'
 import { bestKnownWeight, heaviestSetWeight } from './lib/active-workout.js'
@@ -996,6 +997,104 @@ function Calendar({ start, close }) {
   </>
 }
 export const calendarSheet = start => ui().openSheet(close => <Calendar start={start} close={close} />)
+
+/* ============================ monthly recap ============================ */
+function RecapSheet({ start, close }) {
+  const st = useStore(s => s.S)
+  const [cur, setCur] = useState(() => {
+    const d = start ? new Date(String(start).slice(0, 7) + '-01T12:00:00') : new Date()
+    d.setDate(1)
+    return d
+  })
+  const y = cur.getFullYear(), mo = cur.getMonth()
+  const ym = y + '-' + String(mo + 1).padStart(2, '0')
+  const isCurrent = ym === todayISO().slice(0, 7)
+  const rec = monthRecap(st.workouts || [], st.unit, ym)
+  const viewedEmpty = rec.workouts === 0
+
+  const deltaBadge = (key) => {
+    const v = rec.deltas?.[key]
+    if (v == null) return null
+    const prevVal = rec.prev?.[key]
+    const isAbs = prevVal === 0 || prevVal == null
+    let label = ''
+    if (isAbs) {
+      if (key === 'vol') label = (v > 0 ? '+' : '') + fmtVol(v, st.unit)
+      else if (key === 'durationMs') label = v ? (v > 0 ? '+' : '') + fmtDur(v) : '—'
+      else label = (v > 0 ? '+' : '') + fmtNum(v)
+    } else {
+      const pct = Math.round(v)
+      label = (pct > 0 ? '+' : '') + pct + '%'
+    }
+    const color = v > 0 ? 'var(--acc)' : v < 0 ? 'var(--red)' : 'var(--label-3)'
+    return <span className="delta-pill" style={{ color, background: 'color-mix(in srgb, currentColor 14%, transparent)' }}>{label}</span>
+  }
+
+  const Row = ({ label, value, deltaKey }) => (
+    <div className="lrow" style={{ justifyContent: 'space-between' }}>
+      <div className="lrow-m"><div className="lrow-t">{label}</div></div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 12, flexShrink: 0 }}>
+        <span style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{value}</span>
+        {deltaBadge(deltaKey)}
+      </div>
+    </div>
+  )
+
+  return <>
+    <div className="row between" style={{ marginBottom: 4 }}>
+      <button className="iconbtn" onClick={() => setCur(new Date(y, mo - 1, 1))} aria-label={t('Previous month')}><Icon name="chevronLeft" /></button>
+      <h3 style={{ margin: 0, textAlign: 'center' }}>{t(MONTHS_LONG[mo])} {y}{isCurrent ? ' ' + t('so far') : ''}</h3>
+      <button className="iconbtn" onClick={() => setCur(new Date(y, mo + 1, 1))} aria-label={t('Next month')}><Icon name="chevronRight" /></button>
+    </div>
+    {viewedEmpty
+      ? <div className="small muted" style={{ textAlign: 'center', marginBottom: 8 }}>{t('No workouts in {0}', `${t(MONTHS_LONG[mo])} ${y}`)}</div>
+      : <div className="small muted" style={{ textAlign: 'center', marginBottom: 8 }}>{t('{0} workouts', rec.workouts) + ' · ' + (rec.durationMs ? fmtDur(rec.durationMs) : '0 min') + ' · ' + fmtVol(rec.vol, st.unit)}</div>
+    }
+    <div className="sect-b" style={{ maxWidth: 360, margin: '0 auto' }}>
+      <Row label={t('Workouts')} value={String(rec.workouts)} deltaKey="workouts" />
+      <Row label={t('Time trained')} value={rec.durationMs ? fmtDur(rec.durationMs) : '—'} deltaKey="durationMs" />
+      <Row label={t('Volume')} value={fmtVol(rec.vol, st.unit)} deltaKey="vol" />
+      <Row label={t('Sets')} value={fmtNum(rec.sets)} deltaKey="sets" />
+    </div>
+    {(rec.prs.length > 0 || rec.e1prs.length > 0) && (
+      <div style={{ marginTop: 14, maxWidth: 360, marginLeft: 'auto', marginRight: 'auto' }}>
+        {rec.prs.length > 0 && (
+          <>
+            <h4 className="sec" style={{ margin: '10px 0 6px' }}><Icon name="trophy" style={{ fontSize: 14, color: 'var(--yellow)', marginRight: 6 }} />{t('Records')}</h4>
+            <div className="sect-b">
+              {rec.prs.map(id => {
+                const name = EXIDX[id]?.n || id
+                return <div key={id} className="lrow"><div className="lrow-i" style={{ color: 'var(--yellow)' }}><Icon name="trophy" /></div><div className="lrow-m"><div className="lrow-t capitalize">{name}</div></div></div>
+              })}
+            </div>
+          </>
+        )}
+        {rec.e1prs.length > 0 && (
+          <>
+            <h4 className="sec" style={{ margin: '12px 0 6px' }}><Icon name="chartLine" style={{ fontSize: 14, color: 'var(--acc)', marginRight: 6 }} />{t('Estimated 1RM records')}</h4>
+            <div className="sect-b">
+              {rec.e1prs.map((p, i) => {
+                const name = EXIDX[p.id]?.n || p.id
+                return <div key={p.id + '-' + i} className="lrow">
+                  <div className="lrow-i" style={{ color: 'var(--acc)' }}><Icon name="chartLine" /></div>
+                  <div className="lrow-m"><div className="lrow-t capitalize">{name}</div><div className="lrow-s nocap">{fmtNum(p.est)} {st.unit} · {fmtNum(p.w)} × {p.r}</div></div>
+                  <div className="lrow-v nocap">{fmtDate(p.d, true)}</div>
+                </div>
+              })}
+            </div>
+          </>
+        )}
+      </div>
+    )}
+    {rec.prs.length === 0 && rec.e1prs.length === 0 && !viewedEmpty && (
+      <div className="small muted" style={{ textAlign: 'center', marginTop: 10 }}>{t('No records this month')}</div>
+    )}
+    <div style={{ textAlign: 'center', marginTop: 14 }}>
+      <Button variant="ghost" trailingIcon="calendar" onClick={() => { close(); calendarSheet(ym + '-01') }}>{t('View calendar')}</Button>
+    </div>
+  </>
+}
+export const recapSheet = (start) => ui().openSheet(close => <RecapSheet start={start} close={close} />)
 
 /* shared small workout row (used in lists) */
 export function WorkoutRow({ w, onClick }) {

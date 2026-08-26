@@ -5,7 +5,7 @@ import { EXIDX } from '../lib/exercises.js'
 import { lastBW, streakWeeks, setLabel, modeOf, effortOf, metricModeForEntry, metricRowsForEntry, bestWeightForEntry } from '../lib/history.js'
 import { fmtNum, fmtDate, fmtVol, todayISO, weekKey } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
-import { bwSheet, goalSheet, calendarSheet, workoutDetailSheet, WorkoutRow, bwDeltaColor } from '../sheets.jsx'
+import { bwSheet, goalSheet, calendarSheet, recapSheet, workoutDetailSheet, WorkoutRow, bwDeltaColor } from '../sheets.jsx'
 import LineChart from '../components/LineChart.jsx'
 import Heatmap from '../components/Heatmap.jsx'
 import Icon from '../components/Icon.jsx'
@@ -408,7 +408,7 @@ export default function Stats() {
         <div className="stats-tile-sub"><Icon name="chevronRight" style={{ fontSize: 11 }} />{t('View history')}</div>
       </div>
 
-      <div className="tile tappable" onClick={() => calendarSheet()}>
+      <div className="tile tappable" onClick={() => recapSheet()}>
         <div className="stats-tile-head">
           <span className="l">{t('This month')}</span>
           <span className="stats-tile-icon blue"><Icon name="calendar" /></span>
