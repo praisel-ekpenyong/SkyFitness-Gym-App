@@ -8,6 +8,19 @@
 import { weekKey, isoOf } from './format.js'
 import { bestWeightForEntry } from './workout-model.js'
 
+// Local warmup predicate — duplicated from workout-model.js to avoid a circular
+// import (history.js <-> workout-model.js via lastEntryFor). Keep in sync with
+// phaseForSet / isWarmupRow in workout-model.js.
+function isWarmupRow(set) {
+  const p = set?.phase
+  if (p != null && String(p).trim() !== '') {
+    const token = String(p).trim().toLowerCase()
+    if (token === 'warmup' || token === 'warm-up' || token === 'warm_up') return true
+    if (token === 'work') return false
+  }
+  return set?.warmup === true
+}
+
 // Backward-compatible re-exports
 export { EFFORT, stepEffort, capEffort, effortOf } from './effort.js'
 export { cleanupSg, pairAdjacent, unpairSuperset, supersetUnits, unitOf } from './supersetFlow.js'
@@ -25,12 +38,15 @@ export function lastEntryFor(S, exId) {
     const en = (S.workouts[i].entries || []).find(e => e.id === exId)
     // `target` is what the session prescribed; finished workouts carry it so labels and the
     // progression engine can read a session back the way it was logged.
-    if (en && en.sets && en.sets.some(s => s.done)) {
-      return { d: S.workouts[i].d, sets: en.sets.filter(s => s.done), target: en.target || null }
+    if (!en?.sets) continue
+    const workDone = en.sets.filter(s => s.done && !isWarmupRow(s))
+    if (workDone.length) {
+      return { d: S.workouts[i].d, sets: workDone, target: en.target || null }
     }
   }
   return null
 }
+
 
 export function bestWeightFor(S, exId) {
   let best = 0
