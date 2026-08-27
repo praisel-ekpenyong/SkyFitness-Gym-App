@@ -1,8 +1,8 @@
 import { isCardio, isBodyweightEq } from './exercises.js'
 import { lastEntryFor } from './history.js'
-import { phaseForSet, isWarmupRow, objectOf } from './warmup.js'
+import { phaseForSet, isWarmupRow, ensurePlainObject, objectOf } from './warmup.js'
 
-export { phaseForSet, isWarmupRow, objectOf } from './warmup.js'
+export { phaseForSet, isWarmupRow, ensurePlainObject, objectOf } from './warmup.js'
 
 export const MODES = Object.freeze(['reps', 'time', 'cardio'])
 export const PHASES = Object.freeze({ WORK: 'work', WARMUP: 'warmup' })
@@ -22,13 +22,13 @@ function modeFromUnit(value) {
 }
 
 function explicitMode(source) {
-  const value = objectOf(source).mode
+  const value = ensurePlainObject(source).mode
   const token = typeof value === 'string' ? value.trim().toLowerCase() : ''
-  return MODES.includes(token) ? token : modeFromUnit(objectOf(source).unit)
+  return MODES.includes(token) ? token : modeFromUnit(ensurePlainObject(source).unit)
 }
 
 function inferredMode(source) {
-  const value = objectOf(source)
+  const value = ensurePlainObject(source)
   const explicit = explicitMode(value)
   if (explicit) return explicit
   if (String(value.mode || '').trim().toLowerCase() === 'amrap') return 'reps'
@@ -45,8 +45,8 @@ export function modeForSet(set, target = {}) {
 
 /** Resolve a single mode for an entry; mixed work-row modes intentionally return null. */
 export function modeForEntry(entry, fallback = null) {
-  const source = objectOf(entry)
-  const target = objectOf(source.target || source)
+  const source = ensurePlainObject(entry)
+  const target = ensurePlainObject(source.target || source)
   const sets = Array.isArray(source.sets) ? source.sets : []
   const work = sets.filter(set => !isWarmupRow(set))
   const observed = work.length ? work : sets
@@ -225,8 +225,8 @@ export function workSetsDone(w) {
 }
 
 const workRowsForMode = (entry = {}, mode = 'reps') => {
-  const source = objectOf(entry)
-  const target = objectOf(source.target || source)
+  const source = ensurePlainObject(entry)
+  const target = ensurePlainObject(source.target || source)
   const expectedMode = normalizeMode(mode, 'reps')
   return (Array.isArray(source.sets) ? source.sets : [])
     .filter(set => phaseForSet(set) === 'work' && modeForSet(set, target) === expectedMode)

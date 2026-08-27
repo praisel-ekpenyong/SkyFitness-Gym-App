@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { EXIDX } from '../lib/exercises.js'
 import { lastBW, streakWeeks, setLabel, modeOf, effortOf, metricModeForEntry, metricRowsForEntry, bestWeightForEntry } from '../lib/history.js'
-import { fmtNum, fmtDate, fmtVol, todayISO, weekKey, workoutTimestamp } from '../lib/format.js'
+import { fmtNum, fmtDate, fmtVol, todayISO, weekKey, monthKey, workoutTimestamp } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
 import { bwSheet, goalSheet, calendarSheet, recapSheet, workoutDetailSheet, WorkoutRow, bwDeltaColor } from '../sheets.jsx'
 import LineChart from '../components/LineChart.jsx'
@@ -313,7 +313,7 @@ export default function Stats() {
   const bw30 = S.bodyweight.filter(b => workoutTimestamp(b) > now - 30 * 86400000)
   const bwDelta30 = bw30.length > 1 ? bw30[bw30.length - 1].w - bw30[0].w : null
   const workouts = S.workouts
-  const monthW = workouts.filter(w => String(w.d || '').slice(0, 7) === todayISO().slice(0, 7)).length
+  const monthW = workouts.filter(w => monthKey(w) === monthKey(todayISO())).length
 
   const nameOf = id => EXIDX[id]?.n || workouts.flatMap(w => w.entries || []).find(e => e.id === id)?.n || id
   const currentOf = id => {
