@@ -7,19 +7,7 @@
 
 import { weekKey, isoOf } from './format.js'
 import { bestWeightForEntry } from './workout-model.js'
-
-// Local warmup predicate — duplicated from workout-model.js to avoid a circular
-// import (history.js <-> workout-model.js via lastEntryFor). Keep in sync with
-// phaseForSet / isWarmupRow in workout-model.js.
-function isWarmupRow(set) {
-  const p = set?.phase
-  if (p != null && String(p).trim() !== '') {
-    const token = String(p).trim().toLowerCase()
-    if (token === 'warmup' || token === 'warm-up' || token === 'warm_up') return true
-    if (token === 'work') return false
-  }
-  return set?.warmup === true
-}
+import { isWarmupRow } from './warmup.js'
 
 // Backward-compatible re-exports
 export { EFFORT, stepEffort, capEffort, effortOf } from './effort.js'

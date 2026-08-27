@@ -16,6 +16,11 @@ import { t } from './i18n-core.js'
 const PLAN_FMT = 1
 const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0]   // Mon-first, matching the Plan screen
 
+function normalizeSm(sm) {
+  if (sm == null || sm === '') return null
+  return Array.isArray(sm) ? sm : [sm]
+}
+
 // Keep only the meaningful config fields, so the file stays small and readable.
 function cleanEx(e) {
   const o = { id: e.id, sets: e.sets }
@@ -57,7 +62,7 @@ export function buildPlanBundle(S, name) {
   const customEx = (S.customEx || [])
     .filter(c => usedIds.has(c.id))
     .map(c => {
-      const sm = c.sm == null || c.sm === '' ? null : Array.isArray(c.sm) ? c.sm : [c.sm]
+      const sm = normalizeSm(c.sm)
       return {
         id: c.id,
         n: c.n,
@@ -126,7 +131,7 @@ export function mergePlan(s, bundle, { schedule } = {}) {
     if (same) { exIdMap[c.id] = same.id; return }
     const nid = uid()
     exIdMap[c.id] = nid
-    const sm = c.sm == null || c.sm === '' ? null : Array.isArray(c.sm) ? c.sm : [c.sm]
+    const sm = normalizeSm(c.sm)
     s.customEx.push({
       id: nid,
       n: c.n,
