@@ -525,16 +525,16 @@ export function mergeImport(S, parsed) {
     S.bodyweight = [...S.bodyweight, ...fresh].sort((a, b) => (a.d < b.d ? -1 : 1))
     return { added: fresh.length, skipped: parsed.bodyweight.length - fresh.length }
   }
-  const have = new Set(S.workouts.map(w => w.d))
+  const have = new Set((S.workouts || []).map(w => w.d))
   const fresh = parsed.workouts.filter(w => !have.has(w.d))
-  const used = new Set(fresh.flatMap(w => w.entries.map(e => e.id)))
+  const used = new Set(fresh.flatMap(w => (w.entries || []).map(e => e.id)))
   const customs = parsed.customEx.filter(c => used.has(c.id) && !EXIDX[c.id])
   S.customEx = [...(S.customEx || []), ...customs]
-  S.workouts = [...S.workouts, ...fresh].sort((a, b) => (a.d < b.d ? -1 : 1))
+  S.workouts = [...(S.workouts || []), ...fresh].sort((a, b) => (a.d < b.d ? -1 : 1))
   // seed the weight suggestions — single monotonic-max policy shared with
   // the live workout lifecycle (lib/active-workout.js). Warm-ups excluded,
   // only done work sets + topW count, and a weight never lowers the stored best.
-  fresh.forEach(w => w.entries.forEach(e => {
+  fresh.forEach(w => (w.entries || []).forEach(e => {
     const mx = heaviestForEntry(e)
     if (mx > 0) mergeExWeight(S, e.id, mx, w.d)
   }))

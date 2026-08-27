@@ -109,7 +109,9 @@ export function flush() {
 /** Stamp the snapshot, land it in localStorage synchronously, schedule the mirrors. */
 export function save(snapshot) {
   snapshot._ts = Date.now()
-  localStorage.setItem(LOCAL_KEY, JSON.stringify(snapshot))
+  try {
+    localStorage.setItem(LOCAL_KEY, JSON.stringify(snapshot))
+  } catch (e) { /* quota exceeded — keep pending snapshot for async sinks */ }
   clearTimeout(tm)
   pending = snapshot
   tm = setTimeout(drain, DRAIN_MS)

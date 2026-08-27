@@ -357,7 +357,7 @@ export default function Stats() {
         const doneSets = metricRowsForEntry(en, curMode)
         const mx = curMode === 'reps' ? bestWeightForEntry(en) : Math.max(0, ...doneSets.map(metric))
         if (mx > 0) {
-          exPts.push({ t: w.start, y: mx, d: w.d, sets: doneSets, target: en.target })
+          exPts.push({ t: w.start ?? new Date(w.d).getTime(), y: mx, d: w.d, sets: doneSets, target: en.target })
           if (mx > exBest) exBest = mx
         }
       }
