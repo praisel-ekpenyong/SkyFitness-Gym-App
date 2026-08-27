@@ -378,6 +378,21 @@ describe('sessionsFor', () => {
     const S = { unit: 'kg', workouts: [{ d: '2026-01-01', entries: [{ id: LIFT, sets: [{ w: 60, r: 5, done: true }] }] }] }
     expect(sessionsFor(S, LIFT)).toHaveLength(1)
   })
+
+  it('defensively handles nullish workouts and entries without throwing', () => {
+    const S1 = { unit: 'kg', workouts: null }
+    expect(() => sessionsFor(S1, LIFT)).not.toThrow()
+    expect(sessionsFor(S1, LIFT)).toEqual([])
+    const S2 = { unit: 'kg', workouts: [{ d: '2026-01-01', entries: null }, { d: '2026-01-02' }] }
+    expect(() => sessionsFor(S2, LIFT)).not.toThrow()
+    expect(sessionsFor(S2, LIFT)).toEqual([])
+    const S3 = { unit: 'kg', workouts: [{ d: '2026-01-01', entries: [{ id: LIFT, sets: null }] }] }
+    expect(() => sessionsFor(S3, LIFT)).not.toThrow()
+    expect(sessionsFor(S3, LIFT)).toEqual([])
+    const S4 = { unit: 'kg' }
+    expect(() => sessionsFor(S4, LIFT)).not.toThrow()
+    expect(sessionsFor(S4, LIFT)).toEqual([])
+  })
 })
 
 // Workouts only began storing their prescription in v1.2.2. Everything logged before that is

@@ -77,6 +77,33 @@ describe('plan-share engine', () => {
         'week',
       ])
     })
+
+    it('coerces string secondary muscles to array so single-sm customs survive export', () => {
+      // Legacy customs may store sm as a single string rather than an array;
+      // buildPlanBundle must normalize it so the friend sees the secondary tag.
+      const S = {
+        routines: [{ id: 'r1', name: 'Back Day', ex: [{ id: 'custom-str', sets: 3, reps: 10 }] }],
+        customEx: [
+          { id: 'custom-str', n: 'String Sm Lift', bp: 'back', tg: 'lats', sm: 'upper-back', eq: 'custom', custom: true },
+          { id: 'custom-arr', n: 'Array Sm Lift', bp: 'back', tg: 'upper-back', sm: ['lats'], eq: 'custom', custom: true },
+          { id: 'custom-empty', n: 'No Sm Lift', bp: 'chest', sm: '', eq: 'custom', custom: true },
+        ],
+        week: { 1: 'r1' },
+      }
+      // Only custom-str is referenced; the coercion is verified via a second full bundle
+      const S2 = {
+        routines: [{ id: 'r1', name: 'All Customs', ex: [{ id: 'custom-str', sets: 3 }, { id: 'custom-arr', sets: 3 }, { id: 'custom-empty', sets: 3 }] }],
+        customEx: S.customEx,
+        week: { 1: 'r1' },
+      }
+      const bundle = buildPlanBundle(S2, 'Array Coercion Plan')
+      const str = bundle.customEx.find(c => c.id === 'custom-str')
+      const arr = bundle.customEx.find(c => c.id === 'custom-arr')
+      const emp = bundle.customEx.find(c => c.id === 'custom-empty')
+      expect(str.sm).toEqual(['upper-back'])
+      expect(arr.sm).toEqual(['lats'])
+      expect(emp.sm).toBeUndefined()
+    })
   })
 
   describe('parsePlan', () => {
@@ -202,6 +229,29 @@ describe('plan-share engine', () => {
 
       mergePlan(state, bundle, { schedule: false })
       expect(state.favorites).toEqual(['0025', '0047'])
+    })
+
+    it('coerces string secondary muscles to array on import merge', () => {
+      const state = { routines: [], customEx: [], week: {} }
+      const bundle = {
+        name: 'String Sm Import',
+        routines: [{ id: 'foreign-r1', name: 'Imported', ex: [{ id: 'foreign-c1', sets: 3, reps: 10 }] }],
+        customEx: [{ id: 'foreign-c1', n: 'String Sm Import', bp: 'back', tg: 'lats', sm: 'upper-back' }],
+        week: { 1: 'foreign-r1' },
+      }
+      mergePlan(state, bundle, { schedule: false })
+      expect(state.customEx).toHaveLength(1)
+      expect(state.customEx[0].sm).toEqual(['upper-back'])
+      // idempotent on array input as well
+      const state2 = { routines: [], customEx: [], week: {} }
+      const bundle2 = {
+        name: 'Array Sm Import',
+        routines: [{ id: 'foreign-r1', name: 'Imported', ex: [{ id: 'foreign-c2', sets: 3 }] }],
+        customEx: [{ id: 'foreign-c2', n: 'Array Sm Import', bp: 'back', tg: 'upper-back', sm: ['lats', 'biceps'] }],
+        week: {},
+      }
+      mergePlan(state2, bundle2, { schedule: false })
+      expect(state2.customEx[0].sm).toEqual(['lats', 'biceps'])
     })
   })
 
