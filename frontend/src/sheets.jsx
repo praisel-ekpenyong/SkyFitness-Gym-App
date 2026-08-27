@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useStore, sanitizeDisplayName } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
 import { EXDB, EXIDX, isCardio, isBodyweightEq, allExercises, equipmentOf, smOf } from './lib/exercises.js'
-import { fmtDate, fmtNum, fmtVol, fmtDur, durPart, todayISO, uid, exCount, DAYN, MONTHS_LONG, ACCENTS } from './lib/format.js'
+import { fmtDate, fmtNum, fmtVol, fmtDur, durPart, todayISO, uid, exCount, DAYN, MONTHS_LONG, ACCENTS, monthKey } from './lib/format.js'
 import { lastEntryFor, effectiveRoutineId, setsDone, setsDoneActive, lastBW, supersetUnits, unitOf, setLabel, defaultConfig, cleanupSg, modeOf, effortOf, isBw, isPerSide, sideReps, workSetsDone, bestWeightFor } from './lib/history.js'
 import { beep, vibrate, playWorkoutComplete } from './lib/sound.js'
 import { t, instrFor } from './lib/i18n.js'
@@ -1002,13 +1002,13 @@ export const calendarSheet = start => ui().openSheet(close => <Calendar start={s
 export function RecapSheet({ start, close }) {
   const st = useStore(s => s.S)
   const [cur, setCur] = useState(() => {
-    const d = start ? new Date(String(start).slice(0, 7) + '-01T12:00:00') : new Date()
+    const d = start ? new Date(monthKey(start) + '-01T12:00:00') : new Date()
     d.setDate(1)
     return d
   })
   const y = cur.getFullYear(), mo = cur.getMonth()
   const ym = y + '-' + String(mo + 1).padStart(2, '0')
-  const isCurrent = ym === todayISO().slice(0, 7)
+  const isCurrent = ym === monthKey(todayISO())
   const rec = monthRecap(st.workouts || [], st.unit, ym)
   const viewedEmpty = rec.workouts === 0
 

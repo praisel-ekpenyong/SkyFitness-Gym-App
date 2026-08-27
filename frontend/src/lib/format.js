@@ -42,6 +42,11 @@ export function weekKey(d) {
   return dt.getFullYear() + '-' + week
 }
 
+export function monthKey(value) {
+  const raw = value && typeof value === 'object' ? value.d ?? value : value
+  return String(raw || '').slice(0, 7)
+}
+
 export const localTZ = () => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC' } catch { return 'UTC' } }
 
 export const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7)

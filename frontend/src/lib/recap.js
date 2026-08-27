@@ -1,12 +1,9 @@
 import { workSetsDone, workoutVolume } from './workout-model.js'
 import { bestSetOf } from './onerm.js'
-
-function monthKey(workout) {
-  return String(workout?.d || '').slice(0, 7)
-}
+import { monthKey } from './format.js'
 
 export function prevMonthKey(yearMonth) {
-  const ym = String(yearMonth || '').slice(0, 7)
+  const ym = monthKey(yearMonth)
   const [yStr, mStr] = ym.split('-')
   const y = Number(yStr)
   const m = Number(mStr)
@@ -99,7 +96,7 @@ function e1RecordsByMonth(allWorkouts) {
  * @returns {{ vol:number, sets:number, workouts:number, durationMs:number, prs:string[], e1prs:Array, prev:Object, deltas:Object }}
  */
 export function monthRecap(workouts = [], unit = 'kg', yearMonth) {
-  const ym = String(yearMonth || '').slice(0, 7)
+  const ym = monthKey(yearMonth)
   const prevYm = prevMonthKey(ym)
 
   const curWs = (workouts || []).filter(w => monthKey(w) === ym)
