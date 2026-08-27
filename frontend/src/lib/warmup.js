@@ -2,7 +2,7 @@
 // Extracted to break the circular dependency history.js <-> workout-model.js
 // and to eliminate duplicated isWarmupRow logic.
 
-const objectOf = value => value && typeof value === 'object' && !Array.isArray(value) ? value : {}
+export const objectOf = value => value && typeof value === 'object' && !Array.isArray(value) ? value : {}
 
 function normalizedPhase(value, fallback = 'work') {
   const token = typeof value === 'string' ? value.trim().toLowerCase() : ''

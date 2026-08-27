@@ -1,6 +1,7 @@
 import { EXIDX } from './exercises.js'
 import { MUSCLES, musclesOf } from './muscles.js'
 import { isWarmupRow } from './workout-model.js'
+import { workoutTimestamp } from './format.js'
 
 // A "normal" hard session for one muscle, in primary-set equivalents. The saturation curve
 // 1 - exp(-stimulus / REF) maps any session size onto [0,1) so volume raises the starting
@@ -56,12 +57,8 @@ export function halfLifeDecay(ageMs, halfLifeMs) {
   return 0.5 ** (ageMs / halfLifeMs)
 }
 
-// The v2 data contract has one timestamp per workout, not per set. Keep this fallback in one
-// place so fatigue and strength use exactly the same stimulus time as effort.js.
-function workoutTimestamp(workout) {
-  const timestamp = workout?.start || new Date(workout?.d).getTime()
-  return Number.isFinite(timestamp) ? timestamp : Number(timestamp)
-}
+// The v2 data contract has one timestamp per workout, not per set — canonical
+// helper lives in format.js so fatigue, strength, charts and heatmaps agree.
 
 function emptyMuscleMap(value) {
   return Object.fromEntries(MUSCLES.map(slug => [slug, value]))

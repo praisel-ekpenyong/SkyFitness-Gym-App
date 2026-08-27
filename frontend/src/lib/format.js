@@ -45,6 +45,17 @@ export function weekKey(d) {
 export const localTZ = () => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC' } catch { return 'UTC' } }
 
 export const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7)
+
+export function workoutTimestamp(w) {
+  const ts = w?.start ?? w?.t
+  if (ts != null) {
+    const n = Number(ts)
+    if (Number.isFinite(n)) return n
+  }
+  if (!w?.d) return NaN
+  const t = new Date(w.d).getTime()
+  return Number.isFinite(t) ? t : NaN
+}
 export const ACCENTS = { lime: '#30d158', sky: '#0a84ff', orange: '#ff9f0a', violet: '#bf5af2', pink: '#ff375f', red: '#ff453a', teal: '#40c8e0', gold: '#ffd60a' }
 
 // mm:ss for a work duration — seconds alone read badly past a minute ("90 s" vs "1:30").

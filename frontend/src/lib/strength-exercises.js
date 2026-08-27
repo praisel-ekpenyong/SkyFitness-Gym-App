@@ -9,6 +9,7 @@
 import { best1RM } from './onerm.js'
 import { STRENGTH_FULL_MS, STRENGTH_HALF_LIFE_MS, STRENGTH_FLOOR, halfLifeDecay } from './recovery.js'
 import { musclesOf } from './muscles.js'
+import { workoutTimestamp } from './format.js'
 import { EXIDX } from './exercises.js'
 import { isWarmupRow } from './workout-model.js'
 
@@ -26,7 +27,7 @@ function strengthFromAge(ageMs) {
 function lastWorkSetAt(S, id) {
   let latest = -Infinity
   for (const workout of S?.workouts || []) {
-    const ts = workout.start || new Date(workout.d).getTime()
+    const ts = workoutTimestamp(workout)
     if (!Number.isFinite(ts) || ts <= latest) continue
     const entry = (workout.entries || []).find(e => e.id === id)
     if (!entry) continue
