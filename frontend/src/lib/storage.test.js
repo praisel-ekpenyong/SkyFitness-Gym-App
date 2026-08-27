@@ -136,6 +136,31 @@ describe('save / flush', () => {
     flush()
     expect(writes).toEqual([{ n: 4, _ts: expect.any(Number) }])
   })
+
+  it('survives a storage quota exceeded exception and still drains to sinks', () => {
+    const orig = localStorage.setItem.bind(localStorage)
+    localStorage.setItem = () => { throw new DOMException('Quota exceeded', 'QuotaExceededError') }
+    expect(() => save({ n: 5 })).not.toThrow()
+    // pending snapshot must still be scheduled for async sinks despite localStorage failure
+    expect(writes).toEqual([])
+    vi.advanceTimersByTime(800)
+    expect(writes).toEqual([{ n: 5, _ts: expect.any(Number) }])
+    // restore and verify next save lands in localStorage normally
+    localStorage.setItem = orig
+    save({ n: 6 })
+    expect(JSON.parse(localStorage.getItem(LOCAL_KEY)).n).toBe(6)
+    flush()
+    expect(writes).toHaveLength(2)
+  })
+
+  it('flush() still drains after a quota-blocked save', () => {
+    const orig = localStorage.setItem.bind(localStorage)
+    localStorage.setItem = () => { throw new Error('NS_ERROR_DOM_QUOTA_REACHED') }
+    expect(() => save({ n: 7 })).not.toThrow()
+    expect(() => flush()).not.toThrow()
+    expect(writes).toEqual([{ n: 7, _ts: expect.any(Number) }])
+    localStorage.setItem = orig
+  })
 })
 
 describe('load (web boot protocol)', () => {
