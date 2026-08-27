@@ -1,12 +1,11 @@
 import { isCardio, isBodyweightEq } from './exercises.js'
 import { lastEntryFor } from './history.js'
-import { phaseForSet, isWarmupRow } from './warmup.js'
+import { phaseForSet, isWarmupRow, objectOf } from './warmup.js'
 
-export { phaseForSet, isWarmupRow } from './warmup.js'
+export { phaseForSet, isWarmupRow, objectOf } from './warmup.js'
 
 export const MODES = Object.freeze(['reps', 'time', 'cardio'])
 export const PHASES = Object.freeze({ WORK: 'work', WARMUP: 'warmup' })
-const objectOf = value => value && typeof value === 'object' && !Array.isArray(value) ? value : {}
 
 export function normalizeMode(value, fallback = 'reps') {
   const token = typeof value === 'string' ? value.trim().toLowerCase() : ''

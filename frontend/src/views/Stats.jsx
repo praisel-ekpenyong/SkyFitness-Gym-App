@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { EXIDX } from '../lib/exercises.js'
 import { lastBW, streakWeeks, setLabel, modeOf, effortOf, metricModeForEntry, metricRowsForEntry, bestWeightForEntry } from '../lib/history.js'
-import { fmtNum, fmtDate, fmtVol, todayISO, weekKey } from '../lib/format.js'
+import { fmtNum, fmtDate, fmtVol, todayISO, weekKey, workoutTimestamp } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
 import { bwSheet, goalSheet, calendarSheet, recapSheet, workoutDetailSheet, WorkoutRow, bwDeltaColor } from '../sheets.jsx'
 import LineChart from '../components/LineChart.jsx'
@@ -26,7 +26,7 @@ import { isWarmupRow } from '../lib/workout-model.js'
 function latestMuscleTraining(workouts) {
   const latest = {}
   for (const workout of workouts || []) {
-    const timestamp = Number(workout?.start || new Date(workout?.d).getTime())
+    const timestamp = workoutTimestamp(workout)
     if (!Number.isFinite(timestamp)) continue
     for (const entry of workout.entries || []) {
       if (!(entry.sets || []).some(set => set?.done === true && !isWarmupRow(set))) continue
@@ -123,7 +123,7 @@ function MuscleBalance({ S }) {
   const inWin = S.workouts.filter(w =>
     win === 0 ? true
       : win === 7 ? weekKey(w.d) === weekKey(todayISO())
-        : (w.start || new Date(w.d).getTime()) > now - win * 86400000)
+        : workoutTimestamp(w) > now - win * 86400000)
   // Counting only the sets taken near failure turns the map from "where did the volume go"
   // into "where did the stimulus go" — a muscle can lead on sets and still never be trained
   // hard. Offered only when the window holds ratings at all, since with none the hard map
@@ -131,7 +131,7 @@ function MuscleBalance({ S }) {
   const rated = inWin.some(w => (w.entries || []).some(e => (e.sets || []).some(s => s.done && isHardSet(s))))
   const on = hard && rated
   const load = loadOfWorkouts(inWin, on ? isHardSet : null)
-  const volWin = S.workouts.filter(w => (w.start || new Date(w.d).getTime()) > now - 90 * 86400000)
+  const volWin = S.workouts.filter(w => workoutTimestamp(w) > now - 90 * 86400000)
   const vol90 = loadOfWorkouts(volWin, null)
   const { worked, missed } = rankOf(load)
   const { worked: strengthOrder } = rankOf(strength)
@@ -308,9 +308,9 @@ export default function Stats() {
   const kind = displayScale(S)
   const hd = scaleName(kind)
 
-  const bwPts = S.bodyweight.filter(b => range === 0 || (b.t || new Date(b.d).getTime()) > now - range * 86400000)
-    .map(b => ({ t: b.t || new Date(b.d).getTime(), y: b.w, d: b.d }))
-  const bw30 = S.bodyweight.filter(b => (b.t || new Date(b.d).getTime()) > now - 30 * 86400000)
+  const bwPts = S.bodyweight.filter(b => range === 0 || workoutTimestamp(b) > now - range * 86400000)
+    .map(b => ({ t: workoutTimestamp(b), y: b.w, d: b.d }))
+  const bw30 = S.bodyweight.filter(b => workoutTimestamp(b) > now - 30 * 86400000)
   const bwDelta30 = bw30.length > 1 ? bw30[bw30.length - 1].w - bw30[0].w : null
   const workouts = S.workouts
   const monthW = workouts.filter(w => String(w.d || '').slice(0, 7) === todayISO().slice(0, 7)).length
@@ -357,7 +357,7 @@ export default function Stats() {
         const doneSets = metricRowsForEntry(en, curMode)
         const mx = curMode === 'reps' ? bestWeightForEntry(en) : Math.max(0, ...doneSets.map(metric))
         if (mx > 0) {
-          exPts.push({ t: w.start ?? new Date(w.d).getTime(), y: mx, d: w.d, sets: doneSets, target: en.target })
+          exPts.push({ t: workoutTimestamp(w), y: mx, d: w.d, sets: doneSets, target: en.target })
           if (mx > exBest) exBest = mx
         }
       }

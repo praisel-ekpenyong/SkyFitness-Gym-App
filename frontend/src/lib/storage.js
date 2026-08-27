@@ -106,12 +106,23 @@ export function flush() {
   drain()
 }
 
+function isQuotaError(e) {
+  if (!e) return false
+  const name = e.name || ''
+  const code = e.code
+  const msg = String(e.message || '').toLowerCase()
+  return name === 'QuotaExceededError' || name === 'NS_ERROR_DOM_QUOTA_REACHED' || code === 22 || code === 1014 || msg.includes('quota') || msg.includes('exceeded')
+}
+
 /** Stamp the snapshot, land it in localStorage synchronously, schedule the mirrors. */
 export function save(snapshot) {
   snapshot._ts = Date.now()
   try {
     localStorage.setItem(LOCAL_KEY, JSON.stringify(snapshot))
-  } catch (e) { /* quota exceeded — keep pending snapshot for async sinks */ }
+  } catch (e) {
+    if (!isQuotaError(e)) throw e
+    // quota exceeded — keep pending snapshot for async sinks
+  }
   clearTimeout(tm)
   pending = snapshot
   tm = setTimeout(drain, DRAIN_MS)
