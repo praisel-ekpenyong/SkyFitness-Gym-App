@@ -387,7 +387,7 @@ describe('accumulation and purity', () => {
 
 
 describe('warm-up flag in strength and fatigue', () => {
-  it('a warm-up set does not reset strength but still adds fatigue volume', () => {
+  it('a warm-up set does not reset strength and does not add fatigue volume', () => {
     const now = Date.UTC(2026, 7, 1, 12)
     const oldWork = { id: 'w1', d: '2026-07-10', start: now - 20 * 86400000, unit: 'kg',
       entries: [{ id: '1254', sets: [{ done: true, w: 80, r: 8 }] }] }
@@ -397,9 +397,45 @@ describe('warm-up flag in strength and fatigue', () => {
     const strength = strengthOf(workouts, now)
     // the strength edge is 20 days old: the fresh warm-up must NOT be the latest training event
     expect(strength.chest).toBeLessThan(1)
-    // but the warm-up still contributes to the fatigue stimulus (real mechanical work)
-    const fatigue = fatigueOf(workouts, now)
-    expect(fatigue.chest).toBeGreaterThan(0)
+    // warm-up sets are strictly prep and must NOT contribute to fatigue stimulus
+    const fatigue = fatigueOf([warm], now)
+    expect(fatigue.chest).toBe(0)
+  })
+
+  it('excludes warm-up sets from session 1RM calculations and tonnage accumulation', () => {
+    const now = Date.UTC(2026, 7, 1, 12)
+    // Workout with 2 warm-ups (including a heavy single) and 3 working sets of 80x8
+    const workoutWithWarmups = {
+      id: 'w1', d: '2026-08-01', start: now - 3600000, unit: 'kg',
+      entries: [{
+        id: '1254',
+        sets: [
+          { done: true, warmup: true, w: 40, r: 10 },
+          { done: true, phase: 'warmup', w: 120, r: 1 }, // heavy single warm-up
+          { done: true, w: 80, r: 8 },
+          { done: true, w: 80, r: 8 },
+          { done: true, w: 80, r: 8 },
+        ]
+      }]
+    }
+    // Identical workout with only the 3 working sets of 80x8
+    const workoutWorkOnly = {
+      id: 'w2', d: '2026-08-01', start: now - 3600000, unit: 'kg',
+      entries: [{
+        id: '1254',
+        sets: [
+          { done: true, w: 80, r: 8 },
+          { done: true, w: 80, r: 8 },
+          { done: true, w: 80, r: 8 },
+        ]
+      }]
+    }
+
+    const fatigueWithWarmups = fatigueOf([workoutWithWarmups], now)
+    const fatigueWorkOnly = fatigueOf([workoutWorkOnly], now)
+
+    // Fatigue must be identical because warm-ups are excluded from both tonnage and session 1RM
+    expect(fatigueWithWarmups.chest).toBeCloseTo(fatigueWorkOnly.chest, 10)
   })
 })
 
