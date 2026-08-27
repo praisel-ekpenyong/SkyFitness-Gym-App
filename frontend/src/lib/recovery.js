@@ -170,7 +170,7 @@ function session1RMs(workout, opts = {}) {
     const ex = EXIDX[entry.id]
     for (const set of entry.sets || []) {
       const load = loadKgFor(ex, entry, set, workout, opts)
-      if (set?.done !== true || !(load > 0) || !(set.r > 0)) continue
+      if (set?.done !== true || isWarmupRow(set) || !(load > 0) || !(set.r > 0)) continue
       const est = epley1RM(load, set.r)
       if (!best.has(entry.id) || est > best.get(entry.id)) best.set(entry.id, est)
     }
@@ -209,7 +209,7 @@ function sessionTonnages(workout, opts = {}) {
   for (const entry of workout?.entries || []) {
     const weights = musclesOf(EXIDX[entry.id])
     for (const set of entry.sets || []) {
-      if (set?.done !== true) continue
+      if (set?.done !== true || isWarmupRow(set)) continue
       const measured = setTonnage(EXIDX[entry.id], entry, set, workout, oneRms.get(entry.id), opts)
       const tonnage = Number.isFinite(measured) && measured > 0 ? measured : ZERO_LOAD_SET_STIMULUS
       for (const [slug, weight] of Object.entries(weights)) {
