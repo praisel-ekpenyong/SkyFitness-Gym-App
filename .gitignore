@@ -1,7 +1,7 @@
 # Exercise media (~140 MB) — fetched locally via `npm run media:fetch`, never committed
 frontend/public/media/
 
-# Runtime data — users, passkeys, per-user state, session secret
+# Local runtime data (never committed)
 data/
 
 # Local config
