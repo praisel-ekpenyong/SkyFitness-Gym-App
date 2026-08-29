@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { HashRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import { useStore } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
@@ -15,14 +15,18 @@ import ErrorBoundary from './components/ErrorBoundary.jsx'
 import Modals from './components/Modals.jsx'
 import Toast from './components/Toast.jsx'
 import RestTimer from './components/RestTimer.jsx'
+// Home is eager — the default route ("/home" + catch-all "*") so first paint has no extra RTT.
+// Every other view is lazy and fetched on demand via Suspense, which keeps the initial
+// vendor/catalogue preload small and lets Stats/Library/Workout cache independently.
 import Home from './views/Home.jsx'
-import Plan from './views/Plan.jsx'
-import RoutineEdit from './views/RoutineEdit.jsx'
-import Workout from './views/Workout.jsx'
-import Stats from './views/Stats.jsx'
-import History from './views/History.jsx'
-import Library from './views/Library.jsx'
-import Settings from './views/Settings.jsx'
+
+const Plan = lazy(() => import('./views/Plan.jsx'))
+const RoutineEdit = lazy(() => import('./views/RoutineEdit.jsx'))
+const Workout = lazy(() => import('./views/Workout.jsx'))
+const Stats = lazy(() => import('./views/Stats.jsx'))
+const History = lazy(() => import('./views/History.jsx'))
+const Library = lazy(() => import('./views/Library.jsx'))
+const Settings = lazy(() => import('./views/Settings.jsx'))
 
 bindUI(useUI)   // lets the shared controls open sheets without importing the store at module scope
 
@@ -62,17 +66,23 @@ function Shell() {
           re-mounts the boundary, so the tab bar is always a way out */}
       <div id="app" className="vfade" key={loc.pathname}>
         <ErrorBoundary>
-          <Routes>
-            <Route path="/home" element={<Home />} />
-            <Route path="/plan" element={<Plan />} />
-            <Route path="/plan/r/:id" element={<RoutineEdit />} />
-            <Route path="/workout" element={<Workout />} />
-            <Route path="/stats" element={<Stats />} />
-            <Route path="/history" element={<History />} />
-            <Route path="/library" element={<Library />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="*" element={<Navigate to="/home" replace />} />
-          </Routes>
+          <Suspense fallback={
+            <div style={{ paddingTop: '44vh', display: 'flex', justifyContent: 'center', fontSize: 34, color: 'var(--label-3)' }}>
+              <Icon name="dumbbell" />
+            </div>
+          }>
+            <Routes>
+              <Route path="/home" element={<Home />} />
+              <Route path="/plan" element={<Plan />} />
+              <Route path="/plan/r/:id" element={<RoutineEdit />} />
+              <Route path="/workout" element={<Workout />} />
+              <Route path="/stats" element={<Stats />} />
+              <Route path="/history" element={<History />} />
+              <Route path="/library" element={<Library />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="*" element={<Navigate to="/home" replace />} />
+            </Routes>
+          </Suspense>
         </ErrorBoundary>
       </div>
       <TabBar onStart={startFlow} />

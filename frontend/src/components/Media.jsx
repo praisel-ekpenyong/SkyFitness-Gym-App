@@ -35,9 +35,10 @@ export default function Media({ ex, id, compact, minimizable }) {
     }
   }
 
+  const size = mini ? 84 : compact ? 120 : 320
   return (
     <div className={'exmedia' + (compact ? ' compact' : '') + (mini ? ' mini' : '')} id={id} onClick={() => setPlaying(p => !p)}>
-      <img decoding="async" src={currentSrc} onError={handleError} alt={ex.n} />
+      <img decoding="async" width={size} height={size} src={currentSrc} onError={handleError} alt={ex.n} />
       {minimizable && (
         <button className="giftoggle" onClick={toggleSize}>
           <Icon name={mini ? 'expand' : 'minimize'} />{mini ? t('Expand') : t('Minimize')}
@@ -68,6 +69,8 @@ export function Thumb({ ex }) {
       className="thumb"
       loading="lazy"
       decoding="async"
+      width={50}
+      height={50}
       src={currentSrc}
       onError={() => { if (!failed) setFailed(true) }}
       alt=""

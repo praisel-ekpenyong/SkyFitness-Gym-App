@@ -30,7 +30,12 @@ export const DEF = {
   // null = not set; merged via DEF so old backups / stored snapshots get it for free.
   displayName: null
 }
-const clone = o => JSON.parse(JSON.stringify(o))
+const clone = o => {
+  if (typeof structuredClone === 'function') {
+    try { return structuredClone(o) } catch {}
+  }
+  return JSON.parse(JSON.stringify(o))
+}
 
 function loadState() {
   const raw = loadLocal()

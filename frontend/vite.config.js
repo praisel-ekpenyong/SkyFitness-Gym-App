@@ -42,7 +42,21 @@ const mediaNotice = {
 export default defineConfig({
   plugins: [react(), umami, mediaNotice],
   base: './',
-  build: { chunkSizeWarningLimit: 1500 },
+  build: {
+    // Catalogue is 860k raw / 116k gzip — inherently larger than the 500k warning.
+    // Keep the guard at 900k so real regressions (vendor growth, view bloat) still surface
+    // without drowning the build in an expected warning for the dataset.
+    chunkSizeWarningLimit: 900,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) return 'vendor'
+          if (id.includes('exercises-data')) return 'catalogue'
+          if (id.includes('body-paths')) return 'bodymaps'
+        }
+      }
+    }
+  },
   test: {
     include: ['src/**/*.{test,spec}.?(c|m)[jt]s?(x)', '../scripts/**/*.{test,spec}.?(c|m)[jt]s?(x)']
   }

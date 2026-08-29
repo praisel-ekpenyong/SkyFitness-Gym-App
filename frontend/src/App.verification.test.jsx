@@ -43,6 +43,8 @@ async function boot() {
   document.body.appendChild(container)
   root = createRoot(container)
   await act(async () => { root.render(React.createElement(App)) })
+  await act(async () => { await new Promise(r => setTimeout(r, 0)) })
+  await act(async () => { await new Promise(r => setTimeout(r, 20)) })
 }
 
 beforeEach(() => {
@@ -115,6 +117,11 @@ describe('Ticket 05 — End-to-End Integration & Stats Diagram Parity', () => {
     await act(async () => {
       exercisesTab.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
+    await act(async () => { await new Promise(r => setTimeout(r, 0)) })
+    await act(async () => { await new Promise(r => setTimeout(r, 50)) })
+    for (let i = 0; i < 20 && !Array.from(document.querySelectorAll('.chips button.chip')).some(c => c.textContent.includes('Biceps')); i++) {
+      await act(async () => { await new Promise(r => setTimeout(r, 50)) })
+    }
 
     // Filter chips row should contain Favorites, All, 19 canonical muscles in anatomical order, and Cardio
     const filterChips = Array.from(document.querySelectorAll('.chips button.chip'))
@@ -268,6 +275,12 @@ describe('Ticket 05 — End-to-End Integration & Stats Diagram Parity', () => {
     await act(async () => {
       statsTab.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
+    await act(async () => { await new Promise(r => setTimeout(r, 0)) })
+    await act(async () => { await new Promise(r => setTimeout(r, 50)) })
+    // poll for lazy chunk — Stats is code-split and may need a tick longer under load
+    for (let i = 0; i < 10 && !document.body.textContent.includes('Muscle balance'); i++) {
+      await act(async () => { await new Promise(r => setTimeout(r, 50)) })
+    }
 
     const statsText = document.body.textContent
     expect(statsText).toContain('Muscle balance')
