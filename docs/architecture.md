@@ -8,6 +8,12 @@ Sky is a single-page React 19 app with **no backend**. One zustand store (`front
 
 Navigation is a HashRouter over `/home /plan /plan/r/:id /workout /stats /history /library /settings`. There are no context providers: cross-cutting ephemeral state (sheet stack, toasts, rest/work countdowns) lives in a second store, `store/useUI.js`.
 
+## Catalogue browsing (`lib/catalogue-query.js`)
+
+The Library page and ExercisePicker share one pure query module for catalogue reads. `queryCatalogue({ profile, scope, search, equipment })` owns the policy for combining the built-in catalogue with custom exercises, resolving canonical muscle filters, searching names and muscle metadata, applying Favorites or Chosen scope, deriving usage counts, and producing equipment facets. It returns enriched rows with the original exercise plus favorite, usage, primary-muscle, and match-attribution facts.
+
+The callers keep presentation concerns local: pagination, chip state, empty-state copy, selection, and the Library's best-weight display remain in their respective views. The query accepts malformed or missing profile collections as empty, never mutates input, and intentionally uses a direct pass over the catalogue rather than introducing an index before the measured need exists. This keeps catalogue policy deep and reusable while preserving the existing UI behavior; muscle naming and aliases continue to follow [ADR 0008](adr/0008-canonical-muscle-filters.md).
+
 ## Active-workout lifecycle (`lib/active-workout.js`)
 
 The riskiest writes — building the Active workout, confirming working weight, finishing a Workout with Record/e1RM detection and the heaviest-ever weight cache (`exWeights`) — are the one deep module behind named store actions `beginSession` / `recordWorkingWeight` / `finishSession` and the read seam `bestKnownWeight(S,id)`. All remaining in-session mutations (add/remove exercise, add/remove/warm-up set rows, set-field edits with weight cascading, superset pairing, and `toggleActiveSet` with its declarative rest/navigation outcome) cross the same seam; `views/Workout.jsx` holds no business math or raw draft splicing. The module owns target freezing, `nextPrescription`/`buildSets`/`applyPrescription`, a single monotonic `mergeExWeight` (heavier wins, warm-ups and unticked sets excluded, `topW` included only for the merge, history import reuses the same policy), and the superset-agnostic PR scan. Sheets and Workout are thin callers — see [ADR 0006](adr/0006-active-workout-lifecycle.md).

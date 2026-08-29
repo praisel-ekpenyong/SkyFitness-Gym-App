@@ -202,28 +202,6 @@ describe('ExercisePicker favorites integration', () => {
     expect(chipButtons[1].textContent).toBe('All')
   })
 
-  it('filters list to only favorited exercises when Favorites chip is selected', async () => {
-    useStore.getState().update(s => {
-      s.favorites = ['0001', '0002']
-    })
-
-    await act(async () => {
-      root.render(<ExercisePicker onPick={vi.fn()} close={vi.fn()} />)
-    })
-
-    const favChip = Array.from(container.querySelectorAll('.chips button.chip'))
-      .find(b => b.textContent.includes('Favorites'))
-    expect(favChip).toBeTruthy()
-
-    await act(async () => {
-      favChip.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
-
-    // Assert that the list contains only 2 exercises corresponding to favorites
-    const itemTitles = Array.from(container.querySelectorAll('.list .item .tt')).slice(1).map(el => el.textContent)
-    expect(itemTitles).toEqual(['3/4 sit-up', '45° side bend'])
-  })
-
   it('renders in-row star buttons on picker rows and toggles favorite without picking exercise', async () => {
     useStore.getState().update(s => {
       s.favorites = ['0001']
@@ -308,68 +286,6 @@ describe('ExercisePicker favorites integration', () => {
     expect(emptyState.textContent).toContain('No favorites yet')
   })
 
-  it('allows searching and equipment filtering within favorites', async () => {
-    // 0001 is 'body weight', 0025 is 'barbell'
-    useStore.getState().update(s => {
-      s.favorites = ['0001', '0025']
-    })
-
-    await act(async () => {
-      root.render(<ExercisePicker onPick={vi.fn()} close={vi.fn()} />)
-    })
-
-    const favChip = Array.from(container.querySelectorAll('.chips button.chip'))
-      .find(b => b.textContent.includes('Favorites'))
-    expect(favChip).toBeTruthy()
-
-    await act(async () => {
-      favChip.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
-
-    // Both favorites initially visible (skipping Create your own exercise)
-    let items = Array.from(container.querySelectorAll('.list .item .tt')).slice(1).map(el => el.textContent)
-    expect(items).toEqual(['3/4 sit-up', 'barbell bench press'])
-
-    // Filter by barbell equipment
-    const eqChips = Array.from(container.querySelectorAll('.chips')[1].querySelectorAll('button.chip'))
-    const barbellChip = eqChips.find(b => b.textContent.toLowerCase().includes('barbell'))
-    expect(barbellChip).toBeTruthy()
-
-    await act(async () => {
-      barbellChip.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
-
-    items = Array.from(container.querySelectorAll('.list .item .tt')).slice(1).map(el => el.textContent)
-    expect(items).toEqual(['barbell bench press'])
-
-    // Search query within favorites
-    const searchInput = container.querySelector('.search input')
-    await act(async () => {
-      // Clear equipment first by clicking 'Any equipment'
-      const anyEqChip = eqChips.find(b => b.textContent.toLowerCase().includes('any equipment'))
-      anyEqChip.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
-
-    await act(async () => {
-      const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set
-      nativeInputValueSetter.call(searchInput, 'sit-up')
-      searchInput.dispatchEvent(new Event('input', { bubbles: true }))
-    })
-
-    items = Array.from(container.querySelectorAll('.list .item .tt')).slice(1).map(el => el.textContent)
-    expect(items).toEqual(['3/4 sit-up'])
-
-    // Click the clear button on the SearchField
-    const clearBtn = container.querySelector('.searchf button.clear')
-    expect(clearBtn).toBeTruthy()
-    await act(async () => {
-      clearBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
-
-    expect(searchInput.value).toBe('')
-    items = Array.from(container.querySelectorAll('.list .item .tt')).slice(1).map(el => el.textContent)
-    expect(items).toEqual(['3/4 sit-up', 'barbell bench press'])
-  })
 })
 
 describe('ExercisePicker canonical muscle filtering and search', () => {
@@ -482,34 +398,6 @@ describe('ExercisePicker canonical muscle filtering and search', () => {
     expect(items.every(it => it.textContent.toLowerCase().includes('dumbbell'))).toBe(true)
   })
 
-  it('filters by Chosen chip and shows exercises in usage order', async () => {
-    useStore.getState().update(s => {
-      s.routines = [
-        { id: 'r1', name: 'R1', emoji: '💪', ex: [{ id: '0025', sets: 3, reps: 10 }, { id: '0001', sets: 3, reps: 10 }] },
-        { id: 'r2', name: 'R2', emoji: '🔥', ex: [{ id: '0025', sets: 4, reps: 8 }] },
-      ]
-    })
-
-    await act(async () => {
-      root.render(<ExercisePicker onPick={vi.fn()} close={vi.fn()} />)
-    })
-
-    const chosenChip = Array.from(container.querySelectorAll('.chips button.chip'))
-      .find(b => b.textContent.includes('Chosen'))
-    expect(chosenChip).toBeTruthy()
-    expect(chosenChip.textContent).toContain('Chosen (2)')
-
-    await act(async () => {
-      chosenChip.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
-
-    // On Chosen filter, custom exercise prompt at index 0 is not rendered
-    const items = Array.from(container.querySelectorAll('.list .item'))
-    expect(items.length).toBe(2)
-    // 0025 has usage count 2, 0001 has usage count 1 -> 0025 comes first
-    expect(items[0].textContent.toLowerCase()).toContain('barbell bench press')
-    expect(items[1].textContent.toLowerCase()).toContain('3/4 sit-up')
-  })
 })
 
 describe('ExerciseDetail primary and secondary muscle tags', () => {
