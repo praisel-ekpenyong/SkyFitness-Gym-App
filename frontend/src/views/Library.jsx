@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useStore } from '../store/useStore.js'
-import { EXDB, allExercises, equipmentOf } from '../lib/exercises.js'
-import { FILTER_MUSCLES, MUSCLE_NAME, primaryMuscleOf, matchesMuscleFilter, isSecondaryMuscleMatch, secondaryMatchForQuery, resolveMuscleSlug, matchesExerciseSearch } from '../lib/muscles.js'
-import { bestWeightFor } from '../lib/history.js'
+import { EXDB } from '../lib/exercises.js'
+import { FILTER_MUSCLES, MUSCLE_NAME } from '../lib/muscles.js'
+import { queryCatalogue } from '../lib/catalogue-query.js'
+import { bestWeightForEntry } from '../lib/workout-model.js'
 import { fmtNum } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
 import { Thumb } from '../components/Media.jsx'
@@ -22,18 +23,28 @@ export default function Library() {
   // gracefully fall back to All ('') so they aren't trapped in an empty state.
   const activeFilter = (filter === 'favorites' && favs.length === 0) ? '' : filter
   const isFavFilter = activeFilter === 'favorites'
-  const base = allExercises(S).filter(e => {
-    if (isFavFilter) {
-      if (!favs.includes(e.id)) return false
-    } else if (activeFilter) {
-      if (!matchesMuscleFilter(e, activeFilter)) return false
+  const scope = useMemo(() => isFavFilter
+    ? { kind: 'favorites' }
+    : activeFilter ? { kind: 'muscle', muscle: activeFilter } : { kind: 'all' }, [isFavFilter, activeFilter])
+  const { rows, equipmentOptions: eqOpts, effectiveEquipment: eqOn } = useMemo(() => queryCatalogue({
+    profile: S,
+    scope,
+    search: q,
+    equipment: eq,
+    searchAttribution: !isFavFilter,
+  }), [S.customEx, S.favorites, S.routines, S.workouts, scope, q, eq])
+  const f = rows
+  const bestMap = useMemo(() => {
+    const m = new Map()
+    for (const w of S.workouts || []) {
+      for (const e of w.entries || []) {
+        const cur = m.get(e.id) || 0
+        const best = bestWeightForEntry(e)
+        if (best > cur) m.set(e.id, best)
+      }
     }
-    return matchesExerciseSearch(e, q)
-  })
-  const eqOpts = equipmentOf(base)
-  // Drop the equipment filter if the search narrowed it away, so you never hit a dead end.
-  const eqOn = eqOpts.includes(eq) ? eq : ''
-  const f = eqOn ? base.filter(e => e.eq === eqOn) : base
+    return m
+  }, [S.workouts])
 
   return <>
     <div className="hdr"><div><h1>{t('Exercises')}</h1><div className="sub">{t('{0} exercises with animations', EXDB.length)}</div></div></div>
@@ -58,14 +69,12 @@ export default function Library() {
         <div className="thumb thumb-x"><Icon name="sparkles" /></div>
         <div className="grow"><div className="tt">{t('Create your own exercise')}</div><div className="ss">{t('name + target muscles, no animation')}</div></div><Icon name="plus" className="chev" />
       </div>
-      {f.slice(0, shown).map(e => {
-        const best = bestWeightFor(S, e.id)
-        const isFav = favs.includes(e.id)
-        const primary = primaryMuscleOf(e)
+      {f.slice(0, shown).map(row => {
+        const e = row.exercise
+        const best = bestMap.get(e.id) || 0
+        const primary = row.primaryMuscle
         const primaryLabel = (primary && MUSCLE_NAME[primary]) || e.tg || e.bp
-        const secFilterMatch = !isFavFilter && isSecondaryMuscleMatch(e, activeFilter)
-        const secQueryMatch = !activeFilter && secondaryMatchForQuery(e, q)
-        const secondaryMuscle = secFilterMatch ? resolveMuscleSlug(activeFilter) : secQueryMatch
+        const secondaryMuscle = row.secondaryMatch
         return <div key={e.id} className="item" onClick={() => exerciseDetailSheet(e)}>
           <Thumb ex={e} />
           <div className="grow">
@@ -77,9 +86,9 @@ export default function Library() {
           </div>
           {best > 0 && <span className="tag acc">{fmtNum(best)}</span>}
           <button
-            className={'iconbtn' + (isFav ? ' on-ss' : '')}
-            style={{ width: 34, height: 34, fontSize: 16, color: isFav ? 'var(--acc)' : 'var(--label-3)' }}
-            aria-label={isFav ? t('Remove from favorites') : t('Add to favorites')}
+            className={'iconbtn' + (row.favorite ? ' on-ss' : '')}
+            style={{ width: 34, height: 34, fontSize: 16, color: row.favorite ? 'var(--acc)' : 'var(--label-3)' }}
+            aria-label={row.favorite ? t('Remove from favorites') : t('Add to favorites')}
             onClick={ev => {
               ev.stopPropagation()
               update(s => {
@@ -88,7 +97,7 @@ export default function Library() {
               })
             }}
           >
-            <Icon name={isFav ? 'starFill' : 'star'} />
+            <Icon name={row.favorite ? 'starFill' : 'star'} />
           </button>
           <Button size="sm" variant="tinted" icon="plus" onClick={ev => { ev.stopPropagation(); addToRoutineSheet(e) }}>{t('Plan')}</Button>
         </div>

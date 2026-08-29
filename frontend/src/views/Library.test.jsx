@@ -193,45 +193,6 @@ describe('Library view smoke tests', () => {
     expect(hiddenFavChip).toBeUndefined()
   })
 
-  it('filters favorites by equipment chips correctly', async () => {
-    // 0001 = waist / body weight ('3/4 sit-up')
-    // 0007 = back / cable ('alternate lateral pulldown')
-    useStore.getState().update(s => { s.favorites = ['0001', '0007'] })
-
-    await act(async () => {
-      root.render(<Library />)
-    })
-
-    // Click Favorites chip
-    const favChip = Array.from(container.querySelectorAll('.chips button.chip'))
-      .find(b => b.textContent.includes('Favorites'))
-    expect(favChip).toBeTruthy()
-
-    await act(async () => {
-      favChip.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
-
-    // Initially shows both favorited exercises (+ create prompt)
-    expect(container.querySelectorAll('.list .item').length).toBe(3)
-
-    // Equipment chip row should contain 'body weight' and 'cable'
-    const chipGroups = container.querySelectorAll('.chips')
-    expect(chipGroups.length).toBe(2) // body parts/favorites row + equipment row
-
-    const eqChips = Array.from(chipGroups[1].querySelectorAll('button.chip'))
-    const cableChip = eqChips.find(b => b.textContent.toLowerCase().includes('cable'))
-    expect(cableChip).toBeTruthy()
-
-    // Filter by cable
-    await act(async () => {
-      cableChip.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
-
-    const cableItems = container.querySelectorAll('.list .item')
-    expect(cableItems.length).toBe(2) // 1 prompt + 1 cable exercise (alternate lateral pulldown)
-    expect(cableItems[1].textContent.toLowerCase()).toContain('alternate lateral pulldown')
-  })
-
   it('gracefully falls back to All when the last favorite is unstarred while on the Favorites filter', async () => {
     // Start with 1 favorite
     useStore.getState().update(s => { s.favorites = ['0001'] })

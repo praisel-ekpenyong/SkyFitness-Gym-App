@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useStore, sanitizeDisplayName } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
-import { EXDB, EXIDX, isCardio, isBodyweightEq, allExercises, equipmentOf, smOf } from './lib/exercises.js'
+import { EXDB, EXIDX, isCardio, isBodyweightEq, allExercises, smOf } from './lib/exercises.js'
 import { fmtDate, fmtNum, fmtVol, fmtDur, durPart, todayISO, uid, exCount, DAYN, MONTHS_LONG, ACCENTS, monthKey } from './lib/format.js'
 import { lastEntryFor, effectiveRoutineId, setsDone, setsDoneActive, lastBW, supersetUnits, unitOf, setLabel, defaultConfig, cleanupSg, modeOf, effortOf, isBw, isPerSide, sideReps, workSetsDone, bestWeightFor } from './lib/history.js'
 import { beep, vibrate, playWorkoutComplete } from './lib/sound.js'
@@ -14,9 +14,10 @@ import Icon from './components/Icon.jsx'
 import { Button, Slider, Switch, Segmented, SelectRow, Row, SearchField } from './components/ui.jsx'
 import BodyMap from './components/BodyMap.jsx'
 import { glyphOf, GLYPH_GROUPS, DEFAULT_GLYPH } from './lib/glyphs.js'
-import { FILTER_MUSCLES, MUSCLES, MUSCLE_NAME, primaryMuscleOf, secondaryMusclesOf, bodypartForMuscle, loadOfWorkouts, exerciseMuscleSnapshot, matchesMuscleFilter, isSecondaryMuscleMatch, secondaryMatchForQuery, resolveMuscleSlug, matchesExerciseSearch } from './lib/muscles.js'
+import { FILTER_MUSCLES, MUSCLES, MUSCLE_NAME, primaryMuscleOf, secondaryMusclesOf, bodypartForMuscle, loadOfWorkouts, exerciseMuscleSnapshot } from './lib/muscles.js'
 import { parseImport, mergeImport } from './lib/import-csv.js'
 import { buildPlanBundle, parsePlan, mergePlan, printPlan } from './lib/plan-share.js'
+import { queryCatalogue } from './lib/catalogue-query.js'
 import { estimate1RM, best1RM, REP_CAP } from './lib/onerm.js'
 import { monthRecap } from './lib/recap.js'
 import { policyFor, defaultIncrement, POLICIES_FOR, POLICY_NAME, POLICY_DESC, MAX_BW_SETS } from './lib/progression.js'
@@ -547,45 +548,29 @@ export function deleteCustomEx(ex, afterDelete) {
 }
 
 /* ============================ exercise picker ============================ */
-// Exercises already used in your routines or past workouts (for the "Chosen" filter + a marker).
-function usageMap(st) {
-  const u = {}
-  st.routines.forEach(r => r.ex.forEach(e => { u[e.id] = (u[e.id] || 0) + 1 }))
-  st.workouts.forEach(w => w.entries.forEach(e => { u[e.id] = (u[e.id] || 0) + 1 }))
-  return u
-}
 export function ExercisePicker({ onPick, close }) {
   const st = useStore(s => s.S)
-  const usage = usageMap(st)
-  const favs = st.favorites || []
   const [q, setQ] = useState('')
   const [filter, setFilter] = useState('')          // '' = all, 'favorites' = favorites, '★' = chosen, else a canonical muscle slug or cardio
   const [eq, setEq] = useState('')              // '' = any equipment
   const [shown, setShown] = useState(50)
-  const all = allExercises(st)
   const isFavFilter = filter === 'favorites'
   const isChosenFilter = filter === '★'
-  let base = all.filter(e => {
-    if (isFavFilter) {
-      if (!favs.includes(e.id)) return false
-    } else if (isChosenFilter) {
-      if (!usage[e.id]) return false
-    } else if (filter) {
-      if (!matchesMuscleFilter(e, filter)) return false
-    }
-    return matchesExerciseSearch(e, q)
+  const scope = isFavFilter
+    ? { kind: 'favorites' }
+    : isChosenFilter ? { kind: 'chosen' }
+      : filter ? { kind: 'muscle', muscle: filter } : { kind: 'all' }
+  const { rows, equipmentOptions: eqOpts, effectiveEquipment: eqOn, favoriteCount: favCount, chosenCount, catalogueCount } = queryCatalogue({
+    profile: st,
+    scope,
+    search: q,
+    equipment: eq,
   })
-  if (isChosenFilter) base = [...base].sort((a, b) => (usage[b.id] - usage[a.id]) || (a.n < b.n ? -1 : 1))
-  const eqOpts = equipmentOf(base)
-  // Drop the equipment filter if the search narrowed it away, so you never hit a dead end.
-  const eqOn = eqOpts.includes(eq) ? eq : ''
-  const f = eqOn ? base.filter(e => e.eq === eqOn) : base
-  const favCount = favs.length
-  const chosenCount = Object.keys(usage).length
+  const f = rows
   return <>
     <h3>{t('Add exercise')}</h3>
     <SearchField
-      placeholder={t('Search {0} exercises…', all.length)}
+      placeholder={t('Search {0} exercises…', catalogueCount)}
       value={q}
       onChange={e => { setQ(e.target.value); setShown(50) }}
       onClear={() => { setQ(''); setShown(50) }}
@@ -605,14 +590,11 @@ export function ExercisePicker({ onPick, close }) {
         <div className="thumb thumb-x"><Icon name="sparkles" /></div>
         <div className="grow"><div className="tt">{t('Create your own exercise')}</div><div className="ss">{t('name + target muscles, no animation')}</div></div><Icon name="plus" className="chev" />
       </div>}
-      {f.slice(0, shown).map(e => {
-        const isFav = favs.includes(e.id)
-        const primary = primaryMuscleOf(e)
+      {f.slice(0, shown).map(row => {
+        const e = row.exercise
+        const primary = row.primaryMuscle
         const primaryLabel = (primary && MUSCLE_NAME[primary]) || e.tg || e.bp
-        const isSpecialFilter = isFavFilter || isChosenFilter
-        const secFilterMatch = !isSpecialFilter && isSecondaryMuscleMatch(e, filter)
-        const secQueryMatch = (isSpecialFilter || !filter) && secondaryMatchForQuery(e, q)
-        const secondaryMuscle = secFilterMatch ? resolveMuscleSlug(filter) : secQueryMatch
+        const secondaryMuscle = row.secondaryMatch
         return <div key={e.id} className="item" onClick={() => onPick(e)}>
           <Thumb ex={e} />
           <div className="grow">
@@ -623,9 +605,9 @@ export function ExercisePicker({ onPick, close }) {
             </div>
           </div>
           <button
-            className={'iconbtn' + (isFav ? ' on-ss' : '')}
-            style={{ width: 34, height: 34, fontSize: 16, color: isFav ? 'var(--acc)' : 'var(--label-3)' }}
-            aria-label={isFav ? t('Remove from favorites') : t('Add to favorites')}
+            className={'iconbtn' + (row.favorite ? ' on-ss' : '')}
+            style={{ width: 34, height: 34, fontSize: 16, color: row.favorite ? 'var(--acc)' : 'var(--label-3)' }}
+            aria-label={row.favorite ? t('Remove from favorites') : t('Add to favorites')}
             onClick={ev => {
               ev.stopPropagation()
               update(s => {
@@ -634,7 +616,7 @@ export function ExercisePicker({ onPick, close }) {
               })
             }}
           >
-            <Icon name={isFav ? 'starFill' : 'star'} />
+            <Icon name={row.favorite ? 'starFill' : 'star'} />
           </button>
           <Icon name="plus" className="chev" />
         </div>
