@@ -78,15 +78,18 @@ export function SearchField({ value, onChange, onClear, className = '', style, .
 
 export function Switch({ checked, onChange, disabled }) {
   return (
-    <button
-      role="switch"
-      aria-checked={!!checked}
-      disabled={disabled}
-      className={'sw' + (checked ? ' on' : '')}
-      onClick={() => onChange(!checked)}
-    >
-      <span className="knob" />
-    </button>
+    <span className="sw-hit">
+      <button
+        type="button"
+        role="switch"
+        aria-checked={!!checked}
+        disabled={disabled}
+        className={'sw' + (checked ? ' on' : '')}
+        onClick={() => onChange(!checked)}
+      >
+        <span className="knob" />
+      </button>
+    </span>
   )
 }
 
@@ -101,6 +104,7 @@ export function Segmented({ options, value, onChange, className = '' }) {
       {options.map(o => (
         <button
           key={o.value}
+          type="button"
           className={o.value === value ? 'on' : ''}
           aria-pressed={o.value === value}
           onClick={() => onChange(o.value)}
@@ -119,12 +123,12 @@ export function Stepper({ value, step = 1, onChange, decimal = true, className =
   const set = v => onChange(Math.max(0, Math.round((v || 0) * 100) / 100))
   const inner = (
     <div className={'stp ' + className}>
-      <button onClick={() => set((+value || 0) - step)} aria-label="Decrease"><Icon name="minus" /></button>
+      <button type="button" onClick={() => set((+value || 0) - step)} aria-label="Decrease"><Icon name="minus" /></button>
       <span className="val">
         <NumberField value={value} decimal={decimal} onChange={onChange} />
         {unit && <i>{unit}</i>}
       </span>
-      <button onClick={() => set((+value || 0) + step)} aria-label="Increase"><Icon name="plus" /></button>
+      <button type="button" onClick={() => set((+value || 0) + step)} aria-label="Increase"><Icon name="plus" /></button>
     </div>
   )
   if (!label) return inner
@@ -199,6 +203,7 @@ export function Slider({ value, min = 0, max = 100, step = 1, onChange, classNam
 export function Check({ checked, onChange, className = '', size }) {
   return (
     <button
+      type="button"
       role="checkbox"
       aria-checked={!!checked}
       className={'chk' + (checked ? ' on' : '') + ' ' + className}
@@ -287,7 +292,7 @@ function require_ui() {
 
 export function Button({ variant = 'plain', size, icon, trailingIcon, children, className = '', ...rest }) {
   return (
-    <button className={`btn ${variant}${size ? ' ' + size : ''} ${className}`} {...rest}>
+    <button type="button" className={`btn ${variant}${size ? ' ' + size : ''} ${className}`} {...rest}>
       {icon && <Icon name={icon} />}
       {children && <span>{children}</span>}
       {trailingIcon && <Icon name={trailingIcon} />}
