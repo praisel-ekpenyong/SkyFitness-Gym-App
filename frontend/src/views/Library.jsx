@@ -74,7 +74,7 @@ export default function Library() {
         const best = bestMap.get(e.id) || 0
         const primary = row.primaryMuscle
         const primaryLabel = (primary && MUSCLE_NAME[primary]) || e.tg || e.bp
-        const secondaryMuscle = !isFavFilter && row.secondaryMatch
+        const secondaryMuscle = row.secondaryMatch
         return <div key={e.id} className="item" onClick={() => exerciseDetailSheet(e)}>
           <Thumb ex={e} />
           <div className="grow">
