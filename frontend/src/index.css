@@ -800,10 +800,7 @@ h4.sec{
 .hm-days span{height:11px;font-size:10px;color:var(--label-2);line-height:11px}
 .hm-grid{display:flex;gap:3px}
 .hm-col{display:flex;flex-direction:column;gap:3px}
-.hm-c{
-  width:11px;height:11px;border:0;border-radius:3px;padding:0;background:var(--surface-2);flex:none;
-  appearance:none;-webkit-appearance:none;
-}
+.hm-c{width:11px;height:11px;border-radius:3px;background:var(--surface-2);flex:none}
 .hm-c.l1{background:color-mix(in srgb,var(--acc) 30%,var(--surface-2))}
 .hm-c.l2{background:color-mix(in srgb,var(--acc) 55%,var(--surface-2))}
 .hm-c.l3{background:color-mix(in srgb,var(--acc) 78%,var(--surface-2))}
@@ -1119,17 +1116,6 @@ h4.sec{
 
 /* --------------------------------------------------- desktop (≥1000px) --- */
 .cols{display:block}
-/* A heatmap cell is intentionally tiny on a pointer device that has a cursor. On a
-   phone it becomes a 24px button, while the colour ramp remains the same. The grid
-   is already horizontally scrollable and opens at the latest week. */
-@media (pointer:coarse){
-  .hm-months span{width:24px}
-  .hm-grid,.hm-col{gap:4px}
-  .hm-days{gap:4px}
-  .hm-days span{height:24px;line-height:24px}
-  .hm-c{width:24px;height:24px;border-radius:6px}
-  .hm-legend .hm-c{width:10px;height:10px;border-radius:3px}
-}
 @media (min-width:1000px){
   #app{max-width:1080px;padding-top:32px}
   .cols{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
