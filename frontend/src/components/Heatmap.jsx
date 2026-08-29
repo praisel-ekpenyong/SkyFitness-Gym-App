@@ -39,10 +39,9 @@ export default function Heatmap({ S, onDay }) {
       const key = isoOf(day)
       const a = agg[key]
       const cls = 'hm-c l' + level(a) + (key === todayISO() ? ' today' : '') + (day > today ? ' future' : '')
-      const label = key + (a ? ` · ${t(a.n === 1 ? '{0} workout' : '{0} workouts', a.n)} · ${a.min} min · ${fmtVol(a.vol, S.unit)}` : '')
-      cells.push(<button type="button" key={d} className={cls} disabled={!a || !onDay}
-        aria-label={label} title={label}
-        onClick={a && onDay ? () => onDay(key) : undefined} />)
+      cells.push(<div key={d} className={cls}
+        title={key + (a ? ` · ${t(a.n === 1 ? '{0} workout' : '{0} workouts', a.n)} · ${a.min} min · ${fmtVol(a.vol, S.unit)}` : '')}
+        onClick={a ? () => onDay(key) : undefined} />)
     }
     cols.push(<div key={wk} className="hm-col">{cells}</div>)
   }
