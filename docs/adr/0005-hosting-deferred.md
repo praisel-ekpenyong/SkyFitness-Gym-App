@@ -1,0 +1,3 @@
+# Hosting target deferred; build stays host-agnostic
+
+Sky defers choosing a host (GitHub Pages, GitLab Pages, self-hosted box, Capacitor shell) and instead keeps the build portable from day one: `base: './'`, no server-specific assumptions in the bundle, media streamed from a pinned public CDN rather than bundled. Locking in a host before the static-only refactor lands would couple removal decisions (ticket 07) to deployment details that might still change, while a relative-base build costs nothing today and runs unchanged everywhere. Consequence: any hosting decision later is a config change, not an architecture change.

@@ -1,0 +1,3 @@
+# Guest-only boot, no login or demo seeding
+
+With the backend gone (ADR 0001), login/passkey/account/admin UI and server sync have no purpose — so Sky removes them outright instead of keeping dormant code paths, and boots straight into an empty guest session with no demo seed data. Keeping the dead branches would mean every future change pays a comprehension tax for code that can never run against anything, and demo seeding would quietly mask "my data didn't load" bugs; an empty boot is also the honest testable contract (asserted by the boot smoke test) that storage works. Consequence: upstream profiles that relied on server sync must migrate via JSON backup import, and any future multi-device story would start from export/import rather than accounts.
