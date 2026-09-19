@@ -1,0 +1,9 @@
+{
+  "appId": "com.sky.workout",
+  "appName": "Sky",
+  "webDir": "dist",
+  "backgroundColor": "#0c0e12",
+  "android": {
+    "allowMixedContent": false
+  }
+}

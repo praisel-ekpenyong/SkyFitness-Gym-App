@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Sky</string>
+    <string name="title_activity_main">Sky</string>
+    <string name="package_name">com.sky.workout</string>
+    <string name="custom_url_scheme">com.sky.workout</string>
+</resources>

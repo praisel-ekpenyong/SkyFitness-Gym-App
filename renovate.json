@@ -1,0 +1,59 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", ":semanticCommitsDisabled"],
+
+  "_comment": [
+    "Dependency updates, deliberately quiet — the counterpart of .github/dependabot.yml, with",
+    "the same policy behind it. Sky is dependency-light on purpose: the frontend is React +",
+    "Router + Zustand. A default setup would still open an MR per package per week, which on a",
+    "solo project means the MRs stop being read — the opposite of what this is for. So:",
+    "monthly, everything in an ecosystem grouped into one update, and a low cap on open MRs.",
+    "Historical note: this ran only via the `renovate` job in .gitlab-ci.yml (scheduled pipelines), which was deleted with the server era; it fires again only if a CI home is chosen. Managers and rules for api/, web/ Dockerfiles and GitLab CI went with them."
+  ],
+
+  "timezone": "Europe/Zurich",
+  "schedule": ["* 0-6 1 * *"],
+  "prConcurrentLimit": 5,
+  "prHourlyLimit": 0,
+  "labels": ["dependencies"],
+  "rangeStrategy": "bump",
+  "dependencyDashboard": true,
+
+  "_managers": [
+    "gradle (frontend/android) and cocoapods (frontend/ios) are deliberately NOT managed:",
+    "Capacitor generates those shells and pins the native versions to the @capacitor/* npm",
+    "packages. Bumping them independently desyncs the two and breaks the mobile build; they",
+    "follow the npm update instead."
+  ],
+  "enabledManagers": ["npm"],
+
+  "packageRules": [
+    {
+      "description": "Frontend routine bumps arrive as one update. Runtime and build tooling move together anyway (a Vite bump usually wants its plugin bumped), and splitting them doubles the review without splitting the risk.",
+      "matchManagers": ["npm"],
+      "matchFileNames": ["frontend/package.json"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "frontend"
+    },
+    {
+      "description": "Frontend majors get their own update. The first grouped run on GitHub bundled a Capacitor 7 → 8 migration in with six siblings, where it read as housekeeping — and CI would have gone green on it, because the test job builds the web app and never touches the mobile flavour. A major that lands alone is at least obviously a decision.",
+      "matchManagers": ["npm"],
+      "matchFileNames": ["frontend/package.json"],
+      "matchUpdateTypes": ["major"],
+      "groupName": "frontend-major"
+    },
+    {
+      "description": "Capacitor 8 needs Node >= 22 and frontend/android + frontend/ios are committed, so a major also means migrating the native projects — Gradle/AGP, the Podfile. That is a deliberate piece of work, not a dependency bump. Drop this rule when you want to do it.",
+      "matchPackageNames": ["@capacitor/**"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
+    }
+  ],
+
+  "vulnerabilityAlerts": {
+    "description": "Security fixes ignore the monthly schedule and the group — they land immediately, on their own.",
+    "schedule": ["at any time"],
+    "labels": ["dependencies", "security"],
+    "prPriority": 10
+  }
+}

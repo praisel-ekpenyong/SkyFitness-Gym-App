@@ -1,0 +1,17 @@
+# Exercise media (~140 MB) — fetched locally via `npm run media:fetch`, never committed
+frontend/public/media/
+
+# Local runtime data (never committed)
+data/
+
+# Local config
+.env
+
+# Build output / deps
+frontend/dist/
+frontend/.tmp/
+.tmp/
+.scratch/
+node_modules/
+*.log
+.DS_Store
