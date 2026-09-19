@@ -1,28 +1,20 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { useStore, sanitizeDisplayName } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
-import { EXDB, EXIDX, isCardio, isBodyweightEq, allExercises, smOf } from './lib/exercises.js'
-import { fmtDate, fmtNum, fmtVol, fmtDur, durPart, todayISO, uid, exCount, DAYN, MONTHS_LONG, ACCENTS, monthKey } from './lib/format.js'
-import { lastEntryFor, effectiveRoutineId, setsDone, setsDoneActive, lastBW, supersetUnits, unitOf, setLabel, defaultConfig, cleanupSg, modeOf, effortOf, isBw, isPerSide, sideReps, workSetsDone, bestWeightFor } from './lib/history.js'
-import { beep, vibrate, playWorkoutComplete } from './lib/sound.js'
-import { t, instrFor } from './lib/i18n.js'
+import { EXIDX } from './lib/exercises.js'
+import { fmtDate, fmtNum, fmtVol, fmtDur, durPart, todayISO, exCount, DAYN, MONTHS_LONG, monthKey } from './lib/format.js'
+import { effectiveRoutineId, setsDone, lastBW, setLabel, effortOf } from './lib/history.js'
+import { t } from './lib/i18n.js'
 import { nav } from './lib/nav.js'
 import { starterRoutines } from './lib/starter.js'
-import Media, { Thumb } from './components/Media.jsx'
-import Stepper from './components/Stepper.jsx'
+import { Thumb } from './components/Media.jsx'
 import Icon from './components/Icon.jsx'
-import { Button, Slider, Switch, Segmented, SelectRow, Row, SearchField } from './components/ui.jsx'
-import BodyMap from './components/BodyMap.jsx'
-import { glyphOf, GLYPH_GROUPS, DEFAULT_GLYPH } from './lib/glyphs.js'
-import { FILTER_MUSCLES, MUSCLES, MUSCLE_NAME, primaryMuscleOf, secondaryMusclesOf, bodypartForMuscle, loadOfWorkouts, exerciseMuscleSnapshot } from './lib/muscles.js'
+import { Button, Slider, Switch } from './components/ui.jsx'
+import { glyphOf, GLYPH_GROUPS } from './lib/glyphs.js'
 import { parseImport, mergeImport } from './lib/import-csv.js'
 import { buildPlanBundle, parsePlan, mergePlan, printPlan } from './lib/plan-share.js'
-import { queryCatalogue } from './lib/catalogue-query.js'
-import { estimate1RM, best1RM, REP_CAP } from './lib/onerm.js'
 import { monthRecap } from './lib/recap.js'
-import { policyFor, defaultIncrement, POLICIES_FOR, POLICY_NAME, POLICY_DESC, MAX_BW_SETS } from './lib/progression.js'
 import { MOBILE, shareExport } from './lib/mobile.js'
-import { bestKnownWeight, heaviestSetWeight } from './lib/active-workout.js'
 import { configureSessionSheets } from './sheets/session.jsx'
 import { configureCatalogueSheets } from './sheets/catalogue.jsx'
 
@@ -294,12 +286,6 @@ function DisplayNameSheet({ close }) {
   </>
 }
 export const displayNameSheet = () => ui().openSheet(close => <DisplayNameSheet close={close} />)
-
-/* ============================ catalogue sheets (extracted) ============================ */
-// Catalogue browsing lives in ./sheets/catalogue.jsx: picker, config, detail, custom-exercise
-// form plus the add-to-routine flow. The hub re-exports every entry point so existing
-// callers keep working untouched, and performs the one-line wiring for the injected
-// confirm seam (hub-owned to avoid a circular hub<->catalogue import during migration).
 
 /* ============================ glyph picker ============================ */
 // Grouped by what the glyph means for a training day, so picking one is a scan
