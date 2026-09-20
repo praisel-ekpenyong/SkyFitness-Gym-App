@@ -5,7 +5,54 @@ import { useUI } from '../store/useUI.js'
 function Sheet({ sheet }) {
   const { closeSheet } = useUI()
   const ref = useRef(null)
+  const centerRef = useRef(null)
   const drag = useRef({ startY: null, delta: 0 })
+  const previousFocus = useRef(null)
+
+  useEffect(() => {
+    previousFocus.current = typeof document !== 'undefined' ? document.activeElement : null
+    const container = ref.current || centerRef.current
+    if (container && typeof container.querySelectorAll === 'function') {
+      const focusable = container.querySelectorAll(
+        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      )
+      if (focusable.length > 0 && typeof focusable[0]?.focus === 'function') {
+        if (typeof document !== 'undefined' && !container.contains(document.activeElement)) {
+          focusable[0].focus()
+        }
+      } else if (typeof container.focus === 'function') {
+        container.focus()
+      }
+    }
+    return () => {
+      if (previousFocus.current && typeof previousFocus.current.focus === 'function') {
+        try { previousFocus.current.focus() } catch (_) {}
+      }
+    }
+  }, [])
+
+  const onKeyDown = e => {
+    if (e.key !== 'Tab') return
+    const container = ref.current || centerRef.current
+    if (!container || typeof container.querySelectorAll !== 'function') return
+    const focusable = Array.from(container.querySelectorAll(
+      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    ))
+    if (!focusable.length) return
+    const first = focusable[0]
+    const last = focusable[focusable.length - 1]
+    if (e.shiftKey) {
+      if (document.activeElement === first || !container.contains(document.activeElement)) {
+        e.preventDefault()
+        last.focus()
+      }
+    } else {
+      if (document.activeElement === last || !container.contains(document.activeElement)) {
+        e.preventDefault()
+        first.focus()
+      }
+    }
+  }
 
   const onTouchStart = e => {
     const el = ref.current
@@ -70,18 +117,22 @@ function Sheet({ sheet }) {
   }, [])
 
   const close = () => closeSheet(sheet.id)
+  const role = sheet.kind === 'center' ? 'alertdialog' : 'dialog'
   if (sheet.kind === 'center') {
     return (
       <div>
-        <div className="mback" onClick={() => { if (!sheet.locked) close() }} />
-        <div className="center">{sheet.render(close)}</div>
+        <div className="mback" aria-hidden="true" onClick={() => { if (!sheet.locked) close() }} />
+        <div className="center" ref={centerRef} role={role} aria-modal="true" tabIndex={-1} onKeyDown={onKeyDown}>
+          {sheet.render(close)}
+        </div>
       </div>
     )
   }
   return (
     <div>
-      <div className="mback" onClick={() => { if (!sheet.locked) close() }} />
-      <div className="sheet" ref={ref} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}
+      <div className="mback" aria-hidden="true" onClick={() => { if (!sheet.locked) close() }} />
+      <div className="sheet" ref={ref} role={role} aria-modal="true" tabIndex={-1} onKeyDown={onKeyDown}
+        onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}
         onMouseDown={onMouseDown} onMouseMove={onMouseMove} onMouseUp={onMouseUp} onMouseLeave={onMouseUp}>
         <div className="grab" />
         {sheet.render(close)}
@@ -108,7 +159,7 @@ export default function Modals() {
     if (sheets.length > prev) {
       for (let i = prev; i < sheets.length; i++) {
         sheetEntries.current.push({ openedAt: location.href, live: true })
-        history.pushState({ openGymSheet: true }, '')
+        history.pushState({ skySheet: true }, '')
         pushedEntries.current++
       }
     } else if (sheets.length < prev) {

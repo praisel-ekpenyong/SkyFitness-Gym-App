@@ -12,7 +12,7 @@ import {
 
 export const DEF = {
   // No lang key — Sky is English-only (ticket 05) and nothing reads S.lang. Profiles that
-  // still carry one from upstream keep it in storage harmlessly.
+  // still carry one from an older version keep it in storage harmlessly.
   unit: 'kg', restSec: 90, sound: true, keepAwake: true,
   theme: 'light', accent: 'lime', body: 'male', targetW: null,
   bodyweight: [], routines: [], week: {}, dayPlan: {},

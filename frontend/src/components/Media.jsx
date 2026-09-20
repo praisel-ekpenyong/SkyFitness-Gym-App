@@ -37,8 +37,16 @@ export default function Media({ ex, id, compact, minimizable }) {
 
   const size = mini ? 84 : compact ? 120 : 320
   return (
-    <div className={'exmedia' + (compact ? ' compact' : '') + (mini ? ' mini' : '')} id={id} onClick={() => setPlaying(p => !p)}>
-      <img decoding="async" width={size} height={size} src={currentSrc} onError={handleError} alt={ex.n} />
+    <div
+      className={'exmedia' + (compact ? ' compact' : '') + (mini ? ' mini' : '')}
+      id={id}
+      role="button"
+      tabIndex={0}
+      aria-label={playing ? t('tap to pause') : t('tap to play')}
+      onClick={() => setPlaying(p => !p)}
+      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setPlaying(p => !p) } }}
+    >
+      <img loading="lazy" decoding="async" width={size} height={size} src={currentSrc} onError={handleError} alt={ex.n} />
       {minimizable && (
         <button className="giftoggle" onClick={toggleSize}>
           <Icon name={mini ? 'expand' : 'minimize'} />{mini ? t('Expand') : t('Minimize')}

@@ -1,6 +1,6 @@
 # Sky
 
-A personal fork of [openGym](https://gitlab.com/DuarteSantos8/opengym) (AGPL-3.0): a single-user, no-login, backend-free gym & body-weight tracker.
+A single-user, no-login, backend-free gym & body-weight tracker.
 
 ## Agent skills
 
@@ -18,6 +18,6 @@ Single-context layout: root `CONTEXT.md` + `docs/adr/`. See `docs/agents/domain.
 
 ## Project shape
 
-- `frontend/` — React 19 + Vite PWA. This is the only part Sky keeps.
+- `frontend/` — React 19 + Vite PWA. The entire app lives here.
 - `frontend/src/lib/` — pure training logic (progression, 1RM, recovery) with Vitest tests next to the code. `npm test` in `frontend/`.
-- Server-side parts of upstream (`api/`, `web/`, `mcp/`, Docker/CI configs) have been removed; Sky is a static build only.
+- Sky is a static build only — no server, no API, no backend.

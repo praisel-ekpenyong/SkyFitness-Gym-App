@@ -11,7 +11,7 @@ You can install Sky as a progressive web application on your phone.
 
 <br>
 
-[![License: AGPL v3](https://img.shields.io/badge/license-AGPL--3.0-a3e635?style=flat-square)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/license-MIT-8a90a0?style=flat-square)](LICENSE)
 ![Backend](https://img.shields.io/badge/backend-none-success?style=flat-square)
 ![PWA](https://img.shields.io/badge/PWA-installable-a78bfa?style=flat-square)
 ![React](https://img.shields.io/badge/React-19-38bdf8?style=flat-square&logo=react&logoColor=white)
@@ -198,12 +198,9 @@ cd frontend
 npm run test:fatigue-probe
 ```
 
-## Provenance and License
+## License and Third-Party Notices
 
-Sky is a personal fork of [openGym](https://gitlab.com/DuarteSantos8/opengym) (v1.2.9).
-Public server features (user accounts, server sync, push server, and admin panels) were removed.
-
-- **Source Code**: Licensed under the **[GNU AGPL v3.0](LICENSE)**.
+- **Source Code**: Sky is an original single-page React application. Licensed under the **[MIT License](LICENSE)**.
 - **Exercise Dataset**: Distributed under the **MIT License** (from `hasaneyldrm/exercises-dataset`, derived from ExerciseDB).
 - **Body Diagram Geometry**: Distributed under the **MIT License** (from Melih Colpan's MuscleMap).
 - **Exercise Media**: Images and animations are third-party content (© Gym visual).

@@ -1,6 +1,6 @@
 # Contributing to Sky
 
-Sky is a personal, backend-free fork of [openGym](https://gitlab.com/DuarteSantos8/opengym). It is intentionally small, local-only, and dependency-light.
+Sky is a personal, backend-free gym and body-weight tracker. It is intentionally small, local-only, and dependency-light.
 
 ## Project layout
 
@@ -37,9 +37,7 @@ npm run build
 - **Test the flow you touched.** Click through the affected screens (and workout flow) in a browser before finishing changes.
 - **Training logic gets a unit test.** Anything deciding what you lift next, calculating progression, estimating 1RM, computing recovery fatigue, or parsing imported workouts belongs in a pure helper in `src/lib/` with Vitest tests beside it (`npm test`).
 
-## Provenance & License
+## License
 
-Sky is maintained as a personal fork and does not take public contributions.
-
-- All code in Sky inherits the **[GNU AGPL v3.0](LICENSE)** from upstream openGym.
+- All code in Sky is original work by the project owner, licensed under the **[MIT License](LICENSE)**.
 - Third-party exercise dataset and media licenses are documented in [NOTICE.md](NOTICE.md).

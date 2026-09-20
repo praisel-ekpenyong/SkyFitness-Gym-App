@@ -26,7 +26,7 @@ export default function Settings() {
   const stampExported = () => update(s => { s.lastExport = Date.now() })
   const doExport = async () => {
     const json = JSON.stringify(S, null, 2)
-    const name = 'sky-backup-' + todayISO() + '.json'   // renamed from opengym-backup- at the Sky rebrand
+    const name = 'sky-backup-' + todayISO() + '.json'
     // WKWebView can't download blob URLs — the native build hands the file to the share sheet.
     if (MOBILE) {
       try { await shareExport(json, name); toast(t('Backup exported')); stampExported() } catch (e) { /* share sheet dismissed */ }
@@ -43,7 +43,7 @@ export default function Settings() {
     rd.onload = () => {
       try {
         const data = JSON.parse(rd.result)
-        // Accepts old openGym backups too — same shape, only the name changed.
+        // Same shape as any Sky backup — only the file name changed at the rebrand.
         if (!data.workouts || !data.routines) throw new Error('not a Sky backup')
         confirmSheet({ title: t('Import backup?'), message: t('This replaces all current data with the backup file.'), confirmText: t('Import'), danger: true, onConfirm: () => { replaceState(Object.assign(JSON.parse(JSON.stringify(DEF)), data)); toast(t('Backup imported')) } })
       } catch (e) { toast(t('Import failed: {0}', e.message)) }
@@ -133,10 +133,15 @@ export default function Settings() {
       <div className="lrow" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 12, paddingTop: 13, paddingBottom: 14 }}>
         <span className="lrow-t">{t('Accent color')}</span>
         <div className="swatches">
-          {Object.entries(ACCENTS).map(([k, c]) => (
-            <button key={k} className={'swatch' + ((S.accent || 'lime') === k ? ' on' : '')}
-              style={{ background: c }} onClick={() => update(s => { s.accent = k })} aria-label={k} />
-          ))}
+          {Object.entries(ACCENTS).map(([k, c]) => {
+            const on = (S.accent || 'lime') === k
+            return (
+              <button key={k} className={'swatch' + (on ? ' on' : '')}
+                style={{ background: c }} onClick={() => update(s => { s.accent = k })}
+                aria-label={t('Accent {0}', k)}
+                aria-pressed={on} />
+            )
+          })}
         </div>
       </div>
     </Section>
@@ -163,10 +168,10 @@ export default function Settings() {
         subtitle={t('to install Sky as a full-screen app.') + ' ' + t('Your data never leaves this device — export a backup now and then!')} />
     </Section>}
 
-    {/* About — the one place that says what Sky is and where it came from. AGPL §4–5
-        attribution lives here, so it must survive every future rewrite of the copy. */}
+    {/* About — the one place that says what Sky is. License attribution lives here, so it
+        must survive every future rewrite of the copy. */}
     <div className="dim small" style={{ textAlign: 'center', marginTop: 4, lineHeight: 1.6 }}>
-      Sky · {t('free & open source (AGPL v3)')}
+      Sky · {t('free & open source (MIT)')}
     </div>
   </div>
 }
@@ -230,7 +235,7 @@ function MobileReminderCard({ S, update, toast }) {
       </Row>
       {S.reminder?.on && (
         <Row icon="clock" iconTint="var(--purple)" title={t('Reminder time')}>
-          <input type="time" className="timef" value={S.reminder?.time || DEF.reminder.time}
+          <input type="time" className="timef" aria-label={t('Reminder time')} value={S.reminder?.time || DEF.reminder.time}
             onChange={e => setReminder({ time: e.target.value })} />
         </Row>
       )}

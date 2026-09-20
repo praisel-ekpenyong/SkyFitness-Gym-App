@@ -177,3 +177,50 @@ describe('Home hero routine exercise count binding (05)', () => {
     expect(meta.textContent).toContain('Time to recover & rebuild')
   })
 })
+
+describe('Home declarative weekly progress card (non-gamified PRODUCT.md voice)', () => {
+  it('renders declarative progress without streaks or flame iconography', async () => {
+    const today = todayISO()
+    const wd = weekdayFromISO(today)
+    const routine = routineWithEx(3)
+    useStore.getState().update(s => {
+      s.routines = [routine]
+      s.week = { [wd]: routine.id, [(wd + 2) % 7]: routine.id }
+      s.dayPlan = {}
+      s.workouts = [{ d: today, name: 'Push', sets: [] }]
+      s.active = null
+      s.bodyweight = []
+    })
+
+    await act(async () => { root.render(<Home />) })
+
+    const card = container.querySelector('button.card[aria-label="Weekly progress and calendar"]')
+    expect(card).toBeTruthy()
+    expect(card.textContent).toContain('1 of 2 workouts this week')
+    expect(card.textContent).toContain('1 workout total')
+    expect(card.textContent).toContain('View calendar')
+    expect(card.textContent.toLowerCase()).not.toContain('streak')
+    expect(container.textContent.toLowerCase()).not.toContain('week streak')
+    // No flame icon path present
+    expect(container.querySelector('svg.icn path[d*="M12 20.4c3.2 0 5.4-2.1"]')).toBeNull()
+  })
+
+  it('renders factual text when no routine is scheduled for the week', async () => {
+    useStore.getState().update(s => {
+      s.routines = []
+      s.week = {}
+      s.dayPlan = {}
+      s.workouts = []
+      s.active = null
+      s.bodyweight = []
+    })
+
+    await act(async () => { root.render(<Home />) })
+
+    const card = container.querySelector('button.card[aria-label="Weekly progress and calendar"]')
+    expect(card).toBeTruthy()
+    expect(card.textContent).toContain('No workouts this week')
+    expect(card.textContent).toContain('0 workouts total')
+    expect(card.textContent.toLowerCase()).not.toContain('streak')
+  })
+})

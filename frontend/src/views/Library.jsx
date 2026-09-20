@@ -51,6 +51,7 @@ export default function Library() {
     <SearchField
       style={{ marginBottom: 10 }}
       placeholder={t('Search…')}
+      aria-label={t('Search exercises')}
       value={q}
       onChange={e => { setQ(e.target.value); setShown(40) }}
       onClear={() => { setQ(''); setShown(40) }}
@@ -65,7 +66,8 @@ export default function Library() {
       {eqOpts.map(x => <button key={x} className={'chip' + (eqOn === x ? ' on' : '')} onClick={() => { setEq(x); setShown(40) }}>{t(x)}</button>)}
     </div>}
     <div className="list">
-      <div className="item" onClick={() => customExSheet(null, ex => exerciseDetailSheet(ex), q.trim())}>
+      <div className="item" role="button" tabIndex={0} onClick={() => customExSheet(null, ex => exerciseDetailSheet(ex), q.trim())}
+        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); customExSheet(null, ex => exerciseDetailSheet(ex), q.trim()) } }}>
         <div className="thumb thumb-x"><Icon name="sparkles" /></div>
         <div className="grow"><div className="tt">{t('Create your own exercise')}</div><div className="ss">{t('name + target muscles, no animation')}</div></div><Icon name="plus" className="chev" />
       </div>
@@ -75,7 +77,8 @@ export default function Library() {
         const primary = row.primaryMuscle
         const primaryLabel = (primary && MUSCLE_NAME[primary]) || e.tg || e.bp
         const secondaryMuscle = row.secondaryMatch
-        return <div key={e.id} className="item" onClick={() => exerciseDetailSheet(e)}>
+        return <div key={e.id} className="item" role="button" tabIndex={0} aria-label={e.n} onClick={() => exerciseDetailSheet(e)}
+          onKeyDown={ev => { if (ev.target === ev.currentTarget && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); exerciseDetailSheet(e) } }}>
           <Thumb ex={e} />
           <div className="grow">
             <div className="tt capitalize">{e.n}</div>
@@ -87,7 +90,7 @@ export default function Library() {
           {best > 0 && <span className="tag acc">{fmtNum(best)}</span>}
           <button
             className={'iconbtn' + (row.favorite ? ' on-ss' : '')}
-            style={{ width: 34, height: 34, fontSize: 16, color: row.favorite ? 'var(--acc)' : 'var(--label-3)' }}
+            style={{ width: 34, height: 34, fontSize: 16, color: row.favorite ? 'var(--acc)' : 'var(--label-2)' }}
             aria-label={row.favorite ? t('Remove from favorites') : t('Add to favorites')}
             onClick={ev => {
               ev.stopPropagation()

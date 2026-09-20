@@ -6,7 +6,7 @@ Sky runs as a backend-free application on mobile devices in two ways:
 |---|---|---|
 | Runs | in mobile browser (Safari / Chrome) added to home screen | natively on iPhone / Android via Capacitor shell |
 | Accounts | none — profile stored locally in browser storage | none — profile stored in private app storage |
-| Data | mirrored in `localStorage` + `IndexedDB` (`lib/storage.js`) | mirrored to `opengym-state.json` via `@capacitor/filesystem` |
+| Data | mirrored in `localStorage` + `IndexedDB` (`lib/storage.js`) | mirrored to `sky-state.json` via `@capacitor/filesystem` |
 | Reminders | local Notification API | native local notifications (`@capacitor/local-notifications`) |
 | Exercise media | streamed from jsDelivr CDN | streamed from jsDelivr CDN |
 

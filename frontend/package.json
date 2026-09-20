@@ -14,7 +14,7 @@
     "test:preview": "node scripts/test-deploy-preview.mjs",
     "media:fetch": "node ../scripts/fetch-media.mjs"
   },
-  "license": "AGPL-3.0-or-later",
+  "license": "MIT",
   "dependencies": {
     "@capacitor/app": "^7.1.2",
     "@capacitor/core": "^7.6.8",

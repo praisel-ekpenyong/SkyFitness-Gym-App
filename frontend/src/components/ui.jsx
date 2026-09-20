@@ -60,11 +60,12 @@ export function TextArea({ className = '', ...rest }) {
   return <textarea className={'field area ' + className} {...rest} />
 }
 
-export function SearchField({ value, onChange, onClear, className = '', style, ...rest }) {
+export function SearchField({ value, onChange, onClear, className = '', style, 'aria-label': ariaLabel, ...rest }) {
+  const label = ariaLabel || rest.placeholder || 'Search'
   return (
     <div className={'search searchf ' + className} style={style}>
       <Icon name="magnifier" className="lead" />
-      <input className="field input" value={value} onChange={onChange} {...rest} />
+      <input className="field input" value={value} onChange={onChange} aria-label={label} {...rest} />
       {!!value && (
         <button type="button" className="clear" onClick={onClear} aria-label="Clear">
           <Icon name="xmark" />
@@ -119,16 +120,18 @@ export function Segmented({ options, value, onChange, className = '' }) {
 
 /* ============================ stepper ============================ */
 
-export function Stepper({ value, step = 1, onChange, decimal = true, className = '', label, unit }) {
+export function Stepper({ value, step = 1, onChange, decimal = true, className = '', label, unit, 'aria-label': ariaLabel }) {
   const set = v => onChange(Math.max(0, Math.round((v || 0) * 100) / 100))
+  const decLabel = ariaLabel ? `Decrease ${ariaLabel}` : 'Decrease'
+  const incLabel = ariaLabel ? `Increase ${ariaLabel}` : 'Increase'
   const inner = (
     <div className={'stp ' + className}>
-      <button type="button" onClick={() => set((+value || 0) - step)} aria-label="Decrease"><Icon name="minus" /></button>
+      <button type="button" onClick={() => set((+value || 0) - step)} aria-label={decLabel}><Icon name="minus" /></button>
       <span className="val">
-        <NumberField value={value} decimal={decimal} onChange={onChange} />
+        <NumberField value={value} decimal={decimal} onChange={onChange} aria-label={ariaLabel || label} />
         {unit && <i>{unit}</i>}
       </span>
-      <button type="button" onClick={() => set((+value || 0) + step)} aria-label="Increase"><Icon name="plus" /></button>
+      <button type="button" onClick={() => set((+value || 0) + step)} aria-label={incLabel}><Icon name="plus" /></button>
     </div>
   )
   if (!label) return inner
@@ -187,10 +190,12 @@ export function Slider({ value, min = 0, max = 100, step = 1, onChange, classNam
       className={'sld' + (drag ? ' dragging' : '') + ' ' + className}
       role="slider"
       tabIndex={0}
+      aria-label={rest['aria-label'] || 'Slider'}
       aria-valuenow={value} aria-valuemin={min} aria-valuemax={max}
       data-nodrag                                  /* keeps the sheet from swipe-dismissing */
       onKeyDown={key}
       onPointerDown={e => { e.currentTarget.setPointerCapture?.(e.pointerId); setDrag(true); onChange(posToValue(e.clientX)) }}
+      {...rest}
     >
       <span className="sld-track"><span className="sld-fill" style={{ width: pct + '%' }} /></span>
       <span className="sld-knob" style={{ left: pct + '%' }} />
@@ -200,15 +205,17 @@ export function Slider({ value, min = 0, max = 100, step = 1, onChange, classNam
 
 /* ============================ checkbox ============================ */
 
-export function Check({ checked, onChange, className = '', size }) {
+export function Check({ checked, onChange, className = '', size, 'aria-label': ariaLabel, ...rest }) {
   return (
     <button
       type="button"
       role="checkbox"
       aria-checked={!!checked}
+      aria-label={ariaLabel || rest['aria-label'] || 'Complete set'}
       className={'chk' + (checked ? ' on' : '') + ' ' + className}
       style={size ? { width: size, height: size } : null}
       onClick={() => onChange(!checked)}
+      {...rest}
     >
       <Icon name="check" />
     </button>
@@ -233,7 +240,7 @@ export function Section({ title, footer, children, className = '' }) {
 export function Row({ icon, iconTint, title, subtitle, value, accessory = 'none', onClick, danger, children, className = '' }) {
   const Tag = onClick ? 'button' : 'div'
   return (
-    <Tag className={'lrow' + (onClick ? ' tap' : '') + (danger ? ' danger' : '') + ' ' + className} onClick={onClick}>
+    <Tag type={onClick ? 'button' : undefined} className={'lrow' + (onClick ? ' tap' : '') + (danger ? ' danger' : '') + ' ' + className} onClick={onClick}>
       {icon && <span className="lrow-i" style={iconTint ? { '--tint': iconTint } : null}><Icon name={icon} /></span>}
       <span className="lrow-m">
         <span className="lrow-t">{title}</span>
