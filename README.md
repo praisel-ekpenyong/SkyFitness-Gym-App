@@ -79,7 +79,7 @@ Sky calculates your next target weight and reps from your logged history:
 
 ### 6. Visual Muscle Maps
 Read your training through three front-and-back body diagrams:
-- **Balance Map**: Shows training volume across 18 muscle groups and highlights untrained areas.
+- **Balance Map**: Shows training volume across 19 muscle groups and highlights untrained areas.
 - **Fatigue Map**: Shows current muscle fatigue using a 36-hour half-life recovery model.
 - **Strength Map**: Shows retained strength decay and lists the exercises that trained each muscle.
 
