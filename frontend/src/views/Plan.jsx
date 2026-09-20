@@ -24,11 +24,14 @@ export default function Plan() {
       <button className="iconbtn" onClick={planToolsSheet} aria-label={t('Share your plan')} title={t('Share your plan')}><Icon name="upload" /></button>
     </div>
     <div className="cols"><div>
-      <h4 className="sec">{t('Week schedule')}</h4>
+      <h2 className="sec">{t('Week schedule')}</h2>
       <div className="list" style={{ display: 'flex', flexDirection: 'column' }}>
         {[1, 2, 3, 4, 5, 6, 0].map(d => {
           const r = S.routines.find(x => x.id === S.week[d])
-          return <div key={d} className="item" onClick={() => dayAssignSheet(d)}>
+          return <div key={d} className="item" role="button" tabIndex={0}
+            aria-label={`${t(DAYN[d])}: ${r ? r.name : t('Rest')}`}
+            onClick={() => dayAssignSheet(d)}
+            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); dayAssignSheet(d) } }}>
             <div className="grow"><div className="tt">{t(DAYN[d])}</div></div>
             {r ? <span className="tag acc"><Icon name={glyphOf(r.emoji)} />{r.name}</span> : <span className="tag">{t('Rest')}</span>}
             <Icon name="chevronRight" className="chev" /></div>
@@ -36,10 +39,13 @@ export default function Plan() {
       </div>
     </div><div>
       <div className="row between" style={{ marginTop: 22, marginBottom: 10 }}>
-        <h4 className="sec" style={{ margin: 0 }}>{t('Routines')}</h4>
+        <h2 className="sec" style={{ margin: 0 }}>{t('Routines')}</h2>
         <Button size="sm" variant="tinted" icon="plus" onClick={addRoutine}>{t('New')}</Button>
       </div>
-      {S.routines.length ? <div className="list">{S.routines.map(r => <div key={r.id} className="item" onClick={() => nav('/plan/r/' + r.id)}>
+      {S.routines.length ? <div className="list">{S.routines.map(r => <div key={r.id} className="item" role="button" tabIndex={0}
+        aria-label={`${r.name}, ${exCount(r.ex.length)}`}
+        onClick={() => nav('/plan/r/' + r.id)}
+        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); nav('/plan/r/' + r.id) } }}>
         <span className="lrow-i"><Icon name={glyphOf(r.emoji)} /></span>
         <div className="grow"><div className="tt">{r.name}</div><div className="ss">{exCount(r.ex.length)}</div></div>
         <Icon name="chevronRight" className="chev" /></div>)}</div> : <>

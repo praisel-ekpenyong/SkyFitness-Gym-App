@@ -76,7 +76,7 @@ export function buildPlanBundle(S, name) {
     })
   const week = {}
   WEEK_ORDER.forEach(d => { if (S.week?.[d]) week[d] = S.week[d] })
-  return { opengym_plan: PLAN_FMT, exported: todayISO(), name: name || '', week, routines, customEx }
+  return { sky_plan: PLAN_FMT, exported: todayISO(), name: name || '', week, routines, customEx }
 }
 
 /**
@@ -90,7 +90,7 @@ export function buildPlanBundle(S, name) {
  */
 export function parsePlan(raw) {
   const data = typeof raw === 'string' ? JSON.parse(raw) : raw
-  if (!data || !data.opengym_plan || !Array.isArray(data.routines)) {
+  if (!data || !data.sky_plan || !Array.isArray(data.routines)) {
     throw new Error(t('this isn’t a Sky plan file'))
   }
   const customEx = (Array.isArray(data.customEx) ? data.customEx : []).filter(c => c && c.id)
@@ -244,37 +244,37 @@ export function planPrintHTML(S, owner) {
   }
   .doc { max-width: 720px; margin: 0 auto; }
   header { border-bottom: 2px solid #16181d; padding-bottom: 12px; margin-bottom: 20px; }
-  header .kicker { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: #6a7a3a; font-weight: 700; }
+  header .kicker { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: #6a7a3a; font-weight: 600; }
   header h1 { font-size: 27px; letter-spacing: -.02em; margin: 3px 0 0; }
   header .sub { color: #6b7180; font-size: 13px; margin-top: 4px; }
 
-  h3.block { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: #8a90a0; margin: 0 0 8px; font-weight: 700; }
+  h3.block { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: #5a6272; margin: 0 0 8px; font-weight: 600; }
 
   .week { border: 1px solid #e4e6ec; border-radius: 10px; overflow: hidden; margin-bottom: 26px; break-inside: avoid; page-break-inside: avoid; }
   .w-row { display: flex; align-items: baseline; padding: 8px 14px; border-top: 1px solid #eef0f4; }
   .w-row:first-child { border-top: 0; }
   .w-day { width: 116px; font-weight: 600; color: #16181d; flex: none; }
   .w-r { text-transform: capitalize; }
-  .rest, .w-r .rest { color: #a2a8b6; text-transform: none; }
+  .rest, .w-r .rest { color: #5a6272; text-transform: none; }
 
   .routine { break-inside: avoid; page-break-inside: avoid; margin-bottom: 20px; padding: 14px 16px; border: 1px solid #e4e6ec; border-radius: 12px; }
   .r-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; border-bottom: 1px solid #eef0f4; padding-bottom: 8px; margin-bottom: 8px; break-after: avoid; page-break-after: avoid; }
   .r-head h2 { font-size: 18px; letter-spacing: -.01em; margin: 0; text-transform: capitalize; }
-  .r-count { font-size: 12px; color: #8a90a0; white-space: nowrap; }
+  .r-count { font-size: 12px; color: #5a6272; white-space: nowrap; }
 
   .ex-list { display: flex; flex-direction: column; }
   .ex { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; padding: 6px 0; break-inside: avoid; page-break-inside: avoid; }
   .ex + .ex, .ss + .ex, .ex + .ss { border-top: 1px solid #f2f3f6; }
   .ex-n { text-transform: capitalize; font-weight: 500; }
-  .ex-n .part { text-transform: capitalize; color: #9aa0ae; font-weight: 400; font-size: 12px; margin-left: 8px; }
+  .ex-n .part { text-transform: capitalize; color: #5a6272; font-weight: 400; font-size: 12px; margin-left: 8px; }
   .ex-s { color: #3d424e; white-space: nowrap; font-variant-numeric: tabular-nums; }
-  .ex.empty, .none { color: #a2a8b6; }
+  .ex.empty, .none { color: #5a6272; }
 
-  .ss { break-inside: avoid; page-break-inside: avoid; border-left: 3px solid #cfe08a; padding-left: 12px; margin: 4px 0; }
-  .ss-tag { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: #6a7a3a; font-weight: 700; padding-top: 4px; }
+  .ss { break-inside: avoid; page-break-inside: avoid; border: 1px solid #e4e6ec; border-radius: 8px; padding: 8px 12px; margin: 6px 0; background: #fafafc; }
+  .ss-tag { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: #55662a; font-weight: 600; margin-bottom: 2px; }
   .ss .ex:first-of-type { padding-top: 2px; }
 
-  footer { margin-top: 26px; padding-top: 10px; border-top: 1px solid #eef0f4; color: #a2a8b6; font-size: 11px; text-align: center; }
+  footer { margin-top: 26px; padding-top: 10px; border-top: 1px solid #eef0f4; color: #5a6272; font-size: 11px; text-align: center; }
 </style></head>
 <body><div class="doc">
   <header>

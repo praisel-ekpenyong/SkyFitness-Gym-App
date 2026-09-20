@@ -328,7 +328,7 @@ describe('Ticket 05 — End-to-End Integration & Stats Diagram Parity', () => {
 
     // 10. Plan bundle sharing isolation & preservation
     const planBundle = buildPlanBundle(useStore.getState().S, 'Push Pull Plan')
-    expect(planBundle.opengym_plan).toBe(1)
+    expect(planBundle.sky_plan).toBe(1)
     expect(planBundle.customEx.length).toBe(1) // only referenced c-incline-curl included
     expect(planBundle.customEx[0].tg).toBe('biceps')
     expect(planBundle.customEx[0].sm).toEqual(['forearm'])

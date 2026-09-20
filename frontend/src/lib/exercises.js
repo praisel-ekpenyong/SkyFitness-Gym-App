@@ -46,7 +46,7 @@ export function registerCustom(list) {
 // Full searchable catalogue — customs first so your own exercises are easy to find.
 export const allExercises = st => [...(st.customEx || []), ...EXDB]
 
-// Pinned upstream dataset release for media streaming and CDN fallbacks.
+// Pinned dataset release for media streaming and CDN fallbacks.
 export const PINNED_DATASET_COMMIT = '7455efae41b330c265e7cd4b78dfa848e7ce5ebd'
 export const CDN_IMG_BASE = `https://cdn.jsdelivr.net/gh/hasaneyldrm/exercises-dataset@${PINNED_DATASET_COMMIT}/images/`
 export const CDN_GIF_BASE = `https://cdn.jsdelivr.net/gh/hasaneyldrm/exercises-dataset@${PINNED_DATASET_COMMIT}/videos/`

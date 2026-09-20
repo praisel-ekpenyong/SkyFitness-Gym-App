@@ -34,7 +34,7 @@ describe('plan-share engine', () => {
       }
 
       const bundle = buildPlanBundle(S, 'My PPL Plan')
-      expect(bundle.opengym_plan).toBe(1)
+      expect(bundle.sky_plan).toBe(1)
       expect(bundle.name).toBe('My PPL Plan')
       expect(bundle.routines.length).toBe(1)
       expect(bundle.routines[0].name).toBe('Push Day')
@@ -72,8 +72,8 @@ describe('plan-share engine', () => {
         'customEx',
         'exported',
         'name',
-        'opengym_plan',
         'routines',
+        'sky_plan',
         'week',
       ])
     })
@@ -110,12 +110,12 @@ describe('plan-share engine', () => {
     it('throws error when importing malformed data or wrong format', () => {
       expect(() => parsePlan(null)).toThrow(/Sky plan file/)
       expect(() => parsePlan('{"foo": 123}')).toThrow(/Sky plan file/)
-      expect(() => parsePlan({ opengym_plan: 1, routines: 'not-an-array' })).toThrow(/Sky plan file/)
+      expect(() => parsePlan({ sky_plan: 1, routines: 'not-an-array' })).toThrow(/Sky plan file/)
     })
 
     it('filters out unresolvable exercise IDs and records dropped count', () => {
       const raw = JSON.stringify({
-        opengym_plan: 1,
+        sky_plan: 1,
         name: 'Shared Routine',
         routines: [
           {

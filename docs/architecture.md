@@ -73,7 +73,7 @@ Warm-up rows carry `phase: 'warmup'` (legacy rows may have `warmup: true`; `isWa
 
 Web build: every `persist()` writes `S` synchronously to `localStorage` (`gym_state_v1`) and mirrors it to IndexedDB (`sky-state` db, `state` store) via `lib/storage.js` on an 800 ms debounce (flushed immediately on `visibilitychange → hidden`). At boot, `pickNewest` compares timestamps (`_ts`) and loads whichever stored snapshot is newer, falling back to empty defaults if neither exists. Settings displays a gentle backup reminder when `backupDue` detects that the last successful JSON export (`S.lastExport`) is older than 14 days.
 
-Mobile (Capacitor) build additionally mirrors state to a native file (`opengym-state.json` in `Directory.Data`, via `lib/mobile.js`):
+Mobile (Capacitor) build additionally mirrors state to a native file (`sky-state.json` in `Directory.Data`, via `lib/mobile.js`):
 
 1. Native writes are debounced 800 ms after each persist.
 2. `visibilitychange → hidden` flushes the debounce immediately — backgrounding is often the last event before the OS kills the app.
@@ -104,7 +104,7 @@ Effective-set weights: target 1.0, synergist/secondary 0.4. Free-text muscle nam
 
 - **Backups** (`views/Settings.jsx`): plain JSON of `S`, validated minimally (must contain `workouts` and `routines`), merged onto fresh DEF and swapped in atomically via `replaceState`.
 - **Other apps** (`lib/import-csv.js`): one-set-per-row CSV from Strong, Hevy, FitNotes (iOS + Android dialects detected by signature headers), plus Apple Health `export.xml` for weigh-ins. Dates resolve day-first when ambiguous; units convert per row against the profile unit; effort columns follow blank ≠ rated, RIR wins if both present, cap at 10. Exercise matching refuses to guess on ties (the row becomes a custom exercise instead). Extending the curated `ALIAS_EX` table is the sanctioned way to improve match accuracy. Re-importing never duplicates: merge dedupes **by date**, existing days win.
-- **Plan share** (`lib/plan-share.js`): self-contained JSON bundles tagged `opengym_plan: 1` (`PLAN_FMT = 1`). Merge guarantees: routines always get fresh ids (never overwrite), customs dedupe by name+bodypart, optional `schedule: true` replaces the whole week. Also renders printable HTML.
+- **Plan share** (`lib/plan-share.js`): self-contained JSON bundles tagged `sky_plan: 1` (`PLAN_FMT = 1`). Merge guarantees: routines always get fresh ids (never overwrite), customs dedupe by name+bodypart, optional `schedule: true` replaces the whole week. Also renders printable HTML.
 
 ## i18n & instructions
 

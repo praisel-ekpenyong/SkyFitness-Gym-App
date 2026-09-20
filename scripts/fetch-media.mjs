@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Cross-platform exercise media fetch script for Sky (openGym).
+// Cross-platform exercise media fetch script for Sky.
 // Downloads and extracts 1,324 exercise thumbnails (JPG) and animations (GIF)
 // from github.com/hasaneyldrm/exercises-dataset into frontend/public/media/.
 //
@@ -10,7 +10,7 @@
 // Source: hasaneyldrm/exercises-dataset
 // Metadata and instruction text: MIT.
 // Images and animations: © Gym visual — https://gymvisual.com/
-// Used under dataset terms; openGym does not redistribute or relicense them. See NOTICE.md.
+// Used under dataset terms; Sky does not redistribute or relicense them. See NOTICE.md.
 
 import { createGunzip } from 'node:zlib'
 import { Readable } from 'node:stream'
@@ -29,7 +29,7 @@ export const DEFAULT_ARCHIVE_URL =
 export const NOTICE_BANNER = `↓ Downloading exercise media (~140 MB) from github.com/hasaneyldrm/exercises-dataset
   Metadata and instruction text: MIT.
   Images and animations: © Gym visual — https://gymvisual.com/
-  Used under that dataset's terms, not openGym's AGPL; openGym does not redistribute them.
+  Used under that dataset's terms; Sky does not redistribute them.
   Terms: https://gymvisual.com/content/3-terms-and-conditions-of-use
   Reusing this media yourself, commercially or not, needs your own licence from Gym visual.
   Details in NOTICE.md.`
@@ -254,7 +254,7 @@ Options:
 
   console.log(NOTICE_BANNER)
   console.log(`Target directory: ${targetDir}${dryRun ? ' (DRY RUN)' : ''}`)
-  console.log('Connecting to upstream dataset archive…')
+  console.log('Connecting to dataset archive…')
 
   const startTime = Date.now()
   let lastReport = Date.now()

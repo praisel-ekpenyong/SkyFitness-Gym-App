@@ -46,7 +46,7 @@ When your output names a domain concept (in an issue title, a refactor proposal,
 
 If the concept you need isn't in the glossary yet, that's a signal — either you're inventing language the project doesn't use (reconsider) or there's a real gap (note it for `/domain-modeling`).
 
-Until `CONTEXT.md` exists, use the vocabulary agreed during planning: **Sky** (this fork), **guest mode**, **static build**, **localStorage**, **IndexedDB**, **export**, **import**.
+Until `CONTEXT.md` exists, use the vocabulary agreed during planning: **Sky**, **guest mode**, **static build**, **localStorage**, **IndexedDB**, **export**, **import**.
 
 ## Flag ADR conflicts
 

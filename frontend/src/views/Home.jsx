@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
-import { effectiveRoutine, effectiveRoutineId, streakWeeks, lastBW, setsDoneActive } from '../lib/history.js'
+import { effectiveRoutine, effectiveRoutineId, lastBW, setsDoneActive } from '../lib/history.js'
 import { fmtNum, fmtDate, todayISO, isoOf, weekKey, DAYS, exCount, workoutTimestamp } from '../lib/format.js'
 import { t, dateLocale } from '../lib/i18n.js'
 import { bwSheet, goalSheet, dayOverrideSheet, calendarSheet, startFlow, loadStarterPlan, bwDeltaColor, displayNameSheet } from '../sheets.jsx'
@@ -34,7 +34,7 @@ export default function Home() {
     const eff = effectiveRoutineId(S, iso), ovr = (S.dayPlan || {})[iso] !== undefined, done = doneDays.has(iso)
     const dot = done ? ' done' : ovr && eff ? ' ovr' : eff ? ' plan' : ''
     strip.push(
-      <button key={i} className={'wday' + (iso === todayISO() ? ' today' : '')} onClick={() => dayOverrideSheet(iso)} aria-label={t(DAYS[d.getDay()]) + ' ' + d.getDate()}>
+      <button key={i} className={'wday' + (iso === todayISO() ? ' today' : '')} onClick={() => dayOverrideSheet(iso)} aria-label={d.toLocaleDateString(dateLocale(), { weekday: 'long', day: 'numeric', month: 'long' })}>
         <div className="lbl">{t(DAYS[d.getDay()])}</div>
         <div className="num">{d.getDate()}</div>
         <div className={'dot' + dot} />
@@ -69,7 +69,7 @@ export default function Home() {
           <button className="profile-pill" onClick={displayNameSheet} aria-label={t('Edit name')}>
             <span className="profile-pill-avatar">{initial}</span>
             <span className="profile-pill-name">{displayName}</span>
-            <Icon name="chevronDown" style={{ fontSize: 12, color: 'var(--label-3)' }} />
+            <Icon name="chevronDown" style={{ fontSize: 12, color: 'var(--label-2)' }} />
           </button>
         )}
         {!hasName && (
@@ -131,7 +131,7 @@ export default function Home() {
       </div>
 
       {S.active ? (
-        <Button variant="primary" style={{ background: 'var(--orange)', color: '#000' }} icon="timer" onClick={() => nav('/workout')}>
+        <Button variant="primary" style={{ background: 'var(--orange)', color: 'var(--on-orange)' }} icon="timer" onClick={() => nav('/workout')}>
           {t('Resume workout')}
         </Button>
       ) : routine ? (
@@ -154,7 +154,7 @@ export default function Home() {
     {/* Week Schedule Card */}
     <div className="card">
       <div className="week-nav">
-        <button className="iconbtn" style={{ width: 30, height: 30, fontSize: 15 }} onClick={() => setWeekOffset(w => w - 1)} aria-label={t('Previous week')}>
+        <button className="iconbtn" onClick={() => setWeekOffset(w => w - 1)} aria-label={t('Previous week')}>
           <Icon name="chevronLeft" />
         </button>
         <div className="row" style={{ gap: 8, alignItems: 'center' }}>
@@ -165,7 +165,7 @@ export default function Home() {
             </button>
           )}
         </div>
-        <button className="iconbtn" style={{ width: 30, height: 30, fontSize: 15 }} onClick={() => setWeekOffset(w => w + 1)} aria-label={t('Next week')}>
+        <button className="iconbtn" onClick={() => setWeekOffset(w => w + 1)} aria-label={t('Next week')}>
           <Icon name="chevronRight" />
         </button>
       </div>
@@ -190,7 +190,7 @@ export default function Home() {
       <div className="row between" style={{ marginBottom: 8 }}>
         <h2 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--label)' }}>{t('Body weight')}</h2>
         <div className="row" style={{ gap: 8 }}>
-          <Button size="sm" icon="target" style={S.targetW ? { color: 'var(--yellow)' } : undefined} onClick={goalSheet}>
+          <Button size="sm" icon="target" aria-label={S.targetW ? `${t('Goal weight')}: ${fmtNum(S.targetW)} ${S.unit}` : t('Set goal weight')} style={S.targetW ? { color: 'var(--goal-text)' } : undefined} onClick={goalSheet}>
             {S.targetW ? fmtNum(S.targetW) : t('Goal')}
           </Button>
           <Button size="sm" icon="plus" onClick={() => bwSheet()}>{t('Log')}</Button>
@@ -219,25 +219,31 @@ export default function Home() {
       </> : <div className="muted small">{t("No entries yet — log your weight to start the curve. It's also asked before every workout.")}</div>}
     </div>
 
-    {/* Weekly Progress & Streak Card */}
-    <div className="card tappable" style={{ cursor: 'pointer' }} onClick={() => calendarSheet()}>
+    {/* Weekly Progress & Calendar Card */}
+    <button type="button" className="card tappable" style={{ width: '100%', textAlign: 'left' }} onClick={() => calendarSheet()} aria-label={t('Weekly progress and calendar')}>
       <div className="row between">
         <div>
-          <div className="row" style={{ gap: 7, fontSize: 20, fontWeight: 700, letterSpacing: '-.021em' }}>
-            <Icon name="flame" style={{ color: 'var(--orange)' }} />
-            {t('{0} week streak', streakWeeks(S))}
+          <div className="row" style={{ gap: 8, fontSize: 18, fontWeight: 600, letterSpacing: '-.02em', alignItems: 'center' }}>
+            <Icon name="calendar" style={{ color: 'var(--acc)' }} />
+            <span>
+              {plannedPerWeek
+                ? t('{0} of {1} workouts this week', wThisWeek, plannedPerWeek)
+                : (wThisWeek === 0
+                  ? t('No workouts this week')
+                  : (wThisWeek === 1 ? t('1 workout this week') : t('{0} workouts this week', wThisWeek)))}
+            </span>
           </div>
-          <div className="muted small" style={{ marginTop: 2 }}>
-            {wThisWeek}{plannedPerWeek ? ' / ' + plannedPerWeek : ''} {t('this week')} · {t(S.workouts.length === 1 ? '{0} workout total' : '{0} workouts total', S.workouts.length)}
+          <div className="muted small" style={{ marginTop: 4 }}>
+            {t(S.workouts.length === 1 ? '{0} workout total' : '{0} workouts total', S.workouts.length)} · {t('View calendar')}
           </div>
         </div>
-        <Icon name="calendar" className="chev" style={{ fontSize: 20 }} />
+        <Icon name="chevronRight" className="chev" />
       </div>
       {plannedPerWeek > 0 && (
-        <div className="streak-bar-track">
-          <div className="streak-bar-fill" style={{ width: `${weekProgressPct}%` }} />
+        <div className="week-bar-track streak-bar-track">
+          <div className="week-bar-fill streak-bar-fill" style={{ transform: `scaleX(${Math.max(0, Math.min(1, weekProgressPct / 100))})` }} />
         </div>
       )}
-    </div>
+    </button>
   </div>
 }

@@ -13,7 +13,7 @@ import { t } from './i18n-core.js'
 
 export const MOBILE = import.meta.env.VITE_MOBILE === '1'
 
-const FILE = 'opengym-state.json'
+const FILE = 'sky-state.json'
 
 export async function nativeLoad() {
   try {

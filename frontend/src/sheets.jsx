@@ -66,17 +66,17 @@ function WeightInput({ value, setValue, unit }) {
   const onSlide = v => setValue(clamp(v))
   return <>
     <div className="bwstep">
-      <button className="bw-pm" onClick={() => onSlide(value - 0.1)} aria-label="minus 0.1"><Icon name="minus" /></button>
+      <button className="bw-pm" onClick={() => onSlide(value - 0.1)} aria-label={t('Decrease by 0.1 {0}', unit)}><Icon name="minus" /></button>
       <div className="bw-read">{fmtNum(value)}<span className="u"> {unit}</span></div>
-      <button className="bw-pm" onClick={() => onSlide(value + 0.1)} aria-label="plus 0.1"><Icon name="plus" /></button>
+      <button className="bw-pm" onClick={() => onSlide(value + 0.1)} aria-label={t('Increase by 0.1 {0}', unit)}><Icon name="plus" /></button>
     </div>
     <div className="chips" style={{ justifyContent: 'center', margin: '8px 0' }}>
-      <button className="chip" onClick={() => onSlide(value - 1)}>−1</button>
-      <button className="chip" onClick={() => onSlide(value - 0.5)}>−0.5</button>
-      <button className="chip" onClick={() => onSlide(value + 0.5)}>+0.5</button>
-      <button className="chip" onClick={() => onSlide(value + 1)}>+1</button>
+      <button className="chip" onClick={() => onSlide(value - 1)} aria-label={t('Decrease by 1 {0}', unit)}>−1</button>
+      <button className="chip" onClick={() => onSlide(value - 0.5)} aria-label={t('Decrease by 0.5 {0}', unit)}>−0.5</button>
+      <button className="chip" onClick={() => onSlide(value + 0.5)} aria-label={t('Increase by 0.5 {0}', unit)}>+0.5</button>
+      <button className="chip" onClick={() => onSlide(value + 1)} aria-label={t('Increase by 1 {0}', unit)}>+1</button>
     </div>
-    <Slider value={sv} min={W_LO} max={W_HI} step={0.5} onChange={onSlide} />
+    <Slider value={sv} min={W_LO} max={W_HI} step={0.5} onChange={onSlide} aria-label={t('Weight')} />
   </>
 }
 
@@ -116,7 +116,7 @@ function BwSheet({ required, onDone, close }) {
         {recent.map(b => <div key={b.d} className="row between" style={{ padding: '9px 2px', borderBottom: '1px solid var(--sep)' }}>
           <span className="small muted">{fmtDate(b.d, true)}</span>
           <span className="row" style={{ gap: 12 }}><b>{fmtNum(b.w)} {unit}</b>
-            <button className="iconbtn" style={{ width: 32, height: 30, borderRadius: 8, fontSize: 15, color: 'var(--red)' }} onClick={() => delEntry(b.d)} aria-label="delete"><Icon name="trash" /></button></span>
+            <button className="iconbtn" style={{ width: 32, height: 30, borderRadius: 8, fontSize: 15, color: 'var(--red)' }} onClick={() => delEntry(b.d)} aria-label={t('Delete entry for {0}', fmtDate(b.d, true))}><Icon name="trash" /></button></span>
         </div>)}
       </div>
     </>}
@@ -226,7 +226,7 @@ export function bwDeltaColor(delta, currentW) {
   if (!delta) return 'var(--label-2)'
   if (!S().targetW) return 'var(--label)'
   const up = S().targetW > currentW
-  return (delta > 0) === up ? 'var(--acc)' : 'var(--red)'
+  return (delta > 0) === up ? 'var(--acc-text)' : 'var(--red-text)'
 }
 function GoalSheet({ close }) {
   const st = S()
@@ -273,6 +273,7 @@ function DisplayNameSheet({ close }) {
     <input
       className="input"
       placeholder={t('Enter your name')}
+      aria-label={t('Your name')}
       value={v}
       maxLength={24}
       autoFocus
@@ -322,7 +323,7 @@ function PlanTools({ close }) {
   const exportFile = async () => {
     const bundle = buildPlanBundle(st, '')
     const json = JSON.stringify(bundle, null, 2)
-    const name = 'sky-plan-' + todayISO() + '.json'   // renamed from opengym-plan- at the Sky rebrand
+    const name = 'sky-plan-' + todayISO() + '.json'
     if (MOBILE) { try { await shareExport(json, name) } catch (e) { /* dismissed */ } close(); return }
     const blob = new Blob([json], { type: 'application/json' })
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); URL.revokeObjectURL(a.href)
@@ -522,7 +523,7 @@ export function RecapSheet({ start, close }) {
       const pct = Math.round(v)
       label = (pct > 0 ? '+' : '') + pct + '%'
     }
-    const color = v > 0 ? 'var(--acc)' : v < 0 ? 'var(--red)' : 'var(--label-3)'
+    const color = v > 0 ? 'var(--acc-text)' : v < 0 ? 'var(--red-text)' : 'var(--label-2)'
     return <span className="delta-pill" style={{ color, background: 'color-mix(in srgb, currentColor 14%, transparent)' }}>{label}</span>
   }
 
@@ -595,7 +596,10 @@ export const recapSheet = (start) => ui().openSheet(close => <RecapSheet start={
 export function WorkoutRow({ w, onClick }) {
   const st = useStore(s => s.S)
   const glyph = glyphOf((st.routines.find(r => r.id === w.routineId) || {}).emoji)
-  return <div className="item" onClick={onClick}>
+  return <div className="item" role="button" tabIndex={0}
+    aria-label={`${w.name}, ${fmtDate(w.d, true)}, ${t('{0} sets', setsDone(w))}`}
+    onClick={onClick}
+    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick && onClick() } }}>
     <span className="lrow-i" style={{ width: 34, height: 34, borderRadius: 8, fontSize: 19 }}><Icon name={glyph} /></span>
     <div className="grow"><div className="tt">{w.name}</div>
       <div className="ss">{[fmtDate(w.d, true), ...durPart(w.end - w.start), t('{0} sets', setsDone(w)), fmtVol(w.vol, st.unit)].join(' · ')}</div></div>

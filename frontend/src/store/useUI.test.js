@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 // Regression (surfaced by ticket 08's built-app smoke pass): the sky surgery removed the
 // server-era imports from useUI.js but left two `useStore.getState()` calls in the rest and
-// work timer ticks. Upstream masked them behind the same import; without it, the first tick
+// work timer ticks. The old shared import masked them; without it, the first tick
 // of any rest timer throws ReferenceError in the production bundle — the beep sequence, the
 // "rest over" toast and the notification never fire.
 vi.mock('../lib/sound.js', () => ({

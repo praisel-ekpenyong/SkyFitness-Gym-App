@@ -74,7 +74,7 @@ export function ExerciseDetail({ ex, close }) {
       <h3 className="capitalize" style={{ margin: 0 }}>{ex.n}</h3>
       <button
         className={'iconbtn' + (isFav ? ' on-ss' : '')}
-        style={{ width: 34, height: 34, fontSize: 18, color: isFav ? 'var(--acc)' : 'var(--label-3)' }}
+        style={{ width: 34, height: 34, fontSize: 18, color: isFav ? 'var(--acc)' : 'var(--label-2)' }}
         aria-label={isFav ? t('Remove from favorites') : t('Add to favorites')}
         onClick={() => {
           update(s => {
@@ -209,7 +209,7 @@ export function CustomExForm({ existing, prefill, onDone, close }) {
   return <>
     <h3>{existing ? t('Edit custom exercise') : t('Create your own exercise')}</h3>
     <div className="muted small" style={{ marginBottom: 12 }}>{t('Name it and pick its primary and secondary muscles — it behaves like any other exercise, just without an animation.')}</div>
-    <input className="input" placeholder={t('Exercise name')} value={name} onChange={e => setName(e.target.value)} />
+    <input className="input" placeholder={t('Exercise name')} aria-label={t('Exercise name')} value={name} onChange={e => setName(e.target.value)} />
     
     <div className="small muted" style={{ margin: '12px 0 6px' }}>{t('Primary muscle')}</div>
     <div className="chips" style={{ margin: '0 0 10px' }}>
@@ -309,6 +309,7 @@ export function ExercisePicker({ onPick, close }) {
     <h3>{t('Add exercise')}</h3>
     <SearchField
       placeholder={t('Search {0} exercises…', catalogueCount)}
+      aria-label={t('Search exercises')}
       value={q}
       onChange={e => { setQ(e.target.value); setShown(50) }}
       onClear={() => { setQ(''); setShown(50) }}
@@ -324,7 +325,8 @@ export function ExercisePicker({ onPick, close }) {
       {eqOpts.map(x => <button key={x} className={'chip' + (eqOn === x ? ' on' : '')} onClick={() => { setEq(x); setShown(50) }}>{t(x)}</button>)}
     </div>}
     <div className="list">
-      {filter !== '★' && <div className="item" onClick={() => customExSheet(null, ex => onPick(ex), q.trim())}>
+      {filter !== '★' && <div className="item" role="button" tabIndex={0} onClick={() => customExSheet(null, ex => onPick(ex), q.trim())}
+        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); customExSheet(null, ex => onPick(ex), q.trim()) } }}>
         <div className="thumb thumb-x"><Icon name="sparkles" /></div>
         <div className="grow"><div className="tt">{t('Create your own exercise')}</div><div className="ss">{t('name + target muscles, no animation')}</div></div><Icon name="plus" className="chev" />
       </div>}
@@ -333,7 +335,8 @@ export function ExercisePicker({ onPick, close }) {
         const primary = row.primaryMuscle
         const primaryLabel = (primary && MUSCLE_NAME[primary]) || e.tg || e.bp
         const secondaryMuscle = row.secondaryMatch
-        return <div key={e.id} className="item" onClick={() => onPick(e)}>
+        return <div key={e.id} className="item" role="button" tabIndex={0} aria-label={e.n} onClick={() => onPick(e)}
+          onKeyDown={ev => { if (ev.target === ev.currentTarget && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); onPick(e) } }}>
           <Thumb ex={e} />
           <div className="grow">
             <div className="tt capitalize">{e.n}</div>
@@ -344,7 +347,7 @@ export function ExercisePicker({ onPick, close }) {
           </div>
           <button
             className={'iconbtn' + (row.favorite ? ' on-ss' : '')}
-            style={{ width: 34, height: 34, fontSize: 16, color: row.favorite ? 'var(--acc)' : 'var(--label-3)' }}
+            style={{ width: 34, height: 34, fontSize: 16, color: row.favorite ? 'var(--acc)' : 'var(--label-2)' }}
             aria-label={row.favorite ? t('Remove from favorites') : t('Add to favorites')}
             onClick={ev => {
               ev.stopPropagation()

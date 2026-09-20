@@ -34,9 +34,14 @@ function View({ view, levels, onMuscle, selected }) {
       {MUSCLES.map(slug => (view.p[slug] || []).map((d, i) =>
         <path
           key={slug + i}
+          role={onMuscle ? 'button' : undefined}
+          tabIndex={onMuscle && i === 0 ? 0 : undefined}
+          aria-label={onMuscle && i === 0 ? t(MUSCLE_NAME[slug]) : undefined}
+          aria-pressed={onMuscle && i === 0 ? (selected === slug) : undefined}
           className={'bm-m l' + (levels[slug] || 0) + (selected === slug ? ' sel' : '')}
           d={d}
           onClick={onMuscle ? () => onMuscle(slug) : undefined}
+          onKeyDown={onMuscle && i === 0 ? e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onMuscle(slug) } } : undefined}
         >
           <title>{t(MUSCLE_NAME[slug])}</title>
         </path>))}

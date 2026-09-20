@@ -21,14 +21,14 @@ export default function RestTimer() {
     return () => document.body.classList.remove('resting')
   }, [!!on])
   if (!on) return null
-  const pct = (on.left / on.total) * 100
+  const scale = on.total > 0 ? Math.max(0, Math.min(1, on.left / on.total)) : 0
 
   if (work) return (
     <div id="timer" className="working">
       <div className="t">{clock(work.left)}</div>
       <div className="grow">
         {work.label && <div className="lbl">{work.label}</div>}
-        <div className="bar"><i style={{ width: pct + '%' }} /></div>
+        <div className="bar"><i style={{ transform: `scaleX(${scale})` }} /></div>
       </div>
       <Button size="sm" onClick={stopWork}>{t('Cancel')}</Button>
       <Button size="sm" variant="primary" icon="check" onClick={finishWorkEarly}>{t('Done')}</Button>
@@ -42,7 +42,7 @@ export default function RestTimer() {
     <div id="timer" className="rest">
       <div className="head">
         <div className="t">{clock(timer.left)}</div>
-        <div className="bar"><i style={{ width: pct + '%' }} /></div>
+        <div className="bar"><i style={{ transform: `scaleX(${scale})` }} /></div>
       </div>
       <div className="acts">
         <Button size="sm" icon="minus" onClick={() => addRest(-15)}>15s</Button>
