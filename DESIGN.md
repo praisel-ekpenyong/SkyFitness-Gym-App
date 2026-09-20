@@ -31,8 +31,8 @@ must keep obeying them.
 
 - **Surfaces:** `--bg` (pure black dark / `#f2f2f7` light), `--bg-el` (sheets,
   bars), `--surface`, `--surface-2` (pressed/nested), `--surface-3` (controls).
-- **Labels:** `--label` plus a 4-step alpha ramp `--label-2` (.60) / `-3` (.32) /
-  `-4` (.18) — never invent ad-hoc grey text; pick a ramp step. No gray-on-colour.
+- **Labels:** `--label` plus a 4-step alpha ramp: `--label-2` (.68 dark / .72 light for WCAG AA ≥ 5.2:1 contrast) / `-3` (.32) /
+  `-4` (.18) — never invent ad-hoc grey text; pick a ramp step. Status contrast tokens include `--on-orange` (`#000000`). No gray-on-colour.
 - **Lines:** `--sep` / `--sep-op` at `--hair: .5px`.
 - **Palette:** Apple's system colours (`--blue --green --red --orange --yellow
   --teal --indigo --pink --purple --mint --brown --grey`), so a recolour never
@@ -44,7 +44,8 @@ must keep obeying them.
   use must re-verify contrast (AA 3:1 for 17px/600 button text).
 - **Geometry:** radii `--r-sm 8 / --r 12 / --r-card 14 / --r-lg 16 / --r-xl 22`,
   `--pad: 16px`, `--icon-stroke: 1.7`.
-- **Motion:** `--fast 140ms`, `--med 220ms`, shared `--ease`.
+- **Motion:** `--fast 140ms`, `--med 220ms`, shared `--ease`. Dynamic bars and toggles
+  use compositor-accelerated GPU transforms (`transform: scaleX`) rather than layout-thrashing width transitions.
 - **Mobile:** `--tap-target: 44px` on every interactive control; safe-area vars
   (`--sab/sat/sal/sar`) and fixed-UI clearances (`--page-clearance`,
   `--timer-clearance`) keep content scrollable past fixed bars.

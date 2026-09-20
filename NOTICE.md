@@ -1,15 +1,6 @@
 # Third-party notices
 
-Sky's own source code is licensed under the **GNU AGPL v3.0** (see [LICENSE](LICENSE)).
-
-## App store exception
-
-As an additional permission under section 7 of the AGPL v3.0, the copyright holder permits
-distribution of the Sky mobile application through app store platforms (such as the
-Apple App Store and Google Play) whose terms of service would otherwise be incompatible
-with the AGPL, provided the corresponding source code remains available under the AGPL at
-the project repository. This permission applies to the distribution channel only and does not
-otherwise limit the license.
+Sky's own source code is licensed under the **MIT License** (see [LICENSE](LICENSE)).
 
 ## Body diagram geometry
 
@@ -47,7 +38,7 @@ SOFTWARE.
 
 Sky obtains both through
 [**hasaneyldrm/exercises-dataset**](https://github.com/hasaneyldrm/exercises-dataset), which
-licenses them differently. Neither is covered by Sky's AGPL license.
+licenses them differently. Neither is covered by Sky's MIT license.
 
 That dataset is itself a redistribution: the content originates from
 [**ExerciseDB v1**](https://exercisedb.dev/) by **AscendAPI**. This is verifiable from
@@ -86,10 +77,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### Images & animations — third-party, not MIT and not AGPL
+### Images & animations — third-party, not covered by MIT
 
-The exercise thumbnails (180×180) and animations are **not** covered by the MIT license above and
-**not** by Sky's AGPL. Their ownership is currently **unresolved**, and this notice states this
+The exercise thumbnails (180×180) and animations are **not** covered by the dataset's MIT license above and
+**not** by Sky's MIT license. Their ownership is currently **unresolved**, and this notice states this
 plainly rather than guessing:
 
 - The dataset attributes them to **© [Gym visual](https://gymvisual.com/)**, redistributed
