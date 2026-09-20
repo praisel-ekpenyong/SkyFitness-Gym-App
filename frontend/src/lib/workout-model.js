@@ -22,9 +22,10 @@ function modeFromUnit(value) {
 }
 
 function explicitMode(source) {
-  const value = ensurePlainObject(source).mode
+  const obj = ensurePlainObject(source)
+  const value = obj.mode
   const token = typeof value === 'string' ? value.trim().toLowerCase() : ''
-  return MODES.includes(token) ? token : modeFromUnit(ensurePlainObject(source).unit)
+  return MODES.includes(token) ? token : modeFromUnit(obj.unit)
 }
 
 function inferredMode(source) {

@@ -178,7 +178,6 @@ describe('Ticket 03 — Library and Picker filters plus Exercise Detail presenta
     expect(tags.some(t => t === 'Primary: Lats' || t.includes('Primary: Lats'))).toBe(true)
     expect(tags).toContain('Secondary: Biceps')
     expect(tags).toContain('Secondary: Upper back')
-    // Check that Primary tag has accent styling
     const primaryTag = container.querySelector('.tag.acc')
     expect(primaryTag.textContent).toContain('Primary: Lats')
 

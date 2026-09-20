@@ -83,9 +83,13 @@ export const scaleName = kind => EFFORT[kind].hd
 // Every finished set in the profile, oldest first. `fn` gets the set plus the workout it
 // belongs to, which is what the windowed and per-week views need.
 function eachDoneSet(S, fn) {
-  ;(S.workouts || []).forEach(w =>
-    (w.entries || []).forEach(e =>
-      (e.sets || []).forEach(s => { if (s.done && !isWarmupRow(s)) fn(s, w, e) })))
+  for (const w of S?.workouts || []) {
+    for (const e of w?.entries || []) {
+      for (const s of e?.sets || []) {
+        if (s.done && !isWarmupRow(s)) fn(s, w, e)
+      }
+    }
+  }
 }
 
 // A window in days, counted back from now. 0 = everything, which is also what an empty

@@ -215,9 +215,7 @@ function effortHelpSheet() {
 // The reminder is a native local notification scheduled on planned weekdays — no push server
 // involved. The schedule itself is (re)synced by the store on every persist; this card only
 // owns the OS permission prompt when the switch turns on.
-const NotificationsCard = MobileReminderCard
-
-function MobileReminderCard({ S, update, toast }) {
+function NotificationsCard({ S, update, toast }) {
   const setReminder = patch => update(s => { s.reminder = { ...(s.reminder || DEF.reminder), ...patch, tz: localTZ() } })
   const toggle = async () => {
     const on = !S.reminder?.on

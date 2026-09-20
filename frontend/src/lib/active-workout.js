@@ -32,14 +32,14 @@ import {
 export function bestKnownWeight(S, exId) {
   if (!S || !exId) return 0
   let best = 0
-  ;(S.workouts || []).forEach(w => {
-    ;(w.entries || []).forEach(e => {
+  for (const w of S.workouts || []) {
+    for (const e of w.entries || []) {
       if (e.id === exId) {
         const cur = bestWeightForEntry(e)
         if (cur > best) best = cur
       }
-    })
-  })
+    }
+  }
   const cur = S.exWeights?.[exId]?.w
   if (typeof cur === 'number' && cur > best) best = cur
   return best
@@ -295,13 +295,6 @@ export function toggleActiveSet(S, entryIdx, setIdx, opts = {}) {
     }
   }
 
-  // Superset flow and high-water navigation — same geometry as above; `fresh*` names
-  // are kept only because the done-flag may have flipped mid-function.
-  const freshUnits = units
-  const freshUnit = unit
-  const freshUnitIdx = unitIdx
-  const freshLastUnit = isLastUnit
-  const freshUnitDone = unitDone
   let newHighWater = opts.highWater
   let navigated = false
   let shouldRest = false
@@ -316,17 +309,17 @@ export function toggleActiveSet(S, entryIdx, setIdx, opts = {}) {
     if (progress.isNew) {
       // A unit whose rows are all ticked ends any running rest timer — but only on
       // genuinely new progress, so re-checking finished work never cuts rest short.
-      if (freshUnitDone) shouldStopRest = true
-      if (!freshUnit || freshUnit.length <= 1) {
-        if (!freshUnitDone) {
+      if (unitDone) shouldStopRest = true
+      if (!unit || unit.length <= 1) {
+        if (!unitDone) {
           shouldRest = true
         }
       } else {
-        const step = supersetFlowStep(A.entries, freshUnit, entryIdx)
+        const step = supersetFlowStep(A.entries, unit, entryIdx)
         if (step) {
           if (step.unitDone) {
-            if (!freshLastUnit) {
-              const nextUnit = freshUnits[freshUnitIdx + 1]
+            if (!isLastUnit) {
+              const nextUnit = units[unitIdx + 1]
               if (!askTop && nextUnit?.length) {
                 A.cur = nextUnit[0]
                 navigated = true
@@ -361,7 +354,7 @@ export function toggleActiveSet(S, entryIdx, setIdx, opts = {}) {
     shouldRest,
     shouldStopRest,
     roundDone,
-    unitDone: freshUnitDone,
+    unitDone,
     cur: A.cur
   }
 }
@@ -437,14 +430,14 @@ export function completeActiveSession(S, opts = {}) {
     const mxSets = heaviestSetWeight(e)
     if (mxSets > 0) {
       let bestHistory = 0
-      ;(S.workouts || []).forEach(w => {
-        ;(w.entries || []).forEach(en => {
+      for (const w of S.workouts || []) {
+        for (const en of w.entries || []) {
           if (en.id === e.id) {
             const cur = bestWeightForEntry(en)
             if (cur > bestHistory) bestHistory = cur
           }
-        })
-      })
+        }
+      }
       if (mxSets > bestHistory) prs.push(e.id)
     }
     const rec = is1RMRecord(S, e.id, e)

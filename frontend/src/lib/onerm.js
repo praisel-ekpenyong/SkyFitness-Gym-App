@@ -45,11 +45,11 @@ export function estimate1RM(w, r, formula = DEFAULT_FORMULA) {
 // exercise, with no rep count attached, so it cannot produce an estimate.
 export function bestSetOf(entry, formula = DEFAULT_FORMULA) {
   let best = null
-  ;(entry?.sets || []).forEach(s => {
-    if (!s.done || isWarmupRow(s)) return
+  for (const s of entry?.sets || []) {
+    if (!s.done || isWarmupRow(s)) continue
     const est = estimate1RM(s.w, s.r, formula)
     if (est !== null && (!best || est > best.est)) best = { est, w: Number(s.w), r: Math.round(Number(s.r)) }
-  })
+  }
   return best
 }
 
@@ -57,12 +57,12 @@ export function bestSetOf(entry, formula = DEFAULT_FORMULA) {
 // Chronological, matching the order workouts are appended in.
 export function e1rmSeries(S, exId, formula = DEFAULT_FORMULA) {
   const pts = []
-  ;(S.workouts || []).forEach(w => {
+  for (const w of S.workouts || []) {
     const entry = (w.entries || []).find(e => e.id === exId)
-    if (!entry) return
+    if (!entry) continue
     const best = bestSetOf(entry, formula)
     if (best) pts.push({ t: workoutTimestamp(w), d: w.d, y: best.est, w: best.w, r: best.r })
-  })
+  }
   return pts
 }
 
