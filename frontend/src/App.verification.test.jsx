@@ -130,7 +130,6 @@ describe('Ticket 05 — End-to-End Integration & Stats Diagram Parity', () => {
     expect(chipLabels).toContain('Forearms')
     expect(chipLabels).toContain('Cardio')
 
-    // Helper to click filter chips
     const clickChip = async (scope, label) => {
       const chip = Array.from(scope.querySelectorAll('.chips button.chip')).find(c => c.textContent.trim() === label)
       expect(chip, `Expected chip with label ${label}`).toBeTruthy()

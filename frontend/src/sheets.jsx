@@ -22,7 +22,6 @@ const S = () => useStore.getState().S
 const update = (...a) => useStore.getState().update(...a)
 const ui = () => useUI.getState()
 const toast = m => ui().toast(m)
-const snd = () => S().sound
 
 /* ============================ custom confirm dialog ============================ */
 function ConfirmDialog({ title, message, confirmText, cancelText, danger, onConfirm, close }) {

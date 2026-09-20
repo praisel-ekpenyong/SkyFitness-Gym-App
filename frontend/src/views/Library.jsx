@@ -33,7 +33,6 @@ export default function Library() {
     equipment: eq,
     searchAttribution: !isFavFilter,
   }), [S.customEx, S.favorites, S.routines, S.workouts, scope, q, eq])
-  const f = rows
   const bestMap = useMemo(() => {
     const m = new Map()
     for (const w of S.workouts || []) {
@@ -71,7 +70,7 @@ export default function Library() {
         <div className="thumb thumb-x"><Icon name="sparkles" /></div>
         <div className="grow"><div className="tt">{t('Create your own exercise')}</div><div className="ss">{t('name + target muscles, no animation')}</div></div><Icon name="plus" className="chev" />
       </div>
-      {f.slice(0, shown).map(row => {
+      {rows.slice(0, shown).map(row => {
         const e = row.exercise
         const best = bestMap.get(e.id) || 0
         const primary = row.primaryMuscle
@@ -105,8 +104,8 @@ export default function Library() {
           <Button size="sm" variant="tinted" icon="plus" onClick={ev => { ev.stopPropagation(); addToRoutineSheet(e) }}>{t('Plan')}</Button>
         </div>
       })}
-      {f.length === 0 && <div className="empty"><div className="ico"><Icon name="magnifier" /></div>{t('No match')}</div>}
+      {rows.length === 0 && <div className="empty"><div className="ico"><Icon name="magnifier" /></div>{t('No match')}</div>}
     </div>
-    {f.length > shown && <><div style={{ height: 10 }} /><Button onClick={() => setShown(s => s + 40)}>{t('Show more')}</Button></>}
+    {rows.length > shown && <><div style={{ height: 10 }} /><Button onClick={() => setShown(s => s + 40)}>{t('Show more')}</Button></>}
   </>
 }

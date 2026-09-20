@@ -632,7 +632,6 @@ describe('CustomExForm canonical muscle selection and editing', () => {
       descInput.dispatchEvent(new Event('input', { bubbles: true }))
     })
 
-    // Save
     const saveBtn = Array.from(container.querySelectorAll('button')).find(b => b.textContent.includes('Create exercise'))
     expect(saveBtn).toBeTruthy()
 

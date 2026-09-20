@@ -26,10 +26,12 @@ export function queryCatalogue({ profile, scope = { kind: 'all' }, search = '', 
   const muscle = scope?.kind === 'muscle' ? resolveMuscleSlug(scope.muscle) : null
   const catalogue = allExercises({ customEx: Array.isArray(safeProfile.customEx) ? safeProfile.customEx : [] })
   const matching = catalogue
-    .filter(exercise => kind !== 'favorites' || favoriteIds.has(exercise.id))
-    .filter(exercise => kind !== 'chosen' || usage[exercise.id])
-    .filter(exercise => !muscle || matchesMuscleFilter(exercise, muscle))
-    .filter(exercise => matchesExerciseSearch(exercise, search))
+    .filter(exercise =>
+      (kind !== 'favorites' || favoriteIds.has(exercise.id)) &&
+      (kind !== 'chosen' || usage[exercise.id]) &&
+      (!muscle || matchesMuscleFilter(exercise, muscle)) &&
+      matchesExerciseSearch(exercise, search)
+    )
     .sort((a, b) => kind === 'chosen'
       ? (usage[b.id] - usage[a.id]) || String(a.n || '').localeCompare(String(b.n || ''))
       : 0)

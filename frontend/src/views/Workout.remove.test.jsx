@@ -34,7 +34,7 @@ function setActive(entries, cur = 0) {
     id: 'remove-test', d: '2026-08-11', start: Date.now(), routineId: null,
     name: 'Remove test', bw: null, cur, entries
   }
-  useStore.setState({ S, user: null })
+  useStore.setState({ S })
 }
 
 function renderWorkout(entries) {
@@ -55,7 +55,7 @@ beforeEach(() => {
   useUI.getState().stopRest()
   useUI.getState().stopWork()
   useUI.setState({ sheets: [], toastMsg: '', timer: null, work: null })
-  useStore.setState({ S: clone(DEF), user: null })
+  useStore.setState({ S: clone(DEF) })
   root = null
   container = null
 })
