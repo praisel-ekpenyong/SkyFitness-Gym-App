@@ -24,11 +24,11 @@ You can install Sky as a progressive web application on your phone.
 <div align="center">
 <table>
 <tr>
-<td align="center"><img src="assets/screenshots/home.png" alt="Home Screen" width="145"><br><sub><b>Home</b><br>Daily session & weight</sub></td>
-<td align="center"><img src="assets/screenshots/plan.png" alt="Plan Screen" width="145"><br><sub><b>Plan</b><br>Weekly routine schedule</sub></td>
-<td align="center"><img src="assets/screenshots/workout.png" alt="Workout Screen" width="145"><br><sub><b>Workout</b><br>Guided set logging</sub></td>
-<td align="center"><img src="assets/screenshots/stats.png" alt="Stats Screen" width="145"><br><sub><b>Stats</b><br>Muscle maps & charts</sub></td>
-<td align="center"><img src="assets/screenshots/library.png" alt="Library Screen" width="145"><br><sub><b>Library</b><br>1,324 exercise demos</sub></td>
+<td align="center"><img src="assets/screenshots/home.png" alt="Home Screen (Dark Mode, Green Theme)" width="145"><br><sub><b>Home</b><br>Daily session & weight</sub></td>
+<td align="center"><img src="assets/screenshots/plan.png" alt="Plan Screen (Dark Mode, Green Theme)" width="145"><br><sub><b>Plan</b><br>Weekly routine schedule</sub></td>
+<td align="center"><img src="assets/screenshots/workout.png" alt="Workout Screen (Dark Mode, Green Theme)" width="145"><br><sub><b>Workout</b><br>Guided set logging</sub></td>
+<td align="center"><img src="assets/screenshots/stats.png" alt="Stats Screen (Dark Mode, Green Theme)" width="145"><br><sub><b>Stats</b><br>Muscle maps & charts</sub></td>
+<td align="center"><img src="assets/screenshots/library.png" alt="Library Screen (Dark Mode, Green Theme)" width="145"><br><sub><b>Library</b><br>1,324 exercise demos</sub></td>
 </tr>
 </table>
 </div>
@@ -87,6 +87,11 @@ Read your training through three front-and-back body diagrams:
 - **Interactive Chart**: Track daily weigh-ins with a 30-day moving comparison.
 - **Target Goal**: Set a target weight line to track your progress.
 - **Workout Weigh-In**: Prompts for your body weight before each session.
+
+### 8. Dark Mode and Appearance Customization
+- **Theme Modes**: Seamless Dark (default) and Light appearance options with WCAG AA compliant contrast.
+- **Accent Palettes**: Custom accent color choices (Green / Lime default, Sky, Orange, Violet, Pink, Red, Teal, Gold).
+- **Body Diagrams**: Male and Female anatomical models for training balance and fatigue maps.
 
 ## Data Control and Privacy
 

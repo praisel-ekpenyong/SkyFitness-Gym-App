@@ -61,3 +61,20 @@ describe('Cloudflare Pages deployment configuration', () => {
     expect(parts).toEqual(['/*', '/index.html', '200'])
   })
 })
+
+describe('Netlify deployment configuration', () => {
+  it('includes valid netlify.toml at project root with proper build and routing directives', () => {
+    const netlifyPath = resolve(__dirname, '..', '..', 'netlify.toml')
+    expect(existsSync(netlifyPath)).toBe(true)
+
+    const content = readFileSync(netlifyPath, 'utf-8')
+    expect(content).toContain('base = "frontend"')
+    expect(content).toContain('publish = "dist"')
+    expect(content).toContain('command = "npm run build"')
+    expect(content).toContain('from = "/*"')
+    expect(content).toContain('to = "/index.html"')
+    expect(content).toContain('status = 200')
+    expect(content).toContain('X-Content-Type-Options = "nosniff"')
+    expect(content).toContain('X-Frame-Options = "DENY"')
+  })
+})

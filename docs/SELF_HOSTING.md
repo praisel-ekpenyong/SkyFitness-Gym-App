@@ -36,12 +36,27 @@ The production output is emitted to `frontend/dist/`. Because Vite is configured
 2. Configure Pages to publish the `frontend/dist` directory (or configure a static build step `cd frontend && npm install && npm run build`).
 3. Your site is served over HTTPS automatically.
 
-### Option C — Netlify / Vercel
+### Option C — Netlify
 
-- **Build command:** `cd frontend && npm install && npm run build`
-- **Publish directory:** `frontend/dist`
+A repository-level `netlify.toml` is provided out of the box with the base directory, build command, SPA redirects, and caching headers pre-configured.
 
-### Option D — Caddy (Automatic HTTPS)
+1. **Via Netlify Web UI (Git Continuous Deployment):**
+   - Connect your repository.
+   - Netlify automatically detects `netlify.toml` at the repository root (`base = "frontend"`, `publish = "dist"`, `command = "npm run build"`).
+   - Click **Deploy**.
+
+2. **Via Netlify CLI:**
+   - Build the frontend: `cd frontend && npm run build`
+   - Deploy preview: `npx netlify deploy --dir frontend/dist`
+   - Deploy to production: `npx netlify deploy --dir frontend/dist --prod`
+
+### Option D — Vercel
+
+- **Root directory:** `frontend`
+- **Build command:** `npm run build`
+- **Output directory:** `dist`
+
+### Option E — Caddy (Automatic HTTPS)
 
 ```caddy
 sky.example.com {
@@ -51,7 +66,7 @@ sky.example.com {
 }
 ```
 
-### Option E — Nginx
+### Option F — Nginx
 
 ```nginx
 server {
@@ -67,7 +82,7 @@ server {
 }
 ```
 
-### Option F — Local static preview
+### Option G — Local static preview
 
 To test the production build locally:
 
