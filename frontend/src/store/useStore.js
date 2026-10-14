@@ -2,7 +2,8 @@ import { create } from 'zustand'
 import { localTZ } from '../lib/format.js'
 import { registerCustom } from '../lib/exercises.js'
 import { MOBILE, syncReminder } from '../lib/mobile.js'
-import { flush, load, loadLocal, save } from '../lib/storage.js'
+import { flush, load, loadLocal, save, LOCAL_KEY, onStorageSync } from '../lib/storage.js'
+import { setsDoneActive } from '../lib/history.js'
 import {
   createActiveSession, applyWorkingWeight, completeActiveSession,
   addActiveExercise, removeActiveExercise, toggleActiveSet,
@@ -37,9 +38,29 @@ const clone = o => {
   return JSON.parse(JSON.stringify(o))
 }
 
+export function normalizeState(raw) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return clone(DEF)
+  const base = clone(DEF)
+  const S = { ...base, ...raw }
+  S.workouts = Array.isArray(raw.workouts) ? raw.workouts : []
+  S.routines = Array.isArray(raw.routines) ? raw.routines : []
+  S.bodyweight = Array.isArray(raw.bodyweight) ? raw.bodyweight : []
+  S.customEx = Array.isArray(raw.customEx) ? raw.customEx : []
+  S.favorites = Array.isArray(raw.favorites) ? raw.favorites : []
+  S.week = raw.week && typeof raw.week === 'object' && !Array.isArray(raw.week) ? { ...raw.week } : {}
+  S.dayPlan = raw.dayPlan && typeof raw.dayPlan === 'object' && !Array.isArray(raw.dayPlan) ? { ...raw.dayPlan } : {}
+  S.exWeights = raw.exWeights && typeof raw.exWeights === 'object' && !Array.isArray(raw.exWeights) ? { ...raw.exWeights } : {}
+  S.reminder = { ...base.reminder, ...(raw.reminder && typeof raw.reminder === 'object' && !Array.isArray(raw.reminder) ? raw.reminder : {}) }
+  // A corrupt `active` (bad backup edit, truncated write) must not crash every boot:
+  // Workout reads A.entries, so anything without an entries array is discarded here.
+  const a = raw.active
+  S.active = a && typeof a === 'object' && !Array.isArray(a) && Array.isArray(a.entries) ? a : null
+  return S
+}
+
 function loadState() {
   const raw = loadLocal()
-  return raw ? Object.assign(clone(DEF), raw) : clone(DEF)
+  return raw ? normalizeState(raw) : clone(DEF)
 }
 
 const hasData = st => !!((st.workouts || []).length || (st.routines || []).length || (st.bodyweight || []).length)
@@ -55,9 +76,34 @@ export function sanitizeDisplayName(v) {
 export const useStore = create((set, get) => {
   const persist = S => {
     registerCustom(S.customEx)
-    save(S)   // stamps _ts, writes localStorage now, mirrors on the storage module's debounce
-    set({ S })
+    let blocked = false
+    try {
+      // Denied writes (quota/security) degrade to `false` — never throw — so
+      // training keeps working from memory with the blocked notice showing.
+      blocked = save(S) === false
+    } catch (e) {
+      // Truly unexpected persistence failures (e.g. a circular payload failing
+      // JSON.stringify) still propagate so programmer errors stay loud — but
+      // only after the in-memory state has landed, so no failure ever skips
+      // the update or freezes the app.
+      set({ S, storageBlocked: true })
+      throw e
+    }
+    // stamps _ts, writes localStorage now, mirrors on the storage module's debounce
+    set({ S, storageBlocked: blocked })
   }
+
+  // Cross-tab synchronization: reload and update state when newer _ts snapshot is saved by another tab
+  onStorageSync(incoming => {
+    const current = get().S
+    const incomingTs = Number(incoming?._ts) || 0
+    const currentTs = Number(current?._ts) || 0
+    if (incomingTs > currentTs) {
+      const normalized = normalizeState(incoming)
+      registerCustom(normalized.customEx)
+      set({ S: normalized })
+    }
+  })
 
   // A setting changed right before switching away/closing the tab must not get lost mid-debounce
   // (e.g. setting the reminder time then immediately backgrounding to test it). The drain
@@ -70,6 +116,10 @@ export const useStore = create((set, get) => {
   return {
     S: (() => { const s = loadState(); registerCustom(s.customEx); return s })(),
     ready: false,
+    // True while device storage denies writes (quota/security): training keeps
+    // working from memory and the shell shows a persistent notice that changes
+    // will not persist. Cleared by the next successful save.
+    storageBlocked: false,
 
     // Mutate a draft of S via producer fn, then persist.
     update(mut) {
@@ -77,12 +127,14 @@ export const useStore = create((set, get) => {
       mut(S)
       persist(S)
     },
-    replaceState(S) { persist(clone(S)) },
+    replaceState(S) { persist(normalizeState(S)) },
 
     // --- Active-workout lifecycle (deep seam: lib/active-workout.js) ---
     // Sheets and views call these; the single heaviest-weight policy,
     // target freezing, set toggles, and Record detection all live behind the seam.
-    beginSession(routineId, bw) {
+    beginSession(routineId, bw, { replaceActiveId = null } = {}) {
+      const current = get().S.active
+      if (current && setsDoneActive(current) > 0 && replaceActiveId !== current.id) return null
       const active = createActiveSession(get().S, routineId, bw)
       get().update(s => { s.active = active })
       return active
@@ -158,20 +210,24 @@ export const useStore = create((set, get) => {
     // re-stamp the reminder's timezone, and go straight in — there is no server to ask
     // anything of.
     async boot() {
+      let S = get().S
       const winner = await load({
-        running: get().S,
+        running: S,
         hasData,
-        overlay: x => Object.assign(clone(DEF), x),
+        overlay: x => normalizeState(x),
       })
-      if (winner) persist(winner)   // also refreshes every storage under one fresh timestamp
-      if (MOBILE) syncReminder(get().S)
+      if (winner) S = winner
+      if (MOBILE) syncReminder(S)
 
       // Re-stamp the reminder's timezone on every load — keeps it correct if you're travelling,
       // without needing to revisit Settings.
       const tz = localTZ()
-      if (get().S.reminder?.on && get().S.reminder.tz !== tz) {
-        get().update(s => { s.reminder = { ...s.reminder, tz } })
+      if (S.reminder?.on && S.reminder.tz !== tz) {
+        S = { ...S, reminder: { ...S.reminder, tz } }
       }
+      // One write per boot: the old code persisted the winner and then updated the
+      // reminder tz separately, ping-ponging cross-tab sync via _ts on every load.
+      if (S !== get().S) persist(S)
       set({ ready: true })
     }
   }

@@ -4,7 +4,7 @@ import { useStore } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
 import { bindUI } from './components/ui.jsx'
 import { ACCENTS } from './lib/format.js'
-import { setLang, useLang } from './lib/i18n.js'
+import { setLang, t, useLang } from './lib/i18n.js'
 import { setNav } from './lib/nav.js'
 import { initBackButton } from './lib/back.js'
 import { useWakeLock } from './lib/wakelock.js'
@@ -41,7 +41,7 @@ function applyPrefs(theme, accent) {
 function Shell() {
   const navigate = useNavigate()
   const loc = useLocation()
-  const { S, ready } = useStore()
+  const { S, ready, storageBlocked } = useStore()
   const langV = useLang()   // re-renders the whole shell when the language (pack) changes
   useEffect(() => { setNav(navigate) }, [navigate])
   useEffect(() => { applyPrefs(S.theme, S.accent) }, [S.theme, S.accent])
@@ -51,6 +51,10 @@ function Shell() {
   useEffect(() => { window.scrollTo(0, 0) }, [loc.pathname])
   // bound to the workout, not to the route — checking Stats mid-session keeps the screen on
   useWakeLock(!!S.active && S.keepAwake !== false)
+  useEffect(() => {
+    document.body.classList.toggle('active-session', !!S.active)
+    return () => document.body.classList.remove('active-session')
+  }, [!!S.active])
 
   if (!ready) return (
     <div id="app">
@@ -62,6 +66,14 @@ function Shell() {
 
   return (
     <>
+      {/* Blocked device storage degrades to an in-memory session: training keeps
+          working and this persistent alert says changes will not persist. */}
+      {storageBlocked && (
+        <div role="alert" className="missed-banner" style={{ margin: '12px 16px 0' }}>
+          <div className="missed-banner-title"><Icon name="alert" /><span>{t('Storage blocked')}</span></div>
+          <div style={{ fontSize: 13 }}>{t('Changes will not persist on this device — training still works for this session.')}</div>
+        </div>
+      )}
       {/* keyed on the route: a view that throws is contained, and switching tabs
           re-mounts the boundary, so the tab bar is always a way out */}
       <div id="app" className="vfade" key={loc.pathname}>

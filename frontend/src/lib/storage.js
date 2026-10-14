@@ -97,7 +97,15 @@ function drain() {
   tm = null
   const snapshot = pending
   pending = null
-  if (snapshot) for (const sink of sinks) sink.write(snapshot)
+  if (snapshot) for (const sink of sinks) {
+    // One failing mirror must never kill the others or the app: a denied
+    // IndexedDB/file write degrades silently here (localStorage already
+    // decided the blocked flag); async rejections are dropped the same way.
+    try {
+      const r = sink.write(snapshot)
+      if (r && typeof r.catch === 'function') r.catch(() => {})
+    } catch (e) { /* degraded mirror — the in-memory state already stands */ }
+  }
 }
 
 export function flush() {
@@ -106,26 +114,73 @@ export function flush() {
   drain()
 }
 
-function isQuotaError(e) {
+function isStorageDenied(e) {
   if (!e) return false
   const name = e.name || ''
   const code = e.code
+  if (name === 'QuotaExceededError' || name === 'NS_ERROR_DOM_QUOTA_REACHED' || code === 22 || code === 1014) return true
+  // Blocked device storage (private mode, disabled cookies/site data): the write
+  // is denied, not full. Training must keep working from memory with a notice.
+  if (name === 'SecurityError' || name === 'NotAllowedError' || code === 18 || code === 1000) return true
+  // Last resort: message sniffing, DOMExceptions only — a programmer TypeError
+  // that happens to mention e.g. "permission" must stay loud, not degrade.
+  if (typeof DOMException !== 'function' || !(e instanceof DOMException)) return false
   const msg = String(e.message || '').toLowerCase()
-  return name === 'QuotaExceededError' || name === 'NS_ERROR_DOM_QUOTA_REACHED' || code === 22 || code === 1014 || msg.includes('quota') || msg.includes('exceeded')
+  return DENIED_MSGS.some(m => msg.includes(m))
 }
 
-/** Stamp the snapshot, land it in localStorage synchronously, schedule the mirrors. */
+// Substrings identifying a denied write inside a DOMException message.
+const DENIED_MSGS = ['quota', 'exceeded', 'security', 'denied', 'blocked', 'not allowed', 'access is denied', 'permission']
+
+// True once a localStorage write has been denied until a later write succeeds.
+// The store mirrors this into a visible notice; the in-memory Profile is always
+// authoritative, so a blocked device degrades to one unsaved session, never a freeze.
+let blockedWrites = false
+
+/** Whether the last localStorage write was denied (quota or security). */
+export function isStorageBlocked() {
+  return blockedWrites
+}
+
+/** Test seam: reset the blocked flag without touching stored data. */
+export function __resetStorageBlockedForTests() {
+  blockedWrites = false
+}
+
+// The synchronous local write, injectable so tests can simulate denied device
+// storage deterministically (per-instance stubbing of the frozen happy-dom
+// Storage never lands — verified by probe — so denial goes through here,
+// alongside the existing __setSinksForTests precedent for the mirrors).
+let localWriteImpl = (key, value) => localStorage.setItem(key, value)
+
+/** Test seam: replace the synchronous local write (e.g. with one that throws). */
+export function __setLocalWriteForTests(fn) {
+  localWriteImpl = fn || ((key, value) => localStorage.setItem(key, value))
+}
+
+/**
+ * Stamp the snapshot, land it in localStorage synchronously, schedule the mirrors.
+ * Returns true when the local copy landed, false when storage denied the write
+ * (quota or security) — the snapshot is still queued for the mirrors and the
+ * caller keeps working from memory. Truly unexpected failures (e.g. a circular
+ * payload failing JSON.stringify) still throw so programmer errors stay loud.
+ */
 export function save(snapshot) {
   snapshot._ts = Date.now()
   try {
-    localStorage.setItem(LOCAL_KEY, JSON.stringify(snapshot))
+    localWriteImpl(LOCAL_KEY, JSON.stringify(snapshot))
+    blockedWrites = false
   } catch (e) {
-    if (!isQuotaError(e)) throw e
-    // quota exceeded — keep pending snapshot for async sinks
+    if (!isStorageDenied(e)) throw e
+    // Denied — keep pending snapshot for async sinks, flag for the visible notice.
+    blockedWrites = true
   }
   clearTimeout(tm)
-  pending = snapshot
+  // A shallow copy, not the caller's live object: a mutation between save and the
+  // 800 ms drain must not corrupt what the mirrors receive.
+  pending = { ...snapshot }
   tm = setTimeout(drain, DRAIN_MS)
+  return !blockedWrites
 }
 
 // Is the backup reminder due? True only when the last successful JSON export is missing or
@@ -162,7 +217,9 @@ export async function load({ running, hasData, overlay }) {
     }
     if (!saved && hasData(running)) {
       const native = sinks.find(s => s.id === 'native')
-      if (native) native.write(running)   // first run after upgrading from a file-less version
+      // Seed the mirror with the running state itself (reference-identical, so callers
+      // can rely on identity); only stamp a copy when it carries no timestamp yet.
+      if (native) native.write(running?._ts ? running : { ...running, _ts: Date.now() })   // first run after upgrading from a file-less version
     }
     return null
   }
@@ -179,7 +236,39 @@ export async function load({ running, hasData, overlay }) {
     return overlay(winner)
   }
   if (!mirror && hasData(running) && mirrorSink) {
-    mirrorSink.write(running)   // first boot with the mirror, or its storage was cleared: seed it
+    // First boot with the mirror, or its storage was cleared: seed it. Same
+    // reference when already stamped (see above); a timestamped copy otherwise,
+    // so an unstamped seed never loses the newest-timestamp race by default.
+    mirrorSink.write(running?._ts ? running : { ...running, _ts: Date.now() })
   }
   return null
+}
+
+// Backup validation and sanitization
+export function validateBackup(data) {
+  if (!data || typeof data !== 'object' || Array.isArray(data) || !Array.isArray(data.workouts) || !Array.isArray(data.routines)) {
+    throw new Error('not a Sky backup')
+  }
+  return true
+}
+
+export function sanitizeBackup(data) {
+  if (!data || typeof data !== 'object') return data
+  return { ...data, active: null }
+}
+
+// Cross-tab synchronization event listener
+export function onStorageSync(callback) {
+  if (typeof window === 'undefined' || !window.addEventListener) return () => {}
+  const listener = ev => {
+    if (ev.key !== LOCAL_KEY || !ev.newValue) return
+    try {
+      const incoming = JSON.parse(ev.newValue)
+      if (incoming && typeof incoming === 'object') {
+        callback(incoming)
+      }
+    } catch {}
+  }
+  window.addEventListener('storage', listener)
+  return () => window.removeEventListener('storage', listener)
 }
