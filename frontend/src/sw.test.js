@@ -23,6 +23,9 @@ describe('Sky Service Worker (sw.js)', () => {
         put: vi.fn(async (req, res) => {
           cacheStore[typeof req === 'string' ? req : req.url] = res
         }),
+        addAll: vi.fn(async (reqs) => {
+          reqs.forEach(r => { cacheStore[typeof r === 'string' ? r : r.url] = { ok: true, status: 200 } })
+        }),
       })),
       keys: vi.fn(async () => ['old-cache', 'sky-rt-v1']),
       delete: vi.fn(async (k) => { delete cacheStore[k]; return true }),
@@ -47,7 +50,9 @@ describe('Sky Service Worker (sw.js)', () => {
     expect(listeners['activate']).toBeDefined()
     expect(listeners['fetch']).toBeDefined()
 
-    listeners['install']()
+    let installWait
+    listeners['install']({ waitUntil: p => { installWait = p } })
+    await installWait
     expect(globalThis.self.skipWaiting).toHaveBeenCalled()
 
     let waitUntilPromise
@@ -55,6 +60,18 @@ describe('Sky Service Worker (sw.js)', () => {
     await waitUntilPromise
     expect(fakeCaches.delete).toHaveBeenCalledWith('old-cache')
     expect(fakeCaches.delete).not.toHaveBeenCalledWith('sky-rt-v1')
+  })
+
+  it('precaches the app shell on install so the first offline visit opens', async () => {
+    loadServiceWorker()
+
+    let waitUntilPromise
+    listeners['install']({ waitUntil: p => { waitUntilPromise = p } })
+    await waitUntilPromise
+
+    expect(globalThis.self.skipWaiting).toHaveBeenCalled()
+    expect(fakeCaches.open).toHaveBeenCalledWith('sky-rt-v1')
+    expect(cacheStore['index.html']).toBeTruthy()
   })
 
   it('serves cached app shell when offline', async () => {
@@ -125,6 +142,49 @@ describe('Sky Service Worker (sw.js)', () => {
       const cdnUrl = 'https://cdn.jsdelivr.net/gh/exercises-dataset@abc/images/0027.jpg'
       const { responded } = await hit(cdnUrl)
       expect(responded).toBeUndefined()
+    })
+
+    it('resolves a graceful fallback for uncached media offline instead of breaking the fetch', async () => {
+      loadServiceWorker()
+
+      let responded
+      listeners['fetch']({
+        request: { method: 'GET', url: 'https://sky.app/media/images/9999.jpg' },
+        respondWith: p => { responded = p },
+      })
+      const result = await responded
+      expect(result.status).toBe(503)
+    })
+  })
+
+  describe('runtime cache scope', () => {
+    it('leaves the worker script itself out of the runtime cache', async () => {
+      loadServiceWorker()
+      globalThis.fetch = vi.fn(() => Promise.reject(new TypeError('network disabled')))
+
+      let responded = 'unset'
+      listeners['fetch']({
+        request: { method: 'GET', url: 'https://sky.app/sw.js' },
+        respondWith: p => { responded = p },
+      })
+      expect(responded).toBe('unset')
+      expect(globalThis.fetch).not.toHaveBeenCalled()
+    })
+
+    it('caches hashed shell assets on success under the versioned name', async () => {
+      loadServiceWorker()
+
+      const fresh = { ok: true, clone() { return this } }
+      globalThis.fetch = vi.fn(() => Promise.resolve(fresh))
+
+      let responded
+      listeners['fetch']({
+        request: { method: 'GET', url: 'https://sky.app/assets/app-abc123.js' },
+        respondWith: p => { responded = p },
+      })
+      expect(await responded).toBe(fresh)
+      expect(fakeCaches.open).toHaveBeenCalledWith('sky-rt-v1')
+      expect(cacheStore['https://sky.app/assets/app-abc123.js']).toBe(fresh)
     })
   })
 })
