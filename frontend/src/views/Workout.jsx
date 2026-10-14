@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { exOr } from '../lib/exercises.js'
-import { effectiveRoutine, lastEntryFor, freestyleConfig, defaultConfig, setsDoneActive, supersetUnits, unitOf, setLabel, modeOf, isBw, isPerSide, sideReps, repStep, EFFORT, effortOf, stepEffort, capEffort } from '../lib/history.js'
+import { effectiveRoutine, lastEntryFor, freestyleConfig, defaultConfig, setsDoneActive, supersetUnits, unitOf, setLabel, modeOf, isBw, isPerSide, sideReps, repStep, EFFORT, effortOf, stepEffort, capEffort, hasEffectiveOverride } from '../lib/history.js'
 import { bestKnownWeight } from '../lib/active-workout.js'
 import { fmtNum, fmtDate, todayISO, exCount, DAYN } from '../lib/format.js'
 import { playSetComplete } from '../lib/sound.js'
@@ -20,7 +20,7 @@ function StartChooser() {
   const nav = useNavigate()
   const S = useStore(s => s.S)
   const todayR = effectiveRoutine(S, todayISO())
-  const todayOvr = S.dayPlan[todayISO()] !== undefined
+  const todayOvr = hasEffectiveOverride(S, todayISO())
   const others = S.routines.filter(r => r !== todayR)
   return <div className="narrow">
     <div className="hdr"><div><h1>{t('Start workout')}</h1><div className="sub">{t(DAYN[new Date().getDay()])} — {todayR ? t('today is {0}', todayR.name) : t('rest day, but no one’s stopping you')}</div></div></div>
