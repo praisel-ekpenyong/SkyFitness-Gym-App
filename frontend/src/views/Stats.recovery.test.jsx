@@ -169,7 +169,7 @@ async function tick(milliseconds) {
 }
 
 const lastMap = () => mocks.maps.at(-1)
-const expectPressed = button => expect(button?.getAttribute('aria-pressed')).toBe('true')
+const expectPressed = button => expect(button?.getAttribute('aria-checked')).toBe('true')
 
 beforeEach(() => {
   vi.useFakeTimers()
