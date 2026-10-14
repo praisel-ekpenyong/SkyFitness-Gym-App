@@ -252,9 +252,69 @@ export function validateBackup(data) {
   return true
 }
 
+const isPlainRecord = v => v && typeof v === 'object' && !Array.isArray(v)
+// A Workout Entry is usable when it names an exercise and carries a sets
+// array — anything else (null, missing id, missing sets) is a hand-edit scar
+// that must never sink a Restore. Sets themselves stay as logged; only the
+// Entry shell is guarded here so one bad record cannot kill the tab.
+const isGoodWorkoutEntry = e => isPlainRecord(e) && typeof e.id === 'string' && e.id.length > 0 && Array.isArray(e.sets)
+const isGoodWorkout = w => isPlainRecord(w) && Array.isArray(w.entries)
+const isGoodRoutineEx = e => isPlainRecord(e) && typeof e.id === 'string' && e.id.length > 0
+const isGoodRoutine = r => isPlainRecord(r) && typeof r.id === 'string' && r.id.length > 0 && Array.isArray(r.ex)
+
+// Strip malformed Workout and Routine elements (and malformed Entries inside
+// otherwise good ones), returning the cleaned Profile plus how many elements
+// were skipped for the visible notice. Stale Day overrides (pointing at a
+// deleted Routine) are pruned silently — the week schedule is the fallback.
+export function sanitizeRestorePayload(data) {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return { clean: data, skipped: 0 }
+  let skipped = 0
+  let workouts
+  if (Array.isArray(data.workouts)) {
+    workouts = []
+    for (const w of data.workouts) {
+      if (!isGoodWorkout(w)) { skipped++; continue }
+      const entries = []
+      for (const e of w.entries) {
+        if (!isGoodWorkoutEntry(e)) { skipped++; continue }
+        entries.push(e)
+      }
+      workouts.push({ ...w, entries })
+    }
+  }
+  let routines
+  if (Array.isArray(data.routines)) {
+    routines = []
+    for (const r of data.routines) {
+      if (!isGoodRoutine(r)) { skipped++; continue }
+      const ex = []
+      for (const e of r.ex) {
+        if (!isGoodRoutineEx(e)) { skipped++; continue }
+        ex.push(e)
+      }
+      routines.push({ ...r, ex })
+    }
+  }
+  const clean = { ...data, active: null }
+  if (workouts !== undefined) clean.workouts = workouts
+  if (routines !== undefined) {
+    clean.routines = routines
+    const ids = new Set(routines.map(r => r.id))
+    if (data.dayPlan && typeof data.dayPlan === 'object' && !Array.isArray(data.dayPlan)) {
+      const dayPlan = { ...data.dayPlan }
+      for (const k of Object.keys(dayPlan)) {
+        const v = dayPlan[k]
+        if (v !== 'rest' && !ids.has(v)) delete dayPlan[k]
+      }
+      clean.dayPlan = dayPlan
+    }
+  }
+  return { clean, skipped }
+}
+
 export function sanitizeBackup(data) {
   if (!data || typeof data !== 'object') return data
-  return { ...data, active: null }
+  return sanitizeRestorePayload(data).clean
 }
 
 // Cross-tab synchronization event listener

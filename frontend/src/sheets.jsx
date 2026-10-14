@@ -3,7 +3,7 @@ import { useStore, sanitizeDisplayName } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
 import { EXIDX } from './lib/exercises.js'
 import { fmtDate, fmtNum, fmtVol, fmtDur, durPart, todayISO, exCount, DAYN, MONTHS_LONG, monthKey } from './lib/format.js'
-import { effectiveRoutineId, setsDone, lastBW, setLabel, effortOf } from './lib/history.js'
+import { effectiveRoutineId, hasEffectiveOverride, setsDone, lastBW, setLabel, effortOf } from './lib/history.js'
 import { t } from './lib/i18n.js'
 import { nav } from './lib/nav.js'
 import { starterRoutines } from './lib/starter.js'
@@ -382,7 +382,7 @@ function PlanImport({ bundle, close }) {
     </div>}
     {bundle.scheduledDays > 0 && <div className="row between" style={{ padding: '10px 2px', borderTop: '1px solid var(--sep)', borderBottom: '1px solid var(--sep)', marginBottom: 16, gap: 12 }}>
       <div><div className="tt" style={{ fontSize: 15 }}>{t('Use this weekly schedule')}</div><div className="small dim">{t('Replaces your current Mon–Sun assignments.')}</div></div>
-      <Switch checked={schedule} onChange={setSchedule} />
+      <Switch checked={schedule} label={t('Use this weekly schedule')} onChange={setSchedule} />
     </div>}
     <Button variant="primary" onClick={apply}>{t('Add to my plan')}</Button>
     <div style={{ height: 8 }} />
@@ -468,7 +468,7 @@ function Calendar({ start, close }) {
   for (let i = 0; i < startOffset; i++) cells.push(<div key={'e' + i} />)
   for (let d = 1; d <= daysIn; d++) {
     const iso = y + '-' + String(mo + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0')
-    const ws = byDay[iso], effId = effectiveRoutineId(st, iso), ovr = st.dayPlan[iso] !== undefined
+    const ws = byDay[iso], effId = effectiveRoutineId(st, iso), ovr = hasEffectiveOverride(st, iso)
     const dotCls = ws ? 'done' : ovr && effId ? 'ovr' : effId ? 'plan' : ''
     cells.push(<button key={d} className={'cal-d' + (ws ? ' has' : '') + (iso === todayISO() ? ' today' : '')} onClick={() => {
       if (!ws) { close(); dayOverrideSheet(iso); return }
