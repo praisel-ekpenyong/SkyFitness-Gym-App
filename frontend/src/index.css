@@ -1006,6 +1006,15 @@ h4.sec{
 }
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
+/* --- offline badge: tiny local-serving indicator, only rendered while offline --- */
+.offline-badge{
+  position:fixed;top:calc(8px + env(safe-area-inset-top, 0px));left:50%;transform:translateX(-50%);
+  z-index:200;background:color-mix(in srgb,var(--surface-2) 88%,transparent);
+  backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);
+  border-radius:99px;padding:4px 12px;font-size:11px;font-weight:600;color:var(--label-2);
+  box-shadow:0 6px 18px -6px rgba(0,0,0,.5);pointer-events:none;white-space:nowrap;
+}
+
 /* ---------------------------------------------------------------- misc --- */
 .empty{text-align:center;color:var(--label-2);padding:44px 20px;font-size:15px;line-height:1.45}
 .empty .ico{font-size:34px;color:var(--label-2);margin-bottom:12px;display:flex;justify-content:center}

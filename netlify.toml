@@ -1,5 +1,6 @@
 # Netlify configuration for Sky Fitness Gym App
 # Single-user, backend-free gym & body-weight tracker PWA
+# Canonical twin: frontend/public/_headers (Cloudflare Pages) — keep the two policies identical.
 
 [build]
   base = "frontend"
@@ -12,13 +13,17 @@
   to = "/index.html"
   status = 200
 
-# Global security headers
+# Global security headers (mirrors frontend/public/_headers).
+# Minimal static policy: everything same-origin; images and media may also come
+# from the pinned exercise-dataset CDN (see PINNED_DATASET_COMMIT in
+# frontend/src/lib/exercises.js). Opt-in analytics hosts are appended here, never inline.
 [[headers]]
   for = "/*"
   [headers.values]
     X-Content-Type-Options = "nosniff"
     X-Frame-Options = "DENY"
     Referrer-Policy = "strict-origin-when-cross-origin"
+    Content-Security-Policy = "default-src 'self'; img-src 'self' https://cdn.jsdelivr.net; media-src 'self' https://cdn.jsdelivr.net"
 
 # Application shell, service worker, and manifest must always fresh-check
 [[headers]]
