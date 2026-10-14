@@ -52,6 +52,18 @@ export function effectiveRoutineId(S, iso) {
   return S?.week?.[wd] || null
 }
 
+// A Day override counts as Rescheduled only while it points somewhere real:
+// 'rest' or a Routine that still exists. A stale id (Routine deleted after the
+// override) falls back to the week schedule via effectiveRoutineId above, so
+// every Rescheduled badge and dot reads this — never a raw dayPlan presence
+// check — or a deleted Routine keeps claiming a reschedule.
+export function hasEffectiveOverride(S, iso) {
+  const ov = S?.dayPlan?.[iso]
+  if (ov === undefined) return false
+  if (ov === 'rest') return true
+  return (S?.routines || []).some(r => r && r.id === ov)
+}
+
 export function effectiveRoutine(S, iso) {
   const id = effectiveRoutineId(S, iso)
   return id ? (S?.routines || []).find(r => r.id === id) || null : null
