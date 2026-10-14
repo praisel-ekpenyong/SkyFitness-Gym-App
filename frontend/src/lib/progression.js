@@ -60,6 +60,10 @@ export function defaultIncrement(exId, unit) {
   return heavy ? 5 : 2.5
 }
 export const DEFAULT_SEC_INCREMENT = 5
+// Smallest prescribable hold: a hand-edited zero time goal clamps here so a bad
+// edit never yields an empty prescription.
+export const MIN_TIME_SEC = 5
+const clampTimeSec = v => (v > 0 ? v : MIN_TIME_SEC)
 // Where adding another set of push-ups stops being progress and starts being a way to spend
 // an evening. Past this the honest advice is load or a harder variation (issue #33).
 export const MAX_BW_SETS = 6
@@ -82,7 +86,8 @@ function snap(v, step) {
 // Back off by DELOAD_FACTOR, landing on something you can actually load. Rounding to the
 // nearest step keeps the cut close to the intended 10 %, but on small weights the nearest
 // step can be the weight you started from — so a deload that did not actually reduce
-// anything takes one step down instead. Never goes below a single step.
+// anything takes one step down instead. Never goes below a single step. When even that
+// cannot reduce the weight, callers read the result as a hold, never a same-weight deload.
 function deloadTo(cur, step) {
   let next = snap(cur * DELOAD_FACTOR, step)
   if (next >= cur) next = snap(cur - step, step)
@@ -104,27 +109,31 @@ export function readSession(entry, fallback) {
   // Warm-up rows are prep, not the session: one filtered read beats guarding every consumer
   // below (an undone warm-up otherwise poisons `ok` forever and its reps drag `low`/`count`).
   const sets = ((entry && entry.sets) || []).filter(s => !isWarmupRow(s))
+  // Only the first N planned Work sets judge Hit/Miss: bonus sets beyond the plan
+  // count toward volume and fatigue (read from the raw rows elsewhere) but never
+  // flip a Hit to a Miss. Fewer rows than planned is still a Miss.
   const planned = target.sets || sets.length
+  const judged = sets.slice(0, planned)
   const enough = sets.length >= planned
 
   if (mode === 'time') {
     const goal = target.sec || 0
-    const held = sets.map(s => (s.done ? (s.sec || 0) : 0))
+    const held = judged.map(s => (s.done ? (s.sec || 0) : 0))
     return {
       mode, goal, held,
-      weight: Math.max(0, ...sets.filter(s => s.done).map(s => s.w || 0)),
+      weight: Math.max(0, ...judged.filter(s => s.done).map(s => s.w || 0)),
       best: Math.max(0, ...held),
       ok: goal > 0 && enough && held.length > 0 && held.every(h => h >= goal)
     }
   }
   const goal = target.reps || 0
-  const reps = sets.map(s => (s.done ? (s.r || 0) : 0))
+  const reps = judged.map(s => (s.done ? (s.r || 0) : 0))
   return {
     mode, goal, reps,
-    weight: Math.max(0, ...sets.filter(s => s.done).map(s => s.w || 0)),
-    count: reps.length,                                   // the dimension bodyweight work grows (#33)
+    weight: Math.max(0, ...judged.filter(s => s.done).map(s => s.w || 0)),
+    count: sets.length,                               // the dimension bodyweight work grows (#33)
     low: reps.length ? Math.min(...reps) : 0,
-    amrap: reps.length ? reps[reps.length - 1] : 0,       // Greyskull's final set
+    amrap: reps.length ? reps[reps.length - 1] : 0,   // Greyskull's final set
     ok: goal > 0 && enough && reps.length > 0 && reps.every(r => r >= goal)
   }
 }
@@ -134,7 +143,10 @@ export function sessionsFor(S, exId, fallback) {
   const out = []
   ;(S.workouts || []).forEach(w => {
     const entry = (w.entries || []).find(e => e.id === exId)
-    if (entry && (entry.sets || []).some(s => s.done && !isWarmupRow(s))) out.push({ d: w.d, ...readSession(entry, fallback) })
+    // A finished Entry with zero performed Work sets still judges — as a Miss that
+    // feeds Stall counting toward Deload. An Entry with no Work sets at all
+    // (Warm-up sets only) is prep, never a Miss.
+    if (entry && ((entry.sets || []).some(s => !isWarmupRow(s)))) out.push({ d: w.d, ...readSession(entry, fallback) })
   })
   return out
 }
@@ -177,28 +189,39 @@ export function nextPrescription(S, cfg, routine) {
       return { policy, kind: 'up', sec, why: ['Held every set for the full time — target up by {0}s.', inc] }
     }
     if (stalls >= deloadAt) {
-      const sec = deloadTo(last.goal || cfg.sec || 0, 5)
+      const cur = last.goal || cfg.sec || 0
+      const sec = deloadTo(cur, 5)
+      // A Deload that cannot reduce reads as a hold, never a same-weight "deload".
+      if (sec >= cur) return { policy, kind: 'hold', sec: clampTimeSec(cur), why: ['Already at the minimum hold — same target again.'] }
       return { policy, kind: 'deload', sec, why: ['Short {0} sessions in a row — back off to {1}s and build up again.', stalls, sec] }
     }
-    return { policy, kind: 'hold', sec: last.goal || cfg.sec, why: ['Last time came up short — same target again.'] }
+    return { policy, kind: 'hold', sec: clampTimeSec(last.goal || cfg.sec), why: ['Last time came up short — same target again.'] }
   }
 
-  const w = last.weight
+  const w = last.weight || cfg.weight || 0
   // Bodyweight work carries no external load, so there is nothing to add or take away —
   // "deload your push-ups to 2.5 kg" is not advice. Progress in reps instead. This runs ahead
   // of the individual policies because it is true for all of them. Note the trigger is the
   // *logged* weight, not the `bw` flag: a dip done with a belt has a load to progress and
   // belongs on the normal policies, and a barbell lift logged at 0 has nothing to add to.
+  // When nothing was performed at all, the plan weight stands in, so a fallen-apart
+  // barbell session holds at its plan weight instead of reading as bodyweight.
   if (w <= 0) {
     const goal = last.goal || cfg.reps || 0
-    if (!last.ok || goal <= 0) return { policy, kind: 'hold', weight: 0, reps: goal || undefined, why: ['Bodyweight — same target again until every set is clean.'] }
+    if (!last.ok || goal <= 0) return { policy, kind: 'hold', weight: 0, reps: Math.max(1, goal), why: ['Bodyweight — same target again until every set is clean.'] }
     // A ceiling turns "+1 rep forever" into a plan (issue #33). Past the top of the range the
     // reps go back to the bottom and a set is added instead, which is how bodyweight work
     // actually progresses once a set of 30 push-ups stops being a strength stimulus.
     const top = cfg.repsMax > 0 ? cfg.repsMax : 0
     if (top > 0 && goal >= top) {
-      const sets = Math.max(1, cfg.sets || last.count || 1) + 1
-      const bottom = Math.max(1, Math.min(cfg.reps || top, top))
+      // Added-set growth resumes from the current Routine target: cutting sets in the
+      // plan lowers the resume point instead of rebuilding from the history high. An
+      // explicit zero is a bad edit, not a plan, so it clamps to the safe minimum;
+      // an absent value (freestyle) still falls back to what was actually done.
+      const planSets = cfg.sets == null ? null : Math.max(1, cfg.sets)
+      const sets = Math.max(1, planSets ?? last.count ?? 1) + 1
+      const planReps = cfg.reps === 0 ? 1 : (cfg.reps || top)
+      const bottom = Math.max(1, Math.min(planReps, top))
       if (sets <= MAX_BW_SETS) return { policy, kind: 'up', weight: 0, reps: bottom, sets, why: ['{0} reps in every set — add a set and go back to {1}.', goal, bottom] }
       // Out of sets worth adding: more volume is no longer the answer, load or a harder
       // variation is — and that is a decision for a person, not a policy.
@@ -214,6 +237,8 @@ export function nextPrescription(S, cfg, routine) {
     if (last.ok) return { policy, kind: 'up', weight: snap(w + inc, inc), reps: bottom, why: ['Top of the rep range in every set — {0} {1} more, back to {2} reps.', inc, unit, bottom] }
     if (stalls >= deloadAt) {
       const dw = deloadTo(w, inc)
+      // A Deload that cannot reduce reads as a hold, never a same-weight "deload".
+      if (dw >= w) return { policy, kind: 'hold', weight: w, reps: bottom, why: ['Already at the minimum load — same weight again.'] }
       return { policy, kind: 'deload', weight: dw, reps: bottom, why: ['Stalled {0} sessions — deload to {1} {2}.', stalls, dw, unit] }
     }
     const aim = Math.min(top, Math.max(bottom, last.low + repStep(cfg)))
@@ -235,6 +260,8 @@ export function nextPrescription(S, cfg, routine) {
   }
   if (stalls >= deloadAt) {
     const dw = deloadTo(w, inc)
+    // A Deload that cannot reduce reads as a hold, never a same-weight "deload".
+    if (dw >= w) return { policy, kind: 'hold', weight: w, why: ['Already at the minimum load — same weight again.'] }
     return {
       policy, kind: 'deload', weight: dw,
       why: stalls > 1
