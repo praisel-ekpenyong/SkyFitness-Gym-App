@@ -10,8 +10,11 @@
 // Like the demo build, MOBILE is replaced at build time, so all of this folds away in
 // web bundles; the Capacitor plugins are only ever imported behind it.
 import { t } from './i18n-core.js'
+import { MOBILE as ENV_MOBILE } from './env.js'
 
-export const MOBILE = import.meta.env.VITE_MOBILE === '1'
+// Re-exported from the environment seam so existing callers keep working
+// untouched; the flag is validated once in lib/env.js.
+export const MOBILE = ENV_MOBILE
 
 const FILE = 'sky-state.json'
 

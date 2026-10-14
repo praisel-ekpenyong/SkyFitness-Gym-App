@@ -42,7 +42,7 @@ _Avoid_: plan, template, program, split
 Which routine belongs to each weekday.
 
 **Day override (Rescheduled)**:
-A one-off replacement (or declared rest) for what the week schedule says on one specific date. In lifter-facing UI copy and badges, this is presented as "Rescheduled" (e.g. `todayOvr` indicators).
+A one-off replacement (or declared rest) for what the week schedule says on one specific date. In lifter-facing UI copy and badges, this is presented as "Rescheduled".
 _Avoid_: re-planning
 
 **Plan file**:
@@ -148,7 +148,7 @@ _Avoid_: using "hard" informally for heavy
 ### Judging & progression
 
 **Hit / Miss**:
-How a session is judged against its target. A performed set that reached its target is a hit; fewer reps, an unticked set, or sets that were never added are misses. A session that fell apart cannot advance the load. In the progression engine and session evaluators (`readSession`, `stallCount`), this boolean judgement is represented as `.ok`.
+How a session is judged against its target. A performed set that reached its target is a hit; fewer reps, an unticked set, or sets that were never added are misses. A session that fell apart cannot advance the load.
 
 **Progression policy**:
 The named rule that derives the next target from history: off, linear, Greyskull LP, double progression, add-time. Policies are pure readings of the log — fixing a mistyped set immediately changes the next prescription.

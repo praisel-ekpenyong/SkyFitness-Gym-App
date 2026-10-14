@@ -3,12 +3,13 @@ import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { validateEnv } from './src/lib/env.js'
 
 // Optional web analytics (Umami). Injected only when BOTH vars are set at build time,
 // so a plain `npm run build` — and every self-hosted install — stays telemetry-free.
+// Validated through the environment seam (see src/lib/env.js and .env.example).
 // Set for the public instance: VITE_UMAMI_SRC=https://stats.example/script.js VITE_UMAMI_ID=<uuid>
-const umamiSrc = process.env.VITE_UMAMI_SRC
-const umamiId = process.env.VITE_UMAMI_ID
+const { umamiSrc, umamiId } = validateEnv(process.env)
 
 const umami = {
   name: 'sky-umami',
