@@ -26,25 +26,35 @@ function useBodyPaths() {
   return paths
 }
 
-function View({ view, levels, onMuscle, selected }) {
+function View({ view, viewKey, levels, onMuscle, selected, primaryOf }) {
   return (
-    <svg className="bm-v" viewBox={view.vb} role="img">
+    <svg className="bm-v" viewBox={view.vb} role={onMuscle ? 'group' : 'img'} aria-label={onMuscle ? t('Body map') : undefined}>
       {INERT.map(slug => (view.p[slug] || []).map((d, i) =>
-        <path key={slug + i} className="bm-sil" d={d} />))}
-      {MUSCLES.map(slug => (view.p[slug] || []).map((d, i) =>
-        <path
-          key={slug + i}
-          role={onMuscle ? 'button' : undefined}
-          tabIndex={onMuscle && i === 0 ? 0 : undefined}
-          aria-label={onMuscle && i === 0 ? t(MUSCLE_NAME[slug]) : undefined}
-          aria-pressed={onMuscle && i === 0 ? (selected === slug) : undefined}
-          className={'bm-m l' + (levels[slug] || 0) + (selected === slug ? ' sel' : '')}
-          d={d}
-          onClick={onMuscle ? () => onMuscle(slug) : undefined}
-          onKeyDown={onMuscle && i === 0 ? e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onMuscle(slug) } } : undefined}
-        >
-          <title>{t(MUSCLE_NAME[slug])}</title>
-        </path>))}
+        <path key={slug + i} className="bm-sil" d={d} aria-hidden="true" />))}
+      {MUSCLES.map(slug => (view.p[slug] || []).map((d, i) => {
+        // One keyboard stop per drawable muscle across both views: the front
+        // instance is primary when the muscle is drawn there, otherwise the
+        // back instance. Supplementary paths stay mouse-clickable but leave
+        // the accessibility tree so the muscle is announced exactly once.
+        const isPrimary = !!onMuscle && i === 0 && primaryOf(slug) === viewKey
+        return (
+          <path
+            key={slug + i}
+            role={isPrimary ? 'button' : undefined}
+            tabIndex={isPrimary ? 0 : undefined}
+            focusable={isPrimary ? undefined : 'false'}
+            aria-label={isPrimary ? t(MUSCLE_NAME[slug]) : undefined}
+            aria-hidden={!isPrimary && onMuscle ? true : undefined}
+            aria-pressed={isPrimary ? (selected === slug) : undefined}
+            className={'bm-m l' + (levels[slug] || 0) + (selected === slug ? ' sel' : '')}
+            d={d}
+            onClick={onMuscle ? () => onMuscle(slug) : undefined}
+            onKeyDown={isPrimary ? e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onMuscle(slug) } } : undefined}
+          >
+            {isPrimary ? <title>{t(MUSCLE_NAME[slug])}</title> : null}
+          </path>
+        )
+      }))}
     </svg>
   )
 }
@@ -60,11 +70,14 @@ export default function BodyMap({ load = {}, thresholds, body = 'male', onMuscle
   const paths = useBodyPaths()
   const levels = levelsOf(load, thresholds)
   const g = paths && (paths[body] || paths.male)
+  // Front wins when a muscle is drawn in both views, so each drawable muscle
+  // keeps exactly one keyboard tab stop across the two views.
+  const primaryOf = slug => (g.front.p[slug] ? 'front' : 'back')
   return (
     <div className={'bodymap ' + className}>
       {g ? <>
-        <View view={g.front} levels={levels} onMuscle={onMuscle} selected={selected} />
-        <View view={g.back} levels={levels} onMuscle={onMuscle} selected={selected} />
+        <View view={g.front} viewKey="front" levels={levels} onMuscle={onMuscle} selected={selected} primaryOf={primaryOf} />
+        <View view={g.back} viewKey="back" levels={levels} onMuscle={onMuscle} selected={selected} primaryOf={primaryOf} />
       </> : <div className="bm-ph" aria-hidden="true" />}
     </div>
   )
