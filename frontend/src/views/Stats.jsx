@@ -12,6 +12,7 @@ import Icon from '../components/Icon.jsx'
 import BodyMap, { BodyMapLegend } from '../components/BodyMap.jsx'
 import { loadOfWorkouts, rankOf, MUSCLE_NAME, musclesOf } from '../lib/muscles.js'
 import { fatigueOf, strengthOf, STRENGTH_FLOOR, LB_TO_KG, fatigueStateOf } from '../lib/recovery.js'
+import { FATIGUE_LEVELS } from '../lib/recovery-view.js'
 import { strengthExerciseRowsForMuscle } from '../lib/strength-exercises.js'
 import { e1rmSeries, best1RM } from '../lib/onerm.js'
 import {
@@ -20,6 +21,8 @@ import {
 } from '../lib/effort.js'
 import { Button, Segmented, SelectRow } from '../components/ui.jsx'
 import { isWarmupRow } from '../lib/workout-model.js'
+
+export { FATIGUE_LEVELS }
 
 // Which muscles the training in a window actually hit — and, the point of the card,
 // which ones it keeps missing. Shading is relative within the window (lib/muscles.js).
@@ -39,14 +42,6 @@ function latestMuscleTraining(workouts) {
   return latest
 }
 
-export const FATIGUE_LEVELS = [
-  { at: 0, level: 0 },
-  { at: 0.15, level: 1 },
-  { at: 0.25, level: 2 },
-  { at: 0.4, level: 3 },
-  { at: 0.55, level: 4, exclusive: true },
-]
-
 export const STRENGTH_LEVELS = [
   { at: STRENGTH_FLOOR, level: 0 },
   { at: 0.625, level: 1 },
@@ -56,12 +51,15 @@ export const STRENGTH_LEVELS = [
 ]
 
 function useNow() {
-  const [, setTick] = useState(0)
+  // The clock lives in state so the Fatigue/Strength memos below only rescan when the
+  // 60-second tick advances it — returning Date.now() directly would hand every render
+  // a fresh `now` and defeat memoization on large histories.
+  const [now, setNow] = useState(() => Date.now())
   useEffect(() => {
-    const iv = setInterval(() => setTick(tick => tick + 1), 60000)
+    const iv = setInterval(() => setNow(Date.now()), 60000)
     return () => clearInterval(iv)
   }, [])
-  return Date.now()
+  return now
 }
 
 /**

@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MUSCLES, levelsOf } from '../lib/muscles.js'
 import { FATIGUE_STATES, STRENGTH_FLOOR, fatigueStateOf } from '../lib/recovery.js'
 import { recapSheet } from '../sheets.jsx'
-import Stats from './Stats.jsx'
+import Stats, { FATIGUE_LEVELS } from './Stats.jsx'
 
 const DAY = 86400000
 const HOUR = 3600000
@@ -184,6 +184,28 @@ afterEach(async () => {
 })
 
 describe('Stats muscle recovery view runtime', () => {
+  it('Fatigue Muscle map shade and inspector label agree at the canonical boundaries', () => {
+    // Canonical Fatigue buckets: ready below 0.25, recovering through 0.5, fatigued
+    // above. The Muscle map shade (levelsOf with the production bands) must never
+    // contradict the inspector label (fatigueStateOf): l4 reads fatigued, l2/l3
+    // recovering, l0/l1 ready.
+    const probes = [
+      { value: 0, label: 'ready', levels: [0, 1] },
+      { value: 0.15, label: 'ready', levels: [0, 1] },
+      { value: 0.2499, label: 'ready', levels: [0, 1] },
+      { value: 0.25, label: 'recovering', levels: [2, 3] },
+      { value: 0.4, label: 'recovering', levels: [2, 3] },
+      { value: 0.5, label: 'recovering', levels: [2, 3] },
+      { value: 0.5001, label: 'fatigued', levels: [4] },
+      { value: 0.6, label: 'fatigued', levels: [4] },
+    ]
+    expect(FATIGUE_LEVELS.at(-1)).toEqual({ at: 0.5, level: 4, exclusive: true })
+    for (const { value, label, levels } of probes) {
+      expect(fatigueStateOf(value)).toBe(label)
+      expect(levels).toContain(levelsOf({ chest: value }, FATIGUE_LEVELS).chest)
+    }
+  })
+
   it('dispatches real clicks through Balance, Fatigue, and Strength and preserves selection', async () => {
     await mountStats()
     expectPressed(viewButton('Muscle balance'))
@@ -235,6 +257,23 @@ describe('Stats muscle recovery view runtime', () => {
     expect(lastMap().load.quadriceps).toBeLessThan(1)
     await click(viewButton('Muscle balance'))
     expect(lastMap().load.chest).toBe(6)
+  })
+
+  it('Fatigue rescan runs on the Muscle map tick change only, not every render', async () => {
+    await mountStats()
+    await click(viewButton('Fatigue'))
+    const first = lastMap().load
+
+    // A second passes and an unrelated selection re-renders the Muscle map: the
+    // state-derived clock has not ticked, so the memoized Fatigue rescan must not run.
+    await tick(1000)
+    await click(muscleCard().querySelector('[data-muscle="chest"]'))
+    expect(lastMap().load).toBe(first)
+
+    // The 60-second tick advances the clock, so the rescan runs exactly then.
+    await tick(59000)
+    expect(lastMap().load).not.toBe(first)
+    expect(lastMap().load.chest).toBeLessThan(first.chest)
   })
 
   it('derives a pound-profile bodyweight in kg and passes it into the rendered Fatigue map', async () => {
