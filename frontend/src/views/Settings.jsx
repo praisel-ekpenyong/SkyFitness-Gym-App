@@ -7,7 +7,8 @@ import { effortOf } from '../lib/effort.js'
 import { wakeLockSupported } from '../lib/wakelock.js'
 import { t } from '../lib/i18n.js'
 import { MOBILE, shareExport, syncReminder } from '../lib/mobile.js'
-import { backupDue } from '../lib/storage.js'
+import { backupDue, validateBackup } from '../lib/storage.js'
+import { restoreFromBackup } from '../lib/restore.js'
 import { loadStarterPlan, confirmSheet, importFromApp, displayNameSheet } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
 import { Section, Row, SelectRow, Switch, Segmented } from '../components/ui.jsx'
@@ -44,8 +45,10 @@ export default function Settings() {
       try {
         const data = JSON.parse(rd.result)
         // Same shape as any Sky backup — only the file name changed at the rebrand.
-        if (!data.workouts || !data.routines) throw new Error('not a Sky backup')
-        confirmSheet({ title: t('Import backup?'), message: t('This replaces all current data with the backup file.'), confirmText: t('Import'), danger: true, onConfirm: () => { replaceState(Object.assign(JSON.parse(JSON.stringify(DEF)), data)); toast(t('Backup imported')) } })
+        // Element-level guards live behind the Restore seam: one malformed Entry
+        // is stripped with a skipped count instead of killing the tab.
+        validateBackup(data)
+        confirmSheet({ title: t('Import backup?'), message: t('This replaces all current data with the backup file.'), confirmText: t('Import'), danger: true, onConfirm: () => { restoreFromBackup(data) } })
       } catch (e) { toast(t('Import failed: {0}', e.message)) }
     }
     rd.readAsText(f)
