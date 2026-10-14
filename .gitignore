@@ -4,8 +4,12 @@ frontend/public/media/
 # Local runtime data (never committed)
 data/
 
-# Local config
+# Local config (Vite reads frontend/.env* — local variants stay untracked,
+# the documented example stays tracked; see frontend/.env.example)
 .env
+.env.local
+.env.*.local
+!**/.env.example
 
 # Build output / deps
 frontend/dist/

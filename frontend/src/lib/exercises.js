@@ -1,5 +1,6 @@
 import { EXDB } from './exercises-data.js'
 import { t } from './i18n-core.js'
+import { IMG_BASE, GIF_BASE } from './env.js'
 
 export { EXDB }
 
@@ -32,7 +33,7 @@ export const BODYPARTS = [...new Set(EXDB.map(e => e.bp))].sort()
 export function equipmentOf(list) {
   const c = {}
   list.forEach(e => { if (e.eq) c[e.eq] = (c[e.eq] || 0) + 1 })
-  return Object.keys(c).sort((a, b) => c[b] - c[a] || (a < b ? -1 : 1))
+  return Object.keys(c).sort((a, b) => c[b] - c[a] || String(a).localeCompare(String(b)))
 }
 
 // Custom (user-created) exercises live in synced state S.customEx (issue #11) and are
@@ -53,9 +54,7 @@ export const CDN_GIF_BASE = `https://cdn.jsdelivr.net/gh/hasaneyldrm/exercises-d
 
 // Sky does not commit 140 MB of media to git; relative defaults serve local assets bundled
 // via `npm run media:fetch`, while CDN fallbacks keep fresh clones and missing assets functional.
-const ENV = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : {}
-const IMG_BASE = (ENV.VITE_IMG_BASE || 'media/images/').replace(/\/?$/, '/')
-const GIF_BASE = (ENV.VITE_GIF_BASE || 'media/videos/').replace(/\/?$/, '/')
+// Bases arrive validated from the environment seam.
 
 export const imgSrc = ex => (ex?.img ? IMG_BASE + ex.img : '')
 export const gifSrc = ex => (ex?.gif ? GIF_BASE + ex.gif : '')
