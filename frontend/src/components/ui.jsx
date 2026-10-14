@@ -77,16 +77,19 @@ export function SearchField({ value, onChange, onClear, className = '', style, '
 
 /* ============================ switch ============================ */
 
-export function Switch({ checked, onChange, disabled }) {
+export function Switch({ checked, onChange, disabled, label, 'aria-label': ariaLabel, ...rest }) {
+  const name = ariaLabel || label
   return (
     <span className="sw-hit">
       <button
         type="button"
         role="switch"
         aria-checked={!!checked}
+        aria-label={name}
         disabled={disabled}
         className={'sw' + (checked ? ' on' : '')}
         onClick={() => onChange(!checked)}
+        {...rest}
       >
         <span className="knob" />
       </button>
@@ -97,18 +100,37 @@ export function Switch({ checked, onChange, disabled }) {
 /* ============================ segmented ============================ */
 
 // options: [{ value, label, icon? }]  — the selected pill slides between cells.
-export function Segmented({ options, value, onChange, className = '' }) {
+// Single-select: announced as a radiogroup with radio options (not toggle
+// buttons), so assistive tech reads the choice as one group. Roving tabindex
+// keeps one stop per group; arrows move between options.
+export function Segmented({ options, value, onChange, className = '', label, 'aria-label': ariaLabel, 'aria-labelledby': ariaLabelledby }) {
   const i = Math.max(0, options.findIndex(o => o.value === value))
+  const name = ariaLabel || label
+  const move = (currentTarget, dir) => {
+    const next = (i + dir + options.length) % options.length
+    onChange(options[next].value)
+    const radios = currentTarget.parentElement?.querySelectorAll('[role="radio"]')
+    radios?.[next]?.focus()
+  }
+  const onKey = e => {
+    if (e.key !== 'ArrowRight' && e.key !== 'ArrowDown' && e.key !== 'ArrowLeft' && e.key !== 'ArrowUp') return
+    e.preventDefault()
+    move(e.currentTarget, (e.key === 'ArrowRight' || e.key === 'ArrowDown') ? 1 : -1)
+  }
   return (
-    <div className={'seg ' + className} style={{ '--n': options.length, '--i': i }}>
+    <div className={'seg ' + className} style={{ '--n': options.length, '--i': i }}
+      role="radiogroup" aria-label={name} aria-labelledby={ariaLabelledby}>
       <span className="seg-sel" aria-hidden="true" />
-      {options.map(o => (
+      {options.map((o, idx) => (
         <button
           key={o.value}
           type="button"
+          role="radio"
+          aria-checked={o.value === value}
+          tabIndex={idx === i ? 0 : -1}
           className={o.value === value ? 'on' : ''}
-          aria-pressed={o.value === value}
           onClick={() => onChange(o.value)}
+          onKeyDown={onKey}
         >
           {o.icon && <Icon name={o.icon} />}
           {o.label && <span>{o.label}</span>}

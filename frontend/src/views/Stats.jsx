@@ -141,7 +141,7 @@ function MuscleBalance({ S }) {
   const sets = m => Math.round((load[m] || 0) * 10) / 10
 
   return <div className="card">
-    <Segmented className="seg-range" value={view} onChange={setView}
+    <Segmented className="seg-range" label={t('Muscle view')} value={view} onChange={setView}
       options={[{ value: 'balance', label: t('Muscle balance') }, { value: 'fatigue', label: t('Fatigue') }, { value: 'strength', label: t('Strength') }]} />
     {view === 'balance' ? <>
       <div className="card-head">
@@ -149,7 +149,7 @@ function MuscleBalance({ S }) {
         {rated && <Button size="sm" icon="flame" style={on ? { color: 'var(--yellow)' } : undefined}
           onClick={() => { setHard(h => !h); setSel(null) }}>{on ? t('Hard') : t('All')}</Button>}
       </div>
-      <Segmented className="seg-range" value={win} onChange={v => { setWin(v); setSel(null) }}
+      <Segmented className="seg-range" label={t('Time window')} value={win} onChange={v => { setWin(v); setSel(null) }}
         options={[{ value: 7, label: t('Week') }, { value: 30, label: '30d' }, { value: 90, label: '90d' }, { value: 0, label: t('All') }]} />
       {inWin.length ? <>
         <BodyMap className="tappable" load={load} body={S.body} selected={sel}
@@ -262,7 +262,7 @@ function EffortCard({ S }) {
     <div className="card-head">
       <h2><Icon name="gauge" style={{ fontSize: 16, color: 'var(--yellow)' }} />{t('Effort')} <span className="card-sub">· {t('how close to failure')}</span></h2>
     </div>
-    <Segmented className="seg-range" value={win} onChange={setWin}
+    <Segmented className="seg-range" label={t('Time window')} value={win} onChange={setWin}
       options={[{ value: 30, label: '30d' }, { value: 90, label: '90d' }, { value: 365, label: '1Y' }, { value: 0, label: t('All') }]} />
     {sum.rated === 0 ? <div className="muted small">{t('No rated sets in this period.')}</div> : <>
       <div className="effort-stats-grid">
@@ -459,7 +459,7 @@ export default function Stats() {
             <Button size="sm" icon="plus" onClick={() => bwSheet()}>{t('Log')}</Button>
           </div>
         </div>
-        <Segmented className="seg-range" value={range} onChange={setRange}
+        <Segmented className="seg-range" label={t('Time window')} value={range} onChange={setRange}
           options={[{ value: 30, label: '1M' }, { value: 90, label: '3M' }, { value: 365, label: '1Y' }, { value: 0, label: t('All') }]} />
         <div className="chart"><LineChart points={bwPts} h={160} unit={S.unit} goal={S.targetW} /></div>
       </div>
@@ -473,7 +473,7 @@ export default function Stats() {
             <SelectRow title={t('Exercise')} sheetTitle={t('Exercise progress')} value={curEx} onChange={setExId}
               options={exHist.map(id => ({ value: id, label: nameOf(id) + (exCurrent[id].mx ? ' ' + '—' + ' ' + fmtNum(exCurrent[id].mx) + ' ' + exCurrent[id].unit : '') }))} />
           </div>
-          {exOpts.length > 1 && <Segmented className="seg-range" value={onEff ? 'effort' : onE1 ? 'e1rm' : 'top'} onChange={setExMetric} options={exOpts} />}
+          {exOpts.length > 1 && <Segmented className="seg-range" label={t('Exercise metric')} value={onEff ? 'effort' : onE1 ? 'e1rm' : 'top'} onChange={setExMetric} options={exOpts} />}
           <div className="chart">
             {onEff
               ? <LineChart points={effPts} h={150} unit={hd} color="var(--yellow)" invert={kind === 'rir'} />
