@@ -5,7 +5,6 @@ import { MOBILE, nativeSink } from './lib/mobile.js'
 import { BASE_URL } from './lib/env.js'
 import { registerSink } from './lib/storage.js'
 import './index.css'
-import './skin.css'
 
 // Mobile builds mirror every save into the app's data directory (survives WebView storage
 // eviction). Registered before anything renders, so no persist can outrun it.
