@@ -14,6 +14,7 @@ import TabBar from './components/TabBar.jsx'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
 import Modals from './components/Modals.jsx'
 import Toast from './components/Toast.jsx'
+import OfflineBadge from './components/OfflineBadge.jsx'
 import RestTimer from './components/RestTimer.jsx'
 // Home is eager — the default route ("/home" + catch-all "*") so first paint has no extra RTT.
 // Every other view is lazy and fetched on demand via Suspense, which keeps the initial
@@ -66,6 +67,7 @@ function Shell() {
 
   return (
     <>
+      <OfflineBadge />
       {/* Blocked device storage degrades to an in-memory session: training keeps
           working and this persistent alert says changes will not persist. */}
       {storageBlocked && (

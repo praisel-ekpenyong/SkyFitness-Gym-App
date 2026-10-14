@@ -1,7 +1,13 @@
+# Sky deploy headers for Cloudflare Pages.
+# Canonical twin: netlify.toml at the repo root — keep the two policies identical.
+# Minimal static policy: everything same-origin; images and media may also come
+# from the pinned exercise-dataset CDN (see PINNED_DATASET_COMMIT in
+# frontend/src/lib/exercises.js). Opt-in analytics hosts are appended here, never inline.
 /*
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY
   Referrer-Policy: strict-origin-when-cross-origin
+  Content-Security-Policy: default-src 'self'; img-src 'self' https://cdn.jsdelivr.net; media-src 'self' https://cdn.jsdelivr.net
 
 /index.html
   Cache-Control: no-cache, no-store, must-revalidate
