@@ -142,9 +142,9 @@ describe('linear progression', () => {
     expect(p.kind).toBe('hold')
   })
 
-  it('never deloads below one increment, however light the lift already is', () => {
+  it('holds instead of deloading when already at one increment — a deload that cannot reduce reads as a hold', () => {
     const p = nextPrescription(hist(LIFT, [[2.5, 1, 1, 1], [2.5, 1, 1, 1], [2.5, 1, 1, 1]]), cfg)
-    expect(p.kind).toBe('deload')
+    expect(p.kind).toBe('hold')
     expect(p.weight).toBe(2.5)
   })
 
@@ -362,7 +362,7 @@ describe('policy "off"', () => {
 })
 
 describe('sessionsFor', () => {
-  it('skips workouts where the exercise was never actually logged', () => {
+  it('judges a finished Entry with zero performed Work sets as a Miss, not as absent', () => {
     const S = {
       unit: 'kg',
       workouts: [
@@ -371,7 +371,10 @@ describe('sessionsFor', () => {
         { d: '2026-01-03', entries: [{ id: 'other', target: {}, sets: [{ w: 20, r: 5, done: true }] }] }
       ]
     }
-    expect(sessionsFor(S, LIFT).map(s => s.d)).toEqual(['2026-01-01'])
+    const sessions = sessionsFor(S, LIFT)
+    expect(sessions.map(s => s.d)).toEqual(['2026-01-01', '2026-01-02'])
+    expect(sessions[0].ok).toBe(true)
+    expect(sessions[1].ok).toBe(false)
   })
 
   it('reads a legacy entry that has no target without crashing', () => {
