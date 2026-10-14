@@ -1,6 +1,10 @@
 // @vitest-environment happy-dom
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { pickNewest, backupDue, BACKUP_NAG_MS, LOCAL_KEY, loadLocal, save, flush, load, registerSink, __setSinksForTests } from './storage.js'
+import {
+  pickNewest, backupDue, BACKUP_NAG_MS, LOCAL_KEY, loadLocal, save, flush, load,
+  registerSink, __setSinksForTests, __setLocalWriteForTests, __resetStorageBlockedForTests,
+  isStorageBlocked, validateBackup, sanitizeBackup, onStorageSync
+} from './storage.js'
 
 // In-memory stand-ins for the two storages: each side arrives at boot as
 // { ts, state } (a parsed snapshot plus its save timestamp) or null.
@@ -93,6 +97,8 @@ beforeEach(() => {
   writes = []
   sink = { id: 'fake', read: async () => null, write: x => writes.push(x) }
   __setSinksForTests([sink])
+  __setLocalWriteForTests()
+  __resetStorageBlockedForTests()
 })
 
 describe('save / flush', () => {
@@ -138,15 +144,16 @@ describe('save / flush', () => {
   })
 
   it('survives a storage quota exceeded exception and still drains to sinks', () => {
-    const orig = localStorage.setItem.bind(localStorage)
-    localStorage.setItem = () => { throw new DOMException('Quota exceeded', 'QuotaExceededError') }
+    // Denied device storage goes through the injectable local-write seam:
+    // per-instance stubbing of the frozen happy-dom Storage never lands.
+    __setLocalWriteForTests(() => { throw new DOMException('Quota exceeded', 'QuotaExceededError') })
     expect(() => save({ n: 5 })).not.toThrow()
     // pending snapshot must still be scheduled for async sinks despite localStorage failure
     expect(writes).toEqual([])
     vi.advanceTimersByTime(800)
     expect(writes).toEqual([{ n: 5, _ts: expect.any(Number) }])
     // restore and verify next save lands in localStorage normally
-    localStorage.setItem = orig
+    __setLocalWriteForTests()
     save({ n: 6 })
     expect(JSON.parse(localStorage.getItem(LOCAL_KEY)).n).toBe(6)
     flush()
@@ -154,12 +161,21 @@ describe('save / flush', () => {
   })
 
   it('flush() still drains after a quota-blocked save', () => {
-    const orig = localStorage.setItem.bind(localStorage)
-    localStorage.setItem = () => { throw new Error('NS_ERROR_DOM_QUOTA_REACHED') }
+    __setLocalWriteForTests(() => { throw new DOMException('NS_ERROR_DOM_QUOTA_REACHED', 'QuotaExceededError') })
     expect(() => save({ n: 7 })).not.toThrow()
     expect(() => flush()).not.toThrow()
     expect(writes).toEqual([{ n: 7, _ts: expect.any(Number) }])
-    localStorage.setItem = orig
+    __setLocalWriteForTests()
+  })
+
+  it('a security denial degrades the same way and reports blocked until a write lands', () => {
+    __setLocalWriteForTests(() => { throw new DOMException('denied', 'SecurityError') })
+    expect(save({ n: 8 })).toBe(false)
+    expect(isStorageBlocked()).toBe(true)
+    __setLocalWriteForTests()
+    expect(save({ n: 9 })).toBe(true)
+    expect(isStorageBlocked()).toBe(false)
+    flush()
   })
 })
 
@@ -226,3 +242,40 @@ describe('load (web boot protocol)', () => {
     expect(out).toEqual({ _ts: 5, workouts: ['recovered'], overlaid: true })
   })
 })
+
+describe('backup validation and sanitization', () => {
+  it('validateBackup accepts valid payloads and rejects malformed objects', () => {
+    expect(validateBackup({ workouts: [], routines: [] })).toBe(true)
+    expect(() => validateBackup(null)).toThrow('not a Sky backup')
+    expect(() => validateBackup([])).toThrow('not a Sky backup')
+    expect(() => validateBackup({ workouts: [] })).toThrow('not a Sky backup')
+    expect(() => validateBackup({ routines: [] })).toThrow('not a Sky backup')
+  })
+
+  it('sanitizeBackup clears in-flight active workout sessions', () => {
+    expect(sanitizeBackup(null)).toBeNull()
+    const state = { active: { id: 'act-1' }, workouts: [] }
+    expect(sanitizeBackup(state)).toEqual({ active: null, workouts: [] })
+  })
+})
+
+describe('onStorageSync', () => {
+  it('subscribes to window storage events and invokes callback for valid updates', () => {
+    const callback = vi.fn()
+    const unsubscribe = onStorageSync(callback)
+
+    // Unrelated storage key -> ignored
+    window.dispatchEvent(new StorageEvent('storage', { key: 'other_key', newValue: JSON.stringify({ a: 1 }) }))
+    expect(callback).not.toHaveBeenCalled()
+
+    // Valid update on LOCAL_KEY
+    window.dispatchEvent(new StorageEvent('storage', { key: LOCAL_KEY, newValue: JSON.stringify({ _ts: 200, workouts: [] }) }))
+    expect(callback).toHaveBeenCalledWith({ _ts: 200, workouts: [] })
+
+    // Unsubscribe removes listener
+    unsubscribe()
+    window.dispatchEvent(new StorageEvent('storage', { key: LOCAL_KEY, newValue: JSON.stringify({ _ts: 300 }) }))
+    expect(callback).toHaveBeenCalledTimes(1)
+  })
+})
+
