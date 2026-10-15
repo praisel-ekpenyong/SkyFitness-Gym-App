@@ -6,15 +6,15 @@
 // always produce the same display-ready output, and views stay free of imports from
 // the domain helpers composed here.
 import { EXDB } from './exercises.js'
-import { fatigueOf, strengthOf, fatigueStateOf, LB_TO_KG } from './recovery.js'
-import { MUSCLES, loadOfWorkouts, rankOf, musclesOf } from './muscles.js'
+import { fatigueOf, strengthOf, fatigueStateOf, latestTrainedOf, LB_TO_KG } from './recovery.js'
+import { MUSCLES, loadOfWorkouts, rankOf } from './muscles.js'
 import { e1rmSeries, best1RM } from './onerm.js'
 import {
   displayScale, scaleName, toScale, avgRir,
   effortSummary, effortWeeks, effortHistogram, isHardSet, rirOf, hasEffort, effortOf, HARD_RIR,
 } from './effort.js'
 import {
-  isWarmupRow, metricRowsForEntry, metricModeForEntry, bestWeightForEntry,
+  isWarmupRow, metricRowsForEntry, metricModeForEntry, bestWeightForEntry, modeOf,
 } from './workout-model.js'
 import { workoutTimestamp, isoOf, weekKey, monthKey } from './format.js'
 import { streakWeeks } from './history.js'
@@ -49,6 +49,27 @@ function resolveCatalogue(S, catalogue) {
     }
   }
   return { lookup: id => custom.get(id) || defaultCatalogue.lookup(id) || historical.get(id) || null }
+}
+
+// Muscle attribution prefers what the lifter logged: a snapshot carrying muscleWeights was
+// captured when the set was performed, so it beats the catalogue record even when the
+// catalogue's mapping has since been re-derived, and the catalogue answers before a bare
+// historical entry. Identity lookups (names, modes) keep the plain catalogue order.
+function muscleCatalogueOf(S, catalogue) {
+  const logged = new Map()
+  for (const workout of S?.workouts || []) {
+    for (const entry of workout.entries || []) {
+      if (logged.has(entry.id)) continue
+      const snapshot = entry.exercise || entry.muscleSnapshot || entry
+      const weights = snapshot && typeof snapshot === 'object' && !Array.isArray(snapshot)
+        ? snapshot.muscleWeights
+        : null
+      if (weights && typeof weights === 'object' && !Array.isArray(weights) && Object.keys(weights).length) {
+        logged.set(entry.id, { ...entry, ...snapshot, n: snapshot.n || entry.n })
+      }
+    }
+  }
+  return { lookup: id => logged.get(id) || catalogue.lookup(id) || null }
 }
 
 // A window in days back from the injected now. 0 (or another falsy value) keeps
@@ -108,27 +129,19 @@ function workSetsOf(workouts) {
 export function selectStatsOverview(S, opts = {}) {
   const now = requireNow('selectStatsOverview', opts?.now)
   const catalogue = resolveCatalogue(S, opts?.catalogue)
+  const muscleCatalogue = muscleCatalogueOf(S, catalogue)
   const muscleDays = opts?.muscleDays ?? 30
   const effortDays = opts?.effortDays ?? 90
   const hardRequested = !!opts?.hardOnly
   const bodyweightKg = resolveBodyweightKg(S, opts?.bodyweightKg)
   const workouts = S?.workouts || []
 
-  const fatOpts = { bodyweightKg, unit: S?.unit, catalogue }
+  const fatOpts = { bodyweightKg, unit: S?.unit, catalogue: muscleCatalogue }
   const fatigueValues = fatigueOf(workouts, now, fatOpts)
   const strengthValues = strengthOf(workouts, now, fatOpts)
-  const latest = Object.fromEntries(MUSCLES.map(slug => [slug, null]))
-  for (const workout of workouts) {
-    const timestamp = workoutTimestamp(workout)
-    if (!Number.isFinite(timestamp)) continue
-    for (const entry of workout.entries || []) {
-      if (!(entry.sets || []).some(set => set.done === true && !isWarmupRow(set))) continue
-      const exercise = catalogue.lookup(entry.id) || entry.exercise || entry
-      for (const slug of Object.keys(musclesOf(exercise))) {
-        if (latest[slug] == null || timestamp > latest[slug]) latest[slug] = timestamp
-      }
-    }
-  }
+  const trainedAt = latestTrainedOf(workouts, { catalogue: muscleCatalogue })
+  const latest = Object.fromEntries(MUSCLES.map(slug =>
+    [slug, Number.isFinite(trainedAt[slug]) ? trainedAt[slug] : null]))
   const trainingWeeks = Object.fromEntries(MUSCLES.map(slug => [slug,
     latest[slug] == null ? null : Math.max(0, Math.floor((now - latest[slug]) / DAY_MS / 7)),
   ]))
@@ -145,7 +158,7 @@ export function selectStatsOverview(S, opts = {}) {
   const windowSets = workSetsOf(muscleWin)
   const rated = windowSets.some(s => rirOf(s) != null)
   const hardActive = hardRequested && windowSets.some(isHardSet)
-  const rawLoad = loadOfWorkouts(muscleWin, hardActive ? isHardSet : null, catalogue)
+  const rawLoad = loadOfWorkouts(muscleWin, hardActive ? isHardSet : null, muscleCatalogue)
   const load = Object.fromEntries(MUSCLES.map(slug => [slug, round1(rawLoad[slug] || 0)]))
   const { worked, missed } = rankOf(load)
 
@@ -212,7 +225,7 @@ export function selectStatsOverview(S, opts = {}) {
       values: strengthValues,
       latest,
       weeks: trainingWeeks,
-      volume90: loadOfWorkouts(inWindow(workouts, now, 90), null, catalogue),
+      volume90: loadOfWorkouts(inWindow(workouts, now, 90), null, muscleCatalogue),
       order: strengthOrder,
       detrained: strengthOrder.filter(slug => strengthValues[slug] < 1),
     },
@@ -243,39 +256,25 @@ function entriesFor(S, exId) {
 }
 
 // Within an entry, metricModeForEntry makes completed reps rows authoritative.
-// Across entries, the latest logged Mode chooses the progress chart.
+// Across entries, the latest logged Mode chooses the progress chart; the catalogue
+// record is the last fallback through the shared modeOf cascade.
 function resolveMode(pairs, catalogueRecord) {
   for (let i = pairs.length - 1; i >= 0; i--) {
     const mode = metricModeForEntry(pairs[i].entry)
     if (mode) return mode
   }
-  const cm = catalogueRecord?.mode
-  if (cm === 'reps' || cm === 'time' || cm === 'cardio') return cm
-  if (catalogueRecord?.bp === 'cardio') return 'cardio'
-  const tg = String(catalogueRecord?.tg || '').toLowerCase().trim()
-  if (tg === 'cardio' || tg === 'cardiovascular system') return 'cardio'
-  return 'reps'
+  return modeOf(catalogueRecord)
 }
 
-const sessionMetric = (mode, set) => mode === 'cardio' ? (set?.speed || 0) : (set?.sec || 0)
+// The number a set scores in its mode: km/h speed for cardio, seconds for timed work.
+const speedOrSecondsOf = (mode, set) => mode === 'cardio' ? (set?.speed || 0) : (set?.sec || 0)
 const unitFor = (mode, S) => mode === 'cardio' ? 'km/h' : mode === 'time' ? 's' : (S?.unit ?? 'kg')
 
 function metricOf(entry, mode) {
   const value = mode === 'reps'
     ? bestWeightForEntry(entry)
-    : metricRowsForEntry(entry, mode).reduce((best, set) => Math.max(best, Number(sessionMetric(mode, set)) || 0), 0)
+    : metricRowsForEntry(entry, mode).reduce((best, set) => Math.max(best, Number(speedOrSecondsOf(mode, set)) || 0), 0)
   return Number.isFinite(value) && value > 0 ? round1(value) : 0
-}
-
-// Latest chronological point beats every prior one: the record, with the previous
-// best for context. Needs at least two sessions — a single session is a baseline,
-// not a record.
-function recordOf(sortedPts, readValue) {
-  if (sortedPts.length < 2) return null
-  const last = sortedPts[sortedPts.length - 1]
-  const prev = Math.max(...sortedPts.slice(0, -1).map(readValue))
-  if (!(readValue(last) > prev)) return null
-  return { ...last, prev }
 }
 
 /**
@@ -291,11 +290,11 @@ function recordOf(sortedPts, readValue) {
 export function selectExerciseStats(S, exId, opts = {}) {
   const now = requireNow('selectExerciseStats', opts?.now)
   const catalogue = resolveCatalogue(S, opts?.catalogue)
-  const record = catalogue.lookup(exId) ?? null
-  if (record == null) return null
+  const catalogueRecord = catalogue.lookup(exId) ?? null
+  if (catalogueRecord == null) return null
 
   const pairs = entriesFor(S, exId)
-  const mode = resolveMode(pairs, record)
+  const mode = resolveMode(pairs, catalogueRecord)
   const unit = unitFor(mode, S)
   const scale = displayScale(S)
 
@@ -332,20 +331,10 @@ export function selectExerciseStats(S, exId, opts = {}) {
 
   const e1rmPoints = mode === 'reps' ? e1rmSeries(S, exId) : []
   const e1rmBest = mode === 'reps' ? best1RM(S, exId) : null
-  let exerciseRecord = null
-  if (mode === 'reps') {
-    const sorted = [...e1rmPoints].sort((a, b) => a.t - b.t)
-    const hit = recordOf(sorted, p => p.y)
-    if (hit) exerciseRecord = { est: hit.y, w: hit.w, r: hit.r, prev: hit.prev }
-  } else {
-    const sorted = [...points].sort((a, b) => a.t - b.t)
-    const hit = recordOf(sorted, p => p.y)
-    if (hit) exerciseRecord = { value: hit.y, prev: hit.prev }
-  }
 
   return {
     id: exId,
-    name: record?.n ?? exId,
+    name: catalogueRecord?.n ?? exId,
     mode,
     unit,
     points: dots,
@@ -361,7 +350,6 @@ export function selectExerciseStats(S, exId, opts = {}) {
       ratedCount,
       hasCurve: ratedCount >= 3,
     } : null,
-    record: exerciseRecord,
     now,
   }
 }

@@ -374,19 +374,17 @@ export function fatigueOf(workouts, now, opts = {}) {
 }
 
 /**
- * Calculate retained per-muscle strength from the latest completed stimulus in all history.
+ * Timestamp of each drawable muscle's latest completed work set across all history.
  *
- * A muscle with no completed set starts at the 0.5 floor. After a completed set, strength is
- * 1.0 through 14 days old, then decays toward the floor with a 28-day half-life. Any later
- * completed set becomes the new latest stimulus and resets the 14-day full-retention period.
- * The result always contains every drawable muscle slug.
+ * A workout counts when it holds at least one completed non-warm-up set, and its
+ * timestamp then stamps every muscle the exercised entry trains. Catalogue resolution
+ * follows `opts` exactly like the fatigue and strength maps.
  *
  * @param {Array<object>} workouts Workout history with `start`/`d` and entry set arrays.
- * @param {number} now Current time in milliseconds; injected to keep this function deterministic.
- * @returns {Record<string, number>} Retained-strength values keyed by every drawable muscle slug.
+ * @param {Object} opts Options forwarded to catalogue resolution.
+ * @returns {Record<string, number>} Latest stimulus timestamp per muscle slug, `-Infinity` when never trained.
  */
-export function strengthOf(workouts, now, opts = {}) {
-  const current = Number(now)
+export function latestTrainedOf(workouts, opts = {}) {
   const latest = Object.fromEntries(MUSCLES.map(slug => [slug, -Infinity]))
   for (const workout of workouts || []) {
     const timestamp = workoutTimestamp(workout)
@@ -400,6 +398,24 @@ export function strengthOf(workouts, now, opts = {}) {
       }
     }
   }
+  return latest
+}
+
+/**
+ * Calculate retained per-muscle strength from the latest completed stimulus in all history.
+ *
+ * A muscle with no completed set starts at the 0.5 floor. After a completed set, strength is
+ * 1.0 through 14 days old, then decays toward the floor with a 28-day half-life. Any later
+ * completed set becomes the new latest stimulus and resets the 14-day full-retention period.
+ * The result always contains every drawable muscle slug.
+ *
+ * @param {Array<object>} workouts Workout history with `start`/`d` and entry set arrays.
+ * @param {number} now Current time in milliseconds; injected to keep this function deterministic.
+ * @returns {Record<string, number>} Retained-strength values keyed by every drawable muscle slug.
+ */
+export function strengthOf(workouts, now, opts = {}) {
+  const current = Number(now)
+  const latest = latestTrainedOf(workouts, opts)
 
   const result = emptyMuscleMap(STRENGTH_FLOOR)
   if (!Number.isFinite(current)) return result
