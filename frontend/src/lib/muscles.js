@@ -388,13 +388,13 @@ export function exerciseMuscleSnapshot(ex) {
  * times a single set. Volume in kg is deliberately not used: 100 kg of leg press
  * against 12 kg of lateral raise says nothing about which muscle worked harder.
  */
-export function loadOf(items) {
+export function loadOf(items, catalogue) {
   const load = {}
   items.forEach(item => {
     const { id, sets } = item || {}
     if (!sets) return
     const historical = item.ex || item.exercise
-    const source = historical?.muscleWeights ? historical : (EXIDX[id] || historical || item)
+    const source = catalogue ? (catalogue.lookup(id) || historical || item) : (historical?.muscleWeights ? historical : (EXIDX[id] || historical || item))
     const m = musclesOf(source)
     for (const slug in m) load[slug] = (load[slug] || 0) + m[slug] * sets
   })
@@ -407,9 +407,9 @@ export function loadOf(items) {
  * question from where the sets went: a muscle can lead on volume and still never be trained
  * near failure.
  */
-export const loadOfWorkouts = (workouts, pick) =>
+export const loadOfWorkouts = (workouts, pick, catalogue) =>
   loadOf((workouts || []).flatMap(w =>
-    (w.entries || []).map(e => ({ id: e.id, ex: e.exercise || e, sets: (e.sets || []).filter(s => s.done && !isWarmupRow(s) && (!pick || pick(s))).length }))))
+    (w.entries || []).map(e => ({ id: e.id, ex: e.exercise || e, sets: (e.sets || []).filter(s => s.done && !isWarmupRow(s) && (!pick || pick(s))).length }))), catalogue)
 
 /** Load a routine *would* produce, from its planned set counts. */
 export const loadOfRoutine = routine =>
