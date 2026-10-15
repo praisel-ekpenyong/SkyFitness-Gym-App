@@ -5,18 +5,19 @@
 // progress curve. Both selectors are pure snapshots over (S, now): the same inputs
 // always produce the same display-ready output, and views stay free of imports from
 // the domain helpers composed here.
-import { EXIDX } from './exercises.js'
+import { EXDB } from './exercises.js'
 import { fatigueOf, strengthOf, fatigueStateOf, LB_TO_KG } from './recovery.js'
-import { MUSCLES, loadOfWorkouts, rankOf } from './muscles.js'
+import { MUSCLES, loadOfWorkouts, rankOf, musclesOf } from './muscles.js'
 import { e1rmSeries, best1RM } from './onerm.js'
 import {
   displayScale, scaleName, toScale, avgRir,
-  effortSummary, effortWeeks, effortHistogram, isHardSet, rirOf,
+  effortSummary, effortWeeks, effortHistogram, isHardSet, rirOf, hasEffort, effortOf, HARD_RIR,
 } from './effort.js'
 import {
   isWarmupRow, metricRowsForEntry, metricModeForEntry, bestWeightForEntry,
 } from './workout-model.js'
-import { workoutTimestamp } from './format.js'
+import { workoutTimestamp, isoOf, weekKey, monthKey } from './format.js'
+import { streakWeeks } from './history.js'
 import { strengthExerciseRowsForMuscle } from './strength-exercises.js'
 
 const DAY_MS = 24 * 60 * 60 * 1000
@@ -24,19 +25,30 @@ const DAY_MS = 24 * 60 * 60 * 1000
 // Catalogue seam. The default reads the shipped index; tests and future catalogue
 // sources inject { lookup }. A miss here means "unknown exercise" even when stale
 // history rows still carry the id — the curve has nothing to name or weigh.
-export const defaultCatalogue = { lookup: id => EXIDX[id] ?? null }
+const builtInIndex = Object.fromEntries(EXDB.map(ex => [ex.id, ex]))
+export const defaultCatalogue = { lookup: id => builtInIndex[id] ?? null }
 
 /** Round a display load to one decimal place. */
 const round1 = value => Math.round(value * 10) / 10
 
 function requireNow(fn, now) {
-  const current = Number(now)
+  const current = now
   if (!Number.isFinite(current)) throw new Error(`${fn}: now is required`)
   return current
 }
 
-function resolveCatalogue(catalogue) {
-  return catalogue && typeof catalogue.lookup === 'function' ? catalogue : defaultCatalogue
+function resolveCatalogue(S, catalogue) {
+  if (catalogue) return catalogue
+  const custom = new Map((S?.customEx || []).map(ex => [ex.id, ex]))
+  const historical = new Map()
+  for (const workout of S?.workouts || []) {
+    for (const entry of workout.entries || []) {
+      const snapshot = entry.exercise || entry.muscleSnapshot || entry
+      const name = snapshot.n || entry.n
+      if (name) historical.set(entry.id, { ...entry, ...snapshot, n: name })
+    }
+  }
+  return { lookup: id => custom.get(id) || defaultCatalogue.lookup(id) || historical.get(id) || null }
 }
 
 // A window in days back from the injected now. 0 (or another falsy value) keeps
@@ -63,7 +75,7 @@ function resolveBodyweightKg(S, override) {
   const ordered = entries.slice().sort((a, b) => String(a?.d).localeCompare(String(b?.d)))
   for (let i = ordered.length - 1; i >= 0; i--) {
     const w = Number(ordered[i]?.w)
-    if (w > 0) return S?.unit === 'lb' ? w * LB_TO_KG : w
+    if (Number.isFinite(w) && w > 0) return S?.unit === 'lb' ? w * LB_TO_KG : w
   }
   return null
 }
@@ -82,11 +94,12 @@ function workSetsOf(workouts) {
 }
 
 /**
- * Snapshot the overview cards: muscle balance, fatigue, strength, and effort.
+ * Snapshot counts, body-weight trends, exercise index and training readings.
  *
  * @param {Object} S - App state with workouts, bodyweight, unit, and effort setting.
- * @param {Object} opts - { now, catalogue?, muscleDays?, hardOnly?, effortDays?, bodyweightKg? }.
- *   now is required. muscleDays/effortDays default to 30/90; 0 means all history.
+ * @param {Object} opts - { now, catalogue?, muscleDays?, hardOnly?, effortDays?, bodyweightDays?, bodyweightKg? }.
+ *   now is a required finite timestamp. Windows default to 30/90/90 days; 0 means all history.
+ *   muscleDays=7 selects the current local calendar week.
  *   hardOnly asks for the hard-set map and falls back to all sets silently when the
  *   window holds no hard sets (see hardActive/rated).
  * @returns {Object} Display-ready overview with an exercisesFor(slug) closure over
@@ -94,25 +107,45 @@ function workSetsOf(workouts) {
  */
 export function selectStatsOverview(S, opts = {}) {
   const now = requireNow('selectStatsOverview', opts?.now)
-  resolveCatalogue(opts?.catalogue)
+  const catalogue = resolveCatalogue(S, opts?.catalogue)
   const muscleDays = opts?.muscleDays ?? 30
   const effortDays = opts?.effortDays ?? 90
   const hardRequested = !!opts?.hardOnly
   const bodyweightKg = resolveBodyweightKg(S, opts?.bodyweightKg)
   const workouts = S?.workouts || []
 
-  const fatOpts = { bodyweightKg, unit: S?.unit }
+  const fatOpts = { bodyweightKg, unit: S?.unit, catalogue }
   const fatigueValues = fatigueOf(workouts, now, fatOpts)
   const strengthValues = strengthOf(workouts, now, fatOpts)
+  const latest = Object.fromEntries(MUSCLES.map(slug => [slug, null]))
+  for (const workout of workouts) {
+    const timestamp = workoutTimestamp(workout)
+    if (!Number.isFinite(timestamp)) continue
+    for (const entry of workout.entries || []) {
+      if (!(entry.sets || []).some(set => set.done === true && !isWarmupRow(set))) continue
+      const exercise = catalogue.lookup(entry.id) || entry.exercise || entry
+      for (const slug of Object.keys(musclesOf(exercise))) {
+        if (latest[slug] == null || timestamp > latest[slug]) latest[slug] = timestamp
+      }
+    }
+  }
+  const trainingWeeks = Object.fromEntries(MUSCLES.map(slug => [slug,
+    latest[slug] == null ? null : Math.max(0, Math.floor((now - latest[slug]) / DAY_MS / 7)),
+  ]))
+  const { worked: strengthOrder } = rankOf(strengthValues)
+
   const fatigueStates = Object.fromEntries(
     MUSCLES.map(slug => [slug, fatigueStateOf(fatigueValues[slug])]),
   )
 
-  const muscleWin = inWindow(workouts, now, muscleDays)
+  const today = isoOf(new Date(now))
+  const muscleWin = muscleDays === 7
+    ? workouts.filter(w => weekKey(w.d) === weekKey(today))
+    : inWindow(workouts, now, muscleDays)
   const windowSets = workSetsOf(muscleWin)
   const rated = windowSets.some(s => rirOf(s) != null)
   const hardActive = hardRequested && windowSets.some(isHardSet)
-  const rawLoad = loadOfWorkouts(muscleWin, hardActive ? isHardSet : null)
+  const rawLoad = loadOfWorkouts(muscleWin, hardActive ? isHardSet : null, catalogue)
   const load = Object.fromEntries(MUSCLES.map(slug => [slug, round1(rawLoad[slug] || 0)]))
   const { worked, missed } = rankOf(load)
 
@@ -123,15 +156,49 @@ export function selectStatsOverview(S, opts = {}) {
   const weeks = effortWeeks(scoped, 0).map(e => ({
     t: e.t, rir: e.rir, y: toScale(scale, e.rir), n: e.n, sets: e.sets,
   }))
-  const histogram = effortHistogram(scoped, 0)
+  const bins = effortHistogram(scoped, 0)
+  const maxBin = Math.max(1, ...bins.map(bin => bin.n))
+  const histogram = bins.map(bin => ({ ...bin,
+    value: toScale(scale, bin.rir), hard: bin.rir <= HARD_RIR,
+    width: Math.round(bin.n / maxBin * 100), percent: Math.round(bin.pct * 100),
+  }))
+  const weighIns = (S?.bodyweight || []).filter(b => Number.isFinite(Number(b.w)) && Number(b.w) > 0 && Number.isFinite(workoutTimestamp(b)))
+    .slice().sort((a, b) => workoutTimestamp(a) - workoutTimestamp(b))
+  const recentWeight = inWindow(weighIns, now, 30)
+  const bodyweight = {
+    points: inWindow(weighIns, now, opts.bodyweightDays ?? 90).map(b => ({ t: workoutTimestamp(b), d: b.d, y: Number(b.w) })),
+    latest: weighIns.at(-1) || null,
+    delta30: recentWeight.length > 1 ? round1(recentWeight.at(-1).w - recentWeight[0].w) : null,
+    goal: Number.isFinite(S?.targetW) && S.targetW > 0 ? S.targetW : null,
+  }
+
+  const index = new Map()
+  for (const workout of workouts) {
+    for (const entry of workout.entries || []) {
+      const record = catalogue.lookup(entry.id)
+      if (!record) continue
+      const mode = metricModeForEntry(entry) || resolveMode([], record)
+      const current = metricOf(entry, mode)
+      if (current > 0 || !index.has(entry.id)) {
+        index.set(entry.id, { id: entry.id, name: record.n || entry.id, current, mode, unit: unitFor(mode, S) })
+      }
+    }
+  }
+  const exerciseIndex = [...index.values()].sort((a, b) => b.current - a.current || a.name.localeCompare(b.name))
 
   return {
     now,
+    exerciseIndex,
     bodyweightKg,
+    bodyweight,
+    counts: { total: workouts.length, month: workouts.filter(w => monthKey(w) === monthKey(today)).length, streak: streakWeeks(S, now) },
+    workouts: { recent: [...workouts].reverse().slice(0, 6), forDay: day => workouts.filter(w => w.d === day) },
     scale,
     scaleName: scaleName(scale),
     muscles: {
       days: muscleDays,
+      count: muscleWin.length,
+      max: worked.length ? load[worked[0]] : 0,
       hardRequested,
       rated,
       hardActive,
@@ -141,9 +208,19 @@ export function selectStatsOverview(S, opts = {}) {
       top: worked.slice(0, 4),
     },
     fatigue: { values: fatigueValues, states: fatigueStates },
-    strength: { values: strengthValues },
-    effort: {
+    strength: {
+      values: strengthValues,
+      latest,
+      weeks: trainingWeeks,
+      volume90: loadOfWorkouts(inWindow(workouts, now, 90), null, catalogue),
+      order: strengthOrder,
+      detrained: strengthOrder.filter(slug => strengthValues[slug] < 1),
+    },
+    hasEffort: hasEffort(S),
+    effortEnabled: effortOf(S) !== 'none',
+    effort: sum.rated ? {
       days: effortDays,
+      hardThreshold: toScale(scale, HARD_RIR),
       avg: toScale(scale, sum.avg),
       hardPct: sum.hardPct,
       done: sum.done,
@@ -151,8 +228,8 @@ export function selectStatsOverview(S, opts = {}) {
       hard: sum.hard,
       weeks,
       histogram,
-    },
-    exercisesFor: slug => strengthExerciseRowsForMuscle(S, now, slug),
+    } : null,
+    exercisesFor: slug => strengthExerciseRowsForMuscle(S, now, slug, catalogue),
   }
 }
 
@@ -165,13 +242,9 @@ function entriesFor(S, exId) {
   return out
 }
 
-// Overall logging mode: any completed reps work row is authoritative (a strength
-// signal survives mixed-mode entries); otherwise the latest entry's own metric
-// mode; otherwise the catalogue record.
+// Within an entry, metricModeForEntry makes completed reps rows authoritative.
+// Across entries, the latest logged Mode chooses the progress chart.
 function resolveMode(pairs, catalogueRecord) {
-  for (const { entry } of pairs) {
-    if (metricRowsForEntry(entry, 'reps').length) return 'reps'
-  }
   for (let i = pairs.length - 1; i >= 0; i--) {
     const mode = metricModeForEntry(pairs[i].entry)
     if (mode) return mode
@@ -185,6 +258,14 @@ function resolveMode(pairs, catalogueRecord) {
 }
 
 const sessionMetric = (mode, set) => mode === 'cardio' ? (set?.speed || 0) : (set?.sec || 0)
+const unitFor = (mode, S) => mode === 'cardio' ? 'km/h' : mode === 'time' ? 's' : (S?.unit ?? 'kg')
+
+function metricOf(entry, mode) {
+  const value = mode === 'reps'
+    ? bestWeightForEntry(entry)
+    : metricRowsForEntry(entry, mode).reduce((best, set) => Math.max(best, Number(sessionMetric(mode, set)) || 0), 0)
+  return Number.isFinite(value) && value > 0 ? round1(value) : 0
+}
 
 // Latest chronological point beats every prior one: the record, with the previous
 // best for context. Needs at least two sessions — a single session is a baseline,
@@ -205,27 +286,24 @@ function recordOf(sortedPts, readValue) {
  * @param {Object} opts - { now, catalogue? }. now is required.
  * @returns {Object|null} Display-ready exercise stats, or null for an unknown id.
  *   Estimated 1RM appears for reps mode only; effort averages use the profile
- *   display scale and are null when nothing was rated.
+ *   display scale. Effort is null when no included session was rated.
  */
 export function selectExerciseStats(S, exId, opts = {}) {
   const now = requireNow('selectExerciseStats', opts?.now)
-  const catalogue = resolveCatalogue(opts?.catalogue)
+  const catalogue = resolveCatalogue(S, opts?.catalogue)
   const record = catalogue.lookup(exId) ?? null
   if (record == null) return null
 
   const pairs = entriesFor(S, exId)
   const mode = resolveMode(pairs, record)
-  const unit = mode === 'cardio' ? 'km/h' : mode === 'time' ? 's' : (S?.unit ?? 'kg')
+  const unit = unitFor(mode, S)
   const scale = displayScale(S)
-  const hd = scaleName(scale)
 
   const points = []
   for (const { workout, entry } of pairs) {
     if (metricModeForEntry(entry) !== mode) continue
     const rows = metricRowsForEntry(entry, mode)
-    const mx = mode === 'reps'
-      ? bestWeightForEntry(entry)
-      : rows.reduce((best, s) => Math.max(best, Number(sessionMetric(mode, s)) || 0), 0)
+    const mx = metricOf(entry, mode)
     if (!(mx > 0)) continue
     points.push({
       t: workoutTimestamp(workout),
@@ -242,11 +320,9 @@ export function selectExerciseStats(S, exId, opts = {}) {
   const dots = points.map((p, i) => {
     const rir = rirs[i]
     return {
-      t: p.t,
-      d: p.d,
-      y: p.y,
+      ...p,
       m: rir == null ? null : 1 - Math.min(4, Math.max(0, rir)) / 4,
-      note: rir == null ? undefined : `${hd} ${toScale(scale, rir)}`,
+      effort: toScale(scale, rir),
     }
   })
   const effortPoints = []
@@ -273,17 +349,19 @@ export function selectExerciseStats(S, exId, opts = {}) {
     mode,
     unit,
     points: dots,
+    recent: points.slice(-5).reverse(),
     best,
     e1rmPoints,
     e1rmBest,
-    effort: {
+    hasEffort: ratedCount > 0,
+    effort: ratedCount ? {
       scale,
       avg: toScale(scale, avgRir(points.flatMap(p => p.sets))),
       points: effortPoints,
       ratedCount,
       hasCurve: ratedCount >= 3,
-    },
+    } : null,
     record: exerciseRecord,
-    _now: now,
+    now,
   }
 }

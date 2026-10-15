@@ -48,10 +48,10 @@ function lastWorkSetAt(S, id) {
  * @param {Object} entry - Workout entry with id and optional logged muscle snapshot.
  * @returns {Object} Muscle weights by slug from catalogue, logged snapshot, or musclesOf fallback.
  */
-function snapshotWeights(entry) {
-  const catalogue = entry && typeof entry === 'object' ? EXIDX[entry.id] : null
-  if (catalogue) {
-    const weights = musclesOf(catalogue)
+function snapshotWeights(entry, catalogue) {
+  const exercise = entry && typeof entry === 'object' ? (catalogue ? catalogue.lookup(entry.id) : EXIDX[entry.id]) : null
+  if (exercise) {
+    const weights = musclesOf(exercise)
     if (Object.keys(weights).length) return weights
   }
   const direct = entry && typeof entry === 'object'
@@ -65,8 +65,8 @@ function snapshotWeights(entry) {
 
 // Highest-weight muscle of an exercise - used for the primary/secondary badge and the
 // per-muscle link, not for the decay (the exercise's own decay is what the row shows).
-export function primaryMuscleOf(entry) {
-  const weights = snapshotWeights(entry)
+export function primaryMuscleOf(entry, catalogue) {
+  const weights = snapshotWeights(entry, catalogue)
   let best = null
   for (const [slug, weight] of Object.entries(weights)) {
     if (!best || weight > best.weight) best = { slug, weight }
@@ -80,10 +80,10 @@ export function primaryMuscleOf(entry) {
  * @param {Object} entry - Workout entry with id and optional name snapshots; non-objects yield null.
  * @returns {string|null} Catalogue name, else snapshot name, else entry name, else null.
  */
-function exerciseName(entry) {
+function exerciseName(entry, catalogue) {
   // Imported history often has no name snapshot (entries are { id, sets, topW }) - the
   // catalogue (or the registered custom) is the canonical name source.
-  const ex = entry && typeof entry === 'object' ? EXIDX[entry.id] : null
+  const ex = entry && typeof entry === 'object' ? (catalogue ? catalogue.lookup(entry.id) : EXIDX[entry.id]) : null
   if (ex?.n) return ex.n
   if (entry?.muscleSnapshot?.n) return entry.muscleSnapshot.n
   return entry && typeof entry === 'object' && entry.n ? entry.n : null
@@ -111,7 +111,7 @@ function firstEntryWithId(S, id) {
  * Sorted by expected current 1RM, strongest first. Exercises without a usable estimate are
  * omitted - a made-up number is worse than no number.
  */
-export function strengthExerciseRows(S, now) {
+export function strengthExerciseRows(S, now, catalogue) {
   const workouts = S?.workouts || []
   const ids = [...new Set(workouts.flatMap(w => (w.entries || []).map(e => e.id)))]
   const rows = []
@@ -123,10 +123,10 @@ export function strengthExerciseRows(S, now) {
     const decay = lastAt == null ? STRENGTH_FLOOR : strengthFromAge(Number(now) - lastAt)
     rows.push({
       id,
-      name: exerciseName(entry) || id,
+      name: exerciseName(entry, catalogue) || id,
       est: best.est,
       estDate: best.d,
-      primary: primaryMuscleOf(entry) ? primaryMuscleOf(entry).slug : null,
+      primary: primaryMuscleOf(entry, catalogue) ? primaryMuscleOf(entry, catalogue).slug : null,
       decay,
       current: round1(best.est * decay),
     })
@@ -139,23 +139,23 @@ export function strengthExerciseRows(S, now) {
  * secondary 0.4 badge), each with the exercise's OWN decay and expected current 1RM - the
  * tapped muscle filters the list, the row still speaks for the exercise.
  */
-export function strengthExerciseRowsForMuscle(S, now, slug) {
+export function strengthExerciseRowsForMuscle(S, now, slug, catalogue) {
   const workouts = S?.workouts || []
   const seen = new Map()
   for (const workout of workouts) {
     for (const entry of workout.entries || []) {
       if (seen.has(entry.id)) continue
-      const weights = snapshotWeights(entry)
+      const weights = snapshotWeights(entry, catalogue)
       const weight = weights[slug]
       if (!weight) continue
       const best = best1RM(S, entry.id)
       if (!best) continue
       const lastAt = lastWorkSetAt(S, entry.id)
       const decay = lastAt == null ? STRENGTH_FLOOR : strengthFromAge(Number(now) - lastAt)
-      const primary = primaryMuscleOf(entry)
+      const primary = primaryMuscleOf(entry, catalogue)
       seen.set(entry.id, {
         id: entry.id,
-        name: exerciseName(entry) || entry.id,
+        name: exerciseName(entry, catalogue) || entry.id,
         weight,
         primary: primary ? primary.slug : null,
         est: best.est,
