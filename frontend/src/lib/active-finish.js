@@ -11,6 +11,30 @@ import { exerciseMuscleSnapshot } from './muscles.js'
 import { todayISO } from './format.js'
 
 /**
+ * Highest load logged for an exercise across finished workouts.
+ *
+ * Shared read behind both the Best tag (`bestKnownWeight`) and PR detection
+ * (`completeActiveSession`), so the two can never disagree on what history
+ * says. Warm-up rows and unperformed sets never count (`bestWeightForEntry`).
+ *
+ * @param {Object} S - Application state atom containing `workouts`.
+ * @param {string} exId - Exercise identifier from EXIDX.
+ * @returns {number} Heaviest logged load, or 0 if unrecorded.
+ */
+function bestLoggedWeight(S, exId) {
+  let best = 0
+  for (const w of S.workouts || []) {
+    for (const e of w.entries || []) {
+      if (e.id === exId) {
+        const cur = bestWeightForEntry(e)
+        if (cur > best) best = cur
+      }
+    }
+  }
+  return best
+}
+
+/**
  * Highest training load recorded for an exercise across history and working-weight cache.
  *
  * Queries all completed workout entries (excluding warm-up rows and unperformed sets via `bestWeightForEntry`)
@@ -22,17 +46,9 @@ import { todayISO } from './format.js'
  */
 export function bestKnownWeight(S, exId) {
   if (!S || !exId) return 0
-  let best = 0
-  for (const w of S.workouts || []) {
-    for (const e of w.entries || []) {
-      if (e.id === exId) {
-        const cur = bestWeightForEntry(e)
-        if (cur > best) best = cur
-      }
-    }
-  }
+  const best = bestLoggedWeight(S, exId)
   const cur = S.exWeights?.[exId]?.w
-  if (typeof cur === 'number' && cur > best) best = cur
+  if (typeof cur === 'number' && cur > best) return cur
   return best
 }
 
@@ -187,15 +203,7 @@ export function completeActiveSession(S, opts = {}) {
   for (const e of A.entries) {
     const mxSets = heaviestSetWeight(e)
     if (mxSets > 0) {
-      let bestHistory = 0
-      for (const w of S.workouts || []) {
-        for (const en of w.entries || []) {
-          if (en.id === e.id) {
-            const cur = bestWeightForEntry(en)
-            if (cur > bestHistory) bestHistory = cur
-          }
-        }
-      }
+      const bestHistory = bestLoggedWeight(S, e.id)
       if (mxSets > bestHistory) prs.push(e.id)
     }
     const rec = is1RMRecord(S, e.id, e)
