@@ -212,9 +212,9 @@ export const useStore = create((set, get) => {
       get().update(s => { ok = removeActiveExercise(s, idx) })
       return ok
     },
-    toggleActiveSet(entryIdx, setIdx, opts = {}) {
+    toggleActiveSet(entryIdx, setIdx) {
       let outcome = null
-      get().update(s => { outcome = toggleActiveSet(s, entryIdx, setIdx, opts) })
+      get().update(s => { outcome = toggleActiveSet(s, entryIdx, setIdx) })
       return outcome
     },
     updateActiveSetField(entryIdx, setIdx, field, value) {

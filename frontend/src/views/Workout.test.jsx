@@ -20,7 +20,7 @@ const mocks = vi.hoisted(() => {
   state.storeSnapshot = () => ({
     S: state.S,
     update: mut => mut(state.S),
-    toggleActiveSet: (entryIdx, setIdx, opts) => toggleActiveSet(state.S, entryIdx, setIdx, opts),
+    toggleActiveSet: (entryIdx, setIdx) => toggleActiveSet(state.S, entryIdx, setIdx),
     updateActiveSetField: (entryIdx, setIdx, field, value) => updateActiveSetField(state.S, entryIdx, setIdx, field, value),
     removeActiveExercise: idx => removeActiveExercise(state.S, idx),
     addActiveExercise: (exId, cfg) => addActiveExercise(state.S, exId, cfg),
