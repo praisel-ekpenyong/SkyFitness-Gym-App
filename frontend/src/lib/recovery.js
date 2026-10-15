@@ -228,13 +228,17 @@ function loadKgFor(ex, entry, set, workout, opts = {}) {
     : addedKg
 }
 
+function exerciseFor(entry, opts) {
+  return opts.catalogue ? (opts.catalogue.lookup(entry.id) || entry.exercise || entry) : EXIDX[entry.id]
+}
+
 // Best Epley estimate inside one session. Keeping intensity context on the session makes a
 // scored stimulus independent of later imports/deletes; unlike an all-history maximum, a
 // 90-day-old CSV row cannot retroactively reweight today's sets.
 function session1RMs(workout, opts = {}) {
   const best = new Map()
   for (const entry of workout?.entries || []) {
-    const ex = EXIDX[entry.id]
+    const ex = exerciseFor(entry, opts)
     for (const set of entry.sets || []) {
       const load = loadKgFor(ex, entry, set, workout, opts)
       if (set?.done !== true || isWarmupRow(set) || !(load > 0) || !(set.r > 0)) continue
@@ -274,10 +278,11 @@ function sessionTonnages(workout, opts = {}) {
   const sums = emptyMuscleMap(0)
   const oneRms = session1RMs(workout, opts)
   for (const entry of workout?.entries || []) {
-    const weights = musclesOf(EXIDX[entry.id])
+    const exercise = exerciseFor(entry, opts)
+    const weights = musclesOf(exercise)
     for (const set of entry.sets || []) {
       if (set?.done !== true || isWarmupRow(set)) continue
-      const measured = setTonnage(EXIDX[entry.id], entry, set, workout, oneRms.get(entry.id), opts)
+      const measured = setTonnage(exercise, entry, set, workout, oneRms.get(entry.id), opts)
       const tonnage = Number.isFinite(measured) && measured > 0 ? measured : ZERO_LOAD_SET_STIMULUS
       for (const [slug, weight] of Object.entries(weights)) {
         if (Object.prototype.hasOwnProperty.call(MUSCLES_BY_SLUG, slug)) sums[slug] += tonnage * weight
@@ -388,7 +393,7 @@ export function strengthOf(workouts, now, opts = {}) {
     if (!Number.isFinite(timestamp)) continue
     for (const entry of workout.entries || []) {
       if (!(entry.sets || []).some(set => set?.done === true && !isWarmupRow(set))) continue
-      for (const slug of Object.keys(musclesOf(EXIDX[entry.id]))) {
+      for (const slug of Object.keys(musclesOf(exerciseFor(entry, opts)))) {
         if (Object.prototype.hasOwnProperty.call(MUSCLES_BY_SLUG, slug) && timestamp > latest[slug]) {
           latest[slug] = timestamp
         }
