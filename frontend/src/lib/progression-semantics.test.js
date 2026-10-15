@@ -126,8 +126,9 @@ describe('added-set growth resumes from the current Routine target', () => {
       finishedWorkout('2026-04-01', { sets: 3, reps: 15 }, [work(0, 15), work(0, 15), work(0, 15), work(0, 15)])
     ])
     // No sets in the plan (freestyle): growth falls back to what was judged —
-    // the 3 planned Work sets, not the 4th bonus row.
-    const p = nextPrescription(S, { id: LIFT, sets: 0, reps: 15, repsMax: 20, weight: 0, prog: 'linear' })
+    // the 3 planned Work sets, not the 4th bonus row. Sets/reps stay absent so
+    // the resume point reads the judged count; the ceiling sits at the goal.
+    const p = nextPrescription(S, { id: LIFT, weight: 0, repsMax: 15, prog: 'linear' })
     expect(p.kind).toBe('up')
     expect(p.sets).toBe(4)
   })
