@@ -1,8 +1,29 @@
 import { isCardio, isBodyweightEq } from './exercises.js'
-import { lastEntryFor } from './history.js'
 import { phaseForSet, isWarmupRow, ensurePlainObject, objectOf } from './warmup.js'
 
 export { phaseForSet, isWarmupRow, ensurePlainObject, objectOf } from './warmup.js'
+
+/** Return the most recent completed Work sets and frozen target for an exercise. */
+export function lastEntryFor(S, exId) {
+  for (let i = (S?.workouts || []).length - 1; i >= 0; i--) {
+    const en = (S.workouts[i].entries || []).find(e => e.id === exId)
+    if (!en?.sets) continue
+    const workDone = en.sets.filter(s => s.done && !isWarmupRow(s))
+    if (workDone.length) {
+      return { d: S.workouts[i].d, sets: workDone, target: en.target || null }
+    }
+  }
+  return null
+}
+
+/** Return the heaviest completed Work-set load across an exercise's history. */
+export function bestWeightFor(S, exId) {
+  let best = 0
+  ;(S?.workouts || []).forEach(w => (w.entries || []).forEach(e => {
+    if (e.id === exId) best = Math.max(best, bestWeightForEntry(e))
+  }))
+  return best
+}
 
 export const MODES = Object.freeze(['reps', 'time', 'cardio'])
 export const PHASES = Object.freeze({ WORK: 'work', WARMUP: 'warmup' })
