@@ -183,7 +183,7 @@ describe('active-workout lifecycle seam', () => {
     expect(S.active.entries[1].sg).toBeUndefined()
   })
 
-  it('toggleActiveSet evaluates done, askTop, workoutDone, and superset navigation', () => {
+  it('toggleActiveSet evaluates done, next, rest, and superset navigation', () => {
     const S = {
       active: {
         cur: 0,
@@ -200,38 +200,34 @@ describe('active-workout lifecycle seam', () => {
       }
     }
 
-    const r1 = toggleActiveSet(S, 0, 0, { highWater: 0 })
+    const r1 = toggleActiveSet(S, 0, 0)
     expect(r1.checked).toBe(true)
-    expect(r1.askTop).toBe(false)
-    expect(r1.workoutDone).toBe(false)
-    expect(r1.exJustDone).toBe(false)
-    expect(r1.newHighWater).toBe(1)
-    expect(r1.shouldRest).toBe(true)
+    expect(r1.next).toEqual({ kind: 'stay', targetIdx: null })
+    expect(r1.rest).toEqual({ start: true, stop: false })
+    expect(r1.notice).toBe(null)
+    expect(S.active.entries[0].hw).toBe(1)
 
     // Toggle set 1 -> exercise and workout complete
-    const r2 = toggleActiveSet(S, 0, 1, { highWater: 1 })
+    const r2 = toggleActiveSet(S, 0, 1)
     expect(r2.checked).toBe(true)
-    expect(r2.askTop).toBe(true)
-    expect(r2.workoutDone).toBe(true)
-    expect(r2.exJustDone).toBe(true)
-    expect(r2.newHighWater).toBe(2)
-    expect(r2.shouldStopRest).toBe(true)
+    expect(r2.next).toEqual({ kind: 'open-topweight', targetIdx: null })
+    expect(r2.rest).toEqual({ start: false, stop: true })
+    expect(r2.notice).toBe(null)
+    expect(S.active.entries[0].hw).toBe(2)
 
-    // Unchecking does not re-trigger completion or askTop
-    const r3 = toggleActiveSet(S, 0, 1, { highWater: 2 })
+    // Unchecking does not re-trigger completion prompts
+    const r3 = toggleActiveSet(S, 0, 1)
     expect(r3.checked).toBe(false)
-    expect(r3.askTop).toBe(false)
-    expect(r3.workoutDone).toBe(false)
-    expect(r3.shouldStopRest).toBe(false)
-    expect(r3.shouldRest).toBe(false)
+    expect(r3.next).toEqual({ kind: 'stay', targetIdx: null })
+    expect(r3.rest).toEqual({ start: false, stop: false })
+    expect(r3.notice).toBe(null)
 
     // Re-checking finished work is not new progress: no rest side effects either way,
     // so fixing a mistaken untick can't cut a running rest timer short.
-    const r4 = toggleActiveSet(S, 0, 1, { highWater: 2 })
+    const r4 = toggleActiveSet(S, 0, 1)
     expect(r4.checked).toBe(true)
-    expect(r4.newHighWater).toBe(2)
-    expect(r4.shouldStopRest).toBe(false)
-    expect(r4.shouldRest).toBe(false)
+    expect(S.active.entries[0].hw).toBe(2)
+    expect(r4.rest).toEqual({ start: false, stop: false })
   })
 
   it('treats an unticked warm-up as prep, so it cannot keep the exercise reading as unfinished', () => {
@@ -252,16 +248,14 @@ describe('active-workout lifecycle seam', () => {
         }],
       },
     }
-    const first = toggleActiveSet(S, 0, 1, { highWater: 0 })
+    const first = toggleActiveSet(S, 0, 1)
     expect(first.checked).toBe(true)
-    expect(first.shouldRest).toBe(true)
+    expect(first.rest).toEqual({ start: true, stop: false })
 
-    const last = toggleActiveSet(S, 0, 2, { highWater: 1 })
-    expect(last.workoutDone).toBe(true)
-    expect(last.exJustDone).toBe(true)
-    expect(last.askTop).toBe(true)
-    // the unit reads as done even though the warm-up row above is still unticked
-    expect(last.unitDone).toBe(true)
+    const last = toggleActiveSet(S, 0, 2)
+    expect(last.next).toEqual({ kind: 'open-topweight', targetIdx: null })
+    expect(last.notice).toBe(null)
+    expect(last.rest).toEqual({ start: false, stop: true })
   })
 
   it('still holds the prompts back while real work is left', () => {
@@ -278,11 +272,9 @@ describe('active-workout lifecycle seam', () => {
         }],
       },
     }
-    const r = toggleActiveSet(S, 0, 0, { highWater: 1 })
-    expect(r.unitDone).toBe(false)
-    expect(r.exJustDone).toBe(false)
-    expect(r.askTop).toBe(false)
-    expect(r.workoutDone).toBe(false)
+    const r = toggleActiveSet(S, 0, 0)
+    expect(r.next).toEqual({ kind: 'stay', targetIdx: null })
+    expect(r.notice).toBe(null)
   })
 
   it('never reports an all-warm-up entry as finished', () => {
@@ -299,9 +291,11 @@ describe('active-workout lifecycle seam', () => {
         }],
       },
     }
-    const r = toggleActiveSet(S, 0, 0, { highWater: 0 })
-    expect(r.exJustDone).toBe(false)
-    expect(r.askTop).toBe(false)
+    const r = toggleActiveSet(S, 0, 0)
+    // Warm-up-only Entries never count as exercise progress, so no toast —
+    // but the pre-existing finish routing is preserved here (out of scope).
+    expect(r.notice).toBe(null)
+    expect(r.next).toEqual({ kind: 'open-finish', targetIdx: null })
   })
 
   it('applyWorkingWeight sets topW and merges exWeights', () => {

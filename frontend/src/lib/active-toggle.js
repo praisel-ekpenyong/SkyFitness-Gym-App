@@ -5,7 +5,7 @@
 // intent, and the weight-commit follow-up. Session construction lives in
 // active-session.js, set surgery in active-sets.js, finishing in
 // active-finish.js.
-import { modeOf, isBw } from './workout-model.js'
+import { modeOf, isBw, isWarmupRow } from './workout-model.js'
 import {
   supersetUnits, unitOf, hasWork,
   setProgressHighWater, supersetFlowStep, isExerciseDone
@@ -85,42 +85,40 @@ export function commitWorkingWeight(S, entryIdx, weight, opts = {}) {
 /**
  * Toggle completion of a set row and compute all workout lifecycle transitions.
  *
- * Encapsulates the complete state transition for a set toggle:
- * - Flips `set.done` boolean.
- * - Tracks high-water mark progress on work sets (ignoring warm-up rows).
- * - Detects exercise, superset unit, and entire workout completion.
- * - Executes superset wrap-around navigation (`A.cur`).
- * - Flags when working weight confirmation sheet (`topW`) should prompt.
+ * Owns the complete state transition for a set toggle: flips `set.done`,
+ * tracks the per-Entry high-water mark of completed Work sets (ignoring
+ * Warm-up sets) on `entry.hw`, detects exercise, superset unit, and whole
+ * Workout completion, executes superset wrap-around navigation (`A.cur`),
+ * and flags the working-weight confirmation sheet (`topW`).
+ *
+ * Callers read only `next` + `rest` + `notice`: sheets render `next`, the
+ * rest timer reads `rest`, toasts read `notice`.
  *
  * @param {Object} S - Application state atom.
  * @param {number} entryIdx - Index of active entry.
  * @param {number} setIdx - Index of set row being toggled.
- * @param {Object} [opts] - Session progress tracking options.
- * @param {number} [opts.highWater=0] - Previous high-water count of completed work sets in mounted exercise.
- * @returns {Object|null} Declarative outcome descriptor for UI side effects, or null on invalid target:
- *   - `checked`: boolean indicating new `done` state of the set.
- *   - `askTop`: boolean indicating working-weight confirmation sheet should open.
- *   - `workoutDone`: boolean indicating all units in the workout are finished.
- *   - `exJustDone`: boolean indicating the current exercise just finished all work sets.
- *   - `cardioEntry`: boolean indicating if entry is cardio mode.
- *   - `timedEntry`: boolean indicating if entry is timed mode.
+ * @returns {Object|null} Declarative outcome for UI side effects, or null on invalid target:
+ *   - `checked`: new `done` state of the set.
  *   - `mode`: 'reps' | 'time' | 'cardio'.
- *   - `newHighWater`: updated maximum completed work sets.
- *   - `navigated`: boolean indicating whether `active.cur` transitioned to a partner/next unit.
- *   - `shouldRest`: boolean indicating rest timer should start.
- *   - `shouldStopRest`: boolean indicating running rest timer should cancel.
- *   - `roundDone`: boolean indicating all members in current superset round are completed.
- *   - `unitDone`: boolean indicating entire superset unit is completed.
- *   - `cur`: current active exercise index after any navigation.
+ *   - `cur`: active exercise index after any navigation.
  *   - `next`: which sheet opens next — 'open-topweight' | 'open-finish' | 'advance-to' | 'stay',
  *     with `targetIdx` for 'advance-to'. Sheets render it; they never re-derive geometry.
+ *   - `rest`: `{ start, stop }` rest-timer intent (start rest, stop running rest).
+ *   - `notice`: null | 'cardio' | 'timed' — transient toast hint when an Entry
+ *     just finished; null when no toast applies.
  */
-export function toggleActiveSet(S, entryIdx, setIdx, opts = {}) {
+export function toggleActiveSet(S, entryIdx, setIdx) {
   const A = S?.active
   const entry = A?.entries?.[entryIdx]
   if (!entry || !entry.sets?.[setIdx]) return null
 
   const set = entry.sets[setIdx]
+  // The per-Entry high-water mark lives here, not in the caller: entries
+  // created before this seam owned progress carry no `hw`, so seed from the
+  // pre-flip Work-set count (the old mount baseline). Splicing entries keeps
+  // each mark with its Entry, so removal can no longer shift marks.
+  const preFlipDone = entry.sets.reduce((n, s) => n + (s.done && !isWarmupRow(s) ? 1 : 0), 0)
+  const seededHw = typeof entry.hw === 'number' ? entry.hw : preFlipDone
   set.done = !set.done
   const checked = set.done
 
@@ -128,8 +126,9 @@ export function toggleActiveSet(S, entryIdx, setIdx, opts = {}) {
   const cardioEntry = mode === 'cardio'
   const timedEntry = mode === 'time'
 
-  // Toggle never adds, removes or reorders entries, so the group geometry derived
-  // here before the done-flag flip stays valid for every completion check below.
+  // Toggle never adds, removes or reorders entries, so the group geometry
+  // (index/sg-based) is unaffected by the done-flag flip above and stays
+  // valid for every completion check below.
   const { units, unit, unitIdx, isLastUnit } = describeUnit(A.entries, entryIdx)
   // Warm-up rows are prep, not work. The unit is done when no member has an
   // undone work row — the same `hasWork` rule the superset step below reads, so
@@ -154,17 +153,15 @@ export function toggleActiveSet(S, entryIdx, setIdx, opts = {}) {
     }
   }
 
-  let newHighWater = opts.highWater
+  let newHighWater = seededHw
   let navigated = false
   let shouldRest = false
   let shouldStopRest = false
-  let roundDone = false
 
   if (checked) {
-    const currentHw = opts.highWater != null ? opts.highWater : 0
-    const progress = setProgressHighWater(entry, currentHw)
+    const progress = setProgressHighWater(entry, seededHw)
     newHighWater = progress.highWater
-
+    entry.hw = newHighWater
     if (progress.isNew) {
       // A unit whose rows are all ticked ends any running rest timer — but only on
       // genuinely new progress, so re-checking finished work never cuts rest short.
@@ -192,12 +189,13 @@ export function toggleActiveSet(S, entryIdx, setIdx, opts = {}) {
             }
             if (step.roundDone) {
               shouldRest = true
-              roundDone = true
             }
           }
         }
       }
     }
+  } else if (typeof entry.hw !== 'number') {
+    entry.hw = seededHw
   }
 
   // One decision, computed where the geometry already lives. `askTop` keeps
@@ -211,19 +209,10 @@ export function toggleActiveSet(S, entryIdx, setIdx, opts = {}) {
 
   return {
     checked,
-    askTop,
-    workoutDone,
-    exJustDone,
-    cardioEntry,
-    timedEntry,
     mode,
-    newHighWater,
-    navigated,
-    shouldRest,
-    shouldStopRest,
-    roundDone,
-    unitDone,
     cur: A.cur,
-    next
+    next,
+    rest: { start: shouldRest, stop: shouldStopRest },
+    notice: exJustDone && cardioEntry ? 'cardio' : exJustDone && timedEntry ? 'timed' : null
   }
 }

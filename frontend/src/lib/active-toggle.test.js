@@ -3,7 +3,6 @@ import { describe, it, expect } from 'vitest'
 // interface the store and sheets actually consume.
 import { toggleActiveSet, peekWeightCommit, commitWorkingWeight } from './active-workout.js'
 
-const clone = o => JSON.parse(JSON.stringify(o))
 const solo = () => ({
   active: {
     cur: 0,
@@ -19,17 +18,23 @@ const solo = () => ({
 describe('toggle next action', () => {
   it('mid-workout toggle stays, opening nothing', () => {
     const S = solo()
-    const r = toggleActiveSet(S, 0, 0, { highWater: 0 })
+    const r = toggleActiveSet(S, 0, 0)
     expect(r.checked).toBe(true)
+    expect(r.mode).toBe('reps')
+    expect(r.cur).toBe(0)
     expect(r.next).toEqual({ kind: 'stay', targetIdx: null })
+    expect(r.rest).toEqual({ start: true, stop: false })
+    expect(r.notice).toBe(null)
+    expect(S.active.entries[0].hw).toBe(1)
   })
 
   it('final loaded set opens the weight prompt, commit finishes the workout', () => {
     const S = solo()
-    toggleActiveSet(S, 0, 0, { highWater: 0 })
-    const r = toggleActiveSet(S, 0, 1, { highWater: 1 })
-    expect(r.askTop).toBe(true)
+    toggleActiveSet(S, 0, 0)
+    const r = toggleActiveSet(S, 0, 1)
     expect(r.next).toEqual({ kind: 'open-topweight', targetIdx: null })
+    expect(r.rest).toEqual({ start: false, stop: true })
+    expect(r.notice).toBe(null)
     const next = commitWorkingWeight(S, 0, 82.5, { todayISO: () => '2026-08-24' })
     expect(next).toEqual({ kind: 'topweight-then-finish', targetIdx: null, unitDone: true, isLastUnit: true, unitSize: 1 })
     expect(S.active.entries[0].topW).toBe(82.5)
@@ -47,7 +52,7 @@ describe('toggle next action', () => {
       },
       exWeights: {},
     }
-    const r = toggleActiveSet(S, 0, 0, { highWater: 0 })
+    const r = toggleActiveSet(S, 0, 0)
     expect(r.next).toEqual({ kind: 'open-topweight', targetIdx: null })
     const peek = peekWeightCommit(S, 0)
     expect(peek).toEqual({ kind: 'topweight-then-advance', targetIdx: 1, unitDone: true, isLastUnit: false, unitSize: 1 })
@@ -68,9 +73,10 @@ describe('toggle next action', () => {
       },
       exWeights: {},
     }
-    const r = toggleActiveSet(S, 0, 0, { highWater: 0 })
-    expect(r.askTop).toBe(false)
+    const r = toggleActiveSet(S, 0, 0)
     expect(r.next).toEqual({ kind: 'open-finish', targetIdx: null })
+    expect(r.notice).toBe('cardio')
+    expect(r.rest).toEqual({ start: false, stop: true })
   })
 
   it('an unticked warm-up never blocks the finish chain', () => {
@@ -88,9 +94,9 @@ describe('toggle next action', () => {
       },
       exWeights: {},
     }
-    const r = toggleActiveSet(S, 0, 1, { highWater: 0 })
-    expect(r.unitDone).toBe(true)
+    const r = toggleActiveSet(S, 0, 1)
     expect(r.next).toEqual({ kind: 'open-topweight', targetIdx: null })
+    expect(r.notice).toBe(null)
     const next = commitWorkingWeight(S, 0, 80, { todayISO: () => '2026-08-24' })
     expect(next.kind).toBe('topweight-then-finish')
   })
@@ -98,9 +104,11 @@ describe('toggle next action', () => {
   it('unchecking reports stay and reopens nothing', () => {
     const S = solo()
     S.active.entries[0].sets[0].done = true
-    const r = toggleActiveSet(S, 0, 0, { highWater: 1 })
+    const r = toggleActiveSet(S, 0, 0)
     expect(r.checked).toBe(false)
     expect(r.next).toEqual({ kind: 'stay', targetIdx: null })
+    expect(r.rest).toEqual({ start: false, stop: false })
+    expect(r.notice).toBe(null)
   })
 
   it('mid-superset progress navigates to the partner with advance-to', () => {
@@ -114,11 +122,19 @@ describe('toggle next action', () => {
       },
       exWeights: {},
     }
-    const r = toggleActiveSet(S, 0, 0, { highWater: 0 })
-    expect(r.askTop).toBe(false)
-    expect(r.navigated).toBe(true)
+    const r = toggleActiveSet(S, 0, 0)
     expect(r.next).toEqual({ kind: 'advance-to', targetIdx: 1 })
+    expect(r.rest).toEqual({ start: false, stop: false })
     expect(S.active.cur).toBe(1)
+  })
+
+  it('progress survives as Entry state, not caller state', () => {
+    const S = solo()
+    toggleActiveSet(S, 0, 0)
+    expect(S.active.entries[0].hw).toBe(1)
+    const r2 = toggleActiveSet(S, 0, 1)
+    expect(r2.next).toEqual({ kind: 'open-topweight', targetIdx: null })
+    expect(S.active.entries[0].hw).toBe(2)
   })
 
   it('invalid commit weight returns null and stores nothing', () => {

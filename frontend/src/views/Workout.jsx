@@ -200,14 +200,6 @@ function ActiveWorkout() {
   // Superset flow: keep the active exercise in view - completing a set scrolls to the
   // next exercise in the group, then back up to the first exercise of the next round.
   const exRefs = useRef({})
-  const progressHighWater = useRef(A.entries.map(e => e.sets.filter(s => s.done && !isWarmupRow(s)).length))
-  // The marks are index-keyed, and removing an exercise shifts every index above it down
-  // (removeActiveExercise splices). Re-baseline whenever the list length changes, otherwise a
-  // shifted exercise inherits its predecessor's mark and its real progress reads as a re-check.
-  // Count work sets only — warm-ups are excluded from every metric and from progression.
-  useEffect(() => {
-    progressHighWater.current = A.entries.map(e => e.sets.filter(s => s.done && !isWarmupRow(s)).length)
-  }, [A.entries.length])
   useEffect(() => {
     if (!isSuperset) return
     const el = exRefs.current[cur]
@@ -272,33 +264,24 @@ function ActiveWorkout() {
   }
 
   const toggle = (idx, i) => {
-    const res = useStore.getState().toggleActiveSet(idx, i, {
-      highWater: progressHighWater.current[idx] || 0
-    })
+    const res = useStore.getState().toggleActiveSet(idx, i)
     if (!res) return
-
-    if (res.newHighWater != null) {
-      progressHighWater.current[idx] = res.newHighWater
-    }
 
     if (res.checked) {
       playSetComplete(S.sound)
     }
 
     // Sheet choice follows the domain's `next` action (same geometry the
-    // toggle already computed); the raw flags stay as fallback while callers
-    // migrate. Toasts and rest intent still read the outcome fields.
-    const openTop = res.next ? res.next.kind === 'open-topweight' : res.askTop
-    const doneAll = res.next ? res.next.kind === 'open-finish' : res.workoutDone
-    if (openTop) topWeightSheet(idx)
-    else if (doneAll) workoutCompleteSheet()
-    else if (res.exJustDone && res.cardioEntry) useUI.getState().toast(t('Cardio logged'))
-    else if (res.exJustDone && res.timedEntry) useUI.getState().toast(t('Hold logged'))
+    // toggle already computed). Toasts read `notice`, rest reads `rest`.
+    if (res.next.kind === 'open-topweight') topWeightSheet(idx)
+    else if (res.next.kind === 'open-finish') workoutCompleteSheet()
+    else if (res.notice === 'cardio') useUI.getState().toast(t('Cardio logged'))
+    else if (res.notice === 'timed') useUI.getState().toast(t('Hold logged'))
 
-    // Rest timer coordination — gated on new progress like every other flow effect,
-    // so an uncheck/re-check of finished work can't cut a running rest short.
-    if (res.shouldStopRest) stopRest()
-    if (res.shouldRest) startRest(S.restSec)
+    // Rest timer coordination — gated on new progress inside the domain, so an
+    // uncheck/re-check of finished work can't cut a running rest short.
+    if (res.rest.stop) stopRest()
+    if (res.rest.start) startRest(S.restSec)
   }
 
   return <div className="narrow">
