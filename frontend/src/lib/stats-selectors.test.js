@@ -60,6 +60,10 @@ describe('empties', () => {
     expect(over.effort).toBe(null)
     expect(Object.values(over.fatigue.values).every(v => v === 0)).toBe(true)
     expect(Object.values(over.strength.values).every(v => v === STRENGTH_FLOOR)).toBe(true)
+    expect(over.strength.latest.chest).toBe(null)
+    expect(over.strength.weeks.chest).toBe(null)
+    expect(over.bodyweight.latest).toBe(null)
+    expect(over.bodyweight.delta30).toBe(null)
     expect(over.exercisesFor(LIFT_SLUG)).toEqual([])
   })
 
@@ -73,7 +77,6 @@ describe('empties', () => {
     expect(st).not.toBe(null)
     expect(st.points).toEqual([])
     expect(st.effort).toBe(null)
-    expect(st.record).toBe(null)
   })
 })
 
@@ -179,34 +182,10 @@ describe('effort scale', () => {
   })
 })
 
-describe('record', () => {
-  it('flags the latest session when it sets a new estimated max', () => {
+describe('estimated 1RM best', () => {
+  it('peaks at the strongest session estimate', () => {
     const st = selectExerciseStats(profile(), LIFT.id, { now: NOW, catalogue })
     expect(st.e1rmBest.est).toBeCloseTo(93.3, 1)
-    expect(st.record).not.toBe(null)
-    expect(st.record.prev).toBeCloseTo(88.7, 1)
-  })
-
-  it('flags a clear progressive record with its previous best', () => {
-    const S = {
-      unit: 'kg', workouts: [
-        workoutAt(LIFT.id, 10, [doneSet(60, 5)]),
-        workoutAt(LIFT.id, 2, [doneSet(100, 5)]),
-      ],
-    }
-    const st = selectExerciseStats(S, LIFT.id, { now: NOW, catalogue })
-    expect(st.record).not.toBe(null)
-    expect(st.record.prev).toBeLessThan(st.e1rmBest.est)
-  })
-
-  it('stays quiet when the latest session does not beat the best', () => {
-    const S = {
-      unit: 'kg', workouts: [
-        workoutAt(LIFT.id, 10, [doneSet(100, 5)]),
-        workoutAt(LIFT.id, 2, [doneSet(60, 5)]),
-      ],
-    }
-    expect(selectExerciseStats(S, LIFT.id, { now: NOW, catalogue }).record).toBe(null)
   })
 })
 
@@ -303,6 +282,22 @@ describe('body-weight log readings', () => {
     expect(over.bodyweight.delta30).toBe(-4)
     expect(over.bodyweight.goal).toBe(165)
     expect(over.bodyweightKg).toBeCloseTo(79.832, 3)
+  })
+})
+
+describe('muscle attribution prefers the logged snapshot', () => {
+  it('attributes load, fatigue and latest-trained by logged muscleWeights when they differ from the catalogue', () => {
+    const S = { unit: 'kg', workouts: [workoutAt(LIFT.id, 2, [doneSet(50, 5)])] }
+    S.workouts[0].entries[0].muscleWeights = { quadriceps: 1 }
+    const over = selectStatsOverview(S, { now: NOW, catalogue })
+    expect(over.muscles.load.quadriceps).toBe(1)
+    expect(over.muscles.load.chest).toBe(0)
+    expect(over.fatigue.values.quadriceps).toBeGreaterThan(0)
+    expect(over.fatigue.values.chest).toBe(0)
+    expect(over.strength.latest.quadriceps).not.toBe(null)
+    expect(over.strength.latest.chest).toBe(null)
+    // Identity stays catalogue-first: the curve still names the catalogue record.
+    expect(selectExerciseStats(S, LIFT.id, { now: NOW, catalogue }).name).toBe('Bench')
   })
 })
 
