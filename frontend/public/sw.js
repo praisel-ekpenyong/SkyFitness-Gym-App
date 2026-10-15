@@ -15,12 +15,12 @@ const SHELL = ['index.html', 'manifest.json']
 
 const MEDIA_RE = /\/media\/(images|videos)\//
 
+const ASSET_RE = /\.(js|css|png|jpe?g|gif|webp|svg|ico|woff2?|json)$/
+
 // Same-origin shell-or-asset only: extensionless routes (the SPA fallback serves
 // index.html for those), the precached entries, and static asset extensions.
 // Anything else same-origin (unknown documents, worker script itself) is left
 // untouched so the runtime cache cannot fill with non-shell responses.
-const ASSET_RE = /\.(js|css|png|jpe?g|gif|webp|svg|ico|woff2?|json)$/
-
 function isShellOrAsset(url, req) {
   if (req.mode === 'navigate' || req.destination === 'document') return true
   const p = url.pathname

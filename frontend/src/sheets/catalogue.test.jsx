@@ -425,10 +425,8 @@ describe('ExerciseDetail primary and secondary muscle tags', () => {
     expect(primaryTag).toBeTruthy()
     expect(primaryTag.textContent).toContain('Primary: Chest')
 
-    // Equipment tag
     expect(tagTexts).toContain('barbell')
 
-    // Secondary tags
     expect(tagTexts).toContain('Secondary: Shoulders')
     expect(tagTexts).toContain('Secondary: Triceps')
   })
@@ -585,7 +583,6 @@ describe('CustomExForm canonical muscle selection and editing', () => {
       root.render(<CustomExForm onDone={onDone} close={close} />)
     })
 
-    // Name
     const nameInput = container.querySelector('input.input')
     await act(async () => {
       const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set
@@ -624,7 +621,6 @@ describe('CustomExForm canonical muscle selection and editing', () => {
       upperBackSec.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
 
-    // Description
     const descInput = container.querySelector('textarea.input')
     await act(async () => {
       const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set
@@ -706,7 +702,6 @@ describe('CustomExForm canonical muscle selection and editing', () => {
       chestPrimary.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
 
-    // Select secondary Triceps
     const tricepsSec = Array.from(container.querySelectorAll('.chips')[1].querySelectorAll('button.chip')).find(c => c.textContent.trim() === 'Triceps')
     await act(async () => {
       tricepsSec.dispatchEvent(new MouseEvent('click', { bubbles: true }))

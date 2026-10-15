@@ -23,6 +23,19 @@ export function decideBack({ top, canGoBack, exitArmed }) {
   return exitArmed ? 'exit' : 'arm-exit'
 }
 
+/**
+ * Build the Android back-press handler shared by sheets, history, and exit.
+ *
+ * Arms the press-again-to-exit window at the root and disarms it whenever another press does real work.
+ *
+ * @param {Function} getSheets - Returns the current sheet stack, top last.
+ * @param {Function} closeSheet - Closes the sheet with the given id.
+ * @param {Function} toast - Shows a transient message such as the exit warning.
+ * @param {Function} goBack - Walks app history back one step.
+ * @param {Function} exit - Exits the app on a second press inside the window.
+ * @param {Function} now - Clock returning ms; defaults to Date.now, injected in tests.
+ * @returns {Function} Back handler returning the action taken: sheet, history, arm-exit, exit, or ignore.
+ */
 export function makeBackHandler({ getSheets, closeSheet, toast, goBack, exit, now = Date.now }) {
   let armedAt = -Infinity
   return (ev = {}) => {

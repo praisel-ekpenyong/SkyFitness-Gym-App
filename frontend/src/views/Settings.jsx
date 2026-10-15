@@ -13,6 +13,7 @@ import { loadStarterPlan, confirmSheet, importFromApp, displayNameSheet } from '
 import Icon from '../components/Icon.jsx'
 import { Section, Row, SelectRow, Switch, Segmented } from '../components/ui.jsx'
 
+/** Settings route; edits preferences, reminders, backup, and data. */
 export default function Settings() {
   const nav = useNavigate()
   const S = useStore(s => s.S)
@@ -193,6 +194,7 @@ const EFFORT_ROWS = [
 // against. Not where the stepper starts; + walks up from the bottom of the scale.
 const EFFORT_TYPICAL = 2
 
+/** Opens the RIR/RPE effort-scale help sheet. */
 function effortHelpSheet() {
   useUI.getState().openSheet(close => <>
     <h3>{t('Effort per set')}</h3>

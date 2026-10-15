@@ -3,7 +3,7 @@ import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { EXIDX } from '../lib/exercises.js'
 import { fmtNum, fmtVol, fmtDur } from '../lib/format.js'
-import { setsDone, setsDoneActive, supersetUnits, unitOf, workSetsDone } from '../lib/history.js'
+import { setsDone, setsDoneActive, supersetUnits, unitOf, workSetsDone, hasWork } from '../lib/history.js'
 import { playWorkoutComplete } from '../lib/sound.js'
 import { t } from '../lib/i18n.js'
 import { nav } from '../lib/nav.js'
@@ -13,10 +13,15 @@ import BodyMap from '../components/BodyMap.jsx'
 import { loadOfWorkouts } from '../lib/muscles.js'
 import { bestKnownWeight, heaviestSetWeight } from '../lib/active-workout.js'
 
+/** Reads the shared store state. */
 const S = () => useStore.getState().S
+/** Applies a draft mutation to the shared store state. */
 const update = (...a) => useStore.getState().update(...a)
+/** Reads the UI store state. */
 const ui = () => useUI.getState()
+/** Shows a transient toast message. */
 const toast = m => ui().toast(m)
+/** Reads the sound toggle. */
 const snd = () => S().sound
 
 /* ============================ injected hub seams ============================ */
@@ -28,6 +33,13 @@ const snd = () => S().sound
 let _bwSheet = null
 let _confirmSheet = null
 let _WeightInput = null
+/**
+ * Wires the weigh-in, confirm, and weight-input seams for session sheets.
+ *
+ * @param {Function} bwSheet Weigh-in sheet opener.
+ * @param {Function} confirmSheet Hub confirm dialog.
+ * @param {Function} WeightInput Shared weight picker component.
+ */
 export function configureSessionSheets({ bwSheet, confirmSheet, WeightInput }) {
   if (bwSheet) _bwSheet = bwSheet
   if (confirmSheet) _confirmSheet = confirmSheet
@@ -39,6 +51,12 @@ export function startFlow(routineId) {
   if (!_bwSheet) throw new Error('session sheets not wired: missing bwSheet')
   _bwSheet({ required: true, onDone: bw => beginWorkout(routineId, bw) })
 }
+/**
+ * Starts the session for a routine and navigates to the workout view.
+ *
+ * @param {string} routineId Routine to start, if any.
+ * @param {number} bw Weighed-in body weight, if any.
+ */
 export function beginWorkout(routineId, bw) {
   // Thin caller over the deep lifecycle seam — prescription, target freezing
   // and set construction live in lib/active-workout.js, not in the sheet.
@@ -46,6 +64,12 @@ export function beginWorkout(routineId, bw) {
   useUI.getState().stopRest()
   nav('/workout')
 }
+/**
+ * Top-weight confirmation; saving records the working weight for next time.
+ *
+ * @param {number} entryIdx Active entry index.
+ * @param {Function} close Closes the sheet.
+ */
 function TopWeight({ entryIdx, close }) {
   const st = useStore(s => s.S)
   const A = st.active
@@ -63,7 +87,9 @@ function TopWeight({ entryIdx, close }) {
 
   const units = supersetUnits(A ? A.entries : [])
   const unit = entry ? unitOf(units, entryIdx) : []
-  const unitDone = !!entry && unit.every(i => A.entries[i].sets.every(s => s.done))
+  // The same work-sets-only rule the toggle and the superset step use: an
+  // unticked warm-up must not swallow the "save & next" / finish chain.
+  const unitDone = !!entry && !unit.some(i => hasWork(A.entries, i))
   const unitIdx = units.findIndex(u => u === unit)
   const isLastUnit = unitIdx === units.length - 1
   if (!entry || !ex) return null
@@ -92,6 +118,7 @@ function TopWeight({ entryIdx, close }) {
     </> : <Button variant="primary" onClick={() => commit(false)}>{t('Save weight')}</Button>}
   </>
 }
+/** Opens the top-weight confirmation for the given entry. */
 export const topWeightSheet = entryIdx => ui().openSheet(close => <TopWeight entryIdx={entryIdx} close={close} />)
 
 // Shown when the last exercise's last set is checked — finish, or keep going.
@@ -105,8 +132,16 @@ function WorkoutComplete({ close }) {
     <Button onClick={() => { close(); useUI.getState().toast(t('Keep going — tap “+ Add exercise” below')) }}>{t('Continue workout')}</Button>
   </div>
 }
+/** Opens the workout-complete prompt to finish or continue. */
 export const workoutCompleteSheet = () => ui().openSheet(close => <WorkoutComplete close={close} />, { kind: 'center' })
-
+/**
+ * Finish summary; shows duration, volume, PRs, and trained muscles.
+ *
+ * @param {Object} w Finished workout.
+ * @param {Array} prs New weight PR exercise ids.
+ * @param {Array} e1prs New estimated-1RM records.
+ * @param {Function} close Closes the sheet.
+ */
 function FinishSummary({ w, prs, e1prs = [], close }) {
   const st = useStore(s => s.S)
   return <div style={{ textAlign: 'center', padding: '8px 0' }}>
@@ -128,6 +163,7 @@ function FinishSummary({ w, prs, e1prs = [], close }) {
     <Button variant="primary" onClick={() => { close(); nav('/home') }}>{t('Nice!')}</Button>
   </div>
 }
+/** Finishes the workout, confirming first when sets remain unchecked. */
 export function finishWorkout() {
   const A = S().active
   if (!A) return
@@ -138,6 +174,7 @@ export function finishWorkout() {
   if (done < total) { _confirmSheet({ title: t('Finish early?'), message: t(total - done === 1 ? '{0} set still unchecked. Finish the workout now?' : '{0} sets still unchecked. Finish the workout now?', total - done), confirmText: t('Finish workout'), onConfirm: doFinishWorkout }); return }
   doFinishWorkout()
 }
+/** Completes the session and opens the locked finish summary. */
 function doFinishWorkout() {
   const result = useStore.getState().finishSession()
   if (!result) return

@@ -13,17 +13,33 @@
 // - VITE_UMAMI_SRC / VITE_UMAMI_ID: analytics, injected only when both are set.
 // - BASE_URL: Vite-provided deploy scope (subpath installs), default './'.
 
+/**
+ * Normalizes a base path onto the trailing-slash form media and routing reads.
+ * @param {*} value - Raw configured value; blank or missing yields the fallback.
+ * @param {string} fallback - Default returned when the value is empty.
+ * @returns {string} Trimmed value ending in `/`, or the fallback.
+ */
 function withSlash(value, fallback) {
   const s = String(value ?? '').trim()
   if (!s) return fallback
   return s.replace(/\/?$/, '/')
 }
 
+/**
+ * Trims a configured value down to a present-or-absent signal.
+ * @param {*} value - Raw configured value of any type.
+ * @returns {string|undefined} Trimmed non-empty string, or undefined when blank or missing.
+ */
 function nonEmpty(value) {
   const s = String(value ?? '').trim()
   return s ? s : undefined
 }
 
+/**
+ * Normalizes one raw environment object into the validated settings every reader shares.
+ * @param {Object} raw - Raw key-value map from the build and process environment; defaults to empty.
+ * @returns {Object} Validated mobile, media-base, base-URL, and analytics fields with defaults applied; analytics stays undefined unless both halves are set.
+ */
 export function validateEnv(raw = {}) {
   const mobile = raw.VITE_MOBILE === '1'
   const imgBase = withSlash(raw.VITE_IMG_BASE, 'media/images/')
@@ -42,6 +58,10 @@ export function validateEnv(raw = {}) {
   }
 }
 
+/**
+ * Reads the raw environment from the current runtime for one-time startup validation.
+ * @returns {Object} Merged process and build-time variables with build-time values winning; empty when neither source exists.
+ */
 function readRawEnv() {
   const meta = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : {}
   const proc = (typeof process !== 'undefined' && process.env) ? process.env : {}

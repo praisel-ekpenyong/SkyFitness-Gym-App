@@ -5,9 +5,11 @@ import { t } from '../lib/i18n.js'
 import { useStore } from './useStore.js'
 
 
+/** Reports whether system notifications are available. */
 const notificationsSupported = () => typeof window !== 'undefined' && 'Notification' in window
 let requestRestNotificationPermissionP = null
 
+/** Requests permission for rest-timer notifications. */
 const requestRestNotificationPermission = async () => {
   if (!notificationsSupported()) return false
   if (Notification.permission === 'granted') return true
@@ -23,6 +25,7 @@ const requestRestNotificationPermission = async () => {
   return requestRestNotificationPermissionP
 }
 
+/** Shows a rest-over notification when the app is hidden. */
 const maybeRestNotification = async () => {
   if (!notificationsSupported()) return
   if (!document.hidden && document.visibilityState !== 'hidden') return

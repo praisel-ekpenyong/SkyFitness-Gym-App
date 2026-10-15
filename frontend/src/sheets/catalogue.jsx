@@ -16,9 +16,13 @@ import { queryCatalogue } from '../lib/catalogue-query.js'
 import { estimate1RM, best1RM, REP_CAP } from '../lib/onerm.js'
 import { policyFor, defaultIncrement, POLICIES_FOR, POLICY_NAME, POLICY_DESC, MAX_BW_SETS } from '../lib/progression.js'
 
+/** Reads the shared store state. */
 const S = () => useStore.getState().S
+/** Applies a draft mutation to the shared store state. */
 const update = (...a) => useStore.getState().update(...a)
+/** Reads the UI store state. */
 const ui = () => useUI.getState()
+/** Shows a transient toast message. */
 const toast = m => ui().toast(m)
 
 /* ============================ injected hub seams ============================ */
@@ -26,6 +30,11 @@ const toast = m => ui().toast(m)
 // migration; all domains keep calling it rather than owning their own. The hub
 // re-exports this module, so importing the hub back would be circular.
 let _confirmSheet = null
+/**
+ * Wires the confirm-sheet seam for catalogue sheets.
+ *
+ * @param {Function} confirmSheet Hub confirm dialog.
+ */
 export function configureCatalogueSheets({ confirmSheet }) {
   if (confirmSheet) _confirmSheet = confirmSheet
 }
@@ -59,6 +68,12 @@ function OneRM({ ex }) {
   </>
 }
 
+/**
+ * Exercise-detail sheet; Add opens the routine picker and Edit opens the custom form.
+ *
+ * @param {Object} ex Dataset exercise.
+ * @param {Function} close Closes the sheet.
+ */
 export function ExerciseDetail({ ex, close }) {
   const st = useStore(s => s.S)
   const last = lastEntryFor(st, ex.id)
@@ -107,9 +122,18 @@ export function ExerciseDetail({ ex, close }) {
     {instrFor(ex).length > 0 && <><h4 className="sec">{t('How to')}</h4><ol className="steps-list">{instrFor(ex).map((s, i) => <li key={i}>{s}</li>)}</ol></>}
   </>
 }
+/** Opens the exercise-detail sheet for the given exercise. */
 export const exerciseDetailSheet = ex => ui().openSheet(close => <ExerciseDetail ex={ex} close={close} />)
 
-/* ============================ add to routine ============================ */
+/**
+ * Add-to-routine sheet body: pick which routine receives an exercise.
+ *
+ * Choosing a routine (or a new one) opens the exercise config sheet; saving
+ * appends the configured exercise and toasts. A new routine navigates to `/plan/r/:id`.
+ *
+ * @param {Object} ex - Dataset exercise to add.
+ * @param {Function} close - Sheet closer.
+ */
 function AddToRoutine({ ex, close }) {
   const st = useStore(s => s.S)
   const pick = rid => {
@@ -140,6 +164,7 @@ function AddToRoutine({ ex, close }) {
     </div>
   </>
 }
+/** Opens the add-to-routine picker for the given exercise. */
 export const addToRoutineSheet = ex => ui().openSheet(close => <AddToRoutine ex={ex} close={close} />)
 
 /* ============================ custom exercises (issue #11) ============================ */
@@ -256,8 +281,20 @@ export function CustomExForm({ existing, prefill, onDone, close }) {
     {existing && <><div style={{ height: 8 }} /><Button variant="danger" icon="trash" onClick={() => { close(); deleteCustomEx(existing) }}>{t('Delete exercise')}</Button></>}
   </>
 }
+/**
+ * Opens the custom-exercise form; saving creates or updates the exercise.
+ *
+ * @param {Object} existing Exercise being edited, if any.
+ * @param {Function} onDone Called with the saved exercise.
+ * @param {string} prefill Initial name for a new exercise.
+ */
 export const customExSheet = (existing, onDone, prefill) => ui().openSheet(close => <CustomExForm existing={existing} prefill={prefill} onDone={onDone} close={close} />)
-
+/**
+ * Confirms then deletes a custom exercise from routines and catalogue.
+ *
+ * @param {Object} ex Custom exercise to delete.
+ * @param {Function} afterDelete Runs after deletion.
+ */
 export function deleteCustomEx(ex, afterDelete) {
   if (S().active?.entries.some(e => e.id === ex.id)) { toast(t('Finish your current workout first')); return }
   if (!_confirmSheet) throw new Error('catalogue sheets not wired: missing confirmSheet')
@@ -285,8 +322,15 @@ export function deleteCustomEx(ex, afterDelete) {
   })
 }
 
-/* ============================ exercise picker ============================ */
-export function ExercisePicker({ onPick, close }) {
+/**
+ * Exercise picker sheet body: search, filter, and choose one exercise.
+ *
+ * Searches the catalogue by name with muscle/equipment filters and favorites.
+ * Choosing a row calls `onPick` with the dataset exercise; favoriting updates the store.
+ *
+ * @param {Function} onPick - Called with the chosen dataset exercise.
+ */
+export function ExercisePicker({ onPick }) {
   const st = useStore(s => s.S)
   const [q, setQ] = useState('')
   const [filter, setFilter] = useState('')          // '' = all, 'favorites' = favorites, '★' = chosen, else a canonical muscle slug or cardio
@@ -369,6 +413,7 @@ export function ExercisePicker({ onPick, close }) {
     {f.length > shown && <><div style={{ height: 8 }} /><Button onClick={() => setShown(s => s + 50)}>{t('Show more')}</Button></>}
   </>
 }
+/** Opens the exercise picker calling back with the chosen exercise. */
 export const exercisePicker = onPick => ui().openSheet(close => <ExercisePicker onPick={onPick} close={close} />)
 
 /* ============================ exercise config ============================ */
@@ -398,6 +443,17 @@ function ProgressionFields({ ex, mode, c, setC, routine, unit }) {
   </>
 }
 
+/**
+ * Exercise-config sheet; saving returns the sets/reps/weight config.
+ *
+ * @param {Object} ex Dataset exercise.
+ * @param {Object} existing Current routine config, if editing.
+ * @param {Function} onSave Called with the chosen config.
+ * @param {Function} onDelete Removes the exercise from the routine.
+ * @param {Function} close Closes the sheet.
+ * @param {Object} routine Parent routine for inherited progression.
+ * @param {Object} initial Starting config override.
+ */
 function ExConfig({ ex, existing, onSave, onDelete, close, routine, initial }) {
   const st = useStore(s => s.S)
   const cardio = isCardio(ex.id)
@@ -405,7 +461,7 @@ function ExConfig({ ex, existing, onSave, onDelete, close, routine, initial }) {
   // Cardio keeps its own duration+speed form; the reps/time choice (issue #16) is offered for
   // everything else, which is where the gap was — planks, hangs, wall sits, loaded carries.
   const mode = cardio ? 'cardio' : modeOf({ ...c, id: ex.id })
-  // Both default from the dataset and are then whatever the config says — see isBw.
+  // Bodyweight falls back to the dataset default unless the config overrides it (see isBw); per-side comes from the config alone.
   const bw = !cardio && isBw({ ...c, id: ex.id })
   const perSide = isPerSide(c)
   // Keep whatever the other mode already had (sets, weight) and fill only what is missing.
@@ -512,4 +568,14 @@ function ExConfig({ ex, existing, onSave, onDelete, close, routine, initial }) {
     {onDelete && <><div style={{ height: 8 }} /><Button variant="danger" onClick={() => { close(); onDelete() }}>{t('Remove from routine')}</Button></>}
   </>
 }
+/**
+ * Opens the exercise-config sheet; saving returns the chosen config.
+ *
+ * @param {Object} ex Dataset exercise.
+ * @param {Object} existing Current routine config, if editing.
+ * @param {Function} onSave Called with the chosen config.
+ * @param {Function} onDelete Removes the exercise from the routine.
+ * @param {Object} routine Parent routine for inherited progression.
+ * @param {Object} initial Starting config override.
+ */
 export const exConfigSheet = (ex, existing, onSave, onDelete, routine, initial) => ui().openSheet(close => <ExConfig ex={ex} existing={existing} initial={initial} onSave={onSave} onDelete={onDelete} routine={routine} close={close} />)

@@ -61,6 +61,11 @@ export default function Media({ ex, id, compact, minimizable }) {
   )
 }
 
+/**
+ * Small still exercise thumbnail for list rows; falls back to a dumbbell placeholder when the exercise has no image.
+ * Decorative (empty alt text); the surrounding row already names the exercise.
+ * @param {Object} ex - Exercise with optional image sources and id.
+ */
 export function Thumb({ ex }) {
   const [failed, setFailed] = useState(false)
   const [lastId, setLastId] = useState(ex?.id)

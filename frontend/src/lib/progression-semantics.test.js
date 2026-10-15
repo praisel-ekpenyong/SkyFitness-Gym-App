@@ -57,6 +57,7 @@ describe('a finished Entry with zero performed Work sets is a Miss', () => {
     expect(p.kind).toBe('deload')
     expect(p.weight).toBe(55)
     expect(p.why[0]).toMatch(/reset/i)
+    expect(p.why[0]).toMatch(/Workouts/)
   })
 })
 
@@ -119,7 +120,19 @@ describe('added-set growth resumes from the current Routine target', () => {
     expect(p.reps).toBe(10)
     expect(p.weight).toBe(0)
   })
+
+  it('freestyle added-set growth ignores bonus sets: resumes from the judged count, not the history high', () => {
+    const S = stateWith([
+      finishedWorkout('2026-04-01', { sets: 3, reps: 15 }, [work(0, 15), work(0, 15), work(0, 15), work(0, 15)])
+    ])
+    // No sets in the plan (freestyle): growth falls back to what was judged —
+    // the 3 planned Work sets, not the 4th bonus row.
+    const p = nextPrescription(S, { id: LIFT, sets: 0, reps: 15, repsMax: 20, weight: 0, prog: 'linear' })
+    expect(p.kind).toBe('up')
+    expect(p.sets).toBe(4)
+  })
 })
+
 
 describe('a Deload that cannot reduce reads as a hold', () => {
   it('already-minimum iron holds instead of a same-weight Deload', () => {

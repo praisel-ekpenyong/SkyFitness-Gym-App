@@ -78,7 +78,13 @@ export function displayScale(S) {
   eachDoneSet(S, s => { if (s.rir != null) rir++; else if (s.rpe != null) rpe++ })
   return rpe > rir ? 'rpe' : 'rir'
 }
-export const scaleName = kind => EFFORT[kind].hd
+/**
+ * Label the effort scale for display headers.
+ *
+ * @param {string} kind - Effort scale key ('rir' or 'rpe') from displayScale; other values throw.
+ * @returns {string} Display header for the scale.
+ */
+export const scaleName = (kind) => EFFORT[kind].hd
 
 // Every finished set in the profile, oldest first. `fn` gets the set plus the workout it
 // belongs to, which is what the windowed and per-week views need.
@@ -97,6 +103,12 @@ function eachDoneSet(S, fn) {
 const inWindow = (w, days) =>
   !days || workoutTimestamp(w) > Date.now() - days * 86400000
 
+/**
+ * Average the rated effort of a set list in RIR units.
+ *
+ * @param {Array<Object>|null|undefined} sets - Sets carrying rir or rpe; unrated sets are ignored, nullish counts as empty.
+ * @returns {number|null} Mean RIR across rated sets, or null when none are rated.
+ */
 export const avgRir = sets => {
   const vs = (sets || []).map(rirOf).filter(v => v != null)
   return vs.length ? vs.reduce((a, b) => a + b, 0) / vs.length : null
@@ -167,6 +179,15 @@ function mondayOf(iso) {
  * half the sets at 0 and half at 4 average to a healthy-looking 2.
  */
 export const BUCKETS = 4        // 0,1,2,3 and a "4+" tail
+/**
+ * Spread rated sets across whole-step RIR buckets for one window.
+ *
+ * Counts done non-warm-up sets only; unrated sets are ignored.
+ *
+ * @param {Object} S - App state holding the workouts array.
+ * @param {number} days - Window in days back from now; 0 or falsy means all history.
+ * @returns {Array<Object>} Five buckets for RIR 0-3 plus a 4+ tail, each with rir, tail, n, and pct share.
+ */
 export function effortHistogram(S, days) {
   const bins = new Array(BUCKETS + 1).fill(0)
   let rated = 0

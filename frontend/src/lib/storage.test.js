@@ -257,6 +257,13 @@ describe('backup validation and sanitization', () => {
     const state = { active: { id: 'act-1' }, workouts: [] }
     expect(sanitizeBackup(state)).toEqual({ active: null, workouts: [] })
   })
+
+  it('sanitizeBackup drops unknown top-level keys instead of passing them through', () => {
+    const state = { active: null, workouts: [], routines: [], alien: { x: 1 } }
+    const clean = sanitizeBackup(state)
+    expect(clean).not.toHaveProperty('alien')
+    expect(clean.workouts).toEqual([])
+  })
 })
 
 describe('onStorageSync', () => {

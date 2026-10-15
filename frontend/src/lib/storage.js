@@ -13,6 +13,10 @@ import { MOBILE, nativeLoad, nativeSave } from './mobile.js'
 // definition of it.
 export const LOCAL_KEY = 'gym_state_v1'
 
+/**
+ * Reads the last synchronously saved snapshot from localStorage.
+ * @returns {Object|null} Parsed snapshot, or null when absent or unreadable.
+ */
 export function loadLocal() {
   try {
     const raw = localStorage.getItem(LOCAL_KEY)
@@ -26,6 +30,10 @@ const KEY = 'state'
 
 let dbp = null
 
+/**
+ * Returns the shared IndexedDB mirror handle, opening it on first use.
+ * @returns {Promise|null} Pending open promise, or null where IndexedDB is unavailable; a failed open resets so the next call retries.
+ */
 function openDB() {
   if (!('indexedDB' in globalThis)) return null   // tests / very old browsers: mirror is off
   if (!dbp) {
@@ -39,6 +47,10 @@ function openDB() {
   return dbp
 }
 
+/**
+ * Reads the newest mirrored snapshot from IndexedDB for the boot race.
+ * @returns {Promise<Object|null>} Stored snapshot, or null when missing, unavailable, or unreadable.
+ */
 export async function idbLoad() {
   try {
     const db = await openDB()
@@ -51,6 +63,11 @@ export async function idbLoad() {
   } catch (e) { return null }
 }
 
+/**
+ * Writes a snapshot to the IndexedDB mirror without disturbing the localStorage copy.
+ * @param {Object} snapshot - Stamped state snapshot to mirror.
+ * @returns {Promise<void>} Resolves once the mirror write completes; failures stay silent.
+ */
 export async function idbSave(snapshot) {
   try {
     const db = await openDB()
@@ -93,6 +110,10 @@ const DRAIN_MS = 800
 let tm = null
 let pending = null
 
+/**
+ * Hands the newest pending snapshot to every registered mirror and clears the queue.
+ * @returns {void} Nothing; a failing mirror is skipped so the others still receive the snapshot.
+ */
 function drain() {
   tm = null
   const snapshot = pending
@@ -108,12 +129,21 @@ function drain() {
   }
 }
 
+/**
+ * Writes the pending snapshot to every mirror immediately instead of waiting for the debounce.
+ * @returns {void} Nothing; a no-op when nothing is pending.
+ */
 export function flush() {
   if (tm == null) return
   clearTimeout(tm)
   drain()
 }
 
+/**
+ * Decides whether a storage failure means the device denied the write.
+ * @param {Error} e - Thrown storage error; falsy reads as not denied.
+ * @returns {boolean} True for quota or security denials by name, code, or message; false otherwise.
+ */
 function isStorageDenied(e) {
   if (!e) return false
   const name = e.name || ''
@@ -187,6 +217,12 @@ export function save(snapshot) {
 // older than the nag threshold. `now` is injected so callers (and tests) own the clock.
 export const BACKUP_NAG_MS = 14 * 24 * 60 * 60 * 1000   // two weeks between backups
 
+/**
+ * Tells callers whether the backup reminder should show now.
+ * @param {number} lastExportTs - Millisecond timestamp of the last successful export; missing means never backed up.
+ * @param {number} now - Current millisecond timestamp the caller supplies.
+ * @returns {boolean} True when never exported or the last export is older than two weeks; false otherwise, including future stamps.
+ */
 export function backupDue(lastExportTs, now) {
   return !lastExportTs || now - lastExportTs > BACKUP_NAG_MS
 }
@@ -252,15 +288,45 @@ export function validateBackup(data) {
   return true
 }
 
+/**
+ * Tests whether a restored value is a plain JSON object rather than an array or primitive.
+ * @param {*} v - Candidate value of any type.
+ * @returns {boolean} True for non-null non-array objects; false otherwise.
+ */
 const isPlainRecord = v => v && typeof v === 'object' && !Array.isArray(v)
 // A Workout Entry is usable when it names an exercise and carries a sets
 // array — anything else (null, missing id, missing sets) is a hand-edit scar
 // that must never sink a Restore. Sets themselves stay as logged; only the
 // Entry shell is guarded here so one bad record cannot kill the tab.
 const isGoodWorkoutEntry = e => isPlainRecord(e) && typeof e.id === 'string' && e.id.length > 0 && Array.isArray(e.sets)
+/**
+ * Tests whether a restored workout keeps the entry shell restore requires.
+ * @param {*} w - Candidate workout of any type.
+ * @returns {boolean} True for plain records carrying an `entries` array; false otherwise. Individual sets are checked separately.
+ */
 const isGoodWorkout = w => isPlainRecord(w) && Array.isArray(w.entries)
+/**
+ * Tests whether a restored routine exercise keeps the id restore requires.
+ * @param {*} e - Candidate routine exercise of any type.
+ * @returns {boolean} True for plain records with a non-empty string `id`; false otherwise.
+ */
 const isGoodRoutineEx = e => isPlainRecord(e) && typeof e.id === 'string' && e.id.length > 0
+/**
+ * Tests whether a restored routine keeps the id and exercise list restore requires.
+ * @param {*} r - Candidate routine of any type.
+ * @returns {boolean} True for plain records with a non-empty string `id` and an `ex` array; false otherwise.
+ */
 const isGoodRoutine = r => isPlainRecord(r) && typeof r.id === 'string' && r.id.length > 0 && Array.isArray(r.ex)
+
+// Top-level Profile keys a Restore may carry (mirrors DEF in store/useStore.js —
+// keep the two in sync). Anything else — a hand-edit scar, a key from a newer
+// version — is dropped instead of spread wholesale into state, so one unknown
+// field can never ride a backup into the live Profile.
+const RESTORE_TOP_KEYS = [
+  'unit', 'restSec', 'sound', 'keepAwake', 'theme', 'accent', 'body', 'targetW',
+  'bodyweight', 'routines', 'week', 'dayPlan', 'exWeights', 'workouts', 'customEx',
+  'gifSize', 'favorites', 'reminder', 'effort', 'lastExport', 'displayName'
+]
 
 // Strip malformed Workout and Routine elements (and malformed Entries inside
 // otherwise good ones), returning the cleaned Profile plus how many elements
@@ -295,7 +361,10 @@ export function sanitizeRestorePayload(data) {
       routines.push({ ...r, ex })
     }
   }
-  const clean = { ...data, active: null }
+  const clean = { active: null }
+  for (const k of RESTORE_TOP_KEYS) {
+    if (data[k] !== undefined) clean[k] = data[k]
+  }
   if (workouts !== undefined) clean.workouts = workouts
   if (routines !== undefined) {
     clean.routines = routines
@@ -312,6 +381,11 @@ export function sanitizeRestorePayload(data) {
   return { clean, skipped }
 }
 
+/**
+ * Returns a backup-safe copy of a profile with malformed workouts and routines stripped.
+ * @param {Object} data - Raw profile payload of any shape; non-objects pass through unchanged.
+ * @returns {Object} Cleaned profile limited to known top-level keys with `active` cleared; stale day-plan overrides pruned.
+ */
 export function sanitizeBackup(data) {
   if (!data || typeof data !== 'object') return data
   return sanitizeRestorePayload(data).clean

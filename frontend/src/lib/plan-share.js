@@ -16,6 +16,11 @@ import { t } from './i18n-core.js'
 const PLAN_FMT = 1
 const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0]   // Mon-first, matching the Plan screen
 
+/**
+ * Normalizes a custom exercise's secondary-muscle field onto the array form the bundle uses.
+ * @param {string|string[]} sm - Secondary muscles as one string, an array, or missing; empty string reads as missing.
+ * @returns {string[]|null} Array form, or null when missing or empty.
+ */
 function normalizeSm(sm) {
   if (sm == null || sm === '') return null
   return Array.isArray(sm) ? sm : [sm]
@@ -166,6 +171,11 @@ export function mergePlan(s, bundle, { schedule } = {}) {
 
 /* ------------------------------- printable PDF ------------------------------- */
 
+/**
+ * Escapes a value for safe inline HTML in the printable plan.
+ * @param {*} str - Value of any type; nullish renders as empty.
+ * @returns {string} Text with `&`, `<`, `>`, and `"` entity-encoded.
+ */
 const esc = str => String(str == null ? '' : str)
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 
@@ -195,6 +205,12 @@ function units(ex) {
   return out
 }
 
+/**
+ * Renders one routine as the HTML section the printable plan paginates.
+ * @param {Object} r - Routine with `name` and an `ex` array; unknown ids render under a placeholder name.
+ * @param {string} unit - Weight unit printed after loads, such as `kg`.
+ * @returns {string} HTML section with superset groups kept together; empty routines show a placeholder row.
+ */
 function routineHTML(r, unit) {
   const rows = units(r.ex).map(u => {
     const items = u.map(e => {
@@ -214,6 +230,11 @@ function routineHTML(r, unit) {
   </section>`
 }
 
+/**
+ * Renders the Monday-first week schedule as the HTML table heading the printable plan.
+ * @param {Object} S - Profile state with `routines` and a `week` day-to-routine map; unassigned days read as Rest.
+ * @returns {string} HTML week grid covering all seven days.
+ */
 function weekHTML(S) {
   const rows = WEEK_ORDER.map(d => {
     const r = S.routines.find(x => x.id === S.week?.[d])
@@ -223,7 +244,12 @@ function weekHTML(S) {
   return `<div class="week">${rows}</div>`
 }
 
-/** Full self-contained HTML for the print/PDF view. */
+/**
+ * Builds the full self-contained HTML document for the print and Save-as-PDF view.
+ * @param {Object} S - Profile state with `routines`, `week`, and `unit`; routines without exercises are omitted.
+ * @param {string} owner - Owner name printed in the header; falsy omits the byline.
+ * @returns {string} Complete standalone HTML page with inline styles.
+ */
 export function planPrintHTML(S, owner) {
   const unit = S.unit || 'kg'
   const routines = (S.routines || []).filter(r => r.ex && r.ex.length)
@@ -291,15 +317,17 @@ export function planPrintHTML(S, owner) {
 }
 
 /**
- * Render the plan and open the browser's print dialog (→ Save as PDF).
- * Uses a hidden iframe so we never navigate away or trip a popup blocker.
+ * Renders the plan into a hidden frame and opens the browser print dialog there.
+ * @param {Object} S - Profile state to print.
+ * @param {string} owner - Owner name printed in the header.
+ * @returns {void} Nothing; removes the frame after printing and never navigates the page.
  */
 export function printPlan(S, owner) {
   const ifr = document.createElement('iframe')
   ifr.setAttribute('aria-hidden', 'true')
   ifr.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;opacity:0;'
   document.body.appendChild(ifr)
-  const cleanup = () => { try { ifr.remove() } catch (e) { /* */ } }
+  const cleanup = () => { try { ifr.remove() } catch (e) { /* teardown is best-effort */ } }
   const run = () => {
     const w = ifr.contentWindow
     if (!w) { cleanup(); return }

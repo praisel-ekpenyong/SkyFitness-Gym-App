@@ -39,6 +39,11 @@ export function equipmentOf(list) {
 // Custom (user-created) exercises live in synced state S.customEx (issue #11) and are
 // merged into the id index here so every EXIDX[id] lookup keeps working unchanged.
 let customIds = []
+/**
+ * Points id lookups at the user's current custom exercises for every caller.
+ * @param {Object[]} list - Custom exercises to expose; nullish or empty clears the previous set.
+ * @returns {void} Nothing; removes ids that are no longer listed and adds the new ones as a side effect.
+ */
 export function registerCustom(list) {
   customIds.forEach(id => delete EXIDX[id])
   customIds = (list || []).map(e => e.id)
@@ -56,11 +61,38 @@ export const CDN_GIF_BASE = `https://cdn.jsdelivr.net/gh/hasaneyldrm/exercises-d
 // via `npm run media:fetch`, while CDN fallbacks keep fresh clones and missing assets functional.
 // Bases arrive validated from the environment seam.
 
+/**
+ * Resolves the bundled still-image URL the cards show by default.
+ * @param {Object} ex - Exercise with an `img` file name; nullish or imageless yields an empty string.
+ * @returns {string} Local image path, or an empty string when there is nothing to show.
+ */
 export const imgSrc = ex => (ex?.img ? IMG_BASE + ex.img : '')
+/**
+ * Resolves the bundled clip URL played while a demo runs.
+ * @param {Object} ex - Exercise with a `gif` file name; nullish or clipless yields an empty string.
+ * @returns {string} Local clip path, or an empty string when there is nothing to play.
+ */
 export const gifSrc = ex => (ex?.gif ? GIF_BASE + ex.gif : '')
+/**
+ * Resolves the pinned CDN still-image URL used when the bundled file is missing.
+ * @param {Object} ex - Exercise with an `img` file name; nullish or imageless yields an empty string.
+ * @returns {string} CDN image URL, or an empty string when there is nothing to show.
+ */
 export const cdnImgSrc = ex => (ex?.img ? CDN_IMG_BASE + ex.img : '')
+/**
+ * Resolves the pinned CDN clip URL used when the bundled file is missing.
+ * @param {Object} ex - Exercise with a `gif` file name; nullish or clipless yields an empty string.
+ * @returns {string} CDN clip URL, or an empty string when there is nothing to play.
+ */
 export const cdnGifSrc = ex => (ex?.gif ? CDN_GIF_BASE + ex.gif : '')
 
+/**
+ * Picks the one media URL a card or demo should load for an exercise.
+ * @param {Object} ex - Exercise with `img`/`gif` file names; nullish yields an empty string.
+ * @param {boolean} playing - When true selects the motion clip instead of the still image.
+ * @param {boolean} fallback - When true selects the pinned CDN copy instead of the bundled file.
+ * @returns {string} Chosen URL, or an empty string when the exercise carries no matching file.
+ */
 export const mediaSrc = (ex, { playing = false, fallback = false } = {}) => {
   if (playing) {
     return fallback ? cdnGifSrc(ex) : gifSrc(ex)

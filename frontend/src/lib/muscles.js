@@ -97,6 +97,11 @@ const BY_BODYPART = {
 }
 const SECONDARY = 0.4   // a supporting muscle counts this much against a primary
 
+/**
+ * Wraps a muscle field onto the array form group matching reads.
+ * @param {*} value - Array, single value, or missing input.
+ * @returns {Array} The array itself, a one-item wrapper, or an empty array for nullish or empty-string input.
+ */
 const arrayOf = value => Array.isArray(value) ? value : value == null || value === '' ? [] : [value]
 
 // Completed history entries may retain a nested snapshot after their custom exercise is
@@ -111,6 +116,11 @@ function metadataOf(ex) {
     : ex
 }
 
+/**
+ * Reads the explicitly assigned muscle groups off an exercise, if it carries any.
+ * @param {Object} ex - Exercise that may carry `muscleGroups`, `muscles`, or `targetMuscles`; non-objects yield null.
+ * @returns {string[]|null} Group list in stored form, or null when the exercise names no explicit groups.
+ */
 function explicitGroupsOf(ex) {
   if (!ex || typeof ex !== 'object') return null
   if (Object.prototype.hasOwnProperty.call(ex, 'muscleGroups')) {
@@ -137,6 +147,11 @@ export function hasExplicitMuscleMetadata(ex) {
   return [source.tg, source.mg, ...arrayOf(source.sm)].some(value => canonicalMuscle(value))
 }
 
+/**
+ * Resolves any muscle spelling onto the slug the body map draws.
+ * @param {string} value - Muscle name, alias, slug, or cardio; blank or undrawable yields null.
+ * @returns {string|null} Canonical slug such as `quadriceps`, `cardio` for the cardiovascular system, or null when unknown.
+ */
 export function canonicalMuscle(value) {
   const name = String(value || '').toLowerCase().trim()
   if (name === 'cardio' || name === 'cardiovascular system') return 'cardio'
