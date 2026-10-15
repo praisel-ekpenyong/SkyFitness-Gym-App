@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { toggleActiveSet, peekWeightCommit, commitWorkingWeight } from './active-toggle.js'
+// Imports cross the facade seam, not the module file directly: this pins the
+// interface the store and sheets actually consume.
+import { toggleActiveSet, peekWeightCommit, commitWorkingWeight } from './active-workout.js'
 
 const clone = o => JSON.parse(JSON.stringify(o))
 const solo = () => ({
@@ -99,6 +101,24 @@ describe('toggle next action', () => {
     const r = toggleActiveSet(S, 0, 0, { highWater: 1 })
     expect(r.checked).toBe(false)
     expect(r.next).toEqual({ kind: 'stay', targetIdx: null })
+  })
+
+  it('mid-superset progress navigates to the partner with advance-to', () => {
+    const S = {
+      active: {
+        cur: 0,
+        entries: [
+          { id: 'ex1', sg: 'sg-0-1', target: { reps: 5, weight: 80 }, sets: [{ w: 80, r: 5, done: false }, { w: 80, r: 5, done: false }] },
+          { id: 'ex2', sg: 'sg-0-1', target: { reps: 5, weight: 60 }, sets: [{ w: 60, r: 5, done: false }] },
+        ],
+      },
+      exWeights: {},
+    }
+    const r = toggleActiveSet(S, 0, 0, { highWater: 0 })
+    expect(r.askTop).toBe(false)
+    expect(r.navigated).toBe(true)
+    expect(r.next).toEqual({ kind: 'advance-to', targetIdx: 1 })
+    expect(S.active.cur).toBe(1)
   })
 
   it('invalid commit weight returns null and stores nothing', () => {
