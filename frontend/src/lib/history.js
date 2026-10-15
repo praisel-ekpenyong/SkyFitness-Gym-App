@@ -129,11 +129,11 @@ export const lastBW = S => (S?.bodyweight?.length ? S.bodyweight[S.bodyweight.le
  * @param {Object} S - Application state atom containing `workouts`.
  * @returns {number} Number of consecutive active weeks (capped at 520 weeks / 10 years).
  */
-export function streakWeeks(S) {
+export function streakWeeks(S, now = Date.now()) {
   if (!S?.workouts?.length) return 0
   const weeks = new Set(S.workouts.map(w => weekKey(w.d)))
   let streak = 0
-  const cur = new Date()
+  const cur = new Date(now)
   for (let i = 0; i < 520; i++) {
     const wk = weekKey(isoOf(cur))
     if (weeks.has(wk)) streak++
