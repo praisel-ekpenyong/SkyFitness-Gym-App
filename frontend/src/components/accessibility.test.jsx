@@ -36,6 +36,10 @@ describe('accessibility rendered-role seam', () => {
     expect(btn.getAttribute('aria-checked')).toBe('false')
   })
 
+  it('a switch without a label or aria-label fails loudly instead of rendering bare', async () => {
+    await expect(render(<Switch checked={false} onChange={() => {}} />)).rejects.toThrow(/bare switch/)
+  })
+
   it('single-select group announces as a radiogroup with radio options', async () => {
     const onChange = vi.fn()
     await render(

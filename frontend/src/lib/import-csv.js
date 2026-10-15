@@ -53,6 +53,11 @@ export function parseCSV(text) {
   return rows
 }
 
+/**
+ * Normalizes a CSV header cell so dialect spellings compare equal.
+ * @param {string} h - Raw header cell text.
+ * @returns {string} Lower-cased, punctuation-collapsed, trimmed header key.
+ */
 const norm = h => h.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()
 
 // header text -> the field we care about. Specific names first; first match wins.
@@ -81,6 +86,11 @@ const COLUMNS = [
   ['note', ['comment', 'comments', 'notes', 'note']],
 ]
 
+/**
+ * Maps a CSV header row onto the importer column positions.
+ * @param {string[]} header - First-row header cells in file order.
+ * @returns {Object} Field name to zero-based column index; unknown columns are absent and the first matching alias wins.
+ */
 function mapHeader(header) {
   const map = {}
   header.forEach((h, i) => {
@@ -121,6 +131,11 @@ const SYN = [
 // Words that say nothing about which exercise this is, so they shouldn't stop a match.
 const FILLER = new Set(['the', 'a', 'with', 'and', 'v', 'variation', 'version', 'pulley', 'weighted'])
 
+/**
+ * Reduces a foreign exercise name to comparable content words for matching.
+ * @param {string} name - Raw exercise name from the export; nullish or blank yields an empty array.
+ * @returns {string[]} Lower-cased significant words with equipment shorthand expanded and filler dropped, in name order.
+ */
 function wordsOf(name) {
   // Parentheses are unwrapped rather than dropped: "Bench Press (Barbell)" carries its
   // equipment in there, and the dataset writes that as "barbell bench press".
@@ -131,9 +146,18 @@ function wordsOf(name) {
   SYN.forEach(([re, to]) => { k = k.replace(re, to) })
   return k.split(' ').filter(w => w && !FILLER.has(w))
 }
+/**
+ * Builds the order-insensitive lookup key used to de-duplicate one export's exercise names.
+ * @param {string} name - Raw exercise name; nullish or blank yields an empty string.
+ * @returns {string} Sorted content words joined with single spaces.
+ */
 const keyOf = name => wordsOf(name).sort().join(' ')
 
 let INDEX = null
+/**
+ * Returns the shared catalogue word index matchExercise resolves names against.
+ * @returns {Object} Shared `{ exact, all }` index; the same instance on repeat calls.
+ */
 function buildIndex() {
   if (INDEX) return INDEX
   INDEX = { exact: new Map(), all: [] }
@@ -189,6 +213,10 @@ const ALIAS_EX = {
 }
 
 let ALIAS_IDX = null
+/**
+ * Returns the shared hand-mapped alias table matchExercise consults first.
+ * @returns {Map} Shared sorted-word-key to dataset-id map; the same instance on repeat calls.
+ */
 const aliasIndex = () => {
   if (!ALIAS_IDX) {
     ALIAS_IDX = new Map()
@@ -242,6 +270,11 @@ const CATEGORY_BP = {
 
 /* ----------------------------------------------------------- conversion --- */
 
+/**
+ * Reads a CSV measurement cell as a finite number for weights, reps, and distances.
+ * @param {string} v - Raw cell text; a comma reads as a decimal point and blank or non-numeric reads as 0.
+ * @returns {number} Parsed finite value, or 0 when absent or unparseable.
+ */
 const num = v => { const n = parseFloat(String(v ?? '').replace(',', '.')); return isFinite(n) ? n : 0 }
 // An effort rating out of someone else's export. A blank cell means "not rated" and has to
 // stay absent rather than becoming 0 — and 0 itself means opposite things on the two scales:
@@ -256,6 +289,11 @@ const effortNum = (raw, zeroMeansRated) => {
   return Math.min(10, Math.round(n * 100) / 100)
 }
 const LB_TO_KG = 0.45359237
+/**
+ * Zero-pads a date or time part to two digits for ISO output.
+ * @param {number|string} n - Day, month, hour, or minute value.
+ * @returns {string} At least two characters, left-padded with `0`; longer input passes through unchanged.
+ */
 const p2 = n => String(n).padStart(2, '0')
 const MON = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 }
 
@@ -279,6 +317,12 @@ export function parseWhen(s) {
   }
   return null
 }
+/**
+ * Converts parsed hour and minute parts into a day-offset duration.
+ * @param {string|number} h - Hour part; undefined means no time was present.
+ * @param {string|number} mi - Minute part; missing or unparseable counts as 0.
+ * @returns {number|null} Milliseconds after midnight, or null when no hour was given.
+ */
 const hm = (h, mi) => (h === undefined ? null : (parseInt(h, 10) || 0) * 3600000 + (parseInt(mi, 10) || 0) * 60000)
 
 /** "HH:MM:SS" · "MM:SS" · "90" -> minutes */
@@ -295,6 +339,12 @@ function toMinutes(v) {
   return Math.round(num(s) * 10) / 10
 }
 const KM = { m: 0.001, km: 1, cm: 0.00001, in: 0.0000254, ft: 0.0003048, yd: 0.0009144, mi: 1.609344 }
+/**
+ * Converts an exported distance into kilometres for cardio sets.
+ * @param {string|number} v - Raw distance value; blank or non-numeric reads as 0.
+ * @param {string} unit - Distance unit label such as `km`, `mi`, or `m`; missing or unknown reads as kilometres.
+ * @returns {number} Distance in kilometres.
+ */
 const toKm = (v, unit) => num(v) * (KM[String(unit || 'km').toLowerCase().trim()] ?? 1)
 
 /* --------------------------------------------------------------- parse ---- */
@@ -505,7 +555,18 @@ export function parseBodyweight(text, { unit = 'kg' } = {}) {
   }
 }
 
-/** Sniff the file and parse it as whatever it is. */
+/**
+ * Sniff pasted file text and parse it as workouts or bodyweight.
+ *
+ * XML (Apple Health `HKQuantityTypeIdentifier`, or leading `<`) goes to
+ * `parseBodyweight`; otherwise tries `parseWorkoutCSV` (Hevy/Strong/FitNotes)
+ * first and falls back to `parseBodyweight` CSV. Returns the first success, or
+ * the workout error when both fail.
+ *
+ * @param {string} text - Raw file text.
+ * @param {Object} [opts] - `{unit}` active unit for conversion.
+ * @returns {Object} `{kind:'workouts',...}`, `{kind:'bodyweight',...}`, or `{error}`.
+ */
 export function parseImport(text, opts) {
   const s = String(text)
   if (s.includes('HKQuantityTypeIdentifier') || /^\s*</.test(s)) return parseBodyweight(s, opts)

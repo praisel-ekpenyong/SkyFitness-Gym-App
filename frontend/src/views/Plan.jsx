@@ -7,6 +7,7 @@ import Icon from '../components/Icon.jsx'
 import { Button } from '../components/ui.jsx'
 import { glyphOf, DEFAULT_GLYPH } from '../lib/glyphs.js'
 
+/** Plan route; assigns weekdays and manages routines. */
 export default function Plan() {
   const nav = useNavigate()
   const S = useStore(s => s.S)

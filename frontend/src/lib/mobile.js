@@ -18,6 +18,10 @@ export const MOBILE = ENV_MOBILE
 
 const FILE = 'sky-state.json'
 
+/**
+ * Restores the last natively saved snapshot from the app's private file on mobile builds.
+ * @returns {Promise<Object|null>} Parsed snapshot, or null on first launch or when unreadable.
+ */
 export async function nativeLoad() {
   try {
     const { Filesystem, Directory, Encoding } = await import('@capacitor/filesystem')
@@ -26,6 +30,11 @@ export async function nativeLoad() {
   } catch (e) { return null }   // first launch, or unreadable — localStorage copy takes over
 }
 
+/**
+ * Mirrors a snapshot into the app's private file so the log survives WebView eviction.
+ * @param {Object} state - State snapshot persisted as JSON.
+ * @returns {Promise<void>} Resolves once attempted; failures keep the localStorage copy and stay silent.
+ */
 export async function nativeSave(state) {
   try {
     const { Filesystem, Directory, Encoding } = await import('@capacitor/filesystem')

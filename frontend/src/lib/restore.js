@@ -1,16 +1,22 @@
-// Restore entry point — the public store-plus-restore seam a lifter crosses
-// when loading a full JSON backup file (CONTEXT.md: Restore replaces the
-// current Profile wholesale on confirmation).
-//
-// validateBackup rejects non-backups, sanitizeRestorePayload strips malformed
-// Workout and Routine elements (and malformed Entries inside good ones) with
-// a skipped count, then the cleaned Profile lands via the store's public
-// replaceState and the outcome is announced as a visible toast.
+// Public restore entry point for JSON backup imports (CONTEXT.md: Restore replaces
+// the current Profile wholesale on confirmation). Coordinates schema validation,
+// record sanitization, and atomic state replacement.
 import { validateBackup, sanitizeRestorePayload } from './storage.js'
 import { useStore, DEF } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { t } from './i18n.js'
 
+/**
+ * Restore the application state wholesale from a parsed JSON backup file.
+ *
+ * Validates the backup payload against Sky's backup schema, strips malformed workout
+ * or routine records, replaces active state via store `replaceState`, and emits a UI toast
+ * reporting the outcome (including skipped record count if any).
+ *
+ * @param {Object} data - Parsed backup payload to restore.
+ * @throws {Error} When data fails validation (not an object or missing backup schema markers).
+ * @returns {number} Count of malformed records dropped during sanitization.
+ */
 export function restoreFromBackup(data) {
   validateBackup(data)
   const { clean, skipped } = sanitizeRestorePayload(data)

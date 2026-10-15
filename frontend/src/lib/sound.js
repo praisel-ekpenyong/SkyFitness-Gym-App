@@ -1,6 +1,10 @@
 // WebAudio beeps + haptics (ported from the vanilla app). `enabled` gates sound.
 let audioCtx = null
 
+/**
+ * Returns the shared WebAudio context for timer and set cues, resuming it when suspended.
+ * @returns {AudioContext|null} Shared context, or null outside a browser or without WebAudio support.
+ */
 function getAudioContext() {
   if (typeof window === 'undefined') return null
   const AudioContextClass = window.AudioContext || window.webkitAudioContext
@@ -14,6 +18,14 @@ function getAudioContext() {
   return audioCtx
 }
 
+/**
+ * Plays one short sine cue through the shared audio context.
+ * @param {boolean} enabled - When falsy nothing plays and no context is created.
+ * @param {number} freq - Tone frequency in hertz; missing reads as 880.
+ * @param {number} dur - Audible length in seconds; missing reads as 0.18 with a short release tail.
+ * @param {number} when - Delay in seconds after now; missing plays immediately.
+ * @returns {void} Nothing; failures stay silent so a missed cue never breaks a set.
+ */
 export function beep(enabled, freq, dur, when) {
   if (!enabled) return
   try {
@@ -31,15 +43,20 @@ export function beep(enabled, freq, dur, when) {
     g.gain.exponentialRampToValueAtTime(0.001, t0 + (dur || 0.18))
     o.start(t0)
     o.stop(t0 + (dur || 0.18) + 0.05)
-  } catch (e) { /* */ }
+  } catch (e) { /* best-effort: a failed beep must never break a set tick */ }
 }
 
+/**
+ * Fires a haptic cue where the device supports it.
+ * @param {number|number[]} p - Pattern in milliseconds passed straight to the device vibrator.
+ * @returns {void} Nothing; missing support or failures stay silent.
+ */
 export function vibrate(p) {
   try {
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
       navigator.vibrate(p)
     }
-  } catch (e) { /* */ }
+  } catch (e) { /* haptics are best-effort too */ }
 }
 
 /** Play short acoustic & haptic confirmation when checking off a set. */

@@ -14,6 +14,7 @@ import { POLICIES_FOR, POLICY_NAME, POLICY_DESC } from '../lib/progression.js'
 import BodyMap from '../components/BodyMap.jsx'
 import { loadOfRoutine, rankOf, MUSCLE_NAME } from '../lib/muscles.js'
 
+/** Routine editor route; renames, configures, and orders one routine's exercises. */
 export default function RoutineEdit() {
   const nav = useNavigate()
   const { id } = useParams()

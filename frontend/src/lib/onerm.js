@@ -1,6 +1,6 @@
 import { isWarmupRow } from './workout-model.js'
 import { workoutTimestamp } from './format.js'
-// Estimated one-rep max (issue #18).
+// Estimated one-rep maximum (1RM) calculation and progression tracking.
 //
 // Deliberately knows nothing about the exercise database: an estimate needs a weight AND a
 // rep count, and only reps-mode sets carry both. Cardio sets ({min, speed}) and timed sets
@@ -25,9 +25,18 @@ export const FORMULAS = {
 }
 export const DEFAULT_FORMULA = 'epley'
 
-// Estimate a 1RM from one set. Returns null for anything it cannot honestly answer:
-// missing/zero/negative load, no reps, non-finite input, or more reps than REP_CAP.
-// A single rep is not an estimate — it is the measurement — and comes back unchanged.
+/**
+ * Estimate 1RM from a completed set weight and rep count.
+ *
+ * For single repetitions (`reps === 1`), the weight is the measured maximum and is returned
+ * directly without formula application. For sets exceeding `REP_CAP` (12 reps), returns null
+ * as submaximal formulas lose validity.
+ *
+ * @param {number} w - Lifted load in active units.
+ * @param {number} r - Repetitions performed.
+ * @param {string} [formula='epley'] - Submaximal formula identifier ('epley' | 'brzycki' | 'lombardi').
+ * @returns {number|null} Estimated 1RM rounded to 1 decimal place, or null if invalid/uncapped.
+ */
 export function estimate1RM(w, r, formula = DEFAULT_FORMULA) {
   const weight = Number(w)
   const reps = Number(r)
@@ -40,9 +49,15 @@ export function estimate1RM(w, r, formula = DEFAULT_FORMULA) {
   return Math.round(est * 10) / 10
 }
 
-// Best estimate out of one workout entry's completed sets.
-// `topW` is ignored on purpose: it records the working weight a user confirmed after the
-// exercise, with no rep count attached, so it cannot produce an estimate.
+/**
+ * Calculate the highest estimated 1RM among completed work sets in a single workout entry.
+ *
+ * Excludes warm-up rows, uncompleted sets, and post-exercise confirmed weight (`topW`).
+ *
+ * @param {Object} entry - Workout entry containing `sets` array.
+ * @param {string} [formula='epley'] - Formula name.
+ * @returns {{ est: number, w: number, r: number }|null} Best estimate and source set details, or null if none.
+ */
 export function bestSetOf(entry, formula = DEFAULT_FORMULA) {
   let best = null
   for (const s of entry?.sets || []) {
@@ -53,8 +68,16 @@ export function bestSetOf(entry, formula = DEFAULT_FORMULA) {
   return best
 }
 
-// One point per workout in which the exercise produced an estimate — feeds the trend chart.
-// Chronological, matching the order workouts are appended in.
+/**
+ * Generate a chronological timeline of peak 1RM estimates for an exercise across past workouts.
+ *
+ * Produces one data point per workout where the exercise had valid completed work sets.
+ *
+ * @param {Object} S - Application state atom containing `workouts`.
+ * @param {string} exId - Target exercise identifier.
+ * @param {string} [formula='epley'] - Formula name.
+ * @returns {Array<{ t: number, d: string, y: number, w: number, r: number }>} Chronological points for trend charting.
+ */
 export function e1rmSeries(S, exId, formula = DEFAULT_FORMULA) {
   const pts = []
   for (const w of S.workouts || []) {
@@ -66,16 +89,34 @@ export function e1rmSeries(S, exId, formula = DEFAULT_FORMULA) {
   return pts
 }
 
-// All-time best estimate for an exercise, with the set and date it came from — the source
-// matters, because "142.5 kg est. from 100×10" is a very different claim from "from 140×1".
+/**
+ * Retrieve the all-time peak estimated 1RM for an exercise across historical workouts.
+ *
+ * Retains source set load, reps, calendar date, and timestamp for provenance inspection.
+ *
+ * @param {Object} S - Application state atom containing `workouts`.
+ * @param {string} exId - Target exercise identifier.
+ * @param {string} [formula='epley'] - Formula name.
+ * @returns {{ est: number, w: number, r: number, d: string, t: number }|null} Peak estimate record, or null if none.
+ */
 export function best1RM(S, exId, formula = DEFAULT_FORMULA) {
   let best = null
   e1rmSeries(S, exId, formula).forEach(p => { if (!best || p.y > best.est) best = { est: p.y, w: p.w, r: p.r, d: p.d, t: p.t } })
   return best
 }
 
-// Did this workout beat every estimate that came before it? Used for the finish summary,
-// so it compares against history that does not yet contain `w`.
+/**
+ * Evaluate whether an active workout entry established a new all-time 1RM record.
+ *
+ * Compares the best set of the entry against historical workouts in `S.workouts` (which does not yet
+ * include the active workout).
+ *
+ * @param {Object} S - Application state atom.
+ * @param {string} exId - Target exercise identifier.
+ * @param {Object} entry - Active workout entry being completed.
+ * @param {string} [formula='epley'] - Formula name.
+ * @returns {{ est: number, w: number, r: number, prev: number }|null} Record details if broken, or null otherwise.
+ */
 export function is1RMRecord(S, exId, entry, formula = DEFAULT_FORMULA) {
   const now = bestSetOf(entry, formula)
   if (!now) return null

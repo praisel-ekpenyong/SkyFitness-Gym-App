@@ -18,9 +18,13 @@ import { MOBILE, shareExport } from './lib/mobile.js'
 import { configureSessionSheets } from './sheets/session.jsx'
 import { configureCatalogueSheets } from './sheets/catalogue.jsx'
 
+/** Reads the shared store state. */
 const S = () => useStore.getState().S
+/** Applies a draft mutation to the shared store state. */
 const update = (...a) => useStore.getState().update(...a)
+/** Reads the UI store state. */
 const ui = () => useUI.getState()
+/** Shows a transient toast message. */
 const toast = m => ui().toast(m)
 
 /* ============================ custom confirm dialog ============================ */
@@ -38,7 +42,11 @@ export function confirmSheet(opts) {
   ui().openSheet(close => <ConfirmDialog {...opts} close={close} />, { kind: 'center' })
 }
 
-/* ============================ starter plan ============================ */
+/**
+ * Load the built-in Push/Pull/Legs starter plan into the store.
+ *
+ * Appends three routines and assigns them to Mon/Wed/Fri, then shows a confirmation toast.
+ */
 export function loadStarterPlan() {
   const [push, pull, legs] = starterRoutines()
   update(st => {
@@ -57,7 +65,15 @@ export function loadStarterPlan() {
 // kg, but as pounds it cut off at 136 kg — below plenty of people's body weight, and well
 // below an everyday squat.
 const W_LO = 1
+/** Weight-slider ceiling for the given unit. */
 const wHi = unit => (unit === 'lb' ? 660 : 300)
+/**
+ * Weight picker with slider and step buttons.
+ *
+ * @param {number} value Current weight.
+ * @param {Function} setValue Updates the weight.
+ * @param {string} unit Display unit.
+ */
 function WeightInput({ value, setValue, unit }) {
   const W_HI = wHi(unit)
   const clamp = x => Math.max(W_LO, Math.min(W_HI, Math.round((x || 0) * 10) / 10))
@@ -121,6 +137,11 @@ function BwSheet({ required, onDone, close }) {
     </>}
   </>
 }
+/**
+ * Opens the body-weight sheet; saving logs today's weigh-in.
+ *
+ * @param {Object} opts Sheet options.
+ */
 export function bwSheet(opts = {}) {
   const h = ui().openSheet(close => <BwSheet {...opts} close={close} />, { locked: !!opts.required })
   return h
@@ -227,6 +248,11 @@ export function bwDeltaColor(delta, currentW) {
   const up = S().targetW > currentW
   return (delta > 0) === up ? 'var(--acc-text)' : 'var(--red-text)'
 }
+/**
+ * Target-weight sheet; saving stores the goal drawn on weight charts.
+ *
+ * @param {Function} close Closes the sheet.
+ */
 function GoalSheet({ close }) {
   const st = S()
   const bw = lastBW(st)
@@ -245,19 +271,19 @@ function GoalSheet({ close }) {
     {st.targetW && <><div style={{ height: 8 }} /><Button variant="danger" onClick={() => { update(s => { s.targetW = null }); close(); toast(t('Goal removed')) }}>{t('Remove goal')}</Button></>}
   </>
 }
+/** Opens the target-weight sheet. */
 export const goalSheet = () => ui().openSheet(close => <GoalSheet close={close} />)
 
 /* ============================ profile display name ============================ */
 function DisplayNameSheet({ close }) {
   const st = S()
   const [v, setV] = useState(st.displayName || '')
-  const trimmed = v.trim()
-  const canSave = trimmed.length > 0 && trimmed.length <= 24
+  const clean = sanitizeDisplayName(v)
+  const canSave = clean !== null
   const canClear = !!st.displayName
   const save = () => {
-    const s = sanitizeDisplayName(v)
-    if (s === null) { toast(t('Enter a name')); return }
-    update(s0 => { s0.displayName = s })
+    if (!clean) { toast(t('Enter a name')); return }
+    update(s0 => { s0.displayName = clean })
     close()
     toast(t('Name saved'))
   }
@@ -268,7 +294,7 @@ function DisplayNameSheet({ close }) {
   }
   return <>
     <h3>{t('Your name')}</h3>
-    <div className="muted small" style={{ marginBottom: 12 }}>{t('Shown as “Hi, {0}” on Home. Only on this device.', trimmed || 'there')}</div>
+    <div className="muted small" style={{ marginBottom: 12 }}>{t('Shown as “Hi, {0}” on Home. Only on this device.', clean || 'there')}</div>
     <input
       className="input"
       placeholder={t('Enter your name')}
@@ -285,6 +311,7 @@ function DisplayNameSheet({ close }) {
     {canClear && <><div style={{ height: 8 }} /><Button variant="ghost" onClick={clear}>{t('Clear name')}</Button></>}
   </>
 }
+/** Opens the display-name sheet; saving stores the Home greeting name. */
 export const displayNameSheet = () => ui().openSheet(close => <DisplayNameSheet close={close} />)
 
 /* ============================ glyph picker ============================ */
@@ -314,6 +341,11 @@ export const glyphPicker = (current, onPick) => {
 /* ============================ share / print / import a plan ============================ */
 export const planToolsSheet = () => ui().openSheet(close => <PlanTools close={close} />)
 
+/**
+ * Plan share sheet; exporting saves a plan file and importing opens the preview.
+ *
+ * @param {Function} close Closes the sheet.
+ */
 function PlanTools({ close }) {
   const st = useStore(s => s.S)
   const fileRef = useRef(null)
@@ -355,8 +387,14 @@ function PlanTools({ close }) {
   </>
 }
 
+/** Opens the plan-import preview for the given bundle. */
 export const planImportSheet = bundle => ui().openSheet(close => <PlanImport bundle={bundle} close={close} />)
-
+/**
+ * Plan-import preview; saving adds the routines without changing existing ones.
+ *
+ * @param {Object} bundle Parsed plan bundle.
+ * @param {Function} close Closes the sheet.
+ */
 function PlanImport({ bundle, close }) {
   const [schedule, setSchedule] = useState(false)
   const apply = () => {
@@ -390,7 +428,15 @@ function PlanImport({ bundle, close }) {
   </>
 }
 
-/* ============================ day override / assign ============================ */
+/**
+ * Day-override sheet body: pick what to train on one date.
+ *
+ * Lists every routine plus rest, marks the effective choice, and writes
+ * `dayPlan[iso]` (or clears it for "back to weekly plan") before closing.
+ *
+ * @param {string} iso - Calendar date in 'YYYY-MM-DD' format.
+ * @param {Function} close - Sheet closer.
+ */
 function DayOverride({ iso, close }) {
   const st = useStore(s => s.S)
   const wd = new Date(iso + 'T12:00:00').getDay()
@@ -415,8 +461,14 @@ function DayOverride({ iso, close }) {
     </div>
   </>
 }
+/** Opens the day-override sheet for the given date. */
 export const dayOverrideSheet = iso => ui().openSheet(close => <DayOverride iso={iso} close={close} />)
-
+/**
+ * Weekday-assignment sheet; picking stores the routine for that weekday.
+ *
+ * @param {number} day Weekday index.
+ * @param {Function} close Closes the sheet.
+ */
 function DayAssign({ day, close }) {
   const st = useStore(s => s.S)
   const set = v => { update(s => { if (v) s.week[day] = v; else delete s.week[day] }); close() }
@@ -431,9 +483,15 @@ function DayAssign({ day, close }) {
     </div>
   </>
 }
+/** Opens the weekday-assignment sheet for the given day. */
 export const dayAssignSheet = day => ui().openSheet(close => <DayAssign day={day} close={close} />)
 
-/* ============================ workout detail ============================ */
+/**
+ * Completed-workout detail sheet body with per-exercise set labels and delete.
+ *
+ * @param {Object} w - Completed workout entity from `S.workouts`.
+ * @param {Function} close - Sheet closer.
+ */
 function WorkoutDetail({ w, close }) {
   const st = useStore(s => s.S)
   return <>
@@ -450,9 +508,18 @@ function WorkoutDetail({ w, close }) {
     <Button variant="danger" onClick={() => confirmSheet({ title: t('Delete workout?'), message: t('This removes it from your history for good.'), confirmText: t('Delete'), danger: true, onConfirm: () => { update(s => { s.workouts = s.workouts.filter(x => x.id !== w.id) }); close(); toast(t('Workout deleted')) } })}>{t('Delete workout')}</Button>
   </>
 }
+/** Opens the completed-workout detail for the given workout. */
 export const workoutDetailSheet = w => ui().openSheet(close => <WorkoutDetail w={w} close={close} />)
 
-/* ============================ calendar ============================ */
+/**
+ * Monthly calendar sheet body for history navigation and day planning.
+ *
+ * Dots mark trained/planned/rescheduled days. Tapping a trained day opens its
+ * detail; tapping any other day opens the day-override sheet.
+ *
+ * @param {string} [start] - Any date in the initial month ('YYYY-MM-DD'); defaults to today.
+ * @param {Function} close - Sheet closer.
+ */
 function Calendar({ start, close }) {
   const st = useStore(s => s.S)
   const [cur, setCur] = useState(() => { const d = start ? new Date(start) : new Date(); d.setDate(1); return d })
@@ -492,6 +559,7 @@ function Calendar({ start, close }) {
     <div className="small dim" style={{ textAlign: 'center', marginTop: 10 }}>{t('Tap a trained day for details · tap any other day to plan a session')}</div>
   </>
 }
+/** Opens the monthly calendar sheet starting at the given date. */
 export const calendarSheet = start => ui().openSheet(close => <Calendar start={start} close={close} />)
 
 /* ============================ monthly recap ============================ */
@@ -589,6 +657,11 @@ export function RecapSheet({ start, close }) {
     </div>
   </>
 }
+/**
+ * Opens the monthly recap sheet.
+ *
+ * @param {string} start Any date in the month to show.
+ */
 export const recapSheet = (start) => ui().openSheet(close => <RecapSheet start={start} close={close} />)
 
 /* shared small workout row (used in lists) */

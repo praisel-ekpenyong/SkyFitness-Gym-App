@@ -17,6 +17,9 @@ export default class ErrorBoundary extends Component {
   static getDerivedStateFromError() { return { failed: true } }
   componentDidCatch(err) { console.error('Sky render error:', err) }
 
+  /**
+   * Renders the children, or the fallback recovery UI once a child render has failed.
+   */
   render() {
     if (!this.state.failed) return this.props.children
     const active = useStore.getState().S.active

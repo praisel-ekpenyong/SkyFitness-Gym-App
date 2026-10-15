@@ -14,6 +14,10 @@ import { t } from '../lib/i18n.js'
 let CACHE = null                                  // shared across every mounted map
 let PENDING = null
 
+/**
+ * Loads the body-map SVG geometry once (shared across every mounted map) and returns it, or null until it arrives.
+ * @returns {Object|null} Muscle-path geometry by body and view, or null while loading.
+ */
 function useBodyPaths() {
   const [paths, setPaths] = useState(CACHE)
   useEffect(() => {
@@ -26,6 +30,16 @@ function useBodyPaths() {
   return paths
 }
 
+/**
+ * One front/back body silhouette with each muscle shaded by its training level; interactive only when a muscle callback is given.
+ * Interactive muscles expose a single keyboard tab stop with a localized name; supplementary paths stay out of the accessibility tree.
+ * @param {Object} view - View geometry (viewBox plus per-muscle paths).
+ * @param {string} viewKey - Which view this is ("front" or "back").
+ * @param {Object} levels - Shade level per muscle slug.
+ * @param {Function} [onMuscle] - Called with the muscle slug when a muscle is picked; omitting it renders a static image.
+ * @param {string} [selected] - Currently selected muscle slug.
+ * @param {Function} [primaryOf] - Resolves which view holds the keyboard stop for a muscle.
+ */
 function View({ view, viewKey, levels, onMuscle, selected, primaryOf }) {
   return (
     <svg className="bm-v" viewBox={view.vb} role={onMuscle ? 'group' : 'img'} aria-label={onMuscle ? t('Body map') : undefined}>
@@ -83,6 +97,9 @@ export default function BodyMap({ load = {}, thresholds, body = 'male', onMuscle
   )
 }
 
+/**
+ * Less-to-More shade key matching the map and activity heatmap levels; use alongside BodyMap.
+ */
 export function BodyMapLegend() {
   return <div className="hm-legend">
     {t('Less')} <div className="hm-c l0" /><div className="hm-c l1" /><div className="hm-c l2" />

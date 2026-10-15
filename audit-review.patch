@@ -1,0 +1,204 @@
+diff --git a/frontend/src/components/accessibility.test.jsx b/frontend/src/components/accessibility.test.jsx
+index a0cbefa..c2936c0 100644
+--- a/frontend/src/components/accessibility.test.jsx
++++ b/frontend/src/components/accessibility.test.jsx
+@@ -36,6 +36,10 @@ describe('accessibility rendered-role seam', () => {
+     expect(btn.getAttribute('aria-checked')).toBe('false')
+   })
+ 
++  it('a switch without a label or aria-label fails loudly instead of rendering bare', async () => {
++    await expect(render(<Switch checked={false} onChange={() => {}} />)).rejects.toThrow(/bare switch/)
++  })
++
+   it('single-select group announces as a radiogroup with radio options', async () => {
+     const onChange = vi.fn()
+     await render(
+diff --git a/frontend/src/components/ui.jsx b/frontend/src/components/ui.jsx
+index 91c550f..d8cff56 100644
+--- a/frontend/src/components/ui.jsx
++++ b/frontend/src/components/ui.jsx
+@@ -78,7 +78,11 @@ export function SearchField({ value, onChange, onClear, className = '', style, '
+ /* ============================ switch ============================ */
+ 
+ export function Switch({ checked, onChange, disabled, label, 'aria-label': ariaLabel, ...rest }) {
++  // The visible label text is the accessible name. Rendering without either would
++  // put aria-label={undefined} on the button — a bare switch for screen readers —
++  // so fail loudly instead of shipping the regression silently.
+   const name = ariaLabel || label
++  if (!name) throw new Error('Switch requires `label` or `aria-label` so it never renders as a bare switch.')
+   return (
+     <span className="sw-hit">
+       <button
+diff --git a/frontend/src/lib/progression-semantics.test.js b/frontend/src/lib/progression-semantics.test.js
+index b5bb90a..aa1b663 100644
+--- a/frontend/src/lib/progression-semantics.test.js
++++ b/frontend/src/lib/progression-semantics.test.js
+@@ -57,6 +57,7 @@ describe('a finished Entry with zero performed Work sets is a Miss', () => {
+     expect(p.kind).toBe('deload')
+     expect(p.weight).toBe(55)
+     expect(p.why[0]).toMatch(/reset/i)
++    expect(p.why[0]).toMatch(/Workouts/)
+   })
+ })
+ 
+@@ -107,6 +108,27 @@ describe('bonus Work sets never flip a Hit to a Miss', () => {
+   })
+ })
+ 
++describe('freestyle added-set growth ignores bonus sets', () => {
++  it('resumes from the judged count, not the history high', () => {
++    const S = stateWith([
++      finishedWorkout('2026-04-01', { sets: 3, reps: 15 }, [work(0, 15), work(0, 15), work(0, 15), work(0, 15)])
++    ])
++    // No sets in the plan (freestyle): growth falls back to what was judged.
++    const freestyle = { id: LIFT, weight: 0, repsMax: 15, prog: 'linear' }
++    const p = nextPrescription(S, freestyle)
++    expect(p.kind).toBe('up')
++    expect(p.sets).toBe(4)
++  })
++
++  it('reports the judged count, so bonus sets never leak into growth', () => {
++    const s = readSession({
++      id: LIFT, target: TARGET_3X5,
++      sets: [work(60, 5), work(60, 5), work(60, 5), work(50, 4)]
++    })
++    expect(s.count).toBe(3)
++  })
++})
++
+ describe('added-set growth resumes from the current Routine target', () => {
+   it('cutting sets in the Routine lowers the resume point below the history high', () => {
+     const S = stateWith([
+diff --git a/frontend/src/lib/progression.js b/frontend/src/lib/progression.js
+index 5b94898..0ee6525 100644
+--- a/frontend/src/lib/progression.js
++++ b/frontend/src/lib/progression.js
+@@ -94,6 +94,13 @@ function deloadTo(cur, step) {
+   return Math.max(step, next)
+ }
+ 
++// One Deload-or-hold decision: a Deload that cannot reduce the working weight reads
++// as a hold, never a same-weight "deload".
++function asHoldOrDeload(cur, step, onHold, onDeload) {
++  const next = deloadTo(cur, step)
++  return next >= cur ? onHold() : onDeload(next)
++}
++
+ /**
+  * Reduce one finished workout entry to what a policy needs to judge it.
+  *
+@@ -131,7 +138,9 @@ export function readSession(entry, fallback) {
+   return {
+     mode, goal, reps,
+     weight: Math.max(0, ...judged.filter(s => s.done).map(s => s.w || 0)),
+-    count: sets.length,                               // the dimension bodyweight work grows (#33)
++    count: judged.length,                           // judged Work sets only: bonus sets beyond
++    // the plan count toward volume/fatigue (read from the raw rows elsewhere) but
++    // must never leak into added-set growth (#33)
+     low: reps.length ? Math.min(...reps) : 0,
+     amrap: reps.length ? reps[reps.length - 1] : 0,   // Greyskull's final set
+     ok: goal > 0 && enough && reps.length > 0 && reps.every(r => r >= goal)
+@@ -190,10 +199,10 @@ export function nextPrescription(S, cfg, routine) {
+     }
+     if (stalls >= deloadAt) {
+       const cur = last.goal || cfg.sec || 0
+-      const sec = deloadTo(cur, 5)
+       // A Deload that cannot reduce reads as a hold, never a same-weight "deload".
+-      if (sec >= cur) return { policy, kind: 'hold', sec: clampTimeSec(cur), why: ['Already at the minimum hold — same target again.'] }
+-      return { policy, kind: 'deload', sec, why: ['Short {0} sessions in a row — back off to {1}s and build up again.', stalls, sec] }
++      return asHoldOrDeload(cur, 5,
++        () => ({ policy, kind: 'hold', sec: clampTimeSec(cur), why: ['Already at the minimum hold — same target again.'] }),
++        sec => ({ policy, kind: 'deload', sec, why: ['Short {0} Workouts in a row — back off to {1}s and build up again.', stalls, sec] }))
+     }
+     return { policy, kind: 'hold', sec: clampTimeSec(last.goal || cfg.sec), why: ['Last time came up short — same target again.'] }
+   }
+@@ -236,10 +245,10 @@ export function nextPrescription(S, cfg, routine) {
+     const bottom = Math.min(cfg.repsMin || Math.max(1, top - 2), top)
+     if (last.ok) return { policy, kind: 'up', weight: snap(w + inc, inc), reps: bottom, why: ['Top of the rep range in every set — {0} {1} more, back to {2} reps.', inc, unit, bottom] }
+     if (stalls >= deloadAt) {
+-      const dw = deloadTo(w, inc)
+       // A Deload that cannot reduce reads as a hold, never a same-weight "deload".
+-      if (dw >= w) return { policy, kind: 'hold', weight: w, reps: bottom, why: ['Already at the minimum load — same weight again.'] }
+-      return { policy, kind: 'deload', weight: dw, reps: bottom, why: ['Stalled {0} sessions — deload to {1} {2}.', stalls, dw, unit] }
++      return asHoldOrDeload(w, inc,
++        () => ({ policy, kind: 'hold', weight: w, reps: bottom, why: ['Already at the minimum load — same weight again.'] }),
++        dw => ({ policy, kind: 'deload', weight: dw, reps: bottom, why: ['Stalled {0} Workouts — deload to {1} {2}.', stalls, dw, unit] }))
+     }
+     const aim = Math.min(top, Math.max(bottom, last.low + repStep(cfg)))
+     return { policy, kind: 'hold', weight: w, reps: aim, why: ['Same weight — aim for {0} reps this time.', aim] }
+@@ -259,15 +268,15 @@ export function nextPrescription(S, cfg, routine) {
+     }
+   }
+   if (stalls >= deloadAt) {
+-    const dw = deloadTo(w, inc)
+     // A Deload that cannot reduce reads as a hold, never a same-weight "deload".
+-    if (dw >= w) return { policy, kind: 'hold', weight: w, why: ['Already at the minimum load — same weight again.'] }
+-    return {
+-      policy, kind: 'deload', weight: dw,
+-      why: stalls > 1
+-        ? ['Missed reps {0} sessions running — reset to {1} {2} and work back up.', stalls, dw, unit]
+-        : ['Missed reps — reset to {0} {1} and work back up.', dw, unit]
+-    }
++    return asHoldOrDeload(w, inc,
++      () => ({ policy, kind: 'hold', weight: w, why: ['Already at the minimum load — same weight again.'] }),
++      dw => ({
++        policy, kind: 'deload', weight: dw,
++        why: stalls > 1
++          ? ['Missed reps {0} Workouts running — reset to {1} {2} and work back up.', stalls, dw, unit]
++          : ['Missed reps — reset to {0} {1} and work back up.', dw, unit]
++      }))
+   }
+   return { policy, kind: 'hold', weight: w, why: ['Missed reps last time — same weight again ({0} of {1} to go).', deloadAt - stalls, deloadAt] }
+ }
+diff --git a/frontend/src/lib/storage.js b/frontend/src/lib/storage.js
+index 14b92e4..f6642a2 100644
+--- a/frontend/src/lib/storage.js
++++ b/frontend/src/lib/storage.js
+@@ -262,6 +262,16 @@ const isGoodWorkout = w => isPlainRecord(w) && Array.isArray(w.entries)
+ const isGoodRoutineEx = e => isPlainRecord(e) && typeof e.id === 'string' && e.id.length > 0
+ const isGoodRoutine = r => isPlainRecord(r) && typeof r.id === 'string' && r.id.length > 0 && Array.isArray(r.ex)
+ 
++// Top-level Profile keys a Restore may carry (mirrors DEF in store/useStore.js —
++// keep the two in sync). Anything else — a hand-edit scar, a key from a newer
++// version — is dropped instead of spread wholesale into state, so one unknown
++// field can never ride a backup into the live Profile.
++const RESTORE_TOP_KEYS = [
++  'unit', 'restSec', 'sound', 'keepAwake', 'theme', 'accent', 'body', 'targetW',
++  'bodyweight', 'customEx', 'gifSize', 'favorites', 'exWeights', 'week',
++  'reminder', 'effort', 'lastExport', 'displayName'
++]
++
+ // Strip malformed Workout and Routine elements (and malformed Entries inside
+ // otherwise good ones), returning the cleaned Profile plus how many elements
+ // were skipped for the visible notice. Stale Day overrides (pointing at a
+@@ -295,7 +305,10 @@ export function sanitizeRestorePayload(data) {
+       routines.push({ ...r, ex })
+     }
+   }
+-  const clean = { ...data, active: null }
++  const clean = { active: null }
++  for (const k of RESTORE_TOP_KEYS) {
++    if (data[k] !== undefined) clean[k] = data[k]
++  }
+   if (workouts !== undefined) clean.workouts = workouts
+   if (routines !== undefined) {
+     clean.routines = routines
+diff --git a/frontend/src/lib/storage.test.js b/frontend/src/lib/storage.test.js
+index 5995f42..e4d8657 100644
+--- a/frontend/src/lib/storage.test.js
++++ b/frontend/src/lib/storage.test.js
+@@ -257,6 +257,14 @@ describe('backup validation and sanitization', () => {
+     const state = { active: { id: 'act-1' }, workouts: [] }
+     expect(sanitizeBackup(state)).toEqual({ active: null, workouts: [] })
+   })
++
++  it('sanitizeBackup drops unknown top-level keys instead of passing them through', () => {
++    const state = { active: null, workouts: [], routines: [], alien: { x: 1 } }
++    const clean = sanitizeBackup(state)
++    expect(clean).not.toHaveProperty('alien')
++    expect(clean.workouts).toEqual([])
++    expect(clean.routines).toEqual([])
++  })
+ })
+ 
+ describe('onStorageSync', () => {

@@ -50,6 +50,7 @@ export const STRENGTH_LEVELS = [
   { at: 1, level: 4 },
 ]
 
+/** Returns the current time, ticking once a minute. */
 function useNow() {
   // The clock lives in state so the Fatigue/Strength memos below only rescan when the
   // 60-second tick advances it — returning Date.now() directly would hand every render
@@ -73,6 +74,7 @@ export function weeksSinceTraining(now, lastTrained) {
   return Math.max(0, Math.floor((now - lastTrained) / 86400000 / 7))
 }
 
+/** Legend for the fatigue body map. */
 function FatigueLegend() {
   return <div className="hm-legend hm-fatigue" aria-label={t('Fatigue')}>
     <span>{t('Fatigued')}</span><div className="hm-c l4" />
@@ -81,6 +83,7 @@ function FatigueLegend() {
   </div>
 }
 
+/** Legend for the strength body map. */
 function StrengthLegend() {
   return <div className="hm-legend hm-strength" aria-label={t('Strength')}>
     <span>1 <span className="dim">{t('full')}</span></span><div className="hm-c l4" /><div className="hm-c l3" /><div className="hm-c l2" />
@@ -88,11 +91,21 @@ function StrengthLegend() {
   </div>
 }
 
+/**
+ * Human label for a fatigue value.
+ *
+ * @param {number} value Fatigue score.
+ */
 function fatigueLabel(value) {
   const state = fatigueStateOf(value)
   return t(state === 'ready' ? 'Ready' : state === 'recovering' ? 'Recovering' : 'Fatigued')
 }
 
+/**
+ * Muscle-balance card with balance, fatigue, and strength views.
+ *
+ * @param {Object} S Store state.
+ */
 function MuscleBalance({ S }) {
   const [view, setView] = useState('balance')
   const [win, setWin] = useState(7)

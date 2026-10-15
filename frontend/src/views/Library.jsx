@@ -11,6 +11,7 @@ import { exerciseDetailSheet, addToRoutineSheet, customExSheet } from '../sheets
 import Icon from '../components/Icon.jsx'
 import { Button, SearchField } from '../components/ui.jsx'
 
+/** Library route; searches the catalogue and opens detail or planning. */
 export default function Library() {
   const S = useStore(s => s.S)
   const update = useStore(s => s.update)

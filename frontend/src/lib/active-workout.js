@@ -18,16 +18,20 @@ import { uid, todayISO } from './format.js'
 import { t } from './i18n.js'
 import {
   cleanupSg, pairAdjacent, unpairSuperset,
-  supersetUnits, unitOf, setProgressHighWater, supersetFlowStep
+  supersetUnits, unitOf, setProgressHighWater, supersetFlowStep, hasWork, isExerciseDone
 } from './supersetFlow.js'
 
 // --- read seam --------------------------------------------------------
 
 /**
- * Heaviest weight the profile has ever moved for one exercise —
- * best of history plus the exWeights mirror. History already excludes
- * warm-ups/unticked sets via bestWeightForEntry; exWeights is the
- * confirmed working weight (topW) mirror.
+ * Highest training load recorded for an exercise across history and working-weight cache.
+ *
+ * Queries all completed workout entries (excluding warm-up rows and unperformed sets via `bestWeightForEntry`)
+ * and compares against the confirmed working-weight mirror (`S.exWeights[exId].w`).
+ *
+ * @param {Object} S - Application state atom containing `workouts` and `exWeights`.
+ * @param {string} exId - Exercise identifier from EXIDX.
+ * @returns {number} Heaviest load in active units (kg/lb), or 0 if unrecorded.
  */
 export function bestKnownWeight(S, exId) {
   if (!S || !exId) return 0
@@ -46,8 +50,13 @@ export function bestKnownWeight(S, exId) {
 }
 
 /**
- * Heaviest *set* weight inside one entry's done work rows (warm-ups
- * excluded, unticked excluded, topW not included). Used for PR baseline.
+ * Highest load among completed work sets in a single workout entry.
+ *
+ * Excludes warm-up rows, uncompleted sets, and the post-exercise working weight (`topW`).
+ * Used as the baseline load when evaluating personal records (PRs).
+ *
+ * @param {Object} entry - Active or historical workout entry containing `{ sets }`.
+ * @returns {number} Maximum completed set load in active units, or 0 if none.
  */
 export function heaviestSetWeight(entry) {
   if (!entry || !Array.isArray(entry.sets)) return 0
@@ -61,8 +70,13 @@ export function heaviestSetWeight(entry) {
 }
 
 /**
- * Heaviest weight attributable to one entry, including the confirmed
- * working weight (topW) when present. Used for exWeights merges.
+ * Peak load attributable to an entry, evaluating both completed work sets and post-exercise confirmation.
+ *
+ * Evaluates the maximum of `heaviestSetWeight(entry)` and the confirmed working load (`entry.topW`).
+ * Used when updating the all-time working-weight cache (`exWeights`).
+ *
+ * @param {Object} entry - Completed or active workout entry.
+ * @returns {number} Highest recorded load in active units, or 0 if none.
  */
 export function heaviestForEntry(entry) {
   const base = heaviestSetWeight(entry)
@@ -72,10 +86,17 @@ export function heaviestForEntry(entry) {
 }
 
 /**
- * Single reconciled exWeights merge policy — monotonic max.
- * Only a strictly heavier weight replaces the stored best; the date
- * stamped is the weight's own date (today for a topWeight confirmation,
- * the workout's d for a finished session). Never lowers.
+ * Update the all-time working-weight cache (`exWeights`) under a monotonic maximum policy.
+ *
+ * Only a strictly greater load overwrites the stored record; ties and lower loads are rejected.
+ * The stamped date reflects the source event (today's date for in-session confirmation, or workout
+ * completion date `d` for historical logs). Never lowers stored weight. Mutates `S.exWeights` in-place.
+ *
+ * @param {Object} S - Application state atom containing `exWeights`.
+ * @param {string} exId - Target exercise identifier.
+ * @param {number} weight - Candidate load in active units.
+ * @param {string} dateISO - ISO calendar date ('YYYY-MM-DD') associated with the load.
+ * @returns {boolean} True if the stored weight was updated, false if rejected or unchanged.
  */
 export function mergeExWeight(S, exId, weight, dateISO) {
   const w = Number(weight)
@@ -93,9 +114,19 @@ export function mergeExWeight(S, exId, weight, dateISO) {
 // --- session construction ---------------------------------------------
 
 /**
- * Pure builder for the active workout object. Owns target freezing,
- * prescription and set construction. Does not touch S.
- * Inject today/uid/now for tests; defaults to the real clock.
+ * Construct a fresh active workout session object from a routine or as freestyle.
+ *
+ * Pure factory function: initializes targets, derives progression prescriptions, and generates
+ * initial set rows without mutating state atom `S`.
+ *
+ * @param {Object} S - Application state atom containing routines and preferences.
+ * @param {string|null} routineId - ID of routine to instantiate, or null for a freestyle workout.
+ * @param {number|null} [bw=null] - Current body weight at workout start (in active units).
+ * @param {Object} [opts] - Injectable clock and ID generators for deterministic testing.
+ * @param {() => string} [opts.todayISO] - Calendar date supplier ('YYYY-MM-DD').
+ * @param {() => string} [opts.uid] - Unique session identifier generator.
+ * @param {() => number} [opts.now] - Epoch millisecond timestamp supplier.
+ * @returns {Object} Active workout session object (`S.active`).
  */
 export function createActiveSession(S, routineId, bw, opts = {}) {
   const _today = opts.todayISO || todayISO
@@ -121,7 +152,13 @@ export function createActiveSession(S, routineId, bw, opts = {}) {
 }
 
 /**
- * Set the current active exercise index. Mutates S.active in place.
+ * Set the index of the currently viewed exercise in the active session.
+ *
+ * Mutates `S.active.cur` in-place, clamping `idx` to valid entry bounds `[0, entries.length - 1]`.
+ *
+ * @param {Object} S - Application state atom.
+ * @param {number} idx - Target exercise index.
+ * @returns {boolean} True if index was successfully set; false if no active session exists.
  */
 export function setActiveIndex(S, idx) {
   if (!S?.active || !Array.isArray(S.active.entries)) return false
@@ -131,7 +168,12 @@ export function setActiveIndex(S, idx) {
 }
 
 /**
- * Discard the current active session. Mutates S in place.
+ * Abort and clear the current active workout session.
+ *
+ * Mutates `S.active` to null in-place, discarding all in-progress sets.
+ *
+ * @param {Object} S - Application state atom.
+ * @returns {boolean} True if state was mutated, false if `S` was null.
  */
 export function discardActiveSession(S) {
   if (!S) return false
@@ -142,8 +184,16 @@ export function discardActiveSession(S) {
 // --- in-session exercise & set mutations -------------------------------
 
 /**
- * Add an exercise to an active session, handling both routine progression
- * and freestyle history seeding behind one seam. Mutates S.active in place.
+ * Append an exercise entry to the active workout session.
+ *
+ * For routine-backed workouts, applies progression prescriptions; for freestyle workouts,
+ * seeds targets from historical performance (`preferLast: true`). Clamps active index `cur`
+ * to the new entry. Mutates `S.active` in-place.
+ *
+ * @param {Object} S - Application state atom.
+ * @param {string} exId - Exercise identifier from EXIDX.
+ * @param {Object} [targetCfg={}] - Target configuration overrides (sets, reps, weight, progression).
+ * @returns {Object|null} The newly created entry, or null if no active workout exists.
  */
 export function addActiveExercise(S, exId, targetCfg = {}) {
   if (!S?.active) return null
@@ -161,8 +211,14 @@ export function addActiveExercise(S, exId, targetCfg = {}) {
 }
 
 /**
- * Remove an exercise from an active session by index, cleaning up superset
- * groups and bounding active.cur. Mutates S.active in place.
+ * Remove an exercise from an active workout session by index.
+ *
+ * Deletes the entry, prunes orphaned superset IDs via `cleanupSg`, and bounds `active.cur`
+ * to the remaining entries. Mutates `S.active` in-place.
+ *
+ * @param {Object} S - Application state atom.
+ * @param {number} idx - 0-based index of the entry to remove.
+ * @returns {boolean} True if entry was removed, false if index is out of bounds or no active session.
  */
 export function removeActiveExercise(S, idx) {
   if (!S?.active || !Array.isArray(S.active.entries)) return false
@@ -177,8 +233,17 @@ export function removeActiveExercise(S, idx) {
 }
 
 /**
- * Mutate a set field on an active exercise with automatic forward weight cascading.
- * Mutates S.active in place.
+ * Update a single property on a set row, with automatic forward weight cascading.
+ *
+ * When updating load (`field === 'w'`), changes cascade forward to subsequent uncompleted
+ * work sets in the entry via `cascadeWeight`. Mutates `S.active` in-place.
+ *
+ * @param {Object} S - Application state atom.
+ * @param {number} entryIdx - Index of target exercise entry.
+ * @param {number} setIdx - Index of set row within entry.
+ * @param {string} field - Property key to modify (e.g., 'w', 'r', 'sec', 'rpe').
+ * @param {*} value - New value to assign; `null` or `undefined` deletes the property.
+ * @returns {boolean} True if mutation succeeded, false if entry or set was not found.
  */
 export function updateActiveSetField(S, entryIdx, setIdx, field, value) {
   const entry = S?.active?.entries?.[entryIdx]
@@ -192,7 +257,13 @@ export function updateActiveSetField(S, entryIdx, setIdx, field, value) {
 }
 
 /**
- * Add a new set row to an active exercise. Mutates S.active in place.
+ * Append a new work set row to an active exercise entry.
+ *
+ * Clones target properties and defaults from the preceding row. Mutates `S.active` in-place.
+ *
+ * @param {Object} S - Application state atom.
+ * @param {number} entryIdx - Index of target exercise entry.
+ * @returns {boolean} True if set was appended, false if entry was not found.
  */
 export function addActiveSet(S, entryIdx) {
   const entry = S?.active?.entries?.[entryIdx]
@@ -204,8 +275,15 @@ export function addActiveSet(S, entryIdx) {
 }
 
 /**
- * Remove a set row from an active exercise (at index or the last set),
- * preserving at least one row. Mutates S.active in place.
+ * Remove a set row from an active exercise entry while preserving at least one row.
+ *
+ * If `setIdx` is omitted, pops the last set. Will not remove the last remaining set in an entry.
+ * Mutates `S.active` in-place.
+ *
+ * @param {Object} S - Application state atom.
+ * @param {number} entryIdx - Index of target exercise entry.
+ * @param {number|null} [setIdx=null] - Index of specific set to remove; null removes trailing set.
+ * @returns {boolean} True if set was removed, false if entry is missing or only 1 set remains.
  */
 export function removeActiveSet(S, entryIdx, setIdx = null) {
   const entry = S?.active?.entries?.[entryIdx]
@@ -219,8 +297,14 @@ export function removeActiveSet(S, entryIdx, setIdx = null) {
 }
 
 /**
- * Insert a warm-up row before the first work row in an active exercise.
- * Mutates S.active in place.
+ * Insert a warm-up row before the first work row in an active exercise entry.
+ *
+ * Warm-up rows are marked with `warmup: true` and excluded from volume calculations, PR checks,
+ * and completion judgments. Mutates `S.active` in-place.
+ *
+ * @param {Object} S - Application state atom.
+ * @param {number} entryIdx - Index of target exercise entry.
+ * @returns {boolean} True if warm-up row was inserted, false if entry was not found.
  */
 export function addActiveWarmup(S, entryIdx) {
   const entry = S?.active?.entries?.[entryIdx]
@@ -231,7 +315,14 @@ export function addActiveWarmup(S, entryIdx) {
 }
 
 /**
- * Pair two adjacent entries in an active session into a superset.
+ * Pair two adjacent active exercise entries into a superset group.
+ *
+ * Mutates `S.active.entries` in-place using `pairAdjacent`.
+ *
+ * @param {Object} S - Application state atom.
+ * @param {number} firstIdx - Index of first entry.
+ * @param {number} secondIdx - Index of adjacent second entry (`|firstIdx - secondIdx| === 1`).
+ * @returns {boolean} True if pairing succeeded, false if active entries are missing.
  */
 export function pairActiveSuperset(S, firstIdx, secondIdx) {
   if (!S?.active?.entries) return false
@@ -240,7 +331,13 @@ export function pairActiveSuperset(S, firstIdx, secondIdx) {
 }
 
 /**
- * Unpair an entry from its superset partner in an active session.
+ * Dissolve superset membership for an active exercise entry.
+ *
+ * Prunes orphaned singleton partner groups via `unpairSuperset`. Mutates `S.active.entries` in-place.
+ *
+ * @param {Object} S - Application state atom.
+ * @param {number} entryIdx - Index of entry to ungroup.
+ * @returns {boolean} True if unpairing succeeded, false if active entries are missing.
  */
 export function unpairActiveSuperset(S, entryIdx) {
   if (!S?.active?.entries) return false
@@ -249,12 +346,35 @@ export function unpairActiveSuperset(S, entryIdx) {
 }
 
 /**
- * Toggle completion of a set in an active workout:
- * - Toggles `set.done`
- * - Determines if working weight confirmation (`topW`) is needed
- * - Evaluates if the unit or entire workout is done
- * - Updates high-water marks and executes superset navigation (`active.cur`)
- * - Returns a declarative outcome descriptor for caller side-effects (sound, timers, modals)
+ * Toggle completion of a set row and compute all workout lifecycle transitions.
+ *
+ * Encapsulates the complete state transition for a set toggle:
+ * - Flips `set.done` boolean.
+ * - Tracks high-water mark progress on work sets (ignoring warm-up rows).
+ * - Detects exercise, superset unit, and entire workout completion.
+ * - Executes superset wrap-around navigation (`A.cur`).
+ * - Flags when working weight confirmation sheet (`topW`) should prompt.
+ *
+ * @param {Object} S - Application state atom.
+ * @param {number} entryIdx - Index of active entry.
+ * @param {number} setIdx - Index of set row being toggled.
+ * @param {Object} [opts] - Session progress tracking options.
+ * @param {number} [opts.highWater=0] - Previous high-water count of completed work sets in mounted exercise.
+ * @returns {Object|null} Declarative outcome descriptor for UI side effects, or null on invalid target:
+ *   - `checked`: boolean indicating new `done` state of the set.
+ *   - `askTop`: boolean indicating working-weight confirmation sheet should open.
+ *   - `workoutDone`: boolean indicating all units in the workout are finished.
+ *   - `exJustDone`: boolean indicating the current exercise just finished all work sets.
+ *   - `cardioEntry`: boolean indicating if entry is cardio mode.
+ *   - `timedEntry`: boolean indicating if entry is timed mode.
+ *   - `mode`: 'reps' | 'time' | 'cardio'.
+ *   - `newHighWater`: updated maximum completed work sets.
+ *   - `navigated`: boolean indicating whether `active.cur` transitioned to a partner/next unit.
+ *   - `shouldRest`: boolean indicating rest timer should start.
+ *   - `shouldStopRest`: boolean indicating running rest timer should cancel.
+ *   - `roundDone`: boolean indicating all members in current superset round are completed.
+ *   - `unitDone`: boolean indicating entire superset unit is completed.
+ *   - `cur`: current active exercise index after any navigation.
  */
 export function toggleActiveSet(S, entryIdx, setIdx, opts = {}) {
   const A = S?.active
@@ -275,7 +395,10 @@ export function toggleActiveSet(S, entryIdx, setIdx, opts = {}) {
   const unit = unitOf(units, entryIdx)
   const unitIdx = units.findIndex(u => u === unit)
   const isLastUnit = unitIdx >= units.length - 1
-  const unitDone = unit.every(ui => (ui === entryIdx ? entry : A.entries[ui]).sets.every(x => x.done))
+  // Warm-up rows are prep, not work. The unit is done when no member has an
+  // undone work row — the same `hasWork` rule the superset step below reads, so
+  // an unticked warm-up can no longer keep a finished unit reading as unfinished.
+  const unitDone = !unit.some(ui => hasWork(A.entries, ui))
 
   let askTop = false
   let exJustDone = false
@@ -286,7 +409,7 @@ export function toggleActiveSet(S, entryIdx, setIdx, opts = {}) {
       workoutDone = true
     }
     const loaded = mode === 'reps' && !(isBw({ ...(entry.target || {}), id: entry.id }) && !entry.sets.some(x => x.w > 0))
-    if (entry.sets.every(x => x.done)) {
+    if (isExerciseDone(entry)) {
       exJustDone = true
       if (loaded && !entry.asked) {
         entry.asked = true
@@ -362,10 +485,16 @@ export function toggleActiveSet(S, entryIdx, setIdx, opts = {}) {
 // --- in-session weight confirmation -----------------------------------
 
 /**
- * Mutate S in place: set the confirmed working weight for one entry
- * and merge it into exWeights with today's date. Called inside
- * update(mut) so the caller still owns persistence.
- * Returns false for invalid weight or missing entry.
+ * Set the confirmed working weight for an active entry and record it in `exWeights`.
+ *
+ * Updates `entry.topW` and applies monotonic max merge to `S.exWeights[entry.id]`.
+ * Mutates `S` in-place; must be executed within `useStore.update(...)`.
+ *
+ * @param {Object} S - Application state atom.
+ * @param {number} entryIdx - Index of entry in active session.
+ * @param {number} weight - Working load in active units.
+ * @param {Object} [opts] - Injectable clock options for testing (`todayISO`).
+ * @returns {boolean} True if working weight was valid and applied; false otherwise.
  */
 export function applyWorkingWeight(S, entryIdx, weight, opts = {}) {
   const _today = opts.todayISO || todayISO
@@ -381,8 +510,18 @@ export function applyWorkingWeight(S, entryIdx, weight, opts = {}) {
 // --- finish -----------------------------------------------------------
 
 /**
- * Construct the persisted completed workout boundary data structure.
- * Pure function; excludes entries with no completed sets.
+ * Map an active workout session into a persistable completed workout record.
+ *
+ * Pure function: filters out unperformed entries (zero completed sets), freezes routine metadata,
+ * attaches personal record (PR) flags, and records muscle fatigue snapshots for custom exercises.
+ * Completion options arrive as a destructured second argument.
+ *
+ * @param {Object} active - Active session object (`S.active`).
+ * @param {number} [end=Date.now()] - Workout finish epoch timestamp in milliseconds.
+ * @param {Array<string>} [prs=[]] - Exercise IDs that established personal records.
+ * @param {string} [unit='kg'] - Active weight unit.
+ * @param {(entry: Object) => Object|null} [snapshotFor] - Custom exercise muscle snapshot provider.
+ * @returns {Object} Persistable workout entity for `S.workouts`.
  */
 export function buildCompletedWorkout(active, { end = Date.now(), prs = [], unit = 'kg', snapshotFor } = {}) {
   const entries = (active?.entries || []).map(entry => {
@@ -414,10 +553,17 @@ export function buildCompletedWorkout(active, { end = Date.now(), prs = [], unit
 }
 
 /**
- * Complete the active workout: PR / e1RM detection, building the
- * persisted record, exWeights merges, and clearing active.
- * Mutates S in place (call inside update) and returns the boundary
- * data the UI needs to present the summary.
+ * Finalize the active workout session and commit it to historical log.
+ *
+ * Evaluates personal records (heaviest completed sets) and estimated 1RM records against history,
+ * calculates total tonnage volume (`vol`), merges peak loads into `exWeights`, appends the
+ * completed workout to `S.workouts` sorted chronologically, and clears `S.active`.
+ * Mutates `S` in-place; must be executed within `useStore.update(...)`.
+ *
+ * @param {Object} S - Application state atom.
+ * @param {Object} [opts] - Injectable clock options for testing (`now`).
+ * @returns {{ workout: Object, prs: Array<string>, e1prs: Array<Object> }|null}
+ *   Summary boundary data for UI recap, or null if no active workout was present.
  */
 export function completeActiveSession(S, opts = {}) {
   const _now = opts.now || Date.now

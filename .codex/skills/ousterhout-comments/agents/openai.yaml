@@ -1,0 +1,4 @@
+interface:
+  display_name: "Ousterhout comments"
+  short_description: "Write and clean comments that explain missing knowledge"
+  default_prompt: "Use $ousterhout-comments to write or clean up comments in this codebase using Chapters 12, 13, 15, and 16 of A Philosophy of Software Design."
