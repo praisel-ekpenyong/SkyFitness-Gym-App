@@ -28,7 +28,7 @@ vi.mock('../sheets.jsx', () => ({
   bwSheet: () => {}, goalSheet: () => {}, calendarSheet: () => {}, recapSheet: vi.fn(), workoutDetailSheet: () => {},
   WorkoutRow: () => React.createElement('div'), bwDeltaColor: () => 'inherit',
 }))
-vi.mock('../components/LineChart.jsx', () => ({ default: () => React.createElement('div') }))
+vi.mock('../components/LineChart.jsx', () => ({ default: props => React.createElement('div', { 'data-chart-days': props.points.map(p => p.d).join(',') }) }))
 vi.mock('../components/Heatmap.jsx', () => ({ default: () => React.createElement('div') }))
 vi.mock('../components/Icon.jsx', () => ({ default: props => React.createElement('span', props) }))
 vi.mock('../components/BodyMap.jsx', () => ({
@@ -106,6 +106,7 @@ function allSubfullWorkout(now = BASE_NOW) {
 }
 
 function resetFixture(workouts = lifecycleWorkouts()) {
+  mocks.S.customEx = []
   mocks.S.unit = 'kg'
   mocks.S.bodyweight = []
   mocks.S.workouts = workouts
@@ -320,4 +321,36 @@ describe('Stats muscle recovery view runtime', () => {
     await click(monthTile)
     expect(recapSheet).toHaveBeenCalled()
   })
+})
+
+it('shows a Profile custom exercise and its available progress controls before global registration', async () => {
+  resetFixture([0, 1, 2].map(day => workout(`custom-${day}`, BASE_NOW - day * DAY, [
+    entry('custom-press', [set(true, { rir: 2 })]),
+  ])))
+  mocks.S.customEx = [{ id: 'custom-press', n: 'Custom press', bp: 'chest', tg: 'pectorals', eq: 'barbell', sm: [] }]
+  await mountStats()
+  expect(container.textContent).toContain('Custom press')
+  expect(buttonWithText(container, 'Est. 1RM')).toBeTruthy()
+  expect(buttonWithText(container, 'Effort')).toBeTruthy()
+  expect(container.querySelectorAll('.exercise-session-item')).toHaveLength(3)
+})
+
+it('keeps the Hard-set control usable when the selected window has only easy ratings', async () => {
+  resetFixture([workout('easy', BASE_NOW, [entry('1254', [set(true, { rir: 5 })])])])
+  await mountStats()
+  await click(buttonWithText(muscleCard().querySelector('.card-head'), 'All'))
+  expect(muscleCard().textContent).toContain('by sets worked')
+  expect(buttonWithText(muscleCard().querySelector('.card-head'), 'All')).toBeTruthy()
+})
+
+it('refreshes the body-weight chart on the shared minute clock without a Workout card', async () => {
+  resetFixture([])
+  const edge = BASE_NOW - 90 * DAY + 30000
+  mocks.S.bodyweight = [{ d: iso(edge), t: edge, w: 80 }, { d: iso(BASE_NOW), t: BASE_NOW, w: 79 }]
+  await mountStats()
+  const weightCard = [...container.querySelectorAll('.card')].find(card => card.querySelector('h2')?.textContent === 'Body weight')
+  const chart = () => weightCard.querySelector('[data-chart-days]')
+  expect(chart().getAttribute('data-chart-days')).toContain(iso(edge))
+  await tick(60000)
+  expect(chart().getAttribute('data-chart-days')).toBe(iso(BASE_NOW))
 })
