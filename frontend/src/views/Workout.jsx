@@ -3,7 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { exOr } from '../lib/exercises.js'
-import { effectiveRoutine, lastEntryFor, freestyleConfig, defaultConfig, setsDoneActive, supersetUnits, unitOf, setLabel, modeOf, isBw, isPerSide, sideReps, repStep, EFFORT, effortOf, stepEffort, capEffort, hasEffectiveOverride, hasWork, isExerciseDone } from '../lib/history.js'
+import { effectiveRoutine, hasEffectiveOverride } from '../lib/schedule.js'
+import { lastEntryFor, freestyleConfig, defaultConfig, setsDoneActive, modeOf, isBw, isPerSide, sideReps, repStep } from '../lib/workout-model.js'
+import { supersetUnits, unitOf, hasWork, isExerciseDone } from '../lib/supersetFlow.js'
+import { setLabel } from '../lib/format.js'
+import { EFFORT, effortOf, stepEffort, capEffort } from '../lib/effort.js'
 import { bestKnownWeight } from '../lib/active-workout.js'
 import { fmtNum, fmtDate, todayISO, exCount, DAYN } from '../lib/format.js'
 import { playSetComplete } from '../lib/sound.js'
@@ -281,8 +285,13 @@ function ActiveWorkout() {
       playSetComplete(S.sound)
     }
 
-    if (res.askTop) topWeightSheet(idx)
-    else if (res.workoutDone) workoutCompleteSheet()
+    // Sheet choice follows the domain's `next` action (same geometry the
+    // toggle already computed); the raw flags stay as fallback while callers
+    // migrate. Toasts and rest intent still read the outcome fields.
+    const openTop = res.next ? res.next.kind === 'open-topweight' : res.askTop
+    const doneAll = res.next ? res.next.kind === 'open-finish' : res.workoutDone
+    if (openTop) topWeightSheet(idx)
+    else if (doneAll) workoutCompleteSheet()
     else if (res.exJustDone && res.cardioEntry) useUI.getState().toast(t('Cardio logged'))
     else if (res.exJustDone && res.timedEntry) useUI.getState().toast(t('Hold logged'))
 

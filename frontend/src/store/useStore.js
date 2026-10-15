@@ -11,9 +11,9 @@ import { localTZ } from '../lib/format.js'
 import { registerCustom } from '../lib/exercises.js'
 import { MOBILE, syncReminder } from '../lib/mobile.js'
 import { flush, load, loadLocal, save, LOCAL_KEY, onStorageSync } from '../lib/storage.js'
-import { setsDoneActive } from '../lib/history.js'
+import { setsDoneActive } from '../lib/workout-model.js'
 import {
-  createActiveSession, applyWorkingWeight, completeActiveSession,
+  createActiveSession, applyWorkingWeight, commitWorkingWeight, completeActiveSession,
   addActiveExercise, removeActiveExercise, toggleActiveSet,
   updateActiveSetField, addActiveSet, removeActiveSet, addActiveWarmup,
   pairActiveSuperset, unpairActiveSuperset, setActiveIndex, discardActiveSession
@@ -251,6 +251,11 @@ export const useStore = create((set, get) => {
       let ok = false
       get().update(s => { ok = applyWorkingWeight(s, entryIdx, weight) })
       return ok
+    },
+    commitWorkingWeight(entryIdx, weight) {
+      let next = null
+      get().update(s => { next = commitWorkingWeight(s, entryIdx, weight) })
+      return next
     },
     setActiveIndex(idx) {
       let ok = false
