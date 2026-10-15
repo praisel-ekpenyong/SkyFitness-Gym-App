@@ -141,6 +141,10 @@ function Sheet({ sheet }) {
   )
 }
 
+/**
+ * Renders every open bottom sheet or centered dialog from the UI store; renders nothing when none are open.
+ * Sheets trap focus, close on Escape, and lock page scroll while open.
+ */
 export default function Modals() {
   const sheets = useUI(s => s.sheets)
   const closeSheet = useUI(s => s.closeSheet)

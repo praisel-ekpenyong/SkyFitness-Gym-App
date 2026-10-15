@@ -1,20 +1,71 @@
-// Pure decisions for the active-workout superset flow. Keeping these independent of React and
-// the stores makes the uneven-round and re-check rules explicit and directly testable.
+// Pure decisions for the active-workout superset flow.
+//
+// Governs contiguous superset grouping, partner pairing/unpairing, high-water
+// mark progress tracking, and round/unit navigation across active exercises.
+// Keeping these pure and decoupled from React/Zustand guarantees deterministic
+// testing for uneven rounds, wrap-around navigation, and warm-up set exclusion.
 import { isWarmupRow } from './workout-model.js'
 
-const hasWork = (entries, idx) => !!entries[idx]?.sets?.some(set => !set.done && !isWarmupRow(set))
+/**
+ * Check whether an entry contains at least one uncompleted work set.
+ *
+ * Warm-up rows are excluded: they are preparatory sets and never prevent an
+ * exercise, superset round, or workout from completing.
+ * Accepts either an entries array with an index `(entries, idx)`, or an entry directly `(entry)`.
+ *
+ * @param {Array<Object>|Object} entryOrEntries - Entries array or a single entry object.
+ * @param {number} [idx] - Optional index when passing an entries array.
+ * @returns {boolean} True if the entry has pending (done: false) work sets.
+ */
+export const hasWork = (entryOrEntries, idx) => {
+  const entry = idx == null ? entryOrEntries : entryOrEntries?.[idx]
+  return !!entry?.sets?.some(set => !set.done && !isWarmupRow(set))
+}
 
-// A completion is new progress only when it takes this exercise beyond the largest number of
-// simultaneously completed _work_ sets seen in this mounted session. Warm-ups are excluded
-// from every metric, so they must not drive superset navigation either.
+/**
+ * Check whether an exercise entry is completed.
+ *
+ * An exercise is considered done when it has at least one prescribed work set
+ * and all of its work sets are marked completed. Entries with only warm-up rows
+ * are prep sets and cannot be completed exercises.
+ *
+ * @param {Object} entry - Workout entry containing a sets array.
+ * @returns {boolean} True if the entry has work sets and none remain undone.
+ */
+export function isExerciseDone(entry) {
+  if (!entry || !Array.isArray(entry.sets) || !entry.sets.length) return false
+  const hasAnyWork = entry.sets.some(s => !isWarmupRow(s))
+  return hasAnyWork && !hasWork(entry)
+}
+/**
+ * Update the high-water mark of completed work sets for superset progression.
+ *
+ * Progress is only recognized when completed work sets strictly exceed the
+ * previous high-water mark in the current mounted session. Warm-up sets are ignored.
+ *
+ * @param {Object} entry - Active workout entry.
+ * @param {number} [previous=0] - Previous maximum completed work set count.
+ * @returns {{ isNew: boolean, highWater: number }}
+ */
 export function setProgressHighWater(entry, previous = 0) {
   const done = entry?.sets?.reduce((count, set) => count + (set.done && !isWarmupRow(set) ? 1 : 0), 0) || 0
   return { isNew: done > previous, highWater: Math.max(previous, done) }
 }
 
-// Decide where a newly completed superset set goes next. Spent members are skipped, including
-// across the wrap. A round ends when no later member in display order has work left; this makes
-// the last *active* member the boundary rather than blindly using the group's last array index.
+/**
+ * Determine the next exercise navigation target after completing a set in a superset unit.
+ *
+ * Navigation rules:
+ * - Exhausted members (no remaining work) are skipped across the wrap.
+ * - A round is complete when no subsequent member in display order has remaining work.
+ * - A unit is complete when all members have completed all work sets.
+ *
+ * @param {Array<Object>} entries - Active workout entries array.
+ * @param {number[]} unit - Array of entry indices in the active superset unit.
+ * @param {number} fromIdx - Index of the entry just performed.
+ * @returns {{ unitDone: boolean, roundDone: boolean, nextIdx: number|null } | null}
+ *   Navigation descriptor, or null if the unit is invalid or a singleton.
+ */
 export function supersetFlowStep(entries, unit, fromIdx) {
   if (!Array.isArray(entries) || !Array.isArray(unit) || unit.length <= 1) return null
   const pos = unit.indexOf(fromIdx)
@@ -29,7 +80,12 @@ export function supersetFlowStep(entries, unit, fromIdx) {
   return { unitDone: false, roundDone, nextIdx }
 }
 
-// Drop superset ids that no longer have an adjacent partner (after unlink/reorder/remove).
+/**
+ * Remove lone superset group tags (`sg`) that lack an adjacent partner.
+ * Mutates `ex` in-place after exercise deletion, reordering, or unpairing.
+ *
+ * @param {Array<Object>} ex - Array of routine exercises or workout entries.
+ */
 export function cleanupSg(ex) {
   if (!Array.isArray(ex)) return
   ex.forEach((e, i) => {
@@ -37,9 +93,16 @@ export function cleanupSg(ex) {
   })
 }
 
-// Return the contiguous run around an entry that shares its superset id. A repeated id in a
-// separated part of the list is deliberately not included: the display semantics are adjacent
-// entries sharing one id, not every entry that happens to carry that id.
+/**
+ * Find the contiguous index range of entries sharing the superset group of `idx`.
+ *
+ * Non-adjacent entries with the same `sg` ID are intentionally excluded:
+ * superset display semantics require adjacency.
+ *
+ * @param {Array<Object>} items - Array of exercise or entry objects.
+ * @param {number} idx - Anchor entry index.
+ * @returns {number[]} Contiguous array of matching indices (at least `[idx]`).
+ */
 function contiguousSgGroup(items, idx) {
   const sg = items[idx]?.sg
   if (!sg) return [idx]
@@ -50,6 +113,14 @@ function contiguousSgGroup(items, idx) {
   return Array.from({ length: last - first + 1 }, (_, i) => first + i)
 }
 
+/**
+ * Generate a unique superset group identifier for a newly paired pair of entries.
+ *
+ * @param {Array<Object>} items - Array of existing entry objects.
+ * @param {number} first - First entry index.
+ * @param {number} second - Second entry index.
+ * @returns {string} Unique group identifier string (e.g. 'sg-0-1' or 'sg-0-1-2').
+ */
 function freshSg(items, first, second) {
   const base = `sg-${Math.min(first, second)}-${Math.max(first, second)}`
   let sg = base
@@ -58,10 +129,20 @@ function freshSg(items, first, second) {
   return sg
 }
 
-// Purely pair two adjacent entries. Existing contiguous groups on either side are merged, so
-// pairing the end of one group with the start of another produces one display unit. A caller can
-// provide a group id (useful when restoring a known id); otherwise an existing id is preferred,
-// with a deterministic unused id for two previously ungrouped entries.
+/**
+ * Pair two adjacent entries into a unified superset group.
+ *
+ * Merges existing contiguous groups if either entry is already part of one.
+ * Pure function: returns a cloned array of items with updated `sg` identifiers.
+ *
+ * @param {Array<Object>} items - Array of routine exercises or entry objects.
+ * @param {number} first - Index of first entry.
+ * @param {number} second - Index of second entry (must satisfy `|first - second| === 1`).
+ * @param {string} [groupId] - Optional explicit group ID (e.g., when restoring known state).
+ * @throws {TypeError} If items is not an array.
+ * @throws {RangeError} If indices are out of range or not adjacent.
+ * @returns {Array<Object>} New array of entries with paired superset IDs.
+ */
 export function pairAdjacent(items, first, second, groupId) {
   if (!Array.isArray(items)) throw new TypeError('Superset entries must be an array')
   if (!Number.isInteger(first) || !Number.isInteger(second) || !items[first] || !items[second]) {
@@ -78,8 +159,18 @@ export function pairAdjacent(items, first, second, groupId) {
   return next
 }
 
-// Remove one entry from its superset and clean any ids that no longer have an adjacent partner.
-// This is pure so the active workout can replace its entries atomically through the store.
+/**
+ * Remove an entry from its superset group and prune orphaned singletons.
+ *
+ * Pure function: returns a cloned array of items with the entry ungrouped
+ * and any resulting lone partner IDs cleaned.
+ *
+ * @param {Array<Object>} items - Array of routine exercises or entry objects.
+ * @param {number} idx - Index of the entry to unpair.
+ * @throws {TypeError} If items is not an array.
+ * @throws {RangeError} If idx is out of range.
+ * @returns {Array<Object>} New array of entries with updated superset assignments.
+ */
 export function unpairSuperset(items, idx) {
   if (!Array.isArray(items)) throw new TypeError('Superset entries must be an array')
   if (!Number.isInteger(idx) || !items[idx]) throw new RangeError('Superset entry index is invalid')
@@ -91,8 +182,15 @@ export function unpairSuperset(items, idx) {
   return next
 }
 
-// Group consecutive items sharing a superset id (sg) into "units" of indices.
-// items may be routine exercises ({sg}) or active-workout entries ({sg}).
+/**
+ * Partition an entry array into contiguous superset units.
+ *
+ * Consecutive entries sharing an `sg` ID are grouped into an index array;
+ * standalone entries form single-element arrays `[i]`.
+ *
+ * @param {Array<Object>} items - Routine exercises or active workout entries.
+ * @returns {Array<number[]>} Array of units (each an array of entry indices).
+ */
 export function supersetUnits(items) {
   if (!Array.isArray(items)) return []
   const units = []
@@ -104,4 +202,12 @@ export function supersetUnits(items) {
   return units
 }
 
+/**
+ * Find the superset unit (array of entry indices) containing `idx`.
+ * Falls back to `[idx]` (a single-exercise unit) if ungrouped.
+ *
+ * @param {Array<number[]>} units - Partitioned units array from `supersetUnits`.
+ * @param {number} idx - Target entry index.
+ * @returns {number[]} Array of entry indices representing the unit.
+ */
 export function unitOf(units, idx) { return (units || []).find(u => u.includes(idx)) || [idx] }

@@ -200,7 +200,6 @@ describe('active-workout lifecycle seam', () => {
       }
     }
 
-    // Toggle set 0
     const r1 = toggleActiveSet(S, 0, 0, { highWater: 0 })
     expect(r1.checked).toBe(true)
     expect(r1.askTop).toBe(false)
@@ -233,6 +232,76 @@ describe('active-workout lifecycle seam', () => {
     expect(r4.newHighWater).toBe(2)
     expect(r4.shouldStopRest).toBe(false)
     expect(r4.shouldRest).toBe(false)
+  })
+
+  it('treats an unticked warm-up as prep, so it cannot keep the exercise reading as unfinished', () => {
+    // A warm-up row is not work. Leaving it unticked must not swallow the
+    // working-weight prompt or the finish prompt, the way an unticked work row
+    // does — the rest timer and superset navigation already read work sets only.
+    const S = {
+      active: {
+        cur: 0,
+        entries: [{
+          id: 'ex1',
+          target: { reps: 5, weight: 80 },
+          sets: [
+            { w: 40, r: 5, done: false, phase: 'warmup', warmup: true },
+            { w: 80, r: 5, done: false },
+            { w: 80, r: 5, done: false },
+          ],
+        }],
+      },
+    }
+    const first = toggleActiveSet(S, 0, 1, { highWater: 0 })
+    expect(first.checked).toBe(true)
+    expect(first.shouldRest).toBe(true)
+
+    const last = toggleActiveSet(S, 0, 2, { highWater: 1 })
+    expect(last.workoutDone).toBe(true)
+    expect(last.exJustDone).toBe(true)
+    expect(last.askTop).toBe(true)
+    // the unit reads as done even though the warm-up row above is still unticked
+    expect(last.unitDone).toBe(true)
+  })
+
+  it('still holds the prompts back while real work is left', () => {
+    const S = {
+      active: {
+        cur: 0,
+        entries: [{
+          id: 'ex1',
+          target: { reps: 5, weight: 80 },
+          sets: [
+            { w: 80, r: 5, done: true },
+            { w: 80, r: 5, done: false },
+          ],
+        }],
+      },
+    }
+    const r = toggleActiveSet(S, 0, 0, { highWater: 1 })
+    expect(r.unitDone).toBe(false)
+    expect(r.exJustDone).toBe(false)
+    expect(r.askTop).toBe(false)
+    expect(r.workoutDone).toBe(false)
+  })
+
+  it('never reports an all-warm-up entry as finished', () => {
+    // Reachable in two taps: insert a warm-up, then remove the only work row.
+    const S = {
+      active: {
+        cur: 0,
+        entries: [{
+          id: 'ex1',
+          target: { reps: 5, weight: 80 },
+          sets: [
+            { w: 40, r: 5, done: false, phase: 'warmup', warmup: true },
+          ],
+        }],
+      },
+    }
+    const r = toggleActiveSet(S, 0, 0, { highWater: 0 })
+    expect(r.exJustDone).toBe(false)
+    expect(r.askTop).toBe(false)
   })
 
   it('applyWorkingWeight sets topW and merges exWeights', () => {

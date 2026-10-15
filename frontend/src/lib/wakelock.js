@@ -7,12 +7,20 @@
 // and the lock is re-acquired on every visibilitychange for as long as it holds.
 import { useEffect } from 'react'
 
+/**
+ * Reports whether the browser exposes the Screen Wake Lock API.
+ * @returns {boolean} True when `navigator.wakeLock` exists; false otherwise.
+ */
 export const wakeLockSupported = () => 'wakeLock' in navigator
 
 let sentinel = null       // the live WakeLockSentinel, null when we hold nothing
 let wanted = false        // do we currently want the screen to stay on?
 let pending = false       // a request() is in flight — don't stack a second one
 
+/**
+ * Takes the screen lock while a workout wants it, unless one is held or requested.
+ * @returns {Promise<void>} Resolves once attempted; hidden documents, refusals, and mid-flight releases all settle quietly without a lock.
+ */
 async function acquire() {
   if (!wanted || sentinel || pending || !wakeLockSupported()) return
   if (document.visibilityState !== 'visible') return   // request() rejects on a hidden document
@@ -30,8 +38,16 @@ async function acquire() {
   } finally { pending = false }
 }
 
+/**
+ * Re-takes the screen lock when the document becomes visible again.
+ * @returns {void} Nothing; hidden documents stay untouched.
+ */
 const onVisible = () => { if (document.visibilityState === 'visible') acquire() }
 
+/**
+ * Declares the workout wants the screen on and takes the lock now.
+ * @returns {void} Nothing; repeat calls while wanted are ignored and the lock re-acquires on every return to visible.
+ */
 export function requestWakeLock() {
   if (wanted) return
   wanted = true
@@ -39,6 +55,10 @@ export function requestWakeLock() {
   acquire()
 }
 
+/**
+ * Declares the workout no longer needs the screen on and drops any held lock.
+ * @returns {void} Nothing; stops re-acquiring and detaches the visibility listener.
+ */
 export function releaseWakeLock() {
   wanted = false
   document.removeEventListener('visibilitychange', onVisible)

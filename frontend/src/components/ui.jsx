@@ -56,10 +56,22 @@ export const TextField = forwardRef(function TextField({ className = '', ...rest
   return <input ref={ref} className={'field ' + className} {...rest} />
 })
 
+/**
+ * Multi-line text field in the shared field styling; use for free-form notes.
+ * Remaining props pass through to the underlying textarea.
+ * @param {string} [className] - Extra classes appended to the field styling.
+ */
 export function TextArea({ className = '', ...rest }) {
   return <textarea className={'field area ' + className} {...rest} />
 }
 
+/**
+ * Search input with a magnifier and a clear button shown while there is text; use for filtering lists.
+ * The input's accessible name falls back to the placeholder, then to "Search".
+ * @param {string} value - Current query text.
+ * @param {Function} onChange - Called with the input change event.
+ * @param {Function} onClear - Called when the clear button is pressed.
+ */
 export function SearchField({ value, onChange, onClear, className = '', style, 'aria-label': ariaLabel, ...rest }) {
   const label = ariaLabel || rest.placeholder || 'Search'
   return (
@@ -75,18 +87,31 @@ export function SearchField({ value, onChange, onClear, className = '', style, '
   )
 }
 
-/* ============================ switch ============================ */
-
-export function Switch({ checked, onChange, disabled }) {
+/**
+ * Toggle switch (role="switch") with an enlarged touch target; use for on/off settings.
+ * A visible label or an aria-label must be provided, otherwise it throws instead of rendering a nameless switch.
+ * @param {boolean} checked - Whether the switch is on.
+ * @param {Function} onChange - Called with the toggled value.
+ * @param {boolean} [disabled] - Whether the switch is disabled.
+ * @param {string} [label] - Visible label text, also used as the accessible name.
+ */
+export function Switch({ checked, onChange, disabled, label, 'aria-label': ariaLabel, ...rest }) {
+  const name = ariaLabel || label
+  // The visible label text is the accessible name. Rendering without either would
+  // put aria-label={undefined} on the button — a bare switch for screen readers —
+  // so fail loudly instead of shipping the regression silently.
+  if (!name) throw new Error('Switch requires `label` or `aria-label` so it never renders as a bare switch.')
   return (
     <span className="sw-hit">
       <button
         type="button"
         role="switch"
         aria-checked={!!checked}
+        aria-label={name}
         disabled={disabled}
         className={'sw' + (checked ? ' on' : '')}
         onClick={() => onChange(!checked)}
+        {...rest}
       >
         <span className="knob" />
       </button>
@@ -97,18 +122,37 @@ export function Switch({ checked, onChange, disabled }) {
 /* ============================ segmented ============================ */
 
 // options: [{ value, label, icon? }]  — the selected pill slides between cells.
-export function Segmented({ options, value, onChange, className = '' }) {
+// Single-select: announced as a radiogroup with radio options (not toggle
+// buttons), so assistive tech reads the choice as one group. Roving tabindex
+// keeps one stop per group; arrows move between options.
+export function Segmented({ options, value, onChange, className = '', label, 'aria-label': ariaLabel, 'aria-labelledby': ariaLabelledby }) {
   const i = Math.max(0, options.findIndex(o => o.value === value))
+  const name = ariaLabel || label
+  const move = (currentTarget, dir) => {
+    const next = (i + dir + options.length) % options.length
+    onChange(options[next].value)
+    const radios = currentTarget.parentElement?.querySelectorAll('[role="radio"]')
+    radios?.[next]?.focus()
+  }
+  const onKey = e => {
+    if (e.key !== 'ArrowRight' && e.key !== 'ArrowDown' && e.key !== 'ArrowLeft' && e.key !== 'ArrowUp') return
+    e.preventDefault()
+    move(e.currentTarget, (e.key === 'ArrowRight' || e.key === 'ArrowDown') ? 1 : -1)
+  }
   return (
-    <div className={'seg ' + className} style={{ '--n': options.length, '--i': i }}>
+    <div className={'seg ' + className} style={{ '--n': options.length, '--i': i }}
+      role="radiogroup" aria-label={name} aria-labelledby={ariaLabelledby}>
       <span className="seg-sel" aria-hidden="true" />
-      {options.map(o => (
+      {options.map((o, idx) => (
         <button
           key={o.value}
           type="button"
+          role="radio"
+          aria-checked={o.value === value}
+          tabIndex={idx === i ? 0 : -1}
           className={o.value === value ? 'on' : ''}
-          aria-pressed={o.value === value}
           onClick={() => onChange(o.value)}
+          onKeyDown={onKey}
         >
           {o.icon && <Icon name={o.icon} />}
           {o.label && <span>{o.label}</span>}
@@ -118,8 +162,16 @@ export function Segmented({ options, value, onChange, className = '' }) {
   )
 }
 
-/* ============================ stepper ============================ */
-
+/**
+ * Minus/plus stepper around an editable numeric field; use for quantities like weight or reps.
+ * Values are clamped at zero; the decrease/increase buttons are named from the field label.
+ * @param {number} value - Current numeric value.
+ * @param {number} [step] - Amount each button press adds or subtracts.
+ * @param {Function} onChange - Called with the new value.
+ * @param {boolean} [decimal] - Whether the inner field accepts decimals.
+ * @param {string} [label] - Optional heading rendered above the stepper.
+ * @param {string} [unit] - Optional unit suffix shown after the field.
+ */
 export function Stepper({ value, step = 1, onChange, decimal = true, className = '', label, unit, 'aria-label': ariaLabel }) {
   const set = v => onChange(Math.max(0, Math.round((v || 0) * 100) / 100))
   const decLabel = ariaLabel ? `Decrease ${ariaLabel}` : 'Decrease'
@@ -203,8 +255,13 @@ export function Slider({ value, min = 0, max = 100, step = 1, onChange, classNam
   )
 }
 
-/* ============================ checkbox ============================ */
-
+/**
+ * Round completion checkbox (role="checkbox"); use to mark a set done.
+ * Announced as "Complete set" unless an accessible name is passed.
+ * @param {boolean} checked - Whether the box is ticked.
+ * @param {Function} onChange - Called with the toggled value.
+ * @param {number|string} [size] - Optional width/height override for the box.
+ */
 export function Check({ checked, onChange, className = '', size, 'aria-label': ariaLabel, ...rest }) {
   return (
     <button
@@ -237,6 +294,17 @@ export function Section({ title, footer, children, className = '' }) {
   )
 }
 
+/**
+ * One inset-list row with optional icon, text, value and trailing accessory; use inside Section lists.
+ * Renders as a button when pressable, otherwise as a static row.
+ * @param {string} [icon] - Icon name for the leading rail.
+ * @param {string} [title] - Primary row text.
+ * @param {string} [subtitle] - Secondary text under the title.
+ * @param {*} [value] - Trailing value shown before the accessory.
+ * @param {string} [accessory] - Trailing marker: "chevron", "check", or "none".
+ * @param {Function} [onClick] - Makes the row pressable when provided.
+ * @param {boolean} [danger] - Whether to tint the row destructive red.
+ */
 export function Row({ icon, iconTint, title, subtitle, value, accessory = 'none', onClick, danger, children, className = '' }) {
   const Tag = onClick ? 'button' : 'div'
   return (
@@ -289,14 +357,29 @@ export function SelectRow({ icon, iconTint, title, value, options, onChange, she
 // Late import keeps this module free of a cycle at load time (useUI pulls in the
 // store, which pulls in helpers that import controls).
 let _ui = null
+/**
+ * Registers the UI store module so shared controls can open sheets without importing it at load time; call once at boot.
+ * @param {Function} store - The UI store hook whose state exposes the sheet controls.
+ */
 export function bindUI(store) { _ui = store }
+/**
+ * Returns the bound UI store state; throws when bindUI has not run yet.
+ * @returns {Object} The current UI store state.
+ */
 function require_ui() {
   if (!_ui) throw new Error('ui store not bound — call bindUI(useUI) once at boot')
   return _ui.getState()
 }
 
-/* ============================ buttons ============================ */
-
+/**
+ * Themed button with optional leading/trailing icons; use for all tappable actions.
+ * @param {string} [variant] - Visual style ("plain", "primary", "ghost", "danger").
+ * @param {string} [size] - Size modifier (e.g. "sm").
+ * @param {string} [icon] - Leading icon name.
+ * @param {string} [trailingIcon] - Trailing icon name.
+ * @param {*} [children] - Button label content.
+ * @param {string} [className] - Extra classes appended to the button styling.
+ */
 export function Button({ variant = 'plain', size, icon, trailingIcon, children, className = '', ...rest }) {
   return (
     <button type="button" className={`btn ${variant}${size ? ' ' + size : ''} ${className}`} {...rest}>

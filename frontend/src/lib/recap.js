@@ -2,6 +2,12 @@ import { workSetsDone, workoutVolume } from './workout-model.js'
 import { bestSetOf } from './onerm.js'
 import { monthKey } from './format.js'
 
+/**
+ * Step a calendar month key back by one month.
+ *
+ * @param {string|Object} yearMonth - 'YYYY-MM' string or workout-like object carrying d.
+ * @returns {string} Previous month as 'YYYY-MM', or '' when the input is not a valid month.
+ */
 export function prevMonthKey(yearMonth) {
   const ym = monthKey(yearMonth)
   const [yStr, mStr] = ym.split('-')
@@ -13,6 +19,12 @@ export function prevMonthKey(yearMonth) {
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`
 }
 
+/**
+ * Order workouts chronologically for stable recap attribution.
+ *
+ * @param {Array<Object>|null|undefined} workouts - Workouts with d and optional start; nullish counts as empty.
+ * @returns {Array<Object>} New array sorted by d then start, leaving the input unmodified.
+ */
 function sortedWorkouts(workouts) {
   return [...(workouts || [])].sort((a, b) => {
     const da = String(a?.d || '')
@@ -27,6 +39,12 @@ function sortedWorkouts(workouts) {
   })
 }
 
+/**
+ * Summarize volume, sets, duration, and PRs across a workout list.
+ *
+ * @param {Array<Object>|null|undefined} workouts - Workouts to summarize; nullish counts as empty.
+ * @returns {Object} Totals with vol, sets, workouts count, durationMs, and deduplicated prs ids.
+ */
 function metricsFor(workouts) {
   let vol = 0
   let sets = 0
@@ -58,6 +76,12 @@ function metricsFor(workouts) {
   }
 }
 
+/**
+ * Attribute each exercise's estimated-1RM records to the month first achieved.
+ *
+ * @param {Array<Object>|null|undefined} allWorkouts - Full history in any order; attribution follows chronological order.
+ * @returns {Map<string,Array<Object>>} Records keyed by 'YYYY-MM', each with id, est, w, r, d, t, and prev best.
+ */
 function e1RecordsByMonth(allWorkouts) {
   const sorted = sortedWorkouts(allWorkouts)
   const bestByEx = new Map()

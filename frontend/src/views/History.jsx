@@ -5,6 +5,7 @@ import { t } from '../lib/i18n.js'
 import { WorkoutRow, workoutDetailSheet } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
 
+/** History route; lists completed workouts with detail on tap. */
 export default function History() {
   const nav = useNavigate()
   const workouts = useStore(s => s.S.workouts)
