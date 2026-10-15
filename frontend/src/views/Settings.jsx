@@ -7,11 +7,13 @@ import { effortOf } from '../lib/effort.js'
 import { wakeLockSupported } from '../lib/wakelock.js'
 import { t } from '../lib/i18n.js'
 import { MOBILE, shareExport, syncReminder } from '../lib/mobile.js'
-import { backupDue } from '../lib/storage.js'
+import { backupDue, validateBackup } from '../lib/storage.js'
+import { restoreFromBackup } from '../lib/restore.js'
 import { loadStarterPlan, confirmSheet, importFromApp, displayNameSheet } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
 import { Section, Row, SelectRow, Switch, Segmented } from '../components/ui.jsx'
 
+/** Settings route; edits preferences, reminders, backup, and data. */
 export default function Settings() {
   const nav = useNavigate()
   const S = useStore(s => s.S)
@@ -44,8 +46,10 @@ export default function Settings() {
       try {
         const data = JSON.parse(rd.result)
         // Same shape as any Sky backup — only the file name changed at the rebrand.
-        if (!data.workouts || !data.routines) throw new Error('not a Sky backup')
-        confirmSheet({ title: t('Import backup?'), message: t('This replaces all current data with the backup file.'), confirmText: t('Import'), danger: true, onConfirm: () => { replaceState(Object.assign(JSON.parse(JSON.stringify(DEF)), data)); toast(t('Backup imported')) } })
+        // Element-level guards live behind the Restore seam: one malformed Entry
+        // is stripped with a skipped count instead of killing the tab.
+        validateBackup(data)
+        confirmSheet({ title: t('Import backup?'), message: t('This replaces all current data with the backup file.'), confirmText: t('Import'), danger: true, onConfirm: () => { restoreFromBackup(data) } })
       } catch (e) { toast(t('Import failed: {0}', e.message)) }
     }
     rd.readAsText(f)
@@ -78,7 +82,7 @@ export default function Settings() {
          the only option, so there is nothing left to pick) ---------- */}
     <Section title={t('General')} footer={t('Note: switching units only changes the label — logged numbers are not converted.')}>
       <Row icon="scale" iconTint="var(--teal)" title={t('Weight unit')}>
-        <Segmented className="seg-inline"
+        <Segmented className="seg-inline" label={t('Weight unit')}
           options={[{ value: 'kg', label: 'kg' }, { value: 'lb', label: 'lb' }]}
           value={S.unit} onChange={v => update(s => { s.unit = v })} />
       </Row>
@@ -92,18 +96,18 @@ export default function Settings() {
       {(wakeOK || !MOBILE) && (
         <Row icon="sun" iconTint="var(--yellow)" title={t('Keep screen awake')}
           subtitle={wakeOK ? null : t('Not supported in this browser.')}>
-          <Switch checked={wakeOK && S.keepAwake !== false} disabled={!wakeOK}
+          <Switch checked={wakeOK && S.keepAwake !== false} disabled={!wakeOK} label={t('Keep screen awake')}
             onChange={v => update(s => { s.keepAwake = v })} />
         </Row>
       )}
       <Row icon="bell" iconTint="var(--pink)" title={t('Sounds')}>
-        <Switch checked={!!S.sound} onChange={v => update(s => { s.sound = v })} />
+        <Switch checked={!!S.sound} label={t('Sounds')} onChange={v => update(s => { s.sound = v })} />
       </Row>
       {/* Two names for the same judgement, so the column asks in the scale you already think in.
           The (i) sits before the control — you read it on the way to the choice, not after it. */}
       <Row icon="target" iconTint="var(--purple)" title={t('Effort per set')}>
         <button className="helpbtn" aria-label={t('What are RIR and RPE?')} onClick={effortHelpSheet}><Icon name="info" /></button>
-        <Segmented className="seg-inline"
+        <Segmented className="seg-inline" label={t('Effort per set')}
           options={[{ value: 'none', label: t('Off') }, { value: 'rir', label: t('RIR') }, { value: 'rpe', label: t('RPE') }]}
           value={effortOf(S)} onChange={v => update(s => { s.effort = v; delete s.showRir })} />
       </Row>
@@ -115,7 +119,7 @@ export default function Settings() {
     <Section title={t('Appearance')}>
       <Row icon="moon" iconTint="var(--indigo)" title={t('Theme')}>
         <Segmented
-          className="seg-inline"
+          className="seg-inline" label={t('Theme')}
           options={[{ value: 'dark', icon: 'moon', label: t('Dark') }, { value: 'light', icon: 'sun', label: t('Light') }]}
           value={S.theme === 'light' ? 'light' : 'dark'}
           onChange={v => update(s => { s.theme = v })}
@@ -124,22 +128,22 @@ export default function Settings() {
       {/* Purely how the muscle map is drawn — nothing else in the app reads this. */}
       <Row icon="figureStrength" iconTint="var(--teal)" title={t('Body diagram')}>
         <Segmented
-          className="seg-inline"
+          className="seg-inline" label={t('Body diagram')}
           options={[{ value: 'male', label: t('Male') }, { value: 'female', label: t('Female') }]}
           value={S.body === 'female' ? 'female' : 'male'}
           onChange={v => update(s => { s.body = v })}
         />
       </Row>
       <div className="lrow" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 12, paddingTop: 13, paddingBottom: 14 }}>
-        <span className="lrow-t">{t('Accent color')}</span>
-        <div className="swatches">
+        <span className="lrow-t" id="accent-label">{t('Accent color')}</span>
+        <div className="swatches" role="radiogroup" aria-labelledby="accent-label">
           {Object.entries(ACCENTS).map(([k, c]) => {
             const on = (S.accent || 'lime') === k
             return (
               <button key={k} className={'swatch' + (on ? ' on' : '')}
                 style={{ background: c }} onClick={() => update(s => { s.accent = k })}
-                aria-label={t('Accent {0}', k)}
-                aria-pressed={on} />
+                role="radio" aria-checked={on}
+                aria-label={t('Accent {0}', k)} />
             )
           })}
         </div>
@@ -190,6 +194,7 @@ const EFFORT_ROWS = [
 // against. Not where the stepper starts; + walks up from the bottom of the scale.
 const EFFORT_TYPICAL = 2
 
+/** Opens the RIR/RPE effort-scale help sheet. */
 function effortHelpSheet() {
   useUI.getState().openSheet(close => <>
     <h3>{t('Effort per set')}</h3>
@@ -229,7 +234,7 @@ function NotificationsCard({ S, update, toast }) {
     <Section title={t('Notifications')}
       footer={S.reminder?.on ? t('Reminds you at this time on days that have a routine planned.') : null}>
       <Row icon="calendar" iconTint="var(--orange)" title={t('Workout day reminder')}>
-        <Switch checked={!!S.reminder?.on} onChange={toggle} />
+        <Switch checked={!!S.reminder?.on} label={t('Workout day reminder')} onChange={toggle} />
       </Row>
       {S.reminder?.on && (
         <Row icon="clock" iconTint="var(--purple)" title={t('Reminder time')}>

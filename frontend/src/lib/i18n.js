@@ -9,6 +9,10 @@ export { dateLocale, t, instrFor }
 
 // React subscription bookkeeping — kept here, not in core, so core has zero React coupling.
 const subs = new Set()
+/**
+ * Wakes every subscribed language listener so components re-render.
+ * @returns {void} Nothing; a no-op before anything subscribes.
+ */
 const notify = () => { subs.forEach(f => f()) }
 
 // Sky ships English only — the locale/instruction packs and their lazy loaders are gone.

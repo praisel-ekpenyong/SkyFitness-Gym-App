@@ -14,6 +14,10 @@ import { t } from '../lib/i18n.js'
 let CACHE = null                                  // shared across every mounted map
 let PENDING = null
 
+/**
+ * Loads the body-map SVG geometry once (shared across every mounted map) and returns it, or null until it arrives.
+ * @returns {Object|null} Muscle-path geometry by body and view, or null while loading.
+ */
 function useBodyPaths() {
   const [paths, setPaths] = useState(CACHE)
   useEffect(() => {
@@ -26,25 +30,45 @@ function useBodyPaths() {
   return paths
 }
 
-function View({ view, levels, onMuscle, selected }) {
+/**
+ * One front/back body silhouette with each muscle shaded by its training level; interactive only when a muscle callback is given.
+ * Interactive muscles expose a single keyboard tab stop with a localized name; supplementary paths stay out of the accessibility tree.
+ * @param {Object} view - View geometry (viewBox plus per-muscle paths).
+ * @param {string} viewKey - Which view this is ("front" or "back").
+ * @param {Object} levels - Shade level per muscle slug.
+ * @param {Function} [onMuscle] - Called with the muscle slug when a muscle is picked; omitting it renders a static image.
+ * @param {string} [selected] - Currently selected muscle slug.
+ * @param {Function} [primaryOf] - Resolves which view holds the keyboard stop for a muscle.
+ */
+function View({ view, viewKey, levels, onMuscle, selected, primaryOf }) {
   return (
-    <svg className="bm-v" viewBox={view.vb} role="img">
+    <svg className="bm-v" viewBox={view.vb} role={onMuscle ? 'group' : 'img'} aria-label={onMuscle ? t('Body map') : undefined}>
       {INERT.map(slug => (view.p[slug] || []).map((d, i) =>
-        <path key={slug + i} className="bm-sil" d={d} />))}
-      {MUSCLES.map(slug => (view.p[slug] || []).map((d, i) =>
-        <path
-          key={slug + i}
-          role={onMuscle ? 'button' : undefined}
-          tabIndex={onMuscle && i === 0 ? 0 : undefined}
-          aria-label={onMuscle && i === 0 ? t(MUSCLE_NAME[slug]) : undefined}
-          aria-pressed={onMuscle && i === 0 ? (selected === slug) : undefined}
-          className={'bm-m l' + (levels[slug] || 0) + (selected === slug ? ' sel' : '')}
-          d={d}
-          onClick={onMuscle ? () => onMuscle(slug) : undefined}
-          onKeyDown={onMuscle && i === 0 ? e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onMuscle(slug) } } : undefined}
-        >
-          <title>{t(MUSCLE_NAME[slug])}</title>
-        </path>))}
+        <path key={slug + i} className="bm-sil" d={d} aria-hidden="true" />))}
+      {MUSCLES.map(slug => (view.p[slug] || []).map((d, i) => {
+        // One keyboard stop per drawable muscle across both views: the front
+        // instance is primary when the muscle is drawn there, otherwise the
+        // back instance. Supplementary paths stay mouse-clickable but leave
+        // the accessibility tree so the muscle is announced exactly once.
+        const isPrimary = !!onMuscle && i === 0 && primaryOf(slug) === viewKey
+        return (
+          <path
+            key={slug + i}
+            role={isPrimary ? 'button' : undefined}
+            tabIndex={isPrimary ? 0 : undefined}
+            focusable={isPrimary ? undefined : 'false'}
+            aria-label={isPrimary ? t(MUSCLE_NAME[slug]) : undefined}
+            aria-hidden={!isPrimary && onMuscle ? true : undefined}
+            aria-pressed={isPrimary ? (selected === slug) : undefined}
+            className={'bm-m l' + (levels[slug] || 0) + (selected === slug ? ' sel' : '')}
+            d={d}
+            onClick={onMuscle ? () => onMuscle(slug) : undefined}
+            onKeyDown={isPrimary ? e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onMuscle(slug) } } : undefined}
+          >
+            {isPrimary ? <title>{t(MUSCLE_NAME[slug])}</title> : null}
+          </path>
+        )
+      }))}
     </svg>
   )
 }
@@ -60,16 +84,22 @@ export default function BodyMap({ load = {}, thresholds, body = 'male', onMuscle
   const paths = useBodyPaths()
   const levels = levelsOf(load, thresholds)
   const g = paths && (paths[body] || paths.male)
+  // Front wins when a muscle is drawn in both views, so each drawable muscle
+  // keeps exactly one keyboard tab stop across the two views.
+  const primaryOf = slug => (g.front.p[slug] ? 'front' : 'back')
   return (
     <div className={'bodymap ' + className}>
       {g ? <>
-        <View view={g.front} levels={levels} onMuscle={onMuscle} selected={selected} />
-        <View view={g.back} levels={levels} onMuscle={onMuscle} selected={selected} />
+        <View view={g.front} viewKey="front" levels={levels} onMuscle={onMuscle} selected={selected} primaryOf={primaryOf} />
+        <View view={g.back} viewKey="back" levels={levels} onMuscle={onMuscle} selected={selected} primaryOf={primaryOf} />
       </> : <div className="bm-ph" aria-hidden="true" />}
     </div>
   )
 }
 
+/**
+ * Less-to-More shade key matching the map and activity heatmap levels; use alongside BodyMap.
+ */
 export function BodyMapLegend() {
   return <div className="hm-legend">
     {t('Less')} <div className="hm-c l0" /><div className="hm-c l1" /><div className="hm-c l2" />

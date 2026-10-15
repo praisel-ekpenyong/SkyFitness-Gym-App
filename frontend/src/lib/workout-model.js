@@ -7,12 +7,25 @@ export { phaseForSet, isWarmupRow, ensurePlainObject, objectOf } from './warmup.
 export const MODES = Object.freeze(['reps', 'time', 'cardio'])
 export const PHASES = Object.freeze({ WORK: 'work', WARMUP: 'warmup' })
 
+/**
+ * Normalize a mode-like value to a canonical logging mode.
+ *
+ * @param {*} value - Candidate mode; non-strings and unknown tokens fall back.
+ * @param {string} [fallback] - Replacement when value is unknown; defaults to 'reps', and an unknown fallback itself yields 'reps'.
+ * @returns {string} 'reps', 'time', or 'cardio'.
+ */
 export function normalizeMode(value, fallback = 'reps') {
   const token = typeof value === 'string' ? value.trim().toLowerCase() : ''
   if (MODES.includes(token)) return token
   return MODES.includes(fallback) ? fallback : 'reps'
 }
 
+/**
+ * Translate a weight-unit token to its logging mode.
+ *
+ * @param {*} value - Unit label such as 'reps', 'sec', or 'min'; non-strings yield null.
+ * @returns {string|null} 'reps', 'time', 'cardio', or null when unrecognized.
+ */
 function modeFromUnit(value) {
   const token = typeof value === 'string' ? value.trim().toLowerCase() : ''
   if (['rep', 'reps', 'repetition', 'repetitions'].includes(token)) return 'reps'
@@ -21,6 +34,12 @@ function modeFromUnit(value) {
   return null
 }
 
+/**
+ * Read the explicitly stored mode from a set, row, or target object.
+ *
+ * @param {*} source - Set, row, or config possibly carrying mode or unit; non-objects read as empty.
+ * @returns {string|null} Stored mode, or null when neither mode nor unit names one.
+ */
 function explicitMode(source) {
   const obj = ensurePlainObject(source)
   const value = obj.mode
@@ -28,6 +47,14 @@ function explicitMode(source) {
   return MODES.includes(token) ? token : modeFromUnit(obj.unit)
 }
 
+/**
+ * Infer a logging mode from stored fields when no explicit mode is present.
+ *
+ * Explicit mode wins; otherwise legacy duration and count fields decide.
+ *
+ * @param {*} source - Set, row, or target possibly carrying mode, unit, or legacy result fields; non-objects read as empty.
+ * @returns {string|null} Inferred mode, or null when nothing indicates one.
+ */
 function inferredMode(source) {
   const value = ensurePlainObject(source)
   const explicit = explicitMode(value)
@@ -59,16 +86,52 @@ export function modeForEntry(entry, fallback = null) {
   return fallback == null ? modeForSet(source, target) : normalizeMode(fallback)
 }
 
+/**
+ * Resolve the logging mode for an exercise config.
+ *
+ * @param {Object|null|undefined} cfg - Exercise config with optional mode and id; nullish reads as reps unless catalogued otherwise.
+ * @returns {string} Explicit mode when valid, else 'cardio' for cardio exercises, else 'reps'.
+ */
 export function modeOf(cfg) {
   const m = cfg && cfg.mode
   if (m === 'reps' || m === 'time' || m === 'cardio') return m
   return isCardio(cfg && cfg.id) ? 'cardio' : 'reps'
 }
+/**
+ * Report whether an exercise config logs timed holds.
+ *
+ * @param {Object|null|undefined} cfg - Exercise config passed to modeOf.
+ * @returns {boolean} True when the resolved mode is 'time'.
+ */
 export const isTimed = cfg => modeOf(cfg) === 'time'
 
+/**
+ * Report whether an exercise is logged as bodyweight work.
+ *
+ * @param {Object|null|undefined} cfg - Exercise config with optional bodyweight flag and id.
+ * @returns {boolean} Explicit bodyweight flag when present, else the catalogue bodyweight default.
+ */
 export const isBw = cfg => (cfg && cfg.bodyweight != null ? !!cfg.bodyweight : isBodyweightEq(cfg && cfg.id))
+/**
+ * Report whether an exercise is logged per side.
+ *
+ * @param {Object|null|undefined} cfg - Exercise config with optional side flag; nullish yields false.
+ * @returns {boolean} True only when cfg.side is truthy.
+ */
 export const isPerSide = cfg => !!(cfg && cfg.side)
+/**
+ * Convert a logged total into per-side reps for unilateral work.
+ *
+ * @param {number} reps - Logged total reps across both sides; nullish counts as 0.
+ * @returns {number} Half the total, preserving .5 for odd totals.
+ */
 export const sideReps = reps => (reps || 0) / 2
+/**
+ * Return the rep stepper increment that keeps unilateral totals splittable.
+ *
+ * @param {Object|null|undefined} cfg - Exercise config with optional side flag.
+ * @returns {number} 2 for per-side exercises, else 1.
+ */
 export const repStep = cfg => (isPerSide(cfg) ? 2 : 1)
 
 // --- Row construction (deep seam) -----------------------------------------
@@ -83,10 +146,18 @@ export const ROW_DEFAULTS = Object.freeze({
 export const SETS_DEFAULTS = Object.freeze({ cardio: 1, time: 3, reps: 3 })
 
 /**
- * Make one work or warm-up row for `mode` from `target` and an optional
- * `prev` row to seed from. `target` carries the exercise config (min/speed
- * etc.); `prev` is the row to copy (history entry or last row). Warm-up rows
- * carry `phase:'warmup'+warmup:true` for legacy readers.
+ * Make one work or warm-up row for `mode` from `target` and an optional `prev` row.
+ *
+ * `target` carries the exercise config ({min,speed} for cardio, {sec,weight} for
+ * time, {reps,weight} for reps); `prev` is the history or last row to copy.
+ * Warm-up rows carry `phase:'warmup'+warmup:true` for legacy readers. Options
+ * arrive as a destructured third argument.
+ *
+ * @param {string} mode - 'reps' | 'time' | 'cardio'.
+ * @param {Object} [target] - Exercise config holding the mode's fields.
+ * @param {Object|null} [prev=null] - Row to copy values from.
+ * @param {boolean} [warmup=false] - Mark the row as a warm-up row.
+ * @returns {Object} New set row with `done:false`.
  */
 export function makeRow(mode, target = {}, { prev = null, warmup = false } = {}) {
   const m = normalizeMode(mode, 'reps')
@@ -115,6 +186,13 @@ export function defaultConfig(id, mode) {
   return { sets: SETS_DEFAULTS.reps, reps: ROW_DEFAULTS.reps.reps, weight: ROW_DEFAULTS.reps.weight, mode: 'reps', ...bw }
 }
 
+/**
+ * Build a freestyle entry config seeded from the exercise's last logged target.
+ *
+ * @param {Object} S - App state holding the workouts history.
+ * @param {Object} cfg - Fresh exercise config providing defaults and id.
+ * @returns {Object} Copy of cfg overlaid with the last target, keeping cfg.id and at least one set.
+ */
 export function freestyleConfig(S, cfg) {
   const last = lastEntryFor(S, cfg.id)
   if (!last) return { ...cfg }
@@ -126,6 +204,16 @@ export function freestyleConfig(S, cfg) {
   }
 }
 
+/**
+ * Build fresh uncompleted set rows for an exercise from plan and history.
+ *
+ * Rows reuse last logged values within the same mode and fall back to the plan.
+ *
+ * @param {Object} S - App state with workouts history and optional exWeights working-weight hints.
+ * @param {Object} cfg - Exercise plan carrying id, sets count, and mode fields.
+ * @param {Object} options - Build flags; honors options.preferLast to keep each last set weight over the hint.
+ * @returns {Array<Object>} New set rows with done:false, at least one row.
+ */
 export function buildSets(S, cfg, options = {}) {
   const last = lastEntryFor(S, cfg.id)
   const n = Math.max(1, cfg.sets || 1)
@@ -158,24 +246,41 @@ export function buildSets(S, cfg, options = {}) {
     // makeRow would otherwise re-derive r from prev, but w is already resolved
     // via exWeights/preferLast — so seed r from usable and override w explicitly.
     const row = makeRow('reps', { ...cfg, reps: r, weight: w }, { prev: null })
-    // If usable exists, copy r already via target above; preserve w computed.
     sets.push(row)
   }
   return sets
 }
 
+/**
+ * Total weight-times-reps across completed work sets in a workout.
+ *
+ * @param {Object|null|undefined} w - Workout with an entries array of set rows; nullish yields 0.
+ * @returns {number} Summed w*r for done non-warm-up sets; 0 when none.
+ */
 export function workoutVolume(w) {
   let v = 0
   ;(w?.entries || []).forEach(e => (e.sets || []).forEach(s => { if (s.done && !isWarmupRow(s)) v += (s.w || 0) * (s.r || 0) }))
   return v
 }
 
+/**
+ * Count every completed set in a finished workout.
+ *
+ * @param {Object|null|undefined} w - Workout with an entries array of set rows; nullish yields 0.
+ * @returns {number} Number of sets with done truthy, including warm-ups.
+ */
 export function setsDone(w) {
   let n = 0
   ;(w?.entries || []).forEach(e => (e.sets || []).forEach(s => { if (s.done) n++ }))
   return n
 }
 
+/**
+ * Count every completed set in an in-progress workout.
+ *
+ * @param {Object|null|undefined} A - Active workout with an entries array; nullish yields 0.
+ * @returns {number} Number of sets with done truthy, including warm-ups.
+ */
 export function setsDoneActive(A) {
   let n = 0
   if (A) (A.entries || []).forEach(e => (e.sets || []).forEach(s => { if (s.done) n++ }))
@@ -225,6 +330,13 @@ export function workSetsDone(w) {
   )
 }
 
+/**
+ * Select work-phase rows of one mode from an entry.
+ *
+ * @param {Object} entry - Workout entry with sets and optional target; missing sets count as empty.
+ * @param {string} mode - Requested mode; unknown values normalize to 'reps'.
+ * @returns {Array<Object>} Work rows matching the normalized mode, in logged order.
+ */
 const workRowsForMode = (entry = {}, mode = 'reps') => {
   const source = ensurePlainObject(entry)
   const target = ensurePlainObject(source.target || source)
@@ -233,8 +345,22 @@ const workRowsForMode = (entry = {}, mode = 'reps') => {
     .filter(set => phaseForSet(set) === 'work' && modeForSet(set, target) === expectedMode)
 }
 
+/**
+ * Select completed work rows of one mode from an entry.
+ *
+ * @param {Object} entry - Workout entry passed to workRowsForMode.
+ * @param {string} mode - Requested mode passed to workRowsForMode.
+ * @returns {Array<Object>} Done work rows of that mode, excluding warm-ups.
+ */
 const completedRowsForMode = (entry, mode) => workRowsForMode(entry, mode).filter(s => s.done === true && !isWarmupRow(s))
 
+/**
+ * Select the completed rows that score an entry's headline metric.
+ *
+ * @param {Object} entry - Workout entry with sets and optional target.
+ * @param {string} mode - Requested mode; unknown or missing values fall back to the entry's own metric mode.
+ * @returns {Array<Object>} Completed rows for the resolved mode, or [] when the entry has no metric mode.
+ */
 export function metricRowsForEntry(entry, mode) {
   const requested = typeof mode === 'string' ? mode.trim().toLowerCase() : ''
   const resolved = MODES.includes(requested) ? requested : metricModeForEntry(entry)

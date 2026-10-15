@@ -14,6 +14,7 @@ import TabBar from './components/TabBar.jsx'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
 import Modals from './components/Modals.jsx'
 import Toast from './components/Toast.jsx'
+import OfflineBadge from './components/OfflineBadge.jsx'
 import RestTimer from './components/RestTimer.jsx'
 // Home is eager — the default route ("/home" + catch-all "*") so first paint has no extra RTT.
 // Every other view is lazy and fetched on demand via Suspense, which keeps the initial
@@ -30,6 +31,12 @@ const Settings = lazy(() => import('./views/Settings.jsx'))
 
 bindUI(useUI)   // lets the shared controls open sheets without importing the store at module scope
 
+/**
+ * Applies the theme and accent preferences to the document (colour-scheme datasets plus theme-color meta).
+ * Unknown accents fall back to "lime"; anything other than "light" resolves to dark.
+ * @param {string} theme - "light" or "dark".
+ * @param {string} accent - Accent key from the supported accent set.
+ */
 function applyPrefs(theme, accent) {
   const de = document.documentElement
   de.dataset.theme = theme === 'light' ? 'light' : 'dark'
@@ -38,6 +45,9 @@ function applyPrefs(theme, accent) {
   if (meta) meta.content = de.dataset.theme === 'light' ? '#f2f2f7' : '#000000'
 }
 
+/**
+ * App frame: tab routes with error containment, tab bar, rest timer, sheets and toast; shows a splash mark until the store is ready.
+ */
 function Shell() {
   const navigate = useNavigate()
   const loc = useLocation()
@@ -66,6 +76,7 @@ function Shell() {
 
   return (
     <>
+      <OfflineBadge />
       {/* Blocked device storage degrades to an in-memory session: training keeps
           working and this persistent alert says changes will not persist. */}
       {storageBlocked && (
@@ -105,6 +116,9 @@ function Shell() {
   )
 }
 
+/**
+ * App root: boots the store once, wires the Android system back button, and provides the router for the shell.
+ */
 export default function App() {
   const boot = useStore(s => s.boot)
   useEffect(() => { boot() }, [boot])

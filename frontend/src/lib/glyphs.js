@@ -39,6 +39,11 @@ const LEGACY = {
   '🐺': 'figureRun', '🦈': 'swim', '🤖': 'machine',
 }
 
+/**
+ * Resolves a stored routine glyph to the icon key the UI renders.
+ * @param {string} v - Icon key or legacy emoji; falsy yields the default.
+ * @returns {string} Known key unchanged, legacy emoji mapped, otherwise the default glyph; unrecognised emoji retry on the base character first.
+ */
 export function glyphOf(v) {
   if (!v) return DEFAULT_GLYPH
   if (ICON_NAMES.includes(v)) return v

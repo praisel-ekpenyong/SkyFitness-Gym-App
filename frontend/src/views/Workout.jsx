@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { exOr } from '../lib/exercises.js'
-import { effectiveRoutine, lastEntryFor, freestyleConfig, defaultConfig, setsDoneActive, supersetUnits, unitOf, setLabel, modeOf, isBw, isPerSide, sideReps, repStep, EFFORT, effortOf, stepEffort, capEffort } from '../lib/history.js'
+import { effectiveRoutine, lastEntryFor, freestyleConfig, defaultConfig, setsDoneActive, supersetUnits, unitOf, setLabel, modeOf, isBw, isPerSide, sideReps, repStep, EFFORT, effortOf, stepEffort, capEffort, hasEffectiveOverride, hasWork, isExerciseDone } from '../lib/history.js'
 import { bestKnownWeight } from '../lib/active-workout.js'
 import { fmtNum, fmtDate, todayISO, exCount, DAYN } from '../lib/format.js'
 import { playSetComplete } from '../lib/sound.js'
@@ -20,7 +20,7 @@ function StartChooser() {
   const nav = useNavigate()
   const S = useStore(s => s.S)
   const todayR = effectiveRoutine(S, todayISO())
-  const todayOvr = S.dayPlan[todayISO()] !== undefined
+  const todayOvr = hasEffectiveOverride(S, todayISO())
   const others = S.routines.filter(r => r !== todayR)
   return <div className="narrow">
     <div className="hdr"><div><h1>{t('Start workout')}</h1><div className="sub">{t(DAYN[new Date().getDay()])} — {todayR ? t('today is {0}', todayR.name) : t('rest day, but no one’s stopping you')}</div></div></div>
@@ -182,6 +182,7 @@ export function removeActiveExercise(idx) {
   useStore.getState().removeActiveExercise(idx)
 }
 
+/** Active-workout route body; logs sets for the running session. */
 function ActiveWorkout() {
   const nav = useNavigate()
   const S = useStore(s => s.S)
@@ -340,7 +341,7 @@ function ActiveWorkout() {
     </>}
     <div style={{ height: 10 }} />
     {(() => {
-      const exDone = A.entries.filter(e => e.sets.length && e.sets.every(s => s.done)).length
+      const exDone = A.entries.filter(isExerciseDone).length
       const allDone = A.entries.length > 0 && exDone === A.entries.length
       return <button className={allDone ? 'btn primary' : 'btn ghost dim'} onClick={finishWorkout}>
         {allDone ? t('Finish workout') : t('Finish workout early · {0} exercises', exDone + '/' + A.entries.length)}
@@ -350,6 +351,7 @@ function ActiveWorkout() {
   </div>
 }
 
+/** Workout route; shows the active session or the start chooser. */
 export default function Workout() {
   const active = useStore(s => s.S.active)
   return active ? <ActiveWorkout /> : <StartChooser />

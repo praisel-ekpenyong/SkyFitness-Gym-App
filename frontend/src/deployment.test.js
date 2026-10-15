@@ -52,6 +52,20 @@ describe('Cloudflare Pages deployment configuration', () => {
     expect(parsed['/assets/*']?.['Cache-Control']).toBe('public, max-age=31536000, immutable')
   })
 
+  it('pins a minimal static policy (self plus the pinned media host) with a canonical pointer', () => {
+    const content = readFileSync(resolve(publicDir, '_headers'), 'utf-8')
+    const parsed = parseHeadersFile(content)
+
+    // Minimal static policy: everything same-origin; images and media may also
+    // come from the pinned exercise-dataset CDN (see PINNED_DATASET_COMMIT in
+    // src/lib/exercises.js). Opt-in analytics hosts are appended here, never inline.
+    expect(parsed['/*']?.['Content-Security-Policy']).toBe(
+      "default-src 'self'; img-src 'self' https://cdn.jsdelivr.net; media-src 'self' https://cdn.jsdelivr.net"
+    )
+    // Canonical twin lives in netlify.toml — edits land in both places.
+    expect(content).toContain('netlify.toml')
+  })
+
   it('includes valid _redirects file for SPA client-side routing fallback', () => {
     const redirectsPath = resolve(publicDir, '_redirects')
     expect(existsSync(redirectsPath)).toBe(true)
@@ -59,6 +73,47 @@ describe('Cloudflare Pages deployment configuration', () => {
     const content = readFileSync(redirectsPath, 'utf-8').trim()
     const parts = content.split(/\s+/)
     expect(parts).toEqual(['/*', '/index.html', '200'])
+  })
+})
+
+describe('PWA install metadata', () => {
+  function readPngSize(filePath) {
+    const buf = readFileSync(filePath)
+    expect(buf.subarray(0, 8)).toEqual(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))
+    expect(buf.subarray(12, 16).toString('ascii')).toBe('IHDR')
+    return { width: buf.readUInt32BE(16), height: buf.readUInt32BE(20) }
+  }
+
+  it('declares installable plus maskable icons with health categories', () => {
+    const manifest = JSON.parse(readFileSync(resolve(publicDir, 'manifest.json'), 'utf-8'))
+
+    expect(manifest.name).toBeTruthy()
+    expect(manifest.short_name).toBeTruthy()
+    expect(manifest.start_url).toBe('./')
+    expect(manifest.display).toBe('standalone')
+    expect(manifest.icons.some(i => i.sizes === '192x192' && String(i.purpose).split(' ').includes('any'))).toBe(true)
+    expect(manifest.icons.some(i => i.sizes === '512x512' && String(i.purpose).split(' ').includes('maskable'))).toBe(true)
+    expect(manifest.categories).toContain('health')
+  })
+
+  it('ships every declared icon file at its declared size', () => {
+    const manifest = JSON.parse(readFileSync(resolve(publicDir, 'manifest.json'), 'utf-8'))
+
+    for (const icon of manifest.icons) {
+      const [w, h] = String(icon.sizes).split(' ')[0].split('x').map(Number)
+      const filePath = resolve(publicDir, icon.src)
+      expect(existsSync(filePath)).toBe(true)
+      expect(readPngSize(filePath)).toEqual({ width: w, height: h })
+    }
+  })
+
+  it('links the manifest document-relative, matching the configured base', () => {
+    const html = readFileSync(resolve(publicDir, '..', 'index.html'), 'utf-8')
+    const match = html.match(/<link rel="manifest" href="([^"]+)"/)
+    expect(match).toBeTruthy()
+    // No leading slash: stays correct on subpath deploys, consistent with base './'.
+    expect(match[1]).toBe('manifest.json')
+    expect(readFileSync(resolve(publicDir, '..', 'vite.config.js'), 'utf-8')).toContain("base: './'")
   })
 })
 
@@ -76,5 +131,10 @@ describe('Netlify deployment configuration', () => {
     expect(content).toContain('status = 200')
     expect(content).toContain('X-Content-Type-Options = "nosniff"')
     expect(content).toContain('X-Frame-Options = "DENY"')
+    expect(content).toContain(
+      `Content-Security-Policy = "default-src 'self'; img-src 'self' https://cdn.jsdelivr.net; media-src 'self' https://cdn.jsdelivr.net"`
+    )
+    // Canonical twin lives in frontend/public/_headers — edits land in both places.
+    expect(content).toContain('frontend/public/_headers')
   })
 })

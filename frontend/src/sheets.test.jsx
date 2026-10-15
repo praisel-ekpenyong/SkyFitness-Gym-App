@@ -85,7 +85,6 @@ describe('RecapSheet', () => {
 
     expect(container.querySelector('h3')?.textContent).toContain('January 2026')
 
-    // View calendar button
     const calBtn = Array.from(container.querySelectorAll('button')).find(b => b.textContent.includes('View calendar'))
     expect(calBtn).toBeTruthy()
     await act(async () => {

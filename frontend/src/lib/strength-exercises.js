@@ -13,6 +13,12 @@ import { workoutTimestamp } from './format.js'
 import { EXIDX } from './exercises.js'
 import { isWarmupRow } from './workout-model.js'
 
+/**
+ * Round a 1RM display value to one decimal place.
+ *
+ * @param {number} value - Continuous estimate in kg or lb.
+ * @returns {number} Value rounded to the nearest tenth.
+ */
 const round1 = value => Math.round(value * 10) / 10
 
 // Same retained-strength curve the muscle map uses, applied to one exercise's age.
@@ -36,6 +42,12 @@ function lastWorkSetAt(S, id) {
   return Number.isFinite(latest) ? latest : null
 }
 
+/**
+ * Resolve an entry's muscle weights, preferring the live catalogue.
+ *
+ * @param {Object} entry - Workout entry with id and optional logged muscle snapshot.
+ * @returns {Object} Muscle weights by slug from catalogue, logged snapshot, or musclesOf fallback.
+ */
 function snapshotWeights(entry) {
   const catalogue = entry && typeof entry === 'object' ? EXIDX[entry.id] : null
   if (catalogue) {
@@ -62,6 +74,12 @@ export function primaryMuscleOf(entry) {
   return best
 }
 
+/**
+ * Resolve the display name for a logged exercise entry.
+ *
+ * @param {Object} entry - Workout entry with id and optional name snapshots; non-objects yield null.
+ * @returns {string|null} Catalogue name, else snapshot name, else entry name, else null.
+ */
 function exerciseName(entry) {
   // Imported history often has no name snapshot (entries are { id, sets, topW }) - the
   // catalogue (or the registered custom) is the canonical name source.
@@ -71,6 +89,13 @@ function exerciseName(entry) {
   return entry && typeof entry === 'object' && entry.n ? entry.n : null
 }
 
+/**
+ * Find the first logged entry for one exercise across all workouts.
+ *
+ * @param {Object} S - App state holding the workouts array in stored order.
+ * @param {string} id - Exercise id to match.
+ * @returns {Object|null} First matching entry, or null when absent.
+ */
 function firstEntryWithId(S, id) {
   for (const workout of S?.workouts || []) {
     const entry = (workout.entries || []).find(e => e.id === id)

@@ -12,7 +12,15 @@ let dict = {}                   // empty forever; t() falls through to the key i
 let instr = null                // null = English steps come from ex.st via instrFor
 let version = 0                 // bumped on every setLang; drives the React subscription selector
 
+/**
+ * Reports the locale tag number and date formatting follow.
+ * @returns {string} Always `en-GB`.
+ */
 export const dateLocale = () => 'en-GB'
+/**
+ * Reports the current language revision for React subscription reads.
+ * @returns {number} Version counter bumped on every language state change.
+ */
 export const getVersion = () => version
 
 // Translate a source string; {0},{1}… are replaced with args (also on the English fallback).

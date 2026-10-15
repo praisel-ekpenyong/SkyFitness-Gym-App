@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "skills": {
+    "code-comments": {
+      "source": "../../code-comments",
+      "sourceType": "local",
+      "computedHash": "7d649f5e37d844eba091009b816ed980c4dd3071aa1c1a8688dc58c0d597f28e"
+    },
+    "ousterhout-comments": {
+      "source": "../../../.codex/skills/ousterhout-comments",
+      "sourceType": "local",
+      "computedHash": "8653ccf40e35265f284a1a2096b777daeda1e56cf4cfb7e020417b6fe4e5f223"
+    }
+  }
+}

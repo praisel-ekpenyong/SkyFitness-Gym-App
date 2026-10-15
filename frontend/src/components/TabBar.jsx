@@ -5,6 +5,11 @@ import { todayISO } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
 import Icon from './Icon.jsx'
 
+/**
+ * Bottom tab bar with Home, Plan, a central Start/Resume action, Stats and Exercises; the app's primary navigation.
+ * The active tab is marked with aria-current="page"; the center button starts the scheduled routine or resumes the running workout.
+ * @param {Function} onStart - Called with the scheduled routine id to start a workout.
+ */
 export default function TabBar({ onStart }) {
   const nav = useNavigate()
   const loc = useLocation()

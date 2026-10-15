@@ -1,3 +1,11 @@
+// Central application state store (Zustand atom).
+//
+// Encapsulates the user's entire profile: workouts, routines, bodyweight history,
+// schedule, and in-progress workout sessions. State updates use an immutable copy-on-write
+// pattern via `update(mutator)` and are automatically persisted to storage (localStorage,
+// mirrored by IndexedDB / native storage) and synchronized across open browser tabs.
+// Heavy active-workout business logic is delegated behind the `lib/active-workout.js` seam.
+
 import { create } from 'zustand'
 import { localTZ } from '../lib/format.js'
 import { registerCustom } from '../lib/exercises.js'
@@ -11,26 +19,54 @@ import {
   pairActiveSuperset, unpairActiveSuperset, setActiveIndex, discardActiveSession
 } from '../lib/active-workout.js'
 
+/**
+ * Default empty state atom `S` representing a fresh profile.
+ * Every profile snapshot loaded from disk or backup is normalized over a clone of DEF.
+ */
 export const DEF = {
-  // No lang key — Sky is English-only (ticket 05) and nothing reads S.lang. Profiles that
-  // still carry one from an older version keep it in storage harmlessly.
-  unit: 'kg', restSec: 90, sound: true, keepAwake: true,
-  theme: 'light', accent: 'lime', body: 'male', targetW: null,
-  bodyweight: [], routines: [], week: {}, dayPlan: {},
-  exWeights: {}, workouts: [], active: null, customEx: [], gifSize: 'full',
-  favorites: [],
+  // Display & unit preferences
+  unit: 'kg',           // 'kg' | 'lb' - active weight display unit throughout the app
+  restSec: 90,          // Default rest timer countdown in seconds
+  sound: true,          // Rest timer chime audio toggle
+  keepAwake: true,      // Screen Wake Lock toggle during active workouts
+  theme: 'light',       // 'light' | 'dark' UI theme token
+  accent: 'lime',       // Accent color token (CSS theme class)
+  body: 'male',         // 'male' | 'female' anatomical model for recovery heatmaps
+  targetW: null,        // Goal body weight in current `unit`, or null if unset
+
+  // Historical data & routines
+  bodyweight: [],       // Chronological bodyweight log: { d: 'YYYY-MM-DD', w: number, t?: epoch ms }
+  routines: [],         // User routines: Array<{ id, name, emoji, prog?, ex: Array<cfg> }>
+  week: {},             // Weekday schedule: { [dayIndex 0..6]: routineId | null }
+  dayPlan: {},          // Date-specific overrides: { ['YYYY-MM-DD']: routineId | 'rest' | null }
+  exWeights: {},        // All-time heaviest working weight per exercise: { [exId]: { w: number, d: 'YYYY-MM-DD' } }
+  workouts: [],         // Finished workout log: Array<{ id, d, name, entries: Array<entry> }>
+  active: null,         // Active session object ({ id, routineId, entries, ... }) or null
+  customEx: [],         // Custom exercise definitions: Array<{ id, name, bp, target, ... }>
+  gifSize: 'full',      // Exercise illustration size: 'full' | 'compact'
+  favorites: [],        // Array of favorited exercise ID strings
+
+  // English-only application: locale bundles were removed, so nothing reads S.lang. Legacy
+  // profiles that still carry the key retain it in storage harmlessly.
+
+  // Daily reminder notification settings: { on: boolean, time: 'HH:mm', tz: string|null }
+  reminder: { on: false, time: '08:00', tz: null },
+
   // effort: which per-set effort scale is logged — 'none' | 'rir' | 'rpe'. null, not 'none', so
   // that a profile which never chose (loaded state is overlaid on DEF, on every path: local
   // load or backup import) still falls back to the `showRir` boolean this replaced and
   // keeps the column it had. See effortOf.
-  reminder: { on: false, time: '08:00', tz: null }, effort: null,
+  effort: null,
+
   // Timestamp of the last successful JSON export — drives the backup nag in Settings.
   // null, not absent, so a fresh install reads as "never exported" like any old profile.
   lastExport: null,
+
   // Profile display name — optional name shown as "Hi {name}" on Home (CONTEXT.md: Profile display name).
   // null = not set; merged via DEF so old backups / stored snapshots get it for free.
   displayName: null
 }
+/** Deep-copies a state value. */
 const clone = o => {
   if (typeof structuredClone === 'function') {
     try { return structuredClone(o) } catch {}
@@ -38,6 +74,13 @@ const clone = o => {
   return JSON.parse(JSON.stringify(o))
 }
 
+/**
+ * Produce a guaranteed well-formed application state atom `S` from arbitrary or partially corrupt input.
+ *
+ * Deep-clones `DEF` as the structural baseline, overlays valid top-level fields from `raw`,
+ * ensures collections are true arrays, maps (`week`, `dayPlan`, `exWeights`) are plain objects,
+ * and resets `active` to null if it lacks a valid `entries` array.
+ */
 export function normalizeState(raw) {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return clone(DEF)
   const base = clone(DEF)
@@ -58,18 +101,27 @@ export function normalizeState(raw) {
   return S
 }
 
+/** Loads the persisted state, falling back to a fresh profile. */
 function loadState() {
   const raw = loadLocal()
   return raw ? normalizeState(raw) : clone(DEF)
 }
 
+/** Reports whether the profile holds any training data. */
 const hasData = st => !!((st.workouts || []).length || (st.routines || []).length || (st.bodyweight || []).length)
 
+/**
+ * Sanitize a user-provided profile display name for storage.
+ *
+ * Strips leading/trailing whitespace, collapses consecutive internal whitespace into
+ * a single space, and caps length at 24 characters. Returns null if empty or whitespace-only
+ * so absent names remain null in state.
+ */
 export function sanitizeDisplayName(v) {
   if (v == null) return null
-  const s = String(v).trim()
+  const s = String(v).trim().replace(/\s+/g, ' ')
   if (!s) return null
-  // 1–24 chars, keep as-entered — rendering capitalizes first grapheme
+  // 1–24 chars, collapsed whitespace — rendering capitalizes first grapheme
   return s.slice(0, 24)
 }
 
@@ -121,14 +173,25 @@ export const useStore = create((set, get) => {
     // will not persist. Cleared by the next successful save.
     storageBlocked: false,
 
-    // Mutate a draft of S via producer fn, then persist.
+    /**
+     * Mutate application state atom `S` via a draft function and persist changes.
+     *
+     * Clones current state, executes `mut(draft)`, and persists via `save(S)`.
+     * Automatically registers custom exercises and synchronizes cross-tab updates.
+     *
+     * @param {(draft: Object) => void} mut - Synchronous mutator function.
+     */
     update(mut) {
       const S = clone(get().S)
       mut(S)
       persist(S)
     },
+    /**
+     * Replace application state atom `S` wholesale after normalizing schema.
+     *
+     * @param {Object} S - New state payload to normalize and persist.
+     */
     replaceState(S) { persist(normalizeState(S)) },
-
     // --- Active-workout lifecycle (deep seam: lib/active-workout.js) ---
     // Sheets and views call these; the single heaviest-weight policy,
     // target freezing, set toggles, and Record detection all live behind the seam.
@@ -205,10 +268,12 @@ export const useStore = create((set, get) => {
       return result
     },
 
-    // Boot: let the storage module race its copies and hand back the newest snapshot
-    // (mobile file mirror / IndexedDB mirror, each against what localStorage loaded),
-    // re-stamp the reminder's timezone, and go straight in — there is no server to ask
-    // anything of.
+    /**
+     * Initialize store during application launch.
+     *
+     * Races local and mirrored storage (IndexedDB/file mirrors) to select the newest snapshot,
+     * updates reminder timezone if the device travelled, and marks the store ready.
+     */
     async boot() {
       let S = get().S
       const winner = await load({

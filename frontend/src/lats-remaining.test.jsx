@@ -201,7 +201,6 @@ describe('Ticket 04 — Custom exercise lifecycle with lats', () => {
     expect(primaryChips).toContain('Lats')
     expect(primaryChips).toContain('Upper back')
     expect(primaryChips.indexOf('Lats')).toBe(primaryChips.indexOf('Upper back') + 1)
-    // Select Lats
     const latsPrimary = Array.from(container.querySelectorAll('.chips')[0].querySelectorAll('button.chip')).find(c => c.textContent.trim() === 'Lats')
     await act(async () => { latsPrimary.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
     // Secondary row should appear and contain Upper back but not Lats
@@ -222,7 +221,6 @@ describe('Ticket 04 — Custom exercise lifecycle with lats', () => {
     })
     const latsPrimary = Array.from(container.querySelectorAll('.chips')[0].querySelectorAll('button.chip')).find(c => c.textContent.trim() === 'Lats')
     await act(async () => { latsPrimary.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
-    // Select secondary Upper back
     const upperSec = Array.from(container.querySelectorAll('.chips')[1].querySelectorAll('button.chip')).find(c => c.textContent.trim() === 'Upper back')
     await act(async () => { upperSec.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
     const saveBtn = Array.from(container.querySelectorAll('button')).find(b => b.textContent.includes('Create exercise'))

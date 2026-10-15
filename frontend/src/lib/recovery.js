@@ -18,13 +18,13 @@ export const CARDIO_TONNAGE_PER_MIN = 50  // duration proxy for cardio/timed wor
 // Two such sets therefore retain the old 1 - exp(-2 / 3) starting-fatigue reading.
 const ZERO_LOAD_SET_STIMULUS = FATIGUE_REF_VOLUME / 3
 
-/** Exponential half-life for fatigue stimulus. */
+/** Fatigue stimulus half-life: 36 hours, in ms. */
 export const FATIGUE_HALF_LIFE_MS = 129600000
 
-/** Period after training during which retained strength remains at full value. */
+/** Retained strength holds at 1.0 for this long after a completed set: 14 days, in ms. */
 export const STRENGTH_FULL_MS = 1209600000
 
-/** Exponential half-life for retained strength after the full-retention period. */
+/** Retained-strength half-life once the full-retention window ends: 28 days, in ms. */
 export const STRENGTH_HALF_LIFE_MS = 2419200000
 
 /** Minimum retained-strength value for an untrained or fully detrained muscle. */
@@ -60,6 +60,12 @@ export function halfLifeDecay(ageMs, halfLifeMs) {
 // The v2 data contract has one timestamp per workout, not per set — canonical
 // helper lives in format.js so fatigue, strength, charts and heatmaps agree.
 
+/**
+ * Build a fresh per-muscle map holding the same initial value.
+ *
+ * @param {*} value - Initial value assigned to every drawable muscle slug.
+ * @returns {Object} New object keyed by every drawable muscle slug.
+ */
 function emptyMuscleMap(value) {
   return Object.fromEntries(MUSCLES.map(slug => [slug, value]))
 }
@@ -68,20 +74,45 @@ function emptyMuscleMap(value) {
 // inflate the estimate). Used only to express a set's intensity relative to the lifter's own
 // capacity - the same formula the app already shows for estimated 1RM.
 const REP_CAP = 12
+/**
+ * Estimate a one-rep maximum from one set via the Epley formula.
+ *
+ * @param {number} load - Set load in kg; caller converts units first.
+ * @param {number} reps - Completed reps; missing or falsy counts as 1 and reps cap at 12.
+ * @returns {number} Estimated 1RM in the same unit as load.
+ */
 const epley1RM = (load, reps) => load * (1 + Math.min(reps || 1, REP_CAP) / 30)
 
 export const LB_TO_KG = 0.45359237
 
+/**
+ * Coerce a value to a finite number for load math.
+ *
+ * @param {*} value - Candidate number; null, undefined, empty string, and booleans yield null.
+ * @returns {number|null} Finite number, or null when not parseable.
+ */
 function numeric(value) {
   if (value === null || value === undefined || value === '' || typeof value === 'boolean') return null
   const n = Number(value)
   return Number.isFinite(n) ? n : null
 }
 
+/**
+ * Report whether a unit label names imperial pounds.
+ *
+ * @param {*} unit - Unit label; nullish reads as empty and yields false.
+ * @returns {boolean} True for lb, lbs, pound, or pounds in any case.
+ */
 function isPounds(unit) {
   return /^(?:lb|lbs|pound|pounds)$/i.test(String(unit ?? '').trim())
 }
 
+/**
+ * Find the first stamped weight unit across candidate records.
+ *
+ * @param {...Object} records - Records searched in order for unit, u, weightUnit, weight_unit, or loadUnit.
+ * @returns {string} First non-empty unit found, else 'kg'.
+ */
 function unitOf(...records) {
   for (const record of records) {
     if (!record || typeof record !== 'object') continue
@@ -92,6 +123,13 @@ function unitOf(...records) {
   return 'kg'
 }
 
+/**
+ * Convert a logged load to kilograms, clamping negatives to zero.
+ *
+ * @param {*} value - Logged load; non-numeric yields 0.
+ * @param {*} unit - Unit label; pound labels convert via LB_TO_KG, all else read as kg.
+ * @returns {number} Load in kg, never negative.
+ */
 function kgOf(value, unit) {
   const n = numeric(value)
   if (n === null) return 0
@@ -120,6 +158,12 @@ function bodyweightKgFor(workout, opts = {}, stampedLoadUnit) {
   return BODYWEIGHT_REF_LOAD
 }
 
+/**
+ * Read whether an entry targets bodyweight work.
+ *
+ * @param {Object} entry - Workout entry possibly carrying target.bodyweight or bodyweight.
+ * @returns {boolean|null} True/false when explicitly configured, else null.
+ */
 function bodyweightTarget(entry) {
   const target = entry?.target
   if (target && Object.prototype.hasOwnProperty.call(target, 'bodyweight')) return !!target.bodyweight
@@ -127,12 +171,28 @@ function bodyweightTarget(entry) {
   return null
 }
 
+/**
+ * Report whether any candidate record carries an explicit unit stamp.
+ *
+ * @param {...Object} records - Records checked for a non-empty unit key.
+ * @returns {boolean} True when at least one record stamps a unit.
+ */
 function hasUnitStamp(...records) {
   return records.some(record => record && typeof record === 'object'
     && ['unit', 'u', 'weightUnit', 'weight_unit', 'loadUnit'].some(key => Object.prototype.hasOwnProperty.call(record, key)
       && record[key] !== undefined && record[key] !== null && String(record[key]).trim() !== ''))
 }
 
+/**
+ * Decide whether a set counts body mass in addition to any added load.
+ *
+ * @param {Object} ex - Catalogue exercise for the entry, if known.
+ * @param {Object} entry - Workout entry possibly configuring bodyweight.
+ * @param {Object} set - Set row with the logged added load.
+ * @param {Object} workout - Parent workout possibly stamping body mass.
+ * @param {Object} opts - Profile bodyweight context in display or canonical form.
+ * @returns {boolean} True when body mass applies to this set.
+ */
 function bodyweightConfigured(ex, entry, set, workout, opts = {}) {
   const configured = bodyweightTarget(entry)
   if (configured !== null) return configured
@@ -149,6 +209,16 @@ function bodyweightConfigured(ex, entry, set, workout, opts = {}) {
   return ex?.eq === 'body weight' && (added === 0 || hasBodyweightContext)
 }
 
+/**
+ * Resolve the total load of one set in kilograms, including body mass when configured.
+ *
+ * @param {Object} ex - Catalogue exercise for the entry, if known.
+ * @param {Object} entry - Workout entry holding target and unit context.
+ * @param {Object} set - Set row with the logged added load.
+ * @param {Object} workout - Parent workout possibly stamping body mass.
+ * @param {Object} opts - Profile bodyweight context in display or canonical form.
+ * @returns {number} Total load in kg: body mass plus added load, or added load alone.
+ */
 function loadKgFor(ex, entry, set, workout, opts = {}) {
   const setUnit = unitOf(set, entry?.target, entry, workout, opts)
   const addedKg = kgOf(set?.w, setUnit)
@@ -246,6 +316,15 @@ function fatigueStimuli(workouts, current, opts = {}) {
 
 const MUSCLES_BY_SLUG = Object.fromEntries(MUSCLES.map(slug => [slug, true]))
 
+/**
+ * Accumulate decayed stimulus events into a saturating fatigue level.
+ *
+ * Sorts the event list in place as a side effect.
+ *
+ * @param {Array<Object>} events - Per-muscle stimuli with timestamp and normalized stimulus; empty yields 0.
+ * @param {number} now - Current time in ms; future-dated gaps clamp to zero age.
+ * @returns {number} Fatigue in [0,1): 0 when no events, approaching 1 without pinning.
+ */
 function fatigueValue(events, now) {
   if (!events.length) return 0
   events.sort((a, b) => a.timestamp - b.timestamp)

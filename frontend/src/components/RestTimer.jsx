@@ -3,6 +3,11 @@ import { useUI } from '../store/useUI.js'
 import { t } from '../lib/i18n.js'
 import { Button } from './ui.jsx'
 
+/**
+ * Formats a countdown value as minutes:seconds (75 becomes "1:15").
+ * @param {number} sec - Remaining time in seconds.
+ * @returns {string} The formatted "m:ss" clock text.
+ */
 const clock = sec => Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0')
 
 // One bar, two meanings: the rest countdown between sets, and the work countdown during a

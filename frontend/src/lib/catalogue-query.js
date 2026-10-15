@@ -59,6 +59,12 @@ export function queryCatalogue({ profile, scope = { kind: 'all' }, search = '', 
   }
 }
 
+/**
+ * Count routine and workout usage per exercise id.
+ *
+ * @param {Object} profile - Profile with optional routines and workouts arrays; missing collections count as empty.
+ * @returns {Object} Counts keyed by exercise id for ids seen at least once.
+ */
 function usageMap(profile) {
   const usage = {}
   const routines = Array.isArray(profile.routines) ? profile.routines : []
