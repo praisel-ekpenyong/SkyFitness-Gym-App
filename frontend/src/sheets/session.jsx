@@ -3,7 +3,7 @@ import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { EXIDX } from '../lib/exercises.js'
 import { fmtNum, fmtVol, fmtDur } from '../lib/format.js'
-import { setsDone, setsDoneActive, supersetUnits, unitOf, workSetsDone, hasWork } from '../lib/history.js'
+import { setsDone, setsDoneActive, workSetsDone } from '../lib/workout-model.js'
 import { playWorkoutComplete } from '../lib/sound.js'
 import { t } from '../lib/i18n.js'
 import { nav } from '../lib/nav.js'
@@ -11,7 +11,7 @@ import Icon from '../components/Icon.jsx'
 import { Button } from '../components/ui.jsx'
 import BodyMap from '../components/BodyMap.jsx'
 import { loadOfWorkouts } from '../lib/muscles.js'
-import { bestKnownWeight, heaviestSetWeight } from '../lib/active-workout.js'
+import { bestKnownWeight, heaviestSetWeight, peekWeightCommit } from '../lib/active-workout.js'
 
 /** Reads the shared store state. */
 const S = () => useStore.getState().S
@@ -85,13 +85,13 @@ function TopWeight({ entryIdx, close }) {
   const [v, setV] = useState(entry ? (Math.max(maxSet, prevBest) || entry.target.weight || 0) : 0)
   useEffect(() => { if (!entry) close() }, [!entry])
 
-  const units = supersetUnits(A ? A.entries : [])
-  const unit = entry ? unitOf(units, entryIdx) : []
-  // The same work-sets-only rule the toggle and the superset step use: an
-  // unticked warm-up must not swallow the "save & next" / finish chain.
-  const unitDone = !!entry && !unit.some(i => hasWork(A.entries, i))
-  const unitIdx = units.findIndex(u => u === unit)
-  const isLastUnit = unitIdx === units.length - 1
+  // Advance/finish navigation is decided behind the toggle seam: the same
+  // geometry the toggle already computed, previewed here for button labels.
+  // The work-sets-only rule (unticked warm-ups never block) lives there too.
+  const peek = entry ? peekWeightCommit(st, entryIdx) : null
+  const unitDone = peek ? peek.unitDone : false
+  const isLastUnit = peek ? peek.isLastUnit : false
+  const unitSize = peek ? peek.unitSize : 0
   if (!entry || !ex) return null
   const WeightInput = _WeightInput
   if (!WeightInput) return null
@@ -99,16 +99,22 @@ function TopWeight({ entryIdx, close }) {
   const commit = advance => {
     const n = Math.round((v || 0) * 10) / 10
     if (!isFinite(n) || n < 0) { toast(t('Enter a valid weight')); return }
-    useStore.getState().recordWorkingWeight(entryIdx, n)
+    // Recording and deciding share one domain call, so the Active workout
+    // can never change between them (the finish-under-sheet teardown race).
+    const next = useStore.getState().commitWorkingWeight(entryIdx, n)
     close()
-    if (advance && unitDone) {
-      if (isLastUnit) workoutCompleteSheet()               // whole workout done → finish/continue prompt
-      else update(s => { s.active.cur = units[unitIdx + 1][0] })
-    } else toast(t('Tracked — next time starts at {0}', fmtNum((S().exWeights[entry.id] || {}).w ?? n) + ' ' + st.unit))
+    if (advance && next) {
+      if (next.kind === 'topweight-then-finish') { workoutCompleteSheet(); return }
+      if (next.kind === 'topweight-then-advance' && next.targetIdx != null) {
+        useStore.getState().setActiveIndex(next.targetIdx)
+        return
+      }
+    }
+    toast(t('Tracked — next time starts at {0}', fmtNum((S().exWeights[entry.id] || {}).w ?? n) + ' ' + st.unit))
   }
   return <>
     <h3 className="capitalize row" style={{ gap: 8 }}><Icon name="checkCircle" style={{ color: 'var(--acc)' }} />{t('{0} done', ex.n)}</h3>
-    <div className="muted small">{t('Confirm the weight you worked with — your highest becomes the default next time.')}{!unitDone && unit.length > 1 ? ' ' + t('Then finish the superset partner.') : ''}</div>
+    <div className="muted small">{t('Confirm the weight you worked with — your highest becomes the default next time.')}{!unitDone && unitSize > 1 ? ' ' + t('Then finish the superset partner.') : ''}</div>
     <WeightInput value={v} setValue={setV} unit={st.unit} />
     <div style={{ height: 10 }} />
     {prevBest > 0 ? <div className="small dim" style={{ textAlign: 'center', marginBottom: 12 }}>{t('Previous best:')} {fmtNum(prevBest)} {st.unit}{maxSet > prevBest && <span style={{ color: 'var(--yellow)' }}> — {t('new record!')}</span>}</div> : <div style={{ height: 4 }} />}
