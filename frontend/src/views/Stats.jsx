@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { EXIDX } from '../lib/exercises.js'
-import { lastBW, streakWeeks, setLabel, modeOf, effortOf, metricModeForEntry, metricRowsForEntry, bestWeightForEntry } from '../lib/history.js'
+import { lastBW, streakWeeks, setLabel, effortOf } from '../lib/history.js'
 import { fmtNum, fmtDate, fmtVol, todayISO, weekKey, monthKey, workoutTimestamp } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
 import { bwSheet, goalSheet, calendarSheet, recapSheet, workoutDetailSheet, WorkoutRow, bwDeltaColor } from '../sheets.jsx'
@@ -21,8 +21,9 @@ import {
 } from '../lib/effort.js'
 import { Button, Segmented, SelectRow } from '../components/ui.jsx'
 import { isWarmupRow } from '../lib/workout-model.js'
+import { modeFor as modeForExercise, topSetSeries, currentBest, weeksSinceTraining } from '../lib/exercise-progress.js'
 
-export { FATIGUE_LEVELS }
+export { FATIGUE_LEVELS, weeksSinceTraining }
 
 // Which muscles the training in a window actually hit — and, the point of the card,
 // which ones it keeps missing. Shading is relative within the window (lib/muscles.js).
@@ -61,17 +62,6 @@ function useNow() {
     return () => clearInterval(iv)
   }, [])
   return now
-}
-
-/**
- * Return the whole weeks since a completed muscle-training timestamp.
- *
- * @param {number} now Current render-time timestamp in milliseconds.
- * @param {number} lastTrained Timestamp of the latest completed training event.
- * @returns {number} Non-negative whole weeks, including zero for ages under seven days.
- */
-export function weeksSinceTraining(now, lastTrained) {
-  return Math.max(0, Math.floor((now - lastTrained) / 86400000 / 7))
 }
 
 /** Legend for the fatigue body map. */
@@ -327,54 +317,25 @@ export default function Stats() {
   const monthW = workouts.filter(w => monthKey(w) === monthKey(todayISO())).length
 
   const nameOf = id => EXIDX[id]?.n || workouts.flatMap(w => w.entries || []).find(e => e.id === id)?.n || id
-  const currentOf = id => {
-    for (let i = workouts.length - 1; i >= 0; i--) {
-      const en = (workouts[i].entries || []).find(e => e.id === id)
-      if (!en) continue
-      const mode = metricModeForEntry(en) || modeOf({ id })
-      const rows = metricRowsForEntry(en, mode)
-      const mx = mode === 'reps' ? bestWeightForEntry(en) : Math.max(0, ...rows.map(s => mode === 'cardio' ? (s.speed || 0) : mode === 'time' ? (s.sec || 0) : (s.w || 0)))
-      if (mx > 0) return { mx, unit: mode === 'cardio' ? 'km/h' : mode === 'time' ? 's' : S.unit }
-    }
-    return { mx: 0, unit: S.unit }
-  }
-  const exHist = [...new Set(workouts.flatMap(w => (w.entries || []).map(e => e.id)))].filter(id => EXIDX[id] || nameOf(id) !== id)
-  const exCurrent = Object.fromEntries(exHist.map(id => [id, currentOf(id)]))
-  exHist.sort((a, b) => exCurrent[b].mx - exCurrent[a].mx || nameOf(a).localeCompare(nameOf(b)))
+  // The exercise-progress pipeline lives in lib/exercise-progress.js — the view
+  // only selects which exercise and renders the points it returns.
+  const { exHist, exCurrent } = useMemo(() => {
+    const ids = [...new Set(workouts.flatMap(w => (w.entries || []).map(e => e.id)))]
+      .filter(id => EXIDX[id] || nameOf(id) !== id)
+    const current = Object.fromEntries(ids.map(id => [id, currentBest(S, id)]))
+    ids.sort((a, b) => current[b].mx - current[a].mx || nameOf(a).localeCompare(nameOf(b)))
+    return { exHist: ids, exCurrent: current }
+  }, [S, workouts])
   const curEx = exId && exHist.includes(exId) ? exId : exHist[0] || null
   // A completed reps work row is authoritative for strength metrics, even when the parent
   // target also contains timed/cardio work. Entries without reps rows use their selected mode.
-  const curMode = curEx ? (() => {
-    for (let i = workouts.length - 1; i >= 0; i--) {
-      const en = (workouts[i].entries || []).find(e => e.id === curEx)
-      if (en) {
-        const mode = metricModeForEntry(en)
-        if (mode) return mode
-      }
-    }
-    return modeOf({ id: curEx })
-  })() : 'reps'
+  const curMode = useMemo(() => (curEx ? modeForExercise(S, curEx) : 'reps'), [S, curEx])
   const curCardio = curMode === 'cardio'
   const curTimed = curMode === 'time'
-  const metric = s => curCardio ? (s.speed || 0) : curTimed ? (s.sec || 0) : (s.w || 0)
   const exUnit = curCardio ? 'km/h' : curTimed ? 's' : S.unit
-  let exPts = [], exList = [], exBest = 0
-  if (curEx) {
-    workouts.forEach(w => {
-      const en = (w.entries || []).find(e => e.id === curEx)
-      if (en) {
-        const loggedMode = metricModeForEntry(en)
-        if (loggedMode !== curMode) return
-        const doneSets = metricRowsForEntry(en, curMode)
-        const mx = curMode === 'reps' ? bestWeightForEntry(en) : Math.max(0, ...doneSets.map(metric))
-        if (mx > 0) {
-          exPts.push({ t: workoutTimestamp(w), y: mx, d: w.d, sets: doneSets, target: en.target })
-          if (mx > exBest) exBest = mx
-        }
-      }
-    })
-    exList = exPts.slice(-5).reverse()
-  }
+  const exPts = useMemo(() => (curEx ? topSetSeries(S, curEx) : []), [S, curEx])
+  const exBest = useMemo(() => exPts.reduce((best, p) => Math.max(best, p.y), 0), [exPts])
+  const exList = useMemo(() => exPts.slice(-5).reverse(), [exPts])
   // Estimated 1RM (issue #18) — only reps-mode training produces one, so cardio and timed
   // work simply have no points and the toggle stays hidden.
   const e1Pts = curEx && curMode === 'reps' ? e1rmSeries(S, curEx) : []
