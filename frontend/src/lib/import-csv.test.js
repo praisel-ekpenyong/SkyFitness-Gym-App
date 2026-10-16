@@ -45,3 +45,82 @@ describe('mergeImport defensive guards', () => {
     expect(S.workouts[0].entries).toHaveLength(1)
   })
 })
+
+/* Custom-exercise body-part fallback (import-csv.js): an unmatched name becomes a
+   custom exercise whose body part is mapped from the file's Category column, with
+   cardio signals winning over the 'upper legs' default for strength rows. */
+
+describe('import custom-exercise body-part fallback', () => {
+  const byName = parsed => Object.fromEntries(parsed.customEx.map(c => [c.n, c]))
+
+  it('maps known categories onto body parts, case-insensitively', () => {
+    const csv = [
+      'Date,Exercise,Category,Weight,Reps',
+      '2026-08-08,Zzx Qqq Alpha Lift,Chest,80,5',
+      '2026-08-08,Zzx Qqq Beta Lift,SHOULDERS,40,8',
+      '2026-08-08,Zzx Qqq Gamma Lift,Biceps,30,10',
+    ].join('\n')
+    const customs = byName(parseWorkoutCSV(csv, { unit: 'kg' }))
+    expect(customs['zzx qqq alpha lift'].bp).toBe('chest')
+    expect(customs['zzx qqq beta lift'].bp).toBe('shoulders')
+    expect(customs['zzx qqq gamma lift'].bp).toBe('upper arms')
+  })
+
+  it("falls back to 'upper legs' for an unknown category on a strength row", () => {
+    const csv = [
+      'Date,Exercise,Category,Weight,Reps',
+      '2026-08-08,Zzx Qqq Mystery Lift,Mystery,80,5',
+    ].join('\n')
+    const customs = byName(parseWorkoutCSV(csv, { unit: 'kg' }))
+    const rec = customs['zzx qqq mystery lift']
+    expect(rec.bp).toBe('upper legs')
+    // the import shape: lower-cased name, empty-string target, no secondary list
+    expect(rec.n).toBe('zzx qqq mystery lift')
+    expect(rec.tg).toBe('')
+    expect(rec.sm).toBeUndefined()
+  })
+
+  it("falls back to 'cardio' when the row carries distance", () => {
+    const csv = [
+      'Date,Exercise,Category,Distance',
+      '2026-08-08,Zzx Qqq Cardio Thing,Mystery,5',
+    ].join('\n')
+    const customs = byName(parseWorkoutCSV(csv, { unit: 'kg' }))
+    expect(customs['zzx qqq cardio thing'].bp).toBe('cardio')
+  })
+
+  it("falls back to 'cardio' for time without reps", () => {
+    const csv = [
+      'Date,Exercise,Category,Time',
+      '2026-08-08,Zzx Qqq Row Thing,Mystery,30:00',
+    ].join('\n')
+    const customs = byName(parseWorkoutCSV(csv, { unit: 'kg' }))
+    expect(customs['zzx qqq row thing'].bp).toBe('cardio')
+  })
+})
+
+/* Import's existing-days-win rule for the Body-weight log: importing twice
+   never rewrites a logged reading. Guards the mergeImport -> mergeWeighIns
+   delegation against flipping to overwrite. */
+
+describe('mergeImport bodyweight skip rule', () => {
+  it('leaves existing days alone and reports added/skipped', () => {
+    const S = { bodyweight: [{ d: '2026-01-01', w: 80, t: 1 }] }
+    const res = mergeImport(S, {
+      kind: 'bodyweight',
+      bodyweight: [{ d: '2026-01-01', w: 81, t: 2 }, { d: '2026-01-02', w: 79, t: 3 }],
+    })
+    expect(res).toEqual({ added: 1, skipped: 1 })
+    expect(S.bodyweight).toEqual([
+      { d: '2026-01-01', w: 80, t: 1 },
+      { d: '2026-01-02', w: 79, t: 3 },
+    ])
+  })
+
+  it('normalizes a missing bodyweight log instead of throwing', () => {
+    const S = {}
+    const res = mergeImport(S, { kind: 'bodyweight', bodyweight: [{ d: '2026-01-02', w: 79 }] })
+    expect(res).toEqual({ added: 1, skipped: 0 })
+    expect(S.bodyweight).toHaveLength(1)
+  })
+})
