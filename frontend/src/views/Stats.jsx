@@ -325,7 +325,7 @@ export default function Stats() {
     const current = Object.fromEntries(ids.map(id => [id, currentBest(S, id)]))
     ids.sort((a, b) => current[b].mx - current[a].mx || nameOf(a).localeCompare(nameOf(b)))
     return { exHist: ids, exCurrent: current }
-  }, [S, workouts])
+  }, [S])
   const curEx = exId && exHist.includes(exId) ? exId : exHist[0] || null
   // A completed reps work row is authoritative for strength metrics, even when the parent
   // target also contains timed/cardio work. Entries without reps rows use their selected mode.
