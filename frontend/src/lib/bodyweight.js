@@ -96,6 +96,26 @@ export function deleteWeighIn(S, iso) {
 }
 
 /**
+ * Read the weigh-in before the latest one (previous distinct day).
+ * Order-independent like latestWeighIn, so legacy or hand-edited stores
+ * read correctly too.
+ *
+ * @param {Object} S - Application state atom.
+ * @returns {Object|null} Previous `{ d, w, t? }` entry, or null when fewer
+ * than two distinct days are logged.
+ */
+export function prevWeighIn(S) {
+  const log = S?.bodyweight
+  if (!Array.isArray(log) || log.length < 2) return null
+  const last = latestWeighIn(S)
+  let prev = null
+  for (const b of log) {
+    if (b.d < last.d && (!prev || b.d > prev.d)) prev = b
+  }
+  return prev
+}
+
+/**
  * Read the chronologically latest weigh-in. Scans by day rather than taking
  * the last element, so legacy or hand-edited stores read correctly too.
  *
