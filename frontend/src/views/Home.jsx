@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { effectiveRoutine, effectiveRoutineId, hasEffectiveOverride, sessionProgress } from '../lib/history.js'
 import { dayStatus } from '../lib/schedule.js'
-import { latestWeighIn, deltaTowardGoal } from '../lib/bodyweight.js'
+import { latestWeighIn, prevWeighIn, deltaTowardGoal } from '../lib/bodyweight.js'
 import { fmtNum, fmtDate, todayISO, isoOf, weekKey, DAYS, exCount, workoutTimestamp } from '../lib/format.js'
 import { t, dateLocale } from '../lib/i18n.js'
 import { bwSheet, goalSheet, dayOverrideSheet, calendarSheet, startFlow, loadStarterPlan, displayNameSheet } from '../sheets.jsx'
@@ -22,7 +22,7 @@ export default function Home() {
   const routine = effectiveRoutine(S, todayISO())
   const todayOvr = hasEffectiveOverride(S, todayISO())
   const bw = latestWeighIn(S)
-  const prevBW = S.bodyweight.length > 1 ? S.bodyweight[S.bodyweight.length - 2] : null
+  const prevBW = prevWeighIn(S)
   const delta = bw && prevBW ? bw.w - prevBW.w : null
 
   const monday = new Date(today); monday.setDate(today.getDate() - ((today.getDay() + 6) % 7) + weekOffset * 7)

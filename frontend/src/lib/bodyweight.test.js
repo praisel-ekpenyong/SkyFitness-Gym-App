@@ -6,6 +6,7 @@ import {
   deltaTowardGoal,
   latestWeighIn,
   mergeWeighIns,
+  prevWeighIn,
   recordWeighIn,
 } from './bodyweight.js'
 
@@ -86,6 +87,14 @@ describe('deleteWeighIn / latestWeighIn', () => {
     expect(latestWeighIn(S)).toEqual({ d: '2026-01-10', w: 80 })
     expect(latestWeighIn({ bodyweight: [] })).toBeNull()
     expect(latestWeighIn({})).toBeNull()
+  })
+
+  it('reads the previous distinct day even when stored out of order', () => {
+    const S = { bodyweight: [{ d: '2026-01-10', w: 80 }, { d: '2026-01-01', w: 82 }, { d: '2026-01-05', w: 81 }] }
+    expect(prevWeighIn(S)).toEqual({ d: '2026-01-05', w: 81 })
+    expect(prevWeighIn({ bodyweight: [{ d: '2026-01-10', w: 80 }] })).toBeNull()
+    expect(prevWeighIn({ bodyweight: [] })).toBeNull()
+    expect(prevWeighIn({})).toBeNull()
   })
 })
 
