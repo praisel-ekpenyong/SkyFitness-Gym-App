@@ -28,6 +28,12 @@ describe('recordWeighIn (sheet write rule: upsert)', () => {
     expect(S.bodyweight).toEqual([{ d: '2026-01-10', w: 79.5, t: 2 }])
   })
 
+  it('keeps the existing timestamp when overwriting without one', () => {
+    const S = { bodyweight: [{ d: '2026-01-10', w: 80, t: 5 }] }
+    recordWeighIn(S, { d: '2026-01-10', w: 79 })
+    expect(S.bodyweight).toEqual([{ d: '2026-01-10', w: 79, t: 5 }])
+  })
+
   it('leaves an existing day alone with {overwrite:false}', () => {
     const S = { bodyweight: [{ d: '2026-01-10', w: 80, t: 1 }] }
     recordWeighIn(S, { d: '2026-01-10', w: 79.5, t: 2 }, { overwrite: false })
