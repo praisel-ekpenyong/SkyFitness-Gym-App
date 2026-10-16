@@ -24,7 +24,7 @@ import { Button, Segmented, SelectRow } from '../components/ui.jsx'
 import { isWarmupRow } from '../lib/workout-model.js'
 import { modeFor as modeForExercise, topSetSeries, currentBest, weeksSinceTraining } from '../lib/exercise-progress.js'
 
-export { FATIGUE_LEVELS, weeksSinceTraining }
+export { FATIGUE_LEVELS }
 
 // Which muscles the training in a window actually hit — and, the point of the card,
 // which ones it keeps missing. Shading is relative within the window (lib/muscles.js).

@@ -85,6 +85,20 @@ describe('topSetSeries', () => {
     expect(topSetSeries(S, LIFT).map(p => p.d)).toEqual(['2026-01-08'])
   })
 
+  it('prefers completed reps rows when an entry genuinely mixes modes', () => {
+    const S = {
+      unit: 'kg',
+      workouts: [w('2026-01-01', [{ id: LIFT, sets: [
+        { w: 80, r: 5, done: true },
+        { sec: 90, done: true },
+      ] }])],
+    }
+    // no target pins the rows, so reps wins by precedence and the hold
+    // scores nothing into the series
+    expect(modeFor(S, LIFT)).toBe('reps')
+    expect(topSetSeries(S, LIFT).map(p => p.y)).toEqual([80])
+  })
+
   it('scores timed holds by longest hold and cardio by top speed', () => {
     const timed = {
       unit: 'kg',
@@ -130,6 +144,19 @@ describe('currentBest', () => {
       ],
     }
     expect(currentBest(S, LIFT)).toEqual({ mx: 80, unit: 'kg' })
+  })
+
+  it('falls back to the catalogue mode when an entry mixes modes with nothing scored', () => {
+    const S = {
+      unit: 'kg',
+      workouts: [w('2026-01-01', [{ id: LIFT, sets: [
+        { w: 80, r: 5, done: false },
+        { sec: 90, done: false },
+      ] }])],
+    }
+    // metricModeForEntry is null (mixed, nothing completed), so currentBest
+    // resolves via the catalogue fallback and finds nothing scored
+    expect(currentBest(S, LIFT)).toEqual({ mx: 0, unit: 'kg' })
   })
 
   it('reports timed and cardio bests in their own units, not the profile unit', () => {

@@ -4,9 +4,6 @@ import { isWarmupRow } from './workout-model.js'
 import { workoutTimestamp } from './format.js'
 import { LB_TO_KG } from './bodyweight.js'
 
-/** Kilograms per pound — owned by the Body-weight log (lib/bodyweight.js); re-exported here so existing recovery.js importers keep working. */
-export { LB_TO_KG }
-
 // A "normal" hard session for one muscle, in primary-set equivalents. The saturation curve
 // 1 - exp(-stimulus / REF) maps any session size onto [0,1) so volume raises the starting
 // fatigue level without ever pinning it, and the value can then fade asymptotically.

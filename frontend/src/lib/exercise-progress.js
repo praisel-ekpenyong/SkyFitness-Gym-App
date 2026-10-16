@@ -21,10 +21,11 @@ const bestRowValue = (rows, mode) =>
 /**
  * Resolve the Mode an exercise currently trains under (CONTEXT.md: Mode).
  *
- * The latest logged entry is authoritative: a completed reps work row keeps
- * the exercise on reps even when its target also carries timed/cardio work,
- * and entries without reps rows resolve to their own logged mode. An exercise
- * never trained falls back to the catalogue, like every fresh plan.
+ * The latest logged entry is authoritative: its completed rows decide, with
+ * reps winning when rows genuinely mix; a target with an explicit mode pins
+ * otherwise untyped rows to it (rows built by makeRow carry no mode of
+ * their own). An exercise never trained falls back to the catalogue, like
+ * every fresh plan.
  *
  * @param {Object} S - Application state atom containing `workouts`.
  * @param {string} exId - Exercise identifier.
