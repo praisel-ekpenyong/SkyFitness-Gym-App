@@ -65,7 +65,8 @@ export function assignWeekday(s, day, v) {
   if (!isWeekday(day)) throw new Error(`Weekday out of range: ${day}`)
   s.week ??= {}
   if (!v) { delete s.week[day]; return }
-  if (v === REST || !isSchedulable(s, v)) throw new Error(`Unknown routine for weekday ${day}: ${v}`)
+  if (v === REST) throw new Error(`Cannot assign rest to weekday ${day}: clear it with a falsy value`)
+  if (!isSchedulable(s, v)) throw new Error(`Unknown routine for weekday ${day}: ${v}`)
   s.week[day] = v
 }
 
