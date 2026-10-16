@@ -24,7 +24,7 @@ export const round1 = w => Math.round(w * 10) / 10
 /** Chronological order for ISO-day entries. */
 const byDay = (a, b) => (a.d < b.d ? -1 : a.d > b.d ? 1 : 0)
 
-/** Stored entry shape. */
+/** Canonical stored entry: weight rounded to 1 decimal, `t` kept only when supplied. */
 const stored = e => ({ d: e.d, w: round1(e.w), ...(e.t !== undefined ? { t: e.t } : {}) })
 
 /**

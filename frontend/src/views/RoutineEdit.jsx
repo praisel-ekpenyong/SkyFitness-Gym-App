@@ -28,6 +28,7 @@ export default function RoutineEdit() {
   const edit = fn => update(s => {
     const r = s.routines.find(x => x.id === id)
     const next = fn(r.ex)
+    // Seam fns return the next list (immutable); in-place tweaks return nothing.
     if (Array.isArray(next)) r.ex = next
   })
   const move = (i, dir) => edit(ex => {
