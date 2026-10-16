@@ -5,6 +5,7 @@ import { exOr } from '../lib/exercises.js'
 import { exLine } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
 import { supersetUnits, cleanupSg, pairAdjacent, unpairSuperset } from '../lib/supersetFlow.js'
+import { detachRoutine } from '../lib/schedule.js'
 import { Thumb } from '../components/Media.jsx'
 import { glyphPicker, exercisePicker, exConfigSheet, confirmSheet } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
@@ -112,8 +113,7 @@ export default function RoutineEdit() {
       onConfirm: () => {
         update(s => {
           s.routines = s.routines.filter(x => x.id !== id)
-          Object.keys(s.week).forEach(k => { if (s.week[k] === id) delete s.week[k] })
-          Object.keys(s.dayPlan).forEach(k => { if (s.dayPlan[k] === id) delete s.dayPlan[k] })
+          detachRoutine(s, id)
         })
         nav('/plan')
       }
