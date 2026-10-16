@@ -3,7 +3,8 @@ import { useStore, sanitizeDisplayName } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
 import { EXIDX } from './lib/exercises.js'
 import { fmtDate, fmtNum, fmtVol, fmtDur, durPart, todayISO, exCount, DAYN, MONTHS_LONG, monthKey } from './lib/format.js'
-import { effectiveRoutineId, hasEffectiveOverride, setsDone, lastBW, setLabel, effortOf } from './lib/history.js'
+import { effectiveRoutineId, hasEffectiveOverride, setsDone, setLabel, effortOf } from './lib/history.js'
+import { recordWeighIn, deleteWeighIn, latestWeighIn } from './lib/bodyweight.js'
 import { t } from './lib/i18n.js'
 import { nav } from './lib/nav.js'
 import { starterRoutines } from './lib/starter.js'
@@ -99,22 +100,17 @@ function WeightInput({ value, setValue, unit }) {
 function BwSheet({ required, onDone, close }) {
   const st = useStore(s => s.S)
   const unit = st.unit
-  const bw = lastBW(st)
+  const bw = latestWeighIn(st)
   const [v, setV] = useState(bw ? bw.w : 70)
   const save = () => {
     const n = Math.round((v || 0) * 10) / 10
     if (!n || n <= 0) { toast(t('Enter a valid weight')); return }
-    update(s => {
-      const iso = todayISO()
-      const ex = s.bodyweight.find(b => b.d === iso)
-      if (ex) { ex.w = n; ex.t = Date.now() } else s.bodyweight.push({ d: iso, w: n, t: Date.now() })
-      s.bodyweight.sort((a, b) => (a.d < b.d ? -1 : 1))
-    })
+    update(s => { recordWeighIn(s, { d: todayISO(), w: n, t: Date.now() }) })
     close()
     if (onDone) onDone(n); else toast(t('Weight saved'))
   }
   const recent = [...st.bodyweight].reverse().slice(0, 3)
-  const delEntry = d => update(s => { s.bodyweight = s.bodyweight.filter(b => b.d !== d) })
+  const delEntry = d => update(s => { deleteWeighIn(s, d) })
   return <>
     <h3>{required ? t('Quick check-in') : t('Log body weight')}</h3>
     <div className="muted small">{required ? t('Slide or tap to set your weight — tracked before every workout so your curve stays honest.') : t('Today') + ', ' + fmtDate(todayISO(), true)}</div>
@@ -242,12 +238,6 @@ export function importFromApp(file, onDone) {
 }
 
 /* ============================ target weight ============================ */
-export function bwDeltaColor(delta, currentW) {
-  if (!delta) return 'var(--label-2)'
-  if (!S().targetW) return 'var(--label)'
-  const up = S().targetW > currentW
-  return (delta > 0) === up ? 'var(--acc-text)' : 'var(--red-text)'
-}
 /**
  * Target-weight sheet; saving stores the goal drawn on weight charts.
  *
@@ -255,7 +245,7 @@ export function bwDeltaColor(delta, currentW) {
  */
 function GoalSheet({ close }) {
   const st = S()
-  const bw = lastBW(st)
+  const bw = latestWeighIn(st)
   const [v, setV] = useState(st.targetW || (bw ? bw.w : 70))
   return <>
     <h3>{t('Target weight')}</h3>
@@ -266,7 +256,7 @@ function GoalSheet({ close }) {
       const n = Math.round((v || 0) * 10) / 10
       if (!n || n <= 0) { toast(t('Enter a valid weight')); return }
       update(s => { s.targetW = n }); close()
-      const b = lastBW(S()); toast(t('Goal set: {0}', fmtNum(n) + ' ' + st.unit) + (b ? ' (' + t('{0} to go', fmtNum(Math.abs(n - b.w))) + ')' : ''))
+      const b = latestWeighIn(S()); toast(t('Goal set: {0}', fmtNum(n) + ' ' + st.unit) + (b ? ' (' + t('{0} to go', fmtNum(Math.abs(n - b.w))) + ')' : ''))
     }}>{t('Save goal')}</Button>
     {st.targetW && <><div style={{ height: 8 }} /><Button variant="danger" onClick={() => { update(s => { s.targetW = null }); close(); toast(t('Goal removed')) }}>{t('Remove goal')}</Button></>}
   </>

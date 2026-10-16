@@ -2,16 +2,17 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { EXIDX } from '../lib/exercises.js'
-import { lastBW, streakWeeks, setLabel, effortOf } from '../lib/history.js'
+import { streakWeeks, setLabel, effortOf } from '../lib/history.js'
 import { fmtNum, fmtDate, fmtVol, todayISO, weekKey, monthKey, workoutTimestamp } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
-import { bwSheet, goalSheet, calendarSheet, recapSheet, workoutDetailSheet, WorkoutRow, bwDeltaColor } from '../sheets.jsx'
+import { bwSheet, goalSheet, calendarSheet, recapSheet, workoutDetailSheet, WorkoutRow } from '../sheets.jsx'
 import LineChart from '../components/LineChart.jsx'
 import Heatmap from '../components/Heatmap.jsx'
 import Icon from '../components/Icon.jsx'
 import BodyMap, { BodyMapLegend } from '../components/BodyMap.jsx'
 import { loadOfWorkouts, rankOf, MUSCLE_NAME, musclesOf } from '../lib/muscles.js'
-import { fatigueOf, strengthOf, STRENGTH_FLOOR, LB_TO_KG, fatigueStateOf } from '../lib/recovery.js'
+import { fatigueOf, strengthOf, STRENGTH_FLOOR, fatigueStateOf } from '../lib/recovery.js'
+import { latestWeighIn, currentBodyweightKg, deltaTowardGoal } from '../lib/bodyweight.js'
 import { FATIGUE_LEVELS } from '../lib/recovery-view.js'
 import { strengthExerciseRowsForMuscle } from '../lib/strength-exercises.js'
 import { e1rmSeries, best1RM } from '../lib/onerm.js'
@@ -104,13 +105,7 @@ function MuscleBalance({ S }) {
   const now = useNow()
   const workouts = S.workouts
   // The user's own last registered bodyweight drives bodyweight-exercise tonnage.
-  const bodyweightKg = useMemo(() => {
-    const entries = S.bodyweight || []
-    if (!entries.length) return null
-    const last = entries.slice().sort((a, b) => String(a.d).localeCompare(String(b.d))).at(-1)
-    if (!last || !(last.w > 0)) return null
-    return S.unit === 'lb' ? last.w * LB_TO_KG : last.w
-  }, [S.bodyweight, S.unit])
+  const bodyweightKg = useMemo(() => currentBodyweightKg(S), [S.bodyweight, S.unit])
   const fatigue = useMemo(() => fatigueOf(workouts, now, { bodyweightKg, unit: S.unit }), [workouts, now, bodyweightKg, S.unit])
   const strength = useMemo(() => strengthOf(workouts, now, { bodyweightKg, unit: S.unit }), [workouts, now, bodyweightKg, S.unit])
   const muscleExercises = useMemo(() => (sel ? strengthExerciseRowsForMuscle(S, now, sel) : []), [S, now, sel])
@@ -403,11 +398,11 @@ export default function Stats() {
           <span className="l">{t('Weight 30d')}</span>
           <span className="stats-tile-icon purple"><Icon name="scale" /></span>
         </div>
-        <div className="v" style={{ fontSize: 22, color: bwDelta30 === null ? 'inherit' : bwDeltaColor(bwDelta30, (lastBW(S) || {}).w || 0) }}>
+        <div className="v" style={{ fontSize: 22, color: bwDelta30 === null ? 'inherit' : deltaTowardGoal(S.targetW, latestWeighIn(S)?.w ?? 0, bwDelta30) }}>
           {bwDelta30 === null ? '—' : (bwDelta30 > 0 ? '+' : '') + fmtNum(bwDelta30) + ' ' + S.unit}
         </div>
         <div className="stats-tile-sub">
-          {lastBW(S) ? `${fmtNum(lastBW(S).w)} ${S.unit}` : t('No weigh-ins')}
+          {latestWeighIn(S) ? `${fmtNum(latestWeighIn(S).w)} ${S.unit}` : t('No weigh-ins')}
         </div>
       </div>
     </div>

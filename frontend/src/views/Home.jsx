@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
-import { effectiveRoutine, effectiveRoutineId, hasEffectiveOverride, lastBW, sessionProgress } from '../lib/history.js'
+import { effectiveRoutine, effectiveRoutineId, hasEffectiveOverride, sessionProgress } from '../lib/history.js'
+import { latestWeighIn, deltaTowardGoal } from '../lib/bodyweight.js'
 import { fmtNum, fmtDate, todayISO, isoOf, weekKey, DAYS, exCount, workoutTimestamp } from '../lib/format.js'
 import { t, dateLocale } from '../lib/i18n.js'
-import { bwSheet, goalSheet, dayOverrideSheet, calendarSheet, startFlow, loadStarterPlan, bwDeltaColor, displayNameSheet } from '../sheets.jsx'
+import { bwSheet, goalSheet, dayOverrideSheet, calendarSheet, startFlow, loadStarterPlan, displayNameSheet } from '../sheets.jsx'
 import LineChart from '../components/LineChart.jsx'
 import Icon from '../components/Icon.jsx'
 import { Button } from '../components/ui.jsx'
@@ -19,7 +20,7 @@ export default function Home() {
   const today = new Date()
   const routine = effectiveRoutine(S, todayISO())
   const todayOvr = hasEffectiveOverride(S, todayISO())
-  const bw = lastBW(S)
+  const bw = latestWeighIn(S)
   const prevBW = S.bodyweight.length > 1 ? S.bodyweight[S.bodyweight.length - 2] : null
   const delta = bw && prevBW ? bw.w - prevBW.w : null
 
@@ -200,7 +201,7 @@ export default function Home() {
         <div className="row" style={{ gap: 8, alignItems: 'baseline' }}>
           <div className="big">{fmtNum(bw.w)} <span className="muted" style={{ fontSize: '1rem', fontWeight: 400 }}>{S.unit}</span></div>
           {!!delta && (
-            <span className="delta-pill" style={{ color: bwDeltaColor(delta, bw.w), background: 'color-mix(in srgb, currentColor 14%, transparent)' }}>
+            <span className="delta-pill" style={{ color: deltaTowardGoal(S.targetW, bw.w, delta), background: 'color-mix(in srgb, currentColor 14%, transparent)' }}>
               <Icon name={delta > 0 ? 'arrowUp' : 'arrowDown'} style={{ fontSize: 12 }} />
               {fmtNum(Math.abs(delta))}
             </span>
