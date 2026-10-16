@@ -26,7 +26,7 @@ vi.mock('../store/useStore.js', () => ({
 vi.mock('react-router-dom', () => ({ useNavigate: () => () => {} }))
 vi.mock('../sheets.jsx', () => ({
   bwSheet: () => {}, goalSheet: () => {}, calendarSheet: () => {}, recapSheet: vi.fn(), workoutDetailSheet: () => {},
-  WorkoutRow: () => React.createElement('div'), bwDeltaColor: () => 'inherit',
+  WorkoutRow: () => React.createElement('div'),
 }))
 vi.mock('../components/LineChart.jsx', () => ({ default: () => React.createElement('div') }))
 vi.mock('../components/Heatmap.jsx', () => ({ default: () => React.createElement('div') }))
