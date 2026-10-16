@@ -67,7 +67,7 @@ describe('assignWeekday', () => {
 
   it('rejects the rest sentinel: an unassigned weekday already reads as rest', () => {
     const s = mkState({ week: { 1: 'r1' } })
-    expect(() => assignWeekday(s, 2, REST)).toThrow()
+    expect(() => assignWeekday(s, 2, REST)).toThrow(/rest/i)
     expect(s.week).toEqual({ 1: 'r1' })
   })
 })
