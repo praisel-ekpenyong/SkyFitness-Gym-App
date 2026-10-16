@@ -98,3 +98,29 @@ describe('import custom-exercise body-part fallback', () => {
     expect(customs['zzx qqq row thing'].bp).toBe('cardio')
   })
 })
+
+/* Import's existing-days-win rule for the Body-weight log: importing twice
+   never rewrites a logged reading. Guards the mergeImport -> mergeWeighIns
+   delegation against flipping to overwrite. */
+
+describe('mergeImport bodyweight skip rule', () => {
+  it('leaves existing days alone and reports added/skipped', () => {
+    const S = { bodyweight: [{ d: '2026-01-01', w: 80, t: 1 }] }
+    const res = mergeImport(S, {
+      kind: 'bodyweight',
+      bodyweight: [{ d: '2026-01-01', w: 81, t: 2 }, { d: '2026-01-02', w: 79, t: 3 }],
+    })
+    expect(res).toEqual({ added: 1, skipped: 1 })
+    expect(S.bodyweight).toEqual([
+      { d: '2026-01-01', w: 80, t: 1 },
+      { d: '2026-01-02', w: 79, t: 3 },
+    ])
+  })
+
+  it('normalizes a missing bodyweight log instead of throwing', () => {
+    const S = {}
+    const res = mergeImport(S, { kind: 'bodyweight', bodyweight: [{ d: '2026-01-02', w: 79 }] })
+    expect(res).toEqual({ added: 1, skipped: 0 })
+    expect(S.bodyweight).toHaveLength(1)
+  })
+})

@@ -88,14 +88,6 @@ export function effectiveRoutine(S, iso) {
 }
 
 /**
- * Retrieve the most recently logged body weight entry.
- *
- * @param {Object} S - Application state atom containing `bodyweight` array.
- * @returns {{ d: string, w: number }|null} Latest bodyweight entry, or null if none recorded.
- */
-export const lastBW = S => (S?.bodyweight?.length ? S.bodyweight[S.bodyweight.length - 1] : null)
-
-/**
  * Calculate the count of consecutive weeks with at least one logged workout, counting back from current week.
  *
  * Evaluates weekly buckets using `weekKey`. The current calendar week can be in-progress without breaking
