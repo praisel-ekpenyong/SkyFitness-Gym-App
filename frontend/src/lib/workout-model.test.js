@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { modeOf, isTimed, defaultConfig, buildSets, freestyleConfig, workoutVolume, bestWeightFor, bestWeightForEntry, isBw, isPerSide, sideReps, repStep, cascadeWeight, insertWarmupRow, removeRowAt, workSetsDone } from './workout-model.js'
+import { bestWeightFor } from './history.js'
+import { modeOf, isTimed, defaultConfig, buildSets, freestyleConfig, workoutVolume, bestWeightForEntry, isBw, isPerSide, sideReps, repStep, cascadeWeight, insertWarmupRow, removeRowAt, workSetsDone, hasWork, isExerciseDone, sessionProgress } from './workout-model.js'
 import { fmtSec, setLabel, exLine } from './format.js'
 import { effortOf, stepEffort, capEffort } from './effort.js'
 import { pairAdjacent, unpairSuperset, supersetUnits } from './supersetFlow.js'
@@ -644,5 +645,112 @@ describe('warm-up rows identified by phase alone', () => {
     const next = cascadeWeight(rows, 0, 50)
     expect(next[1].w).toBe(50)
     expect(next[2].w).toBe(100)
+  })
+})
+
+// The one definition of "work left" that every completion check reads: the
+// superset step, the set toggle, the working-weight sheet and the finish surfaces.
+describe('hasWork', () => {
+  const warmup = { done: false, phase: 'warmup', warmup: true }
+
+  it('ignores warm-up rows, so prep alone never counts as work left', () => {
+    expect(hasWork([{ sets: [warmup, { done: true }, { done: true }] }], 0)).toBe(false)
+  })
+
+  it('counts an undone work row', () => {
+    expect(hasWork([{ sets: [{ done: true }, { done: false }] }], 0)).toBe(true)
+  })
+
+  it('reads an entry with no rows as no work left', () => {
+    expect(hasWork([{ sets: [] }], 0)).toBe(false)
+  })
+  it('reads a missing entry as no work left', () => {
+    expect(hasWork([], 3)).toBe(false)
+    expect(hasWork([undefined], 0)).toBe(false)
+    expect(hasWork(null)).toBe(false)
+    expect(hasWork(undefined)).toBe(false)
+  })
+
+  it('accepts a single entry directly without requiring an entries array and index', () => {
+    expect(hasWork({ sets: [{ done: false }] })).toBe(true)
+    expect(hasWork({ sets: [{ done: true }] })).toBe(false)
+    expect(hasWork({ sets: [warmup, { done: true }] })).toBe(false)
+  })
+})
+
+// CONTEXT.md: Session progress — warm-ups never block completion, and an entry
+// with no work rows has nothing left to do, so it counts as done rather than
+// wedging the finish button on "finish early" forever.
+describe('isExerciseDone', () => {
+  const warmupDone = { done: true, phase: 'warmup', warmup: true }
+  const warmupUndone = { done: false, phase: 'warmup', warmup: true }
+
+  it('returns false for nullish entries', () => {
+    expect(isExerciseDone(null)).toBe(false)
+    expect(isExerciseDone(undefined)).toBe(false)
+  })
+
+  it('counts an entry with no work rows as done — nothing left to do', () => {
+    expect(isExerciseDone({ sets: [] })).toBe(true)
+    expect(isExerciseDone({ sets: [warmupDone, warmupDone] })).toBe(true)
+    expect(isExerciseDone({ sets: [warmupUndone] })).toBe(true)
+  })
+
+  it('returns false when work sets remain undone', () => {
+    expect(isExerciseDone({ sets: [{ done: true }, { done: false }] })).toBe(false)
+    expect(isExerciseDone({ sets: [warmupDone, { done: false }] })).toBe(false)
+  })
+
+  it('returns true when all work sets are done, even with unticked warm-up sets', () => {
+    expect(isExerciseDone({ sets: [{ done: true }, { done: true }] })).toBe(true)
+    expect(isExerciseDone({ sets: [warmupUndone, { done: true }] })).toBe(true)
+    expect(isExerciseDone({ sets: [warmupDone, { done: true }] })).toBe(true)
+  })
+})
+
+// The probe fixture that proved the header, the confirm and the finish button
+// disagreed: one unticked warm-up row, both work sets ticked. Before
+// sessionProgress the header demanded one more set and the confirm called the
+// unticked warm-up a miss (see CONTEXT.md: Warm-up set — never a miss).
+describe('sessionProgress', () => {
+  const warmupUnticked = { w: 40, r: 5, done: false, phase: 'warmup', warmup: true }
+  const work = done => ({ w: 100, r: 8, done })
+  const probeSession = () => ({ entries: [{ id: '0025', sets: [warmupUnticked, work(true), work(true)] }] })
+
+  it('counts work sets only, so an unticked warm-up finishes the session', () => {
+    expect(sessionProgress(probeSession())).toEqual({
+      done: 2, total: 2, remaining: 0, exDone: 1, exTotal: 1, allDone: true,
+    })
+  })
+
+  it('leaves the session unfinished while a work set is unticked', () => {
+    const A = { entries: [{ id: '0025', sets: [warmupUnticked, work(true), work(false)] }] }
+    const p = sessionProgress(A)
+    expect(p.remaining).toBe(1)
+    expect(p.exDone).toBe(0)
+    expect(p.allDone).toBe(false)
+  })
+
+  it('ticking or adding warm-up rows never moves done or total', () => {
+    const base = { entries: [{ id: 'x', sets: [work(false)] }] }
+    const warmed = { entries: [{ id: 'x', sets: [{ ...work(true), phase: 'warmup', warmup: true }, work(false)] }] }
+    expect(sessionProgress(warmed)).toEqual(sessionProgress(base))
+  })
+
+  it('an entry left with only warm-up rows counts as done, so it cannot block finishing', () => {
+    const A = {
+      entries: [
+        { id: 'a', sets: [work(true)] },
+        { id: 'b', sets: [{ ...work(true), phase: 'warmup', warmup: true }] },
+      ],
+    }
+    const p = sessionProgress(A)
+    expect(p.exDone).toBe(2)
+    expect(p.allDone).toBe(true)
+  })
+
+  it('reads an empty or missing session as zero progress, not done', () => {
+    expect(sessionProgress(null)).toEqual({ done: 0, total: 0, remaining: 0, exDone: 0, exTotal: 0, allDone: false })
+    expect(sessionProgress({ entries: [] }).allDone).toBe(false)
   })
 })

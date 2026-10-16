@@ -3,7 +3,7 @@ import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { EXIDX } from '../lib/exercises.js'
 import { fmtNum, fmtVol, fmtDur } from '../lib/format.js'
-import { setsDone, setsDoneActive, workSetsDone } from '../lib/workout-model.js'
+import { setsDone, workSetsDone, sessionProgress, isWarmupRow } from '../lib/workout-model.js'
 import { playWorkoutComplete } from '../lib/sound.js'
 import { t } from '../lib/i18n.js'
 import { nav } from '../lib/nav.js'
@@ -169,15 +169,20 @@ function FinishSummary({ w, prs, e1prs = [], close }) {
     <Button variant="primary" onClick={() => { close(); nav('/home') }}>{t('Nice!')}</Button>
   </div>
 }
-/** Finishes the workout, confirming first when sets remain unchecked. */
+/** Finishes the workout, confirming first when work sets remain unchecked. */
 export function finishWorkout() {
   const A = S().active
   if (!A) return
-  const done = setsDoneActive(A)
-  const total = A.entries.reduce((n, e) => n + e.sets.length, 0)
+  const prog = sessionProgress(A)
   if (!_confirmSheet) throw new Error('session sheets not wired: missing confirmSheet')
-  if (!done) { _confirmSheet({ title: t('Nothing logged yet'), message: t('You haven’t checked off any sets. Finish the workout anyway?'), confirmText: t('Finish anyway'), onConfirm: doFinishWorkout }); return }
-  if (done < total) { _confirmSheet({ title: t('Finish early?'), message: t(total - done === 1 ? '{0} set still unchecked. Finish the workout now?' : '{0} sets still unchecked. Finish the workout now?', total - done), confirmText: t('Finish workout'), onConfirm: doFinishWorkout }); return }
+  if (!prog.done) {
+    const warmOnly = (A.entries || []).some(e => (e.sets || []).some(s => s.done && isWarmupRow(s)))
+    _confirmSheet(warmOnly
+      ? { title: t('Only warm-ups logged so far'), message: t('Only warm-up sets are ticked — finish the workout anyway?'), confirmText: t('Finish anyway'), onConfirm: doFinishWorkout }
+      : { title: t('Nothing logged yet'), message: t('You haven’t checked off any sets. Finish the workout anyway?'), confirmText: t('Finish anyway'), onConfirm: doFinishWorkout })
+    return
+  }
+  if (prog.remaining > 0) { _confirmSheet({ title: t('Finish early?'), message: t(prog.remaining === 1 ? '{0} set still unchecked. Finish the workout now?' : '{0} sets still unchecked. Finish the workout now?', prog.remaining), confirmText: t('Finish workout'), onConfirm: doFinishWorkout }); return }
   doFinishWorkout()
 }
 /** Completes the session and opens the locked finish summary. */

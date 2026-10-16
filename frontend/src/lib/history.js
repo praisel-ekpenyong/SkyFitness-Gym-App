@@ -7,44 +7,19 @@
 
 import { weekKey, isoOf } from './format.js'
 import { bestWeightForEntry } from './workout-model.js'
-import { isWarmupRow } from './warmup.js'
 
 // Backward-compatible re-exports
 export { EFFORT, stepEffort, capEffort, effortOf } from './effort.js'
-export { cleanupSg, pairAdjacent, unpairSuperset, supersetUnits, unitOf, hasWork, isExerciseDone } from './supersetFlow.js'
+export { cleanupSg, pairAdjacent, unpairSuperset, supersetUnits, unitOf } from './supersetFlow.js'
 export {
   modeOf, isTimed, isBw, isPerSide, sideReps, repStep,
   defaultConfig, freestyleConfig, buildSets, workoutVolume,
   setsDone, setsDoneActive, cascadeWeight, insertWarmupRow,
-  removeRowAt, workSetsDone, metricRowsForEntry, metricModeForEntry,
-  bestWeightForEntry, MODES, PHASES, ROW_DEFAULTS, SETS_DEFAULTS, makeRow
+  removeRowAt, workSetsDone, hasWork, isExerciseDone, sessionProgress,
+  metricRowsForEntry, metricModeForEntry,
+  bestWeightForEntry, lastEntryFor, MODES, PHASES, ROW_DEFAULTS, SETS_DEFAULTS, makeRow
 } from './workout-model.js'
 export { fmtSec, setLabel, exLine } from './format.js'
-
-/**
- * Find the most recent workout entry for an exercise containing completed work sets.
- *
- * Scans workouts in reverse chronological order. Warm-up rows are excluded so prep sets
- * never masquerade as training sessions. Retains the prescribed `target` for progression audits.
- *
- * @param {Object} S - Application state atom containing `workouts`.
- * @param {string} exId - Exercise identifier from EXIDX.
- * @returns {{ d: string, sets: Array<Object>, target: Object|null }|null} Last entry summary, or null if never performed.
- */
-export function lastEntryFor(S, exId) {
-  for (let i = (S?.workouts || []).length - 1; i >= 0; i--) {
-    const en = (S.workouts[i].entries || []).find(e => e.id === exId)
-    // `target` is what the session prescribed; finished workouts carry it so labels and the
-    // progression engine can read a session back the way it was logged.
-    if (!en?.sets) continue
-    const workDone = en.sets.filter(s => s.done && !isWarmupRow(s))
-    if (workDone.length) {
-      return { d: S.workouts[i].d, sets: workDone, target: en.target || null }
-    }
-  }
-  return null
-}
-
 
 /**
  * Find the highest completed set load for an exercise across all logged workouts.

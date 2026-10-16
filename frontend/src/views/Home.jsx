@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
-import { effectiveRoutine, effectiveRoutineId, hasEffectiveOverride, lastBW, setsDoneActive } from '../lib/history.js'
+import { effectiveRoutine, effectiveRoutineId, hasEffectiveOverride, lastBW, sessionProgress } from '../lib/history.js'
 import { fmtNum, fmtDate, todayISO, isoOf, weekKey, DAYS, exCount, workoutTimestamp } from '../lib/format.js'
 import { t, dateLocale } from '../lib/i18n.js'
 import { bwSheet, goalSheet, dayOverrideSheet, calendarSheet, startFlow, loadStarterPlan, bwDeltaColor, displayNameSheet } from '../sheets.jsx'
@@ -122,7 +122,7 @@ export default function Home() {
           </div>
           <div className="home-hero-meta">
             {S.active
-              ? `${setsDoneActive(S.active)} ${t('sets logged')}`
+              ? `${sessionProgress(S.active).done} ${t('sets logged')}`
               : (routine
                 ? (routine.ex?.length ? exCount(routine.ex.length) : t("Today's routine"))
                 : t('Time to recover & rebuild'))}
