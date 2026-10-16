@@ -3,7 +3,9 @@ import { useStore, sanitizeDisplayName } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
 import { EXIDX } from './lib/exercises.js'
 import { fmtDate, fmtNum, fmtVol, fmtDur, durPart, todayISO, exCount, DAYN, MONTHS_LONG, monthKey } from './lib/format.js'
-import { effectiveRoutineId, hasEffectiveOverride, setsDone, lastBW, setLabel, effortOf } from './lib/history.js'
+import { effectiveRoutineId, hasEffectiveOverride, setsDone, setLabel, effortOf } from './lib/history.js'
+import { setDayOverride, assignWeekday, dayStatus } from './lib/schedule.js'
+import { recordWeighIn, deleteWeighIn, latestWeighIn } from './lib/bodyweight.js'
 import { t } from './lib/i18n.js'
 import { nav } from './lib/nav.js'
 import { starterRoutines } from './lib/starter.js'
@@ -99,22 +101,17 @@ function WeightInput({ value, setValue, unit }) {
 function BwSheet({ required, onDone, close }) {
   const st = useStore(s => s.S)
   const unit = st.unit
-  const bw = lastBW(st)
+  const bw = latestWeighIn(st)
   const [v, setV] = useState(bw ? bw.w : 70)
   const save = () => {
     const n = Math.round((v || 0) * 10) / 10
     if (!n || n <= 0) { toast(t('Enter a valid weight')); return }
-    update(s => {
-      const iso = todayISO()
-      const ex = s.bodyweight.find(b => b.d === iso)
-      if (ex) { ex.w = n; ex.t = Date.now() } else s.bodyweight.push({ d: iso, w: n, t: Date.now() })
-      s.bodyweight.sort((a, b) => (a.d < b.d ? -1 : 1))
-    })
+    update(s => { recordWeighIn(s, { d: todayISO(), w: n, t: Date.now() }) })
     close()
     if (onDone) onDone(n); else toast(t('Weight saved'))
   }
   const recent = [...st.bodyweight].reverse().slice(0, 3)
-  const delEntry = d => update(s => { s.bodyweight = s.bodyweight.filter(b => b.d !== d) })
+  const delEntry = d => update(s => { deleteWeighIn(s, d) })
   return <>
     <h3>{required ? t('Quick check-in') : t('Log body weight')}</h3>
     <div className="muted small">{required ? t('Slide or tap to set your weight — tracked before every workout so your curve stays honest.') : t('Today') + ', ' + fmtDate(todayISO(), true)}</div>
@@ -242,12 +239,6 @@ export function importFromApp(file, onDone) {
 }
 
 /* ============================ target weight ============================ */
-export function bwDeltaColor(delta, currentW) {
-  if (!delta) return 'var(--label-2)'
-  if (!S().targetW) return 'var(--label)'
-  const up = S().targetW > currentW
-  return (delta > 0) === up ? 'var(--acc-text)' : 'var(--red-text)'
-}
 /**
  * Target-weight sheet; saving stores the goal drawn on weight charts.
  *
@@ -255,7 +246,7 @@ export function bwDeltaColor(delta, currentW) {
  */
 function GoalSheet({ close }) {
   const st = S()
-  const bw = lastBW(st)
+  const bw = latestWeighIn(st)
   const [v, setV] = useState(st.targetW || (bw ? bw.w : 70))
   return <>
     <h3>{t('Target weight')}</h3>
@@ -266,7 +257,7 @@ function GoalSheet({ close }) {
       const n = Math.round((v || 0) * 10) / 10
       if (!n || n <= 0) { toast(t('Enter a valid weight')); return }
       update(s => { s.targetW = n }); close()
-      const b = lastBW(S()); toast(t('Goal set: {0}', fmtNum(n) + ' ' + st.unit) + (b ? ' (' + t('{0} to go', fmtNum(Math.abs(n - b.w))) + ')' : ''))
+      const b = latestWeighIn(S()); toast(t('Goal set: {0}', fmtNum(n) + ' ' + st.unit) + (b ? ' (' + t('{0} to go', fmtNum(Math.abs(n - b.w))) + ')' : ''))
     }}>{t('Save goal')}</Button>
     {st.targetW && <><div style={{ height: 8 }} /><Button variant="danger" onClick={() => { update(s => { s.targetW = null }); close(); toast(t('Goal removed')) }}>{t('Remove goal')}</Button></>}
   </>
@@ -444,7 +435,7 @@ function DayOverride({ iso, close }) {
   const hasOvr = st.dayPlan[iso] !== undefined
   const effId = effectiveRoutineId(st, iso)
   const set = v => {
-    update(s => { if (!v) delete s.dayPlan[iso]; else s.dayPlan[iso] = v })
+    update(s => setDayOverride(s, iso, v))
     close()
     toast(v === '' ? t('Back to weekly plan') : v === 'rest' ? t('{0} set to rest', fmtDate(iso)) : t('{0} planned for {1}', (st.routines.find(r => r.id === v) || {}).name, fmtDate(iso)))
   }
@@ -471,7 +462,7 @@ export const dayOverrideSheet = iso => ui().openSheet(close => <DayOverride iso=
  */
 function DayAssign({ day, close }) {
   const st = useStore(s => s.S)
-  const set = v => { update(s => { if (v) s.week[day] = v; else delete s.week[day] }); close() }
+  const set = v => { update(s => assignWeekday(s, day, v)); close() }
   return <>
     <h3>{t(DAYN[day])}</h3>
     <div className="list">
@@ -536,7 +527,7 @@ function Calendar({ start, close }) {
   for (let d = 1; d <= daysIn; d++) {
     const iso = y + '-' + String(mo + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0')
     const ws = byDay[iso], effId = effectiveRoutineId(st, iso), ovr = hasEffectiveOverride(st, iso)
-    const dotCls = ws ? 'done' : ovr && effId ? 'ovr' : effId ? 'plan' : ''
+    const dotCls = dayStatus({ trained: ws, effId, ovr })
     cells.push(<button key={d} className={'cal-d' + (ws ? ' has' : '') + (iso === todayISO() ? ' today' : '')} onClick={() => {
       if (!ws) { close(); dayOverrideSheet(iso); return }
       if (ws.length === 1) { close(); workoutDetailSheet(ws[0]); return }

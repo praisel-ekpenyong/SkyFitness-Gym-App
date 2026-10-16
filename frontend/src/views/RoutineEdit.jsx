@@ -2,9 +2,10 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useEffect } from 'react'
 import { useStore } from '../store/useStore.js'
 import { exOr } from '../lib/exercises.js'
-import { uid, exLine } from '../lib/format.js'
+import { exLine } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
-import { supersetUnits, cleanupSg } from '../lib/supersetFlow.js'
+import { supersetUnits, cleanupSg, pairAdjacent, unpairSuperset } from '../lib/supersetFlow.js'
+import { detachRoutine } from '../lib/schedule.js'
 import { Thumb } from '../components/Media.jsx'
 import { glyphPicker, exercisePicker, exConfigSheet, confirmSheet } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
@@ -24,14 +25,25 @@ export default function RoutineEdit() {
   useEffect(() => { if (!r) nav('/plan') }, [!!r])
   if (!r) return null
 
-  const edit = fn => update(s => { fn(s.routines.find(x => x.id === id).ex) })
-  const move = (i, dir) => edit(ex => { const j = i + dir; if (j < 0 || j >= ex.length) return;[ex[i], ex[j]] = [ex[j], ex[i]]; cleanupSg(ex) })
+  const edit = fn => update(s => {
+    const r = s.routines.find(x => x.id === id)
+    const next = fn(r.ex)
+    // Seam fns return the next list (immutable); in-place tweaks return nothing.
+    if (Array.isArray(next)) r.ex = next
+  })
+  const move = (i, dir) => edit(ex => {
+    const j = i + dir
+    if (j < 0 || j >= ex.length) return
+    const next = [...ex]
+    ;[next[i], next[j]] = [next[j], next[i]]
+    cleanupSg(next)
+    return next
+  })
   const toggleLink = i => edit(ex => {
-    if (i < 1) return
+    if (i < 1 || i >= ex.length) return
     const cur = ex[i], prev = ex[i - 1]
-    if (cur.sg && prev.sg && cur.sg === prev.sg) delete cur.sg
-    else { const gid = prev.sg || ('sg' + uid()); prev.sg = gid; cur.sg = gid }
-    cleanupSg(ex)
+    if (cur.sg && prev.sg && cur.sg === prev.sg) return unpairSuperset(ex, i)
+    return pairAdjacent(ex, i - 1, i)
   })
 
   const units = supersetUnits(r.ex)
@@ -102,8 +114,7 @@ export default function RoutineEdit() {
       onConfirm: () => {
         update(s => {
           s.routines = s.routines.filter(x => x.id !== id)
-          Object.keys(s.week).forEach(k => { if (s.week[k] === id) delete s.week[k] })
-          Object.keys(s.dayPlan).forEach(k => { if (s.dayPlan[k] === id) delete s.dayPlan[k] })
+          detachRoutine(s, id)
         })
         nav('/plan')
       }
