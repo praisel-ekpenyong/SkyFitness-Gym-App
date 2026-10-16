@@ -4,6 +4,7 @@ import { isWarmupRow } from './workout-model.js'
 import { workoutTimestamp } from './format.js'
 import { LB_TO_KG } from './bodyweight.js'
 
+/** Kilograms per pound — owned by the Body-weight log (lib/bodyweight.js); re-exported here so existing recovery.js importers keep working. */
 export { LB_TO_KG }
 
 // A "normal" hard session for one muscle, in primary-set equivalents. The saturation curve
@@ -85,8 +86,6 @@ const REP_CAP = 12
  * @returns {number} Estimated 1RM in the same unit as load.
  */
 const epley1RM = (load, reps) => load * (1 + Math.min(reps || 1, REP_CAP) / 30)
-
-/** Kilograms per pound — owned by the Body-weight log (lib/bodyweight.js), re-exported here. */
 
 /**
  * Coerce a value to a finite number for load math.
