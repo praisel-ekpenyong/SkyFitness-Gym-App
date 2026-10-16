@@ -137,6 +137,21 @@ describe('toggle next action', () => {
     expect(S.active.entries[0].hw).toBe(2)
   })
 
+  it('a resumed pre-hw Entry: uncheck then re-check never reads as new progress', () => {
+    // Sessions saved before hw existed replay here: the first interaction can
+    // be an uncheck, and the later re-check must not restart or cut rest.
+    const S = solo()
+    S.active.entries[0].sets[0].done = true
+    S.active.entries[0].sets[1].done = true
+    const un = toggleActiveSet(S, 0, 0)
+    expect(un.rest).toEqual({ start: false, stop: false })
+    expect(S.active.entries[0].hw).toBe(2)
+    const re = toggleActiveSet(S, 0, 0)
+    expect(re.checked).toBe(true)
+    expect(re.rest).toEqual({ start: false, stop: false })
+    expect(S.active.entries[0].hw).toBe(2)
+  })
+
   it('invalid commit weight returns null and stores nothing', () => {
     const S = solo()
     const next = commitWorkingWeight(S, 0, -5)

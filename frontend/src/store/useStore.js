@@ -195,9 +195,11 @@ export const useStore = create((set, get) => {
     // --- Active-workout lifecycle (deep seam: lib/active-workout.js) ---
     // Sheets and views call these; the single heaviest-weight policy,
     // target freezing, set toggles, and Record detection all live behind the seam.
-    beginSession(routineId, bw, { replaceActiveId = null } = {}) {
+    beginSession(routineId, bw) {
+      // A session with logged sets is never silently replaced: refuse (null)
+      // and the in-progress session survives instead of losing its sets.
       const current = get().S.active
-      if (current && setsDoneActive(current) > 0 && replaceActiveId !== current.id) return null
+      if (current && setsDoneActive(current) > 0) return null
       const active = createActiveSession(get().S, routineId, bw)
       get().update(s => { s.active = active })
       return active
