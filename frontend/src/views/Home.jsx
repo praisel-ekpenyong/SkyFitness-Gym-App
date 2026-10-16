@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { effectiveRoutine, effectiveRoutineId, hasEffectiveOverride, lastBW, sessionProgress } from '../lib/history.js'
+import { dayStatus } from '../lib/schedule.js'
 import { fmtNum, fmtDate, todayISO, isoOf, weekKey, DAYS, exCount, workoutTimestamp } from '../lib/format.js'
 import { t, dateLocale } from '../lib/i18n.js'
 import { bwSheet, goalSheet, dayOverrideSheet, calendarSheet, startFlow, loadStarterPlan, bwDeltaColor, displayNameSheet } from '../sheets.jsx'
@@ -32,7 +33,8 @@ export default function Home() {
     const d = new Date(monday); d.setDate(monday.getDate() + i)
     const iso = isoOf(d)
     const eff = effectiveRoutineId(S, iso), ovr = hasEffectiveOverride(S, iso), done = doneDays.has(iso)
-    const dot = done ? ' done' : ovr && eff ? ' ovr' : eff ? ' plan' : ''
+    const dotCls = dayStatus({ trained: done, effId: eff, ovr })
+    const dot = dotCls ? ' ' + dotCls : ''
     strip.push(
       <button key={i} className={'wday' + (iso === todayISO() ? ' today' : '')} onClick={() => dayOverrideSheet(iso)} aria-label={d.toLocaleDateString(dateLocale(), { weekday: 'long', day: 'numeric', month: 'long' })}>
         <div className="lbl">{t(DAYS[d.getDay()])}</div>
