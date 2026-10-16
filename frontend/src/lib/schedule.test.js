@@ -64,6 +64,12 @@ describe('assignWeekday', () => {
     expect(() => assignWeekday(s, 1, 'no-such-routine')).toThrow()
     expect(s.week).toEqual({})
   })
+
+  it('rejects the rest sentinel: an unassigned weekday already reads as rest', () => {
+    const s = mkState({ week: { 1: 'r1' } })
+    expect(() => assignWeekday(s, 2, REST)).toThrow()
+    expect(s.week).toEqual({ 1: 'r1' })
+  })
 })
 
 describe('detachRoutine', () => {
@@ -95,6 +101,13 @@ describe('detachRoutine', () => {
     // 2026-10-16 is a Friday (getDay() === 5).
     expect(hasEffectiveOverride(s, '2026-10-16')).toBe(false)
     expect(effectiveRoutineId(s, '2026-10-16')).toBe('r2')
+  })
+
+  it('reads a legacy rest value in the week map as unscheduled, never a plan dot', () => {
+    // The write seam rejects 'rest' for weekdays, but older stores may hold it.
+    const s = mkState({ week: { 5: 'rest' } })
+    expect(effectiveRoutineId(s, '2026-10-16')).toBeNull()
+    expect(dayStatus({ trained: false, effId: effectiveRoutineId(s, '2026-10-16'), ovr: false })).toBe('')
   })
 })
 

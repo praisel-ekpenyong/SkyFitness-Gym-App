@@ -44,7 +44,9 @@ export function bestWeightFor(S, exId) {
  * Priority:
  * 1. Specific date override (`S.dayPlan[iso]`). Returns null if marked 'rest'.
  * 2. If the overridden routine was deleted, falls back to the recurring weekday schedule.
- * 3. Recurring weekday schedule (`S.week[dayIndex]`).
+ * 3. Recurring weekday schedule (`S.week[dayIndex]`). A legacy 'rest' value
+ *    reads as unscheduled — the write seam rejects it, but older stores
+ *    may hold one.
  *
  * @param {Object} S - Application state atom containing `dayPlan`, `routines`, and `week`.
  * @param {string} iso - Calendar date string in 'YYYY-MM-DD' format.
@@ -55,7 +57,8 @@ export function effectiveRoutineId(S, iso) {
   if (ov === 'rest') return null
   if (ov && (S?.routines || []).some(r => r.id === ov)) return ov
   const wd = new Date(iso + 'T12:00:00').getDay()
-  return S?.week?.[wd] || null
+  const id = S?.week?.[wd] || null
+  return id === 'rest' ? null : id
 }
 
 /**

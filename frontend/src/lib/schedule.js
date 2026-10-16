@@ -54,7 +54,8 @@ export function clearDayOverride(s, iso) {
 /**
  * Assign a routine to one weekday of the recurring schedule.
  *
- * Falsy `v` clears the day back to rest.
+ * Falsy `v` clears the day back to rest. The 'rest' sentinel is rejected:
+ * an unassigned weekday already reads as rest, so there is nothing to write.
  *
  * @param {Object} s - Draft profile state with `week` and `routines`.
  * @param {number} day - Weekday index 0–6 (Date.getDay()).
@@ -64,7 +65,7 @@ export function assignWeekday(s, day, v) {
   if (!isWeekday(day)) throw new Error(`Weekday out of range: ${day}`)
   s.week ??= {}
   if (!v) { delete s.week[day]; return }
-  if (!isSchedulable(s, v)) throw new Error(`Unknown routine for weekday ${day}: ${v}`)
+  if (v === REST || !isSchedulable(s, v)) throw new Error(`Unknown routine for weekday ${day}: ${v}`)
   s.week[day] = v
 }
 
