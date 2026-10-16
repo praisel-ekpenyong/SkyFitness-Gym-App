@@ -10,7 +10,7 @@ Issues live as local markdown files under `.scratch/<feature>/` — one director
 
 ### Triage labels
 
-Default canonical triage vocabulary: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+Default canonical triage vocabulary: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`, plus terminal `resolved` for merged work. See `docs/agents/triage-labels.md`.
 
 ### Domain docs
 

@@ -9,10 +9,12 @@ The skills speak in terms of five canonical triage roles. This file maps those r
 | `ready-for-agent`          | `ready-for-agent`    | Fully specified, ready for an AFK agent  |
 | `ready-for-human`          | `ready-for-human`    | Requires human implementation            |
 | `wontfix`                  | `wontfix`            | Will not be actioned                     |
-| — (terminal state)         | `resolved`           | Work is merged; completion recorded under `## Comments` |
+| — (terminal state)         | `resolved`           | Work is merged; completion recorded under `## Comments` on the issue file |
 
 Terminal states: `resolved` and `wontfix` are final — no further triage or implementation.
 
+Wayfinding efforts record completion differently: an `## Answer` on the child ticket plus a pointer in the map's Decisions-so-far (see `issue-tracker.md`).
+
 When a skill mentions a role (e.g. "apply the AFK-ready triage label"), use the corresponding label string from this table.
 
-Edit the right-hand column to match whatever vocabulary you actually use.
+Edit the right-hand column to match whatever vocabulary you actually use (terminal `resolved` stays).
