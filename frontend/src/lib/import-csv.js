@@ -22,6 +22,7 @@ import { EXDB, EXIDX } from './exercises.js'
 import { uid } from './format.js'
 import { isWarmupRow } from './workout-model.js'
 import { heaviestForEntry, mergeExWeight } from './active-workout.js'
+import { LB_TO_KG, mergeWeighIns } from './bodyweight.js'
 
 /* ----------------------------------------------------------------- CSV ---- */
 
@@ -288,7 +289,6 @@ const effortNum = (raw, zeroMeansRated) => {
   if (!isFinite(n) || n < 0 || (n === 0 && !zeroMeansRated)) return null
   return Math.min(10, Math.round(n * 100) / 100)
 }
-const LB_TO_KG = 0.45359237
 /**
  * Zero-pads a date or time part to two digits for ISO output.
  * @param {number|string} n - Day, month, hour, or minute value.
@@ -580,12 +580,7 @@ export function parseImport(text, opts) {
 
 /** Merge into state. Existing days win — importing twice never duplicates a workout. */
 export function mergeImport(S, parsed) {
-  if (parsed.kind === 'bodyweight') {
-    const have = new Set(S.bodyweight.map(b => b.d))
-    const fresh = parsed.bodyweight.filter(b => !have.has(b.d))
-    S.bodyweight = [...S.bodyweight, ...fresh].sort((a, b) => (a.d < b.d ? -1 : 1))
-    return { added: fresh.length, skipped: parsed.bodyweight.length - fresh.length }
-  }
+  if (parsed.kind === 'bodyweight') return mergeWeighIns(S, parsed.bodyweight)
   const have = new Set((S.workouts || []).map(w => w.d))
   const fresh = parsed.workouts.filter(w => !have.has(w.d))
   const used = new Set(fresh.flatMap(w => (w.entries || []).map(e => e.id)))
