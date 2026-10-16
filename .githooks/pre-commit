@@ -1,0 +1,8 @@
+#!/bin/sh
+# Every commit must leave the suite green. cad7a52 landed with two dangling
+# references (an import of a file that was never committed, and an unexported
+# helper) because nothing gated the commit. This hook is that gate.
+# Skip once, knowingly: git commit --no-verify
+
+cd frontend || exit 1
+npm test
