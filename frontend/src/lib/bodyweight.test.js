@@ -93,6 +93,7 @@ describe('deleteWeighIn / latestWeighIn', () => {
     const S = { bodyweight: [{ d: '2026-01-10', w: 80 }, { d: '2026-01-01', w: 82 }, { d: '2026-01-05', w: 81 }] }
     expect(prevWeighIn(S)).toEqual({ d: '2026-01-05', w: 81 })
     expect(prevWeighIn({ bodyweight: [{ d: '2026-01-10', w: 80 }] })).toBeNull()
+    expect(prevWeighIn({ bodyweight: [{ d: '2026-01-10', w: 80 }, { d: '2026-01-10', w: 81 }] })).toBeNull()
     expect(prevWeighIn({ bodyweight: [] })).toBeNull()
     expect(prevWeighIn({})).toBeNull()
   })
