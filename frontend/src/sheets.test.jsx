@@ -2,7 +2,7 @@
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { RecapSheet, recapSheet } from './sheets.jsx'
+import { RecapSheet, recapSheet, finishWorkout } from './sheets.jsx'
 import { useStore, DEF } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
 
@@ -100,5 +100,51 @@ describe('RecapSheet', () => {
     })
 
     expect(container.textContent).toContain('No workouts in May 2026')
+  })
+})
+
+describe('finishWorkout confirmation', () => {
+  // The deleted __probe2.test.js proved the confirm counted an unticked warm-up as an
+  // unchecked set while the finish button said everything was done. Both now read
+  // sessionProgress (CONTEXT.md: Session progress), so the confirm only ever asks
+  // about work sets.
+  const activeWith = sets => ({
+    id: 'active', name: 'Test workout', start: Date.now(), cur: 0,
+    entries: [{ id: '0025', target: { mode: 'reps', reps: 5, weight: 100, bodyweight: false }, sets }],
+  })
+
+  it('finishes straight away when only an unticked warm-up remains', async () => {
+    useStore.getState().update(s => {
+      s.active = activeWith([
+        { w: 40, r: 5, done: false, phase: 'warmup', warmup: true },
+        { w: 100, r: 8, done: true },
+        { w: 100, r: 8, done: true },
+      ])
+    })
+
+    await act(async () => { finishWorkout() })
+
+    // No confirm blocked it: the session closed and the workout landed in history.
+    expect(useStore.getState().S.active).toBeNull()
+    expect(useStore.getState().S.workouts.length).toBe(1)
+  })
+
+  it('asks honestly when only warm-ups are ticked', async () => {
+    useStore.getState().update(s => {
+      s.active = activeWith([
+        { w: 40, r: 5, done: true, phase: 'warmup', warmup: true },
+        { w: 100, r: 8, done: false },
+      ])
+    })
+
+    await act(async () => { finishWorkout() })
+
+    // The session survives until confirmed, and the confirm names warm-ups, not "sets".
+    expect(useStore.getState().S.active).not.toBeNull()
+    const sheet = useUI.getState().sheets.at(-1)
+    expect(sheet).toBeTruthy()
+    await act(async () => { root.render(sheet.render(vi.fn())) })
+    expect(container.textContent).toContain('Only warm-ups logged so far')
+    expect(container.textContent).toContain('warm-up sets are ticked')
   })
 })

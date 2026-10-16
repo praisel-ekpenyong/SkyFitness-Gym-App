@@ -1,5 +1,4 @@
 import { isCardio, isBodyweightEq } from './exercises.js'
-import { lastEntryFor } from './history.js'
 import { phaseForSet, isWarmupRow, ensurePlainObject, objectOf } from './warmup.js'
 
 export { phaseForSet, isWarmupRow, ensurePlainObject, objectOf } from './warmup.js'
@@ -331,6 +330,62 @@ export function workSetsDone(w) {
 }
 
 /**
+ * Whether an entry still has work sets left to tick.
+ *
+ * The one definition of "work left" that every completion check reads: the
+ * superset step, the set toggle, the working-weight sheet and the finish
+ * surfaces. Warm-up rows are preparatory and never count as work left.
+ * Accepts either an entry directly, or an entries array with an index.
+ *
+ * @param {Array<Object>|Object} entryOrEntries - Entries array or a single entry object.
+ * @param {number} [idx] - Index when passing an entries array.
+ * @returns {boolean} True if the entry has an unticked work set; missing entries read as none.
+ */
+export const hasWork = (entryOrEntries, idx) => {
+  const entry = idx == null ? entryOrEntries : entryOrEntries?.[idx]
+  return !!entry?.sets?.some(set => !set.done && !isWarmupRow(set))
+}
+
+/**
+ * Whether an entry has nothing left to do.
+ *
+ * An entry counts as done when no work set remains unticked (CONTEXT.md:
+ * Session progress). An entry left with only warm-up rows — or none at all —
+ * has nothing left to do and counts as done, so a session can always be
+ * finished without a false "unchecked" claim. Nullish entries are not done.
+ *
+ * @param {Object} entry - Workout entry containing a sets array.
+ * @returns {boolean} True when no work set is left to tick.
+ */
+export function isExerciseDone(entry) {
+  if (!entry || !Array.isArray(entry.sets)) return false
+  return !hasWork(entry)
+}
+
+/**
+ * The one reading of Active workout progress (CONTEXT.md: Session progress).
+ *
+ * Work sets only: warm-up rows never move any number here. Every surface that
+ * shows or asks how far the session has come reads this — `done`/`total` the
+ * header, `remaining` the finish confirm, `exDone`/`exTotal`/`allDone` the
+ * finish button — so the surfaces cannot disagree. `allDone` means every entry
+ * has nothing left to do; an empty session is not done.
+ *
+ * @param {Object|null} A - Active workout with an entries array; nullish yields zeroes.
+ * @returns {{ done: number, total: number, remaining: number, exDone: number, exTotal: number, allDone: boolean }}
+ *   done/total: ticked vs all work sets. exDone/exTotal: entries with nothing
+ *   left to do vs all entries.
+ */
+export function sessionProgress(A) {
+  const entries = A?.entries || []
+  const total = entries.reduce((n, e) => n + (e.sets || []).filter(s => !isWarmupRow(s)).length, 0)
+  const done = workSetsDone(A)
+  const exDone = entries.filter(isExerciseDone).length
+  const exTotal = entries.length
+  return { done, total, remaining: total - done, exDone, exTotal, allDone: exTotal > 0 && exDone === exTotal }
+}
+
+/**
  * Select work-phase rows of one mode from an entry.
  *
  * @param {Object} entry - Workout entry with sets and optional target; missing sets count as empty.
@@ -373,6 +428,30 @@ export function metricModeForEntry(entry, fallback = null) {
     if (completedRowsForMode(entry, mode).length) return mode
   }
   return modeForEntry(entry, fallback)
+}
+
+/**
+ * Find the most recent workout entry for an exercise containing completed work sets.
+ *
+ * Scans workouts in reverse chronological order. Warm-up rows are excluded so prep sets
+ * never masquerade as training sessions. Retains the prescribed `target` for progression audits.
+ *
+ * @param {Object} S - Application state atom containing `workouts`.
+ * @param {string} exId - Exercise identifier from EXIDX.
+ * @returns {{ d: string, sets: Array<Object>, target: Object|null }|null} Last entry summary, or null if never performed.
+ */
+export function lastEntryFor(S, exId) {
+  for (let i = (S?.workouts || []).length - 1; i >= 0; i--) {
+    const en = (S.workouts[i].entries || []).find(e => e.id === exId)
+    // `target` is what the session prescribed; finished workouts carry it so labels and the
+    // progression engine can read a session back the way it was logged.
+    if (!en?.sets) continue
+    const workDone = en.sets.filter(s => s.done && !isWarmupRow(s))
+    if (workDone.length) {
+      return { d: S.workouts[i].d, sets: workDone, target: en.target || null }
+    }
+  }
+  return null
 }
 
 /** Best load from completed work rows, with a guarded reps-only legacy topW fallback. */

@@ -4,39 +4,8 @@
 // mark progress tracking, and round/unit navigation across active exercises.
 // Keeping these pure and decoupled from React/Zustand guarantees deterministic
 // testing for uneven rounds, wrap-around navigation, and warm-up set exclusion.
-import { isWarmupRow } from './workout-model.js'
+import { hasWork, isWarmupRow } from './workout-model.js'
 
-/**
- * Check whether an entry contains at least one uncompleted work set.
- *
- * Warm-up rows are excluded: they are preparatory sets and never prevent an
- * exercise, superset round, or workout from completing.
- * Accepts either an entries array with an index `(entries, idx)`, or an entry directly `(entry)`.
- *
- * @param {Array<Object>|Object} entryOrEntries - Entries array or a single entry object.
- * @param {number} [idx] - Optional index when passing an entries array.
- * @returns {boolean} True if the entry has pending (done: false) work sets.
- */
-export const hasWork = (entryOrEntries, idx) => {
-  const entry = idx == null ? entryOrEntries : entryOrEntries?.[idx]
-  return !!entry?.sets?.some(set => !set.done && !isWarmupRow(set))
-}
-
-/**
- * Check whether an exercise entry is completed.
- *
- * An exercise is considered done when it has at least one prescribed work set
- * and all of its work sets are marked completed. Entries with only warm-up rows
- * are prep sets and cannot be completed exercises.
- *
- * @param {Object} entry - Workout entry containing a sets array.
- * @returns {boolean} True if the entry has work sets and none remain undone.
- */
-export function isExerciseDone(entry) {
-  if (!entry || !Array.isArray(entry.sets) || !entry.sets.length) return false
-  const hasAnyWork = entry.sets.some(s => !isWarmupRow(s))
-  return hasAnyWork && !hasWork(entry)
-}
 /**
  * Update the high-water mark of completed work sets for superset progression.
  *

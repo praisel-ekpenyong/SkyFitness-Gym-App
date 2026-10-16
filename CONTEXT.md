@@ -106,6 +106,10 @@ Any set that is not a warm-up. All metrics, judgements and policies read work se
 Prep sets explicitly marked as such; excluded from every metric, judgement and progression decision.
 _Avoid_: treating an unticked warm-up as a miss
 
+**Session progress**:
+How far the Active workout has come, counted in work sets only — warm-ups never move it. One reading of progress serves every surface that shows or asks about it.
+_Avoid_: counting warm-ups toward done; a separate progress reading per surface.
+
 **Freestyle**:
 Adding an exercise to a workout without a routine; seeded from the last time it was trained, not generic defaults.
 

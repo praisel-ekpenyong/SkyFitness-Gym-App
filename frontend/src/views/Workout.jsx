@@ -3,9 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { exOr } from '../lib/exercises.js'
-import { effectiveRoutine, hasEffectiveOverride } from '../lib/schedule.js'
-import { lastEntryFor, freestyleConfig, defaultConfig, setsDoneActive, modeOf, isBw, isPerSide, sideReps, repStep } from '../lib/workout-model.js'
-import { supersetUnits, unitOf, hasWork, isExerciseDone } from '../lib/supersetFlow.js'
+import { effectiveRoutine, hasEffectiveOverride } from '../lib/history.js'
+import { lastEntryFor, freestyleConfig, defaultConfig, sessionProgress, modeOf, isBw, isPerSide, sideReps, repStep } from '../lib/workout-model.js'
+import { supersetUnits, unitOf } from '../lib/supersetFlow.js'
 import { setLabel } from '../lib/format.js'
 import { EFFORT, effortOf, stepEffort, capEffort } from '../lib/effort.js'
 import { bestKnownWeight } from '../lib/active-workout.js'
@@ -206,8 +206,7 @@ function ActiveWorkout() {
     if (el && typeof el.scrollIntoView === 'function') el.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
   }, [cur, isSuperset, A.entries.length])
 
-  const total = A.entries.reduce((n, e) => n + e.sets.length, 0)
-  const done = setsDoneActive(A)
+  const prog = sessionProgress(A)
 
   const setField = (idx, i, field, v) => useStore.getState().updateActiveSetField(idx, i, field, v)
   const addSet = idx => useStore.getState().addActiveSet(idx)
@@ -271,15 +270,13 @@ function ActiveWorkout() {
       playSetComplete(S.sound)
     }
 
-    // Sheet choice follows the domain's `next` action (same geometry the
-    // toggle already computed). Toasts read `notice`, rest reads `rest`.
     if (res.next.kind === 'open-topweight') topWeightSheet(idx)
     else if (res.next.kind === 'open-finish') workoutCompleteSheet()
     else if (res.notice === 'cardio') useUI.getState().toast(t('Cardio logged'))
     else if (res.notice === 'timed') useUI.getState().toast(t('Hold logged'))
 
-    // Rest timer coordination — gated on new progress inside the domain, so an
-    // uncheck/re-check of finished work can't cut a running rest short.
+    // Rest start/stop is gated on genuinely new progress inside the domain (see
+    // toggleActiveSet) — don't add caller-side gating here.
     if (res.rest.stop) stopRest()
     if (res.rest.start) startRest(S.restSec)
   }
@@ -287,10 +284,10 @@ function ActiveWorkout() {
   return <div className="narrow">
     <div className="hdr">
       <button className="iconbtn" aria-label={t('Discard')} onClick={() => confirmSheet({ title: t('Discard workout?'), message: t('The sets you logged in this session will be lost.'), confirmText: t('Discard'), danger: true, onConfirm: () => { useStore.getState().discardSession(); stopRest(); nav('/home') } })}><Icon name="xmark" /></button>
-      <div style={{ textAlign: 'center' }}><h1 style={{ fontWeight: 600, fontSize: 17, margin: 0 }}>{A.name}</h1><div className="sub"><Elapsed start={A.start} /> · {t('{0} sets', done + '/' + total)}</div></div>
+      <div style={{ textAlign: 'center' }}><h1 style={{ fontWeight: 600, fontSize: 17, margin: 0 }}>{A.name}</h1><div className="sub"><Elapsed start={A.start} /> · {t('{0} sets', prog.done + '/' + prog.total)}</div></div>
       <button className="iconbtn" style={{ color: 'var(--acc)' }} aria-label={t('Finish')} onClick={finishWorkout}><Icon name="check" /></button>
     </div>
-    <div className="wprog"><i style={{ transform: `scaleX(${total ? done / total : 0})` }} /></div>
+    <div className="wprog"><i style={{ transform: `scaleX(${prog.total ? prog.done / prog.total : 0})` }} /></div>
 
     {A.entries.length ? <>
       <div className="muted small" style={{ marginBottom: 6 }}>{isSuperset ? t('Superset {0} / {1}', unitIdx + 1, units.length) : t('Exercise {0} / {1}', unitIdx + 1, units.length)}</div>
@@ -332,13 +329,9 @@ function ActiveWorkout() {
       </div>
     </>}
     <div style={{ height: 10 }} />
-    {(() => {
-      const exDone = A.entries.filter(isExerciseDone).length
-      const allDone = A.entries.length > 0 && exDone === A.entries.length
-      return <button className={allDone ? 'btn primary' : 'btn ghost dim'} onClick={finishWorkout}>
-        {allDone ? t('Finish workout') : t('Finish workout early · {0} exercises', exDone + '/' + A.entries.length)}
-      </button>
-    })()}
+    <button className={prog.allDone ? 'btn primary' : 'btn ghost dim'} onClick={finishWorkout}>
+      {prog.allDone ? t('Finish workout') : t('Finish workout early · {0} exercises', prog.exDone + '/' + prog.exTotal)}
+    </button>
     <div style={{ height: 40 }} />
   </div>
 }

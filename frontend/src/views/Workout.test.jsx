@@ -193,3 +193,34 @@ describe('superset flow survives an exercise being removed mid-session', () => {
     expect(mocks.startRest).toHaveBeenCalledWith(90)
   })
 })
+
+describe('header and finish button share one progress reading', () => {
+  // The committed probe (__probe2.test.js, deleted with this fix) proved the header and
+  // the finish button disagreed on exactly this fixture: an unticked warm-up row with
+  // every work set ticked. Both now read sessionProgress, so they cannot split again.
+  it('an unticked warm-up neither stalls the button nor fakes an unchecked set', async () => {
+    await mount([{
+      id: '0025',
+      target: { mode: 'reps', reps: 5, weight: 100, bodyweight: false },
+      sets: [
+        { w: 40, r: 5, done: false, phase: 'warmup', warmup: true },
+        { w: 100, r: 8, done: true },
+        { w: 100, r: 8, done: true },
+      ],
+    }])
+
+    // Header counts work sets only: 2 of 2, no phantom unchecked set.
+    expect(container.querySelector('.hdr .sub')?.textContent).toContain('2/2 sets')
+
+    // The finish button offers a plain finish, not an early one.
+    const finish = Array.from(container.querySelectorAll('button'))
+      .find(b => b.textContent.includes('Finish workout'))
+    expect(finish).toBeTruthy()
+    expect(finish.textContent).not.toContain('early')
+    expect(finish.className).toContain('primary')
+
+    await act(async () => { finish.dispatchEvent(new dom.Event('click', { bubbles: true })) })
+    const { finishWorkout } = await import('../sheets.jsx')
+    expect(finishWorkout).toHaveBeenCalledOnce()
+  })
+})

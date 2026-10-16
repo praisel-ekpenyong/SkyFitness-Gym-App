@@ -5,10 +5,10 @@
 // intent, and the weight-commit follow-up. Session construction lives in
 // active-session.js, set surgery in active-sets.js, finishing in
 // active-finish.js.
-import { modeOf, isBw, isWarmupRow } from './workout-model.js'
+import { modeOf, isBw, isWarmupRow, hasWork, isExerciseDone } from './workout-model.js'
 import {
-  supersetUnits, unitOf, hasWork,
-  setProgressHighWater, supersetFlowStep, isExerciseDone
+  supersetUnits, unitOf,
+  setProgressHighWater, supersetFlowStep
 } from './supersetFlow.js'
 import { applyWorkingWeight } from './active-finish.js'
 
@@ -91,8 +91,8 @@ export function commitWorkingWeight(S, entryIdx, weight, opts = {}) {
  * Workout completion, executes superset wrap-around navigation (`A.cur`),
  * and flags the working-weight confirmation sheet (`topW`).
  *
- * Callers read only `next` + `rest` + `notice`: sheets render `next`, the
- * rest timer reads `rest`, toasts read `notice`.
+ * Callers read `checked` (set-complete sound) and the three effect channels:
+ * sheets render `next`, the rest timer reads `rest`, toasts read `notice`.
  *
  * @param {Object} S - Application state atom.
  * @param {number} entryIdx - Index of active entry.
@@ -144,8 +144,14 @@ export function toggleActiveSet(S, entryIdx, setIdx) {
       workoutDone = true
     }
     const loaded = mode === 'reps' && !(isBw({ ...(entry.target || {}), id: entry.id }) && !entry.sets.some(x => x.w > 0))
-    if (isExerciseDone(entry)) {
+    // The completion consequences — top-weight prompt, "logged" notices — are for
+    // work finishing, never for ticking prep: an entry left with no work rows has
+    // no top set to crown and nothing completed to announce (CONTEXT.md: Warm-up set).
+    const hasWorkRows = entry.sets.some(s => !isWarmupRow(s))
+    if (isExerciseDone(entry) && hasWorkRows) {
       exJustDone = true
+      // Prompt at most once per Entry: an uncheck/re-check of the final set must
+      // not reopen the sheet.
       if (loaded && !entry.asked) {
         entry.asked = true
         askTop = true
@@ -195,6 +201,8 @@ export function toggleActiveSet(S, entryIdx, setIdx) {
       }
     }
   } else if (typeof entry.hw !== 'number') {
+    // Seed even on an uncheck: a legacy Entry's first interaction may be an
+    // uncheck, and the later re-check must then not count as new progress.
     entry.hw = seededHw
   }
 
