@@ -2,8 +2,11 @@
 // cascade that used to be assembled inside the catalogue sheet, pinned at the
 // new interface — including the Active-workout refusal that previously had no
 // test anywhere (CONTEXT.md: Active workout — at most one exists).
+// upsertCustomEx is the store-write side of the Custom exercise form: the
+// record shape (CONTEXT.md: Custom exercise) and the update-vs-create fork
+// used to live inline in the sheet; here they are pinned as one module seam.
 import { describe, it, expect } from 'vitest'
-import { toggleFavorite, deleteCustomEx } from './catalogue-writes.js'
+import { toggleFavorite, deleteCustomEx, upsertCustomEx } from './catalogue-writes.js'
 
 const custom = () => ({ id: 'ex-fly', n: 'Homemade fly', bp: 'chest', custom: true })
 
@@ -112,5 +115,77 @@ describe('deleteCustomEx — the retire cascade', () => {
     expect(() => deleteCustomEx(S, custom())).not.toThrow()
     expect(S.customEx).toEqual([])
     expect(S.favorites).toEqual([])
+  })
+})
+
+describe("upsertCustomEx — the form's store write", () => {
+  it('edits the found entry in place, touching exactly the five fields', () => {
+    const S = {
+      customEx: [
+        { id: 'ex-c', n: 'Old name', tg: 'chest', sm: ['triceps'], bp: 'chest', desc: 'old', eq: 'custom', custom: true },
+        { id: 'ex-other', n: 'Untouched', tg: 'abs', sm: [], bp: 'waist', eq: 'custom', custom: true }
+      ]
+    }
+    const entry = S.customEx[0]
+    const res = upsertCustomEx(S, { id: 'ex-c', n: 'New name', tg: 'abs', sm: ['obliques'], desc: 'cues' })
+
+    expect(res).toBe('ex-c')
+    // the very entry object the store holds is the one mutated
+    expect(S.customEx[0]).toBe(entry)
+    expect(entry.n).toBe('New name')
+    expect(entry.tg).toBe('abs')
+    expect(entry.sm).toEqual(['obliques'])
+    expect(entry.desc).toBe('cues')
+    // record-shape policy lives in the seam: bp re-derived from tg, eq/custom/id untouched
+    expect(entry.bp).toBe('waist')
+    expect(entry.eq).toBe('custom')
+    expect(entry.custom).toBe(true)
+    expect(S.customEx[1]).toEqual({ id: 'ex-other', n: 'Untouched', tg: 'abs', sm: [], bp: 'waist', eq: 'custom', custom: true })
+    expect(S.customEx).toHaveLength(2)
+  })
+
+  it('writes nothing for a stale id (entry already retired elsewhere)', () => {
+    const S = { customEx: [{ id: 'ex-other', n: 'Stays', tg: 'abs', sm: [], bp: 'waist', eq: 'custom', custom: true }] }
+    const before = JSON.stringify(S)
+    const res = upsertCustomEx(S, { id: 'ex-gone', n: 'Whatever', tg: 'chest', sm: [], desc: '' })
+
+    expect(JSON.stringify(S)).toBe(before)
+    // the sheet's onDone(EXIDX[id]) still runs with the id it had
+    expect(res).toBe('ex-gone')
+  })
+
+  it('appends the exact record shape on create and returns the fresh id', () => {
+    const S = { customEx: [{ id: 'ex-c', n: 'Existing custom', tg: 'chest', sm: [], bp: 'chest', eq: 'custom', custom: true }] }
+    const res = upsertCustomEx(S, { id: null, n: 'Nordic curl', tg: 'hamstring', sm: ['gluteal'], desc: 'slow eccentric' })
+
+    expect(S.customEx).toHaveLength(2)
+    const created = S.customEx[1]
+    expect(created.n).toBe('Nordic curl')
+    expect(created.tg).toBe('hamstring')
+    expect(created.sm).toEqual(['gluteal'])
+    expect(created.desc).toBe('slow eccentric')
+    // record-shape policy lives here, stated once: fresh 'c'-prefixed id, derived body part, custom marks
+    expect(created.id).toMatch(/^c./)
+    expect(created.bp).toBe('upper legs')
+    expect(created.eq).toBe('custom')
+    expect(created.custom).toBe(true)
+    expect(res).toBe(created.id)
+  })
+
+  it('mints a fresh id per create, never reusing one', () => {
+    const S = { customEx: [] }
+    const a = upsertCustomEx(S, { id: null, n: 'One', tg: 'chest', sm: [], desc: '' })
+    const b = upsertCustomEx(S, { id: null, n: 'Two', tg: 'chest', sm: [], desc: '' })
+    expect(a).not.toBe(b)
+    expect(S.customEx.map(x => x.id)).toEqual([a, b])
+  })
+
+  it('creates when there is no customEx list yet — a hand-made state cannot break the save', () => {
+    const S = {}
+    const res = upsertCustomEx(S, { id: null, n: 'First ever', tg: 'cardio', sm: [], desc: '' })
+
+    expect(Array.isArray(S.customEx)).toBe(true)
+    expect(S.customEx[0].bp).toBe('cardio')
+    expect(res).toBe(S.customEx[0].id)
   })
 })
