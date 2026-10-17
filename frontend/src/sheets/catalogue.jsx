@@ -5,7 +5,7 @@ import { EXIDX, isCardio, isBodyweightEq, allExercises } from '../lib/exercises.
 import { fmtDate, fmtNum, exCount, uid, setLabel } from '../lib/format.js'
 import { bestWeightFor } from '../lib/history.js'
 import { lastEntryFor, defaultConfig, modeOf, isBw, isPerSide, sideReps } from '../lib/workout-model.js'
-import { toggleFavorite, deleteCustomEx as retireCascade, upsertCustomEx } from '../lib/catalogue-writes.js'
+import * as catalogueWrites from '../lib/catalogue-writes.js'
 import { t, instrFor } from '../lib/i18n.js'
 import { nav } from '../lib/nav.js'
 import Media, { Thumb } from '../components/Media.jsx'
@@ -94,7 +94,7 @@ export function ExerciseDetail({ ex, close }) {
         style={{ width: 34, height: 34, fontSize: 18, color: isFav ? 'var(--acc)' : 'var(--label-2)' }}
         aria-label={isFav ? t('Remove from favorites') : t('Add to favorites')}
         onClick={() => {
-          update(s => { toggleFavorite(s, ex.id) })
+          update(s => { catalogueWrites.toggleFavorite(s, ex.id) })
         }}
       >
         <Icon name={isFav ? 'starFill' : 'star'} />
@@ -202,7 +202,7 @@ export function CustomExForm({ existing, prefill, onDone, close }) {
     // user-entered fields and reads back the stored id for onDone
     let id
     update(s => {
-      id = upsertCustomEx(s, { id: existing ? existing.id : null, n: trimmedName, tg: primary, sm: finalSm, desc: trimmedDesc })
+      id = catalogueWrites.upsertCustomEx(s, { id: existing ? existing.id : null, n: trimmedName, tg: primary, sm: finalSm, desc: trimmedDesc })
     })
     close()
     toast(existing ? t('Saved') : t('“{0}” created', trimmedName))
@@ -276,16 +276,16 @@ export const customExSheet = (existing, onDone, prefill) => ui().openSheet(close
 export function deleteCustomEx(ex, afterDelete) {
   if (S().active?.entries.some(e => e.id === ex.id)) { toast(t('Finish your current workout first')); return }
   if (!_confirmSheet) throw new Error('catalogue sheets not wired: missing confirmSheet')
-  let retired = null
+  let res = null
   _confirmSheet({
     title: t('Delete “{0}”?', ex.n),
     message: t('It will be removed from your routines. Already-logged workouts keep their sets.'),
     confirmText: t('Delete'), danger: true,
     onConfirm: () => {
       // The seam re-refuses if a workout started while this dialog was open (e.g. a
-      // second tab): refuse the success toast rather than retiring mid-session.
-      update(s => { retired = retireCascade(s, ex) })
-      if (!retired.ok) { toast(t('Finish your current workout first')); return }
+      // second tab): refuse the success toast rather than deleting mid-session.
+      update(s => { res = catalogueWrites.deleteCustomEx(s, ex) })
+      if (!res.ok) { toast(t('Finish your current workout first')); return }
       toast(t('Exercise deleted'))
       afterDelete && afterDelete()
     }
@@ -365,7 +365,7 @@ export function ExercisePicker({ onPick }) {
             aria-label={row.favorite ? t('Remove from favorites') : t('Add to favorites')}
             onClick={ev => {
               ev.stopPropagation()
-              update(s => { toggleFavorite(s, e.id) })
+              update(s => { catalogueWrites.toggleFavorite(s, e.id) })
             }}
           >
             <Icon name={row.favorite ? 'starFill' : 'star'} />
