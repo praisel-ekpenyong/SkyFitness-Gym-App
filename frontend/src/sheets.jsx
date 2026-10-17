@@ -10,7 +10,7 @@ import { setDayOverride, assignWeekday, dayStatus } from './lib/schedule.js'
 import { recordWeighIn, deleteWeighIn, latestWeighIn } from './lib/bodyweight.js'
 import { t } from './lib/i18n.js'
 import { nav } from './lib/nav.js'
-import { starterRoutines } from './lib/starter.js'
+import { applyStarterPlan } from './lib/starter.js'
 import { Thumb } from './components/Media.jsx'
 import Icon from './components/Icon.jsx'
 import { Button, Slider, Switch } from './components/ui.jsx'
@@ -52,11 +52,7 @@ export function confirmSheet(opts) {
  * Appends three routines and assigns them to Mon/Wed/Fri, then shows a confirmation toast.
  */
 export function loadStarterPlan() {
-  const [push, pull, legs] = starterRoutines()
-  update(st => {
-    st.routines.push(push, pull, legs)
-    st.week[1] = push.id; st.week[3] = pull.id; st.week[5] = legs.id
-  })
+  update(st => { applyStarterPlan(st) })
   toast(t('Starter plan loaded — Mon Push · Wed Pull · Fri Legs'))
 }
 
