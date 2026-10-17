@@ -15,7 +15,7 @@ import { Thumb } from './components/Media.jsx'
 import Icon from './components/Icon.jsx'
 import { Button, Slider, Switch } from './components/ui.jsx'
 import { glyphOf, GLYPH_GROUPS } from './lib/glyphs.js'
-import { parseImport, mergeImport } from './lib/import-csv.js'
+import { parseImport, mergeImport, importPreview } from './lib/import-csv.js'
 import { buildPlanBundle, parsePlan, mergePlan, printPlan } from './lib/plan-share.js'
 import { monthRecap } from './lib/recap.js'
 import { MOBILE, shareExport } from './lib/mobile.js'
@@ -149,11 +149,10 @@ export function bwSheet(opts = {}) {
 // are all on screen before the confirm button.
 function ImportSummary({ parsed, close }) {
   const st = useStore(s => s.S)
+  // The dry-run totals — exactly what mergeImport returns, so the numbers on
+  // screen cannot drift from what the confirm button will actually do.
+  const { added: fresh, skipped: have } = importPreview(st, parsed)
   const isBW = parsed.kind === 'bodyweight'
-  const have = isBW
-    ? parsed.bodyweight.filter(b => st.bodyweight.some(x => x.d === b.d)).length
-    : parsed.workouts.filter(w => st.workouts.some(x => x.d === w.d)).length
-  const fresh = (isBW ? parsed.bodyweight.length : parsed.workouts.length) - have
 
   const doImport = () => {
     let res
