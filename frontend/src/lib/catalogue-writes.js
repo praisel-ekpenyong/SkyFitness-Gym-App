@@ -1,6 +1,6 @@
 // Write side of Catalogue curations (CONTEXT.md): starring a Favorite exercise,
-// retiring a Custom exercise and saving one. Three screens hand-rolled the
-// favorites toggle, and the retire cascade mutated five collections from an
+// deleting a Custom exercise and saving one. Three screens hand-rolled the
+// favorites toggle, and the delete cascade mutated five collections from an
 // import of the sheet — with the one policy that keeps deleted customs readable
 // in history (the muscle snapshot) untested. The custom-exercise form assembled
 // the stored record inline; the update-vs-create fork and the record's shape
@@ -31,16 +31,16 @@ export function toggleFavorite(S, id) {
 }
 
 /**
- * Retire a Custom exercise (CONTEXT.md: Unknown exercise — "a deleted custom…
+ * Delete a Custom exercise (CONTEXT.md: Unknown exercise — "a deleted custom…
  * rendered, removable, never fatal").
  *
- * The one home for the cascade, with every policy it owns stated once:
+ * The one home for the delete cascade, with every policy it owns stated once:
  * - the Active workout holds the id → refuse (the sheet asks before opening
  *   the confirm dialog; this seam refuses again for anyone who forgot to ask)
  * - history keeps rendering: matching finished entries get the display name
  *   stamped and a muscle snapshot filled in — once, only where none is stored
  * - routine sweeps that strand a lone superset tag dissolve it (cleanupSg)
- * - everything the exercise owned makes way: its customEx row, its entries in
+ * - everything the exercise owned stands down: its customEx row, its entries in
  *   every routine, its Best suggestion (`exWeights`) and its star
  *
  * Never touches `week` / `dayPlan`: a Routine loses one Entry, it stays
@@ -48,7 +48,7 @@ export function toggleFavorite(S, id) {
  * (`exOr`) keeps rendering it as Unknown wherever it is still stored.
  *
  * @param {Object} S - Application state atom.
- * @param {Object} ex - Custom exercise to retire (needs `id`, `n`).
+ * @param {Object} ex - Custom exercise to delete (needs `id`, `n`).
  * @returns {{ ok: boolean, reason: 'active'|null }} Refusal states why.
  */
 export function deleteCustomEx(S, ex) {
@@ -61,7 +61,9 @@ export function deleteCustomEx(S, ex) {
   }))
   S.customEx = (S.customEx || []).filter(x => x.id !== ex.id)
   ;(S.routines || []).forEach(r => { r.ex = r.ex.filter(e => e.id !== ex.id); cleanupSg(r.ex) })
-  delete S.exWeights[ex.id]
+  // real state always carries `exWeights` (normalizeState); a sparse hand-made one
+  // may not, and deleting the Best weight must not be the thing that throws
+  delete (S.exWeights || {})[ex.id]
   S.favorites = (S.favorites || []).filter(id => id !== ex.id)
   return { ok: true, reason: null }
 }
