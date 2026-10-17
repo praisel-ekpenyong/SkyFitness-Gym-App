@@ -1,12 +1,15 @@
-// Write side of Catalogue curations (CONTEXT.md): starring a Favorite exercise
-// and retiring a Custom exercise. Three screens hand-rolled the favorites
-// toggle, and the retire cascade mutated five collections from an import of the
-// sheet — with the one policy that keeps deleted customs readable in history
-// (the muscle snapshot) untested. Reads stay in catalogue-query.js /
+// Write side of Catalogue curations (CONTEXT.md): starring a Favorite exercise,
+// retiring a Custom exercise and saving one. Three screens hand-rolled the
+// favorites toggle, and the retire cascade mutated five collections from an
+// import of the sheet — with the one policy that keeps deleted customs readable
+// in history (the muscle snapshot) untested. The custom-exercise form assembled
+// the stored record inline; the update-vs-create fork and the record's shape
+// are decided once here, at the same seam. Reads stay in catalogue-query.js /
 // exercises.js; write-side siblings live in schedule.js and bodyweight.js.
 
-import { exerciseMuscleSnapshot } from './muscles.js'
+import { exerciseMuscleSnapshot, bodypartForMuscle } from './muscles.js'
 import { cleanupSg } from './supersetFlow.js'
+import { uid } from './format.js'
 
 /**
  * Star or unstar one exercise (CONTEXT.md: Favorite exercise — starred for
@@ -61,4 +64,39 @@ export function deleteCustomEx(S, ex) {
   delete S.exWeights[ex.id]
   S.favorites = (S.favorites || []).filter(id => id !== ex.id)
   return { ok: true, reason: null }
+}
+
+/**
+ * Create or update a Custom exercise (CONTEXT.md: Custom exercise) — the store
+ * write of the custom-exercise form. The sheet keeps everything that decides
+ * *whether* to save (required name, required primary, duplicate-name check,
+ * cardio clearing secondaries); this seam owns everything about *what* lands:
+ * - update: exactly the five editable fields (n, tg, sm, bp, desc) mutate on
+ *   the found entry; a stale id (entry gone) writes nothing — the silent
+ *   no-op the sheet has always shown, preserved
+ * - create: the stored record shape, stated once — fresh `'c' + uid()` id,
+ *   `eq: 'custom'`, `custom: true`, body part derived from the primary
+ * The form passes only user-entered fields; it never assembles the record.
+ *
+ * @param {Object} S - Application state atom.
+ * @param {Object} draft - User-entered fields: `{ id, n, tg, sm, desc }` (id null to create).
+ * @returns {string} The stored exercise's id — the sheet's `onDone(EXIDX[id])` reads it even when nothing was written.
+ */
+export function upsertCustomEx(S, draft) {
+  const bp = bodypartForMuscle(draft.tg)
+  if (draft.id) {
+    const entry = (S.customEx || []).find(x => x.id === draft.id)
+    if (entry) {
+      entry.n = draft.n
+      entry.tg = draft.tg
+      entry.sm = draft.sm
+      entry.bp = bp
+      entry.desc = draft.desc
+    }
+    return draft.id
+  }
+  S.customEx = S.customEx || []
+  const id = 'c' + uid()
+  S.customEx.push({ id, n: draft.n, bp, tg: draft.tg, sm: draft.sm, desc: draft.desc, eq: 'custom', custom: true })
+  return id
 }

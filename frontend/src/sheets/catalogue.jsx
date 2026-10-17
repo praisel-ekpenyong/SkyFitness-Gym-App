@@ -5,7 +5,7 @@ import { EXIDX, isCardio, isBodyweightEq, allExercises } from '../lib/exercises.
 import { fmtDate, fmtNum, exCount, uid, setLabel } from '../lib/format.js'
 import { bestWeightFor } from '../lib/history.js'
 import { lastEntryFor, defaultConfig, modeOf, isBw, isPerSide, sideReps } from '../lib/workout-model.js'
-import { toggleFavorite, deleteCustomEx as retireCascade } from '../lib/catalogue-writes.js'
+import { toggleFavorite, deleteCustomEx as retireCascade, upsertCustomEx } from '../lib/catalogue-writes.js'
 import { t, instrFor } from '../lib/i18n.js'
 import { nav } from '../lib/nav.js'
 import Media, { Thumb } from '../components/Media.jsx'
@@ -13,7 +13,7 @@ import Stepper from '../components/Stepper.jsx'
 import Icon from '../components/Icon.jsx'
 import { Button, Switch, Segmented, SelectRow, Row, SearchField } from '../components/ui.jsx'
 import { glyphOf, DEFAULT_GLYPH } from '../lib/glyphs.js'
-import { FILTER_MUSCLES, MUSCLES, MUSCLE_NAME, primaryMuscleOf, secondaryMusclesOf, bodypartForMuscle } from '../lib/muscles.js'
+import { FILTER_MUSCLES, MUSCLES, MUSCLE_NAME, primaryMuscleOf, secondaryMusclesOf } from '../lib/muscles.js'
 import { queryCatalogue } from '../lib/catalogue-query.js'
 import { estimate1RM, best1RM, REP_CAP } from '../lib/onerm.js'
 import { policyFor, defaultIncrement, POLICIES_FOR, POLICY_NAME, POLICY_DESC, MAX_BW_SETS } from '../lib/progression.js'
@@ -196,35 +196,14 @@ export function CustomExForm({ existing, prefill, onDone, close }) {
     const dup = allExercises(S()).find(e => e.n.toLowerCase() === trimmedName.toLowerCase() && e.id !== (existing || {}).id)
     if (dup) { toast(t('“{0}” already exists', dup.n)); return }
     const trimmedDesc = desc.trim().slice(0, 1000)
-    const derivedBp = bodypartForMuscle(primary)
     const finalSm = primary === 'cardio' ? [] : secondaries
-    let id = existing && existing.id
-    if (existing) {
-      update(s => {
-        const customEntry = (s.customEx || []).find(x => x.id === id)
-        if (customEntry) {
-          customEntry.n = trimmedName
-          customEntry.tg = primary
-          customEntry.sm = finalSm
-          customEntry.bp = derivedBp
-          customEntry.desc = trimmedDesc
-        }
-      })
-    } else {
-      id = 'c' + uid()
-      update(s => {
-        (s.customEx = s.customEx || []).push({
-          id,
-          n: trimmedName,
-          bp: derivedBp,
-          tg: primary,
-          sm: finalSm,
-          desc: trimmedDesc,
-          eq: 'custom',
-          custom: true,
-        })
-      })
-    }
+    // the store write is the seam: what a stored Custom record looks like and
+    // update-vs-create is lib/catalogue-writes.js's call; the form passes only
+    // user-entered fields and reads back the stored id for onDone
+    let id
+    update(s => {
+      id = upsertCustomEx(s, { id: existing ? existing.id : null, n: trimmedName, tg: primary, sm: finalSm, desc: trimmedDesc })
+    })
     close()
     toast(existing ? t('Saved') : t('“{0}” created', trimmedName))
     onDone && onDone(EXIDX[id])
