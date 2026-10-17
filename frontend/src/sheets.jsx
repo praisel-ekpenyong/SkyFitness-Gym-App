@@ -2,8 +2,10 @@ import { useRef, useState } from 'react'
 import { useStore, sanitizeDisplayName } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
 import { EXIDX } from './lib/exercises.js'
-import { fmtDate, fmtNum, fmtVol, fmtDur, durPart, todayISO, exCount, DAYN, MONTHS_LONG, monthKey } from './lib/format.js'
-import { effectiveRoutineId, hasEffectiveOverride, setsDone, setLabel, effortOf } from './lib/history.js'
+import { fmtDate, fmtNum, fmtVol, fmtDur, durPart, todayISO, exCount, DAYN, MONTHS_LONG, monthKey, setLabel } from './lib/format.js'
+import { effectiveRoutineId, hasEffectiveOverride, deleteWorkout } from './lib/history.js'
+import { setsDone } from './lib/workout-model.js'
+import { effortOf } from './lib/effort.js'
 import { setDayOverride, assignWeekday, dayStatus } from './lib/schedule.js'
 import { recordWeighIn, deleteWeighIn, latestWeighIn } from './lib/bodyweight.js'
 import { t } from './lib/i18n.js'
@@ -496,7 +498,7 @@ function WorkoutDetail({ w, close }) {
           <div className="ss">{e.sets.filter(s => s.done).map(s => setLabel(e.id, s, e.target)).join('  ·  ') || t('no sets')}</div></div>
       </div>
     })}
-    <Button variant="danger" onClick={() => confirmSheet({ title: t('Delete workout?'), message: t('This removes it from your history for good.'), confirmText: t('Delete'), danger: true, onConfirm: () => { update(s => { s.workouts = s.workouts.filter(x => x.id !== w.id) }); close(); toast(t('Workout deleted')) } })}>{t('Delete workout')}</Button>
+    <Button variant="danger" onClick={() => confirmSheet({ title: t('Delete workout?'), message: t('This removes it from your history for good.'), confirmText: t('Delete'), danger: true, onConfirm: () => { update(s => { deleteWorkout(s, w.id) }); close(); toast(t('Workout deleted')) } })}>{t('Delete workout')}</Button>
   </>
 }
 /** Opens the completed-workout detail for the given workout. */
