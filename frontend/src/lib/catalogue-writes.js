@@ -61,7 +61,9 @@ export function deleteCustomEx(S, ex) {
   }))
   S.customEx = (S.customEx || []).filter(x => x.id !== ex.id)
   ;(S.routines || []).forEach(r => { r.ex = r.ex.filter(e => e.id !== ex.id); cleanupSg(r.ex) })
-  delete S.exWeights[ex.id]
+  // real state always carries `exWeights` (normalizeState); a sparse hand-made one
+  // may not, and deleting the Best weight must not be the thing that throws
+  delete (S.exWeights || {})[ex.id]
   S.favorites = (S.favorites || []).filter(id => id !== ex.id)
   return { ok: true, reason: null }
 }
