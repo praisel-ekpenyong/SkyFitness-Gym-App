@@ -168,3 +168,28 @@ describe('stale Day override falls back without badge', () => {
     expect(container.textContent).toMatch(/Scheduled today/)
   })
 })
+
+/* Reset (CONTEXT.md): replacing the Profile with factory defaults wholesale —
+   Restore with no backup loaded. The seam under test is the shared replace
+   path, so the same normalization/persistence behavior applies. */
+
+describe('Reset replaces the Profile through the Restore path', () => {
+  it('clears planted data, never aliases DEF into the atom, and keeps DEF pristine', async () => {
+    const { resetProfile } = await import('../lib/restore.js')
+    useStore.getState().update(s => {
+      s.workouts = [{ id: 'w-x', d: todayISO() }]
+      s.favorites = ['ex-push']
+    })
+    resetProfile()
+
+    const S = useStore.getState().S
+    expect(S.workouts).toEqual([])
+    expect(S.favorites).toEqual([])
+    // the store atom is a fresh clone — mutating it must never reach the
+    // shipped factory-defaults object
+    expect(S).not.toBe(DEF)
+    const defBefore = JSON.stringify(DEF)
+    useStore.getState().update(s => { s.unit = 'lb' })
+    expect(JSON.stringify(DEF)).toBe(defBefore)
+  })
+})
