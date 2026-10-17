@@ -22,7 +22,7 @@ import { EXDB, EXIDX } from './exercises.js'
 import { uid } from './format.js'
 import { isWarmupRow } from './workout-model.js'
 import { heaviestForEntry, mergeExWeight } from './active-workout.js'
-import { LB_TO_KG, mergeWeighIns } from './bodyweight.js'
+import { LB_TO_KG, mergeWeighIns, weighInsPreview } from './bodyweight.js'
 
 /* ----------------------------------------------------------------- CSV ---- */
 
@@ -578,11 +578,34 @@ export function parseImport(text, opts) {
 
 /* --------------------------------------------------------------- merge ---- */
 
+/* ----------------------------------------------- import counts ---- */
+
+// The workout-side import dedupe rule (CONTEXT.md: Import — existing days win),
+// stated once here and shared by the merge and its dry-run below.
+const freshWorkouts = (state, parsed) => {
+  const have = new Set((state.workouts || []).map(w => w.d))
+  return parsed.workouts.filter(w => !have.has(w.d))
+}
+
+/**
+ * Count what an import would do without writing anything — the one read the
+ * ImportSummary needs, carrying the same `{added, skipped}` shape the merge
+ * returns, so the sheet cannot silently drift from the merge rule.
+ *
+ * @param {Object} state - Application state atom (or any Profile draft).
+ * @param {Object} parsed - `parseImport` output.
+ * @returns {{ added: number, skipped: number }}
+ */
+export function importPreview(state, parsed) {
+  if (parsed.kind === 'bodyweight') return weighInsPreview(state, parsed.bodyweight)
+  const fresh = freshWorkouts(state, parsed)
+  return { added: fresh.length, skipped: parsed.workouts.length - fresh.length }
+}
+
 /** Merge into state. Existing days win — importing twice never duplicates a workout. */
 export function mergeImport(S, parsed) {
   if (parsed.kind === 'bodyweight') return mergeWeighIns(S, parsed.bodyweight)
-  const have = new Set((S.workouts || []).map(w => w.d))
-  const fresh = parsed.workouts.filter(w => !have.has(w.d))
+  const fresh = freshWorkouts(S, parsed)
   const used = new Set(fresh.flatMap(w => (w.entries || []).map(e => e.id)))
   const customs = parsed.customEx.filter(c => used.has(c.id) && !EXIDX[c.id])
   S.customEx = [...(S.customEx || []), ...customs]
