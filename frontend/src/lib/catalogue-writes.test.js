@@ -27,7 +27,7 @@ const baseState = () => ({
   customEx: [custom(), { id: 'ex-row', n: 'Row custom', bp: 'back', custom: true }],
   routines: [
     { id: 'r-push', ex: [{ id: '0025' }, { id: 'ex-fly' }] },
-    // the custom sits in a superset pair — retiring it must strand the partner's tag
+    // the custom sits in a superset pair — deleting it must strand the partner's tag
     { id: 'r-pair', ex: [{ id: '0047', sg: 'ss-1' }, { id: 'ex-fly', sg: 'ss-1' }, { id: '0085' }] }
   ],
   exWeights: { 'ex-fly': { w: 22.5, d: '2026-01-10' }, '0025': { w: 100 } },
@@ -56,7 +56,7 @@ describe('toggleFavorite', () => {
   })
 })
 
-describe('deleteCustomEx — the retire cascade', () => {
+describe('deleteCustomEx — the delete cascade', () => {
   it('stamps the display name into every matching history entry and snapshots muscles once', () => {
     const S = baseState()
     const res = deleteCustomEx(S, custom())
@@ -144,7 +144,7 @@ describe("upsertCustomEx — the form's store write", () => {
     expect(S.customEx).toHaveLength(2)
   })
 
-  it('writes nothing for a stale id (entry already retired elsewhere)', () => {
+  it('writes nothing for a stale id (entry already deleted elsewhere)', () => {
     const S = { customEx: [{ id: 'ex-other', n: 'Stays', tg: 'abs', sm: [], bp: 'waist', eq: 'custom', custom: true }] }
     const before = JSON.stringify(S)
     const res = upsertCustomEx(S, { id: 'ex-gone', n: 'Whatever', tg: 'chest', sm: [], desc: '' })
