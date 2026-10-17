@@ -111,10 +111,13 @@ describe('deleteCustomEx — the delete cascade', () => {
   })
 
   it('tolerates a sparse state — missing collections read as empty', () => {
-    const S = { customEx: undefined, workouts: undefined, routines: undefined, exWeights: {}, favorites: undefined }
+    const S = { customEx: undefined, workouts: undefined, routines: undefined, favorites: undefined }
     expect(() => deleteCustomEx(S, custom())).not.toThrow()
     expect(S.customEx).toEqual([])
     expect(S.favorites).toEqual([])
+    // `exWeights` was absent entirely: the cascade deletes through it when it
+    // exists and never conjures the key out of nothing
+    expect('exWeights' in S).toBe(false)
   })
 })
 
