@@ -8,6 +8,7 @@ import {
   mergeWeighIns,
   prevWeighIn,
   recordWeighIn,
+  weighInsPreview,
 } from './bodyweight.js'
 
 const TOWARD = 'var(--acc-text)'
@@ -77,6 +78,38 @@ describe('mergeWeighIns (import write rule: existing days win)', () => {
     const S = {}
     expect(() => mergeWeighIns(S, [{ d: '2026-01-02', w: 79 }])).not.toThrow()
     expect(S.bodyweight).toEqual([{ d: '2026-01-02', w: 79 }])
+  })
+})
+
+describe('weighInsPreview — the merge dry-run', () => {
+  it('counts exactly what mergeWeighIns would add and skip', () => {
+    const mergeState = { bodyweight: [{ d: '2026-01-01', w: 80 }] }
+    const entries = [{ d: '2026-01-01', w: 81 }, { d: '2026-01-02', w: 79 }]
+    expect(weighInsPreview(mergeState, entries)).toEqual(mergeWeighIns({ bodyweight: [...mergeState.bodyweight] }, entries))
+  })
+
+  it('matches the batch dedupe: a repeated day counts once (existing days win)', () => {
+    const S = { bodyweight: [] }
+    const res = weighInsPreview(S, [
+      { d: '2026-01-03', w: 79 },
+      { d: '2026-01-01', w: 81 },
+      { d: '2026-01-01', w: 80 },
+    ])
+    expect(res).toEqual({ added: 2, skipped: 1 })
+  })
+
+  it('skips junk rows with no day, the way the merge will', () => {
+    const S = { bodyweight: [{ d: '2026-01-01', w: 80 }] }
+    expect(weighInsPreview(S, [{ w: 70 }, { d: '2026-01-02', w: 71 }])).toEqual({ added: 1, skipped: 1 })
+  })
+
+  it('reads only — never normalizes, sorts or writes the log', () => {
+    const S = { bodyweight: [{ d: '2026-01-10', w: 80 }, { d: '2026-01-01', w: 81 }] }
+    weighInsPreview(S, [{ d: '2026-01-02', w: 79 }])
+    expect(S.bodyweight).toEqual([{ d: '2026-01-10', w: 80 }, { d: '2026-01-01', w: 81 }])
+    const bare = {}
+    expect(weighInsPreview(bare, [{ d: '2026-01-02', w: 79 }])).toEqual({ added: 1, skipped: 0 })
+    expect(bare).toEqual({}) // no bodyweight array conjured up
   })
 })
 

@@ -1,25 +1,11 @@
-// Core state and workout history queries over state object S.
-// Domain-specific operations have been migrated to their canonical deep modules:
-// - Effort scales & steppers: lib/effort.js
-// - Superset pairing & units: lib/supersetFlow.js
-// - Set/row models & metrics: lib/workout-model.js
-// - Label & time formatting:  lib/format.js
+// History (CONTEXT.md: Workout "a finished, dated training session in history"):
+// reads over the workout log and the history write side. Row/set helpers, effort
+// scales, superset pairing and labels live in their canonical modules —
+// workout-model.js, effort.js, supersetFlow.js and format.js — and are no
+// longer re-routed through here.
 
 import { weekKey, isoOf } from './format.js'
 import { bestWeightForEntry } from './workout-model.js'
-
-// Backward-compatible re-exports
-export { EFFORT, stepEffort, capEffort, effortOf } from './effort.js'
-export { cleanupSg, pairAdjacent, unpairSuperset, supersetUnits, unitOf } from './supersetFlow.js'
-export {
-  modeOf, isTimed, isBw, isPerSide, sideReps, repStep,
-  defaultConfig, freestyleConfig, buildSets, workoutVolume,
-  setsDone, setsDoneActive, cascadeWeight, insertWarmupRow,
-  removeRowAt, workSetsDone, hasWork, isExerciseDone, sessionProgress,
-  metricRowsForEntry, metricModeForEntry,
-  bestWeightForEntry, lastEntryFor, MODES, PHASES, ROW_DEFAULTS, SETS_DEFAULTS, makeRow
-} from './workout-model.js'
-export { fmtSec, setLabel, exLine } from './format.js'
 
 /**
  * Find the highest completed set load for an exercise across all logged workouts.
@@ -36,6 +22,24 @@ export function bestWeightFor(S, exId) {
     if (e.id === exId) best = Math.max(best, bestWeightForEntry(e))
   }))
   return best
+}
+
+/**
+ * Delete one Workout from history for good (the workout-detail confirm path).
+ *
+ * Removes exactly the workout record and nothing else. Bests (`S.exWeights`)
+ * and Records (`w.prs` on surviving workouts) keep standing — a Best is
+ * "heaviest ever recorded", not "heaviest of what remains", so deleting history
+ * never lowers a suggestion or unremembers a PR.
+ *
+ * @param {Object} S - Application state atom.
+ * @param {string} id - Workout id to delete.
+ * @returns {boolean} True when a workout with that id was removed.
+ */
+export function deleteWorkout(S, id) {
+  const before = (S.workouts || []).length
+  S.workouts = (S.workouts || []).filter(w => w.id !== id)
+  return S.workouts.length !== before
 }
 
 /**

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { starterRoutines } from './starter.js'
+import { starterRoutines, applyStarterPlan } from './starter.js'
 import { EXIDX } from './exercises.js'
 
 describe('starter routines factory', () => {
@@ -43,5 +43,31 @@ describe('starter routines factory', () => {
         expect(item.n.length).toBeGreaterThan(0)
       })
     })
+  })
+})
+
+describe('applyStarterPlan — the write seam', () => {
+  it('pushes three routines and assigns Mon/Wed/Fri through the schedule seam', () => {
+    const S = { routines: [], week: {} }
+    const [push, pull, legs] = applyStarterPlan(S)
+
+    expect(S.routines.length).toBe(3)
+    expect(S.routines.map(r => r.id)).toEqual([push, pull, legs])
+    expect(S.week).toEqual({ 1: push, 3: pull, 5: legs })
+  })
+
+  it('boots cleanly on a missing routines list, the way a draft store can arrive', () => {
+    const S = { week: {} }
+    expect(applyStarterPlan(S)).toHaveLength(3)
+    expect(S.routines).toHaveLength(3)
+  })
+
+  it('leaves overrides and other weekdays alone', () => {
+    const S = { routines: [], week: { 0: 'r-something' }, dayPlan: { '2026-01-12': 'rest' } }
+    applyStarterPlan(S)
+    expect(S.week[0]).toBe('r-something')
+    expect(S.week[2]).toBeUndefined()
+    expect(S.week[6]).toBeUndefined()
+    expect(S.dayPlan).toEqual({ '2026-01-12': 'rest' })
   })
 })

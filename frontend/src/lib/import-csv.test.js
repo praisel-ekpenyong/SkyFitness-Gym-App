@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseWorkoutCSV, mergeImport } from './import-csv.js'
+import { parseWorkoutCSV, mergeImport, importPreview } from './import-csv.js'
 
 const CSV = [
   'Date,Exercise,Weight,Reps,Set Type',
@@ -122,5 +122,38 @@ describe('mergeImport bodyweight skip rule', () => {
     const res = mergeImport(S, { kind: 'bodyweight', bodyweight: [{ d: '2026-01-02', w: 79 }] })
     expect(res).toEqual({ added: 1, skipped: 0 })
     expect(S.bodyweight).toHaveLength(1)
+  })
+})
+
+/* The ImportSummary's totals read the dry-run (importPreview), so whatever the
+   sheet displays must equal what the confirm button will return — by
+   construction, since both run the same "existing days win" statement. */
+
+describe('importPreview — the totalling dry-run', () => {
+  const workoutParsed = () => parseWorkoutCSV(CSV, { unit: 'kg' })
+
+  it('reports exactly what mergeImport will return, without writing (workouts)', () => {
+    const S0 = { workouts: [], customEx: [] }
+    const preview = importPreview(S0, workoutParsed())
+    expect(S0.workouts).toEqual([]) // dry-run: nothing written
+
+    const S1 = { workouts: [], customEx: [] }
+    const merged = mergeImport(S1, workoutParsed())
+    expect(preview).toEqual(merged)
+  })
+
+  it('counts already-logged days as skipped when re-importing the same file', () => {
+    const S = { workouts: [{ d: '2026-08-08', entries: [] }] }
+    expect(importPreview(S, workoutParsed())).toEqual({ added: 0, skipped: 1 })
+  })
+
+  it('delegates the bodyweight branch and matches mergeImport there too', () => {
+    const S0 = { bodyweight: [{ d: '2026-01-01', w: 80 }] }
+    const parsed = { kind: 'bodyweight', bodyweight: [{ d: '2026-01-01', w: 81 }, { d: '2026-01-02', w: 79 }] }
+    expect(importPreview(S0, parsed)).toEqual({ added: 1, skipped: 1 })
+    expect(S0.bodyweight).toHaveLength(1) // dry-run didn't touch the log
+
+    const S1 = { bodyweight: [{ d: '2026-01-01', w: 80 }] }
+    expect(mergeImport(S1, parsed)).toEqual({ added: 1, skipped: 1 })
   })
 })

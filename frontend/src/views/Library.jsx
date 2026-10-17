@@ -6,6 +6,7 @@ import { queryCatalogue } from '../lib/catalogue-query.js'
 import { bestWeightForEntry } from '../lib/workout-model.js'
 import { fmtNum } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
+import { toggleFavorite } from '../lib/catalogue-writes.js'
 import { Thumb } from '../components/Media.jsx'
 import { exerciseDetailSheet, addToRoutineSheet, customExSheet } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
@@ -94,10 +95,7 @@ export default function Library() {
             aria-label={row.favorite ? t('Remove from favorites') : t('Add to favorites')}
             onClick={ev => {
               ev.stopPropagation()
-              update(s => {
-                const cur = s.favorites || []
-                s.favorites = cur.includes(e.id) ? cur.filter(id => id !== e.id) : [...cur, e.id]
-              })
+              update(s => { toggleFavorite(s, e.id) })
             }}
           >
             <Icon name={row.favorite ? 'starFill' : 'star'} />

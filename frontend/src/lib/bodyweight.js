@@ -59,6 +59,21 @@ export function recordWeighIn(S, { d, w, t } = {}, { overwrite = true } = {}) {
   return log.find(b => b.d === d)
 }
 
+// The import rule (CONTEXT.md: Import — existing days win): a weigh-in whose
+// day is already logged — or whose day clashes with another weigh-in in the
+// same batch — is skipped, so importing twice never rewrites a logged reading.
+// One statement shared by the merge and its dry-run below.
+function freshByDay(log, entries) {
+  const have = new Set(log.map(b => b.d))
+  const fresh = []
+  for (const e of entries || []) {
+    if (!e?.d || have.has(e.d)) continue
+    fresh.push(e)
+    have.add(e.d)
+  }
+  return fresh
+}
+
 /**
  * Merge a batch of weigh-ins (the import write rule: existing days win, so
  * importing twice never rewrites a logged reading). Sorts once for the batch.
@@ -69,16 +84,25 @@ export function recordWeighIn(S, { d, w, t } = {}, { overwrite = true } = {}) {
  */
 export function mergeWeighIns(S, entries = []) {
   const log = writableLog(S)
-  const have = new Set(log.map(b => b.d))
-  let added = 0, skipped = 0
-  for (const e of entries || []) {
-    if (!e?.d || have.has(e.d)) { skipped++; continue }
-    log.push(stored(e))
-    have.add(e.d)
-    added++
-  }
+  const fresh = freshByDay(log, entries)
+  fresh.forEach(e => log.push(stored(e)))
   log.sort(byDay)
-  return { added, skipped }
+  return { added: fresh.length, skipped: (entries || []).length - fresh.length }
+}
+
+/**
+ * Count what a weigh-in import would do without writing — the ImportSummary
+ * reads its totals from this dry-run instead of re-deriving the merge rule by
+ * hand in the sheet. Reads only: never normalizes or sorts the log.
+ *
+ * @param {Object} S - Application state atom.
+ * @param {Array} entries - Weigh-ins in the profile unit.
+ * @returns {{ added: number, skipped: number }} The same shape mergeWeighIns returns.
+ */
+export function weighInsPreview(S, entries = []) {
+  const log = Array.isArray(S.bodyweight) ? S.bodyweight : []
+  const fresh = freshByDay(log, entries)
+  return { added: fresh.length, skipped: (entries || []).length - fresh.length }
 }
 
 /**
