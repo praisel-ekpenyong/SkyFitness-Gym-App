@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { EXIDX } from '../lib/exercises.js'
-import { streakWeeks, setLabel, effortOf } from '../lib/history.js'
-import { fmtNum, fmtDate, fmtVol, todayISO, weekKey, monthKey, workoutTimestamp } from '../lib/format.js'
+import { streakWeeks } from '../lib/history.js'
+import { fmtNum, fmtDate, fmtVol, todayISO, weekKey, monthKey, workoutTimestamp, setLabel } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
 import { bwSheet, goalSheet, calendarSheet, recapSheet, workoutDetailSheet, WorkoutRow } from '../sheets.jsx'
 import LineChart from '../components/LineChart.jsx'
@@ -18,7 +18,7 @@ import { strengthExerciseRowsForMuscle } from '../lib/strength-exercises.js'
 import { e1rmSeries, best1RM } from '../lib/onerm.js'
 import {
   hasEffort, displayScale, scaleName, toScale, avgRir, effortSummary, effortWeeks,
-  effortHistogram, isHardSet, HARD_RIR
+  effortHistogram, isHardSet, HARD_RIR, effortOf
 } from '../lib/effort.js'
 import { Button, Segmented, SelectRow } from '../components/ui.jsx'
 import { isWarmupRow } from '../lib/workout-model.js'
