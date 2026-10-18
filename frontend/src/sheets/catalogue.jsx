@@ -2,8 +2,10 @@ import { useState } from 'react'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { EXIDX, isCardio, isBodyweightEq, allExercises } from '../lib/exercises.js'
-import { fmtDate, fmtNum, exCount, uid } from '../lib/format.js'
-import { lastEntryFor, setLabel, defaultConfig, cleanupSg, modeOf, isBw, isPerSide, sideReps, bestWeightFor } from '../lib/history.js'
+import { fmtDate, fmtNum, exCount, uid, setLabel } from '../lib/format.js'
+import { bestWeightFor } from '../lib/history.js'
+import { lastEntryFor, defaultConfig, modeOf, isBw, isPerSide, sideReps } from '../lib/workout-model.js'
+import * as catalogueWrites from '../lib/catalogue-writes.js'
 import { t, instrFor } from '../lib/i18n.js'
 import { nav } from '../lib/nav.js'
 import Media, { Thumb } from '../components/Media.jsx'
@@ -11,7 +13,7 @@ import Stepper from '../components/Stepper.jsx'
 import Icon from '../components/Icon.jsx'
 import { Button, Switch, Segmented, SelectRow, Row, SearchField } from '../components/ui.jsx'
 import { glyphOf, DEFAULT_GLYPH } from '../lib/glyphs.js'
-import { FILTER_MUSCLES, MUSCLES, MUSCLE_NAME, primaryMuscleOf, secondaryMusclesOf, bodypartForMuscle, exerciseMuscleSnapshot } from '../lib/muscles.js'
+import { FILTER_MUSCLES, MUSCLES, MUSCLE_NAME, primaryMuscleOf, secondaryMusclesOf } from '../lib/muscles.js'
 import { queryCatalogue } from '../lib/catalogue-query.js'
 import { estimate1RM, best1RM, REP_CAP } from '../lib/onerm.js'
 import { policyFor, defaultIncrement, POLICIES_FOR, POLICY_NAME, POLICY_DESC, MAX_BW_SETS } from '../lib/progression.js'
@@ -92,10 +94,7 @@ export function ExerciseDetail({ ex, close }) {
         style={{ width: 34, height: 34, fontSize: 18, color: isFav ? 'var(--acc)' : 'var(--label-2)' }}
         aria-label={isFav ? t('Remove from favorites') : t('Add to favorites')}
         onClick={() => {
-          update(s => {
-            const cur = s.favorites || []
-            s.favorites = cur.includes(ex.id) ? cur.filter(id => id !== ex.id) : [...cur, ex.id]
-          })
+          update(s => { catalogueWrites.toggleFavorite(s, ex.id) })
         }}
       >
         <Icon name={isFav ? 'starFill' : 'star'} />
@@ -197,35 +196,14 @@ export function CustomExForm({ existing, prefill, onDone, close }) {
     const dup = allExercises(S()).find(e => e.n.toLowerCase() === trimmedName.toLowerCase() && e.id !== (existing || {}).id)
     if (dup) { toast(t('“{0}” already exists', dup.n)); return }
     const trimmedDesc = desc.trim().slice(0, 1000)
-    const derivedBp = bodypartForMuscle(primary)
     const finalSm = primary === 'cardio' ? [] : secondaries
-    let id = existing && existing.id
-    if (existing) {
-      update(s => {
-        const customEntry = (s.customEx || []).find(x => x.id === id)
-        if (customEntry) {
-          customEntry.n = trimmedName
-          customEntry.tg = primary
-          customEntry.sm = finalSm
-          customEntry.bp = derivedBp
-          customEntry.desc = trimmedDesc
-        }
-      })
-    } else {
-      id = 'c' + uid()
-      update(s => {
-        (s.customEx = s.customEx || []).push({
-          id,
-          n: trimmedName,
-          bp: derivedBp,
-          tg: primary,
-          sm: finalSm,
-          desc: trimmedDesc,
-          eq: 'custom',
-          custom: true,
-        })
-      })
-    }
+    // the store write is the seam: what a stored Custom record looks like and
+    // update-vs-create is lib/catalogue-writes.js's call; the form passes only
+    // user-entered fields and reads back the stored id for onDone
+    let id
+    update(s => {
+      id = catalogueWrites.upsertCustomEx(s, { id: existing ? existing.id : null, n: trimmedName, tg: primary, sm: finalSm, desc: trimmedDesc })
+    })
     close()
     toast(existing ? t('Saved') : t('“{0}” created', trimmedName))
     onDone && onDone(EXIDX[id])
@@ -298,24 +276,16 @@ export const customExSheet = (existing, onDone, prefill) => ui().openSheet(close
 export function deleteCustomEx(ex, afterDelete) {
   if (S().active?.entries.some(e => e.id === ex.id)) { toast(t('Finish your current workout first')); return }
   if (!_confirmSheet) throw new Error('catalogue sheets not wired: missing confirmSheet')
+  let res = null
   _confirmSheet({
     title: t('Delete “{0}”?', ex.n),
     message: t('It will be removed from your routines. Already-logged workouts keep their sets.'),
     confirmText: t('Delete'), danger: true,
     onConfirm: () => {
-      update(s => {
-        // Keep display and muscle metadata in history before the custom catalogue row disappears.
-        const snapshot = exerciseMuscleSnapshot(ex)
-        s.workouts.forEach(w => w.entries.forEach(e => {
-          if (e.id !== ex.id) return
-          e.n = ex.n
-          if (!e.muscleSnapshot || !Object.keys(e.muscleSnapshot).length) e.muscleSnapshot = snapshot
-        }))
-        s.customEx = (s.customEx || []).filter(x => x.id !== ex.id)
-        s.routines.forEach(r => { r.ex = r.ex.filter(e => e.id !== ex.id); cleanupSg(r.ex) })
-        delete s.exWeights[ex.id]
-        s.favorites = (s.favorites || []).filter(id => id !== ex.id)
-      })
+      // The seam re-refuses if a workout started while this dialog was open (e.g. a
+      // second tab): refuse the success toast rather than deleting mid-session.
+      update(s => { res = catalogueWrites.deleteCustomEx(s, ex) })
+      if (!res.ok) { toast(t('Finish your current workout first')); return }
       toast(t('Exercise deleted'))
       afterDelete && afterDelete()
     }
@@ -395,10 +365,7 @@ export function ExercisePicker({ onPick }) {
             aria-label={row.favorite ? t('Remove from favorites') : t('Add to favorites')}
             onClick={ev => {
               ev.stopPropagation()
-              update(s => {
-                const cur = s.favorites || []
-                s.favorites = cur.includes(e.id) ? cur.filter(id => id !== e.id) : [...cur, e.id]
-              })
+              update(s => { catalogueWrites.toggleFavorite(s, e.id) })
             }}
           >
             <Icon name={row.favorite ? 'starFill' : 'star'} />

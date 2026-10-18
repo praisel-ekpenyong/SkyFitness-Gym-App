@@ -21,7 +21,7 @@ export const GLYPH_GROUPS = [
   { key: 'Cardio',    items: ['figureRun', 'bike', 'swim', 'boxing', 'timer'] },
   { key: 'Recovery',  items: ['stretch', 'moon', 'heart', 'flame', 'bolt'] },
 ]
-export const GLYPHS = GLYPH_GROUPS.flatMap(g => g.items)
+
 
 // Legacy emoji → icon key, so routines created before the redesign keep a
 // sensible glyph instead of all collapsing onto the default.

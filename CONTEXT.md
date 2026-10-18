@@ -25,6 +25,10 @@ A complete copy of the profile as one file, for safekeeping or moving devices.
 Loading a full JSON backup file. Replaces the current profile state wholesale on confirmation.
 _Avoid_: sync
 
+**Reset**:
+Replacing the profile with factory defaults wholesale — Restore with no backup loaded. Never touches backups or the device's storage wiring; there is nothing to undo.
+_Avoid_: wipe cache, clear data, factory reset (Android OS action)
+
 **Import**:
 Bringing partial or outside data in (shared plan files, CSV histories from FitNotes/Strong/Hevy, Apple Health weigh-ins). Imports merge rather than replace — existing routines gain new IDs and existing days win, so importing never duplicates a workout.
 _Avoid_: sync
