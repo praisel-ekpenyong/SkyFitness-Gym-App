@@ -31,6 +31,17 @@ describe('active-workout lifecycle seam', () => {
     expect(bestKnownWeight({ workouts: S.workouts, exWeights: {} }, 'lift')).toBe(90)
   })
 
+  it('bestKnownWeight never promotes a warm-up or an unperformed set (CONTEXT.md: work sets only)', () => {
+    expect(bestKnownWeight({ workouts: [{ entries: [{ id: 'lift', topW: 120, sets: [
+      { phase: 'warmup', done: true, w: 120 },
+      { phase: 'work', done: true, w: 80 },
+      { phase: 'work', done: false, w: 100 },
+    ] }] }] }, 'lift')).toBe(80)
+    expect(bestKnownWeight({ workouts: [{ entries: [{ id: 'lift', sets: [
+      { phase: 'warmup', done: true, w: 120 },
+    ] }] }] }, 'lift')).toBe(0)
+  })
+
   it('heaviestSetWeight excludes warm-ups and unticked', () => {
     const entry = {
       sets: [

@@ -3,7 +3,7 @@
 //
 // Stats.jsx used to rebuild this pipeline inline on every render: the top-set
 // series, the per-exercise current best, and the Mode resolution each
-// reimplemented `bestWeightFor` with mode awareness. A Mode-resolution bug
+// reimplemented the log's best-load read with mode awareness. A Mode-resolution bug
 // fixed in the view stayed broken everywhere else, and none of it was testable
 // without the DOM. The view now renders from this seam; the pipeline is tested
 // in Node.

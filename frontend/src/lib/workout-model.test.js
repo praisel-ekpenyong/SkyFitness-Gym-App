@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { bestWeightFor } from './history.js'
+import { bestKnownWeight } from './active-workout.js'
 import { modeOf, isTimed, defaultConfig, buildSets, freestyleConfig, workoutVolume, bestWeightForEntry, isBw, isPerSide, sideReps, repStep, cascadeWeight, insertWarmupRow, removeRowAt, workSetsDone, hasWork, isExerciseDone, sessionProgress } from './workout-model.js'
 import { fmtSec, setLabel, exLine } from './format.js'
 import { effortOf, stepEffort, capEffort } from './effort.js'
@@ -498,16 +498,6 @@ describe('workoutVolume', () => {
     expect(workSetsDone(w)).toBe(1)
   })
 
-  it('does not use a warm-up as the previous best working weight', () => {
-    expect(bestWeightFor({ workouts: [{ entries: [{ id: LIFT, topW: 120, sets: [
-      { phase: 'warmup', done: true, w: 120 },
-      { phase: 'work', done: true, w: 80 },
-    ] }] }] }, LIFT)).toBe(80)
-    expect(bestWeightFor({ workouts: [{ entries: [{ id: LIFT, topW: 120, sets: [
-      { phase: 'warmup', done: true, w: 120 },
-    ] }] }] }, LIFT)).toBe(0)
-  })
-
   it('uses completed non-warm-up load for timed entries', () => {
     expect(bestWeightForEntry({ target: { mode: 'time' }, topW: 200, sets: [
       { phase: 'warmup', sec: 30, w: 30, done: true },
@@ -532,7 +522,7 @@ describe('workoutVolume', () => {
     const repeatedWeight = Math.max(0, ...repeated.sets.filter(set => set.done).map(set => set.w || 0))
 
     expect(bestWeightForEntry(prior)).toBe(20)
-    expect(repeatedWeight > bestWeightFor(state, LIFT)).toBe(false)
+    expect(repeatedWeight > bestKnownWeight(state, LIFT)).toBe(false)
   })
 })
 

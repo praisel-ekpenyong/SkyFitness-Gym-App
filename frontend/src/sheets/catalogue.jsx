@@ -3,7 +3,7 @@ import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { EXIDX, isCardio, isBodyweightEq, allExercises } from '../lib/exercises.js'
 import { fmtDate, fmtNum, exCount, uid, setLabel } from '../lib/format.js'
-import { bestWeightFor } from '../lib/history.js'
+import { bestKnownWeight } from '../lib/active-workout.js'
 import { lastEntryFor, defaultConfig, modeOf, isBw, isPerSide, sideReps } from '../lib/workout-model.js'
 import * as catalogueWrites from '../lib/catalogue-writes.js'
 import { t, instrFor } from '../lib/i18n.js'
@@ -79,7 +79,7 @@ function OneRM({ ex }) {
 export function ExerciseDetail({ ex, close }) {
   const st = useStore(s => s.S)
   const last = lastEntryFor(st, ex.id)
-  const best = bestWeightFor(st, ex.id)
+  const best = bestKnownWeight(st, ex.id)
   const favs = st.favorites || []
   const isFav = favs.includes(ex.id)
   const isCardioEx = isCardio(ex)
