@@ -197,30 +197,26 @@ describe('lastWorkSetAt', () => {
   const wk = (d, entries) => ({ d, start: at(d), entries })
 
   it('reads the latest timestamp with a performed work set, ignoring warm-ups and undone rows', () => {
-    const S = {
-      workouts: [
-        wk('2026-01-01', [{ id: LIFT, sets: [{ w: 80, r: 5, done: true }] }]),
-        wk('2026-01-08', [{ id: LIFT, sets: [{ w: 40, r: 5, phase: 'warmup', done: true }] }]),
-        wk('2026-01-15', [{ id: LIFT, sets: [{ w: 85, r: 5, done: false }] }]),
-      ],
-    }
-    expect(lastWorkSetAt(S, LIFT)).toBe(at('2026-01-01'))
+    const workouts = [
+      wk('2026-01-01', [{ id: LIFT, sets: [{ w: 80, r: 5, done: true }] }]),
+      wk('2026-01-08', [{ id: LIFT, sets: [{ w: 40, r: 5, phase: 'warmup', done: true }] }]),
+      wk('2026-01-15', [{ id: LIFT, sets: [{ w: 85, r: 5, done: false }] }]),
+    ]
+    expect(lastWorkSetAt(workouts, LIFT)).toBe(at('2026-01-01'))
   })
 
   it('returns null when the exercise was never trained', () => {
-    expect(lastWorkSetAt({ workouts: [] }, LIFT)).toBeNull()
-    expect(lastWorkSetAt({}, LIFT)).toBeNull()
-    const S = { workouts: [wk('2026-01-01', [{ id: LIFT, sets: [{ w: 80, r: 5, done: false }] }])] }
-    expect(lastWorkSetAt(S, LIFT)).toBeNull()
+    expect(lastWorkSetAt([], LIFT)).toBeNull()
+    expect(lastWorkSetAt(undefined, LIFT)).toBeNull()
+    const workouts = [wk('2026-01-01', [{ id: LIFT, sets: [{ w: 80, r: 5, done: false }] }])]
+    expect(lastWorkSetAt(workouts, LIFT)).toBeNull()
   })
 
   it('ignores a later workout that does not include the exercise', () => {
-    const S = {
-      workouts: [
-        wk('2026-01-01', [{ id: LIFT, sets: [{ w: 80, r: 5, done: true }] }]),
-        wk('2026-01-20', [{ id: CARDIO, sets: [{ sec: 60, done: true }] }]),
-      ],
-    }
-    expect(lastWorkSetAt(S, LIFT)).toBe(at('2026-01-01'))
+    const workouts = [
+      wk('2026-01-01', [{ id: LIFT, sets: [{ w: 80, r: 5, done: true }] }]),
+      wk('2026-01-20', [{ id: CARDIO, sets: [{ sec: 60, done: true }] }]),
+    ]
+    expect(lastWorkSetAt(workouts, LIFT)).toBe(at('2026-01-01'))
   })
 })
