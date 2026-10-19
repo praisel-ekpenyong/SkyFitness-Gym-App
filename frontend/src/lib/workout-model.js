@@ -280,6 +280,9 @@ export const workSets = entry => (Array.isArray(entry?.sets) ? entry.sets : []).
 /** The performed work sets of an entry — the list metrics read. */
 export const doneWorkSets = entry => workSets(entry).filter(isPerformed)
 
+/** Whether an entry has at least one performed work set — the entry-counts-as-trained test. */
+export const hasWorkSet = entry => doneWorkSets(entry).length > 0
+
 /**
  * Total weight-times-reps across completed work sets in a workout.
  *

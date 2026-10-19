@@ -3,15 +3,15 @@
 // / 0.5 floor model as the muscle map, applied to the exercise's last done work set), and
 // the expected CURRENT 1RM (= estimate x decay). The body map keeps the per-muscle model;
 // the exercise list deliberately reads per-exercise, so an old exercise shows its own
-// decline even when its muscle is kept fresh by other work. Muscle mapping is
-// catalogue-first (EXIDX), exactly like the fatigue/strength maps, falling back to the
-// logged snapshot (muscleWeights) for exercises no longer in the catalogue.
+// decline even when its muscle is kept fresh by other work. Muscle mapping and the last
+// trained time read the shared entry readings (muscles.js `muscleWeightsOf`,
+// exercise-progress.js `lastWorkSetAt`), so a deleted custom is read here the same way the
+// fatigue and strength maps read it.
 import { best1RM } from './onerm.js'
 import { STRENGTH_FULL_MS, STRENGTH_HALF_LIFE_MS, STRENGTH_FLOOR, halfLifeDecay } from './recovery.js'
-import { musclesOf } from './muscles.js'
-import { workoutTimestamp } from './format.js'
+import { muscleWeightsOf } from './muscles.js'
+import { lastWorkSetAt } from './exercise-progress.js'
 import { EXIDX } from './exercises.js'
-import { doneWorkSets } from './workout-model.js'
 
 /**
  * Round a 1RM display value to one decimal place.
@@ -28,45 +28,10 @@ function strengthFromAge(ageMs) {
   return Math.max(STRENGTH_FLOOR, halfLifeDecay(ageMs - STRENGTH_FULL_MS, STRENGTH_HALF_LIFE_MS))
 }
 
-// Timestamp of the exercise's latest completed WORK set (warm-ups excluded - they are prep,
-// not stimulus, and the strength model is built on effective work).
-function lastWorkSetAt(S, id) {
-  let latest = -Infinity
-  for (const workout of S?.workouts || []) {
-    const ts = workoutTimestamp(workout)
-    if (!Number.isFinite(ts) || ts <= latest) continue
-    const entry = (workout.entries || []).find(e => e.id === id)
-    if (!entry) continue
-    if (doneWorkSets(entry).length > 0) latest = ts
-  }
-  return Number.isFinite(latest) ? latest : null
-}
-
-/**
- * Resolve an entry's muscle weights, preferring the live catalogue.
- *
- * @param {Object} entry - Workout entry with id and optional logged muscle snapshot.
- * @returns {Object} Muscle weights by slug from catalogue, logged snapshot, or musclesOf fallback.
- */
-function snapshotWeights(entry) {
-  const catalogue = entry && typeof entry === 'object' ? EXIDX[entry.id] : null
-  if (catalogue) {
-    const weights = musclesOf(catalogue)
-    if (Object.keys(weights).length) return weights
-  }
-  const direct = entry && typeof entry === 'object'
-    ? (entry.muscleWeights || entry.muscleSnapshot?.muscleWeights)
-    : null
-  if (direct && typeof direct === 'object' && !Array.isArray(direct) && Object.keys(direct).length) {
-    return direct
-  }
-  return musclesOf(entry)
-}
-
 // Highest-weight muscle of an exercise - used for the primary/secondary badge and the
 // per-muscle link, not for the decay (the exercise's own decay is what the row shows).
 export function primaryMuscleOf(entry) {
-  const weights = snapshotWeights(entry)
+  const weights = muscleWeightsOf(entry)
   let best = null
   for (const [slug, weight] of Object.entries(weights)) {
     if (!best || weight > best.weight) best = { slug, weight }
@@ -145,7 +110,7 @@ export function strengthExerciseRowsForMuscle(S, now, slug) {
   for (const workout of workouts) {
     for (const entry of workout.entries || []) {
       if (seen.has(entry.id)) continue
-      const weights = snapshotWeights(entry)
+      const weights = muscleWeightsOf(entry)
       const weight = weights[slug]
       if (!weight) continue
       const best = best1RM(S, entry.id)

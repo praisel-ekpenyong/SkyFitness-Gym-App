@@ -439,6 +439,25 @@ describe('warm-up flag in strength and fatigue', () => {
   })
 })
 
+describe('deleted custom exercises', () => {
+  it('keep counting in fatigue and strength through their logged muscle snapshot', () => {
+    const now = Date.UTC(2026, 7, 1, 12)
+    const deleted = {
+      id: 'c-deleted',
+      muscleSnapshot: { muscleWeights: { [SINGLE_SLUG]: 1 } },
+      sets: [{ done: true, w: 80, r: 8 }],
+    }
+    const workouts = [{ id: 'w1', d: '2026-08-01', start: now - 3600000, unit: 'kg', entries: [deleted] }]
+    expect(fatigueOf(workouts, now)[SINGLE_SLUG]).toBeGreaterThan(0)
+    expect(strengthOf(workouts, now)[SINGLE_SLUG]).toBe(1)
+
+    // No catalogue id and no snapshot still contributes nothing.
+    const bare = { id: 'c-bare', sets: [{ done: true, w: 80, r: 8 }] }
+    const bareWorkouts = [{ id: 'w2', d: '2026-08-01', start: now - 3600000, unit: 'kg', entries: [bare] }]
+    expect(fatigueOf(bareWorkouts, now)[SINGLE_SLUG]).toBe(0)
+  })
+})
+
 describe('canonical loads and configured bodyweight', () => {
   const loaded = EXDB.find(ex => {
     const weights = musclesOf(ex)

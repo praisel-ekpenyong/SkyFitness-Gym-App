@@ -12,6 +12,7 @@ asked who they are.
 ### History reads
 
 - 🏆 **Best has one reading.** The exercise detail's Best now counts logged workouts and the stored working weight together, the same rule the session screen already follows — it could previously show a lower Best than the weight you had confirmed.
+- 💪 **Deleted custom exercises keep counting.** Fatigue and retained strength now read an entry's logged muscle snapshot when the custom exercise it came from is gone, so deleting a custom no longer erases the training it did from the body map.
 
 ### Profile display name
 
@@ -41,3 +42,4 @@ asked who they are.
 ### Architecture Modularization
 
 - 🧩 **Domain sheet modules.** Extracted catalogue browsing (`sheets/catalogue.jsx`) and active workout session sheets (`sheets/session.jsx`) from the monolithic `sheets.jsx` hub.
+- 🧱 **Named set and entry readings.** "Work set", "performed", "trained entry" and the per-entry muscle weights each have one named reading (`isWorkSet` / `isPerformed` / `workSets` / `doneWorkSets` / `hasWorkSet` / `muscleWeightsOf` / `lastTrainedByMuscle` / `lastWorkSetAt`), and every surface — body map, fatigue, strength rows, superset flow, session counters — applies the same precedence instead of carrying its own copy.
