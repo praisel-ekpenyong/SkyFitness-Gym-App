@@ -122,3 +122,20 @@ export const isBodyweightEq = idOrEx =>
 // down on the first `ex.n`.
 export const exOr = id => EXIDX[id] ||
   { id, n: t('Unknown exercise'), bp: '', tg: '', eq: '', sm: [], st: [], missing: true }
+
+/**
+ * The exercise object a logged entry trains.
+ *
+ * Catalogue first so a live custom reads its current metadata; a deleted custom or
+ * import falls back to an embedded `exercise` object, else the entry itself — whose
+ * nested `muscleSnapshot` the muscle reads unwrap.
+ *
+ * @param {Object|null|undefined} entry - Entry with `id` and/or an embedded `exercise`.
+ * @returns {Object|null} Resolved exercise/entry object, or null for nullish input.
+ */
+export const exerciseFor = entry => {
+  const source = entry && typeof entry === 'object' ? entry : null
+  if (!source) return null
+  const embedded = source.exercise
+  return EXIDX[source.id] || (embedded && typeof embedded === 'object' ? embedded : source)
+}

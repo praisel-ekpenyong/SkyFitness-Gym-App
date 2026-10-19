@@ -7,7 +7,7 @@
 // RIR is the internal unit because it has a real zero — a set taken to failure — where RPE's
 // floor of 6 is only a convention about which sets are worth rating. RPE 8 == RIR 2.
 import { weekKey, workoutTimestamp } from './format.js'
-import { isWarmupRow } from './workout-model.js'
+import { doneWorkSets } from './workout-model.js'
 
 // How hard a set felt, if the profile logs it at all. Two scales for the same thing, kept in
 // their own fields: RIR counts the reps still in the tank, RPE reads the same effort off a
@@ -91,9 +91,7 @@ export const scaleName = (kind) => EFFORT[kind].hd
 function eachDoneSet(S, fn) {
   for (const w of S?.workouts || []) {
     for (const e of w?.entries || []) {
-      for (const s of e?.sets || []) {
-        if (s.done && !isWarmupRow(s)) fn(s, w, e)
-      }
+      for (const s of doneWorkSets(e)) fn(s, w, e)
     }
   }
 }

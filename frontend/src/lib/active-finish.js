@@ -4,7 +4,7 @@
 // estimated-1RM detection, and the completed-Workout boundary. Session
 // construction lives in active-session.js, set surgery in active-sets.js,
 // the toggle decision in active-toggle.js.
-import { isWarmupRow, workoutVolume, bestWeightForEntry } from './workout-model.js'
+import { workoutVolume, bestWeightForEntry, doneWorkSets, isPerformed } from './workout-model.js'
 import { is1RMRecord } from './onerm.js'
 import { EXIDX } from './exercises.js'
 import { exerciseMuscleSnapshot } from './muscles.js'
@@ -62,10 +62,8 @@ export function bestKnownWeight(S, exId) {
  * @returns {number} Maximum completed set load in active units, or 0 if none.
  */
 export function heaviestSetWeight(entry) {
-  if (!entry || !Array.isArray(entry.sets)) return 0
   let mx = 0
-  for (const s of entry.sets) {
-    if (!s.done || isWarmupRow(s)) continue
+  for (const s of doneWorkSets(entry)) {
     const w = Number(s.w)
     if (Number.isFinite(w) && w > mx) mx = w
   }
@@ -164,7 +162,7 @@ export function buildCompletedWorkout(active, { end = Date.now(), prs = [], unit
       completed.muscleSnapshot = { ...snapshot }
     }
     return completed
-  }).filter(entry => (entry.sets || []).some(set => set.done))
+  }).filter(entry => (entry.sets || []).some(isPerformed))
 
   return {
     id: active.id,

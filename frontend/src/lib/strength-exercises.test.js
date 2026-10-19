@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { strengthExerciseRows, strengthExerciseRowsForMuscle, primaryMuscleOf } from './strength-exercises.js'
+import { loadOfWorkouts } from './muscles.js'
 import { registerCustom } from './exercises.js'
 
 const DAY = 86400000
@@ -172,5 +173,16 @@ describe('primaryMuscleOf', () => {
     expect(primaryMuscleOf({ tg: 'back', mg: 'biceps' }).slug).toBe('upper-back') // canonicalised
     expect(primaryMuscleOf({})).toBeNull()
     expect(primaryMuscleOf(null)).toBeNull()
+  })
+
+  it('reads the same entry weights the body map reads', () => {
+    // `hands` is not a drawable muscle: the raw snapshot fallback used to badge it strongest.
+    const entry = {
+      id: 'gone',
+      muscleSnapshot: { muscleWeights: { chest: 1, hands: 3 } },
+      sets: [{ done: true, w: 60, r: 8 }],
+    }
+    expect(primaryMuscleOf(entry).slug).toBe('chest')
+    expect(loadOfWorkouts([{ entries: [entry] }]).chest).toBe(1)
   })
 })

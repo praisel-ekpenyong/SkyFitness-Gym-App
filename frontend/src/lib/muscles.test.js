@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest'
-import { EXIDX, EXDB, smOf } from './exercises.js'
-import { loadOfWorkouts, musclesOf, loadOf } from './muscles.js'
+import { describe, expect, it, afterEach } from 'vitest'
+import { EXIDX, EXDB, smOf, registerCustom } from './exercises.js'
+import { loadOfWorkouts, musclesOf, loadOf, muscleWeightsOf, lastTrainedByMuscle } from './muscles.js'
 
 // The catalogue keeps the source dataset's secondary-muscle spellings; musclesOf maps
 // those aliases to the canonical body-map slugs and applies the 0.4 support weight.
@@ -450,5 +450,43 @@ describe('legacy custom exercises and BY_BODYPART fallbacks', () => {
     expect(primaryMuscleOf(explicitBicepIsolation)).toBe('biceps')
     // Should be empty array, NOT ['triceps']
     expect(secondaryMusclesOf(explicitBicepIsolation)).toEqual([])
+  })
+})
+
+describe('muscleWeightsOf and lastTrainedByMuscle', () => {
+  afterEach(() => registerCustom([]))
+  const at = d => Date.parse(d + 'T12:00:00Z')
+  const wk = (d, entries) => ({ d, start: at(d), entries })
+
+  it('reads own metadata first, then the live catalogue, then a deleted custom snapshot', () => {
+    registerCustom([{ id: 'c-live', n: 'Curl', tg: 'biceps' }])
+    // The live catalogue beats a stale snapshot logged under the same id.
+    expect(muscleWeightsOf({ id: 'c-live', muscleSnapshot: { muscleWeights: { chest: 1 } } })).toEqual({ biceps: 1 })
+    // The entry's own stamped weights beat the catalogue.
+    expect(muscleWeightsOf({ id: 'c-live', muscleWeights: { triceps: 1 } })).toEqual({ triceps: 1 })
+    // A deleted custom keeps its logged snapshot.
+    expect(muscleWeightsOf({ id: 'c-gone', muscleSnapshot: { muscleWeights: { chest: 1 } } })).toEqual({ chest: 1 })
+    // Nothing readable reads as no muscles.
+    expect(muscleWeightsOf({ id: 'c-gone' })).toEqual({})
+    expect(muscleWeightsOf(null)).toEqual({})
+  })
+
+  it('records the latest performed-work-set timestamp per muscle', () => {
+    registerCustom([{ id: 'c-map', n: 'Map Lift', tg: 'biceps' }])
+    const map = lastTrainedByMuscle([
+      wk('2026-02-01', [{ id: 'c-map', sets: [{ done: true, w: 20, r: 10 }] }]),
+      wk('2026-02-08', [{ id: 'c-map', sets: [{ done: true, phase: 'warmup', w: 5, r: 10 }] }]),
+      wk('2026-02-15', [{ id: 'c-map', sets: [{ done: false, w: 20, r: 10 }] }]),
+    ])
+    expect(map).toEqual({ biceps: at('2026-02-01') })
+    expect(lastTrainedByMuscle([])).toEqual({})
+    expect(lastTrainedByMuscle(undefined)).toEqual({})
+  })
+
+  it('counts a deleted custom through its snapshot instead of dropping the entry', () => {
+    const trained = { id: 'c-gone', sets: [{ done: true, w: 20, r: 10 }], muscleSnapshot: { muscleWeights: { chest: 1 } } }
+    expect(lastTrainedByMuscle([wk('2026-02-01', [trained])])).toEqual({ chest: at('2026-02-01') })
+    const untouched = { ...trained, sets: [{ done: false, w: 20, r: 10 }] }
+    expect(lastTrainedByMuscle([wk('2026-02-01', [untouched])])).toEqual({})
   })
 })
