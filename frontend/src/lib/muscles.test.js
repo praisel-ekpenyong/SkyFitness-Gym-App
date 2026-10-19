@@ -464,6 +464,12 @@ describe('muscleWeightsOf and lastTrainedByMuscle', () => {
     expect(muscleWeightsOf({ id: 'c-live', muscleSnapshot: { muscleWeights: { chest: 1 } } })).toEqual({ biceps: 1 })
     // The entry's own stamped weights beat the catalogue.
     expect(muscleWeightsOf({ id: 'c-live', muscleWeights: { triceps: 1 } })).toEqual({ triceps: 1 })
+    // Own logged weights beat a nested snapshot too; the snapshot is only the fallback copy.
+    expect(muscleWeightsOf({
+      id: 'c-gone',
+      muscleWeights: { triceps: 1 },
+      muscleSnapshot: { muscleWeights: { chest: 1 } },
+    })).toEqual({ triceps: 1 })
     // A deleted custom keeps its logged snapshot.
     expect(muscleWeightsOf({ id: 'c-gone', muscleSnapshot: { muscleWeights: { chest: 1 } } })).toEqual({ chest: 1 })
     // Nothing readable reads as no muscles.
