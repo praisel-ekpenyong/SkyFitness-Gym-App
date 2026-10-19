@@ -122,8 +122,8 @@ export function lastWorkSetAt(workouts, exId) {
   for (const workout of workouts || []) {
     const ts = workoutTimestamp(workout)
     if (!Number.isFinite(ts) || (latest != null && ts <= latest)) continue
-    const entry = (workout.entries || []).find(e => e.id === exId)
-    if (entry && hasWorkSet(entry)) latest = ts
+    const trained = (workout.entries || []).some(e => e.id === exId && hasWorkSet(e))
+    if (trained) latest = ts
   }
   return latest
 }
