@@ -17,7 +17,7 @@ import { startFlow, exercisePicker, exConfigSheet, exerciseDetailSheet, topWeigh
 import Icon from '../components/Icon.jsx'
 import { Button, Check, NumberField } from '../components/ui.jsx'
 import { glyphOf } from '../lib/glyphs.js'
-import { isWarmupRow } from '../lib/workout-model.js'
+import { isWarmupRow, isPerformed } from '../lib/workout-model.js'
 
 /* ---------- start chooser (no active workout) ---------- */
 function StartChooser() {
@@ -224,7 +224,7 @@ function ActiveWorkout() {
   const confirmRemoveExercise = idx => {
     const e = A.entries[idx]
     if (!e) return
-    const hasDone = (e.sets || []).some(s => s.done)
+    const hasDone = (e.sets || []).some(isPerformed)
     confirmSheet({
       title: t('Remove {0}?', exOr(e.id).n),
       message: hasDone

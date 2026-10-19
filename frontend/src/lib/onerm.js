@@ -1,4 +1,4 @@
-import { isWarmupRow } from './workout-model.js'
+import { doneWorkSets } from './workout-model.js'
 import { workoutTimestamp } from './format.js'
 // Estimated one-rep maximum (1RM) calculation and progression tracking.
 //
@@ -60,8 +60,7 @@ export function estimate1RM(w, r, formula = DEFAULT_FORMULA) {
  */
 export function bestSetOf(entry, formula = DEFAULT_FORMULA) {
   let best = null
-  for (const s of entry?.sets || []) {
-    if (!s.done || isWarmupRow(s)) continue
+  for (const s of doneWorkSets(entry)) {
     const est = estimate1RM(s.w, s.r, formula)
     if (est !== null && (!best || est > best.est)) best = { est, w: Number(s.w), r: Math.round(Number(s.r)) }
   }

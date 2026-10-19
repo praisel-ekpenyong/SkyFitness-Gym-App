@@ -11,7 +11,7 @@ import { STRENGTH_FULL_MS, STRENGTH_HALF_LIFE_MS, STRENGTH_FLOOR, halfLifeDecay 
 import { musclesOf } from './muscles.js'
 import { workoutTimestamp } from './format.js'
 import { EXIDX } from './exercises.js'
-import { isWarmupRow } from './workout-model.js'
+import { doneWorkSets } from './workout-model.js'
 
 /**
  * Round a 1RM display value to one decimal place.
@@ -37,7 +37,7 @@ function lastWorkSetAt(S, id) {
     if (!Number.isFinite(ts) || ts <= latest) continue
     const entry = (workout.entries || []).find(e => e.id === id)
     if (!entry) continue
-    if ((entry.sets || []).some(s => s.done === true && !isWarmupRow(s))) latest = ts
+    if (doneWorkSets(entry).length > 0) latest = ts
   }
   return Number.isFinite(latest) ? latest : null
 }
