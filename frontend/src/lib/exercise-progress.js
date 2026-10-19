@@ -113,17 +113,17 @@ export function weeksSinceTraining(now, lastTrained) {
  * stimulus. Exercise identity is the entry id alone, so imported rows without a
  * name snapshot still count.
  *
- * @param {Object} S - Application state atom containing `workouts`.
+ * @param {Array<Object>} workouts - Workout history with `start`/`d` and entry set arrays.
  * @param {string} exId - Exercise identifier.
  * @returns {number|null} Latest workout timestamp in milliseconds, or null when the exercise was never trained.
  */
-export function lastWorkSetAt(S, exId) {
+export function lastWorkSetAt(workouts, exId) {
   let latest = null
-  for (const workout of S?.workouts || []) {
+  for (const workout of workouts || []) {
     const ts = workoutTimestamp(workout)
     if (!Number.isFinite(ts) || (latest != null && ts <= latest)) continue
-    const entry = (workout.entries || []).find(e => e.id === exId)
-    if (entry && hasWorkSet(entry)) latest = ts
+    const trained = (workout.entries || []).some(e => e.id === exId && hasWorkSet(e))
+    if (trained) latest = ts
   }
   return latest
 }

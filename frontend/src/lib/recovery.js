@@ -1,6 +1,6 @@
 import { exerciseFor } from './exercises.js'
 import { MUSCLES, muscleWeightsOf, lastTrainedByMuscle } from './muscles.js'
-import { isWorkSet, isPerformed, hasWorkSet } from './workout-model.js'
+import { isWorkSet, isPerformed } from './workout-model.js'
 import { workoutTimestamp } from './format.js'
 import { LB_TO_KG } from './bodyweight.js'
 
@@ -343,7 +343,7 @@ function fatigueValue(events, now) {
 /**
  * Calculate current per-muscle fatigue from completed sets in the recent window.
  *
- * Stimulus time is `workout.start`, falling back to the workout date `workout.d`. Each completed
+ * Stimulus time is `workout.start`, falling back to the workout date `workout.d`. Each performed
  * set contributes the exercise's `muscleWeightsOf` weights; the scan is bounded to FATIGUE_SCAN_MS for
  * performance, not semantics. Stimuli are accumulated chronologically with a 36-hour half-life,
  * decayed to `now`, and normalised with the saturation curve 1 - exp(-v). Each session is scored
