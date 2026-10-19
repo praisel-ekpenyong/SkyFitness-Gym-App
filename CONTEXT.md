@@ -103,6 +103,10 @@ One exercise within a routine or a workout; holds its sets.
 **Set**:
 One performance of an exercise — weight × reps, held seconds, or minutes × speed — plus whether it was performed (checked off). An unchecked set counts as not having happened, everywhere. In UI presentation components and row manipulation helpers (`insertWarmupRow`, `removeRowAt`), a set on screen is referred to as a **Row**.
 
+**Performed**:
+A set that was checked off; an unchecked set counts as not having happened, everywhere. The flag is spelled `done` in code.
+_Avoid_: ticked (fine in UI copy, not as the term); completed (that word belongs to Hit/Miss judgement)
+
 **Work set**:
 Any set that is not a warm-up. All metrics, judgements and policies read work sets only.
 
