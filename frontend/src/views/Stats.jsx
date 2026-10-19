@@ -10,7 +10,7 @@ import LineChart from '../components/LineChart.jsx'
 import Heatmap from '../components/Heatmap.jsx'
 import Icon from '../components/Icon.jsx'
 import BodyMap, { BodyMapLegend } from '../components/BodyMap.jsx'
-import { loadOfWorkouts, rankOf, MUSCLE_NAME, musclesOf } from '../lib/muscles.js'
+import { loadOfWorkouts, rankOf, MUSCLE_NAME, lastTrainedByMuscle } from '../lib/muscles.js'
 import { fatigueOf, strengthOf, STRENGTH_FLOOR, fatigueStateOf } from '../lib/recovery.js'
 import { latestWeighIn, currentBodyweightKg, deltaTowardGoal } from '../lib/bodyweight.js'
 import { FATIGUE_LEVELS } from '../lib/recovery-view.js'
@@ -21,28 +21,9 @@ import {
   effortHistogram, isHardSet, HARD_RIR, effortOf
 } from '../lib/effort.js'
 import { Button, Segmented, SelectRow } from '../components/ui.jsx'
-import { doneWorkSets } from '../lib/workout-model.js'
 import { modeFor as modeForExercise, topSetSeries, currentBest, weeksSinceTraining } from '../lib/exercise-progress.js'
 
 export { FATIGUE_LEVELS }
-
-// Which muscles the training in a window actually hit — and, the point of the card,
-// which ones it keeps missing. Shading is relative within the window (lib/muscles.js).
-function latestMuscleTraining(workouts) {
-  const latest = {}
-  for (const workout of workouts || []) {
-    const timestamp = workoutTimestamp(workout)
-    if (!Number.isFinite(timestamp)) continue
-    for (const entry of workout.entries || []) {
-      if (doneWorkSets(entry).length === 0) continue
-      const exercise = EXIDX[entry.id] || entry.exercise || entry
-      for (const slug of Object.keys(musclesOf(exercise))) {
-        if (latest[slug] == null || timestamp > latest[slug]) latest[slug] = timestamp
-      }
-    }
-  }
-  return latest
-}
 
 export const STRENGTH_LEVELS = [
   { at: STRENGTH_FLOOR, level: 0 },
@@ -109,7 +90,7 @@ function MuscleBalance({ S }) {
   const fatigue = useMemo(() => fatigueOf(workouts, now, { bodyweightKg, unit: S.unit }), [workouts, now, bodyweightKg, S.unit])
   const strength = useMemo(() => strengthOf(workouts, now, { bodyweightKg, unit: S.unit }), [workouts, now, bodyweightKg, S.unit])
   const muscleExercises = useMemo(() => (sel ? strengthExerciseRowsForMuscle(S, now, sel) : []), [S, now, sel])
-  const lastTrained = useMemo(() => latestMuscleTraining(workouts), [workouts])
+  const lastTrained = useMemo(() => lastTrainedByMuscle(workouts), [workouts])
   const strengthHint = slug => {
     if (lastTrained[slug] == null) return t('not trained')
     const weeks = weeksSinceTraining(now, lastTrained[slug])

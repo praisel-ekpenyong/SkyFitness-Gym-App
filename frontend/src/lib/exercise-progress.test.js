@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { modeFor, topSetSeries, currentBest, weeksSinceTraining } from './exercise-progress.js'
+import { modeFor, topSetSeries, currentBest, weeksSinceTraining, lastWorkSetAt } from './exercise-progress.js'
 import { EXDB } from './exercises.js'
 
 // Real ids out of the shipped catalogue, so the catalogue fallback is exercised for real.
@@ -189,5 +189,38 @@ describe('weeksSinceTraining', () => {
 
   it('never goes negative for a timestamp in the future', () => {
     expect(weeksSinceTraining(100 * DAY, 101 * DAY)).toBe(0)
+  })
+})
+
+describe('lastWorkSetAt', () => {
+  const at = d => Date.parse(d + 'T12:00:00Z')
+  const wk = (d, entries) => ({ d, start: at(d), entries })
+
+  it('reads the latest timestamp with a performed work set, ignoring warm-ups and undone rows', () => {
+    const S = {
+      workouts: [
+        wk('2026-01-01', [{ id: LIFT, sets: [{ w: 80, r: 5, done: true }] }]),
+        wk('2026-01-08', [{ id: LIFT, sets: [{ w: 40, r: 5, phase: 'warmup', done: true }] }]),
+        wk('2026-01-15', [{ id: LIFT, sets: [{ w: 85, r: 5, done: false }] }]),
+      ],
+    }
+    expect(lastWorkSetAt(S, LIFT)).toBe(at('2026-01-01'))
+  })
+
+  it('returns null when the exercise was never trained', () => {
+    expect(lastWorkSetAt({ workouts: [] }, LIFT)).toBeNull()
+    expect(lastWorkSetAt({}, LIFT)).toBeNull()
+    const S = { workouts: [wk('2026-01-01', [{ id: LIFT, sets: [{ w: 80, r: 5, done: false }] }])] }
+    expect(lastWorkSetAt(S, LIFT)).toBeNull()
+  })
+
+  it('ignores a later workout that does not include the exercise', () => {
+    const S = {
+      workouts: [
+        wk('2026-01-01', [{ id: LIFT, sets: [{ w: 80, r: 5, done: true }] }]),
+        wk('2026-01-20', [{ id: CARDIO, sets: [{ sec: 60, done: true }] }]),
+      ],
+    }
+    expect(lastWorkSetAt(S, LIFT)).toBe(at('2026-01-01'))
   })
 })

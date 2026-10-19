@@ -1,6 +1,6 @@
-import { EXIDX } from './exercises.js'
-import { MUSCLES, musclesOf } from './muscles.js'
-import { isWorkSet, isPerformed, doneWorkSets } from './workout-model.js'
+import { exerciseFor } from './exercises.js'
+import { MUSCLES, muscleWeightsOf, lastTrainedByMuscle } from './muscles.js'
+import { isWorkSet, isPerformed, hasWorkSet } from './workout-model.js'
 import { workoutTimestamp } from './format.js'
 import { LB_TO_KG } from './bodyweight.js'
 
@@ -233,7 +233,7 @@ function loadKgFor(ex, entry, set, workout, opts = {}) {
 function session1RMs(workout, opts = {}) {
   const best = new Map()
   for (const entry of workout?.entries || []) {
-    const ex = EXIDX[entry.id]
+    const ex = exerciseFor(entry)
     for (const set of entry.sets || []) {
       const load = loadKgFor(ex, entry, set, workout, opts)
       if (!isPerformed(set) || !isWorkSet(set) || !(load > 0) || !(set.r > 0)) continue
@@ -273,13 +273,14 @@ function sessionTonnages(workout, opts = {}) {
   const sums = emptyMuscleMap(0)
   const oneRms = session1RMs(workout, opts)
   for (const entry of workout?.entries || []) {
-    const weights = musclesOf(EXIDX[entry.id])
+    const ex = exerciseFor(entry)
+    const weights = muscleWeightsOf(entry)
     for (const set of entry.sets || []) {
       if (!isPerformed(set) || !isWorkSet(set)) continue
-      const measured = setTonnage(EXIDX[entry.id], entry, set, workout, oneRms.get(entry.id), opts)
+      const measured = setTonnage(ex, entry, set, workout, oneRms.get(entry.id), opts)
       const tonnage = Number.isFinite(measured) && measured > 0 ? measured : ZERO_LOAD_SET_STIMULUS
       for (const [slug, weight] of Object.entries(weights)) {
-        if (Object.prototype.hasOwnProperty.call(MUSCLES_BY_SLUG, slug)) sums[slug] += tonnage * weight
+        sums[slug] += tonnage * weight
       }
     }
   }
@@ -313,8 +314,6 @@ function fatigueStimuli(workouts, current, opts = {}) {
   return byMuscle
 }
 
-const MUSCLES_BY_SLUG = Object.fromEntries(MUSCLES.map(slug => [slug, true]))
-
 /**
  * Accumulate decayed stimulus events into a saturating fatigue level.
  *
@@ -345,7 +344,7 @@ function fatigueValue(events, now) {
  * Calculate current per-muscle fatigue from completed sets in the recent window.
  *
  * Stimulus time is `workout.start`, falling back to the workout date `workout.d`. Each completed
- * set contributes the exercise's `musclesOf` weights; the scan is bounded to FATIGUE_SCAN_MS for
+ * set contributes the exercise's `muscleWeightsOf` weights; the scan is bounded to FATIGUE_SCAN_MS for
  * performance, not semantics. Stimuli are accumulated chronologically with a 36-hour half-life,
  * decayed to `now`, and normalised with the saturation curve 1 - exp(-v). Each session is scored
  * against a causal, downward-only EWMA left by strictly earlier in-window sessions. Session-local
@@ -381,19 +380,7 @@ export function fatigueOf(workouts, now, opts = {}) {
  */
 export function strengthOf(workouts, now, opts = {}) {
   const current = Number(now)
-  const latest = Object.fromEntries(MUSCLES.map(slug => [slug, -Infinity]))
-  for (const workout of workouts || []) {
-    const timestamp = workoutTimestamp(workout)
-    if (!Number.isFinite(timestamp)) continue
-    for (const entry of workout.entries || []) {
-      if (doneWorkSets(entry).length === 0) continue
-      for (const slug of Object.keys(musclesOf(EXIDX[entry.id]))) {
-        if (Object.prototype.hasOwnProperty.call(MUSCLES_BY_SLUG, slug) && timestamp > latest[slug]) {
-          latest[slug] = timestamp
-        }
-      }
-    }
-  }
+  const latest = lastTrainedByMuscle(workouts)
 
   const result = emptyMuscleMap(STRENGTH_FLOOR)
   if (!Number.isFinite(current)) return result

@@ -7,7 +7,7 @@
 // fixed in the view stayed broken everywhere else, and none of it was testable
 // without the DOM. The view now renders from this seam; the pipeline is tested
 // in Node.
-import { modeOf, metricModeForEntry, metricRowsForEntry, bestWeightForEntry } from './workout-model.js'
+import { modeOf, metricModeForEntry, metricRowsForEntry, bestWeightForEntry, hasWorkSet } from './workout-model.js'
 import { workoutTimestamp } from './format.js'
 
 /** Unit a headline number reads in: loads in the profile unit, holds in seconds, cardio in km/h. */
@@ -104,4 +104,26 @@ export function currentBest(S, exId) {
  */
 export function weeksSinceTraining(now, lastTrained) {
   return Math.max(0, Math.floor((now - lastTrained) / 86400000 / 7))
+}
+
+/**
+ * Timestamp of an exercise's latest performed work set across history.
+ *
+ * The retained-strength model reads effective work: warm-up rows are prep, not
+ * stimulus. Exercise identity is the entry id alone, so imported rows without a
+ * name snapshot still count.
+ *
+ * @param {Object} S - Application state atom containing `workouts`.
+ * @param {string} exId - Exercise identifier.
+ * @returns {number|null} Latest workout timestamp in milliseconds, or null when the exercise was never trained.
+ */
+export function lastWorkSetAt(S, exId) {
+  let latest = null
+  for (const workout of S?.workouts || []) {
+    const ts = workoutTimestamp(workout)
+    if (!Number.isFinite(ts) || (latest != null && ts <= latest)) continue
+    const entry = (workout.entries || []).find(e => e.id === exId)
+    if (entry && hasWorkSet(entry)) latest = ts
+  }
+  return latest
 }
