@@ -464,6 +464,12 @@ describe('muscleWeightsOf and lastTrainedByMuscle', () => {
     expect(muscleWeightsOf({ id: 'c-live', muscleSnapshot: { muscleWeights: { chest: 1 } } })).toEqual({ biceps: 1 })
     // The entry's own stamped weights beat the catalogue.
     expect(muscleWeightsOf({ id: 'c-live', muscleWeights: { triceps: 1 } })).toEqual({ triceps: 1 })
+    // Own logged weights beat a nested snapshot too; the snapshot is only the fallback copy.
+    expect(muscleWeightsOf({
+      id: 'c-gone',
+      muscleWeights: { triceps: 1 },
+      muscleSnapshot: { muscleWeights: { chest: 1 } },
+    })).toEqual({ triceps: 1 })
     // A deleted custom keeps its logged snapshot.
     expect(muscleWeightsOf({ id: 'c-gone', muscleSnapshot: { muscleWeights: { chest: 1 } } })).toEqual({ chest: 1 })
     // Nothing readable reads as no muscles.
@@ -481,6 +487,18 @@ describe('muscleWeightsOf and lastTrainedByMuscle', () => {
     expect(map).toEqual({ biceps: at('2026-02-01') })
     expect(lastTrainedByMuscle([])).toEqual({})
     expect(lastTrainedByMuscle(undefined)).toEqual({})
+  })
+
+  it('counts performed bodyweight and timed rows with no load as trained', () => {
+    registerCustom([
+      { id: 'c-bw', n: 'Push-up', tg: 'chest' },
+      { id: 'c-timed', n: 'Plank', tg: 'abs' },
+    ])
+    const map = lastTrainedByMuscle([
+      wk('2026-03-01', [{ id: 'c-bw', sets: [{ done: true, r: 12 }] }]),
+      wk('2026-03-02', [{ id: 'c-timed', sets: [{ done: true, sec: 60 }] }]),
+    ])
+    expect(map).toEqual({ chest: at('2026-03-01'), abs: at('2026-03-02') })
   })
 
   it('counts a deleted custom through its snapshot instead of dropping the entry', () => {

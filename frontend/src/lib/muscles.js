@@ -361,7 +361,9 @@ export function matchesMuscleGroups(ex, requested) {
 /** Muscles one exercise trains: { slug: 0…1 }. Duplicate metadata never adds load twice. */
 export function musclesOf(ex) {
   if (!ex) return {}
-  const sourceEx = metadataOf(ex)
+  // Own weights (or direct/legacy fields) are authoritative even when a nested
+  // `muscleSnapshot` is present; only unwrap the snapshot when the entry has nothing of its own.
+  const sourceEx = hasOwnMuscleMeta(ex) ? ex : metadataOf(ex)
   if (sourceEx !== ex) return musclesOf(sourceEx)
   if (ex.muscleWeights && typeof ex.muscleWeights === 'object' && !Array.isArray(ex.muscleWeights)) {
     const snapshot = {}
@@ -450,7 +452,7 @@ export const loadOfActive = active =>
 /**
  * Latest performed-work-set timestamp per muscle across history.
  *
- * Reads the same weights and the same filled work-set rule as the maps, so an untrained
+ * Reads the same weights and the same performed work-set rule as the maps, so an untrained
  * muscle is simply absent and a deleted custom still counts through its snapshot.
  *
  * @param {Array<Object>} workouts - Workout history with `start`/`d` and entry set arrays.
