@@ -251,6 +251,36 @@ export function buildSets(S, cfg, options = {}) {
 }
 
 /**
+ * Whether a row is a work set — the phase reading, complement of `isWarmupRow`.
+ *
+ * CONTEXT.md: Work set — any set that is not a warm-up; all metrics, judgements
+ * and policies read work sets only. A missing or unrecognised phase reads as
+ * work (the `phaseForSet` contract), so the predicate is for real rows.
+ *
+ * @param {Object|null|undefined} set - Set/row object.
+ * @returns {boolean} True when the row is a work set.
+ */
+export const isWorkSet = set => !isWarmupRow(set)
+
+/**
+ * Whether a set was performed (checked off).
+ *
+ * CONTEXT.md: Performed — an unchecked set counts as not having happened,
+ * everywhere. Read as truthy: production writes booleans, and a hand-edited
+ * `done: 1` counts rather than silently disappearing from the strict readers.
+ *
+ * @param {Object|null|undefined} set - Set/row object.
+ * @returns {boolean} True when the set was checked off.
+ */
+export const isPerformed = set => !!set?.done
+
+/** The work sets of an entry, performed or not (the phase-only list). */
+export const workSets = entry => (entry?.sets || []).filter(isWorkSet)
+
+/** The performed work sets of an entry — the list metrics read. */
+export const doneWorkSets = entry => workSets(entry).filter(isPerformed)
+
+/**
  * Total weight-times-reps across completed work sets in a workout.
  *
  * @param {Object|null|undefined} w - Workout with an entries array of set rows; nullish yields 0.

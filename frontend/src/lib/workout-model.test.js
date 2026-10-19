@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { bestKnownWeight } from './active-workout.js'
-import { modeOf, isTimed, defaultConfig, buildSets, freestyleConfig, workoutVolume, bestWeightForEntry, isBw, isPerSide, sideReps, repStep, cascadeWeight, insertWarmupRow, removeRowAt, workSetsDone, hasWork, isExerciseDone, sessionProgress } from './workout-model.js'
+import { modeOf, isTimed, defaultConfig, buildSets, freestyleConfig, workoutVolume, bestWeightForEntry, isBw, isPerSide, sideReps, repStep, cascadeWeight, insertWarmupRow, removeRowAt, workSetsDone, isWorkSet, isPerformed, workSets, doneWorkSets, hasWork, isExerciseDone, sessionProgress } from './workout-model.js'
 import { fmtSec, setLabel, exLine } from './format.js'
 import { effortOf, stepEffort, capEffort } from './effort.js'
 import { pairAdjacent, unpairSuperset, supersetUnits } from './supersetFlow.js'
@@ -523,6 +523,35 @@ describe('workoutVolume', () => {
 
     expect(bestWeightForEntry(prior)).toBe(20)
     expect(repeatedWeight > bestKnownWeight(state, LIFT)).toBe(false)
+  })
+})
+
+describe('the work-set readings — one home for phase and performed', () => {
+  it('isWorkSet reads the phase: both warm-up schemas excluded, a missing phase reads as work', () => {
+    expect(isWorkSet({ phase: 'warmup' })).toBe(false)
+    expect(isWorkSet({ warmup: true })).toBe(false)
+    expect(isWorkSet({ phase: 'work' })).toBe(true)
+    expect(isWorkSet({})).toBe(true)
+  })
+
+  it('isPerformed is truthy: a hand-edited done: 1 counts, false/0/absent do not', () => {
+    expect(isPerformed({ done: true })).toBe(true)
+    expect(isPerformed({ done: 1 })).toBe(true)
+    expect(isPerformed({ done: false })).toBe(false)
+    expect(isPerformed({ done: 0 })).toBe(false)
+    expect(isPerformed({})).toBe(false)
+  })
+
+  it('workSets keeps unticked work rows and drops warm-ups; doneWorkSets keeps performed work rows only', () => {
+    const entry = { sets: [
+      { w: 20, done: true, phase: 'warmup' },
+      { w: 60, done: false },
+      { w: 80, done: true, phase: 'work' },
+    ] }
+    expect(workSets(entry).map(s => s.w)).toEqual([60, 80])
+    expect(doneWorkSets(entry).map(s => s.w)).toEqual([80])
+    expect(workSets(null)).toEqual([])
+    expect(doneWorkSets(undefined)).toEqual([])
   })
 })
 
