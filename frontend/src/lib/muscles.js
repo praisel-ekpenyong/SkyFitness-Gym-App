@@ -452,7 +452,7 @@ export const loadOfActive = active =>
 /**
  * Latest performed-work-set timestamp per muscle across history.
  *
- * Reads the same weights and the same filled work-set rule as the maps, so an untrained
+ * Reads the same weights and the same performed work-set rule as the maps, so an untrained
  * muscle is simply absent and a deleted custom still counts through its snapshot.
  *
  * @param {Array<Object>} workouts - Workout history with `start`/`d` and entry set arrays.
