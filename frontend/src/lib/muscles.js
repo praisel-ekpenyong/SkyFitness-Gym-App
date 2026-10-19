@@ -7,8 +7,9 @@
 // map can actually draw, via ALIAS below. Anything genuinely undrawable (hands,
 // ankles, "cardiovascular system") maps to null and is dropped rather than guessed at.
 
-import { isWarmupRow } from './workout-model.js'
-import { EXIDX, smOf, isCardio } from './exercises.js'
+import { doneWorkSets, hasWorkSet } from './workout-model.js'
+import { EXIDX, smOf, isCardio, exerciseFor } from './exercises.js'
+import { workoutTimestamp } from './format.js'
 
 // The muscles a map can shade, in head-to-toe order — also the order of any list
 // built from them, so "what am I neglecting" reads top-down like a body.
@@ -104,16 +105,44 @@ const SECONDARY = 0.4   // a supporting muscle counts this much against a primar
  */
 const arrayOf = value => Array.isArray(value) ? value : value == null || value === '' ? [] : [value]
 
+// Direct (or legacy single-field) muscle metadata stamped on the outer object itself.
+const hasDirectMuscleMeta = ex => !!ex && typeof ex === 'object' && (
+  ['muscleGroups', 'muscles', 'targetMuscles'].some(key => Object.prototype.hasOwnProperty.call(ex, key))
+  || [ex.tg, ex.mg, ...arrayOf(ex.sm)].some(value => value != null && value !== '')
+)
+
 // Completed history entries may retain a nested snapshot after their custom exercise is
 // deleted from the profile catalogue. Prefer that snapshot when the outer entry has no muscle
 // metadata of its own, while keeping direct/legacy entry fields authoritative when present.
 function metadataOf(ex) {
   if (!ex || typeof ex !== 'object') return ex
-  const hasDirect = ['muscleGroups', 'muscles', 'targetMuscles'].some(key => Object.prototype.hasOwnProperty.call(ex, key))
-    || [ex.tg, ex.mg, ...arrayOf(ex.sm)].some(value => value != null && value !== '')
-  return !hasDirect && ex.muscleSnapshot && typeof ex.muscleSnapshot === 'object' && !Array.isArray(ex.muscleSnapshot)
+  return !hasDirectMuscleMeta(ex) && ex.muscleSnapshot && typeof ex.muscleSnapshot === 'object' && !Array.isArray(ex.muscleSnapshot)
     ? ex.muscleSnapshot
     : ex
+}
+
+// Muscle metadata the entry owns itself — direct/legacy fields or logged weights — as opposed
+// to a nested `muscleSnapshot`, which is only the entry's last-resort copy of it.
+const hasOwnMuscleMeta = ex =>
+  hasDirectMuscleMeta(ex) || (!!ex && typeof ex === 'object' && ex.muscleWeights
+    && typeof ex.muscleWeights === 'object' && !Array.isArray(ex.muscleWeights)
+    && Object.keys(ex.muscleWeights).length > 0)
+
+/**
+ * Muscle weights one logged entry trains: the entry's own metadata when present, else the
+ * live catalogue, else the entry itself with its nested `muscleSnapshot` unwrapped.
+ *
+ * The one precedence every muscle surface reads — body map, fatigue, strength, exercise
+ * rows — so a deleted custom keeps counting through its snapshot and a live one reads its
+ * current catalogue metadata.
+ *
+ * @param {Object|null|undefined} entry - Workout entry with id and/or embedded exercise or snapshot.
+ * @returns {Record<string, number>} Muscle weights by slug, { slug: 0…1 }.
+ */
+export function muscleWeightsOf(entry) {
+  const source = entry && typeof entry === 'object' ? entry : null
+  if (!source) return {}
+  return hasOwnMuscleMeta(source) ? musclesOf(source) : musclesOf(exerciseFor(source))
 }
 
 /**
@@ -384,18 +413,17 @@ export function exerciseMuscleSnapshot(ex) {
 
 /**
  * Training load per muscle, in "effective sets".
- * `items` is [{ id, sets }] — sets being a count, so a 4×8 bench press weighs four
+ * `items` is [{ ex, sets }] — `ex` the entry or exercise whose weights are read via
+ * {@link muscleWeightsOf}, `sets` a count, so a 4×8 bench press weighs four
  * times a single set. Volume in kg is deliberately not used: 100 kg of leg press
  * against 12 kg of lateral raise says nothing about which muscle worked harder.
  */
 export function loadOf(items) {
   const load = {}
   items.forEach(item => {
-    const { id, sets } = item || {}
+    const { sets } = item || {}
     if (!sets) return
-    const historical = item.ex || item.exercise
-    const source = historical?.muscleWeights ? historical : (EXIDX[id] || historical || item)
-    const m = musclesOf(source)
+    const m = muscleWeightsOf(item.ex || item)
     for (const slug in m) load[slug] = (load[slug] || 0) + m[slug] * sets
   })
   return load
@@ -409,7 +437,7 @@ export function loadOf(items) {
  */
 export const loadOfWorkouts = (workouts, pick) =>
   loadOf((workouts || []).flatMap(w =>
-    (w.entries || []).map(e => ({ id: e.id, ex: e.exercise || e, sets: (e.sets || []).filter(s => s.done && !isWarmupRow(s) && (!pick || pick(s))).length }))))
+    (w.entries || []).map(e => ({ id: e.id, ex: e, sets: doneWorkSets(e).filter(s => !pick || pick(s)).length }))))
 
 /** Load a routine *would* produce, from its planned set counts. */
 export const loadOfRoutine = routine =>
@@ -417,7 +445,31 @@ export const loadOfRoutine = routine =>
 
 /** Load for a workout still in progress — the sets ticked so far. */
 export const loadOfActive = active =>
-  loadOf((active?.entries || []).map(e => ({ id: e.id, ex: e.exercise || e, sets: (e.sets || []).filter(s => s.done && !isWarmupRow(s)).length })))
+  loadOf((active?.entries || []).map(e => ({ id: e.id, ex: e, sets: doneWorkSets(e).length })))
+
+/**
+ * Latest performed-work-set timestamp per muscle across history.
+ *
+ * Reads the same weights and the same filled work-set rule as the maps, so an untrained
+ * muscle is simply absent and a deleted custom still counts through its snapshot.
+ *
+ * @param {Array<Object>} workouts - Workout history with `start`/`d` and entry set arrays.
+ * @returns {Record<string, number>} Latest timestamp in milliseconds by trained muscle slug.
+ */
+export function lastTrainedByMuscle(workouts) {
+  const latest = {}
+  for (const workout of workouts || []) {
+    const timestamp = workoutTimestamp(workout)
+    if (!Number.isFinite(timestamp)) continue
+    for (const entry of workout.entries || []) {
+      if (!hasWorkSet(entry)) continue
+      for (const slug of Object.keys(muscleWeightsOf(entry))) {
+        if (latest[slug] == null || timestamp > latest[slug]) latest[slug] = timestamp
+      }
+    }
+  }
+  return latest
+}
 
 /**
  * Shade buckets 0–4 per muscle.

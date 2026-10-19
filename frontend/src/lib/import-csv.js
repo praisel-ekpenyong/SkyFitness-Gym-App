@@ -20,7 +20,7 @@
 
 import { EXDB, EXIDX } from './exercises.js'
 import { uid } from './format.js'
-import { isWarmupRow } from './workout-model.js'
+import { isWorkSet } from './workout-model.js'
 import { heaviestForEntry, mergeExWeight } from './active-workout.js'
 import { LB_TO_KG, mergeWeighIns, weighInsPreview } from './bodyweight.js'
 
@@ -469,7 +469,7 @@ export function parseWorkoutCSV(text, { unit = 'kg' } = {}) {
     const day = byDate.get(d)
     const entries = [...day.ex.entries()].map(([id, ss]) => {
       const conv2 = ss.map(({ u, ...s }) => (s.w !== undefined ? { ...s, w: convRow({ ...s, u }) } : s))
-      const mx = Math.max(0, ...conv2.filter(s => !isWarmupRow(s)).map(s => s.w || 0))
+      const mx = Math.max(0, ...conv2.filter(isWorkSet).map(s => s.w || 0))
       return { id, sets: conv2, topW: mx || null }
     })
     const base = new Date(d + 'T00:00:00').getTime()

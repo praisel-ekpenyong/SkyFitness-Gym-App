@@ -11,7 +11,7 @@ import { localTZ } from '../lib/format.js'
 import { registerCustom } from '../lib/exercises.js'
 import { MOBILE, syncReminder } from '../lib/mobile.js'
 import { flush, load, loadLocal, save, LOCAL_KEY, onStorageSync } from '../lib/storage.js'
-import { setsDoneActive } from '../lib/workout-model.js'
+import { setsDone } from '../lib/workout-model.js'
 import {
   createActiveSession, applyWorkingWeight, commitWorkingWeight, completeActiveSession,
   addActiveExercise, removeActiveExercise, toggleActiveSet,
@@ -199,7 +199,7 @@ export const useStore = create((set, get) => {
       // A session with logged sets is never silently replaced: refuse (null)
       // and the in-progress session survives instead of losing its sets.
       const current = get().S.active
-      if (current && setsDoneActive(current) > 0) return null
+      if (current && setsDone(current) > 0) return null
       const active = createActiveSession(get().S, routineId, bw)
       get().update(s => { s.active = active })
       return active

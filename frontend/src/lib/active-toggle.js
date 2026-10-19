@@ -5,7 +5,7 @@
 // intent, and the weight-commit follow-up. Session construction lives in
 // active-session.js, set surgery in active-sets.js, finishing in
 // active-finish.js.
-import { modeOf, isBw, isWarmupRow, hasWork, isExerciseDone } from './workout-model.js'
+import { modeOf, isBw, isWorkSet, doneWorkSets, hasWork, isExerciseDone } from './workout-model.js'
 import {
   supersetUnits, unitOf,
   setProgressHighWater, supersetFlowStep
@@ -117,7 +117,7 @@ export function toggleActiveSet(S, entryIdx, setIdx) {
   // created before this seam owned progress carry no `hw`, so seed from the
   // pre-flip Work-set count (the old mount baseline). Splicing entries keeps
   // each mark with its Entry, so removal can no longer shift marks.
-  const preFlipDone = entry.sets.reduce((n, s) => n + (s.done && !isWarmupRow(s) ? 1 : 0), 0)
+  const preFlipDone = doneWorkSets(entry).length
   const seededHw = typeof entry.hw === 'number' ? entry.hw : preFlipDone
   set.done = !set.done
   const checked = set.done
@@ -147,7 +147,7 @@ export function toggleActiveSet(S, entryIdx, setIdx) {
     // The completion consequences — top-weight prompt, "logged" notices — are for
     // work finishing, never for ticking prep: an entry left with no work rows has
     // no top set to crown and nothing completed to announce (CONTEXT.md: Warm-up set).
-    const hasWorkRows = entry.sets.some(s => !isWarmupRow(s))
+    const hasWorkRows = entry.sets.some(isWorkSet)
     if (isExerciseDone(entry) && hasWorkRows) {
       exJustDone = true
       // Prompt at most once per Entry: an uncheck/re-check of the final set must
