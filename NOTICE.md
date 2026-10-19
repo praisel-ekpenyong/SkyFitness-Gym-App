@@ -34,6 +34,27 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
+## Landing page photography
+
+The landing page (`landing/index.html`) uses four photographs from Wikimedia Commons.
+They are not covered by Sky's MIT license. Each is credited in the page footer and in
+[`assets/credits.json`](assets/credits.json).
+
+- **"Close-up Hand holding dumbbell in gym"** by Nenad Stojkovic,
+  [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/), via
+  [Wikimedia Commons](https://commons.wikimedia.org/w/index.php?curid=116285193).
+- **"Young man lifting dumbbell weight for exercise in fitness gym"** by Nenad Stojkovic,
+  [CC BY 2.0](https://creativecommons.org/licenses/by/2.0), via
+  [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Young_man_lifting_dumbbell_weight_for_exercise_in_fitness_gym.jpg).
+- **"Aluminium Dumbbell"** by Designproduct,
+  [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0), via
+  [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Aluminium_Dumbbell.jpg).
+  Altered versions must be shared under the same license.
+- **"Colorful dumbbells of various sizes"** by Ser Amantio di Nicolao,
+  [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0), via
+  [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Colorful_dumbbells_of_various_sizes.jpg).
+  Altered versions must be shared under the same license.
+
 ## Exercise data & media
 
 Sky obtains both through
