@@ -219,4 +219,14 @@ describe('lastWorkSetAt', () => {
     ]
     expect(lastWorkSetAt(workouts, LIFT)).toBe(at('2026-01-01'))
   })
+
+  it('counts a workout when a duplicate entry carries the performed work set', () => {
+    const workouts = [
+      wk('2026-01-01', [
+        { id: LIFT, sets: [{ w: 80, r: 5, done: false }] },
+        { id: LIFT, sets: [{ w: 80, r: 5, done: true }] },
+      ]),
+    ]
+    expect(lastWorkSetAt(workouts, LIFT)).toBe(at('2026-01-01'))
+  })
 })
