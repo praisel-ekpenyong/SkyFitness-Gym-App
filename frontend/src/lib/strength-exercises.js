@@ -84,7 +84,7 @@ export function strengthExerciseRows(S, now) {
     const best = best1RM(S, id)
     if (!best) continue
     const entry = firstEntryWithId(S, id)
-    const lastAt = lastWorkSetAt(S, id)
+    const lastAt = lastWorkSetAt(S?.workouts, id)
     const decay = lastAt == null ? STRENGTH_FLOOR : strengthFromAge(Number(now) - lastAt)
     rows.push({
       id,
@@ -115,7 +115,7 @@ export function strengthExerciseRowsForMuscle(S, now, slug) {
       if (!weight) continue
       const best = best1RM(S, entry.id)
       if (!best) continue
-      const lastAt = lastWorkSetAt(S, entry.id)
+      const lastAt = lastWorkSetAt(S?.workouts, entry.id)
       const decay = lastAt == null ? STRENGTH_FLOOR : strengthFromAge(Number(now) - lastAt)
       const primary = primaryMuscleOf(entry)
       seen.set(entry.id, {
