@@ -9,6 +9,10 @@ is capped at 24 characters, lives inside the ordinary state snapshot (so JSON ex
 older backups pick it up through the default merge), and stays null until you set it — nobody is
 asked who they are.
 
+### History reads
+
+- 🏆 **Best has one reading.** The exercise detail's Best now counts logged workouts and the stored working weight together, the same rule the session screen already follows — it could previously show a lower Best than the weight you had confirmed.
+
 ### Profile display name
 
 - 👋 **Home greets you by name.** The header swaps "Sky" for "Hi, {name}", falling back to

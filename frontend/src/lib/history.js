@@ -1,28 +1,10 @@
-// History (CONTEXT.md: Workout "a finished, dated training session in history"):
-// reads over the workout log and the history write side. Row/set helpers, effort
+// History: the schedule and streak reads every Home/Calendar/hero consumer
+// shares, plus the history write side (deleteWorkout). Row/set helpers, effort
 // scales, superset pairing and labels live in their canonical modules —
 // workout-model.js, effort.js, supersetFlow.js and format.js — and are no
 // longer re-routed through here.
 
 import { weekKey, isoOf } from './format.js'
-import { bestWeightForEntry } from './workout-model.js'
-
-/**
- * Find the highest completed set load for an exercise across all logged workouts.
- *
- * Evaluates completed work sets via `bestWeightForEntry`.
- *
- * @param {Object} S - Application state atom containing `workouts`.
- * @param {string} exId - Exercise identifier from EXIDX.
- * @returns {number} Heaviest completed load in logged units, or 0 if none.
- */
-export function bestWeightFor(S, exId) {
-  let best = 0
-  ;(S?.workouts || []).forEach(w => (w.entries || []).forEach(e => {
-    if (e.id === exId) best = Math.max(best, bestWeightForEntry(e))
-  }))
-  return best
-}
 
 /**
  * Delete one Workout from history for good (the workout-detail confirm path).

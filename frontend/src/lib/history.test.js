@@ -1,30 +1,10 @@
-// History's own seam: history reads (best load for an exercise, the schedule
-// reads every Home/Calendar/Hero consumer share) and the history write side
-// (deleteWorkout). The barrel-era copy of this file duplicated
+// History's own seam: the schedule reads every Home/Calendar/Hero consumer
+// shares, and the history write side (deleteWorkout). The barrel-era copy of this
+// file duplicated
 // workout-model.test.js line for line and was retired; effort, row, label and
 // superset coverage lives at its canonical modules.
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { bestWeightFor, deleteWorkout, effectiveRoutineId, hasEffectiveOverride, effectiveRoutine, streakWeeks } from './history.js'
-
-describe('bestWeightFor', () => {
-  it('reads the heaviest completed work load across the whole log', () => {
-    const S = { workouts: [
-      { entries: [{ id: '0025', sets: [{ w: 60, r: 8, done: true }] }] },
-      { entries: [{ id: '0025', sets: [{ w: 80, r: 5, done: true }, { w: 85, r: 3, done: false }] }] }
-    ] }
-    expect(bestWeightFor(S, '0025')).toBe(80)
-  })
-
-  it('never promotes a warm-up to the best (CONTEXT.md: work sets only)', () => {
-    expect(bestWeightFor({ workouts: [{ entries: [{ id: '0025', topW: 120, sets: [
-      { phase: 'warmup', done: true, w: 120 },
-      { phase: 'work', done: true, w: 80 },
-    ] }] }] }, '0025')).toBe(80)
-    expect(bestWeightFor({ workouts: [{ entries: [{ id: '0025', topW: 120, sets: [
-      { phase: 'warmup', done: true, w: 120 },
-    ] }] }] }, '0025')).toBe(0)
-  })
-})
+import { deleteWorkout, effectiveRoutineId, hasEffectiveOverride, effectiveRoutine, streakWeeks } from './history.js'
 
 describe('deleteWorkout — the history write seam', () => {
   const S = () => ({
