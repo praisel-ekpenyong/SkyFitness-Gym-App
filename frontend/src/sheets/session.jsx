@@ -3,7 +3,7 @@ import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { EXIDX } from '../lib/exercises.js'
 import { fmtNum, fmtVol, fmtDur } from '../lib/format.js'
-import { setsDone, workSetsDone, sessionProgress, isWarmupRow } from '../lib/workout-model.js'
+import { setsDone, workSetsDone, sessionProgress, isPerformed, isWarmupRow } from '../lib/workout-model.js'
 import { playWorkoutComplete } from '../lib/sound.js'
 import { t } from '../lib/i18n.js'
 import { nav } from '../lib/nav.js'
@@ -176,7 +176,7 @@ export function finishWorkout() {
   const prog = sessionProgress(A)
   if (!_confirmSheet) throw new Error('session sheets not wired: missing confirmSheet')
   if (!prog.done) {
-    const warmOnly = (A.entries || []).some(e => (e.sets || []).some(s => s.done && isWarmupRow(s)))
+    const warmOnly = (A.entries || []).some(e => (e.sets || []).some(s => isPerformed(s) && isWarmupRow(s)))
     _confirmSheet(warmOnly
       ? { title: t('Only warm-ups logged so far'), message: t('Only warm-up sets are ticked — finish the workout anyway?'), confirmText: t('Finish anyway'), onConfirm: doFinishWorkout }
       : { title: t('Nothing logged yet'), message: t('You haven’t checked off any sets. Finish the workout anyway?'), confirmText: t('Finish anyway'), onConfirm: doFinishWorkout })

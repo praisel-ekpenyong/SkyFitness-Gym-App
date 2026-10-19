@@ -1,6 +1,6 @@
 import { EXIDX } from './exercises.js'
 import { MUSCLES, musclesOf } from './muscles.js'
-import { isWarmupRow } from './workout-model.js'
+import { isWorkSet, isPerformed, doneWorkSets } from './workout-model.js'
 import { workoutTimestamp } from './format.js'
 import { LB_TO_KG } from './bodyweight.js'
 
@@ -236,7 +236,7 @@ function session1RMs(workout, opts = {}) {
     const ex = EXIDX[entry.id]
     for (const set of entry.sets || []) {
       const load = loadKgFor(ex, entry, set, workout, opts)
-      if (set?.done !== true || isWarmupRow(set) || !(load > 0) || !(set.r > 0)) continue
+      if (!isPerformed(set) || !isWorkSet(set) || !(load > 0) || !(set.r > 0)) continue
       const est = epley1RM(load, set.r)
       if (!best.has(entry.id) || est > best.get(entry.id)) best.set(entry.id, est)
     }
@@ -275,7 +275,7 @@ function sessionTonnages(workout, opts = {}) {
   for (const entry of workout?.entries || []) {
     const weights = musclesOf(EXIDX[entry.id])
     for (const set of entry.sets || []) {
-      if (set?.done !== true || isWarmupRow(set)) continue
+      if (!isPerformed(set) || !isWorkSet(set)) continue
       const measured = setTonnage(EXIDX[entry.id], entry, set, workout, oneRms.get(entry.id), opts)
       const tonnage = Number.isFinite(measured) && measured > 0 ? measured : ZERO_LOAD_SET_STIMULUS
       for (const [slug, weight] of Object.entries(weights)) {
@@ -386,7 +386,7 @@ export function strengthOf(workouts, now, opts = {}) {
     const timestamp = workoutTimestamp(workout)
     if (!Number.isFinite(timestamp)) continue
     for (const entry of workout.entries || []) {
-      if (!(entry.sets || []).some(set => set?.done === true && !isWarmupRow(set))) continue
+      if (doneWorkSets(entry).length === 0) continue
       for (const slug of Object.keys(musclesOf(EXIDX[entry.id]))) {
         if (Object.prototype.hasOwnProperty.call(MUSCLES_BY_SLUG, slug) && timestamp > latest[slug]) {
           latest[slug] = timestamp

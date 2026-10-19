@@ -21,7 +21,7 @@ import {
   effortHistogram, isHardSet, HARD_RIR, effortOf
 } from '../lib/effort.js'
 import { Button, Segmented, SelectRow } from '../components/ui.jsx'
-import { isWarmupRow } from '../lib/workout-model.js'
+import { doneWorkSets } from '../lib/workout-model.js'
 import { modeFor as modeForExercise, topSetSeries, currentBest, weeksSinceTraining } from '../lib/exercise-progress.js'
 
 export { FATIGUE_LEVELS }
@@ -34,7 +34,7 @@ function latestMuscleTraining(workouts) {
     const timestamp = workoutTimestamp(workout)
     if (!Number.isFinite(timestamp)) continue
     for (const entry of workout.entries || []) {
-      if (!(entry.sets || []).some(set => set?.done === true && !isWarmupRow(set))) continue
+      if (doneWorkSets(entry).length === 0) continue
       const exercise = EXIDX[entry.id] || entry.exercise || entry
       for (const slug of Object.keys(musclesOf(exercise))) {
         if (latest[slug] == null || timestamp > latest[slug]) latest[slug] = timestamp

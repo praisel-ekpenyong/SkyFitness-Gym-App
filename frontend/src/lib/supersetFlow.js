@@ -4,7 +4,7 @@
 // mark progress tracking, and round/unit navigation across active exercises.
 // Keeping these pure and decoupled from React/Zustand guarantees deterministic
 // testing for uneven rounds, wrap-around navigation, and warm-up set exclusion.
-import { hasWork, isWarmupRow } from './workout-model.js'
+import { hasWork, doneWorkSets } from './workout-model.js'
 
 /**
  * Update the high-water mark of completed work sets for superset progression.
@@ -17,7 +17,7 @@ import { hasWork, isWarmupRow } from './workout-model.js'
  * @returns {{ isNew: boolean, highWater: number }}
  */
 export function setProgressHighWater(entry, previous = 0) {
-  const done = entry?.sets?.reduce((count, set) => count + (set.done && !isWarmupRow(set) ? 1 : 0), 0) || 0
+  const done = doneWorkSets(entry).length
   return { isNew: done > previous, highWater: Math.max(previous, done) }
 }
 

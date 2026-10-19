@@ -1,5 +1,5 @@
 import { isCardio, isBodyweightEq } from './exercises.js'
-import { phaseForSet, isWarmupRow, ensurePlainObject, objectOf } from './warmup.js'
+import { isWarmupRow, ensurePlainObject, objectOf } from './warmup.js'
 
 export { phaseForSet, isWarmupRow, ensurePlainObject, objectOf } from './warmup.js'
 
@@ -75,7 +75,7 @@ export function modeForEntry(entry, fallback = null) {
   const source = ensurePlainObject(entry)
   const target = ensurePlainObject(source.target || source)
   const sets = Array.isArray(source.sets) ? source.sets : []
-  const work = sets.filter(set => !isWarmupRow(set))
+  const work = sets.filter(isWorkSet)
   const observed = work.length ? work : sets
   const modes = [...new Set(observed.map(set => modeForSet(set, target)))]
   if (modes.length > 1) return null
@@ -275,7 +275,7 @@ export const isWorkSet = set => !isWarmupRow(set)
 export const isPerformed = set => !!set?.done
 
 /** The work sets of an entry, performed or not (the phase-only list). */
-export const workSets = entry => (entry?.sets || []).filter(isWorkSet)
+export const workSets = entry => (Array.isArray(entry?.sets) ? entry.sets : []).filter(isWorkSet)
 
 /** The performed work sets of an entry — the list metrics read. */
 export const doneWorkSets = entry => workSets(entry).filter(isPerformed)
@@ -284,11 +284,11 @@ export const doneWorkSets = entry => workSets(entry).filter(isPerformed)
  * Total weight-times-reps across completed work sets in a workout.
  *
  * @param {Object|null|undefined} w - Workout with an entries array of set rows; nullish yields 0.
- * @returns {number} Summed w*r for done non-warm-up sets; 0 when none.
+ * @returns {number} Summed w*r across performed work sets; 0 when none.
  */
 export function workoutVolume(w) {
   let v = 0
-  ;(w?.entries || []).forEach(e => (e.sets || []).forEach(s => { if (s.done && !isWarmupRow(s)) v += (s.w || 0) * (s.r || 0) }))
+  ;(w?.entries || []).forEach(e => doneWorkSets(e).forEach(s => { v += (s.w || 0) * (s.r || 0) }))
   return v
 }
 
@@ -296,23 +296,11 @@ export function workoutVolume(w) {
  * Count every completed set in a finished workout.
  *
  * @param {Object|null|undefined} w - Workout with an entries array of set rows; nullish yields 0.
- * @returns {number} Number of sets with done truthy, including warm-ups.
+ * @returns {number} Number of performed sets (truthy `done`), including warm-ups.
  */
 export function setsDone(w) {
   let n = 0
-  ;(w?.entries || []).forEach(e => (e.sets || []).forEach(s => { if (s.done) n++ }))
-  return n
-}
-
-/**
- * Count every completed set in an in-progress workout.
- *
- * @param {Object|null|undefined} A - Active workout with an entries array; nullish yields 0.
- * @returns {number} Number of sets with done truthy, including warm-ups.
- */
-export function setsDoneActive(A) {
-  let n = 0
-  if (A) (A.entries || []).forEach(e => (e.sets || []).forEach(s => { if (s.done) n++ }))
+  ;(w?.entries || []).forEach(e => (e.sets || []).forEach(s => { if (isPerformed(s)) n++ }))
   return n
 }
 
@@ -324,7 +312,7 @@ export function cascadeWeight(rows, from, value) {
   const warm = isWarmupRow(rows[from])
   const next = rows.slice()
   for (let j = from + 1; j < next.length; j++) {
-    if (isWarmupRow(next[j]) === warm && !next[j].done) {
+    if (isWarmupRow(next[j]) === warm && !isPerformed(next[j])) {
       next[j] = { ...next[j] }
       if (value == null) delete next[j].w
       else next[j].w = value
@@ -335,7 +323,7 @@ export function cascadeWeight(rows, from, value) {
 
 /** Insert a warm-up row before the first work row, copying the preceding warm-up's values. */
 export function insertWarmupRow(rows, mode, target = {}) {
-  const firstWork = rows.findIndex(x => !isWarmupRow(x))
+  const firstWork = rows.findIndex(isWorkSet)
   const at = firstWork === -1 ? rows.length : firstWork
   const l = rows[at - 1] || rows[rows.length - 1]
   const warm = makeRow(mode, target, { prev: l || null, warmup: true })
@@ -352,11 +340,9 @@ export function removeRowAt(rows, i) {
   return next
 }
 
-/** Completed non-warm-up sets across a workout's entries. */
+/** Performed work sets across a workout's entries. */
 export function workSetsDone(w) {
-  return (w?.entries || []).reduce(
-    (n, e) => n + (e.sets || []).filter(s => s.done && !isWarmupRow(s)).length, 0,
-  )
+  return (w?.entries || []).reduce((n, e) => n + doneWorkSets(e).length, 0)
 }
 
 /**
@@ -373,7 +359,7 @@ export function workSetsDone(w) {
  */
 export const hasWork = (entryOrEntries, idx) => {
   const entry = idx == null ? entryOrEntries : entryOrEntries?.[idx]
-  return !!entry?.sets?.some(set => !set.done && !isWarmupRow(set))
+  return workSets(entry).some(set => !isPerformed(set))
 }
 
 /**
@@ -408,7 +394,7 @@ export function isExerciseDone(entry) {
  */
 export function sessionProgress(A) {
   const entries = A?.entries || []
-  const total = entries.reduce((n, e) => n + (e.sets || []).filter(s => !isWarmupRow(s)).length, 0)
+  const total = entries.reduce((n, e) => n + workSets(e).length, 0)
   const done = workSetsDone(A)
   const exDone = entries.filter(isExerciseDone).length
   const exTotal = entries.length
@@ -427,7 +413,7 @@ const workRowsForMode = (entry = {}, mode = 'reps') => {
   const target = ensurePlainObject(source.target || source)
   const expectedMode = normalizeMode(mode, 'reps')
   return (Array.isArray(source.sets) ? source.sets : [])
-    .filter(set => phaseForSet(set) === 'work' && modeForSet(set, target) === expectedMode)
+    .filter(set => isWorkSet(set) && modeForSet(set, target) === expectedMode)
 }
 
 /**
@@ -437,7 +423,7 @@ const workRowsForMode = (entry = {}, mode = 'reps') => {
  * @param {string} mode - Requested mode passed to workRowsForMode.
  * @returns {Array<Object>} Done work rows of that mode, excluding warm-ups.
  */
-const completedRowsForMode = (entry, mode) => workRowsForMode(entry, mode).filter(s => s.done === true && !isWarmupRow(s))
+const completedRowsForMode = (entry, mode) => workRowsForMode(entry, mode).filter(isPerformed)
 
 /**
  * Select the completed rows that score an entry's headline metric.
@@ -476,7 +462,7 @@ export function lastEntryFor(S, exId) {
     // `target` is what the session prescribed; finished workouts carry it so labels and the
     // progression engine can read a session back the way it was logged.
     if (!en?.sets) continue
-    const workDone = en.sets.filter(s => s.done && !isWarmupRow(s))
+    const workDone = doneWorkSets(en)
     if (workDone.length) {
       return { d: S.workouts[i].d, sets: workDone, target: en.target || null }
     }
@@ -487,13 +473,11 @@ export function lastEntryFor(S, exId) {
 /** Best load from completed work rows, with a guarded reps-only legacy topW fallback. */
 export function bestWeightForEntry(entry = {}) {
   const target = entry.target || entry
-  const workRows = Array.isArray(entry.sets)
-    ? entry.sets.filter(s => phaseForSet(s) === 'work')
-    : []
+  const workRows = workSets(entry)
   const repsRows = metricRowsForEntry(entry, 'reps')
   if (!repsRows.length) {
     return workRows.reduce((best, set) => {
-      if (set?.done !== true || isWarmupRow(set)) return best
+      if (!isPerformed(set)) return best
       const weight = Number(set.w)
       return Number.isFinite(weight) && weight > best ? weight : best
     }, 0)

@@ -7,7 +7,7 @@
 // map can actually draw, via ALIAS below. Anything genuinely undrawable (hands,
 // ankles, "cardiovascular system") maps to null and is dropped rather than guessed at.
 
-import { isWarmupRow } from './workout-model.js'
+import { doneWorkSets } from './workout-model.js'
 import { EXIDX, smOf, isCardio } from './exercises.js'
 
 // The muscles a map can shade, in head-to-toe order — also the order of any list
@@ -409,7 +409,7 @@ export function loadOf(items) {
  */
 export const loadOfWorkouts = (workouts, pick) =>
   loadOf((workouts || []).flatMap(w =>
-    (w.entries || []).map(e => ({ id: e.id, ex: e.exercise || e, sets: (e.sets || []).filter(s => s.done && !isWarmupRow(s) && (!pick || pick(s))).length }))))
+    (w.entries || []).map(e => ({ id: e.id, ex: e.exercise || e, sets: doneWorkSets(e).filter(s => !pick || pick(s)).length }))))
 
 /** Load a routine *would* produce, from its planned set counts. */
 export const loadOfRoutine = routine =>
@@ -417,7 +417,7 @@ export const loadOfRoutine = routine =>
 
 /** Load for a workout still in progress — the sets ticked so far. */
 export const loadOfActive = active =>
-  loadOf((active?.entries || []).map(e => ({ id: e.id, ex: e.exercise || e, sets: (e.sets || []).filter(s => s.done && !isWarmupRow(s)).length })))
+  loadOf((active?.entries || []).map(e => ({ id: e.id, ex: e.exercise || e, sets: doneWorkSets(e).length })))
 
 /**
  * Shade buckets 0–4 per muscle.
