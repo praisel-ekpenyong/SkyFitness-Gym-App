@@ -27,13 +27,18 @@ The 2026-10-27 two-axis review (see [reviews](reviews.md)) verified all ADR 0011
 bullets have tests in `frontend/src/lib/progression-runs.test.js`, and cleaned
 up the duplicated walk/scan helpers (merged `f7d5f37`, `bfb0e13`).
 
+## Resolved questions
+
+- **Manual mid-run weight change under linear** — decided 2026-10-27 and merged
+  as `218877a`: any change of working value (Deload, up, or the lifter's hand)
+  starts a new Run whose first session is a baseline, never a Stall — the same
+  boundary double progression already read, matching ADR 0011 and the glossary
+  as written. Virgin stretches (no change) count from their first session.
+  Full reasoning: `.scratch/progression-review/issues/05-linear-run-boundary.md`.
+
 ## Open questions
 
-- **Manual mid-run weight change under linear** — the Run boundary keys on the
-  last stored Deload, not on a working-value change, so a manually changed
-  weight mid-stream gets no new baseline. Filed as
-  `.scratch/progression-review/issues/05-linear-run-boundary.md`
-  (`needs-triage`, 2026-10-27); the user chose to decide later.
+- (none)
 
 ## Known deliberate quirks
 
