@@ -1,11 +1,10 @@
 // @vitest-environment happy-dom
-import React, { act } from 'react'
-import { createRoot } from 'react-dom/client'
-import { MemoryRouter } from 'react-router-dom'
+import { act } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import Workout, { removeActiveExercise } from './Workout.jsx'
-import { DEF, useStore } from '../store/useStore.js'
+import { removeActiveExercise } from './Workout.jsx'
+import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
+import { entry, resetViewTestState, seedActiveWorkout, renderWorkout, cleanupViewTest } from '../test/view-harness.jsx'
 
 vi.mock('../lib/sound.js', () => ({
   beep: vi.fn(),
@@ -17,61 +16,27 @@ vi.mock('../lib/sound.js', () => ({
 }))
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true
-const clone = value => JSON.parse(JSON.stringify(value))
-const entry = (id, sg) => ({
-  id,
-  ...(sg ? { sg } : {}),
-  target: { sets: 1, reps: 1 },
-  sets: [{ w: 0, r: 1, done: false }]
-})
 
-let root
-let container
-
-function setActive(entries, cur = 0) {
-  const S = clone(DEF)
-  S.active = {
-    id: 'remove-test', d: '2026-08-11', start: Date.now(), routineId: null,
-    name: 'Remove test', bw: null, cur, entries
-  }
-  useStore.setState({ S })
-}
-
-function renderWorkout(entries) {
-  setActive(entries)
-  container = document.createElement('div')
-  document.body.appendChild(container)
-  root = createRoot(container)
-  act(() => root.render(<MemoryRouter><Workout /></MemoryRouter>))
-}
+let view
 
 function removeButton() {
-  return [...container.querySelectorAll('button')].find(button => button.textContent.includes('Remove exercise'))
+  return [...view.container.querySelectorAll('button')].find(button => button.textContent.includes('Remove exercise'))
 }
 
 beforeEach(() => {
   vi.useFakeTimers()
-  localStorage.clear()
-  useUI.getState().stopRest()
-  useUI.getState().stopWork()
-  useUI.setState({ sheets: [], toastMsg: '', timer: null, work: null })
-  useStore.setState({ S: clone(DEF) })
-  root = null
-  container = null
+  resetViewTestState()
+  view = null
 })
 
 afterEach(() => {
-  if (root) act(() => root.unmount())
-  if (container) container.remove()
-  useUI.getState().stopRest()
-  useUI.getState().stopWork()
-  vi.clearAllTimers()
-  vi.useRealTimers()
+  cleanupViewTest(view)
+  view = null
 })
 
 describe('active-session exercise removal', () => {
   it('disables removal for the whole duration of a timed hold', () => {
-    renderWorkout([entry('1001')])
+    view = renderWorkout([entry('1001')])
     expect(removeButton()).toBeTruthy()
     expect(removeButton().disabled).toBe(false)
 
@@ -81,7 +46,7 @@ describe('active-session exercise removal', () => {
   })
 
   it('cancels a pending timed callback before indexes shift and cleans a one-member group', () => {
-    setActive([entry('1001', 'sg-1'), entry('1002', 'sg-1'), entry('1003')], 1)
+    seedActiveWorkout([{ ...entry('1001'), sg: 'sg-1' }, { ...entry('1002'), sg: 'sg-1' }, entry('1003')], { cur: 1 })
     expect(useStore.getState().S.active.cur).toBe(1)
     const wrongWrite = vi.fn(elapsed => {
       useStore.getState().update(s => { s.active.entries[0].sets[0].sec = elapsed })
@@ -101,7 +66,7 @@ describe('active-session exercise removal', () => {
   })
 
   it('hides the remove control for an empty freestyle session', () => {
-    renderWorkout([])
+    view = renderWorkout([])
     expect(removeButton()).toBeUndefined()
   })
 })
@@ -132,7 +97,7 @@ describe('remove-exercise prompt strings', () => {
 
 describe('remove-exercise edge cases', () => {
   it('removing the last remaining exercise leaves an empty, coherent session', () => {
-    setActive([entry('a')], 0)
+    seedActiveWorkout([entry('a')], { cur: 0 })
     act(() => { removeActiveExercise(0) })
     const A = useStore.getState().S.active
     expect(A.entries).toHaveLength(0)
@@ -140,7 +105,7 @@ describe('remove-exercise edge cases', () => {
   })
 
   it('removing one half of a two-member superset dissolves the group', () => {
-    setActive([entry('a', 'g1'), entry('b', 'g1'), entry('c')], 0)
+    seedActiveWorkout([{ ...entry('a'), sg: 'g1' }, { ...entry('b'), sg: 'g1' }, entry('c')], { cur: 0 })
     act(() => { removeActiveExercise(1) })
     const A = useStore.getState().S.active
     expect(A.entries.map(e => e.id)).toEqual(['a', 'c'])
@@ -149,7 +114,7 @@ describe('remove-exercise edge cases', () => {
   })
 
   it('removing an entry below the active one keeps cur on the same exercise', () => {
-    setActive([entry('a'), entry('b'), entry('c')], 2)
+    seedActiveWorkout([entry('a'), entry('b'), entry('c')], { cur: 2 })
     act(() => { removeActiveExercise(0) })
     const A = useStore.getState().S.active
     expect(A.entries.map(e => e.id)).toEqual(['b', 'c'])
