@@ -229,7 +229,7 @@ export function buildSets(S, cfg, options = {}) {
   const mode = modeOf(cfg)
   const preferLast = !!options.preferLast
   const seedWeightOnly = !!options.seedWeightOnly
-  const useExWeights = options.useExWeights !== undefined ? !!options.useExWeights : !routineId
+  const useExWeights = !routineId
   const sets = []
   const prevAt = i => (last ? (last.sets[i] || last.sets[last.sets.length - 1]) : null)
 
