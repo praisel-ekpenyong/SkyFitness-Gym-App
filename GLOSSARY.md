@@ -182,7 +182,8 @@ Cutting the working weight roughly 10% after enough stalls, landing on a loadabl
 Greyskull's final set, taken to failure. Doubling its target reps earns a double increment.
 
 **Bodyweight progression**:
-No load to add, so progress runs in reps up to a rep-range ceiling, then in added sets up to a set ceiling; past that, the honest advice is added load or a harder variation — a human decision, not a policy.
+Reps-mode progression when every performed work set was logged at zero weight, on any exercise: reps up to a rep-range ceiling, then added sets up to a set ceiling, and past that a human choice to add load or a harder variation. The target weight stands in only when no work set was performed.
+_Avoid_: the Bodyweight exercise flag as the trigger. One heavier performed work set uses load progression instead. A timed session with no added weight stays on add-time.
 
 ### Strength & recovery
 

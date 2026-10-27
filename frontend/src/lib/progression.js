@@ -179,7 +179,7 @@ function asHoldOrDeload(cur, step, onHold, onDeload) {
  * - `ok`: boolean indicating whether every planned work set met or exceeded its target.
  * - `mode`: 'time' | 'reps'.
  * - `goal`: target reps or hold duration in seconds.
- * - `weight`: highest completed work weight in this entry (0 for unloaded/bodyweight).
+ * - `weight`: heaviest performed work-set weight, or null when no work set was performed. A logged zero stays zero.
  * - `best`: (time mode) highest completed hold duration in seconds across judged sets.
  * - `held`: (time mode) array of completed durations per judged set (0 for incomplete sets).
  * - `reps`: (reps mode) array of completed reps per judged set (0 for incomplete sets).
@@ -219,9 +219,13 @@ export function readSession(entry, fallback) {
   }
   const goal = target.reps || 0
   const reps = judged.map(s => (isPerformed(s) ? (s.r || 0) : 0))
+  const performed = judged.filter(isPerformed)
+  // Null, not 0, when nothing was performed. A logged 0 kg is a real load
+  // (bodyweight progression). The target weight may stand in only for the null.
+  const weight = performed.length ? Math.max(0, ...performed.map(s => s.w || 0)) : null
   return {
     mode, goal, reps,
-    weight: Math.max(0, ...judged.filter(isPerformed).map(s => s.w || 0)),
+    weight,
     // Judged Work sets only: bonus sets beyond the plan count toward volume/fatigue
     // (read from the raw rows elsewhere) but must never leak into added-set growth (#33).
     count: judged.length,
@@ -331,7 +335,7 @@ export function nextPrescription(S, cfg, routine) {
     return { policy, kind: 'hold', sec: clampTimeSec(last.goal || cfg.sec), why: ['Last time came up short — same target again.'] }
   }
 
-  const w = last.weight || cfg.weight || 0
+  const w = last.weight ?? cfg.weight ?? 0
   // Bodyweight work carries no external load, so there is nothing to add or take away —
   // "deload your push-ups to 2.5 kg" is not advice. Progress in reps instead. This runs ahead
   // of the individual policies because it is true for all of them. Note the trigger is the
