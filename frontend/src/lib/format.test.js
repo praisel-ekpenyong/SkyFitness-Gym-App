@@ -17,6 +17,7 @@ import {
   uid,
   ACCENTS,
   fmtSec,
+  fmtElapsed,
   setLabel,
   exLine,
 } from './format.js'
@@ -124,6 +125,15 @@ describe('format utility module', () => {
       expect(fmtSec(null)).toBe('0:00')
       expect(fmtSec(undefined)).toBe('0:00')
       expect(fmtSec(NaN)).toBe('0:00')
+    })
+  })
+
+  describe('fmtElapsed time formatting', () => {
+    it('floors elapsed seconds so the clock never shows time that has not passed', () => {
+      expect(fmtElapsed(0.5)).toBe('0:00')
+      expect(fmtElapsed(59.5)).toBe('0:59')
+      expect(fmtElapsed(60.4)).toBe('1:00')
+      expect(fmtElapsed(-1)).toBe('0:00')
     })
   })
 
