@@ -9,7 +9,7 @@ import { supersetUnits, unitOf } from '../lib/supersetFlow.js'
 import { setLabel } from '../lib/format.js'
 import { EFFORT, effortOf, stepEffort, capEffort } from '../lib/effort.js'
 import { bestKnownWeight } from '../lib/active-workout.js'
-import { fmtNum, fmtDate, fmtSec, todayISO, exCount, DAYN } from '../lib/format.js'
+import { fmtNum, fmtDate, fmtSec, fmtElapsed, todayISO, exCount, DAYN } from '../lib/format.js'
 import { playSetComplete } from '../lib/sound.js'
 import { t } from '../lib/i18n.js'
 import Media from '../components/Media.jsx'
@@ -51,7 +51,7 @@ function StartChooser() {
 function Elapsed({ start }) {
   const [t, setT] = useState('0:00')
   useEffect(() => {
-    const tick = () => { const s = Math.floor((Date.now() - start) / 1000); setT(Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0')) }
+    const tick = () => setT(fmtElapsed((Date.now() - start) / 1000))
     tick(); const iv = setInterval(tick, 1000); return () => clearInterval(iv)
   }, [start])
   return <span>{t}</span>
