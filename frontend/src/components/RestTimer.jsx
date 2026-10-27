@@ -1,18 +1,12 @@
 import { useEffect } from 'react'
 import { useUI } from '../store/useUI.js'
+import { fmtSec } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
 import { Button } from './ui.jsx'
 
-/**
- * Formats a countdown value as minutes:seconds (75 becomes "1:15").
- * @param {number} sec - Remaining time in seconds.
- * @returns {string} The formatted "m:ss" clock text.
- */
-const clock = sec => Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0')
-
-// One bar, two meanings: the rest countdown between sets, and the work countdown during a
+// One bar, two meanings: the rest countdown between sets, and the Hold timer during a
 // timed set (issue #16). They are mutually exclusive by construction — startWork() stops any
-// running rest — so the bar can never have to show both, and a work set gets its own colour
+// running rest — so the bar can never have to show both, and the Hold gets its own colour
 // plus a "Done" that logs the time actually held.
 export default function RestTimer() {
   const timer = useUI(s => s.timer)
@@ -30,7 +24,7 @@ export default function RestTimer() {
 
   if (work) return (
     <div id="timer" className="working">
-      <div className="t">{clock(work.left)}</div>
+      <div className="t">{fmtSec(work.left)}</div>
       <div className="grow">
         {work.label && <div className="lbl">{work.label}</div>}
         <div className="bar"><i style={{ transform: `scaleX(${scale})` }} /></div>
@@ -46,7 +40,7 @@ export default function RestTimer() {
   return (
     <div id="timer" className="rest">
       <div className="head">
-        <div className="t">{clock(timer.left)}</div>
+        <div className="t">{fmtSec(timer.left)}</div>
         <div className="bar"><i style={{ transform: `scaleX(${scale})` }} /></div>
       </div>
       <div className="acts">

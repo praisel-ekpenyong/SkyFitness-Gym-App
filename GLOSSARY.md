@@ -125,6 +125,22 @@ Adding an exercise to a workout without a routine; seeded from the last time it 
 Adjacent entries paired to be trained back-to-back. Pairing is positional: reorder or unlink and the group dissolves.
 _Avoid_: circuit, giant set
 
+**Rest**:
+The recovery interval between sets, or between rounds of a superset.
+_Avoid_: break, rest period, pause
+
+**Rest duration**:
+The default length of a rest, set by the lifter, used whenever a rest begins.
+_Avoid_: rest time, rest setting
+
+**Rest timer**:
+The countdown showing a rest in progress; the same one whether the rest followed a set or was started by hand.
+_Avoid_: break timer, recovery clock
+
+**Manual rest**:
+A rest the lifter starts by hand, not one that follows a performed set.
+_Avoid_: quick timer, custom timer, on-demand rest
+
 **Weigh-in**:
 The body weight recorded for one specific workout, giving bodyweight-exercise loads their context.
 _Distinct from_: the body-weight log below, and from "bodyweight" meaning a no-load exercise.
@@ -138,6 +154,10 @@ _Avoid_: bw (on a workout that spelling means the weigh-in)
 **Mode**:
 How an exercise is logged: **reps** (weight × reps), **time** (a held duration, optionally weighted), **cardio** (minutes × speed). A mode rides on the exercise, not the body part.
 _Avoid_: type
+
+**Hold timer**:
+The countdown that times a **time**-mode set while it is held, distinct from the rest timer.
+_Avoid_: work timer, set timer
 
 **Bodyweight exercise**:
 An exercise that carries no load of its own, so any entered weight means *added* weight (a belted dip reads "+10 × 12"). A default from the catalogue's equipment, overridable per exercise.
