@@ -200,7 +200,7 @@ Training load per muscle counted in sets, weighted primary 1 / secondary 0.4 —
 Load × reps of performed Work sets; a Warm-up set is excluded, including when it was performed.
 
 **Fatigue**:
-Per-muscle accumulated stimulus that rises with hard volume and fades with a ~36-hour half-life. Bucketed: **ready** below 0.25, **recovering** to 0.5, **fatigued** above.
+Per-muscle accumulated stimulus from performed Work sets, fading with a ~36-hour half-life: loaded sets count as load × reps weighted by intensity against the lifter's own capacity, while cardio and timed holds count by duration. Bucketed: **ready** below 0.25, **recovering** to 0.5, **fatigued** above.
 _Avoid_: freshness (its inverse)
 
 **Retained strength**:
