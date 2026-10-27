@@ -106,7 +106,7 @@ export function workoutTimestamp(w) {
 }
 export const ACCENTS = { lime: '#30d158', sky: '#0a84ff', orange: '#ff9f0a', violet: '#bf5af2', pink: '#ff375f', red: '#ff453a', teal: '#40c8e0', gold: '#ffd60a' }
 
-// mm:ss for a work duration — seconds alone read badly past a minute ("90 s" vs "1:30").
+// mm:ss for a duration — a held set or a rest; seconds alone read badly past a minute ("90 s" vs "1:30").
 export function fmtSec(sec) {
   const n = Math.max(0, Math.round(Number(sec) || 0))
   return Math.floor(n / 60) + ':' + String(n % 60).padStart(2, '0')
