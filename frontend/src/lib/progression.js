@@ -19,7 +19,7 @@
 //                                                           set-count edits do not trigger deloads
 // So a session that fell apart can never advance the load as though it had succeeded.
 import { EXIDX } from './exercises.js'
-import { isWorkSet, isPerformed, workSets, modeOf, repStep, makeRow, modeForSet } from './workout-model.js'
+import { isWorkSet, isPerformed, workSets, modeOf, repStep, makeRow, modeForSet, isBw } from './workout-model.js'
 
 /**
  * Supported automatic progression policy identifiers.
@@ -56,11 +56,14 @@ export const POLICY_DESC = {
 }
 
 /**
- * Number of consecutive failed sessions required to trigger a deload under each policy.
- * Greyskull resets on the first failure by design; linear, double, and time progression
- * give three attempts before backing off load or duration.
+ * Number of stalled sessions required to trigger a deload under each policy.
+ *
+ * Linear counts consecutive Misses after the current Run's baseline. Double progression and
+ * add-time count sessions in the current Run that made no progress; the Run's baseline is not
+ * one of them, so a Deload is followed by a visible build-up rather than another Deload.
+ * Greyskull resets on the first Miss by design, including at a Deload's new load.
  */
-export const DELOAD_AFTER = { linear: 3, greyskull: 1, double: 3, time: 3 }
+export const DELOAD_AFTER = { linear: 3, greyskull: 1, double: 4, time: 3 }
 // Multiplier for standard 10% deload reductions.
 const DELOAD_FACTOR = 0.9
 
@@ -172,6 +175,124 @@ function asHoldOrDeload(cur, step, onHold, onDeload) {
   return next >= cur ? onHold() : onDeload(next)
 }
 
+// --- Progression streams and Runs -----------------------------------------
+// A stream is the Target's shape: exercise + Mode + planned set count + top reps/seconds.
+// Weight, the bottom of the rep range, per-side logging, and the policy are deliberately
+// outside the shape: changing them must not throw away a climb. A different Target shape
+// starts a new stream, whose first session is a baseline.
+//
+// A Run is the trailing block of stream sessions at one working value: the logged load for
+// reps work, the prescribed hold for add-time. Its first session is a baseline, so following
+// a deload cannot immediately trigger the next one.
+const positive = v => (Number.isFinite(v) && v > 0 ? v : null)
+
+function inStream(session, cfg, mode) {
+  if (session.mode !== mode) return false
+  const target = session.target || {}
+  // Bodyweight progression's ceiling lives in `repsMax`, which older Entries never froze
+  // onto the Target. Filtering on Target reps would throw away every climb, so bodyweight
+  // streams share history by Mode and planned sets and let `repsMax` read the ceiling.
+  // `weight: 0` is the plan's signal; a bodyweight-capable exercise trained with a belt is
+  // on the normal load policies and keeps the top-reps shape.
+  const bodyweight = mode === 'reps' && (cfg.weight === 0 || (cfg.weight == null && isBw(cfg)))
+  if (!bodyweight) {
+    const wantTop = positive(mode === 'time' ? cfg.sec : cfg.reps)
+    const haveTop = positive(mode === 'time' ? target.sec : target.reps)
+    if (wantTop != null && haveTop != null && haveTop !== wantTop) return false
+  }
+  const wantSets = positive(cfg.sets)
+  const haveSets = positive(target.sets)
+  if (wantSets != null && haveSets != null && haveSets !== wantSets) return false
+  return true
+}
+
+// The load a session actually worked at; the Prescription's load stands in when nothing was
+// lifted, and the Target's load after that for Entries written before Prescription records.
+const loadOf = (session, fallback) => {
+  const w = session.weight ?? session.plan?.weight ?? session.target?.weight
+  return Number.isFinite(w) ? w : (Number.isFinite(fallback) ? fallback : 0)
+}
+
+// Index of the first session after the last Deload. The Deload session itself is the new
+// Run's baseline, so linear's Stall count starts here. Entries written before Prescription
+// records cannot mark a Deload, so they keep the old all-history count.
+function afterLastDeload(sessions) {
+  for (let i = sessions.length - 1; i >= 0; i--) {
+    if (sessions[i].plan?.kind === 'deload') return i + 1
+  }
+  return 0
+}
+
+// First index of the trailing Run, i.e. the last session whose working value differs from
+// the one after it. Same value on both sides keeps the Run going.
+function runStart(sessions, valueOf) {
+  if (!sessions.length) return 0
+  const value = valueOf(sessions[sessions.length - 1])
+  let start = sessions.length - 1
+  while (start > 0 && valueOf(sessions[start - 1]) === value) start--
+  return start
+}
+
+// Double progression's Stall: neither a top hit nor Rep progress against the previous
+// session's aim. The Run baseline is excluded; a progress session clears the chain.
+function doubleNoProgress(sessions, start, top, bottom, step) {
+  let n = 0
+  for (let i = sessions.length - 1; i > start; i--) {
+    const s = sessions[i]
+    const prev = sessions[i - 1]
+    const aim = Math.min(top, Math.max(bottom, (prev.low || 0) + step))
+    const progressed = s.ok || (s.enough && s.low >= aim)
+    if (progressed) break
+    n++
+  }
+  return n
+}
+
+// The duration a time session was working against. The Prescription record is authoritative
+// because add-time may prescribe above the frozen Target; pre-record history falls back to
+// the Target it was logged under.
+function sessionSeconds(session, cfg) {
+  const plan = session.plan
+  if (plan && plan.kind !== 'first' && plan.kind !== 'off' && positive(plan.sec)) return plan.sec
+  return positive(session.target?.sec) ?? positive(cfg.sec) ?? MIN_TIME_SEC
+}
+
+// The weakest hold that was actually performed. An unticked set is absent from this reading;
+// `readSession.low` (which includes 0 for unticked sets) still decides progress.
+function weakestPerformed(session) {
+  const held = (session.held || []).filter(v => v > 0)
+  return held.length ? Math.min(...held) : 0
+}
+
+function timeAim(session, cfg, inc) {
+  const working = sessionSeconds(session, cfg)
+  const weak = weakestPerformed(session)
+  return clampTimeSec(weak > 0 ? Math.min(working, weak + inc) : working)
+}
+
+function timeHit(session, cfg) {
+  const working = sessionSeconds(session, cfg)
+  const held = session.held || []
+  // A hand-edited zero Target is not a Hit even if the working floor was held; it is a
+  // bad plan to clamp, not a progression to reward.
+  return session.goal > 0 && !!session.enough && held.length > 0 && held.every(h => h >= working)
+}
+
+// Add-time's Stall: a session in the Run after its baseline that did not reach the aim the
+// previous session asked for. A longer weakest hold is progress even below the Target.
+function timeNoProgress(sessions, start, cfg, inc) {
+  let n = 0
+  for (let i = sessions.length - 1; i > start; i--) {
+    const s = sessions[i]
+    const prev = sessions[i - 1]
+    const aim = timeAim(prev, cfg, inc)
+    const progressed = s.enough && s.low > 0 && s.low >= aim
+    if (progressed) break
+    n++
+  }
+  return n
+}
+
 /**
  * Evaluate a completed workout entry against its prescription and summarize performance.
  *
@@ -184,8 +305,11 @@ function asHoldOrDeload(cur, step, onHold, onDeload) {
  * - `held`: (time mode) array of completed durations per judged set (0 for incomplete sets).
  * - `reps`: (reps mode) array of completed reps per judged set (0 for incomplete sets).
  * - `count`: (reps mode) count of performed work sets (used for bodyweight volume expansion).
- * - `low`: (reps mode) lowest completed reps across judged sets (used for double progression).
+ * - `low`: (reps mode) lowest completed reps across judged sets (used for double progression);
+ *   (time mode) lowest hold, with an unticked set reading 0.
  * - `amrap`: (reps mode) completed reps on the final judged set (used for Greyskull LP double jumps).
+ * - `planned`: number of planned Work sets the judgement read.
+ * - `enough`: whether the Entry carried every planned Work set (bonus sets do not hurt).
  *
  * Entries created prior to v1.2.2 lack a stored `target` and are evaluated against `fallback`
  * (the exercise's current routine plan) to prevent legacy history from scoring as false misses.
@@ -202,8 +326,10 @@ export function readSession(entry, fallback) {
   const sets = workSets(entry)
   // Only the first N planned Work sets judge Hit/Miss: bonus sets beyond the plan
   // count toward volume and fatigue (read from the raw rows elsewhere) but never
-  // flip a Hit to a Miss. Fewer rows than planned is still a Miss.
-  const planned = target.sets || sets.length
+  // flip a Hit to a Miss. Fewer rows than planned is still a Miss. A Prescription that
+  // added a set is authoritative for that session; the Target's set count is the stream's
+  // starting shape, not the volume the policy asked for.
+  const planned = positive(entry?.plan?.sets) ?? positive(target.sets) ?? sets.length
   const judged = sets.slice(0, planned)
   const enough = sets.length >= planned
 
@@ -211,9 +337,10 @@ export function readSession(entry, fallback) {
     const goal = target.sec || 0
     const held = judged.map(s => (isPerformed(s) ? (s.sec || 0) : 0))
     return {
-      mode, goal, held,
+      mode, goal, held, planned, enough,
       weight: Math.max(0, ...judged.filter(isPerformed).map(s => s.w || 0)),
       best: Math.max(0, ...held),
+      low: held.length ? Math.min(...held) : 0,
       ok: goal > 0 && enough && held.length > 0 && held.every(h => h >= goal)
     }
   }
@@ -224,7 +351,7 @@ export function readSession(entry, fallback) {
   // (bodyweight progression). The target weight may stand in only for the null.
   const weight = performed.length ? Math.max(0, ...performed.map(s => s.w || 0)) : null
   return {
-    mode, goal, reps,
+    mode, goal, reps, planned, enough,
     weight,
     // Judged Work sets only: bonus sets beyond the plan count toward volume/fatigue
     // (read from the raw rows elsewhere) but must never leak into added-set growth (#33).
@@ -251,7 +378,15 @@ export function sessionsFor(S, exId, fallback) {
     // A finished Entry with zero performed Work sets still judges — as a Miss that
     // feeds Stall counting toward Deload. An Entry with no Work sets at all
     // (Warm-up sets only) is prep, never a Miss.
-    if (workSets(entry).length) out.push({ d: w.d, ...readSession(entry, fallback) })
+    if (workSets(entry).length) {
+      out.push({
+        d: w.d,
+        ...readSession(entry, fallback),
+        target: entry.target || null,
+        plan: entry.plan || null,
+        routineId: w.routineId || null,
+      })
+    }
   })
   return out
 }
@@ -295,9 +430,23 @@ export function stallCount(sessions) {
  * - `why`: `[templateString, ...args]` translatable format tuple explaining the decision.
  *
  * Domain progression rules:
- * - Bodyweight (`weight <= 0`): load is never added or deloaded. Progresses reps until
- *   reaching `repsMax`, then resets reps to `reps` (or 1) and adds a set up to `MAX_BW_SETS`.
- *   Unilateral exercises (`cfg.side === true`) increment reps by 2 so both sides progress evenly.
+ * - Progression streams: history is filtered to the Target shape — exercise, Mode, planned
+ *   sets, and top reps/seconds. A different shape starts a new stream with a `'first'`
+ *   baseline; changing the policy, the range bottom, or the load keeps the stream.
+ * - Runs: each policy reads the trailing sessions at one working value. A Run's first session
+ *   is a baseline and never a Stall, so following a Deload builds up instead of cascading.
+ * - Double progression: a `'hold'` aims at the previous weakest set plus one rep step, clamped
+ *   to `[repsMin, reps]`. A Stall is a session after the Run baseline with neither a top hit
+ *   nor Rep progress; `DELOAD_AFTER.double` of them deloads.
+ * - Add-time: climbs from the weakest performed hold, and a Deload backs off the achieved hold
+ *   rather than the frozen Target.
+ * - Bodyweight (`weight <= 0`): load is never added or deloaded. Progresses reps from the
+ *   Prescription's goal (not the Target's starting reps) until reaching `repsMax`, then resets
+ *   reps to `reps` (or 1) and adds a set up to `MAX_BW_SETS`; the added set persists as the
+ *   working volume. Unilateral exercises (`cfg.side === true`) increment reps by 2 so both
+ *   sides progress evenly.
+ * - Exact increments: every `'up'` adds `inc` to the working value as logged (`round1(w + inc)`),
+ *   including off-grid loads; only a Deload snaps to the equipment or timer grid.
  * - Non-reducing deloads: when already at the minimum step or `MIN_TIME_SEC`, a deload that
  *   cannot reduce resolves as a `'hold'` with an explanatory message rather than a same-weight deload.
  * - Input clamping: zero or negative rep/second goals clamp to safe minimums (1 rep, `MIN_TIME_SEC`).
@@ -314,28 +463,38 @@ export function nextPrescription(S, cfg, routine) {
   const inc = cfg.inc > 0 ? cfg.inc : (mode === 'time' ? DEFAULT_SEC_INCREMENT : defaultIncrement(cfg.id, unit))
   if (policy === 'off') return { policy, kind: 'off' }
 
-  const sessions = sessionsFor(S, cfg.id, cfg).filter(s => s.mode === mode)
+  // One Target shape is one Progression stream. A different Routine or a previous target
+  // must not contribute a Hit to this climb; changing the policy or the bottom of the range
+  // leaves the shape alone and keeps the history.
+  const sessions = sessionsFor(S, cfg.id, cfg).filter(s => inStream(s, cfg, mode))
   const last = sessions[sessions.length - 1]
   if (!last) return { policy, kind: 'first', why: ['Nothing logged yet — this session sets the baseline.'] }
 
-  const stalls = stallCount(sessions)
   const deloadAt = DELOAD_AFTER[policy] || 3
 
   if (mode === 'time') {
-    if (last.ok) {
-      const sec = (last.goal || cfg.sec || 0) + inc
+    // Add-time reads the hold it actually prescribed, not the frozen Target: a 50 s hold
+    // against a 45 s plan must lead to 55 s, and a 40 s Deload must not fall back to 45 s.
+    if (timeHit(last, cfg)) {
+      const sec = round1(Math.max(sessionSeconds(last, cfg), weakestPerformed(last)) + inc)
       return { policy, kind: 'up', sec, why: ['Held every set for the full time — target up by {0}s.', inc] }
     }
-    if (stalls >= deloadAt) {
-      const cur = last.goal || cfg.sec || 0
-      return asHoldOrDeload(cur, 5,
-        () => ({ policy, kind: 'hold', sec: clampTimeSec(cur), why: ['Already at the minimum hold — same target again.'] }),
-        sec => ({ policy, kind: 'deload', sec, why: ['Short {0} Workouts in a row — back off to {1}s and build up again.', stalls, sec] }))
+    const start = runStart(sessions, s => sessionSeconds(s, cfg))
+    const noProgress = timeNoProgress(sessions, start, cfg, inc)
+    if (noProgress >= deloadAt) {
+      const weak = weakestPerformed(last)
+      const base = weak > 0 ? weak : sessionSeconds(last, cfg)
+      return asHoldOrDeload(base, 5,
+        () => ({ policy, kind: 'hold', sec: Math.max(MIN_TIME_SEC, clampTimeSec(base)), why: ['Already at the shortest hold — same target again.'] }),
+        sec => ({ policy, kind: 'deload', sec, why: ['No progress in {0} Workouts — back off to {1}s and build up again.', noProgress, sec] }))
     }
-    return { policy, kind: 'hold', sec: clampTimeSec(last.goal || cfg.sec), why: ['Last time came up short — same target again.'] }
+    // Climb from the weakest hold actually performed, capped at the duration already being
+    // attempted. This turns "45 s or nothing" into a ladder the lifter can actually climb.
+    const aim = timeAim(last, cfg, inc)
+    return { policy, kind: 'hold', sec: aim, why: ['Last time came up short — aim for {0}s and build from there.', aim] }
   }
 
-  const w = last.weight ?? cfg.weight ?? 0
+  const w = last.weight ?? last.plan?.weight ?? cfg.weight ?? 0
   // Bodyweight work carries no external load, so there is nothing to add or take away —
   // "deload your push-ups to 2.5 kg" is not advice. Progress in reps instead. This runs ahead
   // of the individual policies because it is true for all of them. Note the trigger is the
@@ -344,51 +503,83 @@ export function nextPrescription(S, cfg, routine) {
   // When nothing was performed at all, the plan weight stands in, so a fallen-apart
   // barbell session holds at its plan weight instead of reading as bodyweight.
   if (w <= 0) {
-    const goal = last.goal || cfg.reps || 0
-    if (!last.ok || goal <= 0) return { policy, kind: 'hold', weight: 0, reps: Math.max(1, goal), why: ['Bodyweight — same target again until every set is clean.'] }
+    // The goal actually asked for, not the Target's starting reps: a frozen Target would pin
+    // every session to one rep above the bottom. Legacy Entries without a Prescription record
+    // fall back to the Target. A Hit is measured against that goal too, so a lifter asked for
+    // 15 reps and doing the Target's 10 has not earned the next rep.
+    const prescribed = positive(last.plan?.reps) ?? positive(last.goal) ?? positive(cfg.reps) ?? 0
+    // The working set count: once volume growth has started, the last Prescription's count
+    // is the current plan and must survive the rep climb; otherwise the Routine's sets (or
+    // what was actually judged for freestyle) are the base.
+    const planSets = positive(last.plan?.sets)
+    const baseSets = cfg.sets == null ? null : Math.max(1, cfg.sets)
+    const workingSets = Math.max(1, planSets ?? baseSets ?? last.count ?? 1)
+    const carrySets = planSets != null ? { sets: workingSets } : {}
+    const hit = prescribed > 0 && last.enough && last.low >= prescribed
+    if (!hit) return { policy, kind: 'hold', weight: 0, reps: Math.max(1, prescribed), ...carrySets, why: ['Bodyweight — same target again until every set is clean.'] }
+    // Reps earned beyond the prescription still count as work; climb from the weakest set
+    // actually performed.
+    const goal = Math.max(prescribed, last.low || 0)
     // A ceiling turns "+1 rep forever" into a structured plan: past the top of the range the
     // reps reset to the bottom and a set is added instead, which is how bodyweight work
     // actually progresses once high rep sets cease being an efficient strength stimulus.
     const top = cfg.repsMax > 0 ? cfg.repsMax : 0
     if (top > 0 && goal >= top) {
-      // Added-set growth resumes from the current Routine target: cutting sets in the
-      // plan lowers the resume point instead of rebuilding from the history high. An
-      // explicit zero is a bad edit, not a plan, so it clamps to the safe minimum;
-      // an absent value (freestyle) still falls back to what was actually done.
-      const planSets = cfg.sets == null ? null : Math.max(1, cfg.sets)
-      const sets = Math.max(1, planSets ?? last.count ?? 1) + 1
+      // An explicit zero is a bad edit, not a plan, so it clamps to the safe minimum; an
+      // absent value (freestyle) falls back to the top of the range.
+      const sets = workingSets + 1
       const planReps = cfg.reps === 0 ? 1 : (cfg.reps || top)
       const bottom = Math.max(1, Math.min(planReps, top))
       if (sets <= MAX_BW_SETS) return { policy, kind: 'up', weight: 0, reps: bottom, sets, why: ['{0} reps in every set — add a set and go back to {1}.', goal, bottom] }
       // Out of sets worth adding: more volume is no longer the answer, load or a harder
       // variation is — and that is a decision for a person, not a policy.
-      return { policy, kind: 'hold', weight: 0, reps: goal, why: ['{0} sets of {1} — time to add weight or move to a harder variation.', sets - 1, goal] }
+      return { policy, kind: 'hold', weight: 0, reps: goal, ...carrySets, why: ['{0} sets of {1} — time to add weight or move to a harder variation.', workingSets, goal] }
     }
     // Unilateral work steps by two, so the total stays even and both sides get the rep.
     const next = goal + repStep(cfg)
-    return { policy, kind: 'up', weight: 0, reps: next, why: ['Bodyweight — every rep last time, so go for {0} this time.', next] }
+    return { policy, kind: 'up', weight: 0, reps: next, ...carrySets, why: ['Bodyweight — every rep last time, so go for {0} this time.', next] }
   }
   if (policy === 'double') {
-    const top = cfg.reps || last.goal || 10
-    const bottom = Math.min(cfg.repsMin || Math.max(1, top - 2), top)
-    if (last.ok) return { policy, kind: 'up', weight: snap(w + inc, inc), reps: bottom, why: ['Top of the rep range in every set — {0} {1} more, back to {2} reps.', inc, unit, bottom] }
-    if (stalls >= deloadAt) {
-      return asHoldOrDeload(w, inc,
-        () => ({ policy, kind: 'hold', weight: w, reps: bottom, why: ['Already at the minimum load — same weight again.'] }),
-        dw => ({ policy, kind: 'deload', weight: dw, reps: bottom, why: ['Stalled {0} Workouts — deload to {1} {2}.', stalls, dw, unit] }))
+    const top = Math.max(1, cfg.reps > 0 ? cfg.reps : (last.goal || 10))
+    const bottom = cfg.repsMin > 0
+      ? Math.min(cfg.repsMin, top)
+      : Math.max(1, top - 2)
+    const step = repStep(cfg)
+    if (last.ok) {
+      // An `up` is exact: the announced Increment is the change from the load actually
+      // lifted. Snapping from zero made 41 + 2.5 announce 2.5 but move 1.5.
+      const nextW = round1(w + inc)
+      return { policy, kind: 'up', weight: nextW, reps: bottom, why: ['Top of the rep range in every set — {0} {1} more, back to {2} reps.', inc, unit, bottom] }
     }
-    const aim = Math.min(top, Math.max(bottom, last.low + repStep(cfg)))
+
+    // Double's Stall is no Rep progress, not "below the top". The current Run starts at the
+    // last working-load change; its first session is the baseline and cannot stall.
+    const start = runStart(sessions, s => loadOf(s, cfg.weight))
+    const noProgress = doubleNoProgress(sessions, start, top, bottom, step)
+    if (noProgress >= deloadAt) {
+      return asHoldOrDeload(w, inc,
+        () => ({ policy, kind: 'hold', weight: w, reps: bottom, why: ['Lightest load — same weight again; build reps or add the smallest plate.'] }),
+        dw => ({ policy, kind: 'deload', weight: dw, reps: bottom, why: ['No progress in {0} Workouts — deload to {1} {2}.', noProgress, dw, unit] }))
+    }
+    // Rep progress is the weakest planned Work set meeting last time's low plus one step,
+    // clamped to the range. An unticked set reads 0 and drops the aim back to the bottom.
+    const aim = Math.min(top, Math.max(bottom, (last.low || 0) + step))
     return { policy, kind: 'hold', weight: w, reps: aim, why: ['Same weight — aim for {0} reps this time.', aim] }
   }
 
   // linear + greyskull
+  // A linear Deload starts a new Run: its first session is the baseline and cannot be a
+  // Stall, so one Miss at the reduced load must not immediately cut again. Greyskull keeps
+  // its deliberate reset-on-any-failure rule, including a second reset from the reduced
+  // weight, so only linear trims the count at the last Deload.
+  const stalls = stallCount(policy === 'linear' ? sessions.slice(afterLastDeload(sessions)) : sessions)
   if (last.ok) {
     // Greyskull's final set is taken to failure: double the target reps there and you have
     // earned a double jump.
     const dbl = policy === 'greyskull' && last.goal > 0 && last.amrap >= last.goal * 2
     const step = dbl ? inc * 2 : inc
     return {
-      policy, kind: 'up', weight: snap(w + step, inc),
+      policy, kind: 'up', weight: round1(w + step),
       why: dbl
         ? ['Last set hit {0} reps — twice the target, so take a double jump of {1} {2}.', last.amrap, step, unit]
         : ['Every rep last time — {0} {1} more.', step, unit]
