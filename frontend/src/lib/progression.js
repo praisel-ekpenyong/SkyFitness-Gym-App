@@ -233,6 +233,19 @@ function runStart(sessions, valueOf) {
   return start
 }
 
+// Linear's Run: the sessions since the working value last changed — a Deload, an `up`, or
+// the lifter's hand — excluding that change session as the baseline, the same boundary
+// double progression already reads at a value change. A hand-set weight therefore earns a
+// fresh Miss allowance instead of piling a Deload on top. A stretch that reaches the
+// stream's first session had no change, so its count starts there; Entries written before
+// Prescription records keep the older after-last-Deload boundary, which reads as the whole
+// history.
+function linearRun(sessions, last, cfg) {
+  if (!last.plan) return sessions.slice(afterLastDeload(sessions))
+  const start = runStart(sessions, s => loadOf(s, cfg.weight))
+  return sessions.slice(start > 0 ? start + 1 : start)
+}
+
 // Shared Stall walk: count back from the newest session through the Run after its baseline,
 // counting every session that did not clear the aim the previous one set. The first progress
 // session breaks the chain; the baseline itself (`start`) is excluded.
@@ -571,11 +584,11 @@ export function nextPrescription(S, cfg, routine) {
   }
 
   // linear + greyskull
-  // A linear Deload starts a new Run: its first session is the baseline and cannot be a
-  // Stall, so one Miss at the reduced load must not immediately cut again. Greyskull keeps
-  // its deliberate reset-on-any-failure rule, including a second reset from the reduced
-  // weight, so only linear trims the count at the last Deload.
-  const stalls = stallCount(policy === 'linear' ? sessions.slice(afterLastDeload(sessions)) : sessions)
+  // Greyskull keeps its deliberate reset-on-any-failure rule, including a second reset
+  // from the reduced weight, so it counts every Miss in the stream. Linear reads its Run
+  // the way double progression and add-time do at a change of working value: the stretch
+  // that follows the change starts with a baseline session, never a Stall.
+  const stalls = stallCount(policy === 'linear' ? linearRun(sessions, last, cfg) : sessions)
   if (last.ok) {
     // Greyskull's final set is taken to failure: double the target reps there and you have
     // earned a double jump.
