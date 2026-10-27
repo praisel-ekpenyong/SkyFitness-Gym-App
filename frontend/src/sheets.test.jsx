@@ -106,7 +106,7 @@ describe('RecapSheet', () => {
 describe('finishWorkout confirmation', () => {
   // The deleted __probe2.test.js proved the confirm counted an unticked warm-up as an
   // unchecked set while the finish button said everything was done. Both now read
-  // sessionProgress (CONTEXT.md: Session progress), so the confirm only ever asks
+  // sessionProgress (GLOSSARY.md: Session progress), so the confirm only ever asks
   // about work sets.
   const activeWith = sets => ({
     id: 'active', name: 'Test workout', start: Date.now(), cur: 0,

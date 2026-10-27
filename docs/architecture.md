@@ -1,6 +1,6 @@
 # Architecture
 
-How Sky works under the hood: the persisted data model, where it lives, and the algorithms that turn history into prescriptions. Vocabulary follows the root [CONTEXT.md](../CONTEXT.md). Decisions and their rationale live in [docs/adr/](adr/).
+How Sky works under the hood: the persisted data model, where it lives, and the algorithms that turn history into prescriptions. Vocabulary follows the root [GLOSSARY.md](../GLOSSARY.md). Decisions and their rationale live in [docs/adr/](adr/).
 
 ## The big picture
 

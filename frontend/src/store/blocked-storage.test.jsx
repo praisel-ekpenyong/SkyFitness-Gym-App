@@ -2,7 +2,7 @@
 // Audit-fixes 02: blocked storage stays usable.
 // Seam: store-plus-persistence — drive the public store update() while the
 // persistence layer denies writes, assert the in-memory Profile still changes
-// and a visible notice is exposed. Vocabulary follows CONTEXT.md (Workout,
+// and a visible notice is exposed. Vocabulary follows GLOSSARY.md (Workout,
 // Entry and Miss judgements are untouched here — this slice is persistence only).
 //
 // Denial is injected through storage.js's local-write seam

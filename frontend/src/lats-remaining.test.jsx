@@ -48,7 +48,7 @@ function getChip(scope, label) {
   return Array.from(scope.querySelectorAll('.chips button.chip')).find(b => b.textContent.trim() === label)
 }
 
-// Shared head-to-toe order for 19 muscles + cardio, per CONTEXT.md / muscles.js MUSCLES
+// Shared head-to-toe order for 19 muscles + cardio, per GLOSSARY.md / muscles.js MUSCLES
 const HEAD_TO_TOE_DISPLAY = ['Traps', 'Shoulders', 'Chest', 'Upper back', 'Lats', 'Serratus', 'Biceps', 'Triceps', 'Forearms', 'Abs', 'Obliques', 'Lower back', 'Glutes', 'Quads', 'Hamstrings', 'Adductors', 'Hip flexors', 'Calves', 'Shins', 'Cardio']
 const EXPECTED_LIBRARY_CHIPS = ['Favorites (1)', 'All', ...HEAD_TO_TOE_DISPLAY]
 

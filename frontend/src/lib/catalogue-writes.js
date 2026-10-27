@@ -1,4 +1,4 @@
-// Write side of Catalogue curations (CONTEXT.md): starring a Favorite exercise,
+// Write side of Catalogue curations (GLOSSARY.md): starring a Favorite exercise,
 // deleting a Custom exercise and saving one. Three screens hand-rolled the
 // favorites toggle, and the delete cascade mutated five collections from an
 // import of the sheet — with the one policy that keeps deleted customs readable
@@ -12,7 +12,7 @@ import { cleanupSg } from './supersetFlow.js'
 import { uid } from './format.js'
 
 /**
- * Star or unstar one exercise (CONTEXT.md: Favorite exercise — starred for
+ * Star or unstar one exercise (GLOSSARY.md: Favorite exercise — starred for
  * quick access across the library and the exercise pickers).
  *
  * A missing list reads as empty, so a hand-made or partially restored state
@@ -31,7 +31,7 @@ export function toggleFavorite(S, id) {
 }
 
 /**
- * Delete a Custom exercise (CONTEXT.md: Unknown exercise — "a deleted custom…
+ * Delete a Custom exercise (GLOSSARY.md: Unknown exercise — "a deleted custom…
  * rendered, removable, never fatal").
  *
  * The one home for the delete cascade, with every policy it owns stated once:
@@ -69,7 +69,7 @@ export function deleteCustomEx(S, ex) {
 }
 
 /**
- * Create or update a Custom exercise (CONTEXT.md: Custom exercise) — the store
+ * Create or update a Custom exercise (GLOSSARY.md: Custom exercise) — the store
  * write of the custom-exercise form. The sheet keeps everything that decides
  * *whether* to save (required name, required primary, duplicate-name check,
  * cardio clearing secondaries); this seam owns everything about *what* lands:
