@@ -233,19 +233,27 @@ function runStart(sessions, valueOf) {
   return start
 }
 
-// Double progression's Stall: neither a top hit nor Rep progress against the previous
-// session's aim. The Run baseline is excluded; a progress session clears the chain.
-function doubleNoProgress(sessions, start, top, bottom, step) {
+// Shared Stall walk: count back from the newest session through the Run after its baseline,
+// counting every session that did not clear the aim the previous one set. The first progress
+// session breaks the chain; the baseline itself (`start`) is excluded.
+function noProgressSince(sessions, start, progressed) {
   let n = 0
   for (let i = sessions.length - 1; i > start; i--) {
     const s = sessions[i]
     const prev = sessions[i - 1]
-    const aim = Math.min(top, Math.max(bottom, (prev.low || 0) + step))
-    const progressed = s.ok || (s.enough && s.low >= aim)
-    if (progressed) break
+    if (progressed(s, prev)) break
     n++
   }
   return n
+}
+
+// Double progression's Stall: neither a top hit nor Rep progress against the previous
+// session's aim. The Run baseline is excluded; a progress session clears the chain.
+function doubleNoProgress(sessions, start, top, bottom, step) {
+  return noProgressSince(sessions, start, (s, prev) => {
+    const aim = Math.min(top, Math.max(bottom, (prev.low || 0) + step))
+    return s.ok || (s.enough && s.low >= aim)
+  })
 }
 
 // The duration a time session was working against. The Prescription record is authoritative
@@ -281,16 +289,10 @@ function timeHit(session, cfg) {
 // Add-time's Stall: a session in the Run after its baseline that did not reach the aim the
 // previous session asked for. A longer weakest hold is progress even below the Target.
 function timeNoProgress(sessions, start, cfg, inc) {
-  let n = 0
-  for (let i = sessions.length - 1; i > start; i--) {
-    const s = sessions[i]
-    const prev = sessions[i - 1]
+  return noProgressSince(sessions, start, (s, prev) => {
     const aim = timeAim(prev, cfg, inc)
-    const progressed = s.enough && s.low > 0 && s.low >= aim
-    if (progressed) break
-    n++
-  }
-  return n
+    return s.enough && s.low > 0 && s.low >= aim
+  })
 }
 
 /**
