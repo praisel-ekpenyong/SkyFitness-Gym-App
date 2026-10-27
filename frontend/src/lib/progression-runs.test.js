@@ -231,6 +231,63 @@ describe('linear deload runs', () => {
     expect(p.kind).toBe('deload')
     expect(p.weight).toBe(50)
   })
+
+  it('keeps the all-history count for Entries written before Prescription records', () => {
+    // No plan on any session: the old after-any-Deload boundary reads as the whole
+    // history, per ADR 0011's legacy bullet.
+    const S = state(repeat(3, i => session({ d: day(i), target, rows: rowsOf(60, 3) })))
+    expect(S.workouts.every(w => w.entries[0].plan == null)).toBe(true)
+    expect(nextPrescription(S, LINEAR).kind).toBe('deload')
+  })
+
+  it('treats a hand-set weight as a new Run baseline, not a Stall', () => {
+    const S = state(repeat(3, i => miss(60, day(i), { kind: 'hold', weight: 60 })))
+    const deload = nextPrescription(S, LINEAR)
+    S.workouts.push(miss(55, '2026-01-04', deload))
+    // Baseline at 55, then two Misses: the allowance is spent by one.
+    S.workouts.push(miss(55, '2026-01-05', { kind: 'hold', weight: 55 }))
+    S.workouts.push(miss(55, '2026-01-06', { kind: 'hold', weight: 55 }))
+    // The lifter hand-sets a lower load rather than taking the Deload.
+    S.workouts.push(miss(50, '2026-01-07', { kind: 'hold', weight: 50 }))
+    S.workouts.push(miss(50, '2026-01-08', { kind: 'hold', weight: 50 }))
+
+    // The hand-set session is the new baseline: one Miss since it, not three.
+    const p = nextPrescription(S, LINEAR)
+    expect(p.kind).toBe('hold')
+    expect(p.weight).toBe(50)
+  })
+
+  it('gives a hand-set heavier weight a fresh Miss allowance too', () => {
+    const S = state(repeat(3, i => miss(60, day(i), { kind: 'hold', weight: 60 })))
+    nextPrescription(S, LINEAR)
+    // The lifter hand-sets 65 instead of taking the reduced load — a baseline, never a
+    // Stall, so it does not count toward the next Deload on its own.
+    S.workouts.push(miss(65, '2026-01-04', { kind: 'hold', weight: 65 }))
+    S.workouts.push(miss(65, '2026-01-05', { kind: 'hold', weight: 65 }))
+    expect(nextPrescription(S, LINEAR).kind).toBe('hold')
+
+    S.workouts.push(miss(65, '2026-01-06', { kind: 'hold', weight: 65 }))
+    expect(nextPrescription(S, LINEAR).kind).toBe('hold')
+
+    S.workouts.push(miss(65, '2026-01-07', { kind: 'hold', weight: 65 }))
+    expect(nextPrescription(S, LINEAR).kind).toBe('deload')
+  })
+
+  it('never counts the first session at a fresh load as a Stall, up or Deload alike', () => {
+    const S = state([session({ d: day(0), target, rows: rowsOf(60, 5) })])
+    const up = nextPrescription(S, LINEAR)
+    expect(up).toMatchObject({ kind: 'up', weight: 62.5 })
+    S.workouts.push(miss(62.5, '2026-01-02', up))
+
+    // The first session at 62.5 is the Run's baseline; two Misses since it hold.
+    S.workouts.push(miss(62.5, '2026-01-03', { kind: 'up', weight: 62.5 }))
+    S.workouts.push(miss(62.5, '2026-01-04', { kind: 'up', weight: 62.5 }))
+    expect(nextPrescription(S, LINEAR).kind).toBe('hold')
+
+    // A third Miss past the baseline deloads.
+    S.workouts.push(miss(62.5, '2026-01-05', { kind: 'up', weight: 62.5 }))
+    expect(nextPrescription(S, LINEAR).kind).toBe('deload')
+  })
 })
 
 describe('bodyweight progression runs', () => {
