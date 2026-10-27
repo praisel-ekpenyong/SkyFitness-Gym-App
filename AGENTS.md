@@ -10,11 +10,11 @@ Issues live as local markdown files under `.scratch/<feature>/` — one director
 
 ### Triage labels
 
-Default canonical triage vocabulary: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`, plus terminal `resolved` for merged work. See `docs/agents/triage-labels.md`.
+Open triage roles are in `docs/agents/triage-labels.md`. Closing a ticket is defined in `docs/agents/issue-tracker.md`.
 
 ### Domain docs
 
-Single-context layout: root `CONTEXT.md` + `docs/adr/`. See `docs/agents/domain.md`.
+Single-context layout: root `GLOSSARY.md` + `docs/adr/`. See `docs/agents/domain.md`.
 
 ## Project shape
 

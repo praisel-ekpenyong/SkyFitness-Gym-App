@@ -1,4 +1,4 @@
-// Body-weight log (CONTEXT.md): the ongoing series of daily weigh-ins on Home
+// Body-weight log (GLOSSARY.md): the ongoing series of daily weigh-ins on Home
 // with a goal weight — one entry per day, chronological.
 //
 // The sheet (upsert today's reading), the importer (skip days already logged),
@@ -7,7 +7,7 @@
 // three read and write through this seam now; the batch path sorts once so a
 // multi-year Health export does not pay a re-sort per entry.
 //
-// Never touches the per-workout weigh-in (`w.bw`, CONTEXT.md: Weigh-in) —
+// Never touches the per-workout weigh-in (`w.bw`, GLOSSARY.md: Weigh-in) —
 // that stamp belongs to the workout lifecycle, not to this log.
 
 /** Kilograms per pound — the single conversion factor shared with the CSV parser. */
@@ -59,7 +59,7 @@ export function recordWeighIn(S, { d, w, t } = {}, { overwrite = true } = {}) {
   return log.find(b => b.d === d)
 }
 
-// The import rule (CONTEXT.md: Import — existing days win): a weigh-in whose
+// The import rule (GLOSSARY.md: Import — existing days win): a weigh-in whose
 // day is already logged — or whose day clashes with another weigh-in in the
 // same batch — is skipped, so importing twice never rewrites a logged reading.
 // One statement shared by the merge and its dry-run below.

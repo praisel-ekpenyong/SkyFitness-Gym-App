@@ -4,7 +4,7 @@
 // lifter does (load a backup file), assert the persisted Profile outcome
 // (good Workout and Routine records survive) plus the visible notice
 // (skipped count), and assert a stale Day override falls back to the week
-// schedule with no Rescheduled badge. Vocabulary follows CONTEXT.md
+// schedule with no Rescheduled badge. Vocabulary follows GLOSSARY.md
 // (Workout, Entry, Day override as Rescheduled, Restore).
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
@@ -169,7 +169,7 @@ describe('stale Day override falls back without badge', () => {
   })
 })
 
-/* Reset (CONTEXT.md): replacing the Profile with factory defaults wholesale —
+/* Reset (GLOSSARY.md): replacing the Profile with factory defaults wholesale —
    Restore with no backup loaded. The seam under test is the shared replace
    path, so the same normalization/persistence behavior applies. */
 

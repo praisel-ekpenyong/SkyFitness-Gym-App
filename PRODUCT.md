@@ -5,7 +5,7 @@ This file holds audience, purpose, operating context, constraints, and voice —
 **not** surface-level visual direction. The incumbent visual system is already
 documented in code: see the four-rule header of `frontend/src/index.css`
 (one type scale, neutral surface ramp, hairlines not borders, motion that
-acknowledges). Domain vocabulary is defined in `CONTEXT.md`.
+acknowledges). Domain vocabulary is defined in `GLOSSARY.md`.
 
 ## What Sky is
 
@@ -69,7 +69,7 @@ Plain, declarative, no hype. Every number comes with a reason — "why this
 number?" must always be answerable, because prescriptions carry a
 translatable `why` template. No streaks, no guilt, no gamified nags: a
 missed session is reported, not punished. Domain vocabulary follows
-`CONTEXT.md` exactly (**workout**, not session-as-record; **entry**,
+`GLOSSARY.md` exactly (**workout**, not session-as-record; **entry**,
 **set**, **target**; "Rescheduled", not "re-planned"). Units are lower-case
 ("60 kg" never "60 Kg").
 
@@ -80,7 +80,7 @@ push servers. A design idea that needs any of these is out of scope.
 
 ## Evidence quality
 
-- Product purpose, audience, constraints: **HIGH** — README.md, CONTEXT.md,
+- Product purpose, audience, constraints: **HIGH** — README.md, GLOSSARY.md,
   docs/adr/, and docs/architecture.md agree with each other and with the code.
 - Operating context: **HIGH** — tap-target and safe-area tokens, the
   dual-write storage protocol, and Capacitor shells are all in the code.

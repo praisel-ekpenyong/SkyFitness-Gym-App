@@ -1,9 +1,9 @@
 // Tests cross the same seam the sheets do after the carve: the full-statement
 // cascade that used to be assembled inside the catalogue sheet, pinned at the
 // new interface — including the Active-workout refusal that previously had no
-// test anywhere (CONTEXT.md: Active workout — at most one exists).
+// test anywhere (GLOSSARY.md: Active workout — at most one exists).
 // upsertCustomEx is the store-write side of the Custom exercise form: the
-// record shape (CONTEXT.md: Custom exercise) and the update-vs-create fork
+// record shape (GLOSSARY.md: Custom exercise) and the update-vs-create fork
 // used to live inline in the sheet; here they are pinned as one module seam.
 import { describe, it, expect } from 'vitest'
 import { toggleFavorite, deleteCustomEx, upsertCustomEx } from './catalogue-writes.js'

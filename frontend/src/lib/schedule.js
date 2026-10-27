@@ -1,4 +1,4 @@
-// Week schedule / Day override: the write side (CONTEXT.md: Week schedule,
+// Week schedule / Day override: the write side (GLOSSARY.md: Week schedule,
 // Day override (Rescheduled)) plus the one dot classifier both schedule
 // surfaces render from.
 //
@@ -13,7 +13,7 @@
 // the active workout degrades to freestyle when its routine is gone and
 // finished `workouts[].routineId` is history that must never be swept.
 
-/** Day-override value marking a date as declared rest (CONTEXT.md: Day override). */
+/** Day-override value marking a date as declared rest (GLOSSARY.md: Day override). */
 export const REST = 'rest'
 
 /** Weekday domain for the week schedule: Date.getDay() values, Sun–Sat. */
@@ -24,7 +24,7 @@ const isSchedulable = (s, v) =>
   v === REST || (s?.routines || []).some(r => r && r.id === v)
 
 /**
- * Write a one-off override for one date (CONTEXT.md: Day override).
+ * Write a one-off override for one date (GLOSSARY.md: Day override).
  *
  * Falsy `v` clears back to the weekly plan, making the old implicit
  * convention explicit. An unknown routine id throws — the storage sanitize

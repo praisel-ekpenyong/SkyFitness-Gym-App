@@ -62,7 +62,7 @@ export const DEF = {
   // null, not absent, so a fresh install reads as "never exported" like any old profile.
   lastExport: null,
 
-  // Profile display name — optional name shown as "Hi {name}" on Home (CONTEXT.md: Profile display name).
+  // Profile display name — optional name shown as "Hi {name}" on Home (GLOSSARY.md: Profile display name).
   // null = not set; merged via DEF so old backups / stored snapshots get it for free.
   displayName: null
 }

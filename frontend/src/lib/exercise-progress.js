@@ -19,7 +19,7 @@ const bestRowValue = (rows, mode) =>
   Math.max(0, ...rows.map(s => (mode === 'cardio' ? (s.speed || 0) : mode === 'time' ? (s.sec || 0) : (s.w || 0))))
 
 /**
- * Resolve the Mode an exercise currently trains under (CONTEXT.md: Mode).
+ * Resolve the Mode an exercise currently trains under (GLOSSARY.md: Mode).
  *
  * The latest logged entry is authoritative: its completed rows decide, with
  * reps winning when rows genuinely mix; a target with an explicit mode pins

@@ -1,4 +1,4 @@
-// Wholesale Profile replacement (CONTEXT.md: Restore "replaces the current
+// Wholesale Profile replacement (GLOSSARY.md: Restore "replaces the current
 // Profile wholesale on confirmation"). Backup import and Reset both converge
 // here, on the store's `replaceState`, so validation, sanitization and
 // persistence cannot drift between the two entry points.
@@ -32,7 +32,7 @@ export function restoreFromBackup(data) {
 }
 
 /**
- * Reset the Profile wholesale to factory defaults (CONTEXT.md: Reset — Restore
+ * Reset the Profile wholesale to factory defaults (GLOSSARY.md: Reset — Restore
  * with no backup loaded). The confirm dialog, navigation and toast stay with
  * Settings; the replacement path is the Restore one, so normalization and
  * persistence behave identically.

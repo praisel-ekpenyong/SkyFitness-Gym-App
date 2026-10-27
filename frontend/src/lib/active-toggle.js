@@ -146,7 +146,7 @@ export function toggleActiveSet(S, entryIdx, setIdx) {
     const loaded = mode === 'reps' && !(isBw({ ...(entry.target || {}), id: entry.id }) && !entry.sets.some(x => x.w > 0))
     // The completion consequences — top-weight prompt, "logged" notices — are for
     // work finishing, never for ticking prep: an entry left with no work rows has
-    // no top set to crown and nothing completed to announce (CONTEXT.md: Warm-up set).
+    // no top set to crown and nothing completed to announce (GLOSSARY.md: Warm-up set).
     const hasWorkRows = entry.sets.some(isWorkSet)
     if (isExerciseDone(entry) && hasWorkRows) {
       exJustDone = true

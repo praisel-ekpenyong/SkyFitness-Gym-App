@@ -2,7 +2,7 @@
 
 The incumbent visual system, extracted from `frontend/src/index.css` and the
 views it styles. Product truth (audience, constraints, voice) lives in
-[PRODUCT.md](PRODUCT.md); domain vocabulary lives in [CONTEXT.md](CONTEXT.md).
+[PRODUCT.md](PRODUCT.md); domain vocabulary lives in [GLOSSARY.md](GLOSSARY.md).
 
 Sky did not start from a blank page: `index.css` was rebuilt around four
 explicit rules, each aimed at a specific "generated" tell. Any new design work
