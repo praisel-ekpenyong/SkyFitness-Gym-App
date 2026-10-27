@@ -4,7 +4,7 @@ import { useUI } from './store/useUI.js'
 import { EXIDX } from './lib/exercises.js'
 import { fmtDate, fmtNum, fmtVol, fmtDur, durPart, todayISO, exCount, DAYN, MONTHS_LONG, monthKey, setLabel } from './lib/format.js'
 import { effectiveRoutineId, hasEffectiveOverride, deleteWorkout } from './lib/history.js'
-import { setsDone } from './lib/workout-model.js'
+import { setsDone, tonnageOf } from './lib/workout-model.js'
 import { effortOf } from './lib/effort.js'
 import { setDayOverride, assignWeekday, dayStatus } from './lib/schedule.js'
 import { recordWeighIn, deleteWeighIn, latestWeighIn } from './lib/bodyweight.js'
@@ -484,7 +484,7 @@ function WorkoutDetail({ w, close }) {
   const st = useStore(s => s.S)
   return <>
     <h3>{w.name}</h3>
-    <div className="muted small" style={{ marginBottom: 12 }}>{[fmtDate(w.d, true), ...durPart(w.end - w.start), fmtVol(w.vol, st.unit), ...(w.bw ? [fmtNum(w.bw) + ' ' + st.unit] : [])].join(' · ')}</div>
+    <div className="muted small" style={{ marginBottom: 12 }}>{[fmtDate(w.d, true), ...durPart(w.end - w.start), fmtVol(tonnageOf(w), st.unit), ...(w.bw ? [fmtNum(w.bw) + ' ' + st.unit] : [])].join(' · ')}</div>
     {w.entries.map((e, i) => {
       const ex = EXIDX[e.id]
       return <div key={i} className="row" style={{ marginBottom: 12, alignItems: 'flex-start' }}>
@@ -517,7 +517,7 @@ function Calendar({ start, close }) {
   const startOffset = (new Date(y, mo, 1).getDay() + 6) % 7
   const daysIn = new Date(y, mo + 1, 0).getDate()
   const monthWs = st.workouts.filter(w => w.d.startsWith(y + '-' + String(mo + 1).padStart(2, '0')))
-  const monthVol = monthWs.reduce((a, w) => a + (w.vol || 0), 0)
+  const monthVol = monthWs.reduce((a, w) => a + tonnageOf(w), 0)
   const monthMs = monthWs.reduce((a, w) => a + Math.max(0, (w.end || w.start) - w.start), 0)
   const cells = []
   for (let i = 0; i < startOffset; i++) cells.push(<div key={'e' + i} />)
@@ -662,7 +662,7 @@ export function WorkoutRow({ w, onClick }) {
     onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick && onClick() } }}>
     <span className="lrow-i" style={{ width: 34, height: 34, borderRadius: 8, fontSize: 19 }}><Icon name={glyph} /></span>
     <div className="grow"><div className="tt">{w.name}</div>
-      <div className="ss">{[fmtDate(w.d, true), ...durPart(w.end - w.start), t('{0} sets', setsDone(w)), fmtVol(w.vol, st.unit)].join(' · ')}</div></div>
+      <div className="ss">{[fmtDate(w.d, true), ...durPart(w.end - w.start), t('{0} sets', setsDone(w)), fmtVol(tonnageOf(w), st.unit)].join(' · ')}</div></div>
     {w.prs && w.prs.length > 0 && <span className="pr"><Icon name="trophy" />{w.prs.length} PR</span>}
     <Icon name="chevronRight" className="chev" />
   </div>

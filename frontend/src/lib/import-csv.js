@@ -479,7 +479,6 @@ export function parseWorkoutCSV(text, { unit = 'kg' } = {}) {
       id: 'iw' + uid(), d, start, end: end > start ? end : start,
       routineId: null, name: day.name || 'Imported', entries, prs: [],
     }
-    w.vol = entries.reduce((a, e) => a + e.sets.reduce((b, s) => b + (s.w || 0) * (s.r || 0), 0), 0)
     return w
   })
 
@@ -580,7 +579,7 @@ export function parseImport(text, opts) {
 
 /* ----------------------------------------------- import counts ---- */
 
-// The workout-side import dedupe rule (CONTEXT.md: Import — existing days win),
+// The workout-side import dedupe rule (GLOSSARY.md: Import — existing days win),
 // stated once here and shared by the merge and its dry-run below.
 const freshWorkouts = (state, parsed) => {
   const have = new Set((state.workouts || []).map(w => w.d))
