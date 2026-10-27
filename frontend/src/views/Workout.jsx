@@ -9,7 +9,7 @@ import { supersetUnits, unitOf } from '../lib/supersetFlow.js'
 import { setLabel } from '../lib/format.js'
 import { EFFORT, effortOf, stepEffort, capEffort } from '../lib/effort.js'
 import { bestKnownWeight } from '../lib/active-workout.js'
-import { fmtNum, fmtDate, todayISO, exCount, DAYN } from '../lib/format.js'
+import { fmtNum, fmtDate, fmtSec, todayISO, exCount, DAYN } from '../lib/format.js'
 import { playSetComplete } from '../lib/sound.js'
 import { t } from '../lib/i18n.js'
 import Media from '../components/Media.jsx'
@@ -190,7 +190,7 @@ export function removeActiveExercise(idx) {
 function ActiveWorkout() {
   const nav = useNavigate()
   const S = useStore(s => s.S)
-  const { startRest, stopRest, work } = useUI()
+  const { startRest, stopRest, work, timer } = useUI()
   const A = S.active
   const units = supersetUnits(A.entries)
   const cur = Math.min(A.cur, Math.max(0, A.entries.length - 1))
@@ -290,7 +290,15 @@ function ActiveWorkout() {
     <div className="wprog"><i style={{ transform: `scaleX(${prog.total ? prog.done / prog.total : 0})` }} /></div>
 
     {A.entries.length ? <>
-      <div className="muted small" style={{ marginBottom: 6 }}>{isSuperset ? t('Superset {0} / {1}', unitIdx + 1, units.length) : t('Exercise {0} / {1}', unitIdx + 1, units.length)}</div>
+      {/* A rest can also be started by hand, between sets or exercises, without logging a
+          set that did not happen. Disabled — never hidden — while either countdown runs, so
+          the line keeps its place and a tap can never restart or shadow the active timer. */}
+      <div className="row between" style={{ marginBottom: 6 }}>
+        <div className="muted small">{isSuperset ? t('Superset {0} / {1}', unitIdx + 1, units.length) : t('Exercise {0} / {1}', unitIdx + 1, units.length)}</div>
+        <Button size="sm" icon="timer" disabled={!!timer || !!work} onClick={() => startRest(S.restSec)}>
+          {t('Rest {0}', fmtSec(S.restSec))}
+        </Button>
+      </div>
       {isSuperset ? (
         <div className="ss-card">
           <div className="ss-hd" style={{ justifyContent: 'space-between' }}>
