@@ -109,16 +109,16 @@ describe('bonus Work sets never flip a Hit to a Miss', () => {
 })
 
 describe('added-set growth resumes from the current Routine target', () => {
-  it('cutting sets in the Routine lowers the resume point below the history high', () => {
+  it('cutting sets in the Routine starts a new Target shape at the new plan', () => {
+    // Planned sets are part of the Progression stream: a 4-set history is not the same
+    // shape as a 2-set plan, so the cut plan begins at its own baseline rather than
+    // pretending the old 4-set block was a Hit for it.
     const S = stateWith([
       finishedWorkout('2026-04-01', { sets: 4, reps: 15 }, [work(0, 15), work(0, 15), work(0, 15), work(0, 15)])
     ])
     const cutPlan = { id: LIFT, sets: 2, reps: 10, repsMax: 15, weight: 0, prog: 'linear' }
     const p = nextPrescription(S, cutPlan)
-    expect(p.kind).toBe('up')
-    expect(p.sets).toBe(3)
-    expect(p.reps).toBe(10)
-    expect(p.weight).toBe(0)
+    expect(p.kind).toBe('first')
   })
 
   it('freestyle added-set growth ignores bonus sets: resumes from the judged count, not the history high', () => {

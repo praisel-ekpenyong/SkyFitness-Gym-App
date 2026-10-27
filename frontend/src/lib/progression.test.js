@@ -239,7 +239,8 @@ describe('bodyweight exercises', () => {
   })
 
   it('stops adding sets at the cap and says what to do instead', () => {
-    const at15 = hist(LIFT, [[0, 15, 15, 15]], { sets: 3, reps: 15 })
+    // The cap is the plan's own set count: six planned sets at the ceiling cannot grow.
+    const at15 = hist(LIFT, [[0, 15, 15, 15, 15, 15, 15]], { sets: MAX_BW_SETS, reps: 15 })
     const p = nextPrescription(at15, { ...cfg, sets: MAX_BW_SETS, reps: 10, repsMax: 15 })
     expect(p.kind).toBe('hold')
     expect(p.sets).toBeUndefined()
@@ -336,8 +337,10 @@ describe('double progression', () => {
     expect(p.reps).toBeLessThanOrEqual(12)
   })
 
-  it('deloads after a run of stalls and restarts at the bottom of the range', () => {
-    const rows = [[40, 9, 9, 9], [40, 9, 9, 9], [40, 9, 9, 9]]
+  it('deloads after four no-progress sessions following the baseline and restarts at the bottom', () => {
+    // The first session at a working weight is the Run's baseline; four no-progress
+    // sessions after it are what earn the Deload.
+    const rows = Array.from({ length: 5 }, () => [40, 9, 9, 9])
     const p = nextPrescription(hist(LIFT, rows, { sets: 3, reps: 12 }), cfg)
     expect(p.kind).toBe('deload')
     expect(p.reps).toBe(8)
@@ -363,16 +366,16 @@ describe('timed progression', () => {
     expect(p.weight).toBeUndefined()
   })
 
-  it('repeats the target when a hold came up short', () => {
+  it('climbs gradually from the weakest hold instead of repeating the frozen target', () => {
     const p = nextPrescription(timeHist([[45, 38]]), cfg)
     expect(p.kind).toBe('hold')
-    expect(p.sec).toBe(45)
+    expect(p.sec).toBe(43)              // weakest 38 + 5, still below the 45 s Target
   })
 
-  it('backs the target off after a run of short sessions', () => {
-    const p = nextPrescription(timeHist([[45, 30], [45, 32], [45, 31]]), cfg)
+  it('backs the target off from the achieved hold after a run of no-progress sessions', () => {
+    const p = nextPrescription(timeHist([[45, 30], [45, 32], [45, 31], [45, 31]]), cfg)
     expect(p.kind).toBe('deload')
-    expect(p.sec).toBe(40)              // 45 × 0.9 = 40.5 → nearest 5 s step
+    expect(p.sec).toBe(30)              // 31 × 0.9 = 27.9 → nearest 5 s step is 30
   })
 
   it('ignores reps history when the exercise switched to time', () => {

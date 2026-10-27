@@ -31,7 +31,13 @@ export function createActiveSession(S, routineId, bw, opts = {}) {
   const routine = routineId ? (S.routines || []).find(r => r.id === routineId) : null
   const entries = (routine ? routine.ex : []).map(cfg => {
     const plan = nextPrescription(S, cfg, routine)
-    const sets = applyPrescription(buildSets(S, cfg), plan)
+    // A new Progression stream keeps the Routine's last working weight but starts at the
+    // plan's top reps/seconds. Reading the global `exWeights` here would import another
+    // Routine's heavier history into this one.
+    const sets = applyPrescription(buildSets(S, cfg, {
+      routineId: routine?.id,
+      seedWeightOnly: plan.kind === 'first',
+    }), plan)
     return { id: cfg.id, sg: cfg.sg, target: { ...cfg }, plan, sets }
   })
   return {
@@ -95,7 +101,12 @@ export function addActiveExercise(S, exId, targetCfg = {}) {
   const freestyle = !S.active.routineId
   const full = { ...defaultConfig(exId), ...targetCfg, id: exId }
   const plan = freestyle ? null : nextPrescription(S, full, routine)
-  const baseSets = buildSets(S, full, freestyle ? { preferLast: true } : undefined)
+  const baseSets = freestyle
+    ? buildSets(S, full, { preferLast: true })
+    : buildSets(S, full, {
+      routineId: S.active.routineId,
+      seedWeightOnly: plan.kind === 'first',
+    })
   const sets = freestyle ? baseSets : applyPrescription(baseSets, plan)
   const entry = { id: exId, target: { ...targetCfg }, plan, sets }
   if (!Array.isArray(S.active.entries)) S.active.entries = []

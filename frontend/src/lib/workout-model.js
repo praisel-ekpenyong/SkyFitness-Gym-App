@@ -208,16 +208,28 @@ export function freestyleConfig(S, cfg) {
  *
  * Rows reuse last logged values within the same mode and fall back to the plan.
  *
+ * Routine-backed sessions pass `routineId` so a new Target shape seeds from that Routine's
+ * own last working weight, never another Routine's `exWeights` high. `seedWeightOnly` keeps
+ * the plan's top reps/seconds for a new Progression stream while still carrying that weight.
+ *
  * @param {Object} S - App state with workouts history and optional exWeights working-weight hints.
  * @param {Object} cfg - Exercise plan carrying id, sets count, and mode fields.
- * @param {Object} options - Build flags; honors options.preferLast to keep each last set weight over the hint.
+ * @param {Object} options - Build flags:
+ *   `preferLast` keeps each last set weight over the hint; `routineId` scopes history and
+ *   disables the global working-weight hint; `seedWeightOnly` takes only the weight from
+ *   history; `last` supplies an already-resolved history entry.
  * @returns {Array<Object>} New set rows with done:false, at least one row.
  */
 export function buildSets(S, cfg, options = {}) {
-  const last = lastEntryFor(S, cfg.id)
+  const routineId = options.routineId || null
+  const last = options.last !== undefined
+    ? options.last
+    : (routineId ? lastEntryForRoutine(S, cfg.id, routineId) : lastEntryFor(S, cfg.id))
   const n = Math.max(1, cfg.sets || 1)
   const mode = modeOf(cfg)
   const preferLast = !!options.preferLast
+  const seedWeightOnly = !!options.seedWeightOnly
+  const useExWeights = options.useExWeights !== undefined ? !!options.useExWeights : !routineId
   const sets = []
   const prevAt = i => (last ? (last.sets[i] || last.sets[last.sets.length - 1]) : null)
 
@@ -231,17 +243,19 @@ export function buildSets(S, cfg, options = {}) {
   if (mode === 'time') {
     for (let i = 0; i < n; i++) {
       const prev = prevAt(i)
-      const carried = prev && prev.sec > 0 ? prev : null
+      const usable = prev && prev.sec > 0 ? prev : null
+      // A new stream takes the working weight but not the old Target's duration.
+      const carried = seedWeightOnly && usable ? { w: usable.w } : usable
       sets.push(makeRow('time', cfg, { prev: carried }))
     }
     return sets
   }
-  const conf = S?.exWeights?.[cfg.id]
+  const conf = useExWeights ? S?.exWeights?.[cfg.id] : null
   for (let i = 0; i < n; i++) {
     const prev = prevAt(i)
     const usable = prev && prev.r > 0 ? prev : null
     const w = preferLast && usable ? usable.w : (conf && conf.w > 0 ? conf.w : (usable ? usable.w : cfg.weight))
-    const r = usable ? usable.r : cfg.reps
+    const r = seedWeightOnly ? cfg.reps : (usable ? usable.r : cfg.reps)
     // makeRow would otherwise re-derive r from prev, but w is already resolved
     // via exWeights/preferLast — so seed r from usable and override w explicitly.
     const row = makeRow('reps', { ...cfg, reps: r, weight: w }, { prev: null })
@@ -468,6 +482,33 @@ export function lastEntryFor(S, exId) {
     const workDone = doneWorkSets(en)
     if (workDone.length) {
       return { d: S.workouts[i].d, sets: workDone, target: en.target || null }
+    }
+  }
+  return null
+}
+
+/**
+ * Find the most recent workout entry for an exercise within one Routine.
+ *
+ * A new Progression stream seeds its first rows from the Routine it belongs to. Reading the
+ * global last Entry (or `exWeights`) instead would let a heavy Routine's 100 kg session seed
+ * a light Routine's 40 kg plan. Falls back to the global read when no Routine is supplied.
+ *
+ * @param {Object} S - Application state atom containing `workouts`.
+ * @param {string} exId - Exercise identifier from EXIDX.
+ * @param {string} [routineId] - Routine whose history to read; falsy means any Routine.
+ * @returns {{ d: string, sets: Array<Object>, target: Object|null }|null} Last entry summary.
+ */
+export function lastEntryForRoutine(S, exId, routineId) {
+  if (!routineId) return lastEntryFor(S, exId)
+  for (let i = (S?.workouts || []).length - 1; i >= 0; i--) {
+    const w = S.workouts[i]
+    if (w?.routineId !== routineId) continue
+    const en = (w.entries || []).find(e => e.id === exId)
+    if (!en?.sets) continue
+    const workDone = doneWorkSets(en)
+    if (workDone.length) {
+      return { d: w.d, sets: workDone, target: en.target || null }
     }
   }
   return null
