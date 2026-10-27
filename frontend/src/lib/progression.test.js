@@ -189,6 +189,38 @@ describe('bodyweight exercises', () => {
     expect(p.reps).toBe(11)
   })
 
+  it('progresses in reps after a clean 0 kg session even when the plan still has a weight', () => {
+    const S = { workouts: [{ entries: [{ id: LIFT, sets: [{ w: 0, r: 1, done: true }] }] }] }
+    const p = nextPrescription(S, { id: LIFT, weight: 20, reps: 1 })
+    expect(p.kind).toBe('up')
+    expect(p.weight).toBe(0)
+    expect(p.reps).toBe(2)
+  })
+
+  it('holds a short 0 kg session at 0 even when the target weight is higher', () => {
+    const S = { workouts: [{ entries: [{ id: LIFT, sets: [{ w: 0, r: 1, done: true }] }] }] }
+    const p = nextPrescription(S, { id: LIFT, weight: 20, reps: 5 })
+    expect(p.kind).toBe('hold')
+    expect(p.weight).toBe(0)
+    expect(p.reps).toBe(5)
+  })
+
+  it('progresses from the heavier performed set when another set was 0 kg', () => {
+    const S = { workouts: [{ entries: [{ id: LIFT, target: { sets: 2, reps: 5 }, sets: [
+      { w: 0, r: 5, done: true }, { w: 20, r: 5, done: true }
+    ] }] }] }
+    const p = nextPrescription(S, { id: LIFT, weight: 20, reps: 5, sets: 2, inc: 2.5 })
+    expect(p.kind).toBe('up')
+    expect(p.weight).toBe(22.5)
+  })
+
+  it('holds at the target weight when no work set was performed', () => {
+    const S = { workouts: [{ entries: [{ id: LIFT, sets: [{ w: 0, r: 5, done: false }] }] }] }
+    const p = nextPrescription(S, { id: LIFT, weight: 20, reps: 5, sets: 1 })
+    expect(p.kind).toBe('hold')
+    expect(p.weight).toBe(20)
+  })
+
   /* A ceiling turns "+1 rep forever" into a plan — issue #33. */
   it('climbs to the ceiling one rep at a time', () => {
     const p = nextPrescription(bw([[0, 10, 10, 10]]), { ...cfg, repsMax: 15 })
