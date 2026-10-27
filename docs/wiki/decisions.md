@@ -15,9 +15,13 @@ with a pointer to their successor.
   hints); ADR 0011's seeding bullet was rewritten to state the actual rule
   (merged `6e2346f`, ticket 01 in `.scratch/progression-review/`).
 
-- **2026-10-27 — Linear Run boundary on manual weight change: decide later.**
-  Filed as `needs-triage` ticket 05 in `.scratch/progression-review/` rather
-  than fixed; it is a product-behavior call, not a bug against ADR 0011.
+- **2026-10-27 — A change of working value starts a new Run, linear included.**
+  Adopted the recommendation for ticket 05: Deload, up, or the lifter's hand
+  each start a new Run (baseline never a Stall), unifying linear with double
+  and add-time. Merged `218877a` (4 new test scenarios; virgin stretches
+  untouched). Motivation: it is what ADR 0011 and `GLOSSARY.md` already define,
+  and a hand-set weight must not pile an automatic Deload on top — the cascade
+  shape ADR 0011 was written to kill.
 
 - **2026-10-27 — Deload threshold double 3 → 4 stands.** Review flagged the
   stricter count as beyond the commit message's intent, but ADR 0011 authored
