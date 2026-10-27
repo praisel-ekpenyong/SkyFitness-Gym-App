@@ -253,7 +253,7 @@ export function buildSets(S, cfg, options = {}) {
 /**
  * Whether a row is a work set — the phase reading, complement of `isWarmupRow`.
  *
- * CONTEXT.md: Work set — any set that is not a warm-up; all metrics, judgements
+ * GLOSSARY.md: Work set — any set that is not a warm-up; all metrics, judgements
  * and policies read work sets only. A missing or unrecognised phase reads as
  * work (the `phaseForSet` contract), so the predicate is for real rows.
  *
@@ -265,7 +265,7 @@ export const isWorkSet = set => !isWarmupRow(set)
 /**
  * Whether a set was performed (checked off).
  *
- * CONTEXT.md: Performed — an unchecked set counts as not having happened,
+ * GLOSSARY.md: Performed — an unchecked set counts as not having happened,
  * everywhere. Read as truthy: production writes booleans, and a hand-edited
  * `done: 1` counts rather than silently disappearing from the strict readers.
  *
@@ -284,12 +284,12 @@ export const doneWorkSets = entry => workSets(entry).filter(isPerformed)
 export const hasWorkSet = entry => doneWorkSets(entry).length > 0
 
 /**
- * Total weight-times-reps across completed work sets in a workout.
+ * Tonnage of one Workout: load × reps across performed Work sets.
  *
  * @param {Object|null|undefined} w - Workout with an entries array of set rows; nullish yields 0.
- * @returns {number} Summed w*r across performed work sets; 0 when none.
+ * @returns {number} Summed load × reps; 0 when none.
  */
-export function workoutVolume(w) {
+export function tonnageOf(w) {
   let v = 0
   ;(w?.entries || []).forEach(e => doneWorkSets(e).forEach(s => { v += (s.w || 0) * (s.r || 0) }))
   return v
@@ -368,7 +368,7 @@ export const hasWork = (entryOrEntries, idx) => {
 /**
  * Whether an entry has nothing left to do.
  *
- * An entry counts as done when no work set remains unticked (CONTEXT.md:
+ * An entry counts as done when no work set remains unticked (GLOSSARY.md:
  * Session progress). An entry left with only warm-up rows — or none at all —
  * has nothing left to do and counts as done, so a session can always be
  * finished without a false "unchecked" claim. Nullish entries are not done.
@@ -382,7 +382,7 @@ export function isExerciseDone(entry) {
 }
 
 /**
- * The one reading of Active workout progress (CONTEXT.md: Session progress).
+ * The one reading of Active workout progress (GLOSSARY.md: Session progress).
  *
  * Work sets only: warm-up rows never move any number here. Every surface that
  * shows or asks how far the session has come reads this — `done`/`total` the

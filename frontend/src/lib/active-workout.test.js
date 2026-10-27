@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { tonnageOf } from './workout-model.js'
 import {
   bestKnownWeight, heaviestSetWeight, heaviestForEntry, mergeExWeight,
   createActiveSession, applyWorkingWeight, completeActiveSession,
@@ -31,7 +32,7 @@ describe('active-workout lifecycle seam', () => {
     expect(bestKnownWeight({ workouts: S.workouts, exWeights: {} }, 'lift')).toBe(90)
   })
 
-  it('bestKnownWeight never promotes a warm-up or an unperformed set (CONTEXT.md: work sets only)', () => {
+  it('bestKnownWeight never promotes a warm-up or an unperformed set (GLOSSARY.md: work sets only)', () => {
     expect(bestKnownWeight({ workouts: [{ entries: [{ id: 'lift', topW: 120, sets: [
       { phase: 'warmup', done: true, w: 120 },
       { phase: 'work', done: true, w: 80 },
@@ -396,7 +397,8 @@ describe('active-workout lifecycle seam', () => {
     expect(result.workout.unit).toBe('kg')
     expect(S.exWeights.ex1).toEqual({ w: 90, d: '2026-08-24' })
     expect(S.exWeights.ex2).toEqual({ w: 40, d: '2026-08-24' })
-    expect(result.workout.vol).toBeGreaterThan(0)
+    expect(result.workout.vol).toBeUndefined()
+    expect(tonnageOf(result.workout)).toBe(90 * 5 + 40 * 10)
   })
 })
 

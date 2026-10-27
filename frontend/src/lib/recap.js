@@ -1,4 +1,4 @@
-import { workSetsDone, workoutVolume } from './workout-model.js'
+import { workSetsDone, tonnageOf } from './workout-model.js'
 import { bestSetOf } from './onerm.js'
 import { monthKey } from './format.js'
 
@@ -52,7 +52,7 @@ function metricsFor(workouts) {
   const prs = []
 
   for (const w of workouts || []) {
-    vol += workoutVolume(w)
+    vol += tonnageOf(w)
     sets += workSetsDone(w)
     const start = Number(w.start)
     const end = Number(w.end)

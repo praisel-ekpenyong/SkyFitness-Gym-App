@@ -4,7 +4,7 @@
 // estimated-1RM detection, and the completed-Workout boundary. Session
 // construction lives in active-session.js, set surgery in active-sets.js,
 // the toggle decision in active-toggle.js.
-import { workoutVolume, bestWeightForEntry, doneWorkSets, isPerformed } from './workout-model.js'
+import { bestWeightForEntry, doneWorkSets, isPerformed } from './workout-model.js'
 import { is1RMRecord } from './onerm.js'
 import { EXIDX } from './exercises.js'
 import { exerciseMuscleSnapshot } from './muscles.js'
@@ -182,7 +182,7 @@ export function buildCompletedWorkout(active, { end = Date.now(), prs = [], unit
  * Finalize the active workout session and commit it to historical log.
  *
  * Evaluates personal records (heaviest completed sets) and estimated 1RM records against history,
- * calculates total tonnage volume (`vol`), merges peak loads into `exWeights`, appends the
+ * merges peak loads into `exWeights`, appends the
  * completed workout to `S.workouts` sorted chronologically, and clears `S.active`.
  * Mutates `S` in-place; must be executed within `useStore.update(...)`.
  *
@@ -214,7 +214,6 @@ export function completeActiveSession(S, opts = {}) {
     unit: A.unit || S?.unit || 'kg',
     snapshotFor: en => (EXIDX[en.id]?.custom ? exerciseMuscleSnapshot(EXIDX[en.id]) : null),
   })
-  w.vol = workoutVolume(w)
 
   for (const e of w.entries) {
     const mx = heaviestForEntry(e)

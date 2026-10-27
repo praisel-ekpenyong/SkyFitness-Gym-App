@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   readSession, sessionsFor, stallCount, nextPrescription, MIN_TIME_SEC
 } from './progression.js'
-import { workoutVolume } from './workout-model.js'
+import { tonnageOf } from './workout-model.js'
 import { fatigueOf } from './recovery.js'
 import { EXDB } from './exercises.js'
 
@@ -97,7 +97,7 @@ describe('bonus Work sets never flip a Hit to a Miss', () => {
 
   it('still counts the bonus Work set toward volume and fatigue', () => {
     const w = cleanPlusBonus.workouts[0]
-    expect(workoutVolume(w)).toBe(3 * 60 * 5 + 50 * 4)
+    expect(tonnageOf(w)).toBe(3 * 60 * 5 + 50 * 4)
     const plain = stateWith([
       finishedWorkout('2026-04-01', TARGET_3X5, [work(60, 5), work(60, 5), work(60, 5)])
     ])

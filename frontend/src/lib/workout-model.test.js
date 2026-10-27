@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { bestKnownWeight } from './active-workout.js'
-import { modeOf, isTimed, defaultConfig, buildSets, freestyleConfig, workoutVolume, bestWeightForEntry, isBw, isPerSide, sideReps, repStep, cascadeWeight, insertWarmupRow, removeRowAt, workSetsDone, isWorkSet, isPerformed, workSets, doneWorkSets, hasWork, isExerciseDone, sessionProgress } from './workout-model.js'
+import { modeOf, isTimed, defaultConfig, buildSets, freestyleConfig, tonnageOf, bestWeightForEntry, isBw, isPerSide, sideReps, repStep, cascadeWeight, insertWarmupRow, removeRowAt, workSetsDone, isWorkSet, isPerformed, workSets, doneWorkSets, hasWork, isExerciseDone, sessionProgress } from './workout-model.js'
 import { fmtSec, setLabel, exLine } from './format.js'
 import { effortOf, stepEffort, capEffort } from './effort.js'
 import { pairAdjacent, unpairSuperset, supersetUnits } from './supersetFlow.js'
@@ -462,26 +462,43 @@ describe('buildSets', () => {
   })
 })
 
-describe('workoutVolume', () => {
+describe('tonnageOf', () => {
   it('counts reps work and leaves timed/cardio sets out — there is no weight × reps for a hold', () => {
     const w = { entries: [
       { id: LIFT, sets: [{ w: 60, r: 10, done: true }, { w: 60, r: 10, done: false }] },
       { id: LIFT, target: { mode: 'time' }, sets: [{ sec: 60, w: 20, done: true }] },
       { id: CARDIO, sets: [{ min: 20, speed: 9, done: true }] }
     ] }
-    expect(workoutVolume(w)).toBe(600)
+    expect(tonnageOf(w)).toBe(600)
   })
 
   it('needs no per-side case — the logged reps are already both sides (issue #31)', () => {
     const w = { entries: [{ id: LIFT, target: { side: true }, sets: [{ w: 20, r: 16, done: true }] }] }
-    expect(workoutVolume(w)).toBe(320)
+    expect(tonnageOf(w)).toBe(320)
   })
 
   it('leaves an unloaded bodyweight set at zero volume rather than inventing a number', () => {
     const w = { entries: [{ id: BW, target: { bodyweight: true }, sets: [{ w: 0, r: 20, done: true }] }] }
-    expect(workoutVolume(w)).toBe(0)
+    expect(tonnageOf(w)).toBe(0)
   })
 
+  it('excludes both Warm-up shapes, including a performed Warm-up set', () => {
+    const w = {
+      entries: [{
+        id: LIFT,
+        sets: [
+          { warmup: true, w: 20, r: 5, done: true },
+          { phase: 'warmup', w: 30, r: 5, done: true },
+          { phase: 'work', w: 60, r: 5, done: true },
+        ],
+      }],
+    }
+    expect(tonnageOf(w)).toBe(300)
+    expect(tonnageOf(null)).toBe(0)
+  })
+})
+
+describe('work-set load readings', () => {
   it('recognizes both warm-up schemas in work-set counts', () => {
     const w = {
       unit: 'kg',
@@ -697,7 +714,7 @@ describe('hasWork', () => {
   })
 })
 
-// CONTEXT.md: Session progress — warm-ups never block completion, and an entry
+// GLOSSARY.md: Session progress — warm-ups never block completion, and an entry
 // with no work rows has nothing left to do, so it counts as done rather than
 // wedging the finish button on "finish early" forever.
 describe('isExerciseDone', () => {
@@ -730,7 +747,7 @@ describe('isExerciseDone', () => {
 // The probe fixture that proved the header, the confirm and the finish button
 // disagreed: one unticked warm-up row, both work sets ticked. Before
 // sessionProgress the header demanded one more set and the confirm called the
-// unticked warm-up a miss (see CONTEXT.md: Warm-up set — never a miss).
+// unticked warm-up a miss (see GLOSSARY.md: Warm-up set — never a miss).
 describe('sessionProgress', () => {
   const warmupUnticked = { w: 40, r: 5, done: false, phase: 'warmup', warmup: true }
   const work = done => ({ w: 100, r: 8, done })
