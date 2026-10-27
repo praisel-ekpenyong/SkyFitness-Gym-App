@@ -208,7 +208,7 @@ The exact step a fully hit session adds — bigger for lower-body lifts, overrid
 A session's weakest planned Work set reaching its aim — the previous weakest plus one rep step, clamped to the Target's rep range. Rep progress is not a Hit (the Target top is the Hit); it is the evidence that a double-progression climb is still moving, and it clears the Stall count.
 
 **Stall**:
-For linear, consecutive Misses after the current Run's baseline; a Deload starts a new Run. For Greyskull, every Miss — a reset at the reduced load is part of the program. For double progression and add-time, consecutive sessions in the current Run, after its baseline, that neither reach the Target top nor show progress — Rep progress for double, a longer weakest hold for add-time. A progress session clears the count.
+For linear, consecutive Misses after the current Run's baseline; a Deload starts a new Run. For Greyskull, every Miss — a reset at the reduced load is part of the program. For double progression and add-time, consecutive sessions in the current Run, after its baseline, that neither reach the Target top nor show progress — Rep progress for double, for add-time the weakest hold reaching the aim `min(working, previous weakest + Increment)`. A progress session clears the count.
 _Avoid_: counting every below-top double-progression session as a Miss
 
 **Deload**:
