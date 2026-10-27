@@ -197,7 +197,7 @@ A set whose estimated 1RM beats every estimate before it, kept on the workout wh
 Training load per muscle counted in sets, weighted primary 1 / secondary 0.4 — deliberately not in kilograms, because tonnage across exercises compares nothing.
 
 **Tonnage**:
-Load × reps of performed Work sets; a Warm-up set is excluded, including when it was performed. Fatigue is computed from this sum, weighted by intensity relative to the lifter's own capacity.
+Load × reps of performed Work sets; a Warm-up set is excluded, including when it was performed.
 
 **Fatigue**:
 Per-muscle accumulated stimulus that rises with hard volume and fades with a ~36-hour half-life. Bucketed: **ready** below 0.25, **recovering** to 0.5, **fatigued** above.

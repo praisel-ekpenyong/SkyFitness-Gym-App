@@ -498,7 +498,7 @@ describe('tonnageOf', () => {
   })
 })
 
-describe('work-set load readings', () => {
+describe('workSetsDone and bestWeightForEntry', () => {
   it('recognizes both warm-up schemas in work-set counts', () => {
     const w = {
       unit: 'kg',
