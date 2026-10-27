@@ -106,10 +106,27 @@ export function workoutTimestamp(w) {
 }
 export const ACCENTS = { lime: '#30d158', sky: '#0a84ff', orange: '#ff9f0a', violet: '#bf5af2', pink: '#ff375f', red: '#ff453a', teal: '#40c8e0', gold: '#ffd60a' }
 
-// mm:ss for a duration — a held set or a rest; seconds alone read badly past a minute ("90 s" vs "1:30").
+// One minutes:seconds splitter for durations and elapsed time, so the two formatters
+// cannot drift apart. Callers clamp and round or floor before calling it.
+const clockText = n => Math.floor(n / 60) + ':' + String(n % 60).padStart(2, '0')
+
+/**
+ * Formats a duration in seconds as `m:ss`, rounding to the nearest second.
+ * @param {number} sec - Duration in seconds; negatives and junk clamp to zero.
+ * @returns {string} Minutes and seconds such as `1:30`.
+ */
 export function fmtSec(sec) {
-  const n = Math.max(0, Math.round(Number(sec) || 0))
-  return Math.floor(n / 60) + ':' + String(n % 60).padStart(2, '0')
+  return clockText(Math.max(0, Math.round(Number(sec) || 0)))
+}
+
+/**
+ * Formats elapsed time in seconds as `m:ss`, flooring so the clock never shows a
+ * second before it has passed.
+ * @param {number} sec - Elapsed seconds; negatives and junk clamp to zero.
+ * @returns {string} Minutes and seconds such as `1:30`.
+ */
+export function fmtElapsed(sec) {
+  return clockText(Math.max(0, Math.floor(Number(sec) || 0)))
 }
 
 // The "(RIR 2)" / "(RPE 8)" tail on a set summary, empty when nothing was logged.
