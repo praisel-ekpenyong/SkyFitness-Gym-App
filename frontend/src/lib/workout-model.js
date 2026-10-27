@@ -464,6 +464,33 @@ export function metricModeForEntry(entry, fallback = null) {
 }
 
 /**
+ * Backwards walk shared by the last-entry readers.
+ *
+ * Scans workouts in reverse order, keeping only those the `match` predicate accepts, and returns
+ * the first matching exercise entry that has performed work sets. Callers add their filter
+ * (any-Routine vs one Routine) as the predicate; the entry shape is fixed here.
+ *
+ * @param {Object} S - Application state atom containing `workouts`.
+ * @param {string} exId - Exercise identifier from EXIDX.
+ * @param {(w: Object) => boolean} match - Workout filter; false skips the workout entirely.
+ * @returns {{ d: string, sets: Array<Object>, target: Object|null }|null} Last entry summary, or null.
+ */
+const lastEntryWalk = (S, exId, match) => {
+  const workouts = S?.workouts || []
+  for (let i = workouts.length - 1; i >= 0; i--) {
+    const w = workouts[i]
+    if (!match(w)) continue
+    const en = (w.entries || []).find(e => e.id === exId)
+    // `target` is what the session prescribed; finished workouts carry it so labels and the
+    // progression engine can read a session back the way it was logged.
+    if (!en?.sets) continue
+    const workDone = doneWorkSets(en)
+    if (workDone.length) return { d: w.d, sets: workDone, target: en.target || null }
+  }
+  return null
+}
+
+/**
  * Find the most recent workout entry for an exercise containing completed work sets.
  *
  * Scans workouts in reverse chronological order. Warm-up rows are excluded so prep sets
@@ -474,17 +501,7 @@ export function metricModeForEntry(entry, fallback = null) {
  * @returns {{ d: string, sets: Array<Object>, target: Object|null }|null} Last entry summary, or null if never performed.
  */
 export function lastEntryFor(S, exId) {
-  for (let i = (S?.workouts || []).length - 1; i >= 0; i--) {
-    const en = (S.workouts[i].entries || []).find(e => e.id === exId)
-    // `target` is what the session prescribed; finished workouts carry it so labels and the
-    // progression engine can read a session back the way it was logged.
-    if (!en?.sets) continue
-    const workDone = doneWorkSets(en)
-    if (workDone.length) {
-      return { d: S.workouts[i].d, sets: workDone, target: en.target || null }
-    }
-  }
-  return null
+  return lastEntryWalk(S, exId, () => true)
 }
 
 /**
@@ -501,17 +518,7 @@ export function lastEntryFor(S, exId) {
  */
 export function lastEntryForRoutine(S, exId, routineId) {
   if (!routineId) return lastEntryFor(S, exId)
-  for (let i = (S?.workouts || []).length - 1; i >= 0; i--) {
-    const w = S.workouts[i]
-    if (w?.routineId !== routineId) continue
-    const en = (w.entries || []).find(e => e.id === exId)
-    if (!en?.sets) continue
-    const workDone = doneWorkSets(en)
-    if (workDone.length) {
-      return { d: w.d, sets: workDone, target: en.target || null }
-    }
-  }
-  return null
+  return lastEntryWalk(S, exId, w => w?.routineId === routineId)
 }
 
 /** Best load from completed work rows, with a guarded reps-only legacy topW fallback. */
