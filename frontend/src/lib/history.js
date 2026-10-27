@@ -83,13 +83,14 @@ export function effectiveRoutine(S, iso) {
  * a trailing streak from the prior week.
  *
  * @param {Object} S - Application state atom containing `workouts`.
+ * @param {number} [now] - Clock in milliseconds. Defaults to the wall clock so a Stats snapshot can count the streak from the same instant as its other readings.
  * @returns {number} Number of consecutive active weeks (capped at 520 weeks / 10 years).
  */
-export function streakWeeks(S) {
+export function streakWeeks(S, now = Date.now()) {
   if (!S?.workouts?.length) return 0
   const weeks = new Set(S.workouts.map(w => weekKey(w.d)))
   let streak = 0
-  const cur = new Date()
+  const cur = new Date(now)
   for (let i = 0; i < 520; i++) {
     const wk = weekKey(isoOf(cur))
     if (weeks.has(wk)) streak++
