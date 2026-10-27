@@ -136,6 +136,25 @@ export function applyWorkingWeight(S, entryIdx, weight, opts = {}) {
 }
 
 /**
+ * Freeze the resolved Prescription onto a finished Entry.
+ *
+ * Only the decision fields are kept: `kind` says whether the session was a first baseline,
+ * hold, up, or deload, and the value fields say what it asked for. The `why` tuple is
+ * presentation, and a stall counter would be state the log can derive for itself.
+ *
+ * @param {Object|null|undefined} plan - Active Entry's resolved Prescription.
+ * @returns {Object|null} Persistable `{ kind, weight?, reps?, sec?, sets? }`, or null.
+ */
+function planRecord(plan) {
+  if (!plan || typeof plan !== 'object') return null
+  const out = { kind: plan.kind }
+  for (const key of ['weight', 'reps', 'sec', 'sets']) {
+    if (plan[key] != null) out[key] = plan[key]
+  }
+  return out
+}
+
+/**
  * Map an active workout session into a persistable completed workout record.
  *
  * Pure function: filters out unperformed entries (zero completed sets), freezes routine metadata,
@@ -157,6 +176,10 @@ export function buildCompletedWorkout(active, { end = Date.now(), prs = [], unit
       topW: entry.topW || null,
       target: entry.target || null,
     }
+    // Persist the resolved Prescription so the next session can see the duration a deload
+    // actually prescribed and where a Run began. Older Entries simply have no `plan`.
+    const plan = planRecord(entry.plan)
+    if (plan) completed.plan = plan
     const snapshot = typeof snapshotFor === 'function' ? snapshotFor(entry) : null
     if (snapshot && typeof snapshot === 'object' && !Array.isArray(snapshot) && Object.keys(snapshot).length) {
       completed.muscleSnapshot = { ...snapshot }

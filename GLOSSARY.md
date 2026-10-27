@@ -185,18 +185,35 @@ How a session is judged against its target. A performed set that reached its tar
 **Progression policy**:
 The named rule that derives the next target from history: off, linear, Greyskull LP, double progression, add-time. Policies are pure readings of the log — fixing a mistyped set immediately changes the next prescription.
 
+**Progression stream**:
+The slice of history one policy reads for one Target shape: exercise, Mode, planned set count, and top reps or seconds. Weight, the rep-range bottom, per-side logging, and the policy itself are outside the shape — changing them does not start a new stream, while changing the Target shape does. A new stream's first session is its baseline, and its rows seed from the last working weight in the same Routine (else the Routine's plan weight).
+_Avoid_: exercise history (which implies every Target shape shares one); routine history (a stream can span Routines)
+
+**Run**:
+A consecutive stretch of sessions in a Progression stream at the same working value: the logged working load for reps work, the prescribed hold for add-time. A change of working value starts a new Run, whose first session is a baseline and is never a Stall. Greyskull is the deliberate exception: every Miss resets, including a Miss at a Deload's new load.
+_Avoid_: streak, block
+
 **Prescription**:
 The concrete next target a policy produces — weight/reps/seconds/sets — together with the reason it chose them. Always auditable; a suggestion you can't explain is one you stop trusting.
 _Avoid_: suggestion
 
+**Prescription record**:
+The resolved Prescription frozen onto a finished Entry as `plan` (`kind`, `weight`, `reps`, `sec`, `sets`), so later sessions can see what was actually asked. Entries written before it existed derive the same reading from their Target and sets.
+_Avoid_: storing a stall counter
+
 **Increment**:
-The step a fully hit session adds — bigger for lower-body lifts, overridable per exercise.
+The exact step a fully hit session adds — bigger for lower-body lifts, overridable per exercise. It is added to the working value as logged, not snapped from zero; only a Deload is snapped to the equipment or timer grid. For add-time the step is seconds.
+
+**Rep progress**:
+A session's weakest planned Work set reaching its aim — the previous weakest plus one rep step, clamped to the Target's rep range. Rep progress is not a Hit (the Target top is the Hit); it is the evidence that a double-progression climb is still moving, and it clears the Stall count.
 
 **Stall**:
-Consecutive missed sessions, counting back from the most recent.
+For linear, consecutive Misses after the current Run's baseline; a Deload starts a new Run. For Greyskull, every Miss — a reset at the reduced load is part of the program. For double progression and add-time, consecutive sessions in the current Run, after its baseline, that neither reach the Target top nor show progress — Rep progress for double, a longer weakest hold for add-time. A progress session clears the count.
+_Avoid_: counting every below-top double-progression session as a Miss
 
 **Deload**:
-Cutting the working weight roughly 10% after enough stalls, landing on a loadable step; never below one increment.
+Cutting the working value roughly 10% after enough Stalls — load for reps work, hold duration for add-time — snapped to a loadable step or timer step, and never below one Increment (5 s for a hold). Rep work returns to the bottom of the rep range. The first session at the new value is a new Run baseline. When the value cannot be reduced, the Prescription holds at the same value and says so.
+_Avoid_: cascading Deloads; a same-weight "deload"
 
 **AMRAP**:
 Greyskull's final set, taken to failure. Doubling its target reps earns a double increment.
