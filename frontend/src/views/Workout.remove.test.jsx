@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import React, { act } from 'react'
+import { act } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { removeActiveExercise } from './Workout.jsx'
 import { useStore } from '../store/useStore.js'
