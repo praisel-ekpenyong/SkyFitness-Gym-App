@@ -118,6 +118,8 @@ describe('format utility module', () => {
       expect(fmtSec(45)).toBe('0:45')
       expect(fmtSec(90)).toBe('1:30')
       expect(fmtSec(605)).toBe('10:05')
+      expect(fmtSec(0.5)).toBe('0:01')
+      expect(fmtSec(59.5)).toBe('1:00')
     })
 
     it('guards against null, negative, and non-numeric inputs', () => {
