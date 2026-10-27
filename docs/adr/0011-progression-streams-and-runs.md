@@ -16,9 +16,11 @@ not from every historical Entry of the exercise.
   or seconds. Working weight, `repsMin`, per-side logging, and the policy are outside the
   shape. A different Target shape starts a new stream; changing policy, the bottom of the
   range, or the load does not. A new stream's first session is a baseline, and its rows seed
-  from the last working weight in the same Routine (else the Routine's plan weight), never
-  from an unrelated Routine's heavier history.
-- A Run is the trailing block of stream sessions at the same working value — the logged
+  from the last working weight in the same Routine (else the Routine's plan weight). Every
+  routine-backed session prefers that same-Routine history over the all-time `exWeights`
+  hint — the hint is read only when the session has no Routine behind it — so an unrelated
+  Routine's heavier history never seeds.
+- A Run is the trailing stretch of stream sessions at the same working value — the logged
   working load for reps work, the prescribed hold duration for add-time. Its first session is
   a baseline and is never a Stall. Greyskull is the deliberate exception: its rule is reset on
   any Miss, so a Miss at the reduced load resets again from that load.
@@ -37,7 +39,8 @@ not from every historical Entry of the exercise.
   weakest + 5 s)`), and advances by the Increment from the value actually achieved. A Deload
   backs off that achieved value, so a 30 s session can prescribe 25 s rather than repeatedly
   falling back to the original Target. The Routine Target stays the starting point; a
-  Prescription may exceed it.
+  Prescription may exceed it. A hand-edited zero-seconds Target is never a Hit even when the
+  working floor was held — a zero goal is a bad plan to clamp, not a progression to reward.
 - Every `up` adds the exact Increment to the logged working value (`round1(w + inc)`), so an
   off-grid 41 kg + 2.5 kg announces and delivers 43.5 kg. Snapping stays a Deload concern.
   This applies to linear and Greyskull too.
