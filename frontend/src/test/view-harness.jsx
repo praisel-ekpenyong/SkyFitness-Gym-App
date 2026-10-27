@@ -1,9 +1,8 @@
 // Test-only helpers for the Workout view tests. Production code never imports this module.
 //
-// The harness deliberately leaves timers and mocks to each test file: fake timers and the
-// hoisted `vi.mock` factories are per-file concerns, so the files stay in charge of them and
-// only the store/DOM lifecycle lives here.
-import React, { act } from 'react'
+// Timer installation and the hoisted `vi.mock` factories are per-file concerns, so each test
+// file stays in charge of them; cleanup here restores real timers so fake time cannot leak.
+import { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { MemoryRouter } from 'react-router-dom'
 import { vi } from 'vitest'
@@ -15,6 +14,9 @@ import { useUI } from '../store/useUI.js'
 
 /** Deep-copies a state value. */
 const clone = value => JSON.parse(JSON.stringify(value))
+
+// `entry` and `seedActiveWorkout` are deliberately plain test fixtures. Production Row and
+// Active-workout construction lives in `makeRow`/`beginSession` (ADR-0006, ADR-0007).
 
 /**
  * Builds one Active-workout entry with a single default set.
@@ -36,13 +38,9 @@ export function resetViewTestState() {
   document.body.className = ''
 }
 
-/**
- * Seeds one Active workout, or clears it when `entries` is null.
- * Returns the seeded state atom; callers that only care about the store may ignore it.
- */
-export function seedActiveWorkout(entries, { restSec, cur = 0, start = Date.now() } = {}) {
+/** Seeds one Active workout, or clears it when `entries` is null. */
+export function seedActiveWorkout(entries, { cur = 0, start = Date.now() } = {}) {
   const S = clone(DEF)
-  if (restSec !== undefined) S.restSec = restSec
   S.active = entries
     ? {
         id: 'view-test',
@@ -56,7 +54,6 @@ export function seedActiveWorkout(entries, { restSec, cur = 0, start = Date.now(
       }
     : null
   useStore.setState({ S })
-  return S
 }
 
 /** Mounts the Workout route for an Active workout seeded through `seedActiveWorkout`. */
