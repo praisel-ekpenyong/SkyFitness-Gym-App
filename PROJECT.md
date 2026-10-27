@@ -22,7 +22,7 @@ Every defect and requirement identified during Phase 0 Survey is inventoried and
 | 8 | 1-Rep max measurement fidelity | Align 1-rep single calculation in `recovery.js:71` with `onerm.js:38` (no discounting of 1-rep single) | M1 | explorer_survey_1 |
 | 9 | Duplicate PR ID prevention | Deduplicate PR IDs pushed in `active-workout.js:completeActiveSession` | M1 | explorer_survey_1 |
 | 10 | Zero reps in completed sets | Prevent `recovery.js` from treating 0 reps as 1 rep | M1 | explorer_survey_1 |
-| 11 | Negative/NaN volume protection | Guard against negative or NaN values in `workout-model.js:workoutVolume` | M1 | explorer_survey_1 |
+| 11 | Negative/NaN volume protection | Guard against negative or NaN values in `workout-model.js:tonnageOf` | M1 | explorer_survey_1 |
 | 12 | State normalization & null protection | Add `normalizeState(raw)` in `useStore.js` to prevent shallow `Object.assign` null overwrites | M2 | explorer_survey_2 |
 | 13 | Backup import validation & zombie session strip | Deeply validate backup JSON, clear `fileRef`, and ensure `active: null` on restore in `Settings.jsx` | M2 | explorer_survey_2 |
 | 14 | Bodyweight import null guard | Defend against `null`/undefined `S.bodyweight` in `import-csv.js:mergeImport` | M2 | explorer_survey_2 |
