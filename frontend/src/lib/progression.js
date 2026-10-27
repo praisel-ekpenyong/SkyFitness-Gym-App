@@ -181,7 +181,7 @@ function asHoldOrDeload(cur, step, onHold, onDeload) {
 // outside the shape: changing them must not throw away a climb. A different Target shape
 // starts a new stream, whose first session is a baseline.
 //
-// A Run is the trailing block of stream sessions at one working value: the logged load for
+// A Run is the trailing stretch of stream sessions at one working value: the logged load for
 // reps work, the prescribed hold for add-time. Its first session is a baseline, so following
 // a deload cannot immediately trigger the next one.
 const positive = v => (Number.isFinite(v) && v > 0 ? v : null)
@@ -278,8 +278,9 @@ function timeHit(session, cfg) {
   return session.goal > 0 && !!session.enough && held.length > 0 && held.every(h => h >= working)
 }
 
-// Add-time's Stall: a session in the Run after its baseline that did not reach the aim the
-// previous session asked for. A longer weakest hold is progress even below the Target.
+// Add-time's Stall: a session in the Run after its baseline whose weakest hold did not reach
+// the aim the previous session asked for — `min(working, previous weakest + inc)`. A longer
+// hold below that aim is still a Stall, not progress.
 function timeNoProgress(sessions, start, cfg, inc) {
   let n = 0
   for (let i = sessions.length - 1; i > start; i--) {
