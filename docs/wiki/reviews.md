@@ -3,10 +3,15 @@
 One entry per review event. Findings live in tickets/reports; this page records
 what ran, against what, and where the findings went.
 
-## 2026-10-28 — Two-axis review: hamstring set distribution
+## 2026-10-28 — Subsystem review: exercise catalogue search
 
-- **Range:** `master...feat/hamstring-set-distribution` at `6c4f1dc`.
-- **Method:** Standards axis and Spec axis as parallel subagents (sessions `3de3ba90-cd5d-4929-b10b-1c8631494306` and `700e396c-e22b-445a-a373-af1a4b397b3b`).
+- **Scope:** `frontend/src/lib/catalogue-query.js`, `muscles.js`, `exercises.js`, `views/Library.jsx`, `sheets/catalogue.jsx`, `components/ui.jsx` at commit `ef34ca0`.
+- **Method:** Two parallel subagents: Domain & Algorithm Specialist (`0c28ff5a-ded9-4af6-b37c-e3d32e37a9d0`) and Search UX & Client Specialist (`54f74f57-2809-46c3-8ea6-8017876edc5d`).
+- **Domain Docs & ADRs:** `GLOSSARY.md`, ADR 0008 (canonical muscle filters & custom exercise mappings), ADR 0012 (catalogue curations & hamstring hinges).
+- **Outcome:** Architectural synthesis recorded in [Exercise catalogue search](catalogue-search.md). Identified 5 key search limitations/quirks (hyphenation disparity e.g. "push up" vs "push-up", missing equipment aliases e.g. "bodyweight", lack of multi-word tokenization e.g. "dumbbell press", zero cross-field searching, no typo tolerance). Confirmed linear search performance (~1.2ms idle, ~5.4ms active scan across 1,324 items) comfortably within 60fps frame budget without debounce.
+- **Verification:** 36/36 unit tests passed in `catalogue-query.test.js` & `muscles.test.js` (1.50s); 41/41 component tests passed in `Library.test.jsx` & `catalogue.test.jsx` (4.47s). Full repository suite remains green.
+
+## 2026-10-28 — Two-axis review: hamstring set distribution
 - **Spec source:** `.scratch/hamstring-set-distribution/spec.md` (ticket 01).
 - **Outcome:** Standards — 1 domain vocabulary violation ("primary target" vs canonical "primary muscle") and 2 baseline smells (`cur` name, duplicate test). Spec — 2 missing requirements (`EXIDX.sm` overlay population, `musclesOf` string IDs) and 1 test assertion tightness issue (`toMatchObject` vs `toEqual`).
 - **Disposition:** All findings addressed in commit `858d919` (`chore(review): address standards and spec review findings for catalogue curations`), merged to `feat/hamstring-set-distribution` (`6c4f1dc`). Full suite: 64/64 test files passed (886/886 tests green). Ticket 01 resolved.
