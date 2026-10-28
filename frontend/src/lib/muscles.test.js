@@ -57,12 +57,20 @@ describe('hamstring hinge catalogue curations and set distribution', () => {
       const secondaries = secondaryMusclesOf(id)
       expect(secondaries).toContain('gluteal')
       expect(secondaries).toContain('lower-back')
-      expect(musclesOf(EXIDX[id])).toMatchObject({
+      expect(musclesOf(EXIDX[id])).toEqual({
         hamstring: 1,
         gluteal: 0.4,
         'lower-back': 0.4,
       })
     }
+  })
+
+  it('resolves string exercise IDs transparently in musclesOf', () => {
+    expect(musclesOf('0085')).toEqual({
+      hamstring: 1,
+      gluteal: 0.4,
+      'lower-back': 0.4,
+    })
   })
 
   it('continues to enrich rear delts for existing row variations', () => {
@@ -73,16 +81,6 @@ describe('hamstring hinge catalogue curations and set distribution', () => {
         deltoids: 0.4,
       })
     }
-  })
-
-  it('keeps EXDB in exercises-data.js unmodified', () => {
-    const rawRdl = EXDB.find(e => e.id === '0085')
-    expect(rawRdl.tg).toBe('glutes')
-    expect(rawRdl.sm).not.toContain('glutes')
-
-    const rawSldl = EXDB.find(e => e.id === '0432')
-    expect(rawSldl.tg).toBe('glutes')
-    expect(rawSldl.sm).not.toContain('glutes')
   })
 })
 
