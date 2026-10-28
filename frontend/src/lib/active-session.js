@@ -137,3 +137,43 @@ export function removeActiveExercise(S, idx) {
   }
   return true
 }
+
+/**
+ * Replace an exercise in the active workout session in-place.
+ *
+ * Replaces `S.active.entries[idx]` with the new exercise, inherits the outgoing entry's `sg`
+ * (superset group) if present, clears previous progression and working-weight prompt flags
+ * (`asked`, `hw`, `topW`), clamps `S.active.cur` to `idx`, and seeds fresh set rows matching
+ * the new exercise's progression stream (or freestyle defaults). Leaves `S.routines` untouched.
+ *
+ * @param {Object} S - Application state atom.
+ * @param {number} idx - Index of the active exercise entry to replace.
+ * @param {string} newExId - Exercise identifier from EXIDX.
+ * @param {Object} [targetCfg={}] - Target configuration overrides (sets, reps, weight, progression).
+ * @returns {Object|null} The newly created entry, or null if invalid index or no active workout.
+ */
+export function replaceActiveExercise(S, idx, newExId, targetCfg = {}) {
+  if (!S?.active || !Array.isArray(S.active.entries)) return null
+  if (idx < 0 || idx >= S.active.entries.length) return null
+  if (!newExId) return null
+
+  const oldEntry = S.active.entries[idx]
+  const routine = S.active.routineId ? (S.routines || []).find(r => r.id === S.active.routineId) : null
+  const freestyle = !S.active.routineId
+  const full = { ...defaultConfig(newExId), ...targetCfg, id: newExId }
+  const plan = freestyle ? null : nextPrescription(S, full, routine)
+  const baseSets = freestyle
+    ? buildSets(S, full, { preferLast: true })
+    : seedSets(S, full, S.active.routineId, plan)
+  const sets = freestyle ? baseSets : applyPrescription(baseSets, plan)
+
+  const entry = { id: newExId, target: { ...targetCfg }, plan, sets }
+  if (oldEntry && oldEntry.sg != null) {
+    entry.sg = oldEntry.sg
+  }
+
+  S.active.entries[idx] = entry
+  S.active.cur = Math.max(0, Math.min(idx, S.active.entries.length - 1))
+  return entry
+}
+
