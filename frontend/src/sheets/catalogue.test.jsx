@@ -352,7 +352,16 @@ describe('ExercisePicker canonical muscle filtering and search', () => {
     const items = Array.from(container.querySelectorAll('.list .item'))
     expect(items.length).toBeGreaterThan(5)
 
-    const benchItem = items.find(it => it.textContent.toLowerCase().includes('bench press'))
+    // Expand batch to surface compound movements ranked after direct title matches
+    const showMore = Array.from(container.querySelectorAll('button')).find(b => b.textContent.includes('Show more'))
+    if (showMore) {
+      await act(async () => {
+        showMore.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      })
+    }
+
+    const allItems = Array.from(container.querySelectorAll('.list .item'))
+    const benchItem = allItems.find(it => it.textContent.toLowerCase().includes('bench press'))
     expect(benchItem).toBeTruthy()
     expect(benchItem.querySelector('.ss .tag')?.textContent).toContain('Secondary: Triceps')
     expect(benchItem.querySelector('.ss')?.textContent.toLowerCase()).toContain('chest')

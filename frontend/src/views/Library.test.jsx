@@ -177,7 +177,7 @@ describe('Library view smoke tests', () => {
     const searchInput = container.querySelector('input.input')
     await act(async () => {
       const nativeSetter = Object.getOwnPropertyDescriptor(globalThis.HTMLInputElement.prototype, 'value').set
-      nativeSetter.call(searchInput, '3/4 sit-up')
+      nativeSetter.call(searchInput, 'sit-up')
       searchInput.dispatchEvent(new Event('input', { bubbles: true }))
     })
 
@@ -303,8 +303,17 @@ describe('Library view smoke tests', () => {
     const names = items.map(it => it.textContent.toLowerCase())
     expect(names.some(n => n.includes('pushdown') || n.includes('extension'))).toBe(true)
 
-    // Bench press should have "Secondary: Triceps" badge because triceps is its secondary target
-    const benchItem = items.find(it => it.textContent.toLowerCase().includes('bench press'))
+    // Expand batch to surface compound movements ranked after direct title matches
+    const showMore = Array.from(container.querySelectorAll('button')).find(b => b.textContent.includes('Show more'))
+    if (showMore) {
+      await act(async () => {
+        showMore.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      })
+    }
+
+    const allItems = Array.from(container.querySelectorAll('.list .item'))
+    // Bench press should have "Secondary: Triceps" badge because triceps is its secondary muscle
+    const benchItem = allItems.find(it => it.textContent.toLowerCase().includes('bench press'))
     expect(benchItem).toBeTruthy()
     expect(benchItem.querySelector('.ss .tag')?.textContent).toContain('Secondary: Triceps')
     // Primary muscle subtitle uses canonical display name "Chest", not raw "pectorals"

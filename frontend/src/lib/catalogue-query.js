@@ -1,18 +1,17 @@
-import { allExercises, equipmentOf, smOf } from './exercises.js'
+import { allExercises, equipmentOf } from './exercises.js'
 import {
-  canonicalMuscle,
+  exerciseContext,
   isSecondaryMuscleMatch,
   matchesExerciseSearch,
   matchesMuscleFilter,
   primaryMuscleOf,
   resolveMuscleSlug,
   secondaryMatchForQuery,
-  secondaryMusclesOf,
   stringIncludesToken,
   tokenizeSearchQuery,
   tokenMatchesExercise,
-  MUSCLE_NAME,
 } from './muscles.js'
+
 
 export { tokenizeSearchQuery }
 
@@ -34,10 +33,7 @@ export function scoreExerciseMatch(exercise, tokens, rawQuery = '') {
   const tokenList = [...new Set(Array.isArray(tokens) ? tokens : tokenizeSearchQuery(tokens))]
   if (!tokenList || tokenList.length === 0) return 0
 
-  const primary = primaryMuscleOf(exercise)
-  const secondaries = secondaryMusclesOf(exercise)
-  const primaryName = (primary && MUSCLE_NAME[primary]) || ''
-  const rawSm = smOf(exercise)
+  const ctx = exerciseContext(exercise)
   const titleLower = String(exercise.n || '').toLowerCase()
 
   let matchedTokenCount = 0
@@ -45,14 +41,12 @@ export function scoreExerciseMatch(exercise, tokens, rawQuery = '') {
 
   for (const token of tokenList) {
     const t = token.toLowerCase()
-    const tokenSlug = canonicalMuscle(t)
-    const matchesMuscle = tokenSlug && (primary === tokenSlug || (secondaries && secondaries.includes(tokenSlug)))
     const matchesTitle = stringIncludesToken(titleLower, t)
 
-    if (tokenMatchesExercise(token, exercise, primary, secondaries, primaryName, rawSm)) {
+    if (tokenMatchesExercise(token, exercise, ctx)) {
       matchedTokenCount++
     }
-    if (matchesTitle || matchesMuscle) {
+    if (matchesTitle) {
       titleMatchCount++
     }
   }
@@ -60,13 +54,14 @@ export function scoreExerciseMatch(exercise, tokens, rawQuery = '') {
   const rawLower = String(rawQuery || (typeof tokens === 'string' ? tokens : tokenList.join(' '))).trim().toLowerCase()
   const normRaw = rawLower.replace(/[^\w\s]/g, ' ').trim().replace(/\s+/g, ' ')
   const normTitle = titleLower.replace(/[^\w\s]/g, ' ').trim().replace(/\s+/g, ' ')
-  const exactPhraseBonus = (tokenList.length > 1 && (
+  const exactPhraseBonus = (
     (rawLower.length > 0 && titleLower.includes(rawLower)) ||
     (normRaw.length > 0 && normTitle.includes(normRaw))
-  )) ? 50 : 0
+  ) ? 50 : 0
 
   return (matchedTokenCount * 100) + exactPhraseBonus + (titleMatchCount * 10)
 }
+
 
 /**
  * Query the Catalogue for one browsing caller.
@@ -105,19 +100,14 @@ export function queryCatalogue({ profile, scope = { kind: 'all' }, search = '', 
       const scoreDiff = (scores.get(b.id) || 0) - (scores.get(a.id) || 0)
       if (scoreDiff !== 0) return scoreDiff
       if (kind === 'chosen') {
-        const usageDiff = (usage[b.id] || 0) - (usage[a.id] || 0)
-        if (usageDiff !== 0) return usageDiff
-        return String(a.n || '').localeCompare(String(b.n || ''))
+        return compareChosenUsage(a, b, usage)
       }
       const customDiff = (b.custom ? 1 : 0) - (a.custom ? 1 : 0)
       if (customDiff !== 0) return customDiff
       return (catalogueOrder.get(a.id) || 0) - (catalogueOrder.get(b.id) || 0)
     })
   } else if (kind === 'chosen') {
-    matching.sort((a, b) =>
-      ((usage[b.id] || 0) - (usage[a.id] || 0)) ||
-      String(a.n || '').localeCompare(String(b.n || ''))
-    )
+    matching.sort((a, b) => compareChosenUsage(a, b, usage))
   }
 
   const equipmentOptions = equipmentOf(matching)
@@ -142,6 +132,20 @@ export function queryCatalogue({ profile, scope = { kind: 'all' }, search = '', 
     favoriteCount: favoriteList.length,
     chosenCount: Object.keys(usage).length,
   }
+}
+
+/**
+ * Compares two exercises in the chosen scope by usage count descending, tie-breaking by name.
+ *
+ * @param {Object} a - First exercise.
+ * @param {Object} b - Second exercise.
+ * @param {Object} usage - Map of exercise id to usage count.
+ * @returns {number}
+ */
+function compareChosenUsage(a, b, usage) {
+  const usageDiff = (usage[b.id] || 0) - (usage[a.id] || 0)
+  if (usageDiff !== 0) return usageDiff
+  return String(a.n || '').localeCompare(String(b.n || ''))
 }
 
 /**
