@@ -10,6 +10,7 @@ commit they were true at; superseded claims are marked, not erased.
 ## Subsystems
 
 - [Progression streams and Runs](progression-streams.md) — how `src/lib/progression.js` reads history, and its residual open questions.
+- [Exercise catalogue search](catalogue-search.md) — matching algorithms, filter evaluation pipeline, secondary attribution, and consumer integration.
 
 ## Decisions
 
