@@ -129,7 +129,7 @@ export function toggleActiveSet(S, entryIdx, setIdx) {
   // Toggle never adds, removes or reorders entries, so the group geometry
   // (index/sg-based) is unaffected by the done-flag flip above and stays
   // valid for every completion check below.
-  const { units, unit, unitIdx, isLastUnit } = describeUnit(A.entries, entryIdx)
+  const { unit, isLastUnit } = describeUnit(A.entries, entryIdx)
   // Warm-up rows are prep, not work. The unit is done when no member has an
   // undone work row — the same `hasWork` rule the superset step below reads, so
   // an unticked warm-up can no longer keep a finished unit reading as unfinished.
@@ -181,11 +181,6 @@ export function toggleActiveSet(S, entryIdx, setIdx) {
         if (step) {
           if (step.unitDone) {
             if (!isLastUnit) {
-              const nextUnit = units[unitIdx + 1]
-              if (!askTop && nextUnit?.length) {
-                A.cur = nextUnit[0]
-                navigated = true
-              }
               shouldRest = true
             }
           } else {

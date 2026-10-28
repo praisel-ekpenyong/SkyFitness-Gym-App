@@ -105,6 +105,120 @@ describe('toggle next action', () => {
     expect(r.rest).toEqual({ start: false, stop: true })
   })
 
+  it('unprompted exercises (cardio, timed, bodyweight without load) start rest and stay when another exercise follows', () => {
+    // 1. Cardio followed by another exercise
+    const S1 = {
+      active: {
+        cur: 0,
+        entries: [
+          { id: 'ex-cardio', target: { mode: 'cardio', min: 20, speed: 8 }, sets: [{ min: 20, speed: 8, done: false }] },
+          { id: 'ex2', target: { reps: 5, weight: 60 }, sets: [{ w: 60, r: 5, done: false }] },
+        ],
+      },
+      exWeights: {},
+    }
+    const r1 = toggleActiveSet(S1, 0, 0)
+    expect(r1.next).toEqual({ kind: 'stay', targetIdx: null })
+    expect(r1.notice).toBe('cardio')
+    expect(r1.rest).toEqual({ start: true, stop: true })
+
+    // 2. Timed hold followed by another exercise
+    const S2 = {
+      active: {
+        cur: 0,
+        entries: [
+          { id: 'ex-timed', target: { mode: 'time', sec: 45 }, sets: [{ sec: 45, done: false }] },
+          { id: 'ex2', target: { reps: 5, weight: 60 }, sets: [{ w: 60, r: 5, done: false }] },
+        ],
+      },
+      exWeights: {},
+    }
+    const r2 = toggleActiveSet(S2, 0, 0)
+    expect(r2.next).toEqual({ kind: 'stay', targetIdx: null })
+    expect(r2.notice).toBe('timed')
+    expect(r2.rest).toEqual({ start: true, stop: true })
+
+    // 3. Bodyweight without load followed by another exercise
+    const S3 = {
+      active: {
+        cur: 0,
+        entries: [
+          { id: 'ex-bw', target: { mode: 'reps', reps: 10, bodyweight: true }, sets: [{ w: 0, r: 10, done: false }] },
+          { id: 'ex2', target: { reps: 5, weight: 60 }, sets: [{ w: 60, r: 5, done: false }] },
+        ],
+      },
+      exWeights: {},
+    }
+    const r3 = toggleActiveSet(S3, 0, 0)
+    expect(r3.next).toEqual({ kind: 'stay', targetIdx: null })
+    expect(r3.notice).toBe(null)
+    expect(r3.rest).toEqual({ start: true, stop: true })
+
+    // 4. Exercise whose weight was already confirmed (asked: true) followed by another exercise
+    const S4 = {
+      active: {
+        cur: 0,
+        entries: [
+          { id: 'ex-asked', asked: true, target: { reps: 5, weight: 80 }, sets: [{ w: 80, r: 5, done: false }] },
+          { id: 'ex2', target: { reps: 5, weight: 60 }, sets: [{ w: 60, r: 5, done: false }] },
+        ],
+      },
+      exWeights: {},
+    }
+    const r4 = toggleActiveSet(S4, 0, 0)
+    expect(r4.next).toEqual({ kind: 'stay', targetIdx: null })
+    expect(r4.notice).toBe(null)
+    expect(r4.rest).toEqual({ start: true, stop: true })
+  })
+
+  it('superset unit completion starts inter-exercise rest and stays on completed unit when another exercise follows', () => {
+    const S = {
+      active: {
+        cur: 1,
+        entries: [
+          { id: 'ex1', sg: 'sg-0-1', target: { reps: 5, weight: 80 }, sets: [{ w: 80, r: 5, done: true }] },
+          { id: 'ex2', sg: 'sg-0-1', asked: true, target: { reps: 5, weight: 60 }, sets: [{ w: 60, r: 5, done: false }] },
+          { id: 'ex3', target: { reps: 5, weight: 70 }, sets: [{ w: 70, r: 5, done: false }] },
+        ],
+      },
+      exWeights: {},
+    }
+    const r = toggleActiveSet(S, 1, 0)
+    expect(r.next).toEqual({ kind: 'stay', targetIdx: null })
+    expect(r.cur).toBe(1)
+    expect(r.rest).toEqual({ start: true, stop: true })
+  })
+
+  it('session finale suppresses rest and stops running rest on the final unit for unprompted and superset exercises', () => {
+    // Single unprompted cardio finale
+    const S1 = {
+      active: {
+        cur: 0,
+        entries: [{ id: 'ex-cardio', target: { mode: 'cardio', min: 20, speed: 8 }, sets: [{ min: 20, speed: 8, done: false }] }],
+      },
+      exWeights: {},
+    }
+    const r1 = toggleActiveSet(S1, 0, 0)
+    expect(r1.next).toEqual({ kind: 'open-finish', targetIdx: null })
+    expect(r1.rest).toEqual({ start: false, stop: true })
+
+    // Superset as the final unit in the session
+    const S2 = {
+      active: {
+        cur: 1,
+        entries: [
+          { id: 'ex1', sg: 'sg-0-1', target: { reps: 5, weight: 80 }, sets: [{ w: 80, r: 5, done: true }] },
+          { id: 'ex2', sg: 'sg-0-1', asked: true, target: { reps: 5, weight: 60 }, sets: [{ w: 60, r: 5, done: false }] },
+        ],
+      },
+      exWeights: {},
+    }
+    const r2 = toggleActiveSet(S2, 1, 0)
+    expect(r2.next).toEqual({ kind: 'open-finish', targetIdx: null })
+    expect(r2.cur).toBe(1)
+    expect(r2.rest).toEqual({ start: false, stop: true })
+  })
+
   it('an unticked warm-up never blocks the finish chain', () => {
     const S = {
       active: {
