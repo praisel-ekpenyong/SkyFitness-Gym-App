@@ -4,6 +4,7 @@ import {
   bestKnownWeight, heaviestSetWeight, heaviestForEntry, mergeExWeight,
   createActiveSession, applyWorkingWeight, completeActiveSession,
   buildCompletedWorkout, addActiveExercise, removeActiveExercise,
+  replaceActiveExercise,
   updateActiveSetField, addActiveSet, removeActiveSet, addActiveWarmup,
   pairActiveSuperset, unpairActiveSuperset, toggleActiveSet,
   setActiveIndex, discardActiveSession
@@ -399,6 +400,160 @@ describe('active-workout lifecycle seam', () => {
     expect(S.exWeights.ex2).toEqual({ w: 40, d: '2026-08-24' })
     expect(result.workout.vol).toBeUndefined()
     expect(tonnageOf(result.workout)).toBe(90 * 5 + 40 * 10)
+  })
+
+  it('replaceActiveExercise replaces entry in-place, clamps cur, preserves surrounding entries, and returns new entry', () => {
+    const S = {
+      active: {
+        cur: 0,
+        entries: [
+          { id: 'ex0', sets: [{ w: 40, r: 10, done: true }] },
+          { id: 'ex1', sets: [{ w: 50, r: 8, done: true }] },
+          { id: 'ex2', sets: [{ w: 60, r: 6, done: false }] },
+        ]
+      }
+    }
+    const newEntry = replaceActiveExercise(S, 1, '0025', { sets: 3, reps: 8, weight: 70 })
+    expect(newEntry).toBeDefined()
+    expect(newEntry.id).toBe('0025')
+    expect(S.active.entries).toHaveLength(3)
+    expect(S.active.entries[0].id).toBe('ex0')
+    expect(S.active.entries[1]).toBe(newEntry)
+    expect(S.active.entries[2].id).toBe('ex2')
+    expect(S.active.cur).toBe(1)
+  })
+
+  it('replaceActiveExercise inherits outgoing superset group (sg) or leaves it undefined', () => {
+    const S = {
+      active: {
+        cur: 0,
+        entries: [
+          { id: 'ex0', sg: 'sg-pair-1', sets: [] },
+          { id: 'ex1', sets: [] },
+        ]
+      }
+    }
+    // With sg
+    const replaced0 = replaceActiveExercise(S, 0, '0025', { sets: 2 })
+    expect(replaced0.sg).toBe('sg-pair-1')
+    expect(S.active.entries[0].sg).toBe('sg-pair-1')
+
+    // Without sg
+    const replaced1 = replaceActiveExercise(S, 1, '0026', { sets: 2 })
+    expect(replaced1.sg).toBeUndefined()
+    expect(S.active.entries[1].sg).toBeUndefined()
+  })
+
+  it('replaceActiveExercise clears asked, hw, and topW flags from the outgoing entry', () => {
+    const S = {
+      active: {
+        cur: 0,
+        entries: [
+          {
+            id: 'ex0',
+            asked: true,
+            hw: 3,
+            topW: 85,
+            sets: [{ w: 85, r: 5, done: true }]
+          }
+        ]
+      }
+    }
+    const replaced = replaceActiveExercise(S, 0, '0025', { sets: 3, reps: 10, weight: 60 })
+    expect(replaced.asked).toBeUndefined()
+    expect(replaced.hw).toBeUndefined()
+    expect(replaced.topW).toBeUndefined()
+    expect(S.active.entries[0].asked).toBeUndefined()
+    expect(S.active.entries[0].hw).toBeUndefined()
+    expect(S.active.entries[0].topW).toBeUndefined()
+  })
+
+  it('replaceActiveExercise seeds sets via progression stream for routine-backed session and leaves S.routines untouched', () => {
+    const S = blankProfile()
+    const originalRoutine = {
+      id: 'r1',
+      name: 'Push',
+      ex: [
+        { id: 'old-lift', sets: 3, reps: 8, weight: 40 },
+        { id: '0025', sets: 3, reps: 8, weight: 50, prog: 'linear', inc: 2.5 }
+      ]
+    }
+    S.routines = [clone(originalRoutine)]
+    S.workouts = [
+      {
+        d: '2026-08-10',
+        routineId: 'r1',
+        entries: [{
+          id: '0025',
+          sets: [{ w: 50, r: 8, done: true }, { w: 50, r: 8, done: true }, { w: 50, r: 8, done: true }],
+          target: { sets: 3, reps: 8, weight: 50, prog: 'linear', inc: 2.5 }
+        }]
+      }
+    ]
+    S.active = {
+      id: 'a1',
+      routineId: 'r1',
+      cur: 0,
+      entries: [
+        { id: 'old-lift', sets: [{ w: 40, r: 8, done: true }] }
+      ]
+    }
+
+    const routineSnapshot = clone(S.routines)
+
+    const replaced = replaceActiveExercise(S, 0, '0025', { sets: 3, reps: 8, weight: 50, prog: 'linear', inc: 2.5 })
+    expect(replaced).toBeDefined()
+    expect(replaced.id).toBe('0025')
+    expect(replaced.plan).toBeDefined()
+    expect(replaced.plan.kind).toBe('up')
+    expect(replaced.sets[0].w).toBe(52.5)
+
+    // The underlying routine in S.routines must be completely untouched
+    expect(S.routines).toEqual(routineSnapshot)
+  })
+
+  it('replaceActiveExercise seeds sets from freestyle history when active session is freestyle', () => {
+    const S = blankProfile()
+    S.workouts = [
+      {
+        d: '2026-08-10',
+        entries: [{ id: '0025', sets: [{ w: 65, r: 10, done: true }, { w: 65, r: 10, done: true }] }]
+      }
+    ]
+    S.active = {
+      id: 'a2',
+      routineId: null,
+      cur: 0,
+      entries: [
+        { id: 'other', sets: [{ w: 20, r: 12, done: false }] }
+      ]
+    }
+
+    const replaced = replaceActiveExercise(S, 0, '0025', { sets: 2 })
+    expect(replaced.plan).toBeNull()
+    expect(replaced.sets[0].w).toBe(65)
+    expect(replaced.sets[0].r).toBe(10)
+  })
+
+  it('replaceActiveExercise bounds checking returns null on invalid index, missing active session, or missing exId', () => {
+    const S = {
+      active: {
+        cur: 0,
+        entries: [{ id: 'ex0', sets: [] }]
+      }
+    }
+    // Invalid index
+    expect(replaceActiveExercise(S, -1, '0025')).toBeNull()
+    expect(replaceActiveExercise(S, 5, '0025')).toBeNull()
+    // Missing exId
+    expect(replaceActiveExercise(S, 0, '')).toBeNull()
+    expect(replaceActiveExercise(S, 0, null)).toBeNull()
+    // No active session
+    expect(replaceActiveExercise(null, 0, '0025')).toBeNull()
+    expect(replaceActiveExercise({ active: null }, 0, '0025')).toBeNull()
+    expect(replaceActiveExercise({ active: { entries: 'not-array' } }, 0, '0025')).toBeNull()
+    // Entry was not modified
+    expect(S.active.entries[0].id).toBe('ex0')
   })
 })
 
