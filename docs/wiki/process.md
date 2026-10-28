@@ -27,8 +27,9 @@ discipline in `AGENTS.md`.
   observed on every 2026-10-27 implementer commit (808/808 through ticket 04,
   812/812 after ticket 05). The test gate is therefore enforced at commit time,
   not just by instruction.
-- Test suite as of 2026-10-28: 59 files, 817 tests, `cd frontend && npm test`.
+- Test suite as of 2026-10-28 (commit `32f391f`): 64 files, 888 tests, `cd frontend && npm test`.
   Fresh worktrees need `npm install` before testing.
+- Release pipeline verification includes 4 stages: unit tests (`npm test`), 108k fatigue probe (`npm run test:fatigue-probe`), bundle compilation (`npm run build`), and 6-screen Playwright navigation check (`npm run test:preview`). See [deployments](deployment.md).
 
 ## Deviations on record
 

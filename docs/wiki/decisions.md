@@ -4,6 +4,9 @@ One entry per decision, newest first. A decision here is a settled call; the
 ticket/ADR it points to carries the reasoning. Superseded entries stay listed
 with a pointer to their successor.
 
+- **2026-10-28 — Netlify production release verified across 4 gates and live edge policies.**
+  Production build at commit `32f391f` deployed to Netlify site `skyfitness-app` (`51d8627c-c73a-4802-be54-4fce0937cb28`, deploy ID `6ae1fba526036da1accf8409`, live at `https://skyfitness-app.netlify.app`). Automated pre-flight verified 888 unit tests, 108,000 fatigue comparisons, and 6-screen Playwright preview navigation. Live edge verified HTTP 200, strict CSP headers (`cdn.jsdelivr.net` pinned), SPA routing fallback, and no-cache policy on `/index.html`, `/sw.js`, and `/manifest.json` ensuring immediate client updates. Detailed in [deployment](deployment.md).
+
 - **2026-10-28 — Code comments adhere to Ousterhout's 'stranger' standard with automated comment-only verification.**
   Audited core domain and view files (`Workout.jsx`, `workout-model.js`, `format.js`, `bodyweight.js`, `schedule.js`, `progression.js`). Resolved all stale `@param` references (`STALE_PARAM` count reduced to 0), added missing top-level module overview docstrings describing subsystem ownership and boundaries, and documented public interface contracts (`inStream`, `timeAim`, `timeHit`, `replaceActiveExerciseFlow`). All comment additions and cleanups are strictly verified via AST comparison (`comment_tools.py verify`) to ensure zero runtime alterations. Merged in `a56e916` (ticket 01 in `.scratch/code-comments/`).
 
