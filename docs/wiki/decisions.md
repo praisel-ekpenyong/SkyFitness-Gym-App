@@ -4,6 +4,9 @@ One entry per decision, newest first. A decision here is a settled call; the
 ticket/ADR it points to carries the reasoning. Superseded entries stay listed
 with a pointer to their successor.
 
+- **2026-10-28 — Code comments adhere to Ousterhout's 'stranger' standard with automated comment-only verification.**
+  Audited core domain and view files (`Workout.jsx`, `workout-model.js`, `format.js`, `bodyweight.js`, `schedule.js`, `progression.js`). Resolved all stale `@param` references (`STALE_PARAM` count reduced to 0), added missing top-level module overview docstrings describing subsystem ownership and boundaries, and documented public interface contracts (`inStream`, `timeAim`, `timeHit`, `replaceActiveExerciseFlow`). All comment additions and cleanups are strictly verified via AST comparison (`comment_tools.py verify`) to ensure zero runtime alterations. Merged in `a56e916` (ticket 01 in `.scratch/code-comments/`).
+
 - **2026-10-28 — In-session exercise reordering is strictly session-local, non-destructive, and adheres to positional supersets.**
   Added `moveActiveExercise(S, idx, dir)` behind the ADR 0006 lifecycle seam in `lib/active-session.js` and exposed on `useStore`. Reordering operates on individual entries, is enabled when 2 or more exercises exist and no timed hold is active, keeps performed sets intact, tracks `active.cur` to the moved exercise, and dissolves supersets via `cleanupSg` if an entry is moved past outside neighbors. UI provides a dedicated sheet with Move Up/Down chevrons, close button, and tap/keyboard jump navigation. Merged in `669a6bd` and `6adf5a6` (tickets 01 and 02 in `.scratch/exercise-reordering/`).
 

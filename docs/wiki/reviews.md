@@ -3,6 +3,18 @@
 One entry per review event. Findings live in tickets/reports; this page records
 what ran, against what, and where the findings went.
 
+## 2026-10-28 — Code comments audit: core domain and active workout
+
+- **Scope:** `Workout.jsx`, `workout-model.js`, `format.js`, `bodyweight.js`, `schedule.js`, and `progression.js` at commit `a56e916`.
+- **Method:** Code Comments Specialist subagent (`dc9f7f0a-b012-4fcc-9664-e1276a60b6c0`) executing `/code-comments` Clean and Write workflow in isolated worktree `.worktrees/code-comments`.
+- **Standards:** Ousterhout's *A Philosophy of Software Design* (chs 12, 13, 15, 16).
+- **Scanner Results:**
+  - `STALE_PARAM`: Reduced from 3 to 0 across the entire repository (`isPerformed`, `recordWeighIn`, `dayStatus`).
+  - `MISSING_MODULE_DOC`: Resolved for `Workout.jsx`, `workout-model.js`, and `format.js`.
+  - `MISSING_DOC`: Added interface docstrings for `replaceActiveExerciseFlow` and progression helpers (`inStream`, `timeAim`, `timeHit`).
+  - Comment coverage: 82% → 83% across `frontend/src`.
+- **Verification:** `comment_tools.py verify` confirmed 6/6 files comment-only (zero runtime changes). Full Vitest test suite: 64/64 files, 884/884 tests passed. Merged to `master` in `a56e916`.
+
 ## 2026-10-28 — Two-axis review: exercise reordering
 
 - **Range:** `d720eb1...HEAD` at `6adf5a6` — "feat: in-session exercise reordering in active workouts".
