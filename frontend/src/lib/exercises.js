@@ -5,7 +5,7 @@ import { IMG_BASE, GIF_BASE } from './env.js'
 export { EXDB }
 
 // The generated dataset already supplies secondary muscles for most exercises. Keep the
-// handful of conservative catalogue curations (primary target overrides and secondary muscle additions)
+// handful of conservative catalogue curations (primary muscle overrides and secondary muscle additions)
 // here so a dataset refresh does not erase them. Values follow the dataset's existing alias vocabulary.
 export const CATALOGUE_CURATIONS = {
   // Romanian Deadlifts
@@ -40,8 +40,14 @@ export const smOf = ex => {
 
 export const EXIDX = {}
 EXDB.forEach(e => {
-  const cur = CATALOGUE_CURATIONS[e.id]
-  EXIDX[e.id] = cur?.tg ? { ...e, tg: cur.tg } : e
+  const curation = CATALOGUE_CURATIONS[e.id]
+  if (curation) {
+    const curated = curation.tg ? { ...e, tg: curation.tg } : { ...e }
+    curated.sm = smOf(curated)
+    EXIDX[e.id] = curated
+  } else {
+    EXIDX[e.id] = e
+  }
 })
 export const BODYPARTS = [...new Set(EXDB.map(e => e.bp))].sort()
 
