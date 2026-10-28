@@ -41,7 +41,7 @@ The query pipeline in `queryCatalogue` executes deterministically in five stages
 ## Matching & Attribution Semantics
 
 - **Cross-attribute token matching:** As of `75acfa2`, tokens can match across different fields. Searching
-  `"barbell chest"` matches Barbell Bench Press because `"barbell"` matches equipment and `"chest"` matches target muscle.
+  `"barbell chest"` matches Barbell Bench Press because `"barbell"` matches equipment and `"chest"` matches primary muscle.
 - **Hyphen & punctuation normalization:** Punctuation characters (`-`, `/`, `_`) are converted to whitespace.
   Searching `"push up"` matches `"push-up"`, `"pull up"` matches `"pull-up"`, and `"3 4 sit up"` matches `"3/4 sit-up"`.
 - **Numeric token safety:** Numeric tokens enforce boundary checks (`(?<!\d)${t}(?!\d)`) so searching `"4"` does
@@ -50,7 +50,7 @@ The query pipeline in `queryCatalogue` executes deterministically in five stages
   resolve through `canonicalMuscle` for each token individually, matching exercises targeting those muscle groups.
 - **Secondary muscle attribution (`secondaryMatchForQuery`):**
   - When an exercise matches a query token corresponding to a secondary muscle, and that token did not match
-    the title or primary target, `secondaryMatchForQuery` attributes the secondary slug, rendering a
+    the title or primary muscle, `secondaryMatchForQuery` attributes the secondary slug, rendering a
     `<span className="tag">Secondary: {Muscle}</span>` badge.
   - Attribution is suppressed (`return null`) if the search term matched the exercise's title or primary muscle.
   - The `searchAttribution` toggle allows views to disable search badges (used in Library Favorites view).

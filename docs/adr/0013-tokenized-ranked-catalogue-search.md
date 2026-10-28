@@ -16,7 +16,7 @@ Replace contiguous single-string search across `catalogue-query.js` and `muscles
    - Lowercase and trim.
    - Filter out common conversational stop words (`with`, `on`, `in`, `for`, `the`, `to`, `at`, `and`, `or`, `a`, `an`) and 1-letter noise tokens.
 2. **Cross-Attribute Token Matching:**
-   - For each extracted token, an exercise matches if the token matches any of its attributes: title (`n`), equipment (`eq`), primary target muscle (`tg`, canonical slug, or display name), secondary muscles (`secondaries` or raw `smOf`), body part (`bp`), description (`desc`), or resolved canonical muscle aliases (`canonicalMuscle`).
+   - For each extracted token, an exercise matches if the token matches any of its attributes: title (`n`), equipment (`eq`), primary muscle (`tg`, canonical slug, or display name), secondary muscles (`secondaries` or raw `smOf`), body part (`bp`), description (`desc`), or resolved canonical muscle aliases (`canonicalMuscle`).
    - An exercise is included in search results if it matches *at least one* token.
 3. **Relevance Scoring and Ranking:**
    - Results are sorted deterministically by match quality:
