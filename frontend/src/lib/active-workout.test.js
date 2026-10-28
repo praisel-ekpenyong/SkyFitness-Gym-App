@@ -4,7 +4,7 @@ import {
   bestKnownWeight, heaviestSetWeight, heaviestForEntry, mergeExWeight,
   createActiveSession, applyWorkingWeight, completeActiveSession,
   buildCompletedWorkout, addActiveExercise, removeActiveExercise,
-  replaceActiveExercise,
+  replaceActiveExercise, buildActiveEntry,
   updateActiveSetField, addActiveSet, removeActiveSet, addActiveWarmup,
   pairActiveSuperset, unpairActiveSuperset, toggleActiveSet,
   setActiveIndex, discardActiveSession
@@ -555,5 +555,20 @@ describe('active-workout lifecycle seam', () => {
     // Entry was not modified
     expect(S.active.entries[0].id).toBe('ex0')
   })
+
+  it('buildActiveEntry constructs entry with id, target, plan, and sets', () => {
+    const S = {
+      active: { routineId: null, entries: [] },
+      workouts: [],
+    }
+    const entry = buildActiveEntry(S, '0025', { sets: 3, reps: 10, weight: 60 })
+    expect(entry.id).toBe('0025')
+    expect(entry.target).toEqual({ sets: 3, reps: 10, weight: 60 })
+    expect(entry.plan).toBeNull() // freestyle
+    expect(entry.sets).toHaveLength(3)
+    expect(entry.sets[0].w).toBe(60)
+    expect(entry.sets[0].r).toBe(10)
+  })
 })
+
 
