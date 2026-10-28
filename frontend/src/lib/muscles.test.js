@@ -550,3 +550,110 @@ describe('muscleWeightsOf and lastTrainedByMuscle', () => {
     expect(lastTrainedByMuscle([wk('2026-02-01', [untouched])])).toEqual({})
   })
 })
+
+describe('tokenized catalogue search & normalization', () => {
+  it('tokenizes search queries with punctuation removal, stop-word filtering, and noise removal', async () => {
+    const { tokenizeSearchQuery, SEARCH_STOP_WORDS } = await import('./muscles.js')
+
+    expect(SEARCH_STOP_WORDS.has('with')).toBe(true)
+    expect(SEARCH_STOP_WORDS.has('on')).toBe(true)
+
+    // Normal splitting and lowercasing
+    expect(tokenizeSearchQuery('Dumbbell Bench Press')).toEqual(['dumbbell', 'bench', 'press'])
+
+    // Hyphen and punctuation normalization
+    expect(tokenizeSearchQuery('push-up')).toEqual(['push', 'up'])
+    expect(tokenizeSearchQuery('45-degree leg-press!')).toEqual(['45', 'degree', 'leg', 'press'])
+
+    // Conversational stop words stripped
+    expect(tokenizeSearchQuery('curls with band')).toEqual(['curls', 'band'])
+    expect(tokenizeSearchQuery('squat on the box')).toEqual(['squat', 'box'])
+    expect(tokenizeSearchQuery('press for chest')).toEqual(['press', 'chest'])
+
+    // Single-character noise stripped unless digit
+    expect(tokenizeSearchQuery('bench x')).toEqual(['bench'])
+    expect(tokenizeSearchQuery('bench 1')).toEqual(['bench', '1'])
+    expect(tokenizeSearchQuery('plan b')).toEqual(['plan'])
+
+    // Fallback when query consists solely of stop words or 1-char tokens
+    expect(tokenizeSearchQuery('on')).toEqual(['on'])
+    expect(tokenizeSearchQuery('for the')).toEqual(['for', 'the'])
+    expect(tokenizeSearchQuery('a')).toEqual(['a'])
+    expect(tokenizeSearchQuery('x')).toEqual(['x'])
+
+    // Empty or whitespace / punctuation only
+    expect(tokenizeSearchQuery('')).toEqual([])
+    expect(tokenizeSearchQuery('   ')).toEqual([])
+    expect(tokenizeSearchQuery('---')).toEqual([])
+    expect(tokenizeSearchQuery(null)).toEqual([])
+    expect(tokenizeSearchQuery(undefined)).toEqual([])
+  })
+
+  it('matches exercises out of order, across attributes, and with hyphen normalization', async () => {
+    const { matchesExerciseSearch } = await import('./muscles.js')
+    const bench = EXIDX['0025'] // Barbell Bench Press (chest, triceps, deltoids, eq: barbell)
+
+    // Out-of-order words
+    expect(matchesExerciseSearch(bench, 'bench barbell')).toBe(true)
+    expect(matchesExerciseSearch(bench, 'press barbell bench')).toBe(true)
+
+    // Cross-attribute matching (equipment + primary muscle)
+    expect(matchesExerciseSearch(bench, 'barbell chest')).toBe(true)
+    expect(matchesExerciseSearch(bench, 'barbell pectorals')).toBe(true)
+
+    // Cross-attribute matching (title + secondary muscle)
+    expect(matchesExerciseSearch(bench, 'bench triceps')).toBe(true)
+    expect(matchesExerciseSearch(bench, 'bench deltoids')).toBe(true)
+
+    // Hyphen normalization
+    const pushupEx = { id: 'c-pu', n: 'Close-Grip Push-Up', tg: 'chest', bp: 'chest', eq: 'body weight' }
+    expect(matchesExerciseSearch(pushupEx, 'push up')).toBe(true)
+    expect(matchesExerciseSearch(pushupEx, 'push-up')).toBe(true)
+    expect(matchesExerciseSearch(pushupEx, 'close grip push up')).toBe(true)
+
+    const spacePushup = { id: 'c-pu2', n: 'Push Up', tg: 'chest', bp: 'chest', eq: 'body weight' }
+    expect(matchesExerciseSearch(spacePushup, 'push-up')).toBe(true)
+    expect(matchesExerciseSearch(spacePushup, 'push up')).toBe(true)
+
+    // Disjunctive OR matching: matches ANY token
+    expect(matchesExerciseSearch(bench, 'bench squat')).toBe(true)
+    expect(matchesExerciseSearch(bench, 'unrelated bench')).toBe(true)
+    expect(matchesExerciseSearch(bench, 'unrelated squat')).toBe(false)
+
+    // Stop-word filtering in action
+    const bandCurl = { id: 'c-bc', n: 'Band Bicep Curl', tg: 'biceps', eq: 'band' }
+    expect(matchesExerciseSearch(bandCurl, 'curls with band')).toBe(true)
+
+    // Matching in exercise description / notes
+    const withDesc = { id: 'c-desc', n: 'Custom Lift', tg: 'chest', bp: 'chest', desc: 'Keep elbows tucked' }
+    expect(matchesExerciseSearch(withDesc, 'elbows')).toBe(true)
+    expect(matchesExerciseSearch(withDesc, 'tucked')).toBe(true)
+  })
+
+  it('attributes secondary muscles on tokenized queries while suppressing title and primary hits', async () => {
+    const { secondaryMatchForQuery } = await import('./muscles.js')
+    const bench = EXIDX['0025'] // Barbell Bench Press (primary: chest, secondaries: triceps, deltoids)
+
+    // Secondary matches when paired with title words
+    expect(secondaryMatchForQuery(bench, 'bench triceps')).toBe('triceps')
+    expect(secondaryMatchForQuery(bench, 'triceps bench')).toBe('triceps')
+    expect(secondaryMatchForQuery(bench, 'barbell triceps')).toBe('triceps')
+
+    // Secondary alias resolution in tokenized search
+    expect(secondaryMatchForQuery(bench, 'bench delts')).toBe('deltoids')
+    expect(secondaryMatchForQuery(bench, 'bench shoulders')).toBe('deltoids')
+
+    // Suppression when query matches primary target
+    expect(secondaryMatchForQuery(bench, 'chest')).toBeNull()
+    expect(secondaryMatchForQuery(bench, 'bench chest')).toBeNull()
+    expect(secondaryMatchForQuery(bench, 'pectorals')).toBeNull()
+
+    // Suppression when query matches only title
+    expect(secondaryMatchForQuery(bench, 'bench press')).toBeNull()
+    expect(secondaryMatchForQuery(bench, 'barbell')).toBeNull()
+
+    // Multiple secondary tokens: attributes the first non-primary/non-title match
+    expect(secondaryMatchForQuery(bench, 'triceps delts')).toBe('triceps')
+  })
+})
+
