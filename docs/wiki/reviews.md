@@ -3,6 +3,19 @@
 One entry per review event. Findings live in tickets/reports; this page records
 what ran, against what, and where the findings went.
 
+## 2026-10-28 — Catalogue review: hamstring set distribution for RDL and SLDL
+
+- **Context:** Audit of hamstring vs glute set accounting in Romanian Deadlift (RDL) and Stiff-Leg Deadlift (SLDL) across `frontend/src/lib/exercises-data.js`, `exercises.js`, and `muscles.js` at commit `d720eb1`.
+- **Findings:**
+  - Effective sets follow `GLOSSARY.md` (Primary 1.0, Secondary 0.4 via `muscles.js:99`).
+  - Barbell RDL (`0085`) and Dumbbell RDL (`1459`) are pinned in `EXDB` with `tg: 'glutes'`, crediting only 0.4 effective sets to hamstrings and 1.0 to glutes per performed work set.
+  - SLDL exhibits implement asymmetry: Barbell Straight Leg Deadlift (`0116`) has `tg: 'hamstrings'` (1.0 sets to hamstrings), whereas Dumbbell Stiff Leg Deadlift (`0432`) has `tg: 'glutes'` (0.4 sets to hamstrings).
+  - Built-in starter routine (`src/lib/starter.js:9`) compounds this: Leg Day allocates 10 effective sets to glutes and suppresses hamstrings because Squat (`0043`), Leg Press (`0739`), and RDL (`0085`) all default to primary glutes.
+  - No primary target curation seam exists in `exercises.js` (only `SECONDARY_ADDITIONS` is currently supported).
+- **Recommendations:**
+  - Tactical: Add a primary target override for RDL (`0085`, `1459`) and dumbbell SLDL (`0432`, `0434`) so hamstrings receive 1.0 and glutes receive 0.4.
+  - Strategic: Generalize `exercises.js` to support structured `CATALOGUE_OVERRIDES` (target overrides, secondary additions, and secondary removals) protected by invariant tests in `muscles.test.js`.
+
 ## 2026-10-28 — Two-axis review: inter-exercise rest
 
 - **Range:** `d6e3285...HEAD` at `9eeb0fe` — "feat(active-workout): unprompted exercise transitions and workout finale boundary (ticket 02)".

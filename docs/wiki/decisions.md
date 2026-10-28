@@ -4,6 +4,9 @@ One entry per decision, newest first. A decision here is a settled call; the
 ticket/ADR it points to carries the reasoning. Superseded entries stay listed
 with a pointer to their successor.
 
+- **2026-10-28 — Catalogue curations re-target RDL and SLDL to Hamstrings primary with secondary Glutes.**
+  Preserved the single-primary invariant (`1.0` primary, `0.4` secondary). Unified catalogue overrides into a declarative `CATALOGUE_CURATIONS` seam in `frontend/src/lib/exercises.js` (folding in `SECONDARY_ADDITIONS`) without mutating `exercises-data.js`. Re-targeted Romanian Deadlifts, Stiff-Leg Deadlifts, Single-Leg Deadlifts, and Stiff-Leg Good Mornings to Primary Hamstrings (`1.0`), explicitly injecting Glutes into secondary additions alongside Lower Back (`0.4` each). Past workouts live-reinterpret through `EXIDX` per ADR 0009 without database migration. Specified in `.scratch/hamstring-set-distribution/` and ADR 0012.
+
 - **2026-10-28 — Inter-exercise rest is bounded by the session finale and preserves unprompted view position.**
   Completing the final set of an exercise or superset unit starts rest at `S.restSec` only when another exercise remains in the session (`isLastUnit === false`). On the workout finale (`isLastUnit === true`), rest stops and auto-rest is suppressed so the workout complete sheet presents cleanly. Eager navigation on superset unit completion was removed, ensuring unprompted exercises and supersets keep their card position with the rest countdown running until the lifter navigates manually. Merged `9eeb0fe` (tickets 01 and 02 in `.scratch/rest-between-exercises/`).
 
