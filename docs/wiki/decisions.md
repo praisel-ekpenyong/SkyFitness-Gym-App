@@ -4,6 +4,9 @@ One entry per decision, newest first. A decision here is a settled call; the
 ticket/ADR it points to carries the reasoning. Superseded entries stay listed
 with a pointer to their successor.
 
+- **2026-10-28 — In-session exercise reordering is strictly session-local, non-destructive, and adheres to positional supersets.**
+  Added `moveActiveExercise(S, idx, dir)` behind the ADR 0006 lifecycle seam in `lib/active-session.js` and exposed on `useStore`. Reordering operates on individual entries, is enabled when 2 or more exercises exist and no timed hold is active, keeps performed sets intact, tracks `active.cur` to the moved exercise, and dissolves supersets via `cleanupSg` if an entry is moved past outside neighbors. UI provides a dedicated sheet with Move Up/Down chevrons, close button, and tap/keyboard jump navigation. Merged in `669a6bd` and `6adf5a6` (tickets 01 and 02 in `.scratch/exercise-reordering/`).
+
 - **2026-10-28 — Catalogue curations re-target RDL and SLDL to Hamstrings primary with secondary Glutes.**
   Preserved the single-primary invariant (`1.0` primary, `0.4` secondary). Unified catalogue overrides into a declarative `CATALOGUE_CURATIONS` seam in `frontend/src/lib/exercises.js` (folding in `SECONDARY_ADDITIONS`) without mutating `exercises-data.js`. Re-targeted Romanian Deadlifts, Stiff-Leg Deadlifts, Single-Leg Deadlifts, and Stiff-Leg Good Mornings to Primary Hamstrings (`1.0`), explicitly injecting Glutes into secondary additions alongside Lower Back (`0.4` each). Past workouts live-reinterpret through `EXIDX` per ADR 0009 without database migration. Specified in `.scratch/hamstring-set-distribution/` and ADR 0012.
 
