@@ -9,6 +9,16 @@ import { uid, todayISO } from './format.js'
 import { t } from './i18n.js'
 import { cleanupSg } from './supersetFlow.js'
 
+// Seed rows for a new Prescription. A new Progression stream keeps the Routine's own last
+// working weight but starts at the plan's top reps/seconds; reading the global `exWeights`
+// hint here would import another Routine's heavier history into this one.
+function seedSets(S, cfg, routineId, plan) {
+  return buildSets(S, cfg, {
+    routineId,
+    seedWeightOnly: plan.kind === 'first',
+  })
+}
+
 /**
  * Construct a fresh active workout session object from a routine or as freestyle.
  *
@@ -31,13 +41,7 @@ export function createActiveSession(S, routineId, bw, opts = {}) {
   const routine = routineId ? (S.routines || []).find(r => r.id === routineId) : null
   const entries = (routine ? routine.ex : []).map(cfg => {
     const plan = nextPrescription(S, cfg, routine)
-    // A new Progression stream keeps the Routine's last working weight but starts at the
-    // plan's top reps/seconds. Reading the global `exWeights` here would import another
-    // Routine's heavier history into this one.
-    const sets = applyPrescription(buildSets(S, cfg, {
-      routineId: routine?.id,
-      seedWeightOnly: plan.kind === 'first',
-    }), plan)
+    const sets = applyPrescription(seedSets(S, cfg, routine?.id, plan), plan)
     return { id: cfg.id, sg: cfg.sg, target: { ...cfg }, plan, sets }
   })
   return {
@@ -103,10 +107,7 @@ export function addActiveExercise(S, exId, targetCfg = {}) {
   const plan = freestyle ? null : nextPrescription(S, full, routine)
   const baseSets = freestyle
     ? buildSets(S, full, { preferLast: true })
-    : buildSets(S, full, {
-      routineId: S.active.routineId,
-      seedWeightOnly: plan.kind === 'first',
-    })
+    : seedSets(S, full, S.active.routineId, plan)
   const sets = freestyle ? baseSets : applyPrescription(baseSets, plan)
   const entry = { id: exId, target: { ...targetCfg }, plan, sets }
   if (!Array.isArray(S.active.entries)) S.active.entries = []

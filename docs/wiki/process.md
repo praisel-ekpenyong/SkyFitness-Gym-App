@@ -24,9 +24,10 @@ discipline in `AGENTS.md`.
   paths on the main checkout. Discovered 2026-10-27 while filing
   `progression-review` tickets.
 - A pre-commit hook re-runs the full frontend suite before allowing a commit —
-  observed on every 2026-10-27 implementer commit ("808/808" hooks). The test
-  gate is therefore enforced at commit time, not just by instruction.
-- Test suite as of 2026-10-27: 59 files, 808 tests, `cd frontend && npm test`.
+  observed on every 2026-10-27 implementer commit (808/808 through ticket 04,
+  812/812 after ticket 05). The test gate is therefore enforced at commit time,
+  not just by instruction.
+- Test suite as of 2026-10-28: 59 files, 817 tests, `cd frontend && npm test`.
   Fresh worktrees need `npm install` before testing.
 
 ## Deviations on record
