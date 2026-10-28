@@ -88,6 +88,11 @@ _Avoid_: missing exercise
 Swapping an Entry in a Routine or Active workout for a different catalogue exercise. The replacement inherits the original position and superset pairing, seeds targets from its own history, and in an Active workout is strictly session-local (leaving the underlying Routine unchanged and prompting confirmation before discarding any performed sets).
 _Avoid_: exercise substitution, exercise swap
 
+**Exercise reordering**:
+Changing the sequence of entries in a routine or an active workout. In an active workout, reordering is strictly session-local, non-destructive, and adheres to positional superset rules.
+_Avoid_: rearranging exercises, exercise rearranging, shuffling
+
+
 
 ### Logging a session
 

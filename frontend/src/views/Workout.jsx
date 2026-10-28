@@ -4,7 +4,7 @@ import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { exOr } from '../lib/exercises.js'
 import { effectiveRoutine, hasEffectiveOverride } from '../lib/history.js'
-import { lastEntryFor, freestyleConfig, defaultConfig, sessionProgress, modeOf, isBw, isPerSide, sideReps, repStep } from '../lib/workout-model.js'
+import { lastEntryFor, freestyleConfig, defaultConfig, sessionProgress, modeOf, isBw, isPerSide, sideReps, repStep, workSets, doneWorkSets } from '../lib/workout-model.js'
 import { supersetUnits, unitOf } from '../lib/supersetFlow.js'
 import { setLabel } from '../lib/format.js'
 import { EFFORT, effortOf, stepEffort, capEffort } from '../lib/effort.js'
@@ -12,7 +12,7 @@ import { bestKnownWeight } from '../lib/active-workout.js'
 import { fmtNum, fmtDate, fmtSec, fmtElapsed, todayISO, exCount, DAYN } from '../lib/format.js'
 import { playSetComplete } from '../lib/sound.js'
 import { t } from '../lib/i18n.js'
-import Media from '../components/Media.jsx'
+import Media, { Thumb } from '../components/Media.jsx'
 import { startFlow, exercisePicker, exConfigSheet, exerciseDetailSheet, topWeightSheet, finishWorkout, workoutCompleteSheet, confirmSheet } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
 import { Button, Check, NumberField } from '../components/ui.jsx'
@@ -226,6 +226,52 @@ export function replaceActiveExerciseFlow(idx) {
   }
 }
 
+/** Bottom sheet listing active workout entries for sequential reordering and fast navigation. */
+export function ReorderExercisesSheet({ close }) {
+  const entries = useStore(s => s.S.active?.entries || [])
+  const units = supersetUnits(entries)
+  const unitFirst = new Set(units.filter(u => u.length > 1).map(u => u[0]))
+  const inSS = new Set(units.filter(u => u.length > 1).flat())
+
+  const move = (idx, dir) => {
+    useStore.getState().moveActiveExercise(idx, dir)
+  }
+  const select = idx => {
+    useStore.getState().setActiveIndex(idx)
+    close()
+  }
+
+  return <div>
+    <h3>{t('Reorder exercises')}</h3>
+    <div className="muted small" style={{ marginBottom: 12 }}>{t('Move exercises up or down, or tap to jump.')}</div>
+    <div className="list">
+      {entries.map((entry, idx) => {
+        const ex = exOr(entry.id)
+        const done = doneWorkSets(entry).length
+        const total = workSets(entry).length
+        return <div key={idx}>
+          {unitFirst.has(idx) && <div className="ss-label"><Icon name="link" />{t('Superset')}</div>}
+          <div className={'item' + (inSS.has(idx) ? ' in-ss' : '')} role="button" tabIndex={0} onClick={() => select(idx)} style={{ cursor: 'pointer' }}>
+            <Thumb ex={ex} />
+            <div className="grow">
+              <div className="tt capitalize">{ex.n}</div>
+              <div className="ss">{total ? t('{0} sets', done + '/' + total) : ''}</div>
+            </div>
+            <div style={{ display: 'flex', gap: 4, flex: 'none', alignItems: 'center' }} onClick={e => e.stopPropagation()}>
+              <button className="iconbtn" aria-label={t('Move {0} up', ex.n)} disabled={idx === 0} style={{ width: 32, height: 28, borderRadius: 8, fontSize: 13 }} onClick={() => move(idx, -1)}>
+                <Icon name="chevronUp" />
+              </button>
+              <button className="iconbtn" aria-label={t('Move {0} down', ex.n)} disabled={idx === entries.length - 1} style={{ width: 32, height: 28, borderRadius: 8, fontSize: 13 }} onClick={() => move(idx, 1)}>
+                <Icon name="chevronDown" />
+              </button>
+            </div>
+          </div>
+        </div>
+      })}
+    </div>
+  </div>
+}
+
 /** Active-workout route body; logs sets for the running session. */
 function ActiveWorkout() {
   const nav = useNavigate()
@@ -308,6 +354,10 @@ function ActiveWorkout() {
         </div>
       ))
     } else replaceActiveExerciseFlow(cur)
+  }
+
+  const reorderExerciseSheet = () => {
+    useUI.getState().openSheet(close => <ReorderExercisesSheet close={close} />)
   }
 
   // A timed set is held, not typed. The Hold timer records what was actually held — an early
@@ -395,6 +445,7 @@ function ActiveWorkout() {
     {A.entries.length > 0 && <>
       <div style={{ height: 6 }} />
       <div style={{ display: 'flex', justifyContent: 'center', gap: 8, flexWrap: 'wrap' }}>
+        <Button size="sm" icon="list" disabled={holding || A.entries.length < 2} onClick={reorderExerciseSheet}>{t('Reorder exercises')}</Button>
         <Button size="sm" icon="shuffle" disabled={holding} onClick={replaceExerciseSheet}>{t('Replace exercise')}</Button>
         <Button size="sm" icon="minus" style={{ color: 'var(--red)' }} disabled={holding} onClick={removeExerciseSheet}>{t('Remove exercise')}</Button>
       </div>
