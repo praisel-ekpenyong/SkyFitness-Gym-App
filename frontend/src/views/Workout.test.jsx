@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => {
     startRest: vi.fn(),
     stopRest: vi.fn(),
     topWeightSheet: vi.fn(),
+    workoutCompleteSheet: vi.fn(),
   }
   state.storeSnapshot = () => ({
     S: state.S,
@@ -60,7 +61,7 @@ vi.mock('../sheets.jsx', () => ({
   exerciseDetailSheet: vi.fn(),
   topWeightSheet: mocks.topWeightSheet,
   finishWorkout: vi.fn(),
-  workoutCompleteSheet: vi.fn(),
+  workoutCompleteSheet: mocks.workoutCompleteSheet,
   confirmSheet: vi.fn(),
 }))
 vi.mock('../components/Media.jsx', () => ({ default: () => null }))
@@ -160,6 +161,7 @@ describe('Workout set completion flow', () => {
 
     expect(mocks.stopRest).toHaveBeenCalledOnce()
     expect(mocks.startRest).not.toHaveBeenCalled()
+    expect(mocks.workoutCompleteSheet).toHaveBeenCalledOnce()
   })
 
   it('leaves a completed superset selected while its top-weight sheet owns the advance choice', async () => {
@@ -187,6 +189,37 @@ describe('Workout set completion flow', () => {
     expect(mocks.S.active.cur).toBe(0)
     expect(mocks.stopRest).toHaveBeenCalledOnce()
     expect(mocks.startRest).toHaveBeenCalledWith(90)
+  })
+
+  it('starts rest when performing the final set of an unprompted exercise if another exercise follows, leaving it selected', async () => {
+    await mount([
+      exercise('plain-treadmill', [false], {
+        target: { mode: 'cardio', min: 20, speed: 8 },
+      }),
+      exercise('plain-squat', [false, false]),
+    ])
+    await toggleSet(0)
+
+    expect(mocks.topWeightSheet).not.toHaveBeenCalled()
+    expect(mocks.workoutCompleteSheet).not.toHaveBeenCalled()
+    expect(mocks.S.active.cur).toBe(0)
+    expect(mocks.stopRest).toHaveBeenCalledOnce()
+    expect(mocks.startRest).toHaveBeenCalledWith(90)
+  })
+
+  it('stops running rest and suppresses auto-rest on the workout finale when performing an unprompted exercise', async () => {
+    await mount([
+      exercise('plain-bench', [true, true]),
+      exercise('plain-treadmill', [false], {
+        target: { mode: 'cardio', min: 20, speed: 8 },
+      }),
+    ], 1)
+    await toggleSet(0)
+
+    expect(mocks.topWeightSheet).not.toHaveBeenCalled()
+    expect(mocks.workoutCompleteSheet).toHaveBeenCalledOnce()
+    expect(mocks.stopRest).toHaveBeenCalledOnce()
+    expect(mocks.startRest).not.toHaveBeenCalled()
   })
 })
 
