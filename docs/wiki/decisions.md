@@ -4,6 +4,9 @@ One entry per decision, newest first. A decision here is a settled call; the
 ticket/ADR it points to carries the reasoning. Superseded entries stay listed
 with a pointer to their successor.
 
+- **2026-10-28 — Inter-exercise rest is bounded by the session finale and preserves unprompted view position.**
+  Completing the final set of an exercise or superset unit starts rest at `S.restSec` only when another exercise remains in the session (`isLastUnit === false`). On the workout finale (`isLastUnit === true`), rest stops and auto-rest is suppressed so the workout complete sheet presents cleanly. Eager navigation on superset unit completion was removed, ensuring unprompted exercises and supersets keep their card position with the rest countdown running until the lifter navigates manually. Merged `9eeb0fe` (tickets 01 and 02 in `.scratch/rest-between-exercises/`).
+
 - **2026-10-28 — In-session exercise replacement is strictly session-local, preserving supersets and order.**
   Added `replaceActiveExercise` behind the ADR 0006 lifecycle seam and wired into both
   `RoutineEdit` (template editing) and `Workout` (active session). In an Active workout,

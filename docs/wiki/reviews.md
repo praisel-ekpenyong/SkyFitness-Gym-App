@@ -3,6 +3,14 @@
 One entry per review event. Findings live in tickets/reports; this page records
 what ran, against what, and where the findings went.
 
+## 2026-10-28 — Two-axis review: inter-exercise rest
+
+- **Range:** `d6e3285...HEAD` at `9eeb0fe` — "feat(active-workout): unprompted exercise transitions and workout finale boundary (ticket 02)".
+- **Method:** Standards axis and Spec axis as parallel subagents (sessions `12341323-b95f-4735-8ec8-cf64fd66e2ab` and `86c17219-15b1-4ef7-9e7e-70db7485be7b`).
+- **Spec source:** `.scratch/rest-between-exercises/spec.md` (tickets 01 and 02 in `.scratch/rest-between-exercises/issues/`).
+- **Outcome:** Standards — 0 violations, 0 smells, clean ADR-0006 lifecycle seam adherence. Spec — all 23 User Stories verified and fully implemented, modal coordination and background timer continuity verified, workout finale suppression verified, 0 scope creep. Suite: 63/63 test files passed (869/869 tests green), build 572ms.
+- **Disposition:** Spec verified accurately. Both tickets 01 and 02 resolved.
+
 ## 2026-10-27 — Two-axis review: progression-runs
 
 - **Range:** `93e3b28...HEAD` at `d6976cd` — "Fix progression deloads with
