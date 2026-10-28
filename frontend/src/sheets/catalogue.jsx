@@ -421,8 +421,9 @@ function ProgressionFields({ ex, mode, c, setC, routine, unit }) {
  * @param {Object} routine Parent routine for inherited progression.
  * @param {Object} initial Starting config override.
  * @param {Function} onReplace Opens replacement picker for this exercise.
+ * @param {string} [actionLabel] Custom label for the primary action button.
  */
-export function ExConfig({ ex, existing, onSave, onDelete, close, routine, initial, onReplace }) {
+export function ExConfig({ ex, existing, onSave, onDelete, close, routine, initial, onReplace, actionLabel }) {
   const st = useStore(s => s.S)
   const cardio = isCardio(ex.id)
   const [c, setC] = useState(() => {
@@ -535,7 +536,7 @@ export function ExConfig({ ex, existing, onSave, onDelete, close, routine, initi
         : t('Reps climb by one whenever every set was clean. Set a ceiling to add sets instead of reps forever.')}
     </div>}
     <ProgressionFields ex={ex} mode={mode} c={c} setC={setC} routine={routine} unit={st.unit} />
-    <Button variant="primary" onClick={save}>{existing ? t('Save') : t('Add to routine')}</Button>
+    <Button variant="primary" onClick={save}>{actionLabel || (existing ? t('Save') : t('Add to routine'))}</Button>
     {onReplace && existing && <><div style={{ height: 8 }} /><Button icon="shuffle" onClick={() => { close(); onReplace() }}>{t('Replace exercise')}</Button></>}
     {ex.custom && <><div style={{ height: 8 }} /><Button icon="pencil" onClick={() => { close(); customExSheet(ex) }}>{t('Edit or delete this exercise')}</Button></>}
     {onDelete && <><div style={{ height: 8 }} /><Button variant="danger" onClick={() => { close(); onDelete() }}>{t('Remove from routine')}</Button></>}
@@ -551,5 +552,7 @@ export function ExConfig({ ex, existing, onSave, onDelete, close, routine, initi
  * @param {Object} routine Parent routine for inherited progression.
  * @param {Object} initial Starting config override.
  * @param {Function} onReplace Opens replacement picker for this exercise.
+ * @param {string} [actionLabel] Custom label for the primary action button.
  */
-export const exConfigSheet = (ex, existing, onSave, onDelete, routine, initial, onReplace) => ui().openSheet(close => <ExConfig ex={ex} existing={existing} initial={initial} onSave={onSave} onDelete={onDelete} routine={routine} onReplace={onReplace} close={close} />)
+export const exConfigSheet = (ex, existing, onSave, onDelete, routine, initial, onReplace, actionLabel) => ui().openSheet(close => <ExConfig ex={ex} existing={existing} initial={initial} onSave={onSave} onDelete={onDelete} routine={routine} onReplace={onReplace} actionLabel={actionLabel} close={close} />)
+

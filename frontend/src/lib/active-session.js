@@ -88,6 +88,29 @@ export function discardActiveSession(S) {
 }
 
 /**
+ * Build a fresh active workout entry for an exercise.
+ *
+ * For routine-backed workouts, derives the progression prescription and applies it to seeded sets.
+ * For freestyle workouts, sets are seeded from historical performance (`preferLast: true`).
+ *
+ * @param {Object} S - Application state atom.
+ * @param {string} exId - Exercise identifier from EXIDX.
+ * @param {Object} [targetCfg={}] - Target configuration overrides (sets, reps, weight, progression).
+ * @returns {Object} The constructed entry object `{ id, target, plan, sets }`.
+ */
+export function buildActiveEntry(S, exId, targetCfg = {}) {
+  const routine = S?.active?.routineId ? (S.routines || []).find(r => r.id === S.active.routineId) : null
+  const freestyle = !S?.active?.routineId
+  const full = { ...defaultConfig(exId), ...targetCfg, id: exId }
+  const plan = freestyle ? null : nextPrescription(S, full, routine)
+  const baseSets = freestyle
+    ? buildSets(S, full, { preferLast: true })
+    : seedSets(S, full, S?.active?.routineId, plan)
+  const sets = freestyle ? baseSets : applyPrescription(baseSets, plan)
+  return { id: exId, target: { ...targetCfg }, plan, sets }
+}
+
+/**
  * Append an exercise entry to the active workout session.
  *
  * For routine-backed workouts, applies progression prescriptions; for freestyle workouts,
@@ -101,15 +124,7 @@ export function discardActiveSession(S) {
  */
 export function addActiveExercise(S, exId, targetCfg = {}) {
   if (!S?.active) return null
-  const routine = S.active.routineId ? (S.routines || []).find(r => r.id === S.active.routineId) : null
-  const freestyle = !S.active.routineId
-  const full = { ...defaultConfig(exId), ...targetCfg, id: exId }
-  const plan = freestyle ? null : nextPrescription(S, full, routine)
-  const baseSets = freestyle
-    ? buildSets(S, full, { preferLast: true })
-    : seedSets(S, full, S.active.routineId, plan)
-  const sets = freestyle ? baseSets : applyPrescription(baseSets, plan)
-  const entry = { id: exId, target: { ...targetCfg }, plan, sets }
+  const entry = buildActiveEntry(S, exId, targetCfg)
   if (!Array.isArray(S.active.entries)) S.active.entries = []
   S.active.entries.push(entry)
   S.active.cur = S.active.entries.length - 1
@@ -158,16 +173,7 @@ export function replaceActiveExercise(S, idx, newExId, targetCfg = {}) {
   if (!newExId) return null
 
   const oldEntry = S.active.entries[idx]
-  const routine = S.active.routineId ? (S.routines || []).find(r => r.id === S.active.routineId) : null
-  const freestyle = !S.active.routineId
-  const full = { ...defaultConfig(newExId), ...targetCfg, id: newExId }
-  const plan = freestyle ? null : nextPrescription(S, full, routine)
-  const baseSets = freestyle
-    ? buildSets(S, full, { preferLast: true })
-    : seedSets(S, full, S.active.routineId, plan)
-  const sets = freestyle ? baseSets : applyPrescription(baseSets, plan)
-
-  const entry = { id: newExId, target: { ...targetCfg }, plan, sets }
+  const entry = buildActiveEntry(S, newExId, targetCfg)
   if (oldEntry && oldEntry.sg != null) {
     entry.sg = oldEntry.sg
   }
