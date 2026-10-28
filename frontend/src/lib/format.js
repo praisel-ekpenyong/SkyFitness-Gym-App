@@ -1,3 +1,8 @@
+// Formatting utilities: presentation helpers for dates, timestamps, elapsed
+// durations, numbers, unit labels, and human-readable set/exercise summaries.
+// Owns locale-aware string conversions across the UI, leaving raw time math to
+// callers and training domain logic to lib/workout-model.js.
+
 import { dateLocale, t } from './i18n-core.js'
 import { modeOf, isBw, isPerSide, sideReps } from './workout-model.js'
 import { EFFORT } from './effort.js'

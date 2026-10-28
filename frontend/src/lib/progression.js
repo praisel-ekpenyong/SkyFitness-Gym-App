@@ -194,6 +194,18 @@ function deloadIfStalled(cur, step, noProgress, deloadAt, onHold, onDeload) {
 // a deload cannot immediately trigger the next one.
 const positive = v => (Number.isFinite(v) && v > 0 ? v : null)
 
+/**
+ * Whether a logged session belongs to the current exercise progression stream.
+ *
+ * Compares mode, planned set count, and target top reps or duration. Unweighted
+ * bodyweight exercises share stream history across rep counts since progress
+ * climbs towards `repsMax`.
+ *
+ * @param {Object} session - Evaluated session summary from `readSession`.
+ * @param {Object} cfg - Current exercise target or routine configuration.
+ * @param {string} mode - Active logging mode ('reps', 'time', or 'cardio').
+ * @returns {boolean} True when the session shares this progression stream.
+ */
 function inStream(session, cfg, mode) {
   if (session.mode !== mode) return false
   const target = session.target || {}
@@ -297,12 +309,36 @@ function weakestPerformed(session) {
   return held.length ? Math.min(...held) : 0
 }
 
+/**
+ * Target hold duration for the next add-time session step.
+ *
+ * Advances the weakest performed hold from the previous session by `inc`
+ * seconds, capped at the prescribed working duration and clamped to valid
+ * bounds (`MIN_TIME_SEC` to `MAX_TIME_SEC`). Falls back to working duration
+ * when no holds were performed.
+ *
+ * @param {Object} session - Evaluated session summary from `readSession`.
+ * @param {Object} cfg - Exercise target configuration.
+ * @param {number} inc - Step increment in seconds.
+ * @returns {number} Clamped target duration in seconds.
+ */
 function timeAim(session, cfg, inc) {
   const working = sessionSeconds(session, cfg)
   const weak = weakestPerformed(session)
   return clampTimeSec(weak > 0 ? Math.min(working, weak + inc) : working)
 }
 
+/**
+ * Whether a session achieved a successful Hit under add-time progression.
+ *
+ * Requires a positive goal duration, sufficient completed work sets
+ * (`enough`), and every performed hold meeting or exceeding the prescribed
+ * working duration.
+ *
+ * @param {Object} session - Evaluated session summary from `readSession`.
+ * @param {Object} cfg - Exercise target configuration.
+ * @returns {boolean} True when all work sets met the prescribed hold duration.
+ */
 function timeHit(session, cfg) {
   const working = sessionSeconds(session, cfg)
   const held = session.held || []
