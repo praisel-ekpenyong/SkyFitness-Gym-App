@@ -240,6 +240,20 @@ describe('linear deload runs', () => {
     expect(nextPrescription(S, LINEAR).kind).toBe('deload')
   })
 
+  it('reads the current plan load when a legacy Entry performed nothing, not its frozen Target', () => {
+    // No `plan` (pre-1.2.2) and every row unticked, so the load has to come from the plan.
+    // The frozen Target must not decide it: a bodyweight Target legitimately carries 0 even
+    // after the lifter has loaded the lift, and reading that 0 would prescribe a barbell
+    // exercise as bodyweight.
+    const S = state([session({
+      target: { sets: 3, reps: 8, weight: 0 },
+      rows: [{ w: 0, r: 0, done: false }],
+    })])
+    const p = nextPrescription(S, { id: LIFT, sets: 3, reps: 8, weight: 60, prog: 'linear' })
+    expect(p.kind).toBe('hold')
+    expect(p.weight).toBe(60)
+  })
+
   it('treats a hand-set weight as a new Run baseline, not a Stall', () => {
     const S = state(repeat(3, i => miss(60, day(i), { kind: 'hold', weight: 60 })))
     const deload = nextPrescription(S, LINEAR)

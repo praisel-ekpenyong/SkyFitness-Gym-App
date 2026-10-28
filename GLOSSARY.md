@@ -186,7 +186,7 @@ How a session is judged against its target. A performed set that reached its tar
 The named rule that derives the next target from history: off, linear, Greyskull LP, double progression, add-time. Policies are pure readings of the log — fixing a mistyped set immediately changes the next prescription.
 
 **Progression stream**:
-The slice of history one policy reads for one Target shape: exercise, Mode, planned set count, and top reps or seconds. Weight, the rep-range bottom, per-side logging, and the policy itself are outside the shape — changing them does not start a new stream, while changing the Target shape does. A new stream's first session is its baseline, and its rows seed from the last working weight in the same Routine (else the Routine's plan weight).
+The slice of history one policy reads for one Target shape: exercise, Mode, planned set count, and top reps or seconds. Weight, the rep-range bottom, per-side logging, and the policy itself are outside the shape — changing them does not start a new stream, while changing the Target shape does. One shape carve-out: a bodyweight session (reps mode, no load on the plan — an explicit zero or an unweighted bodyweight-flagged exercise) matches on Mode and planned set count alone and reads its ceiling from `repsMax`, since that ceiling lives outside the Target; a bodyweight exercise trained with a belt carries a load and keeps the full shape. A new stream's first session is its baseline, and its rows seed from the last working weight in the same Routine (else the Routine's plan weight).
 _Avoid_: exercise history (which implies every Target shape shares one); routine history (a stream can span Routines)
 
 **Run**:
