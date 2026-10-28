@@ -4,7 +4,7 @@ import {
   bestKnownWeight, heaviestSetWeight, heaviestForEntry, mergeExWeight,
   createActiveSession, applyWorkingWeight, completeActiveSession,
   buildCompletedWorkout, addActiveExercise, removeActiveExercise,
-  replaceActiveExercise, buildActiveEntry,
+  replaceActiveExercise, moveActiveExercise, buildActiveEntry,
   updateActiveSetField, addActiveSet, removeActiveSet, addActiveWarmup,
   pairActiveSuperset, unpairActiveSuperset, toggleActiveSet,
   setActiveIndex, discardActiveSession
@@ -568,6 +568,155 @@ describe('active-workout lifecycle seam', () => {
     expect(entry.sets).toHaveLength(3)
     expect(entry.sets[0].w).toBe(60)
     expect(entry.sets[0].r).toBe(10)
+  })
+
+  it('moveActiveExercise shifts entries up and down and respects boundaries', () => {
+    const S = {
+      active: {
+        cur: 1,
+        entries: [
+          { id: 'ex0', sets: [{ w: 50, r: 8, done: true }] },
+          { id: 'ex1', sets: [{ w: 60, r: 8, done: false }] },
+          { id: 'ex2', sets: [{ w: 70, r: 8, done: false }] },
+        ]
+      }
+    }
+
+    // Boundary guards
+    expect(moveActiveExercise(S, 0, -1)).toBe(false)
+    expect(moveActiveExercise(S, 2, 1)).toBe(false)
+
+    // Move index 1 up (-1) -> swaps ex1 and ex0
+    expect(moveActiveExercise(S, 1, -1)).toBe(true)
+    expect(S.active.entries.map(e => e.id)).toEqual(['ex1', 'ex0', 'ex2'])
+    expect(S.active.cur).toBe(0) // cur tracked ex1 from index 1 to index 0
+
+    // Move index 0 down (+1) -> swaps ex1 and ex0 back
+    expect(moveActiveExercise(S, 0, 1)).toBe(true)
+    expect(S.active.entries.map(e => e.id)).toEqual(['ex0', 'ex1', 'ex2'])
+    expect(S.active.cur).toBe(1) // cur tracked ex1 from index 0 to index 1
+  })
+
+  it('moveActiveExercise tracks active.cur across moves', () => {
+    const S = {
+      active: {
+        cur: 2,
+        entries: [{ id: 'a' }, { id: 'b' }, { id: 'c' }]
+      }
+    }
+    // Swap 0 and 1 while cur is 2 (unrelated item active)
+    expect(moveActiveExercise(S, 0, 1)).toBe(true)
+    expect(S.active.entries.map(e => e.id)).toEqual(['b', 'a', 'c'])
+    expect(S.active.cur).toBe(2) // cur unchanged
+
+    // Swap 1 and 2 where cur is 2 (the swapped neighbor)
+    expect(moveActiveExercise(S, 1, 1)).toBe(true)
+    expect(S.active.entries.map(e => e.id)).toEqual(['b', 'c', 'a'])
+    expect(S.active.cur).toBe(1) // cur was 2 (c), followed c to index 1
+  })
+
+  it('moveActiveExercise returns false on invalid input', () => {
+    const S = {
+      active: {
+        cur: 0,
+        entries: [{ id: 'a' }]
+      }
+    }
+    expect(moveActiveExercise(null, 0, 1)).toBe(false)
+    expect(moveActiveExercise({}, 0, 1)).toBe(false)
+    expect(moveActiveExercise({ active: null }, 0, 1)).toBe(false)
+    expect(moveActiveExercise(S, -1, 1)).toBe(false)
+    expect(moveActiveExercise(S, 5, 1)).toBe(false)
+    expect(moveActiveExercise(S, 0, 0)).toBe(false)
+    expect(moveActiveExercise(S, 0, 2)).toBe(false)
+    expect(moveActiveExercise(S, '0', 1)).toBe(false)
+    expect(moveActiveExercise(S, 0, '1')).toBe(false)
+  })
+
+  it('moveActiveExercise preserves superset on internal swap, dissolves when breaking adjacency', () => {
+    const S = {
+      active: {
+        cur: 0,
+        entries: [
+          { id: 'bench', sg: 'sg-pair' },
+          { id: 'row', sg: 'sg-pair' },
+          { id: 'squat' },
+        ]
+      }
+    }
+
+    // Swap bench and row: bench moves to index 1, row moves to index 0.
+    // They are still adjacent (0 and 1), so superset is preserved.
+    expect(moveActiveExercise(S, 0, 1)).toBe(true)
+    expect(S.active.entries[0].id).toBe('row')
+    expect(S.active.entries[0].sg).toBe('sg-pair')
+    expect(S.active.entries[1].id).toBe('bench')
+    expect(S.active.entries[1].sg).toBe('sg-pair')
+
+    // Now move bench (at index 1) down past squat (at index 2).
+    // Bench is at index 2, squat is at index 1, row is at index 0.
+    // Row and bench are separated by squat; cleanupSg must dissolve the group!
+    expect(moveActiveExercise(S, 1, 1)).toBe(true)
+    expect(S.active.entries[0].id).toBe('row')
+    expect(S.active.entries[0].sg).toBeUndefined()
+    expect(S.active.entries[1].id).toBe('squat')
+    expect(S.active.entries[1].sg).toBeUndefined()
+    expect(S.active.entries[2].id).toBe('bench')
+    expect(S.active.entries[2].sg).toBeUndefined()
+  })
+
+  it('moveActiveExercise leaves S.routines completely untouched', () => {
+    const S = blankProfile()
+    S.routines = [
+      {
+        id: 'r1',
+        name: 'Upper',
+        ex: [{ id: '0025' }, { id: '0043' }]
+      }
+    ]
+    S.active = createActiveSession(S, 'r1', 75)
+    expect(S.active.entries.map(e => e.id)).toEqual(['0025', '0043'])
+
+    const routineSnapshot = clone(S.routines)
+
+    expect(moveActiveExercise(S, 0, 1)).toBe(true)
+    expect(S.active.entries.map(e => e.id)).toEqual(['0043', '0025'])
+
+    // S.routines must be unmodified
+    expect(S.routines).toEqual(routineSnapshot)
+  })
+
+  it('moveActiveExercise preserves performed sets and all entry metadata non-destructively', () => {
+    const entry0 = {
+      id: '0025',
+      asked: true,
+      hw: 2,
+      topW: 80,
+      target: { sets: 3, reps: 8, weight: 80 },
+      sets: [
+        { w: 80, r: 8, done: true, phase: 'work', rir: 2 },
+        { w: 80, r: 8, done: true, phase: 'work', rir: 1 },
+        { w: 80, r: 6, done: false, phase: 'work' },
+      ]
+    }
+    const entry1 = {
+      id: '0043',
+      target: { sets: 2, reps: 10, weight: 100 },
+      sets: [
+        { w: 100, r: 10, done: false, phase: 'work' },
+        { w: 100, r: 10, done: false, phase: 'work' },
+      ]
+    }
+    const S = {
+      active: {
+        cur: 0,
+        entries: [clone(entry0), clone(entry1)]
+      }
+    }
+
+    expect(moveActiveExercise(S, 0, 1)).toBe(true)
+    expect(S.active.entries[1]).toEqual(entry0)
+    expect(S.active.entries[0]).toEqual(entry1)
   })
 })
 
