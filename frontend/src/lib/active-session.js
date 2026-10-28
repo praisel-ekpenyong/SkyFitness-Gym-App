@@ -183,3 +183,39 @@ export function replaceActiveExercise(S, idx, newExId, targetCfg = {}) {
   return entry
 }
 
+/**
+ * Move an exercise within an active workout session by shifting it up or down.
+ *
+ * Swaps `S.active.entries[idx]` with `S.active.entries[idx + dir]`, applies `cleanupSg`
+ * to maintain positional superset integrity, and updates `S.active.cur` to track the
+ * moved entry. Leaves `S.routines` untouched. Mutates `S.active` in-place.
+ *
+ * @param {Object} S - Application state atom.
+ * @param {number} idx - Index of the active exercise entry to move.
+ * @param {number} dir - Direction to shift: -1 for up (earlier), 1 for down (later).
+ * @returns {boolean} True if entry was moved, false if invalid index/direction or no active session.
+ */
+export function moveActiveExercise(S, idx, dir) {
+  if (!S?.active || !Array.isArray(S.active.entries)) return false
+  if (!Number.isInteger(idx) || !Number.isInteger(dir)) return false
+  if (dir !== -1 && dir !== 1) return false
+  const targetIdx = idx + dir
+  if (idx < 0 || idx >= S.active.entries.length) return false
+  if (targetIdx < 0 || targetIdx >= S.active.entries.length) return false
+
+  const entries = S.active.entries
+  const temp = entries[idx]
+  entries[idx] = entries[targetIdx]
+  entries[targetIdx] = temp
+
+  cleanupSg(entries)
+
+  if (S.active.cur === idx) {
+    S.active.cur = targetIdx
+  } else if (S.active.cur === targetIdx) {
+    S.active.cur = idx
+  }
+
+  return true
+}
+
