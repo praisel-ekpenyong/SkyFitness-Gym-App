@@ -5,26 +5,50 @@ import { IMG_BASE, GIF_BASE } from './env.js'
 export { EXDB }
 
 // The generated dataset already supplies secondary muscles for most exercises. Keep the
-// handful of conservative catalogue additions that are useful to the muscle map here so a
-// dataset refresh does not erase them. Values follow the dataset's existing alias vocabulary.
-const SECONDARY_ADDITIONS = {
-  '0027': ['rear deltoids'], // barbell bent over row
-  '0293': ['rear deltoids'], // dumbbell bent over row
-  '0499': ['rear deltoids'], // inverted row
-  '0861': ['rear deltoids'], // cable seated row
+// handful of conservative catalogue curations (primary muscle overrides and secondary muscle additions)
+// here so a dataset refresh does not erase them. Values follow the dataset's existing alias vocabulary.
+export const CATALOGUE_CURATIONS = {
+  // Romanian Deadlifts
+  '0085': { tg: 'hamstrings', smAdd: ['glutes'] },
+  '1459': { tg: 'hamstrings', smAdd: ['glutes'] },
+  // Stiff / Straight Leg Deadlifts
+  '0432': { tg: 'hamstrings', smAdd: ['glutes'] },
+  '0434': { tg: 'hamstrings', smAdd: ['glutes'] },
+  '1009': { tg: 'hamstrings', smAdd: ['glutes'] },
+  '1023': { tg: 'hamstrings', smAdd: ['glutes'] },
+  // Single Leg Deadlifts
+  '1756': { tg: 'hamstrings', smAdd: ['glutes'] },
+  '1757': { tg: 'hamstrings', smAdd: ['glutes'] },
+  '2805': { tg: 'hamstrings', smAdd: ['glutes'] },
+  // Stiff Leg Good Morning
+  '0115': { tg: 'hamstrings', smAdd: ['glutes'] },
+  // Row variations rear delts
+  '0027': { smAdd: ['rear deltoids'] },
+  '0293': { smAdd: ['rear deltoids'] },
+  '0499': { smAdd: ['rear deltoids'] },
+  '0861': { smAdd: ['rear deltoids'] },
 }
 
-// Secondary muscles for an exercise, with the small conservative additions applied as an
+// Secondary muscles for an exercise, with the conservative additions applied as an
 // overlay. The raw dataset is never mutated - consumers that want the pristine catalogue
 // (export, print, import) keep reading EXDB untouched, while the muscle map sees the
 // enriched list. Values follow the dataset's existing alias vocabulary.
 export const smOf = ex => {
   const base = Array.isArray(ex?.sm) ? ex.sm : (ex?.sm ? [ex.sm] : [])
-  return [...new Set([...base, ...(SECONDARY_ADDITIONS[ex?.id] || [])])]
+  return [...new Set([...base, ...(CATALOGUE_CURATIONS[ex?.id]?.smAdd || [])])]
 }
 
 export const EXIDX = {}
-EXDB.forEach(e => { EXIDX[e.id] = e })
+EXDB.forEach(e => {
+  const curation = CATALOGUE_CURATIONS[e.id]
+  if (curation) {
+    const curated = curation.tg ? { ...e, tg: curation.tg } : { ...e }
+    curated.sm = smOf(curated)
+    EXIDX[e.id] = curated
+  } else {
+    EXIDX[e.id] = e
+  }
+})
 export const BODYPARTS = [...new Set(EXDB.map(e => e.bp))].sort()
 
 // Equipment options present in a given list of exercises, most common first (issue #6).
@@ -50,7 +74,7 @@ export function registerCustom(list) {
   ;(list || []).forEach(e => { EXIDX[e.id] = e })
 }
 // Full searchable catalogue — customs first so your own exercises are easy to find.
-export const allExercises = st => [...(st.customEx || []), ...EXDB]
+export const allExercises = st => [...(st?.customEx || []), ...EXDB.map(e => EXIDX[e.id])]
 
 // Pinned dataset release for media streaming and CDN fallbacks.
 export const PINNED_DATASET_COMMIT = '7455efae41b330c265e7cd4b78dfa848e7ce5ebd'

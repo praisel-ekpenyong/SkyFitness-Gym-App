@@ -18,6 +18,7 @@ import {
   isCardio,
   isBodyweightEq,
   exOr,
+  CATALOGUE_CURATIONS,
 } from './exercises.js'
 
 describe('exercise media sources', () => {
@@ -86,8 +87,52 @@ describe('exercise dataset integrity and helpers', () => {
     expect(row).toBeDefined()
     const sm = smOf(row)
     expect(sm).toContain('rear deltoids')
-    expect(row.sm).not.toContain('rear deltoids') // pristine dataset untouched
+    expect(row.sm).toContain('rear deltoids')
+    const raw = EXDB.find(e => e.id === '0027')
+    expect(raw.sm).not.toContain('rear deltoids') // pristine dataset untouched
   })
+
+  it('applies primary muscle and secondary additions through CATALOGUE_CURATIONS without mutating EXDB', () => {
+    expect(CATALOGUE_CURATIONS).toBeDefined()
+
+    const hingeCuratedIds = [
+      '0085', '1459', // Romanian Deadlifts
+      '0432', '0434', '1009', '1023', // Stiff / Straight Leg Deadlifts
+      '1756', '1757', '2805', // Single Leg Deadlifts
+      '0115', // Stiff Leg Good Morning
+    ]
+
+    for (const id of hingeCuratedIds) {
+      const indexed = EXIDX[id]
+      expect(indexed).toBeDefined()
+      expect(indexed.tg).toBe('hamstrings')
+      expect(indexed.sm).toContain('glutes')
+
+      const raw = EXDB.find(e => e.id === id)
+      expect(raw.tg).toBe('glutes') // raw remains glutes
+      expect(raw.sm).not.toContain('glutes')
+
+      const secondaries = smOf(indexed)
+      expect(secondaries).toContain('glutes')
+      expect(secondaries).toContain('lower back')
+    }
+
+    // Barbell SLDL (0116) was already hamstrings in EXDB and harmonizes
+    expect(EXIDX['0116'].tg).toBe('hamstrings')
+    expect(smOf(EXIDX['0116'])).toContain('glutes')
+
+    // Rear delts for row variations
+    for (const id of ['0027', '0293', '0499', '0861']) {
+      expect(EXIDX[id].sm).toContain('rear deltoids')
+      expect(smOf(EXIDX[id])).toContain('rear deltoids')
+      const raw = EXDB.find(e => e.id === id)
+      expect(raw.sm).not.toContain('rear deltoids')
+    }
+
+    expect(EXIDX['0085'].sm).toContain('glutes')
+    expect(EXIDX['0027'].sm).toContain('rear deltoids')
+  })
+
 
   it('registers and unregisters custom exercises in EXIDX and allExercises', () => {
     const custom = [{ id: 'custom-1', n: 'Custom Lift', bp: 'chest', eq: 'barbell' }]
