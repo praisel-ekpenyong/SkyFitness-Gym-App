@@ -3,6 +3,14 @@
 One entry per review event. Findings live in tickets/reports; this page records
 what ran, against what, and where the findings went.
 
+## 2026-10-28 — Two-axis review: hamstring set distribution
+
+- **Range:** `master...feat/hamstring-set-distribution` at `6c4f1dc`.
+- **Method:** Standards axis and Spec axis as parallel subagents (sessions `3de3ba90-cd5d-4929-b10b-1c8631494306` and `700e396c-e22b-445a-a373-af1a4b397b3b`).
+- **Spec source:** `.scratch/hamstring-set-distribution/spec.md` (ticket 01).
+- **Outcome:** Standards — 1 domain vocabulary violation ("primary target" vs canonical "primary muscle") and 2 baseline smells (`cur` name, duplicate test). Spec — 2 missing requirements (`EXIDX.sm` overlay population, `musclesOf` string IDs) and 1 test assertion tightness issue (`toMatchObject` vs `toEqual`).
+- **Disposition:** All findings addressed in commit `858d919` (`chore(review): address standards and spec review findings for catalogue curations`), merged to `feat/hamstring-set-distribution` (`6c4f1dc`). Full suite: 64/64 test files passed (886/886 tests green). Ticket 01 resolved.
+
 ## 2026-10-28 — Code comments audit: core domain and active workout
 
 - **Scope:** `Workout.jsx`, `workout-model.js`, `format.js`, `bodyweight.js`, `schedule.js`, and `progression.js` at commit `a56e916`.

@@ -1,6 +1,6 @@
 import { describe, expect, it, afterEach } from 'vitest'
 import { EXIDX, EXDB, smOf, registerCustom } from './exercises.js'
-import { loadOfWorkouts, musclesOf, loadOf, muscleWeightsOf, lastTrainedByMuscle } from './muscles.js'
+import { loadOfWorkouts, musclesOf, loadOf, muscleWeightsOf, lastTrainedByMuscle, primaryMuscleOf, secondaryMusclesOf } from './muscles.js'
 
 // The catalogue keeps the source dataset's secondary-muscle spellings; musclesOf maps
 // those aliases to the canonical body-map slugs and applies the 0.4 support weight.
@@ -42,6 +42,48 @@ describe('catalogue secondary additions', () => {
     expect(musclesOf(raw)).toHaveProperty('deltoids')
   })
 })
+
+describe('hamstring hinge catalogue curations and set distribution', () => {
+  const HINGE_IDS = [
+    '0085', '1459', // Romanian Deadlifts
+    '0116', '0432', '0434', '1009', '1023', // Stiff / Straight Leg Deadlifts
+    '1756', '1757', '2805', // Single Leg Deadlifts
+    '0115', // Stiff Leg Good Morning
+  ]
+
+  it('curates primary to hamstring and secondaries to gluteal and lower-back for all hinge variations', () => {
+    for (const id of HINGE_IDS) {
+      expect(primaryMuscleOf(id)).toBe('hamstring')
+      const secondaries = secondaryMusclesOf(id)
+      expect(secondaries).toContain('gluteal')
+      expect(secondaries).toContain('lower-back')
+      expect(musclesOf(EXIDX[id])).toEqual({
+        hamstring: 1,
+        gluteal: 0.4,
+        'lower-back': 0.4,
+      })
+    }
+  })
+
+  it('resolves string exercise IDs transparently in musclesOf', () => {
+    expect(musclesOf('0085')).toEqual({
+      hamstring: 1,
+      gluteal: 0.4,
+      'lower-back': 0.4,
+    })
+  })
+
+  it('continues to enrich rear delts for existing row variations', () => {
+    for (const id of ['0027', '0293', '0499', '0861']) {
+      expect(musclesOf(EXIDX[id])).toMatchObject({
+        'upper-back': 1,
+        biceps: 0.4,
+        deltoids: 0.4,
+      })
+    }
+  })
+})
+
 
 
 describe('map load with warm-up phases', () => {
