@@ -22,7 +22,7 @@
 export {
   createActiveSession, setActiveIndex, discardActiveSession,
   addActiveExercise, removeActiveExercise, replaceActiveExercise,
-  buildActiveEntry
+  moveActiveExercise, buildActiveEntry
 } from './active-session.js'
 export {
   updateActiveSetField, addActiveSet, removeActiveSet, addActiveWarmup,
