@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { queryCatalogue } from './catalogue-query.js'
+import { queryCatalogue, scoreExerciseMatch } from './catalogue-query.js'
 
 const exercise = (id, name, muscle, equipment, secondary = []) => ({
   id,
@@ -228,4 +228,191 @@ describe('Catalogue query', () => {
       chosenCount: result.chosenCount,
     }).toEqual({ rows: [], equipmentOptions: [], favoriteCount: 0, chosenCount: 0 })
   })
+
+  it('scores exercises with matched tokens, exact phrase bonus, and title matches', () => {
+    const ex = exercise('specimen', 'Dumbbell Bench Press', 'chest', 'dumbbell', ['triceps'])
+
+    // Exact contiguous phrase in title: 2 tokens (200) + exact bonus (50) + 2 title matches (20) = 270
+    expect(scoreExerciseMatch(ex, ['dumbbell', 'bench'], 'dumbbell bench')).toBe(270)
+
+    // Out-of-order words: 2 tokens (200) + no exact bonus (0) + 2 title matches (20) = 220
+    expect(scoreExerciseMatch(ex, ['bench', 'dumbbell'], 'bench dumbbell')).toBe(220)
+
+    // Single word in title: 1 token (100) + 1 title match (10) = 110
+    expect(scoreExerciseMatch(ex, ['bench'], 'bench')).toBe(110)
+
+    // Cross-attribute match: 1 in title, 1 in target: 2 tokens (200) + 1 title match (10) + 1 muscle match (10) = 220
+    expect(scoreExerciseMatch(ex, ['dumbbell', 'chest'], 'dumbbell chest')).toBe(220)
+
+    // Disjunctive partial match (1 hit, 1 miss): 1 token (100) + 0 exact + 1 title match (10) = 110
+    expect(scoreExerciseMatch(ex, ['bench', 'squat'], 'bench squat')).toBe(110)
+
+    // Hyphen-normalized exact phrase match: "push up" matching "Push-Up"
+    const pushup = exercise('pu', 'Dumbbell Push-Up', 'chest', 'dumbbell')
+    expect(scoreExerciseMatch(pushup, ['dumbbell', 'push', 'up'], 'dumbbell push up')).toBe(380) // 300 + 50 + 30
+  })
+
+  it('ranks exercises by relevance score in all scope across disjunctive, out-of-order, and cross-attribute queries', () => {
+    const profile = {
+      customEx: [
+        exercise('ex-1', 'Barbell Bench Press', 'chest', 'barbell', ['triceps', 'deltoids']),
+        exercise('ex-2', 'Dumbbell Bench Press', 'chest', 'dumbbell', ['triceps']),
+        exercise('ex-3', 'Incline Dumbbell Bench Press', 'chest', 'dumbbell', ['triceps', 'deltoids']),
+        exercise('ex-4', 'Barbell Back Squat', 'quadriceps', 'barbell', ['gluteal', 'hamstring']),
+      ],
+      favorites: [],
+      routines: [],
+      workouts: [],
+    }
+
+    // Disjunctive OR query: 3 terms matching differently across exercises
+    // ex-3 matches 4 tokens: 'incline', 'dumbbell', 'bench', 'press' -> highest
+    // ex-2 matches 3 tokens: 'dumbbell', 'bench', 'press'
+    // ex-1 matches 2 tokens: 'bench', 'press'
+    // ex-4 matches 0 tokens -> omitted
+    const disjunctiveResult = queryCatalogue({
+      profile,
+      scope: { kind: 'all' },
+      search: 'incline dumbbell bench press',
+      equipment: '',
+    })
+    const disjunctiveIds = disjunctiveResult.rows.map(r => r.exercise.id).filter(id => id.startsWith('ex-'))
+    expect(disjunctiveIds).toEqual(['ex-3', 'ex-2', 'ex-1'])
+
+    // Out-of-order query: "bench dumbbell"
+    // ex-2 and ex-3 match both 'bench' and 'dumbbell' (score 220)
+    // ex-1 matches only 'bench' (score 110)
+    // ex-4 matches neither -> omitted
+    const outOfOrderResult = queryCatalogue({
+      profile,
+      scope: { kind: 'all' },
+      search: 'bench dumbbell',
+      equipment: '',
+    })
+    const outOfOrderIds = outOfOrderResult.rows.map(r => r.exercise.id).filter(id => id.startsWith('ex-'))
+    expect(outOfOrderIds).toEqual(['ex-2', 'ex-3', 'ex-1'])
+
+    // Cross-attribute query: "barbell chest"
+    // ex-1 matches 'barbell' (title/eq) and 'chest' (primary target) -> 2 tokens (220)
+    // ex-2, ex-3, ex-4 all match 1 token (110), tie-breaking by catalogue order: ex-2, ex-3, ex-4
+    const crossAttributeResult = queryCatalogue({
+      profile,
+      scope: { kind: 'all' },
+      search: 'barbell chest',
+      equipment: '',
+    })
+    const crossAttributeIds = crossAttributeResult.rows.map(r => r.exercise.id).filter(id => id.startsWith('ex-'))
+    expect(crossAttributeIds).toEqual(['ex-1', 'ex-4', 'ex-2', 'ex-3'])
+
+  })
+
+  it('ranks chosen scope by search relevance when query is present, tie-breaking by usage count', () => {
+    const profile = {
+      customEx: [
+        exercise('ex-popular-low-rel', 'Barbell Squat', 'quadriceps', 'barbell'),
+        exercise('ex-rare-high-rel-1', 'Dumbbell Bench Press', 'chest', 'dumbbell'),
+        exercise('ex-rare-high-rel-2', 'Incline Dumbbell Bench Press', 'chest', 'dumbbell'),
+      ],
+      favorites: [],
+      // Usage counts: ex-popular-low-rel = 10, ex-rare-high-rel-1 = 1, ex-rare-high-rel-2 = 5
+      routines: [
+        {
+          ex: [
+            ...Array(10).fill({ id: 'ex-popular-low-rel' }),
+            { id: 'ex-rare-high-rel-1' },
+            ...Array(5).fill({ id: 'ex-rare-high-rel-2' }),
+          ],
+        },
+      ],
+      workouts: [],
+    }
+
+    // 1. With search "dumbbell bench":
+    // ex-rare-high-rel-1 and ex-rare-high-rel-2 match 2 tokens (score 220)
+    // ex-popular-low-rel matches 0 tokens -> excluded
+    const searchedResult = queryCatalogue({
+      profile,
+      scope: { kind: 'chosen' },
+      search: 'dumbbell bench',
+      equipment: '',
+    })
+    // Between high-rel-1 (usage 1) and high-rel-2 (usage 5), high-rel-2 wins tie-breaker!
+    expect(searchedResult.rows.map(r => ({ id: r.exercise.id, usage: r.usageCount }))).toEqual([
+      { id: 'ex-rare-high-rel-2', usage: 5 },
+      { id: 'ex-rare-high-rel-1', usage: 1 },
+    ])
+
+    // 2. With broader search "barbell bench" where popular lift has 1 match (110) and high-rel lifts have 1 match (110):
+    // ex-popular-low-rel matches 'barbell' (score 110, usage 10)
+    // ex-rare-high-rel-1 matches 'bench' (score 110, usage 1)
+    // ex-rare-high-rel-2 matches 'bench' (score 110, usage 5)
+    // Tied on score: usage count decides: 10 > 5 > 1!
+    const tiedResult = queryCatalogue({
+      profile,
+      scope: { kind: 'chosen' },
+      search: 'barbell bench',
+      equipment: '',
+    })
+    expect(tiedResult.rows.map(r => r.exercise.id)).toEqual([
+      'ex-popular-low-rel',
+      'ex-rare-high-rel-2',
+      'ex-rare-high-rel-1',
+    ])
+
+    // 3. When search is empty, pure usage count descending order is strictly preserved
+    const emptySearchResult = queryCatalogue({
+      profile,
+      scope: { kind: 'chosen' },
+      search: '',
+      equipment: '',
+    })
+    expect(emptySearchResult.rows.map(r => r.exercise.id)).toEqual([
+      'ex-popular-low-rel',
+      'ex-rare-high-rel-2',
+      'ex-rare-high-rel-1',
+    ])
+  })
+
+  it('attributes secondary muscle on tokenized queries in queryCatalogue rows', () => {
+    const profile = {
+      customEx: [
+        exercise('compound-bench', 'Barbell Compound Press', 'chest', 'barbell', ['triceps', 'deltoids']),
+      ],
+      favorites: [],
+      routines: [],
+      workouts: [],
+    }
+
+    // Tokenized query matching title + secondary muscle
+    const result = queryCatalogue({
+      profile,
+      scope: { kind: 'all' },
+      search: 'compound triceps',
+      equipment: '',
+    })
+    const row = result.rows.find(r => r.exercise.id === 'compound-bench')
+    expect(row?.secondaryMatch).toBe('triceps')
+
+    // Query matching only title does not attribute secondary badge
+    const titleOnlyResult = queryCatalogue({
+      profile,
+      scope: { kind: 'all' },
+      search: 'compound press',
+      equipment: '',
+    })
+    const titleRow = titleOnlyResult.rows.find(r => r.exercise.id === 'compound-bench')
+    expect(titleRow?.secondaryMatch).toBeNull()
+
+    // searchAttribution: false suppresses the badge even with tokenized search
+    const suppressedResult = queryCatalogue({
+      profile,
+      scope: { kind: 'all' },
+      search: 'compound triceps',
+      equipment: '',
+      searchAttribution: false,
+    })
+    const suppressedRow = suppressedResult.rows.find(r => r.exercise.id === 'compound-bench')
+    expect(suppressedRow?.secondaryMatch).toBeNull()
+  })
 })
+
