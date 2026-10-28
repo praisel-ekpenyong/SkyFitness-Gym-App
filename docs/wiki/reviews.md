@@ -3,6 +3,16 @@
 One entry per review event. Findings live in tickets/reports; this page records
 what ran, against what, and where the findings went.
 
+## 2026-10-28 — Two-axis review: tokenized catalogue search
+
+- **Range:** `ef34ca0...HEAD` at `75acfa2` (implementer commit `78124e6`).
+- **Method:** Standards axis and Spec axis as parallel subagents (sessions `90e279e8-8e6d-4e9e-ada3-2cfb5995ca1e` and `4dd0adc6-a078-492a-831c-8728ea02453d`).
+- **Spec source:** `.scratch/tokenized-ranked-search/spec.md`, ADR 0013, and ticket 01 in `.scratch/tokenized-ranked-search/issues/`.
+- **Outcome:**
+  - **Standards:** 1 domain vocabulary breach (`"target muscle"` / `"primary target"` in JSDoc, tests, ADR 0013, and wiki vs canonical **"primary muscle"** in `GLOSSARY.md`), 3 baseline code smells (misleading `titleMatchCount` incrementing on muscle matches, duplicated chosen usage comparator in `catalogue-query.js`, loose parameter data clump in `tokenMatchesExercise`).
+  - **Spec:** 2 implementation flaws (title match bonus credited for muscle matches conflating ranking tiers; single-token exact phrase bonus improperly suppressed by `tokenList.length > 1`).
+- **Disposition:** All findings addressed in ticket 02 (`.scratch/tokenized-ranked-search/issues/02-code-review-fixes.md`) via commit `26d5875`, merged into `master` in `1bf6556`. `titleMatchCount` strictly counts title matches; single-token contiguous matches receive exact phrase bonus; chosen usage comparator deduplicated; `exerciseContext(ex)` encapsulated; domain vocabulary aligned to "primary muscle". Full test suite: 64/64 test files passed (895/895 tests green).
+
 ## 2026-10-28 — Subsystem review: exercise catalogue search
 
 - **Scope:** `frontend/src/lib/catalogue-query.js`, `muscles.js`, `exercises.js`, `views/Library.jsx`, `sheets/catalogue.jsx`, `components/ui.jsx` at commit `ef34ca0`.
