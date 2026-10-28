@@ -14,7 +14,7 @@ import { flush, load, loadLocal, save, LOCAL_KEY, onStorageSync } from '../lib/s
 import { setsDone } from '../lib/workout-model.js'
 import {
   createActiveSession, applyWorkingWeight, commitWorkingWeight, completeActiveSession,
-  addActiveExercise, removeActiveExercise, toggleActiveSet,
+  addActiveExercise, removeActiveExercise, replaceActiveExercise, toggleActiveSet,
   updateActiveSetField, addActiveSet, removeActiveSet, addActiveWarmup,
   pairActiveSuperset, unpairActiveSuperset, setActiveIndex, discardActiveSession
 } from '../lib/active-workout.js'
@@ -213,6 +213,11 @@ export const useStore = create((set, get) => {
       let ok = false
       get().update(s => { ok = removeActiveExercise(s, idx) })
       return ok
+    },
+    replaceActiveExercise(idx, newExId, targetCfg) {
+      let entry = null
+      get().update(s => { entry = replaceActiveExercise(s, idx, newExId, targetCfg) })
+      return entry
     },
     toggleActiveSet(entryIdx, setIdx) {
       let outcome = null

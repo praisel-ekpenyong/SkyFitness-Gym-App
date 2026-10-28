@@ -681,5 +681,5 @@ configureSessionSheets({ bwSheet, confirmSheet, WeightInput })
 // entry point so existing callers keep working untouched, and performs the
 // one-line wiring for the injected confirm seam to avoid a circular
 // hub↔catalogue import during migration.
-export { ExerciseDetail, exerciseDetailSheet, addToRoutineSheet, CustomExForm, customExSheet, deleteCustomEx, ExercisePicker, exercisePicker, exConfigSheet } from './sheets/catalogue.jsx'
+export { ExerciseDetail, exerciseDetailSheet, addToRoutineSheet, CustomExForm, customExSheet, deleteCustomEx, ExercisePicker, exercisePicker, ExConfig, exConfigSheet } from './sheets/catalogue.jsx'
 configureCatalogueSheets({ confirmSheet })

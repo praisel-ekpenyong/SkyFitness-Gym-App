@@ -21,7 +21,8 @@
 // - topW — active-finish.js. The confirmed working weight.
 export {
   createActiveSession, setActiveIndex, discardActiveSession,
-  addActiveExercise, removeActiveExercise
+  addActiveExercise, removeActiveExercise, replaceActiveExercise,
+  buildActiveEntry
 } from './active-session.js'
 export {
   updateActiveSetField, addActiveSet, removeActiveSet, addActiveWarmup,

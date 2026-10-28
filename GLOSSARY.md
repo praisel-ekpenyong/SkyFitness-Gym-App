@@ -84,6 +84,11 @@ The coarse grouping of catalogue exercises (chest, back, waist…); also the fal
 The placeholder for an id that resolves to nothing — a deleted custom, a foreign dataset. Rendered, removable, never fatal.
 _Avoid_: missing exercise
 
+**Exercise replacement**:
+Swapping an Entry in a Routine or Active workout for a different catalogue exercise. The replacement inherits the original position and superset pairing, seeds targets from its own history, and in an Active workout is strictly session-local (leaving the underlying Routine unchanged and prompting confirmation before discarding any performed sets).
+_Avoid_: exercise substitution, exercise swap
+
+
 ### Logging a session
 
 **Target**:

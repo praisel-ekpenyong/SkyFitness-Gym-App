@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { bestKnownWeight } from './active-workout.js'
-import { modeOf, isTimed, defaultConfig, buildSets, freestyleConfig, tonnageOf, bestWeightForEntry, isBw, isPerSide, sideReps, repStep, cascadeWeight, insertWarmupRow, removeRowAt, workSetsDone, isWorkSet, isPerformed, workSets, doneWorkSets, hasWork, isExerciseDone, sessionProgress } from './workout-model.js'
+import { modeOf, isTimed, defaultConfig, buildSets, freestyleConfig, tonnageOf, bestWeightForEntry, isBw, isPerSide, sideReps, repStep, cascadeWeight, insertWarmupRow, removeRowAt, workSetsDone, isWorkSet, isPerformed, workSets, doneWorkSets, hasWork, isExerciseDone, sessionProgress, seedForReplacement } from './workout-model.js'
 import { fmtSec, setLabel, exLine } from './format.js'
 import { effortOf, stepEffort, capEffort } from './effort.js'
 import { pairAdjacent, unpairSuperset, supersetUnits } from './supersetFlow.js'
@@ -839,3 +839,123 @@ describe('sessionProgress', () => {
     expect(sessionProgress({ entries: [] }).allDone).toBe(false)
   })
 })
+
+describe('seedForReplacement', () => {
+  it('pre-populates defaultConfig when no history exists and preserves setsCount', () => {
+    const S = { workouts: [], exWeights: {} }
+    const res = seedForReplacement(S, LIFT, null, 4)
+    expect(res).toEqual({
+      ...defaultConfig(LIFT),
+      sets: 4,
+    })
+  })
+
+  it('falls back to base.sets if setsCount is nullish', () => {
+    const S = { workouts: [], exWeights: {} }
+    const base = defaultConfig(LIFT)
+    expect(seedForReplacement(S, LIFT, null, null).sets).toBe(base.sets)
+    expect(seedForReplacement(S, LIFT, null, undefined).sets).toBe(base.sets)
+  })
+
+  it('uses lastEntryFor when no routineId provided', () => {
+    const S = {
+      workouts: [
+        {
+          d: '2026-10-01',
+          entries: [
+            { id: LIFT, target: { reps: 8, weight: 60, sets: 5 }, sets: [{ w: 60, r: 8, done: true }] },
+          ],
+        },
+      ],
+      exWeights: {},
+    }
+    const res = seedForReplacement(S, LIFT, null, 3)
+    expect(res.reps).toBe(8)
+    expect(res.weight).toBe(60)
+    expect(res.sets).toBe(3)
+  })
+
+  it('prefers routine-specific history over global history when routineId provided', () => {
+    const S = {
+      workouts: [
+        {
+          d: '2026-10-01',
+          routineId: 'other-routine',
+          entries: [
+            { id: LIFT, target: { reps: 5, weight: 100 }, sets: [{ w: 100, r: 5, done: true }] },
+          ],
+        },
+        {
+          d: '2026-10-02',
+          routineId: 'target-routine',
+          entries: [
+            { id: LIFT, target: { reps: 12, weight: 70 }, sets: [{ w: 70, r: 12, done: true }] },
+          ],
+        },
+      ],
+      exWeights: {},
+    }
+    const res = seedForReplacement(S, LIFT, 'target-routine', 3)
+    expect(res.reps).toBe(12)
+    expect(res.weight).toBe(100)
+    expect(res.sets).toBe(3)
+  })
+
+  it('falls back to global history when routine history is absent', () => {
+    const S = {
+      workouts: [
+        {
+          d: '2026-10-01',
+          routineId: 'other-routine',
+          entries: [
+            { id: LIFT, target: { reps: 6, weight: 90 }, sets: [{ w: 90, r: 6, done: true }] },
+          ],
+        },
+      ],
+      exWeights: {},
+    }
+    const res = seedForReplacement(S, LIFT, 'non-existent-routine', 3)
+    expect(res.reps).toBe(6)
+    expect(res.weight).toBe(90)
+    expect(res.sets).toBe(3)
+  })
+
+  it('overrides weight with bestKnownWeight when bestKnownWeight > 0 and not bodyweight', () => {
+    const S = {
+      workouts: [
+        {
+          d: '2026-10-01',
+          entries: [
+            { id: LIFT, target: { reps: 10, weight: 50 }, sets: [{ w: 50, r: 10, done: true }] },
+          ],
+        },
+      ],
+      exWeights: {
+        [LIFT]: { w: 85, d: '2026-10-05' },
+      },
+    }
+    const res = seedForReplacement(S, LIFT, null, 3)
+    expect(res.reps).toBe(10)
+    expect(res.weight).toBe(85)
+  })
+
+  it('does NOT override weight with bestKnownWeight for bodyweight exercises', () => {
+    const S = {
+      workouts: [
+        {
+          d: '2026-10-01',
+          entries: [
+            { id: BW, target: { reps: 15, weight: 0 }, sets: [{ w: 0, r: 15, done: true }] },
+          ],
+        },
+      ],
+      exWeights: {
+        [BW]: { w: 20, d: '2026-10-05' },
+      },
+    }
+    const res = seedForReplacement(S, BW, null, 3)
+    expect(res.bodyweight).toBe(true)
+    expect(res.weight).toBe(0)
+  })
+})
+
