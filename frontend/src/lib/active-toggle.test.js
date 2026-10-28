@@ -62,7 +62,7 @@ describe('toggle next action', () => {
     expect(next.kind).toBe('topweight-then-advance')
   })
 
-  it('ticking final set of a solo exercise starts rest when another exercise follows', () => {
+  it('performing the final set of a solo exercise starts rest when another exercise follows', () => {
     const S = {
       active: {
         cur: 0,
