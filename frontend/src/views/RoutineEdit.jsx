@@ -14,7 +14,7 @@ import { Button, SelectRow } from '../components/ui.jsx'
 import { POLICIES_FOR, POLICY_NAME, POLICY_DESC } from '../lib/progression.js'
 import BodyMap from '../components/BodyMap.jsx'
 import { loadOfRoutine, rankOf, MUSCLE_NAME } from '../lib/muscles.js'
-import { defaultConfig, lastEntryFor, lastEntryForRoutine } from '../lib/workout-model.js'
+import { seedForReplacement } from '../lib/workout-model.js'
 
 /** Routine editor route; renames, configures, and orders one routine's exercises. */
 export default function RoutineEdit() {
@@ -86,15 +86,7 @@ export default function RoutineEdit() {
             r,
             null,
             () => exercisePicker(newEx => {
-              const last = lastEntryForRoutine(S, newEx.id, id) || lastEntryFor(S, newEx.id)
-              const base = defaultConfig(newEx.id)
-              const lastWeight = S.exWeights?.[newEx.id]?.w
-              const initial = {
-                ...base,
-                ...(last?.target || {}),
-                ...(lastWeight && !base.bodyweight ? { weight: lastWeight } : {}),
-                sets: e.sets ?? base.sets,
-              }
+              const initial = seedForReplacement(S, newEx.id, id, e.sets)
               exConfigSheet(
                 newEx,
                 null,

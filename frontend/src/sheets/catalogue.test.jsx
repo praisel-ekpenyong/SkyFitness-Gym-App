@@ -1054,5 +1054,33 @@ describe('ExConfig and exConfigSheet onReplace support', () => {
     expect(onReplace).toHaveBeenCalledTimes(1)
     expect(useUI.getState().sheets.length).toBe(0)
   })
+
+  it('renders actionLabel on primary button if provided to ExConfig', async () => {
+    await act(async () => {
+      root.render(
+        <ExConfig
+          ex={sampleEx}
+          existing={null}
+          actionLabel="Replace"
+          onSave={vi.fn()}
+          close={vi.fn()}
+        />
+      )
+    })
+    const saveBtn = container.querySelector('button.btn.primary')
+    expect(saveBtn.textContent.trim()).toBe('Replace')
+  })
+
+  it('passes actionLabel through exConfigSheet to ExConfig', async () => {
+    exConfigSheet(sampleEx, null, vi.fn(), null, null, null, null, 'Custom Action')
+    const sheets = useUI.getState().sheets
+    expect(sheets.length).toBe(1)
+    await act(async () => {
+      root.render(sheets[0].render(() => useUI.getState().closeSheet(sheets[0].id)))
+    })
+    const saveBtn = container.querySelector('button.btn.primary')
+    expect(saveBtn.textContent.trim()).toBe('Custom Action')
+  })
 })
+
 
