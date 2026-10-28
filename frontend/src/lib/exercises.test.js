@@ -87,10 +87,12 @@ describe('exercise dataset integrity and helpers', () => {
     expect(row).toBeDefined()
     const sm = smOf(row)
     expect(sm).toContain('rear deltoids')
-    expect(row.sm).not.toContain('rear deltoids') // pristine dataset untouched
+    expect(row.sm).toContain('rear deltoids')
+    const raw = EXDB.find(e => e.id === '0027')
+    expect(raw.sm).not.toContain('rear deltoids') // pristine dataset untouched
   })
 
-  it('applies primary target and secondary additions through CATALOGUE_CURATIONS without mutating EXDB', () => {
+  it('applies primary muscle and secondary additions through CATALOGUE_CURATIONS without mutating EXDB', () => {
     expect(CATALOGUE_CURATIONS).toBeDefined()
 
     const hingeCuratedIds = [
@@ -104,6 +106,7 @@ describe('exercise dataset integrity and helpers', () => {
       const indexed = EXIDX[id]
       expect(indexed).toBeDefined()
       expect(indexed.tg).toBe('hamstrings')
+      expect(indexed.sm).toContain('glutes')
 
       const raw = EXDB.find(e => e.id === id)
       expect(raw.tg).toBe('glutes') // raw remains glutes
@@ -120,10 +123,14 @@ describe('exercise dataset integrity and helpers', () => {
 
     // Rear delts for row variations
     for (const id of ['0027', '0293', '0499', '0861']) {
+      expect(EXIDX[id].sm).toContain('rear deltoids')
       expect(smOf(EXIDX[id])).toContain('rear deltoids')
       const raw = EXDB.find(e => e.id === id)
       expect(raw.sm).not.toContain('rear deltoids')
     }
+
+    expect(EXIDX['0085'].sm).toContain('glutes')
+    expect(EXIDX['0027'].sm).toContain('rear deltoids')
   })
 
 

@@ -359,7 +359,8 @@ export function matchesMuscleGroups(ex, requested) {
 }
 
 /** Muscles one exercise trains: { slug: 0…1 }. Duplicate metadata never adds load twice. */
-export function musclesOf(ex) {
+export function musclesOf(idOrEx) {
+  const ex = typeof idOrEx === 'string' ? EXIDX[idOrEx] : idOrEx
   if (!ex) return {}
   // Own weights (or direct/legacy fields) are authoritative even when a nested
   // `muscleSnapshot` is present; only unwrap the snapshot when the entry has nothing of its own.
