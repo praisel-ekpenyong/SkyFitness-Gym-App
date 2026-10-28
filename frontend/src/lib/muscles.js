@@ -201,7 +201,7 @@ export function bodypartForMuscle(muscle) {
   return MUSCLE_TO_BODYPART[slug] || (BY_BODYPART[slug] ? slug : 'chest')
 }
 
-/** Primary target muscle slug for an exercise (canonical anatomical muscle group or 'cardio'). */
+/** Primary muscle slug for an exercise (canonical anatomical muscle group or 'cardio'). */
 export function primaryMuscleOf(idOrEx) {
   const ex = typeof idOrEx === 'string' ? EXIDX[idOrEx] : idOrEx
   if (!ex || typeof ex !== 'object') return null
@@ -311,15 +311,40 @@ export function stringIncludesToken(str, token) {
   return s.includes(t)
 }
 
+
+
+/**
+ * Computes derived muscle and attribute facts for an exercise to avoid
+ * re-resolving them repeatedly across search tokens.
+ *
+ * @param {Object} ex - Exercise object.
+ * @returns {Object|null} Derived context containing primary, secondaries, primaryName, and rawSm.
+ */
+export function exerciseContext(ex) {
+  if (!ex || typeof ex !== 'object') return null
+  const primary = primaryMuscleOf(ex)
+  const secondaries = secondaryMusclesOf(ex)
+  const primaryName = (primary && MUSCLE_NAME[primary]) || ''
+  const rawSm = smOf(ex)
+  return { primary, secondaries, primaryName, rawSm }
+}
+
 /**
  * Checks whether a single token matches an exercise across any of its attributes.
+ *
+ * @param {string} token - Query token to match.
+ * @param {Object} ex - Exercise object.
+ * @param {Object} [ctx] - Precomputed exerciseContext(ex) to eliminate repeated derivations.
+ * @returns {boolean}
  */
-export function tokenMatchesExercise(token, ex, primary, secondaries, primaryName, rawSm) {
+export function tokenMatchesExercise(token, ex, ctx) {
   if (!token || !ex) return false
-  const p = primary !== undefined ? primary : primaryMuscleOf(ex)
-  const s = secondaries !== undefined ? secondaries : secondaryMusclesOf(ex)
-  const pName = primaryName !== undefined ? primaryName : ((p && MUSCLE_NAME[p]) || '')
-  const sm = rawSm !== undefined ? rawSm : smOf(ex)
+  const context = (ctx && typeof ctx === 'object' && !Array.isArray(ctx) && 'primary' in ctx)
+    ? ctx
+    : (typeof ctx === 'string'
+      ? { primary: arguments[2], secondaries: arguments[3], primaryName: arguments[4], rawSm: arguments[5] }
+      : exerciseContext(ex))
+  const { primary: p, secondaries: s, primaryName: pName, rawSm: sm } = context || {}
   const t = token.toLowerCase()
   const tokenSlug = canonicalMuscle(t)
   if (tokenSlug) {
@@ -338,16 +363,15 @@ export function tokenMatchesExercise(token, ex, primary, secondaries, primaryNam
   return false
 }
 
-/** Returns the secondary muscle that matched a search query when the query did not match the primary target or title. */
+/** Returns the secondary muscle that matched a search query when the query did not match the primary muscle or title. */
 export function secondaryMatchForQuery(idOrEx, query) {
   const tokens = tokenizeSearchQuery(query)
   if (tokens.length === 0) return null
   const ex = typeof idOrEx === 'string' ? EXIDX[idOrEx] : idOrEx
   if (!ex) return null
-  const primary = primaryMuscleOf(ex)
-  const primaryName = (primary && MUSCLE_NAME[primary]) || ''
-  const secondaries = secondaryMusclesOf(ex)
-  const rawSm = smOf(ex)
+  const ctx = exerciseContext(ex)
+  if (!ctx) return null
+  const { primary, primaryName, secondaries, rawSm } = ctx
   const titleLower = String(ex.n || '').toLowerCase()
   const tgLower = String(ex.tg || '').toLowerCase()
   const primaryLower = String(primary || '').toLowerCase()
@@ -390,11 +414,8 @@ export function matchesExerciseSearch(idOrEx, query) {
   if (tokens.length === 0) return true
   const ex = typeof idOrEx === 'string' ? EXIDX[idOrEx] : idOrEx
   if (!ex) return false
-  const primary = primaryMuscleOf(ex)
-  const secondaries = secondaryMusclesOf(ex)
-  const primaryName = (primary && MUSCLE_NAME[primary]) || ''
-  const rawSm = smOf(ex)
-  return tokens.some(token => tokenMatchesExercise(token, ex, primary, secondaries, primaryName, rawSm))
+  const ctx = exerciseContext(ex)
+  return tokens.some(token => tokenMatchesExercise(token, ex, ctx))
 }
 
 
