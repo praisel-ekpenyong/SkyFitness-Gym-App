@@ -4,6 +4,9 @@ One entry per decision, newest first. A decision here is a settled call; the
 ticket/ADR it points to carries the reasoning. Superseded entries stay listed
 with a pointer to their successor.
 
+- **2026-10-28 — Comprehensive software design review establishes tactical invariant remediation and strategic boundary roadmap.**
+  Full application audit across 5 subsystems identified 7 critical state/data hazards (phantom high-water marks on set deletion, orphaned hold timers, unit-blind progression, restore key drift, unmemoized catalogue walking). Adopted two-track resolution: immediate tactical invariant patches, and strategic establishment of the 'pit of success' (ESLint boundary rules, automated schema parity tests, and sheet decomposition). Detailed in [Software design & architecture](software-design.md) and [reviews](reviews.md).
+
 - **2026-10-28 — Tokenized and ranked catalogue search adopts disjunctive (OR) matching with multi-tier relevance scoring.**
   Replaced strict contiguous substring matching with tokenized search across `frontend/src/lib/catalogue-query.js` and `muscles.js`. Input queries are normalized (punctuation and hyphens become spaces, lowercased, trimmed) and stop words (`with`, `on`, `in`, `for`, `the`, `to`, `at`, `and`, `or`) are stripped. Tokens match cross-attribute against title, equipment, primary muscle, canonical synonyms, secondaries, body part, and descriptions. Exercises are included if they match at least one token (OR) and ranked deterministically by matched token count descending, tie-broken by title matches and exact phrase match. Detailed in ADR 0013 and [Exercise catalogue search](catalogue-search.md).
 
