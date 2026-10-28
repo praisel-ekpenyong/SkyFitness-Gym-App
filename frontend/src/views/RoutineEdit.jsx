@@ -14,6 +14,7 @@ import { Button, SelectRow } from '../components/ui.jsx'
 import { POLICIES_FOR, POLICY_NAME, POLICY_DESC } from '../lib/progression.js'
 import BodyMap from '../components/BodyMap.jsx'
 import { loadOfRoutine, rankOf, MUSCLE_NAME } from '../lib/muscles.js'
+import { defaultConfig, lastEntryFor, lastEntryForRoutine } from '../lib/workout-model.js'
 
 /** Routine editor route; renames, configures, and orders one routine's exercises. */
 export default function RoutineEdit() {
@@ -77,7 +78,37 @@ export default function RoutineEdit() {
       return <div key={i}>
         {unitFirst.has(i) && <div className="ss-label"><Icon name="link" />{t('Superset')}</div>}
         <div className={'item' + (inSS.has(i) ? ' in-ss' : '')} onClick={() => {
-          exConfigSheet(ex, e, cfg => edit(x => { x[i] = { id: x[i].id, sg: x[i].sg, ...cfg } }), () => edit(x => { x.splice(i, 1); cleanupSg(x) }), r)
+          exConfigSheet(
+            ex,
+            e,
+            cfg => edit(x => { x[i] = { id: x[i].id, sg: x[i].sg, ...cfg } }),
+            () => edit(x => { x.splice(i, 1); cleanupSg(x) }),
+            r,
+            null,
+            () => exercisePicker(newEx => {
+              const last = lastEntryForRoutine(S, newEx.id, id) || lastEntryFor(S, newEx.id)
+              const base = defaultConfig(newEx.id)
+              const lastWeight = S.exWeights?.[newEx.id]?.w
+              const initial = {
+                ...base,
+                ...(last?.target || {}),
+                ...(lastWeight && !base.bodyweight ? { weight: lastWeight } : {}),
+                sets: e.sets ?? base.sets,
+              }
+              exConfigSheet(
+                newEx,
+                null,
+                cfg => edit(x => {
+                  const next = { id: newEx.id, sg: e.sg, ...cfg }
+                  if (!e.sg) delete next.sg
+                  x[i] = next
+                }),
+                null,
+                r,
+                initial
+              )
+            })
+          )
         }}>
           <Thumb ex={ex} />
           <div className="grow"><div className="tt capitalize">{ex.n}</div><div className="ss">{exLine(e, S.unit)}</div></div>
