@@ -597,22 +597,22 @@ describe('active-workout lifecycle seam', () => {
     expect(S.active.cur).toBe(1) // cur tracked ex1 from index 0 to index 1
   })
 
-  it('moveActiveExercise tracks active.cur across moves', () => {
+  it('moveActiveExercise tracks active.cur to the moved entry', () => {
     const S = {
       active: {
         cur: 2,
         entries: [{ id: 'a' }, { id: 'b' }, { id: 'c' }]
       }
     }
-    // Swap 0 and 1 while cur is 2 (unrelated item active)
+    // Moving entry 0 down to index 1 anchors cur to the moved entry (index 1)
     expect(moveActiveExercise(S, 0, 1)).toBe(true)
     expect(S.active.entries.map(e => e.id)).toEqual(['b', 'a', 'c'])
-    expect(S.active.cur).toBe(2) // cur unchanged
+    expect(S.active.cur).toBe(1)
 
-    // Swap 1 and 2 where cur is 2 (the swapped neighbor)
-    expect(moveActiveExercise(S, 1, 1)).toBe(true)
+    // Moving entry 2 up to index 1 anchors cur to index 1
+    expect(moveActiveExercise(S, 2, -1)).toBe(true)
     expect(S.active.entries.map(e => e.id)).toEqual(['b', 'c', 'a'])
-    expect(S.active.cur).toBe(1) // cur was 2 (c), followed c to index 1
+    expect(S.active.cur).toBe(1)
   })
 
   it('moveActiveExercise returns false on invalid input', () => {

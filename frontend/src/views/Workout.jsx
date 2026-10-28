@@ -227,11 +227,11 @@ export function replaceActiveExerciseFlow(idx) {
 }
 
 /** Bottom sheet listing active workout entries for sequential reordering and fast navigation. */
-export function ReorderExercisesSheet({ close }) {
+function ReorderExercisesSheet({ close }) {
   const entries = useStore(s => s.S.active?.entries || [])
   const units = supersetUnits(entries)
   const unitFirst = new Set(units.filter(u => u.length > 1).map(u => u[0]))
-  const inSS = new Set(units.filter(u => u.length > 1).flat())
+  const inSuperset = new Set(units.filter(u => u.length > 1).flat())
 
   const move = (idx, dir) => {
     useStore.getState().moveActiveExercise(idx, dir)
@@ -242,7 +242,10 @@ export function ReorderExercisesSheet({ close }) {
   }
 
   return <div>
-    <h3>{t('Reorder exercises')}</h3>
+    <div className="row between" style={{ marginBottom: 4 }}>
+      <h3 style={{ margin: 0 }}>{t('Reorder exercises')}</h3>
+      <button className="iconbtn" onClick={close} aria-label={t('Close')}><Icon name="xmark" /></button>
+    </div>
     <div className="muted small" style={{ marginBottom: 12 }}>{t('Move exercises up or down, or tap to jump.')}</div>
     <div className="list">
       {entries.map((entry, idx) => {
@@ -251,7 +254,10 @@ export function ReorderExercisesSheet({ close }) {
         const total = workSets(entry).length
         return <div key={idx}>
           {unitFirst.has(idx) && <div className="ss-label"><Icon name="link" />{t('Superset')}</div>}
-          <div className={'item' + (inSS.has(idx) ? ' in-ss' : '')} role="button" tabIndex={0} onClick={() => select(idx)} style={{ cursor: 'pointer' }}>
+          <div className={'item' + (inSuperset.has(idx) ? ' in-ss' : '')} role="button" tabIndex={0} aria-label={ex.n}
+            onClick={() => select(idx)}
+            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); select(idx) } }}
+            style={{ cursor: 'pointer' }}>
             <Thumb ex={ex} />
             <div className="grow">
               <div className="tt capitalize">{ex.n}</div>

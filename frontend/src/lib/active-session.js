@@ -210,11 +210,7 @@ export function moveActiveExercise(S, idx, dir) {
 
   cleanupSg(entries)
 
-  if (S.active.cur === idx) {
-    S.active.cur = targetIdx
-  } else if (S.active.cur === targetIdx) {
-    S.active.cur = idx
-  }
+  S.active.cur = targetIdx
 
   return true
 }
