@@ -2,45 +2,58 @@
 
 Subsystem page for `frontend/src/lib/catalogue-query.js`, `frontend/src/lib/muscles.js`,
 and their client consumers (`frontend/src/views/Library.jsx`, `frontend/src/sheets/catalogue.jsx`).
-Vocabulary derives from `GLOSSARY.md` (Catalogue, Custom exercise, Muscle map, Effective sets).
+Vocabulary derives from `GLOSSARY.md` (Catalogue, Custom exercise, Muscle map, Effective sets, Chosen exercise).
 
 ## Architecture & Data Flow
 
-As of commit `ef34ca0` (2026-10-28), catalogue search is an unindexed in-memory linear filter
-operating over ~1,324 built-in exercises (`EXDB` in `exercises-data.js`) plus profile custom
-exercises (`customEx`).
+As of commit `75acfa2` (2026-10-28, merging ADR 0013), catalogue search is an in-memory tokenized
+disjunctive (OR) filter with multi-tier relevance scoring, operating over ~1,324 built-in exercises
+(`EXDB` in `exercises-data.js`) plus profile custom exercises (`customEx`).
+
+*(Historical note: At commit `ef34ca0`, search was a strict single-string contiguous substring filter.
+This was superseded by ADR 0013 on 2026-10-28).*
 
 The query pipeline in `queryCatalogue` executes deterministically in five stages:
 
 1. **Source assembly:** Profile custom exercises are prepended ahead of `EXDB` (`[...customEx, ...EXDB]`),
-   ensuring custom exercises rank before built-in exercises in results.
+   ensuring custom exercises rank before built-in exercises in results on tie-breaks.
 2. **Scope & search filtering:**
    - Scope checks: `favorites` (`Set.has`), `chosen` (`usageMap` count > 0 from routine/workout history),
      `muscle` (`matchesMuscleFilter`), or `all`.
-   - Keyword matching (`matchesExerciseSearch`): checks whether the normalized query string is a substring
-     of any supported field (name, target muscle, canonical muscle slug/display name, secondary muscles,
-     raw curations, equipment, body part, description).
+   - Tokenization & normalization (`tokenizeSearchQuery`): Strips non-alphanumeric punctuation and hyphens
+     (`[^\w\s]`), converts to lowercase, removes conversational stop words (`with`, `on`, `in`, `for`,
+     `the`, `to`, `at`, `and`, `or`, `a`, `an`), and removes 1-char noise tokens (preserving numeric digits).
+   - Disjunctive matching (`matchesExerciseSearch`): Checks whether the exercise matches *any* extracted
+     token across its title (`ex.n`), equipment (`ex.eq`), primary muscle, secondary muscles, curated
+     additions (`smOf`), body part (`ex.bp`), notes/description (`ex.desc`), or canonical muscle aliases.
 3. **Dynamic equipment faceting:** Equipment chips are derived from the matching set (`equipmentOf(matching)`)
    and sorted by frequency. If an active equipment filter is absent in the new facets, it resets cleanly to `''`.
 4. **Equipment filtering:** Retains only exercises matching `effectiveEquipment`.
-5. **Ordering:** Preserves source insertion order, unless `scope === 'chosen'`, where results sort
-   by usage count descending with alphabetical name `localeCompare` tiebreaker.
+5. **Relevance scoring & ordering:**
+   - When a search query is active, exercises are scored by `scoreExerciseMatch`:
+     `score = (matchedTokenCount * 100) + (exactPhraseBonus ? 50 : 0) + (titleMatchCount * 10)`.
+   - Results are sorted by `score` descending.
+   - Tie-breaking:
+     - In `chosen` scope: sorted by `score` descending, tie-breaking by `usageCount` descending, then name `localeCompare`.
+     - In `all`, `favorites`, and `muscle` scopes: sorted by `score` descending, tie-breaking custom exercises first, then catalogue insertion order.
+   - When search query is empty: original ordering preserved (`chosen` sorts strictly by usage count; other scopes preserve insertion order).
 
 ## Matching & Attribution Semantics
 
-- **Substring matching:** As of `ef34ca0`, matching uses standard JavaScript `String.prototype.includes`.
-  Queries are trimmed and lowercased (`String(query).toLowerCase().trim()`). Punctuation, hyphens, and
-  interior spaces are not stripped or tokenized.
+- **Cross-attribute token matching:** As of `75acfa2`, tokens can match across different fields. Searching
+  `"barbell chest"` matches Barbell Bench Press because `"barbell"` matches equipment and `"chest"` matches target muscle.
+- **Hyphen & punctuation normalization:** Punctuation characters (`-`, `/`, `_`) are converted to whitespace.
+  Searching `"push up"` matches `"push-up"`, `"pull up"` matches `"pull-up"`, and `"3 4 sit up"` matches `"3/4 sit-up"`.
+- **Numeric token safety:** Numeric tokens enforce boundary checks (`(?<!\d)${t}(?!\d)`) so searching `"4"` does
+  not erroneously match `"45"`.
 - **Canonical synonym resolution:** Colloquial abbreviations (`"delts"`, `"pecs"`, `"lats"`, `"quads"`, `"glutes"`)
-  resolve through `canonicalMuscle` and match exercises targeting those groups even when the literal substring
-  is absent in the exercise title.
+  resolve through `canonicalMuscle` for each token individually, matching exercises targeting those muscle groups.
 - **Secondary muscle attribution (`secondaryMatchForQuery`):**
-  - When an exercise matches solely through a secondary muscle (e.g. searching `"triceps"` surfaces Barbell Bench Press),
-    `secondaryMatchForQuery` attributes the secondary slug, rendering a `<span className="tag">Secondary: {Muscle}</span>` badge.
-  - Attribution is deliberately suppressed (`return null`) if the search matched the exercise's name,
-    primary target, or primary canonical display name, eliminating visual badge clutter.
-  - The `searchAttribution` parameter allows views to disable search badges while retaining muscle filter badges
-    (utilized by `Library.jsx` in Favorites view).
+  - When an exercise matches a query token corresponding to a secondary muscle, and that token did not match
+    the title or primary target, `secondaryMatchForQuery` attributes the secondary slug, rendering a
+    `<span className="tag">Secondary: {Muscle}</span>` badge.
+  - Attribution is suppressed (`return null`) if the search term matched the exercise's title or primary muscle.
+  - The `searchAttribution` toggle allows views to disable search badges (used in Library Favorites view).
 
 ## Client Integration & UX
 
@@ -50,34 +63,27 @@ The query pipeline in `queryCatalogue` executes deterministically in five stages
 - **Exercise Picker Sheet (`sheets/catalogue.jsx`):** Modal picker invoked during active workout exercise
   additions/replacements (`Workout.jsx`) and routine editing (`RoutineEdit.jsx`). Evaluates `queryCatalogue`
   synchronously per render.
-- **Performance:** On Node.js v24 / V8 benchmarks (2026-10-28), unfiltered queries execute in ~1.2ms and
-  full substring scans across all 1,324 items execute in ~5.4ms, comfortably within the 16.6ms (60fps)
-  frame budget without requiring web workers or debounce.
+- **Performance:** In-memory tokenization and relevance scoring across all 1,324 movements executes in 5–7ms,
+  well within the 16.6ms (60fps) frame budget without debouncing.
 - **Accessibility & Mobile:** `SearchField` supplies explicit `aria-label`, clear button semantics,
   and avoids autofocus to prevent intrusive virtual keyboard popups on mobile touch devices. Progressive
   batching renders initial slices (40 in Library, 50 in Picker) with "Show more" expansion buttons.
 
-## Known Quirks & Limitations (recorded 2026-10-28 at `ef34ca0`)
+## Resolved & Residual Quirks (updated 2026-10-28 at `75acfa2`)
 
-1. **Hyphenation disparity:** Upstream dataset exercises inconsistently hyphenate compound names.
-   `"push-up"` matches 39 exercises, whereas `"push up"` matches only 14. Searching `"push up"` misses the
-   standard bodyweight push-up because literal `.includes()` fails across the hyphen.
-2. **Equipment aliases:** Equipment search requires dataset literal strings. Searching `"bodyweight"` (one word)
-   fails on exercises tagged `"body weight"` (space-separated). Equipment abbreviations like `"db"` or plural `"bands"`
-   fail to match `"dumbbell"` or `"band"`.
-3. **No multi-word tokenization:** Non-contiguous phrases fail to match. Searching `"dumbbell press"` fails on
-   `"dumbbell incline alternate press"`. Inverted word orders (`"bench barbell"`) fail.
-4. **Cross-field queries:** Combined multi-attribute queries (e.g. `"barbell chest"`) return zero results because
-   no individual field contains both terms.
-5. **No typo tolerance:** Substring matching strictly rejects single-character typos (e.g. `"dumnbell"`).
+- **Resolved — Hyphenation disparity:** Searching `"push up"` now matches `"push-up"` and vice versa.
+- **Resolved — Multi-word tokenization:** Searching `"bench dumbbell"` or `"dumbbell press"` now matches
+  `"Dumbbell Incline Bench Press"` regardless of word order or non-contiguous position.
+- **Resolved — Cross-field queries:** Combined multi-attribute queries like `"barbell chest"` now successfully match.
+- **Resolved — Conversational queries:** Filler words like `"with"` in `"curls with band"` are cleanly stripped.
+- **Residual — Typo tolerance:** Substring matching strictly rejects misspelled words (e.g. `"dumnbell"`). Deliberately preserved to avoid fuzzy scoring performance penalties.
 
 ## Test Coverage
 
-- `frontend/src/lib/catalogue-query.test.js`: 8 unit tests covering custom exercise search, equipment facets,
-  favorite/chosen scopes, usage sorting, secondary muscle attribution, and collection safety.
-- `frontend/src/lib/muscles.test.js`: 28 unit tests covering canonical aliases, primary/secondary extraction,
-  filter matching, and keyword search across names, muscles, and equipment.
-- `frontend/src/views/Library.test.jsx`: 9 tests verifying search input, clear button reset, favorite refinement,
-  and secondary badges.
+- `frontend/src/lib/catalogue-query.test.js`: 12 tests covering custom exercise search, equipment facets,
+  favorite/chosen scopes, relevance scoring, out-of-order/disjunctive ranking, usage tie-breaking, and attribution.
+- `frontend/src/lib/muscles.test.js`: 31 tests covering canonical aliases, tokenization, stop-word filtering,
+  cross-attribute matching, hyphen normalization, disjunctive OR matching, and secondary attribution.
+- `frontend/src/views/Library.test.jsx`: 9 tests verifying search input, clear button reset, and badge rendering.
 - `frontend/src/sheets/catalogue.test.jsx`: 32 tests verifying picker search, favorite toggling, and empty states.
-- Verification (2026-10-28): All 77 unit and component tests passing.
+- Verification (2026-10-28): All 895 tests passing across 64 test files.
