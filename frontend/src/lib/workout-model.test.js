@@ -460,6 +460,55 @@ describe('buildSets', () => {
     expect(buildSets(S, { id: LIFT, sets: 2, reps: 8, weight: 50 }, { preferLast: true }))
       .toEqual([{ w: 60, r: 10, done: false }, { w: 62.5, r: 8, done: false }])
   })
+
+  it('leaves another Routine\'s heavier lift out of a routine-backed session', () => {
+    const S = {
+      exWeights: { [LIFT]: { w: 90 } },
+      workouts: [{ d: '2026-01-01', routineId: 'other', entries: [{ id: LIFT, target: { sets: 1, weight: 50 }, sets: [
+        { w: 90, r: 10, done: true }
+      ] }] }]
+    }
+    expect(buildSets(S, { id: LIFT, sets: 1, reps: 8, weight: 50 }, { routineId: 'r1' }))
+      .toEqual([{ w: 50, r: 8, done: false }])
+  })
+
+  it('reads the working-weight hint only when the session has no Routine behind it', () => {
+    const S = {
+      exWeights: { [LIFT]: { w: 75 } },
+      workouts: [{ d: '2026-01-01', routineId: 'other', entries: [{ id: LIFT, target: { sets: 1, weight: 50 }, sets: [
+        { w: 60, r: 10, done: true }
+      ] }] }]
+    }
+    // Freestyle: every past session is fair game and the all-time hint is the best seed.
+    expect(buildSets(S, { id: LIFT, sets: 1, reps: 8, weight: 50 }))
+      .toEqual([{ w: 75, r: 10, done: false }])
+    expect(buildSets(S, { id: LIFT, sets: 1, reps: 8, weight: 50 }, { routineId: 'r1' }))
+      .toEqual([{ w: 50, r: 8, done: false }])
+  })
+
+  it('carries the Routine\'s own working weight onto a new stream, at the plan\'s top reps', () => {
+    const S = {
+      exWeights: {},
+      workouts: [{ d: '2026-01-01', routineId: 'r1', entries: [{ id: LIFT, target: { sets: 1, reps: 8, weight: 50 }, sets: [
+        { w: 60, r: 10, done: true }
+      ] }] }]
+    }
+    // A new Target shape seeds from the weight actually worked and starts at the plan's
+    // reps — carrying last time's 10 would make a 12-rep plan unstartable.
+    expect(buildSets(S, { id: LIFT, sets: 1, reps: 12, weight: 50 }, { routineId: 'r1', seedWeightOnly: true }))
+      .toEqual([{ w: 60, r: 12, done: false }])
+  })
+
+  it('carries the Routine\'s working weight onto a new timed stream but not the old duration', () => {
+    const S = {
+      exWeights: {},
+      workouts: [{ d: '2026-01-01', routineId: 'r1', entries: [{ id: LIFT, target: { mode: 'time', sets: 1, sec: 45, weight: 20 }, sets: [
+        { sec: 30, w: 20, done: true }
+      ] }] }]
+    }
+    expect(buildSets(S, { id: LIFT, mode: 'time', sets: 1, sec: 60, weight: 20 }, { routineId: 'r1', seedWeightOnly: true }))
+      .toEqual([{ sec: 60, w: 20, done: false }])
+  })
 })
 
 describe('tonnageOf', () => {

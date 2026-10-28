@@ -217,14 +217,12 @@ export function freestyleConfig(S, cfg) {
  * @param {Object} options - Build flags:
  *   `preferLast` keeps each last set weight over the hint; `routineId` scopes history and
  *   disables the global working-weight hint; `seedWeightOnly` takes only the weight from
- *   history; `last` supplies an already-resolved history entry.
+ *   history.
  * @returns {Array<Object>} New set rows with done:false, at least one row.
  */
 export function buildSets(S, cfg, options = {}) {
   const routineId = options.routineId || null
-  const last = options.last !== undefined
-    ? options.last
-    : (routineId ? lastEntryForRoutine(S, cfg.id, routineId) : lastEntryFor(S, cfg.id))
+  const last = routineId ? lastEntryForRoutine(S, cfg.id, routineId) : lastEntryFor(S, cfg.id)
   const n = Math.max(1, cfg.sets || 1)
   const mode = modeOf(cfg)
   const preferLast = !!options.preferLast

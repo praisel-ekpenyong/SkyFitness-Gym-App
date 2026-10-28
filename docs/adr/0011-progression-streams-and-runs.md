@@ -15,11 +15,16 @@ not from every historical Entry of the exercise.
 - A Progression stream is the Target's shape: exercise, Mode, planned set count, and top reps
   or seconds. Working weight, `repsMin`, per-side logging, and the policy are outside the
   shape. A different Target shape starts a new stream; changing policy, the bottom of the
-  range, or the load does not. A new stream's first session is a baseline, and its rows seed
-  from the last working weight in the same Routine (else the Routine's plan weight). Every
-  routine-backed session prefers that same-Routine history over the all-time `exWeights`
-  hint — the hint is read only when the session has no Routine behind it — so an unrelated
-  Routine's heavier history never seeds.
+  range, or the load does not. One carve-out: a bodyweight session — reps mode with no load
+  on the plan, either an explicit `weight: 0` or an absent weight on a bodyweight-flagged
+  exercise — matches on Mode and planned set count alone and reads its ceiling from
+  `repsMax`, because that ceiling lives outside the Target and older Entries never froze a
+  change to it; filtering on Target reps would discard a live climb. A bodyweight-capable
+  exercise trained with a belt has a load and keeps the top-reps shape. A new stream's first
+  session is a baseline, and its rows seed from the last working weight in the same Routine
+  (else the Routine's plan weight). Every routine-backed session prefers that same-Routine
+  history over the all-time `exWeights` hint — the hint is read only when the session has no
+  Routine behind it — so an unrelated Routine's heavier history never seeds.
 - A Run is the trailing stretch of stream sessions at the same working value — the logged
   working load for reps work, the prescribed hold duration for add-time. Its first session is
   a baseline and is never a Stall. Greyskull is the deliberate exception: its rule is reset on
