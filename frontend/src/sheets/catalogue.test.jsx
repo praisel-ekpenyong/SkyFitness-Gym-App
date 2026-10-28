@@ -2,7 +2,7 @@
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { ExerciseDetail, deleteCustomEx, ExercisePicker, CustomExForm } from '../sheets.jsx'
+import { ExerciseDetail, deleteCustomEx, ExercisePicker, CustomExForm, ExConfig, exConfigSheet } from '../sheets.jsx'
 import { useStore, DEF } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 
@@ -922,3 +922,165 @@ describe('CustomExForm canonical muscle selection and editing', () => {
     expect(useStore.getState().S.customEx.length).toBe(1)
   })
 })
+
+describe('ExConfig and exConfigSheet onReplace support', () => {
+  const sampleEx = {
+    id: '0001',
+    n: '3/4 sit-up',
+    bp: 'waist',
+    tg: 'abs',
+    eq: 'body weight',
+  }
+
+  it('renders "Replace exercise" button when editing existing exercise with onReplace callback', async () => {
+    const onReplace = vi.fn()
+    const close = vi.fn()
+    const onSave = vi.fn()
+
+    await act(async () => {
+      root.render(
+        <ExConfig
+          ex={sampleEx}
+          existing={{ id: '0001', sets: 4, reps: 10, weight: 0, mode: 'reps' }}
+          onSave={onSave}
+          close={close}
+          onReplace={onReplace}
+        />
+      )
+    })
+
+    const buttons = Array.from(container.querySelectorAll('button'))
+    const replaceBtn = buttons.find(b => b.textContent.includes('Replace exercise'))
+    expect(replaceBtn).toBeTruthy()
+    expect(replaceBtn.querySelector('svg.icn')).toBeTruthy()
+
+    // Clicking Replace exercise should close the sheet and call onReplace
+    await act(async () => {
+      replaceBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    expect(close).toHaveBeenCalledTimes(1)
+    expect(onReplace).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not render "Replace exercise" button when existing is null (adding an exercise)', async () => {
+    const onReplace = vi.fn()
+
+    await act(async () => {
+      root.render(
+        <ExConfig
+          ex={sampleEx}
+          existing={null}
+          onSave={vi.fn()}
+          close={vi.fn()}
+          onReplace={onReplace}
+        />
+      )
+    })
+
+    const buttons = Array.from(container.querySelectorAll('button'))
+    const replaceBtn = buttons.find(b => b.textContent.includes('Replace exercise'))
+    expect(replaceBtn).toBeUndefined()
+  })
+
+  it('does not render "Replace exercise" button when onReplace is not provided', async () => {
+    await act(async () => {
+      root.render(
+        <ExConfig
+          ex={sampleEx}
+          existing={{ id: '0001', sets: 3, reps: 10, weight: 0, mode: 'reps' }}
+          onSave={vi.fn()}
+          close={vi.fn()}
+        />
+      )
+    })
+
+    const buttons = Array.from(container.querySelectorAll('button'))
+    const replaceBtn = buttons.find(b => b.textContent.includes('Replace exercise'))
+    expect(replaceBtn).toBeUndefined()
+  })
+
+  it('pre-seeds sets and merges with exercise defaults when initial is provided without existing', async () => {
+    let savedConfig = null
+    const onSave = vi.fn(cfg => { savedConfig = cfg })
+    const close = vi.fn()
+
+    await act(async () => {
+      root.render(
+        <ExConfig
+          ex={sampleEx}
+          existing={null}
+          initial={{ sets: 5 }}
+          onSave={onSave}
+          close={close}
+        />
+      )
+    })
+
+    // The sets stepper input should be pre-seeded to 5
+    const setsInput = container.querySelector('.cfgrow input')
+    expect(setsInput.value).toBe('5')
+
+    // Click "Add to routine" or primary save button
+    const saveBtn = container.querySelector('button.btn.primary')
+    await act(async () => {
+      saveBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    expect(onSave).toHaveBeenCalledTimes(1)
+    expect(savedConfig.sets).toBe(5)
+    expect(savedConfig.reps).toBe(10) // default reps for reps mode
+  })
+
+  it('passes onReplace through exConfigSheet to ExConfig', async () => {
+    const onReplace = vi.fn()
+    exConfigSheet(sampleEx, { id: '0001', sets: 3, reps: 10 }, vi.fn(), vi.fn(), null, null, onReplace)
+
+    const sheets = useUI.getState().sheets
+    expect(sheets.length).toBe(1)
+
+    // Mount sheet render
+    await act(async () => {
+      root.render(sheets[0].render(() => useUI.getState().closeSheet(sheets[0].id)))
+    })
+
+    const replaceBtn = Array.from(container.querySelectorAll('button')).find(b => b.textContent.includes('Replace exercise'))
+    expect(replaceBtn).toBeTruthy()
+
+    await act(async () => {
+      replaceBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    expect(onReplace).toHaveBeenCalledTimes(1)
+    expect(useUI.getState().sheets.length).toBe(0)
+  })
+
+  it('renders actionLabel on primary button if provided to ExConfig', async () => {
+    await act(async () => {
+      root.render(
+        <ExConfig
+          ex={sampleEx}
+          existing={null}
+          actionLabel="Replace"
+          onSave={vi.fn()}
+          close={vi.fn()}
+        />
+      )
+    })
+    const saveBtn = container.querySelector('button.btn.primary')
+    expect(saveBtn.textContent.trim()).toBe('Replace')
+  })
+
+  it('passes actionLabel through exConfigSheet to ExConfig', async () => {
+    exConfigSheet(sampleEx, null, vi.fn(), null, null, null, null, 'Custom Action')
+    const sheets = useUI.getState().sheets
+    expect(sheets.length).toBe(1)
+    await act(async () => {
+      root.render(sheets[0].render(() => useUI.getState().closeSheet(sheets[0].id)))
+    })
+    const saveBtn = container.querySelector('button.btn.primary')
+    expect(saveBtn.textContent.trim()).toBe('Custom Action')
+  })
+})
+
+

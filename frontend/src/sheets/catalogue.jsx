@@ -420,11 +420,17 @@ function ProgressionFields({ ex, mode, c, setC, routine, unit }) {
  * @param {Function} close Closes the sheet.
  * @param {Object} routine Parent routine for inherited progression.
  * @param {Object} initial Starting config override.
+ * @param {Function} onReplace Opens replacement picker for this exercise.
+ * @param {string} [actionLabel] Custom label for the primary action button.
  */
-function ExConfig({ ex, existing, onSave, onDelete, close, routine, initial }) {
+export function ExConfig({ ex, existing, onSave, onDelete, close, routine, initial, onReplace, actionLabel }) {
   const st = useStore(s => s.S)
   const cardio = isCardio(ex.id)
-  const [c, setC] = useState(existing || initial || defaultConfig(ex.id))
+  const [c, setC] = useState(() => {
+    if (existing) return existing
+    const base = defaultConfig(ex.id)
+    return initial ? { ...base, ...initial } : base
+  })
   // Cardio keeps its own duration+speed form; the reps/time choice (issue #16) is offered for
   // everything else, which is where the gap was — planks, hangs, wall sits, loaded carries.
   const mode = cardio ? 'cardio' : modeOf({ ...c, id: ex.id })
@@ -530,7 +536,8 @@ function ExConfig({ ex, existing, onSave, onDelete, close, routine, initial }) {
         : t('Reps climb by one whenever every set was clean. Set a ceiling to add sets instead of reps forever.')}
     </div>}
     <ProgressionFields ex={ex} mode={mode} c={c} setC={setC} routine={routine} unit={st.unit} />
-    <Button variant="primary" onClick={save}>{existing ? t('Save') : t('Add to routine')}</Button>
+    <Button variant="primary" onClick={save}>{actionLabel || (existing ? t('Save') : t('Add to routine'))}</Button>
+    {onReplace && existing && <><div style={{ height: 8 }} /><Button icon="shuffle" onClick={() => { close(); onReplace() }}>{t('Replace exercise')}</Button></>}
     {ex.custom && <><div style={{ height: 8 }} /><Button icon="pencil" onClick={() => { close(); customExSheet(ex) }}>{t('Edit or delete this exercise')}</Button></>}
     {onDelete && <><div style={{ height: 8 }} /><Button variant="danger" onClick={() => { close(); onDelete() }}>{t('Remove from routine')}</Button></>}
   </>
@@ -544,5 +551,8 @@ function ExConfig({ ex, existing, onSave, onDelete, close, routine, initial }) {
  * @param {Function} onDelete Removes the exercise from the routine.
  * @param {Object} routine Parent routine for inherited progression.
  * @param {Object} initial Starting config override.
+ * @param {Function} onReplace Opens replacement picker for this exercise.
+ * @param {string} [actionLabel] Custom label for the primary action button.
  */
-export const exConfigSheet = (ex, existing, onSave, onDelete, routine, initial) => ui().openSheet(close => <ExConfig ex={ex} existing={existing} initial={initial} onSave={onSave} onDelete={onDelete} routine={routine} close={close} />)
+export const exConfigSheet = (ex, existing, onSave, onDelete, routine, initial, onReplace, actionLabel) => ui().openSheet(close => <ExConfig ex={ex} existing={existing} initial={initial} onSave={onSave} onDelete={onDelete} routine={routine} onReplace={onReplace} actionLabel={actionLabel} close={close} />)
+

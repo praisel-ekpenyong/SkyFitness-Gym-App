@@ -1,5 +1,6 @@
 import { isCardio, isBodyweightEq } from './exercises.js'
 import { isWarmupRow, ensurePlainObject, objectOf } from './warmup.js'
+import { bestKnownWeight } from './active-finish.js'
 
 export { phaseForSet, isWarmupRow, ensurePlainObject, objectOf } from './warmup.js'
 
@@ -546,3 +547,29 @@ export function bestWeightForEntry(entry = {}) {
     && Number.isFinite(topWeight) && topWeight > best) best = topWeight
   return best
 }
+
+/**
+ * Seed an exercise config for replacement from its history and best known weight.
+ *
+ * Scans the parent routine's history (if provided) before falling back to any routine's history.
+ * Pre-populates the target with the last logged target, overrides with bestKnownWeight
+ * for weighted exercises, and preserves the requested sets count (falling back to base defaults).
+ *
+ * @param {Object} S - Application state atom containing workouts and exWeights.
+ * @param {string} exId - Exercise identifier from EXIDX.
+ * @param {string|null} [routineId] - ID of routine context, or null/undefined.
+ * @param {number|null} [setsCount] - Prescribed sets count from the outgoing exercise, or null/undefined.
+ * @returns {Object} Pre-seeded config object for exConfigSheet / replacement.
+ */
+export function seedForReplacement(S, exId, routineId, setsCount) {
+  const base = defaultConfig(exId)
+  const last = lastEntryForRoutine(S, exId, routineId) || lastEntryFor(S, exId)
+  const bestWeight = bestKnownWeight(S, exId)
+  return {
+    ...base,
+    ...(last?.target || {}),
+    ...(bestWeight > 0 && !base.bodyweight ? { weight: bestWeight } : {}),
+    sets: setsCount ?? base.sets,
+  }
+}
+
