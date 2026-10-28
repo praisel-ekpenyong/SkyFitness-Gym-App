@@ -152,4 +152,31 @@ describe('Workout exercise reorder sheet interaction', () => {
     const inSSItems = document.querySelectorAll('.list .item.in-ss')
     expect(inSSItems).toHaveLength(2)
   })
+
+  it('dismisses sheet when clicking the close button', () => {
+    view = renderWorkoutApp([entry('0025'), entry('0043')])
+    click(reorderButton())
+    expect(useUI.getState().sheets).toHaveLength(1)
+
+    const closeBtn = document.querySelector('button[aria-label="Close"]')
+    expect(closeBtn).toBeTruthy()
+    click(closeBtn)
+
+    expect(useUI.getState().sheets).toHaveLength(0)
+  })
+
+  it('jumps to exercise and closes sheet on Enter keyboard event', () => {
+    view = renderWorkoutApp([entry('0025'), entry('0043')])
+    click(reorderButton())
+
+    const items = [...document.querySelectorAll('.list .item')]
+    expect(items[1].getAttribute('aria-label')).toBeTruthy()
+
+    act(() => {
+      items[1].dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    })
+
+    expect(useStore.getState().S.active.cur).toBe(1)
+    expect(useUI.getState().sheets).toHaveLength(0)
+  })
 })
