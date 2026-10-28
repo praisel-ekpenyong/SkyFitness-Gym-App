@@ -1,12 +1,72 @@
-import { allExercises, equipmentOf } from './exercises.js'
+import { allExercises, equipmentOf, smOf } from './exercises.js'
 import {
+  canonicalMuscle,
   isSecondaryMuscleMatch,
   matchesExerciseSearch,
   matchesMuscleFilter,
   primaryMuscleOf,
   resolveMuscleSlug,
   secondaryMatchForQuery,
+  secondaryMusclesOf,
+  stringIncludesToken,
+  tokenizeSearchQuery,
+  tokenMatchesExercise,
+  MUSCLE_NAME,
 } from './muscles.js'
+
+export { tokenizeSearchQuery }
+
+/**
+ * Scores an exercise against a tokenized search query.
+ *
+ * Score components:
+ * - Each matching token: +100
+ * - Exact contiguous phrase match in exercise title: +50
+ * - Each token matching the title: +10
+ *
+ * @param {Object} exercise - Exercise to score.
+ * @param {string[]|string} tokens - Token array or raw query string.
+ * @param {string} [rawQuery] - Original query string for exact phrase check.
+ * @returns {number} Relevance score (0 when no match).
+ */
+export function scoreExerciseMatch(exercise, tokens, rawQuery = '') {
+  if (!exercise) return 0
+  const tokenList = [...new Set(Array.isArray(tokens) ? tokens : tokenizeSearchQuery(tokens))]
+  if (!tokenList || tokenList.length === 0) return 0
+
+  const primary = primaryMuscleOf(exercise)
+  const secondaries = secondaryMusclesOf(exercise)
+  const primaryName = (primary && MUSCLE_NAME[primary]) || ''
+  const rawSm = smOf(exercise)
+  const titleLower = String(exercise.n || '').toLowerCase()
+
+  let matchedTokenCount = 0
+  let titleMatchCount = 0
+
+  for (const token of tokenList) {
+    const t = token.toLowerCase()
+    const tokenSlug = canonicalMuscle(t)
+    const matchesMuscle = tokenSlug && (primary === tokenSlug || (secondaries && secondaries.includes(tokenSlug)))
+    const matchesTitle = stringIncludesToken(titleLower, t)
+
+    if (tokenMatchesExercise(token, exercise, primary, secondaries, primaryName, rawSm)) {
+      matchedTokenCount++
+    }
+    if (matchesTitle || matchesMuscle) {
+      titleMatchCount++
+    }
+  }
+
+  const rawLower = String(rawQuery || (typeof tokens === 'string' ? tokens : tokenList.join(' '))).trim().toLowerCase()
+  const normRaw = rawLower.replace(/[^\w\s]/g, ' ').trim().replace(/\s+/g, ' ')
+  const normTitle = titleLower.replace(/[^\w\s]/g, ' ').trim().replace(/\s+/g, ' ')
+  const exactPhraseBonus = (tokenList.length > 1 && (
+    (rawLower.length > 0 && titleLower.includes(rawLower)) ||
+    (normRaw.length > 0 && normTitle.includes(normRaw))
+  )) ? 50 : 0
+
+  return (matchedTokenCount * 100) + exactPhraseBonus + (titleMatchCount * 10)
+}
 
 /**
  * Query the Catalogue for one browsing caller.
@@ -25,6 +85,9 @@ export function queryCatalogue({ profile, scope = { kind: 'all' }, search = '', 
   const kind = scope?.kind || 'all'
   const muscle = scope?.kind === 'muscle' ? resolveMuscleSlug(scope.muscle) : null
   const catalogue = allExercises({ customEx: Array.isArray(safeProfile.customEx) ? safeProfile.customEx : [] })
+  const catalogueOrder = new Map(catalogue.map((ex, idx) => [ex.id, idx]))
+  const searchTokens = tokenizeSearchQuery(search)
+
   const matching = catalogue
     .filter(exercise =>
       (kind !== 'favorites' || favoriteIds.has(exercise.id)) &&
@@ -32,9 +95,31 @@ export function queryCatalogue({ profile, scope = { kind: 'all' }, search = '', 
       (!muscle || matchesMuscleFilter(exercise, muscle)) &&
       matchesExerciseSearch(exercise, search)
     )
-    .sort((a, b) => kind === 'chosen'
-      ? (usage[b.id] - usage[a.id]) || String(a.n || '').localeCompare(String(b.n || ''))
-      : 0)
+
+  if (searchTokens.length > 0) {
+    const scores = new Map()
+    for (const ex of matching) {
+      scores.set(ex.id, scoreExerciseMatch(ex, searchTokens, search))
+    }
+    matching.sort((a, b) => {
+      const scoreDiff = (scores.get(b.id) || 0) - (scores.get(a.id) || 0)
+      if (scoreDiff !== 0) return scoreDiff
+      if (kind === 'chosen') {
+        const usageDiff = (usage[b.id] || 0) - (usage[a.id] || 0)
+        if (usageDiff !== 0) return usageDiff
+        return String(a.n || '').localeCompare(String(b.n || ''))
+      }
+      const customDiff = (b.custom ? 1 : 0) - (a.custom ? 1 : 0)
+      if (customDiff !== 0) return customDiff
+      return (catalogueOrder.get(a.id) || 0) - (catalogueOrder.get(b.id) || 0)
+    })
+  } else if (kind === 'chosen') {
+    matching.sort((a, b) =>
+      ((usage[b.id] || 0) - (usage[a.id] || 0)) ||
+      String(a.n || '').localeCompare(String(b.n || ''))
+    )
+  }
+
   const equipmentOptions = equipmentOf(matching)
   const effectiveEquipment = equipmentOptions.includes(equipment) ? equipment : ''
   const selected = effectiveEquipment

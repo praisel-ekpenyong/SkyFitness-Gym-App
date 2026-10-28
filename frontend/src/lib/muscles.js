@@ -281,58 +281,122 @@ export function isSecondaryMuscleMatch(idOrEx, filter) {
   return secondaryMusclesOf(idOrEx).includes(target)
 }
 
-/** Returns the secondary muscle that matched a search query when the query did not match the primary target. */
+/** Common stop words stripped from catalogue search queries. */
+export const SEARCH_STOP_WORDS = new Set(['with', 'on', 'in', 'for', 'the', 'to', 'at', 'and', 'or', 'a', 'an'])
+
+/**
+ * Tokenizes and normalizes a search query string.
+ * Strips non-alphanumeric punctuation/hyphens, lowercases, filters stop words and 1-char noise.
+ * Falls back to raw non-empty tokens if all tokens were filtered out.
+ */
+export function tokenizeSearchQuery(query) {
+  const normalized = String(query || '')
+    .replace(/[^\w\s]/g, ' ')
+    .toLowerCase()
+    .trim()
+  if (!normalized) return []
+  const rawTokens = normalized.split(/\s+/).filter(Boolean)
+  const filtered = rawTokens.filter(t => !SEARCH_STOP_WORDS.has(t) && (t.length > 1 || /\d/.test(t)))
+  return filtered.length > 0 ? filtered : rawTokens
+}
+
+/** Checks whether a string includes a token, respecting numeric boundaries for digit tokens. */
+export function stringIncludesToken(str, token) {
+  if (!str || !token) return false
+  const s = String(str).toLowerCase()
+  const t = String(token).toLowerCase()
+  if (/^\d+$/.test(t)) {
+    return new RegExp(`(?<!\\d)${t}(?!\\d)`).test(s)
+  }
+  return s.includes(t)
+}
+
+/**
+ * Checks whether a single token matches an exercise across any of its attributes.
+ */
+export function tokenMatchesExercise(token, ex, primary, secondaries, primaryName, rawSm) {
+  if (!token || !ex) return false
+  const p = primary !== undefined ? primary : primaryMuscleOf(ex)
+  const s = secondaries !== undefined ? secondaries : secondaryMusclesOf(ex)
+  const pName = primaryName !== undefined ? primaryName : ((p && MUSCLE_NAME[p]) || '')
+  const sm = rawSm !== undefined ? rawSm : smOf(ex)
+  const t = token.toLowerCase()
+  const tokenSlug = canonicalMuscle(t)
+  if (tokenSlug) {
+    if (p === tokenSlug) return true
+    if (s && s.includes(tokenSlug)) return true
+  }
+  if (stringIncludesToken(ex.n, t)) return true
+  if (stringIncludesToken(ex.tg, t)) return true
+  if (p && stringIncludesToken(p, t)) return true
+  if (pName && stringIncludesToken(pName, t)) return true
+  if (s && s.some(m => stringIncludesToken(m, t) || stringIncludesToken(MUSCLE_NAME[m], t))) return true
+  if (sm && sm.some(raw => stringIncludesToken(raw, t))) return true
+  if (stringIncludesToken(ex.eq, t)) return true
+  if (stringIncludesToken(ex.bp, t)) return true
+  if (stringIncludesToken(ex.desc || ex.notes, t)) return true
+  return false
+}
+
+/** Returns the secondary muscle that matched a search query when the query did not match the primary target or title. */
 export function secondaryMatchForQuery(idOrEx, query) {
-  const q = String(query || '').toLowerCase().trim()
-  if (!q) return null
+  const tokens = tokenizeSearchQuery(query)
+  if (tokens.length === 0) return null
   const ex = typeof idOrEx === 'string' ? EXIDX[idOrEx] : idOrEx
   if (!ex) return null
   const primary = primaryMuscleOf(ex)
   const primaryName = (primary && MUSCLE_NAME[primary]) || ''
-  if ((ex.n || '').toLowerCase().includes(q) || (ex.tg || '').toLowerCase().includes(q) || (primary || '').toLowerCase().includes(q) || primaryName.toLowerCase().includes(q)) {
-    return null
-  }
-  const querySlug = canonicalMuscle(q)
-  if (querySlug && querySlug === primary) return null
   const secondaries = secondaryMusclesOf(ex)
-  if (querySlug && secondaries.includes(querySlug)) {
-    return querySlug
-  }
-  const matchedSlug = secondaries.find(m =>
-    m.toLowerCase().includes(q) || (MUSCLE_NAME[m] || '').toLowerCase().includes(q)
-  )
-  if (matchedSlug) return matchedSlug
   const rawSm = smOf(ex)
-  const matchedRaw = rawSm.find(s => s.toLowerCase().includes(q))
-  if (matchedRaw) return canonicalMuscle(matchedRaw)
+  const titleLower = String(ex.n || '').toLowerCase()
+  const tgLower = String(ex.tg || '').toLowerCase()
+  const primaryLower = String(primary || '').toLowerCase()
+  const primaryNameLower = String(primaryName || '').toLowerCase()
+
+  for (const token of tokens) {
+    const t = token.toLowerCase()
+    const matchesTitle = stringIncludesToken(titleLower, t)
+    const tokenSlug = canonicalMuscle(t)
+    const matchesPrimary = (tokenSlug && tokenSlug === primary) ||
+      stringIncludesToken(tgLower, t) ||
+      stringIncludesToken(primaryLower, t) ||
+      stringIncludesToken(primaryNameLower, t)
+
+    if (matchesTitle || matchesPrimary) {
+      continue
+    }
+
+    if (tokenSlug && secondaries.includes(tokenSlug)) {
+      return tokenSlug
+    }
+    const matchedSlug = secondaries.find(m =>
+      stringIncludesToken(m, t) || stringIncludesToken(MUSCLE_NAME[m] || '', t)
+    )
+    if (matchedSlug) return matchedSlug
+
+    const matchedRaw = rawSm.find(s => stringIncludesToken(s, t))
+    if (matchedRaw) {
+      const slug = canonicalMuscle(matchedRaw)
+      if (slug && slug !== primary) return slug
+    }
+  }
+
   return null
 }
 
 /** True when an exercise matches a search query across names, muscles, aliases, and equipment. */
 export function matchesExerciseSearch(idOrEx, query) {
-  const q = String(query || '').toLowerCase().trim()
-  if (!q) return true
+  const tokens = tokenizeSearchQuery(query)
+  if (tokens.length === 0) return true
   const ex = typeof idOrEx === 'string' ? EXIDX[idOrEx] : idOrEx
   if (!ex) return false
   const primary = primaryMuscleOf(ex)
   const secondaries = secondaryMusclesOf(ex)
   const primaryName = (primary && MUSCLE_NAME[primary]) || ''
   const rawSm = smOf(ex)
-  const querySlug = canonicalMuscle(q)
-  if (querySlug) {
-    if (primary === querySlug) return true
-    if (secondaries.includes(querySlug)) return true
-  }
-  return (ex.n || '').toLowerCase().includes(q) ||
-    (ex.tg || '').toLowerCase().includes(q) ||
-    (primary || '').toLowerCase().includes(q) ||
-    primaryName.toLowerCase().includes(q) ||
-    secondaries.some(m => m.toLowerCase().includes(q) || (MUSCLE_NAME[m] || '').toLowerCase().includes(q)) ||
-    rawSm.some(s => s.toLowerCase().includes(q)) ||
-    (ex.eq || '').toLowerCase().includes(q) ||
-    (ex.bp || '').toLowerCase().includes(q) ||
-    (ex.desc || '').toLowerCase().includes(q)
+  return tokens.some(token => tokenMatchesExercise(token, ex, primary, secondaries, primaryName, rawSm))
 }
+
 
 /** Canonical unique muscle groups, accepting both new arrays and legacy single fields. */
 export function muscleGroupsOf(ex) {
