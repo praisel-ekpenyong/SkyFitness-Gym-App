@@ -3,6 +3,14 @@
 One entry per review event. Findings live in tickets/reports; this page records
 what ran, against what, and where the findings went.
 
+## 2026-10-28 — Two-axis review: exercise reordering
+
+- **Range:** `d720eb1...HEAD` at `6adf5a6` — "feat: in-session exercise reordering in active workouts".
+- **Method:** Standards axis and Spec axis as parallel subagents (sessions `cedbc12d-ef4c-4589-a897-0270a20bebcd` and `b9e40a12-538a-4c62-bdef-473914cba455`).
+- **Spec source:** `.scratch/exercise-reordering/spec.md` (tickets 01 and 02 in `.scratch/exercise-reordering/issues/`).
+- **Outcome:** Standards — 0 hard violations, 4 judgement calls (duplicated partition logic, abbreviation `inSS`, exported sheet helper, primitive direction). Spec — 0 scope creep, 2 partial/missing items (reorder sheet close button, row keyboard accessibility), 1 cursor tracking edge case (anchoring `cur` to the moved exercise across all moves).
+- **Disposition:** Actioned and resolved in `6adf5a6`. Close button added to sheet header, `aria-label` and `onKeyDown` added for keyboard navigation, `active.cur` unconditionally follows the moved exercise to `targetIdx`, and `inSS` renamed to `inSuperset`. Suite: 64/64 test files passed (884/884 tests green).
+
 ## 2026-10-28 — Catalogue review: hamstring set distribution for RDL and SLDL
 
 - **Context:** Audit of hamstring vs glute set accounting in Romanian Deadlift (RDL) and Stiff-Leg Deadlift (SLDL) across `frontend/src/lib/exercises-data.js`, `exercises.js`, and `muscles.js` at commit `d720eb1`.
