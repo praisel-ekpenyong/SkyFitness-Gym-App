@@ -4,6 +4,13 @@ One entry per decision, newest first. A decision here is a settled call; the
 ticket/ADR it points to carries the reasoning. Superseded entries stay listed
 with a pointer to their successor.
 
+- **2026-10-28 — In-session exercise replacement is strictly session-local, preserving supersets and order.**
+  Added `replaceActiveExercise` behind the ADR 0006 lifecycle seam and wired into both
+  `RoutineEdit` (template editing) and `Workout` (active session). In an Active workout,
+  the swap leaves the underlying Routine untouched, warns before discarding performed sets,
+  stops any running hold timer, and seeds fresh rows from the replacement's own history.
+  Merged `eb9d6d6` (tickets 01–03 in `.scratch/exercise-replacement/`).
+
 - **2026-10-27 — Chief-of-staff wiki lives at `docs/wiki/`.** Chosen over
   `.wiki/` and top-level `wiki/` so it sits beside the other docs without
   disturbing the single-context tree in `docs/agents/domain.md`. (This page.)
