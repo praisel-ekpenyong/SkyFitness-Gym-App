@@ -54,11 +54,37 @@ describe('toggle next action', () => {
     }
     const r = toggleActiveSet(S, 0, 0)
     expect(r.next).toEqual({ kind: 'open-topweight', targetIdx: null })
+    expect(r.rest).toEqual({ start: true, stop: true })
     const peek = peekWeightCommit(S, 0)
     expect(peek).toEqual({ kind: 'topweight-then-advance', targetIdx: 1, unitDone: true, isLastUnit: false, unitSize: 1 })
     const next = commitWorkingWeight(S, 0, 80, { todayISO: () => '2026-08-24' })
     expect(next.targetIdx).toBe(1)
     expect(next.kind).toBe('topweight-then-advance')
+  })
+
+  it('ticking final set of a solo exercise starts rest when another exercise follows', () => {
+    const S = {
+      active: {
+        cur: 0,
+        entries: [
+          { id: 'ex1', target: { reps: 5, weight: 80 }, sets: [{ w: 80, r: 5, done: true }, { w: 80, r: 5, done: false }] },
+          { id: 'ex2', target: { reps: 5, weight: 60 }, sets: [{ w: 60, r: 5, done: false }] },
+        ],
+      },
+      exWeights: {},
+    }
+    const r = toggleActiveSet(S, 0, 1)
+    expect(r.next).toEqual({ kind: 'open-topweight', targetIdx: null })
+    expect(r.rest).toEqual({ start: true, stop: true })
+
+    // Unchecking and re-checking does not restart or stop rest (high-water mark respected)
+    const un = toggleActiveSet(S, 0, 1)
+    expect(un.checked).toBe(false)
+    expect(un.rest).toEqual({ start: false, stop: false })
+
+    const re = toggleActiveSet(S, 0, 1)
+    expect(re.checked).toBe(true)
+    expect(re.rest).toEqual({ start: false, stop: false })
   })
 
   it('cardio finale opens the finish prompt with no weight step', () => {
