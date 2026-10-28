@@ -238,14 +238,16 @@ describe('Catalogue query', () => {
     // Out-of-order words: 2 tokens (200) + no exact bonus (0) + 2 title matches (20) = 220
     expect(scoreExerciseMatch(ex, ['bench', 'dumbbell'], 'bench dumbbell')).toBe(220)
 
-    // Single word in title: 1 token (100) + 1 title match (10) = 110
-    expect(scoreExerciseMatch(ex, ['bench'], 'bench')).toBe(110)
+    // Single word in title: 1 token (100) + exact phrase bonus (50) + 1 title match (10) = 160
+    expect(scoreExerciseMatch(ex, ['bench'], 'bench')).toBe(160)
 
-    // Cross-attribute match: 1 in title, 1 in target: 2 tokens (200) + 1 title match (10) + 1 muscle match (10) = 220
-    expect(scoreExerciseMatch(ex, ['dumbbell', 'chest'], 'dumbbell chest')).toBe(220)
+    // Cross-attribute match: 1 in title, 1 in primary muscle: 2 tokens (200) + 0 exact phrase bonus (0) + 1 title match (10) = 210
+    expect(scoreExerciseMatch(ex, ['dumbbell', 'chest'], 'dumbbell chest')).toBe(210)
 
     // Disjunctive partial match (1 hit, 1 miss): 1 token (100) + 0 exact + 1 title match (10) = 110
     expect(scoreExerciseMatch(ex, ['bench', 'squat'], 'bench squat')).toBe(110)
+
+
 
     // Hyphen-normalized exact phrase match: "push up" matching "Push-Up"
     const pushup = exercise('pu', 'Dumbbell Push-Up', 'chest', 'dumbbell')
@@ -292,9 +294,8 @@ describe('Catalogue query', () => {
     const outOfOrderIds = outOfOrderResult.rows.map(r => r.exercise.id).filter(id => id.startsWith('ex-'))
     expect(outOfOrderIds).toEqual(['ex-2', 'ex-3', 'ex-1'])
 
-    // Cross-attribute query: "barbell chest"
-    // ex-1 matches 'barbell' (title/eq) and 'chest' (primary target) -> 2 tokens (220)
-    // ex-2, ex-3, ex-4 all match 1 token (110), tie-breaking by catalogue order: ex-2, ex-3, ex-4
+    // ex-1 matches 'barbell' (title/eq) and 'chest' (primary muscle) -> 2 tokens (210)
+    // ex-4 matches 'barbell' in title (110); ex-2, ex-3 match 'chest' in primary muscle (100)
     const crossAttributeResult = queryCatalogue({
       profile,
       scope: { kind: 'all' },
@@ -303,6 +304,8 @@ describe('Catalogue query', () => {
     })
     const crossAttributeIds = crossAttributeResult.rows.map(r => r.exercise.id).filter(id => id.startsWith('ex-'))
     expect(crossAttributeIds).toEqual(['ex-1', 'ex-4', 'ex-2', 'ex-3'])
+
+
 
   })
 

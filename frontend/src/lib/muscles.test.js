@@ -643,7 +643,7 @@ describe('tokenized catalogue search & normalization', () => {
     expect(secondaryMatchForQuery(bench, 'bench delts')).toBe('deltoids')
     expect(secondaryMatchForQuery(bench, 'bench shoulders')).toBe('deltoids')
 
-    // Suppression when query matches primary target
+    // Suppression when query matches primary muscle
     expect(secondaryMatchForQuery(bench, 'chest')).toBeNull()
     expect(secondaryMatchForQuery(bench, 'bench chest')).toBeNull()
     expect(secondaryMatchForQuery(bench, 'pectorals')).toBeNull()
