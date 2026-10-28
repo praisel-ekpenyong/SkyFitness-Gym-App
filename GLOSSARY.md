@@ -66,6 +66,10 @@ An exercise you created yourself with a primary target muscle and optional secon
 An exercise explicitly starred by the lifter for quick access across the library and exercise pickers.
 _Avoid_: bookmark, starred lift, saved exercise, chosen (which is derived from history)
 
+**Chosen exercise**:
+An exercise present in at least one Routine or logged Workout entry, derived dynamically from profile history for quick access without manual starring.
+_Avoid_: favorite, starred lift
+
 **Primary muscle**:
 The main muscle an exercise is designed to train, receiving full (100%) training stimulus and driving the default muscle categorization.
 _Avoid_: target muscle, main muscle
