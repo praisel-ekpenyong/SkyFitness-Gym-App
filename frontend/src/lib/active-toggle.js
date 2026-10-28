@@ -173,9 +173,7 @@ export function toggleActiveSet(S, entryIdx, setIdx) {
       // genuinely new progress, so re-checking finished work never cuts rest short.
       if (unitDone) shouldStopRest = true
       if (!unit || unit.length <= 1) {
-        if (!unitDone) {
-          shouldRest = true
-        } else if (!isLastUnit) {
+        if (!unitDone || !isLastUnit) {
           shouldRest = true
         }
       } else {
