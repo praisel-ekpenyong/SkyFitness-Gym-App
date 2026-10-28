@@ -159,6 +159,32 @@ describe('Workout set completion flow', () => {
     expect(mocks.S.active.cur).toBe(1)
     expect(mocks.startRest).toHaveBeenCalledWith(90)
   })
+
+  it('starts rest when ticking the final set of a solo exercise if another exercise follows, leaving it selected for the top-weight sheet', async () => {
+    await mount([
+      exercise('plain-bench', [true, false]),
+      exercise('plain-squat', [false, false]),
+    ])
+    await toggleSet(1)
+
+    expect(mocks.topWeightSheet).toHaveBeenCalledWith(0)
+    expect(mocks.S.active.cur).toBe(0)
+    expect(mocks.stopRest).toHaveBeenCalledOnce()
+    expect(mocks.startRest).toHaveBeenCalledWith(90)
+
+    mocks.startRest.mockClear()
+    mocks.stopRest.mockClear()
+
+    // Unchecking does not restart or stop rest
+    await toggleSet(1)
+    expect(mocks.startRest).not.toHaveBeenCalled()
+    expect(mocks.stopRest).not.toHaveBeenCalled()
+
+    // Re-checking does not restart or stop rest (high-water mark respected)
+    await toggleSet(1)
+    expect(mocks.startRest).not.toHaveBeenCalled()
+    expect(mocks.stopRest).not.toHaveBeenCalled()
+  })
 })
 
 describe('superset flow survives an exercise being removed mid-session', () => {

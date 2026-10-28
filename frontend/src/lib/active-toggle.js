@@ -175,6 +175,8 @@ export function toggleActiveSet(S, entryIdx, setIdx) {
       if (!unit || unit.length <= 1) {
         if (!unitDone) {
           shouldRest = true
+        } else if (!isLastUnit) {
+          shouldRest = true
         }
       } else {
         const step = supersetFlowStep(A.entries, unit, entryIdx)

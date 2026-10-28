@@ -131,7 +131,7 @@ Adjacent entries paired to be trained back-to-back. Pairing is positional: reord
 _Avoid_: circuit, giant set
 
 **Rest**:
-The recovery interval between sets, or between rounds of a superset.
+The recovery interval between sets, between rounds of a superset, or between exercises.
 _Avoid_: break, rest period, pause
 
 **Rest duration**:

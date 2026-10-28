@@ -179,4 +179,50 @@ describe('manual rest control', () => {
     expect(timerBarText()).toBeNull()
     expect(restControl()).toBeUndefined()
   })
+
+  it('counts down in background behind Top-Weight modal and preserves countdown when tapping Save & next exercise', () => {
+    view = renderWorkoutApp([
+      entry('1001', [{ w: 60, r: 5, done: true }, { w: 60, r: 5, done: false }]),
+      entry('1002', [{ w: 50, r: 5, done: false }]),
+    ])
+
+    click(view.container.querySelectorAll('[role="checkbox"]')[1])
+
+    expect(timerBarText()).toMatch(/^1:30/)
+    act(() => vi.advanceTimersByTime(3000))
+    expect(timerBarText()).toMatch(/^1:27/)
+
+    const saveAndNext = buttonNamed('Save & next exercise')
+    expect(saveAndNext).toBeTruthy()
+
+    click(saveAndNext)
+
+    expect(view.container.textContent).toContain('Exercise 2 / 2')
+    expect(timerBarText()).toMatch(/^1:27/)
+    act(() => vi.advanceTimersByTime(2000))
+    expect(timerBarText()).toMatch(/^1:25/)
+  })
+
+  it('preserves countdown on current view when tapping Just close in Top-Weight modal', () => {
+    view = renderWorkoutApp([
+      entry('1001', [{ w: 60, r: 5, done: true }, { w: 60, r: 5, done: false }]),
+      entry('1002', [{ w: 50, r: 5, done: false }]),
+    ])
+
+    click(view.container.querySelectorAll('[role="checkbox"]')[1])
+
+    expect(timerBarText()).toMatch(/^1:30/)
+    act(() => vi.advanceTimersByTime(3000))
+    expect(timerBarText()).toMatch(/^1:27/)
+
+    const justClose = buttonNamed('Just close')
+    expect(justClose).toBeTruthy()
+
+    click(justClose)
+
+    expect(view.container.textContent).toContain('Exercise 1 / 2')
+    expect(timerBarText()).toMatch(/^1:27/)
+    act(() => vi.advanceTimersByTime(2000))
+    expect(timerBarText()).toMatch(/^1:25/)
+  })
 })
