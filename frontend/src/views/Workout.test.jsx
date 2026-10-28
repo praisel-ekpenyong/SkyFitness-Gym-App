@@ -135,6 +135,22 @@ describe('Workout set completion flow', () => {
     expect(mocks.startRest).toHaveBeenCalledWith(90)
     expect(mocks.stopRest).not.toHaveBeenCalled()
 
+    mocks.startRest.mockClear()
+    mocks.stopRest.mockClear()
+
+    await toggleSet(1)
+    expect(mocks.startRest).toHaveBeenCalledOnce()
+    expect(mocks.stopRest).not.toHaveBeenCalled()
+
+    mocks.startRest.mockClear()
+    mocks.stopRest.mockClear()
+
+    // Final set of the only exercise in session (isLastUnit: true)
+    await toggleSet(2)
+    expect(mocks.topWeightSheet).toHaveBeenCalledWith(0)
+    expect(mocks.stopRest).toHaveBeenCalledOnce()
+    expect(mocks.startRest).not.toHaveBeenCalled()
+
     await unmount()
     vi.clearAllMocks()
     await mount([exercise('plain-treadmill', [false], {
