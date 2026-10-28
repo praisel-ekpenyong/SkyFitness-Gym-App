@@ -90,16 +90,14 @@ export function detachRoutine(s, routineId) {
 /**
  * Classify one date's schedule dot from precomputed inputs.
  *
- * Both call sites (Home week strip, Calendar) already hold the trained
- * lookup (`doneDays` Set / `byDay` map), so the seam takes the precomputed
- * hit rather than rescanning `workouts` per cell. Priority: trained >
- * rescheduled (a live override resolving to a routine) > planned (week
- * schedule hit). A rest override (`ovr` without `effId`) shows no dot.
+ * Seam takes `{ trained, effId, ovr }` (precomputed from `(S, iso)` via
+ * `lib/history.js`) rather than rescanning `workouts` per cell. Priority:
+ * trained > rescheduled (live override resolving to routine) > planned.
+ * A rest override (`ovr` without `effId`) shows no dot.
  *
- * @param {Object} args - Precomputed classification inputs.
- * @param {*} args.trained - Truthy when a workout was logged that date.
- * @param {string|null} args.effId - `effectiveRoutineId` for the date.
- * @param {boolean} args.ovr - `hasEffectiveOverride` for the date.
+ * @param {*} trained - Truthy when a workout was logged that date.
+ * @param {string|null} effId - `effectiveRoutineId` for the date.
+ * @param {boolean} ovr - `hasEffectiveOverride` for the date.
  * @returns {'done'|'ovr'|'plan'|''} Dot class without CSS prefix.
  */
 export function dayStatus({ trained, effId, ovr }) {

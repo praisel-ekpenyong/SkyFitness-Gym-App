@@ -1,3 +1,9 @@
+// Active workout view: orchestrates live workout execution and logging.
+// Owns the active workout screen, set row rendering, rest and hold timer
+// coordination, and interactive bottom sheets for exercise reordering,
+// replacement, and removal. Delegates domain calculations and set row
+// transformations to lib/workout-model.js and active state to store/useStore.js.
+
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
@@ -190,6 +196,15 @@ export function removeActiveExercise(idx) {
   useStore.getState().removeActiveExercise(idx)
 }
 
+/**
+ * Interactive flow to replace an exercise at `idx` in the active workout.
+ *
+ * Prompts for confirmation when sets have already been performed to avoid
+ * accidental data loss, stops any running work timer, then opens the exercise
+ * picker and configuration sheet before committing the replacement in store.
+ *
+ * @param {number} idx - Index of the exercise entry in active workout entries.
+ */
 export function replaceActiveExerciseFlow(idx) {
   const S = useStore.getState().S
   const A = S?.active

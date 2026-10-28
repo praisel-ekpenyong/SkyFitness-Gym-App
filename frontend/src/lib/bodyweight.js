@@ -43,8 +43,10 @@ function writableLog(S) {
  * Record one weigh-in (the sheet write rule: same day overwrites).
  *
  * @param {Object} S - Application state atom.
- * @param {Object} entry - `{ d, w, t? }` weigh-in in the profile unit; `w` must be positive.
- * @param {Object} [opts] - `{ overwrite: true }`; false leaves an existing day alone.
+ * @param {string} d - Calendar date in ISO format ('YYYY-MM-DD').
+ * @param {number} w - Weigh-in value in the profile unit (must be positive).
+ * @param {number} [t] - Optional millisecond timestamp.
+ * @param {boolean} [overwrite=true] - False leaves an existing day alone.
  * @returns {Object} The stored entry for the day.
  */
 export function recordWeighIn(S, { d, w, t } = {}, { overwrite = true } = {}) {

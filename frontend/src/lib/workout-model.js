@@ -1,3 +1,9 @@
+// Workout domain model: pure workout domain helpers for set rows and session state.
+// Owns canonical definitions of work sets vs warm-ups, targets, session progress,
+// set row builders and mutators, and volume and tonnage calculations.
+// Active workout UI orchestration stays in views/Workout.jsx, while progression
+// algorithms live in lib/progression.js.
+
 import { isCardio, isBodyweightEq } from './exercises.js'
 import { isWarmupRow, ensurePlainObject, objectOf } from './warmup.js'
 import { bestKnownWeight } from './active-finish.js'
@@ -276,14 +282,14 @@ export function buildSets(S, cfg, options = {}) {
 export const isWorkSet = set => !isWarmupRow(set)
 
 /**
- * Whether a set was performed (checked off).
+ * Whether a set or row was performed (checked off).
  *
  * GLOSSARY.md: Performed — an unchecked set counts as not having happened,
  * everywhere. Read as truthy: production writes booleans, and a hand-edited
  * `done: 1` counts rather than silently disappearing from the strict readers.
  *
- * @param {Object|null|undefined} set - Set/row object.
- * @returns {boolean} True when the set was checked off.
+ * Parameter: (row) Set or row object with a `done` property.
+ * @returns {boolean} True when the row is checked off (truthy `done`).
  */
 export const isPerformed = set => !!set?.done
 
