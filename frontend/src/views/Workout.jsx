@@ -58,9 +58,10 @@ function Elapsed({ start }) {
 }
 
 /* ---------- one exercise block (reps: weight×reps · time: a held duration · cardio: duration+speed) ---------- */
-function ExerciseBlock({ entryIdx, compact, onToggle, onField, onAddSet, onRemoveSet, onAddWarmup, onRemoveSetAt, onStartTimed, onPairPrev, onPairNext }) {
+function ExerciseBlock({ entryIdx, compact, onToggle, onField, onAddSet, onRemoveSet, onAddWarmup, onRemoveSetAt, onStartTimed, onPairPrev, onPairNext, onReplace }) {
   const S = useStore(s => s.S)
   const working = useUI(s => s.work)
+  const holding = useUI(s => !!s.work)
   const entry = S.active.entries[entryIdx]
   const ex = exOr(entry.id)
   const mode = modeOf({ ...(entry.target || {}), id: entry.id })
@@ -121,7 +122,10 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onAddSet, onRemov
     <Media ex={ex} key={entry.id} compact={compact} minimizable />
     <div className="row between" style={{ marginBottom: 6 }}>
       <h2 style={{ fontSize: compact ? 17 : 20, fontWeight: 600, letterSpacing: '-.02em', textTransform: 'capitalize', lineHeight: 1.2, margin: 0 }}>{ex.n}</h2>
-      <button className="iconbtn" aria-label={t('Details')} onClick={() => exerciseDetailSheet(ex)}><Icon name="info" /></button>
+      <div className="row" style={{ gap: 4 }}>
+        <button className="iconbtn" aria-label={t('Replace exercise')} title={t('Replace exercise')} disabled={holding} onClick={() => onReplace(entryIdx)}><Icon name="shuffle" /></button>
+        <button className="iconbtn" aria-label={t('Details')} onClick={() => exerciseDetailSheet(ex)}><Icon name="info" /></button>
+      </div>
     </div>
     {!compact && (onPairPrev || onPairNext) && <div className="row" style={{ gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
       {onPairPrev && <Button size="xs" variant="tinted" icon="link" title={t('Make superset with previous')} onClick={onPairPrev}>{t('Make superset with previous')}</Button>}
@@ -184,6 +188,44 @@ export function removeActiveExercise(idx) {
   // that was opened first and confirmed after a timed hold started.
   useUI.getState().stopWork()
   useStore.getState().removeActiveExercise(idx)
+}
+
+export function replaceActiveExercise(idx) {
+  if (useUI.getState().work) useUI.getState().stopWork()
+  const S = useStore.getState().S
+  const A = S?.active
+  if (!A) return
+  const entry = A.entries?.[idx]
+  if (!entry) return
+
+  const proceedToPicker = () => {
+    exercisePicker(newEx => {
+      if (!newEx) return
+      const curS = useStore.getState().S
+      const curA = curS?.active
+      const routine = curS?.routines?.find(r => r.id === curA?.routineId)
+      const plannedCount = (entry.sets || []).filter(s => !isWarmupRow(s)).length || (entry.sets || []).length
+      const seed = !curA?.routineId
+        ? freestyleConfig(curS, { id: newEx.id, ...defaultConfig(newEx.id), sets: plannedCount })
+        : { sets: plannedCount }
+      exConfigSheet(newEx, null, cfg => {
+        useStore.getState().replaceActiveExercise(idx, newEx.id, cfg)
+      }, null, routine, seed)
+    })
+  }
+
+  const hasDone = (entry.sets || []).some(isPerformed)
+  if (hasDone) {
+    confirmSheet({
+      title: t('Replace {0}?', exOr(entry.id).n),
+      message: t('The sets you logged for this exercise in this session will be lost.'),
+      confirmText: t('Replace'),
+      danger: true,
+      onConfirm: proceedToPicker,
+    })
+  } else {
+    proceedToPicker()
+  }
 }
 
 /** Active-workout route body; logs sets for the running session. */
@@ -253,6 +295,23 @@ function ActiveWorkout() {
     } else confirmRemoveExercise(cur)
   }
 
+  const replaceExerciseSheet = () => {
+    if (unit.length > 1) {
+      useUI.getState().openSheet(close => (
+        <div>
+          <h3>{t('Replace exercise')}</h3>
+          <div className="muted small" style={{ marginBottom: 12 }}>{t('Which exercise in this superset do you want to replace?')}</div>
+          <div className="list">
+            {unit.map(idx => <div key={idx} className="item" onClick={() => { close(); replaceActiveExercise(idx) }}>
+              <div className="grow"><div className="tt">{exOr(A.entries[idx]?.id).n}</div></div>
+              <Icon name="chevronRight" />
+            </div>)}
+          </div>
+        </div>
+      ))
+    } else replaceActiveExercise(cur)
+  }
+
   // A timed set is held, not typed. The Hold timer records what was actually held — an early
   // finish logs 0:38 of a 0:45 target rather than crediting the full prescription — and then
   // checks the set off through the normal path, so rest, supersets and the finish prompt all
@@ -311,11 +370,13 @@ function ActiveWorkout() {
           {unit.map((idx, k) => <div key={idx} ref={el => { exRefs.current[idx] = el }} className="ss-ex" data-exidx={idx}>
             {k > 0 && <div className="ss-amp">+</div>}
             <ExerciseBlock entryIdx={idx} compact
-              onToggle={i => toggle(idx, i)} onField={(i, f, v) => setField(idx, i, f, v)} onAddSet={() => addSet(idx)} onRemoveSet={() => removeSet(idx)} onAddWarmup={() => addWarmup(idx)} onRemoveSetAt={i => removeSetAt(idx, i)} onStartTimed={i => startTimed(idx, i)} />
+              onToggle={i => toggle(idx, i)} onField={(i, f, v) => setField(idx, i, f, v)} onAddSet={() => addSet(idx)} onRemoveSet={() => removeSet(idx)} onAddWarmup={() => addWarmup(idx)} onRemoveSetAt={i => removeSetAt(idx, i)} onStartTimed={i => startTimed(idx, i)}
+              onReplace={replaceActiveExercise} />
           </div>)}
         </div>
       ) : (
-        <ExerciseBlock entryIdx={cur} onToggle={i => toggle(cur, i)} onField={(i, f, v) => setField(cur, i, f, v)} onAddSet={() => addSet(cur)} onRemoveSet={() => removeSet(cur)} onAddWarmup={() => addWarmup(cur)} onRemoveSetAt={i => removeSetAt(cur, i)} onStartTimed={i => startTimed(cur, i)} onPairPrev={onPairPrev} onPairNext={onPairNext} />
+        <ExerciseBlock entryIdx={cur} onToggle={i => toggle(cur, i)} onField={(i, f, v) => setField(cur, i, f, v)} onAddSet={() => addSet(cur)} onRemoveSet={() => removeSet(cur)} onAddWarmup={() => addWarmup(cur)} onRemoveSetAt={i => removeSetAt(cur, i)} onStartTimed={i => startTimed(cur, i)} onPairPrev={onPairPrev} onPairNext={onPairNext}
+          onReplace={replaceActiveExercise} />
       )}
     </> : <div className="empty"><div className="ico"><Icon name="shuffle" /></div>{t('Freestyle workout — add your first exercise.')}</div>}
 
@@ -335,7 +396,8 @@ function ActiveWorkout() {
     })} icon="plus">{t('Add exercise')}</Button>
     {A.entries.length > 0 && <>
       <div style={{ height: 6 }} />
-      <div style={{ display: 'flex', justifyContent: 'center' }}>
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 8, flexWrap: 'wrap' }}>
+        <Button size="sm" icon="shuffle" disabled={holding} onClick={replaceExerciseSheet}>{t('Replace exercise')}</Button>
         <Button size="sm" icon="minus" style={{ color: 'var(--red)' }} disabled={holding} onClick={removeExerciseSheet}>{t('Remove exercise')}</Button>
       </div>
     </>}
