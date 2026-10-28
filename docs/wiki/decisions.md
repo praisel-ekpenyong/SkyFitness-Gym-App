@@ -7,7 +7,7 @@ with a pointer to their successor.
 - **2026-10-28 — In-session exercise replacement is strictly session-local, preserving supersets and order.**
   Added `replaceActiveExercise` behind the ADR 0006 lifecycle seam and wired into both
   `RoutineEdit` (template editing) and `Workout` (active session). In an Active workout,
-  the swap leaves the underlying Routine untouched, warns before discarding performed sets,
+  the replacement leaves the underlying Routine untouched, warns before discarding performed sets,
   stops any running hold timer, and seeds fresh rows from the replacement's own history.
   Merged `eb9d6d6` (tickets 01–03 in `.scratch/exercise-replacement/`).
 

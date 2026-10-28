@@ -17,7 +17,7 @@ import { startFlow, exercisePicker, exConfigSheet, exerciseDetailSheet, topWeigh
 import Icon from '../components/Icon.jsx'
 import { Button, Check, NumberField } from '../components/ui.jsx'
 import { glyphOf } from '../lib/glyphs.js'
-import { isWarmupRow, isPerformed } from '../lib/workout-model.js'
+import { isWarmupRow, isPerformed, seedForReplacement } from '../lib/workout-model.js'
 
 /* ---------- start chooser (no active workout) ---------- */
 function StartChooser() {
@@ -190,8 +190,7 @@ export function removeActiveExercise(idx) {
   useStore.getState().removeActiveExercise(idx)
 }
 
-export function replaceActiveExercise(idx) {
-  if (useUI.getState().work) useUI.getState().stopWork()
+export function replaceActiveExerciseFlow(idx) {
   const S = useStore.getState().S
   const A = S?.active
   if (!A) return
@@ -199,18 +198,17 @@ export function replaceActiveExercise(idx) {
   if (!entry) return
 
   const proceedToPicker = () => {
+    if (useUI.getState().work) useUI.getState().stopWork()
     exercisePicker(newEx => {
       if (!newEx) return
       const curS = useStore.getState().S
       const curA = curS?.active
       const routine = curS?.routines?.find(r => r.id === curA?.routineId)
       const plannedCount = (entry.sets || []).filter(s => !isWarmupRow(s)).length || (entry.sets || []).length
-      const seed = !curA?.routineId
-        ? freestyleConfig(curS, { id: newEx.id, ...defaultConfig(newEx.id), sets: plannedCount })
-        : { sets: plannedCount }
+      const seed = seedForReplacement(curS, newEx.id, curA?.routineId, plannedCount)
       exConfigSheet(newEx, null, cfg => {
         useStore.getState().replaceActiveExercise(idx, newEx.id, cfg)
-      }, null, routine, seed)
+      }, null, routine, seed, null, t('Replace'))
     })
   }
 
@@ -302,14 +300,14 @@ function ActiveWorkout() {
           <h3>{t('Replace exercise')}</h3>
           <div className="muted small" style={{ marginBottom: 12 }}>{t('Which exercise in this superset do you want to replace?')}</div>
           <div className="list">
-            {unit.map(idx => <div key={idx} className="item" onClick={() => { close(); replaceActiveExercise(idx) }}>
+            {unit.map(idx => <div key={idx} className="item" onClick={() => { close(); replaceActiveExerciseFlow(idx) }}>
               <div className="grow"><div className="tt">{exOr(A.entries[idx]?.id).n}</div></div>
               <Icon name="chevronRight" />
             </div>)}
           </div>
         </div>
       ))
-    } else replaceActiveExercise(cur)
+    } else replaceActiveExerciseFlow(cur)
   }
 
   // A timed set is held, not typed. The Hold timer records what was actually held — an early
@@ -371,12 +369,12 @@ function ActiveWorkout() {
             {k > 0 && <div className="ss-amp">+</div>}
             <ExerciseBlock entryIdx={idx} compact
               onToggle={i => toggle(idx, i)} onField={(i, f, v) => setField(idx, i, f, v)} onAddSet={() => addSet(idx)} onRemoveSet={() => removeSet(idx)} onAddWarmup={() => addWarmup(idx)} onRemoveSetAt={i => removeSetAt(idx, i)} onStartTimed={i => startTimed(idx, i)}
-              onReplace={replaceActiveExercise} />
+              onReplace={replaceActiveExerciseFlow} />
           </div>)}
         </div>
       ) : (
         <ExerciseBlock entryIdx={cur} onToggle={i => toggle(cur, i)} onField={(i, f, v) => setField(cur, i, f, v)} onAddSet={() => addSet(cur)} onRemoveSet={() => removeSet(cur)} onAddWarmup={() => addWarmup(cur)} onRemoveSetAt={i => removeSetAt(cur, i)} onStartTimed={i => startTimed(cur, i)} onPairPrev={onPairPrev} onPairNext={onPairNext}
-          onReplace={replaceActiveExercise} />
+          onReplace={replaceActiveExerciseFlow} />
       )}
     </> : <div className="empty"><div className="ico"><Icon name="shuffle" /></div>{t('Freestyle workout — add your first exercise.')}</div>}
 

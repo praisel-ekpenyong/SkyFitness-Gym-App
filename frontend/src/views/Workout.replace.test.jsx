@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { act } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { replaceActiveExercise } from './Workout.jsx'
+import { replaceActiveExerciseFlow } from './Workout.jsx'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { entry, resetViewTestState, seedActiveWorkout, renderWorkoutApp, cleanupViewTest } from '../test/view-harness.jsx'
@@ -107,12 +107,14 @@ describe('Workout unperformed entry replacement', () => {
     })
 
     expect(mocks.exConfigSheet).toHaveBeenCalledOnce()
-    const [exArg, existingArg, onSave, onDeleteArg, routineArg, seedArg] = mocks.exConfigSheet.mock.calls[0]
+    const [exArg, existingArg, onSave, onDeleteArg, routineArg, seedArg, onReplaceArg, actionLabelArg] = mocks.exConfigSheet.mock.calls[0]
     expect(exArg).toEqual(newEx)
     expect(existingArg).toBeNull()
     expect(onDeleteArg).toBeNull()
     expect(routineArg).toBeUndefined()
     expect(seedArg).toEqual(expect.objectContaining({ sets: 2 }))
+    expect(onReplaceArg).toBeNull()
+    expect(actionLabelArg).toBe('Replace')
 
     // Saving config commits the replacement via store
     act(() => {
@@ -148,6 +150,13 @@ describe('Workout unperformed entry replacement', () => {
     act(() => {
       useStore.getState().update(s => {
         s.routines = [{ id: routineId, name: 'Leg Day', ex: [{ id: '1001', sets: 3 }] }]
+        s.workouts = [
+          {
+            d: '2026-10-01',
+            routineId,
+            entries: [{ id: '1003', target: { sets: 3, reps: 12, weight: 100 }, sets: [{ w: 100, r: 12, done: true }] }],
+          },
+        ]
         s.active.routineId = routineId
       })
     })
@@ -160,9 +169,10 @@ describe('Workout unperformed entry replacement', () => {
     })
 
     expect(mocks.exConfigSheet).toHaveBeenCalledOnce()
-    const [, , onSave, , routineArg, seedArg] = mocks.exConfigSheet.mock.calls[0]
+    const [, , onSave, , routineArg, seedArg, , actionLabelArg] = mocks.exConfigSheet.mock.calls[0]
     expect(routineArg).toEqual(expect.objectContaining({ id: routineId }))
-    expect(seedArg).toEqual({ sets: 2 }) // 2 non-warmup work sets
+    expect(seedArg).toEqual(expect.objectContaining({ sets: 2, reps: 12, weight: 100 })) // pre-seeded from routine history + 2 work sets
+    expect(actionLabelArg).toBe('Replace')
 
     act(() => {
       onSave({ sets: 2, reps: 10, weight: 120 })
@@ -225,15 +235,52 @@ describe('Workout performed entry replacement', () => {
 })
 
 describe('Hold timer halted on replace', () => {
-  it('halts any running hold timer prior to replacement', () => {
+  it('halts any running hold timer prior to replacement when no confirmation is needed', () => {
     seedActiveWorkout([entry('1001')])
     const timerCallback = vi.fn()
     useUI.getState().startWork(30, 'Plank', timerCallback)
     expect(useUI.getState().work).not.toBeNull()
 
-    replaceActiveExercise(0)
+    replaceActiveExerciseFlow(0)
 
     expect(useUI.getState().work).toBeNull()
+  })
+
+  it('does not halt hold timer when confirmation sheet is shown, only halts when confirmed', () => {
+    seedActiveWorkout([
+      entry('1001', [{ w: 60, r: 5, done: true }])
+    ])
+    const timerCallback = vi.fn()
+    useUI.getState().startWork(30, 'Plank', timerCallback)
+    expect(useUI.getState().work).not.toBeNull()
+
+    replaceActiveExerciseFlow(0)
+
+    // Confirmation sheet shown, hold timer must still be running!
+    expect(mocks.confirmSheet).toHaveBeenCalledOnce()
+    expect(useUI.getState().work).not.toBeNull()
+
+    // Confirming replacement halts the timer
+    const confirmOpts = mocks.confirmSheet.mock.calls[0][0]
+    act(() => {
+      confirmOpts.onConfirm()
+    })
+
+    expect(useUI.getState().work).toBeNull()
+  })
+
+  it('leaves hold timer running if confirmation is cancelled', () => {
+    seedActiveWorkout([
+      entry('1001', [{ w: 60, r: 5, done: true }])
+    ])
+    const timerCallback = vi.fn()
+    useUI.getState().startWork(30, 'Plank', timerCallback)
+    expect(useUI.getState().work).not.toBeNull()
+
+    replaceActiveExerciseFlow(0)
+
+    expect(mocks.confirmSheet).toHaveBeenCalledOnce()
+    expect(useUI.getState().work).not.toBeNull()
   })
 })
 
