@@ -260,11 +260,15 @@ function noProgressSince(sessions, start, progressed) {
   return n
 }
 
+// An unticked set reads 0, so the aim falls back to the bottom of the range rather than
+// asking for the same missed number again.
+const aimUp = (range, low) => Math.min(range.top, Math.max(range.bottom, (low || 0) + range.step))
+
 // Double progression's Stall: neither a top hit nor Rep progress against the previous
 // session's aim. The Run baseline is excluded; a progress session clears the chain.
-function doubleNoProgress(sessions, start, top, bottom, step) {
+function doubleNoProgress(sessions, start, range) {
   return noProgressSince(sessions, start, (s, prev) => {
-    const aim = Math.min(top, Math.max(bottom, (prev.low || 0) + step))
+    const aim = aimUp(range, prev.low)
     return s.ok || (s.enough && s.low >= aim)
   })
 }
@@ -324,7 +328,6 @@ function timeNoProgress(sessions, start, cfg, inc) {
  * - `low`: (reps mode) lowest completed reps across judged sets (used for double progression);
  *   (time mode) lowest hold, with an unticked set reading 0.
  * - `amrap`: (reps mode) completed reps on the final judged set (used for Greyskull LP double jumps).
- * - `planned`: number of planned Work sets the judgement read.
  * - `enough`: whether the Entry carried every planned Work set (bonus sets do not hurt).
  *
  * Entries created prior to v1.2.2 lack a stored `target` and are evaluated against `fallback`
@@ -353,7 +356,7 @@ export function readSession(entry, fallback) {
     const goal = target.sec || 0
     const held = judged.map(s => (isPerformed(s) ? (s.sec || 0) : 0))
     return {
-      mode, goal, held, planned, enough,
+      mode, goal, held, enough,
       weight: Math.max(0, ...judged.filter(isPerformed).map(s => s.w || 0)),
       best: Math.max(0, ...held),
       low: held.length ? Math.min(...held) : 0,
@@ -367,7 +370,7 @@ export function readSession(entry, fallback) {
   // (bodyweight progression). The target weight may stand in only for the null.
   const weight = performed.length ? Math.max(0, ...performed.map(s => s.w || 0)) : null
   return {
-    mode, goal, reps, planned, enough,
+    mode, goal, reps, enough,
     weight,
     // Judged Work sets only: bonus sets beyond the plan count toward volume/fatigue
     // (read from the raw rows elsewhere) but must never leak into added-set growth (#33).
@@ -385,7 +388,8 @@ export function readSession(entry, fallback) {
  * @param {Object} S - Application state atom containing `workouts` array.
  * @param {string} exId - Exercise identifier from EXIDX.
  * @param {Object} [fallback] - Fallback routine configuration passed to `readSession`.
- * @returns {Array<Object>} Chronological array of judged sessions with workout date `d` attached.
+ * @returns {Array<Object>} Chronological array of judged sessions, each carrying the judged
+ * summary plus the workout date `d`, frozen `target` and recorded `plan`.
  */
 export function sessionsFor(S, exId, fallback) {
   const out = []
@@ -400,7 +404,6 @@ export function sessionsFor(S, exId, fallback) {
         ...readSession(entry, fallback),
         target: entry.target || null,
         plan: entry.plan || null,
-        routineId: w.routineId || null,
       })
     }
   })
@@ -510,6 +513,10 @@ export function nextPrescription(S, cfg, routine) {
     return { policy, kind: 'hold', sec: aim, why: ['Last time came up short — aim for {0}s and build from there.', aim] }
   }
 
+  // Deliberately not `loadOf`: that helper reads the frozen Target, which for a bodyweight
+  // exercise can legitimately be 0 even after the lifter has added weight. When nothing was
+  // performed, the Prescription's load and then the current plan are the only readings that
+  // say what was actually being attempted.
   const w = last.weight ?? last.plan?.weight ?? cfg.weight ?? 0
   // Bodyweight work carries no external load, so there is nothing to add or take away —
   // "deload your push-ups to 2.5 kg" is not advice. Progress in reps instead. This runs ahead
@@ -561,6 +568,7 @@ export function nextPrescription(S, cfg, routine) {
       ? Math.min(cfg.repsMin, top)
       : Math.max(1, top - 2)
     const step = repStep(cfg)
+    const range = { top, bottom, step }
     if (last.ok) {
       // An `up` is exact: the announced Increment is the change from the load actually
       // lifted. Snapping from zero made 41 + 2.5 announce 2.5 but move 1.5.
@@ -571,15 +579,15 @@ export function nextPrescription(S, cfg, routine) {
     // Double's Stall is no Rep progress, not "below the top". The current Run starts at the
     // last working-load change; its first session is the baseline and cannot stall.
     const start = runStart(sessions, s => loadOf(s, cfg.weight))
-    const noProgress = doubleNoProgress(sessions, start, top, bottom, step)
+    const noProgress = doubleNoProgress(sessions, start, range)
     if (noProgress >= deloadAt) {
       return asHoldOrDeload(w, inc,
         () => ({ policy, kind: 'hold', weight: w, reps: bottom, why: ['Lightest load — same weight again; build reps or add the smallest plate.'] }),
         dw => ({ policy, kind: 'deload', weight: dw, reps: bottom, why: ['No progress in {0} Workouts — deload to {1} {2}.', noProgress, dw, unit] }))
     }
     // Rep progress is the weakest planned Work set meeting last time's low plus one step,
-    // clamped to the range. An unticked set reads 0 and drops the aim back to the bottom.
-    const aim = Math.min(top, Math.max(bottom, (last.low || 0) + step))
+    // clamped to the range.
+    const aim = aimUp(range, last.low)
     return { policy, kind: 'hold', weight: w, reps: aim, why: ['Same weight — aim for {0} reps this time.', aim] }
   }
 
