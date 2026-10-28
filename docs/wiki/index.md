@@ -19,6 +19,10 @@ commit they were true at; superseded claims are marked, not erased.
 
 - [Process notes](process.md) — how work actually flows here (worktrees, tracker, hooks), including observed deviations.
 
+## Operations
+
+- [Deployments and hosting](deployment.md) — Netlify edge policies, release verification gates, and deployment history.
+
 ## Reviews
 
 - [Review archive](reviews.md) — when each review ran, against what, and where its findings went.
