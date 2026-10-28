@@ -9,6 +9,7 @@ commit they were true at; superseded claims are marked, not erased.
 
 ## Subsystems
 
+- [Software design & architecture](software-design.md) — comprehensive architectural breakdown, module depth, mutation seams, domain invariants, and structural trade-offs.
 - [Progression streams and Runs](progression-streams.md) — how `src/lib/progression.js` reads history, and its residual open questions.
 - [Exercise catalogue search](catalogue-search.md) — matching algorithms, filter evaluation pipeline, secondary attribution, and consumer integration.
 

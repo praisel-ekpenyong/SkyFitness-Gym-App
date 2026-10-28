@@ -3,6 +3,26 @@
 One entry per review event. Findings live in tickets/reports; this page records
 what ran, against what, and where the findings went.
 
+## 2026-10-28 — Comprehensive software design review and architectural re-analysis
+
+- **Scope:** Full application audit covering Active Workout Lifecycle, Domain Engine (Progression, Recovery, 1RM, Effort), Persistence & Dual-Write Protocol, Catalogue Query & Muscle Indexing, and View/Sheet Component Architecture at commit `14332f7`.
+- **Method:** Three specialist subagents:
+  - Lifecycle & Store Architecture Specialist (`ad3fdd84-62f7-46be-9731-4c9ab302fbcf`)
+  - Domain Engine & Persistence Specialist (`e3762b1d-e88b-4dc6-822c-b33c825effc7`)
+  - Catalogue & Client Layer Specialist (`e84f10f1-29c4-4113-a088-c1d84eaeb24f`)
+- **Domain Docs & ADRs:** `docs/architecture.md`, `GLOSSARY.md`, `DESIGN.md`, ADRs 0001 through 0013.
+- **Outcome:** Architectural synthesis recorded in [Software design & architecture](software-design.md).
+  - **Module Depth:** Identified exemplary deep modules (`active-toggle.js`, `active-finish.js`, `catalogue-query.js`, `recovery.js`) and shallow pass-through bloat (`useStore.js` with 17 wrapper actions, `active-sets.js`, and `sheets.jsx` with procedural setter injection).
+  - **Critical Hazards Identified:**
+    1. *Phantom High-Water Mark (`entry.hw`)*: `removeActiveSet` fails to clamp `entry.hw` when a completed set is removed, permanently disabling inter-exercise rest and superset progression for that entry.
+    2. *Orphaned Timed Holds*: Session discard and finish handlers call `stopRest()` but omit `stopWork()`, leaving ghost timers running in `useUI` over nullified sessions.
+    3. *Timed Hold Set Surgery Shift*: Deleting warm-up sets during an active timed hold shifts row indices while timer callback retains captured index, mutating the wrong set upon completion.
+    4. *Unit-Blind History in Progression*: `sessionsFor` does not convert `s.w` based on `workout.unit` vs `S.unit`, distorting linear progression by 2.2x or 0.45x upon unit toggle.
+    5. *Hardcoded Key Duplication*: `RESTORE_TOP_KEYS` in `storage.js` manually duplicates `DEF` with no automated parity check, creating silent data-loss hazard on backup restores.
+    6. *Un-memoized History Walking in `ExercisePicker`*: Direct call to `queryCatalogue` in `sheets/catalogue.jsx` re-scans the entire workout history on every keystroke.
+    7. *Accessibility Gaps*: Missing `aria-labelledby` on sheet dialogs, missing `#root` `inert` trapping during open modals, and missing `aria-pressed` on filter chips.
+- **Disposition:** Synthesized into [Software design & architecture](software-design.md). Tactical invariant fixes and strategic environmental guardrails formulated for execution.
+
 ## 2026-10-28 — Two-axis review: tokenized catalogue search
 
 - **Range:** `ef34ca0...HEAD` at `75acfa2` (implementer commit `78124e6`).
