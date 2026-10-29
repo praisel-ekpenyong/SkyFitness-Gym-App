@@ -290,6 +290,20 @@ export const useStore = create((set, get) => {
       get().update(s => { ok = syncRoutineFromSession(s, routineId, syncedEx) })
       return ok
     },
+    updateActiveExerciseNote(entryIdx, note) {
+      get().update(s => {
+        if (!s.active?.entries?.[entryIdx]) return
+        const entry = s.active.entries[entryIdx]
+        const clean = typeof note === 'string' ? note.trim().slice(0, 500) : ''
+        if (clean) {
+          entry.notes = clean
+          if (entry.target) entry.target.notes = clean
+        } else {
+          delete entry.notes
+          if (entry.target) delete entry.target.notes
+        }
+      })
+    },
 
     /**
      * Initialize store during application launch.
