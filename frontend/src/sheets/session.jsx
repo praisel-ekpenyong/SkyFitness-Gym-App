@@ -8,7 +8,7 @@ import { playWorkoutComplete } from '../lib/sound.js'
 import { t } from '../lib/i18n.js'
 import { nav } from '../lib/nav.js'
 import Icon from '../components/Icon.jsx'
-import { Button, Switch } from '../components/ui.jsx'
+import { Button, Switch, TextArea } from '../components/ui.jsx'
 import BodyMap from '../components/BodyMap.jsx'
 import { loadOfWorkouts } from '../lib/muscles.js'
 import { bestKnownWeight, heaviestSetWeight, peekWeightCommit } from '../lib/active-workout.js'
@@ -126,6 +126,53 @@ function TopWeight({ entryIdx, close }) {
 }
 /** Opens the top-weight confirmation for the given entry. */
 export const topWeightSheet = entryIdx => ui().openSheet(close => <TopWeight entryIdx={entryIdx} close={close} />)
+
+/**
+ * In-session exercise note sheet: allows reading, editing, or clearing an exercise's setup/cues.
+ *
+ * @param {number} entryIdx Active entry index.
+ * @param {Function} close Closes the sheet.
+ */
+export function ExerciseNoteSheet({ entryIdx, close }) {
+  const st = useStore(s => s.S)
+  const A = st.active
+  const entry = A?.entries?.[entryIdx]
+  const ex = entry && (EXIDX[entry.id] || { n: entry.id })
+  const [val, setVal] = useState(entry?.notes || '')
+  useEffect(() => { if (!entry) close() }, [!entry, close])
+
+  if (!entry || !ex) return null
+
+  const save = () => {
+    useStore.getState().updateActiveExerciseNote(entryIdx, val)
+    close()
+  }
+
+  const clear = () => {
+    useStore.getState().updateActiveExerciseNote(entryIdx, '')
+    close()
+  }
+
+  return <>
+    <h3>{t('Note')} · {ex.n}</h3>
+    <TextArea
+      autoFocus
+      aria-label={t('Exercise note')}
+      placeholder={t('Notes, cues, or machine setup...')}
+      maxLength={500}
+      value={val}
+      onChange={e => setVal(e.target.value)}
+    />
+    <div className="small dim" style={{ textAlign: 'right', marginTop: 4, marginBottom: 14 }}>{val.length}/500</div>
+    <Button variant="primary" onClick={save}>{t('Save note')}</Button>
+    {entry.notes ? <>
+      <div style={{ height: 8 }} />
+      <Button variant="ghost" className="dim" onClick={clear}>{t('Clear note')}</Button>
+    </> : null}
+  </>
+}
+/** Opens the exercise note sheet for the given active entry. */
+export const exerciseNoteSheet = entryIdx => ui().openSheet(close => <ExerciseNoteSheet entryIdx={entryIdx} close={close} />)
 
 // Shown when the last exercise's last set is checked — finish, or keep going.
 function WorkoutComplete({ close }) {

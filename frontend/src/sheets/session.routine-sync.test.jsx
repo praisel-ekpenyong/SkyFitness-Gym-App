@@ -254,4 +254,146 @@ describe('FinishSummary Routine Sync UI Integration', () => {
     expect(closeSheet).toHaveBeenCalled()
     expect(navTarget).toBe('/home')
   })
+
+  it('detects in-session note updates as note updated in FinishSummary change tags, and committing updates S.routines', async () => {
+    useStore.setState({
+      S: {
+        ...DEF,
+        routines: [
+          {
+            id: 'routine-push',
+            name: 'Push Day',
+            ex: [
+              { id: '0025', sets: 3, notes: 'Seat height 5' },
+            ],
+          },
+        ],
+        workouts: [],
+        exWeights: {},
+        active: {
+          id: 'active-1',
+          d: '2026-10-29',
+          start: 1000,
+          routineId: 'routine-push',
+          name: 'Push Day',
+          bw: null,
+          unit: 'kg',
+          cur: 0,
+          entries: [
+            {
+              id: '0025',
+              notes: 'Seat height 6, pin 8',
+              sets: [
+                { w: 80, r: 5, done: true },
+                { w: 80, r: 5, done: true },
+                { w: 80, r: 5, done: true },
+              ],
+              target: { sets: 3, reps: 5, notes: 'Seat height 6, pin 8' },
+            },
+          ],
+        },
+      },
+    })
+
+    await act(async () => {
+      finishWorkout()
+    })
+
+    const sheets = useUI.getState().sheets
+    expect(sheets.length).toBe(1)
+
+    const closeSheet = vi.fn()
+    await act(async () => {
+      root.render(sheets[0].render(closeSheet))
+    })
+
+    const badge = container.querySelector('.card .tag')
+    expect(badge).not.toBeNull()
+    expect(badge.textContent).toBe('Barbell Bench Press: note updated')
+
+    const toggle = container.querySelector('button[role="switch"]')
+    await act(async () => {
+      toggle.click()
+    })
+    const niceBtn = Array.from(container.querySelectorAll('button')).find(b => b.textContent.includes('Nice!'))
+    await act(async () => {
+      niceBtn.click()
+    })
+
+    const updated = useStore.getState().S.routines.find(r => r.id === 'routine-push')
+    expect(updated.ex[0].notes).toBe('Seat height 6, pin 8')
+    expect(useUI.getState().toastMsg).toBe('Routine “Push Day” updated')
+    expect(closeSheet).toHaveBeenCalled()
+    expect(navTarget).toBe('/home')
+  })
+
+  it('detects in-session note removal as note removed in FinishSummary change tags, and committing removes note in S.routines', async () => {
+    useStore.setState({
+      S: {
+        ...DEF,
+        routines: [
+          {
+            id: 'routine-push',
+            name: 'Push Day',
+            ex: [
+              { id: '0025', sets: 3, notes: 'Old cue to remove' },
+            ],
+          },
+        ],
+        workouts: [],
+        exWeights: {},
+        active: {
+          id: 'active-1',
+          d: '2026-10-29',
+          start: 1000,
+          routineId: 'routine-push',
+          name: 'Push Day',
+          bw: null,
+          unit: 'kg',
+          cur: 0,
+          entries: [
+            {
+              id: '0025',
+              sets: [
+                { w: 80, r: 5, done: true },
+                { w: 80, r: 5, done: true },
+                { w: 80, r: 5, done: true },
+              ],
+              target: { sets: 3, reps: 5 },
+            },
+          ],
+        },
+      },
+    })
+
+    await act(async () => {
+      finishWorkout()
+    })
+
+    const sheets = useUI.getState().sheets
+    expect(sheets.length).toBe(1)
+
+    const closeSheet = vi.fn()
+    await act(async () => {
+      root.render(sheets[0].render(closeSheet))
+    })
+
+    const badge = container.querySelector('.card .tag')
+    expect(badge).not.toBeNull()
+    expect(badge.textContent).toBe('Barbell Bench Press: note removed')
+
+    const toggle = container.querySelector('button[role="switch"]')
+    await act(async () => {
+      toggle.click()
+    })
+    const niceBtn = Array.from(container.querySelectorAll('button')).find(b => b.textContent.includes('Nice!'))
+    await act(async () => {
+      niceBtn.click()
+    })
+
+    const updated = useStore.getState().S.routines.find(r => r.id === 'routine-push')
+    expect(updated.ex[0].notes).toBeUndefined()
+    expect('notes' in updated.ex[0]).toBe(false)
+  })
 })
+
