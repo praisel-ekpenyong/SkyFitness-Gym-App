@@ -480,7 +480,7 @@ export const dayAssignSheet = day => ui().openSheet(close => <DayAssign day={day
  * @param {Object} w - Completed workout entity from `S.workouts`.
  * @param {Function} close - Sheet closer.
  */
-function WorkoutDetail({ w, close }) {
+export function WorkoutDetail({ w, close }) {
   const st = useStore(s => s.S)
   return <>
     <h3>{w.name}</h3>
@@ -490,7 +490,9 @@ function WorkoutDetail({ w, close }) {
       return <div key={i} className="row" style={{ marginBottom: 12, alignItems: 'flex-start' }}>
         {ex && <Thumb ex={ex} />}
         <div className="grow"><div className="tt capitalize" style={{ fontWeight: 600 }}>{ex ? ex.n : (e.n || e.id)} {w.prs && w.prs.includes(e.id) && <span className="pr"><Icon name="trophy" />PR</span>}</div>
-          <div className="ss">{e.sets.filter(s => s.done).map(s => setLabel(e.id, s, e.target)).join('  ·  ') || t('no sets')}</div></div>
+          <div className="ss">{e.sets.filter(s => s.done).map(s => setLabel(e.id, s, e.target)).join('  ·  ') || t('no sets')}</div>
+          {e.notes && <div className="exnote" style={{ margin: '6px 0 0', padding: '6px 10px', fontSize: 13, lineHeight: 1.4 }}>{e.notes}</div>}
+        </div>
       </div>
     })}
     <Button variant="danger" onClick={() => confirmSheet({ title: t('Delete workout?'), message: t('This removes it from your history for good.'), confirmText: t('Delete'), danger: true, onConfirm: () => { update(s => { deleteWorkout(s, w.id) }); close(); toast(t('Workout deleted')) } })}>{t('Delete workout')}</Button>

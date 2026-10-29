@@ -2,7 +2,7 @@
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { RecapSheet, recapSheet, finishWorkout } from './sheets.jsx'
+import { RecapSheet, recapSheet, finishWorkout, workoutDetailSheet } from './sheets.jsx'
 import { useStore, DEF } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
 
@@ -148,3 +148,44 @@ describe('finishWorkout confirmation', () => {
     expect(container.textContent).toContain('warm-up sets are ticked')
   })
 })
+
+describe('WorkoutDetail', () => {
+  it('renders exercise notes beneath completed sets when present', async () => {
+    const workout = {
+      id: 'w-1',
+      name: 'Push Day',
+      d: '2026-03-01',
+      start: 1000,
+      end: 4000,
+      entries: [
+        {
+          id: '0025',
+          sets: [{ w: 80, r: 8, done: true }],
+          notes: 'Right shoulder felt tight on set 2',
+        },
+        {
+          id: '0047',
+          sets: [{ w: 0, r: 15, done: true }],
+        },
+      ],
+    }
+
+    await act(async () => {
+      workoutDetailSheet(workout)
+    })
+    const sheet = useUI.getState().sheets.at(-1)
+    expect(sheet).toBeTruthy()
+    await act(async () => {
+      root.render(sheet.render(vi.fn()))
+    })
+
+    const noteDiv = container.querySelector('.exnote')
+    expect(noteDiv).toBeTruthy()
+    expect(noteDiv.textContent).toBe('Right shoulder felt tight on set 2')
+
+    const exRows = container.querySelectorAll('.row')
+    expect(exRows[0].querySelector('.exnote')?.textContent).toBe('Right shoulder felt tight on set 2')
+    expect(exRows[1].querySelector('.exnote')).toBeNull()
+  })
+})
+
