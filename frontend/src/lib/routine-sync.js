@@ -27,6 +27,19 @@ function toTitleCase(str) {
 }
 
 /**
+ * Clean and normalize an exercise note string.
+ *
+ * Trims whitespace, clamps to 500 characters, returns empty string when omitted/blank.
+ *
+ * @param {*} str - Raw note value.
+ * @returns {string} Trimmed note or empty string.
+ */
+function cleanNote(str) {
+  if (typeof str !== 'string') return ''
+  return str.trim().slice(0, 500)
+}
+
+/**
  * Resolve the human-readable display name for an exercise.
  *
  * Queries embedded item names, custom exercise records in `EXIDX`, catalogue entries,
@@ -277,6 +290,13 @@ export function diffRoutineWithSession(routine, activeSession) {
       delete projected.sg
     }
 
+    const note = cleanNote(entry.notes)
+    if (note) {
+      projected.notes = note
+    } else {
+      delete projected.notes
+    }
+
     return projected
   })
 
@@ -317,10 +337,33 @@ export function diffRoutineWithSession(routine, activeSession) {
     }
   }
 
+  // 5. Detect exercise note adjustments
+  const noteChanges = []
+  for (const entry of sessionEntries) {
+    if (additions.includes(entry.id)) continue
+    if (replacements.some(r => r.to === entry.id)) continue
+
+    const orig = routineExercises.find(e => e.id === entry.id)
+    if (!orig) continue
+
+    const sessionNote = cleanNote(entry.notes)
+    const origNote = cleanNote(orig.notes)
+
+    if (sessionNote !== origNote) {
+      const name = exerciseDisplayName(entry.id, entry)
+      if (sessionNote) {
+        noteChanges.push(`${name}: note updated`)
+      } else {
+        noteChanges.push(`${name}: note removed`)
+      }
+    }
+  }
+
   const changes = [
     ...structuralChanges,
     ...supersetChanges,
     ...setCountChanges,
+    ...noteChanges,
   ]
 
   const hasDiff = changes.length > 0
