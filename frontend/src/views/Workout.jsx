@@ -19,7 +19,7 @@ import { fmtNum, fmtDate, fmtSec, fmtElapsed, todayISO, exCount, DAYN } from '..
 import { playSetComplete } from '../lib/sound.js'
 import { t } from '../lib/i18n.js'
 import Media, { Thumb } from '../components/Media.jsx'
-import { startFlow, exercisePicker, exConfigSheet, exerciseDetailSheet, topWeightSheet, finishWorkout, workoutCompleteSheet, confirmSheet } from '../sheets.jsx'
+import { startFlow, exercisePicker, exConfigSheet, exerciseDetailSheet, topWeightSheet, finishWorkout, workoutCompleteSheet, confirmSheet, exerciseNoteSheet } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
 import { Button, Check, NumberField } from '../components/ui.jsx'
 import { glyphOf } from '../lib/glyphs.js'
@@ -129,6 +129,7 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onAddSet, onRemov
     <div className="row between" style={{ marginBottom: 6 }}>
       <h2 style={{ fontSize: compact ? 17 : 20, fontWeight: 600, letterSpacing: '-.02em', textTransform: 'capitalize', lineHeight: 1.2, margin: 0 }}>{ex.n}</h2>
       <div className="row" style={{ gap: 4 }}>
+        <button className="iconbtn" aria-label={entry.notes ? t('Edit note') : t('Add note')} title={entry.notes ? t('Edit note') : t('Add note')} onClick={() => exerciseNoteSheet(entryIdx)}><Icon name={entry.notes ? 'pencil' : 'clipboard'} /></button>
         <button className="iconbtn" aria-label={t('Replace exercise')} title={t('Replace exercise')} disabled={holding} onClick={() => onReplace(entryIdx)}><Icon name="shuffle" /></button>
         <button className="iconbtn" aria-label={t('Details')} onClick={() => exerciseDetailSheet(ex)}><Icon name="info" /></button>
       </div>
@@ -151,6 +152,13 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onAddSet, onRemov
       <Icon name={plan.kind === 'up' ? 'arrowUp' : plan.kind === 'deload' ? 'arrowDown' : 'lightbulb'} />
       <span>{t(...plan.why)}</span>
     </div>}
+    {entry.notes && (
+      <div className="exnote" role="button" tabIndex={0} aria-label={t('Edit note')} onClick={() => exerciseNoteSheet(entryIdx)} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') exerciseNoteSheet(entryIdx) }} style={{ cursor: 'pointer', margin: '4px 0 10px', display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+        <Icon name="clipboard" size={16} style={{ flexShrink: 0, marginTop: 2, color: 'var(--acc)' }} />
+        <div style={{ flex: 1, whiteSpace: 'pre-wrap' }}>{entry.notes}</div>
+        <Icon name="pencil" size={13} style={{ flexShrink: 0, opacity: 0.5, marginTop: 3 }} />
+      </div>
+    )}
     <div className="card" style={{ marginTop: 10, marginBottom: 0 }}>
       {/* the header carries the same eff3 sizing as the rows, or the labels drift off their columns */}
       <div className={'sethead' + (col3 ? ' eff3' : '')}><span className="n-sp" /><span className="w-sp">{col1.hd}</span>{col2 && <span className="r-sp">{col2.hd}</span>}{col3 && <span className="eff-sp">{col3.hd}</span>}{timed && <span className="ck-sp" />}<span className="ck-sp" /></div>

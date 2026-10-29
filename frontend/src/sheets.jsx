@@ -675,7 +675,7 @@ export function WorkoutRow({ w, onClick }) {
 // point so existing callers keep working untouched, and performs the one-line
 // wiring for the injected weigh-in seam (plus hub-owned confirm + weight input
 // to avoid a circular hub↔session import during migration).
-export { startFlow, beginWorkout, topWeightSheet, workoutCompleteSheet, finishWorkout } from './sheets/session.jsx'
+export { startFlow, beginWorkout, topWeightSheet, workoutCompleteSheet, finishWorkout, exerciseNoteSheet } from './sheets/session.jsx'
 configureSessionSheets({ bwSheet, confirmSheet, WeightInput })
 
 /* ============================ catalogue sheets (extracted) ============================ */
