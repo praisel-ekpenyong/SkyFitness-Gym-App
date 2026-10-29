@@ -23,11 +23,14 @@ describe('useStore.updateActiveExerciseNote', () => {
     })
   })
 
-  it('updates entry.notes and entry.target.notes with trimmed note text', () => {
-    useStore.getState().updateActiveExerciseNote(0, '  Seat height 5, pin 8  ')
+  it('updates entry.notes with trimmed note text without mutating entry.target.notes', () => {
+    // Set a frozen routine baseline note on target
+    useStore.getState().S.active.entries[0].target.notes = 'Baseline routine cue'
+    const res = useStore.getState().updateActiveExerciseNote(0, '  Seat height 5, pin 8  ')
+    expect(res).toBe(true)
     const S = useStore.getState().S
     expect(S.active.entries[0].notes).toBe('Seat height 5, pin 8')
-    expect(S.active.entries[0].target.notes).toBe('Seat height 5, pin 8')
+    expect(S.active.entries[0].target.notes).toBe('Baseline routine cue')
   })
 
   it('clamps note text to 500 characters', () => {
@@ -38,20 +41,22 @@ describe('useStore.updateActiveExerciseNote', () => {
     expect(S.active.entries[0].notes).toBe('a'.repeat(500))
   })
 
-  it('removes notes when passed an empty string or whitespace only', () => {
+  it('removes notes when passed an empty string or whitespace only without mutating target', () => {
+    useStore.getState().S.active.entries[0].target.notes = 'Baseline routine cue'
     useStore.getState().updateActiveExerciseNote(0, 'Existing note')
     expect(useStore.getState().S.active.entries[0].notes).toBe('Existing note')
 
-    useStore.getState().updateActiveExerciseNote(0, '   ')
+    const res = useStore.getState().updateActiveExerciseNote(0, '   ')
+    expect(res).toBe(true)
     const S = useStore.getState().S
     expect(S.active.entries[0].notes).toBeUndefined()
-    expect(S.active.entries[0].target.notes).toBeUndefined()
+    expect(S.active.entries[0].target.notes).toBe('Baseline routine cue')
     expect('notes' in S.active.entries[0]).toBe(false)
   })
 
   it('safely ignores non-existent entry index or missing active session', () => {
-    expect(() => useStore.getState().updateActiveExerciseNote(99, 'note')).not.toThrow()
+    expect(useStore.getState().updateActiveExerciseNote(99, 'note')).toBe(false)
     useStore.setState({ S: { ...DEF, active: null } })
-    expect(() => useStore.getState().updateActiveExerciseNote(0, 'note')).not.toThrow()
+    expect(useStore.getState().updateActiveExerciseNote(0, 'note')).toBe(false)
   })
 })

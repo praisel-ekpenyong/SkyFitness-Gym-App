@@ -7,7 +7,7 @@ import {
   replaceActiveExercise, moveActiveExercise, buildActiveEntry,
   updateActiveSetField, addActiveSet, removeActiveSet, addActiveWarmup,
   pairActiveSuperset, unpairActiveSuperset, toggleActiveSet,
-  setActiveIndex, discardActiveSession
+  setActiveIndex, discardActiveSession, updateActiveExerciseNote
 } from './active-workout.js'
 
 const clone = o => JSON.parse(JSON.stringify(o))
@@ -820,6 +820,64 @@ describe('active-workout lifecycle seam', () => {
       expect(replaced.target.notes).toBeUndefined()
       expect(S.active.entries[0].notes).toBeUndefined()
       expect(S.active.entries[0].target.notes).toBeUndefined()
+    })
+
+    it('replaceActiveExercise preserves targetCfg.notes when explicitly supplied', () => {
+      const S = {
+        active: {
+          cur: 0,
+          entries: [
+            {
+              id: '0025',
+              notes: 'Old note',
+              target: { sets: 3, reps: 8, weight: 80, notes: 'Old note' },
+              sets: [{ w: 80, r: 8, done: true }]
+            }
+          ]
+        }
+      }
+
+      const replaced = replaceActiveExercise(S, 0, '0027', {
+        sets: 3, reps: 12, weight: 20, notes: 'Newly typed cue in exConfigSheet'
+      })
+      expect(replaced).toBeDefined()
+      expect(replaced.id).toBe('0027')
+      expect(replaced.notes).toBe('Newly typed cue in exConfigSheet')
+      expect(replaced.target.notes).toBe('Newly typed cue in exConfigSheet')
+      expect(S.active.entries[0].notes).toBe('Newly typed cue in exConfigSheet')
+    })
+
+    it('updateActiveExerciseNote mutates entry.notes without mutating entry.target.notes', () => {
+      const S = {
+        active: {
+          cur: 0,
+          entries: [
+            {
+              id: '0025',
+              notes: 'Initial note',
+              target: { sets: 3, reps: 8, weight: 80, notes: 'Baseline routine note' },
+              sets: [{ w: 80, r: 8, done: false }]
+            }
+          ]
+        }
+      }
+
+      const res = updateActiveExerciseNote(S, 0, '  Adjusted seat to pin 6  ')
+      expect(res).toBe(true)
+      expect(S.active.entries[0].notes).toBe('Adjusted seat to pin 6')
+      // entry.target.notes must remain the frozen baseline from routine!
+      expect(S.active.entries[0].target.notes).toBe('Baseline routine note')
+
+      // Clears note when passed empty/whitespace string
+      expect(updateActiveExerciseNote(S, 0, '   ')).toBe(true)
+      expect(S.active.entries[0].notes).toBeUndefined()
+      expect('notes' in S.active.entries[0]).toBe(false)
+      expect(S.active.entries[0].target.notes).toBe('Baseline routine note')
+
+      // Returns false for out-of-bounds or missing active session
+      expect(updateActiveExerciseNote(S, 99, 'note')).toBe(false)
+      expect(updateActiveExerciseNote(null, 0, 'note')).toBe(false)
+      expect(updateActiveExerciseNote({ active: null }, 0, 'note')).toBe(false)
     })
 
     it('buildCompletedWorkout persists entry.notes onto completed historical entries', () => {
