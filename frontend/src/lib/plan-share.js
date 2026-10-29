@@ -55,6 +55,8 @@ function cleanEx(e) {
   if (e.repsMin != null) o.repsMin = e.repsMin
   if (e.repsMax != null) o.repsMax = e.repsMax
   if (e.sg) o.sg = e.sg
+  const notes = typeof e.notes === 'string' ? e.notes.trim().slice(0, 500) : ''
+  if (notes) o.notes = notes
   return o
 }
 
