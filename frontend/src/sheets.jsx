@@ -491,7 +491,7 @@ export function WorkoutDetail({ w, close }) {
         {ex && <Thumb ex={ex} />}
         <div className="grow"><div className="tt capitalize" style={{ fontWeight: 600 }}>{ex ? ex.n : (e.n || e.id)} {w.prs && w.prs.includes(e.id) && <span className="pr"><Icon name="trophy" />PR</span>}</div>
           <div className="ss">{e.sets.filter(s => s.done).map(s => setLabel(e.id, s, e.target)).join('  ·  ') || t('no sets')}</div>
-          {e.notes && <div className="exnote" style={{ margin: '6px 0 0', padding: '6px 10px', fontSize: 13, lineHeight: 1.4 }}>{e.notes}</div>}
+          {e.notes && <div className="exnote" style={{ margin: '6px 0 0', padding: '6px 10px', fontSize: 14, color: 'var(--label-2)', lineHeight: 1.4 }}>{e.notes}</div>}
         </div>
       </div>
     })}

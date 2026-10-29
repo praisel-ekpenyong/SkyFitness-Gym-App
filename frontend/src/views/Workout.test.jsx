@@ -8,7 +8,8 @@ import { ExerciseNoteSheet } from '../sheets/session.jsx'
 import {
   toggleActiveSet, updateActiveSetField, removeActiveExercise,
   addActiveExercise, addActiveSet, removeActiveSet, addActiveWarmup,
-  pairActiveSuperset, unpairActiveSuperset, setActiveIndex, discardActiveSession
+  pairActiveSuperset, unpairActiveSuperset, setActiveIndex, discardActiveSession,
+  updateActiveExerciseNote
 } from '../lib/active-workout.js'
 
 const mocks = vi.hoisted(() => {
@@ -23,18 +24,7 @@ const mocks = vi.hoisted(() => {
   state.storeSnapshot = () => ({
     S: state.S,
     update: mut => mut(state.S),
-    updateActiveExerciseNote: (entryIdx, note) => {
-      if (!state.S?.active?.entries?.[entryIdx]) return
-      const entry = state.S.active.entries[entryIdx]
-      const clean = typeof note === 'string' ? note.trim().slice(0, 500) : ''
-      if (clean) {
-        entry.notes = clean
-        if (entry.target) entry.target.notes = clean
-      } else {
-        delete entry.notes
-        if (entry.target) delete entry.target.notes
-      }
-    },
+    updateActiveExerciseNote: (entryIdx, note) => updateActiveExerciseNote(state.S, entryIdx, note),
     toggleActiveSet: (entryIdx, setIdx) => toggleActiveSet(state.S, entryIdx, setIdx),
     updateActiveSetField: (entryIdx, setIdx, field, value) => updateActiveSetField(state.S, entryIdx, setIdx, field, value),
     removeActiveExercise: idx => removeActiveExercise(state.S, idx),
@@ -312,10 +302,9 @@ describe('Workout exercise notes and note sheet', () => {
     expect(callout.getAttribute('role')).toBe('button')
     expect(callout.getAttribute('aria-label')).toBe('Edit note')
 
-    // Header row button shows "Edit note"
-    const headerBtn = container.querySelector('button[aria-label="Edit note"]')
-    expect(headerBtn).not.toBeNull()
-    expect(headerBtn.getAttribute('title')).toBe('Edit note')
+    // Header row button is hidden when entry.notes is present
+    const headerBtn = container.querySelector('button[aria-label="Add note"]')
+    expect(headerBtn).toBeNull()
   })
 
   it('renders add note icon button in header when entry.notes is empty, without note callout', async () => {
@@ -328,7 +317,7 @@ describe('Workout exercise notes and note sheet', () => {
     expect(headerBtn.getAttribute('title')).toBe('Add note')
   })
 
-  it('tapping note callout or header note button opens exerciseNoteSheet', async () => {
+  it('tapping note callout opens exerciseNoteSheet', async () => {
     await mount([exercise('0025', [false], { notes: 'Focus on chest squeeze' })])
 
     const callout = container.querySelector('.exnote')
@@ -356,11 +345,12 @@ describe('Workout exercise notes and note sheet', () => {
       callout.dispatchEvent(spaceEv)
     })
     expect(mocks.exerciseNoteSheet).toHaveBeenCalledWith(0)
+  })
 
-    mocks.exerciseNoteSheet.mockClear()
+  it('tapping header note button when note is empty opens exerciseNoteSheet', async () => {
+    await mount([exercise('0025', [false])])
 
-    // Header note button click
-    const headerBtn = container.querySelector('button[aria-label="Edit note"]')
+    const headerBtn = container.querySelector('button[aria-label="Add note"]')
     await act(async () => {
       headerBtn.dispatchEvent(new dom.Event('click', { bubbles: true }))
     })
@@ -408,7 +398,6 @@ describe('Workout exercise notes and note sheet', () => {
     })
 
     expect(mocks.S.active.entries[0].notes).toBe('Seat height 6, pin 9')
-    expect(mocks.S.active.entries[0].target.notes).toBe('Seat height 6, pin 9')
     expect(close).toHaveBeenCalledOnce()
   })
 
@@ -428,7 +417,6 @@ describe('Workout exercise notes and note sheet', () => {
     })
 
     expect(mocks.S.active.entries[0].notes).toBeUndefined()
-    expect(mocks.S.active.entries[0].target?.notes).toBeUndefined()
     expect(close).toHaveBeenCalledOnce()
   })
 })
