@@ -52,6 +52,173 @@ export function exerciseDisplayName(id, item = {}) {
 }
 
 /**
+ * Detect structural differences (replacements, additions, removals, reorderings)
+ * between routine exercises and session entries.
+ *
+ * @param {Array<Object>} routineExercises - Original routine exercises.
+ * @param {Array<Object>} sessionEntries - Active session entries.
+ * @returns {{
+ *   replacements: Array<{from: string, to: string}>,
+ *   additions: Array<string>,
+ *   removals: Array<string>,
+ *   isReordered: boolean,
+ *   changes: Array<string>
+ * }}
+ */
+export function detectStructuralChanges(routineExercises, sessionEntries) {
+  const rIds = routineExercises.map(e => e.id)
+  const sIds = sessionEntries.map(e => e.id)
+
+  const trulyRemoved = rIds.filter(id => !sIds.includes(id))
+  const trulyAdded = sIds.filter(id => !rIds.includes(id))
+
+  const commonR = rIds.filter(id => sIds.includes(id))
+  const commonS = sIds.filter(id => rIds.includes(id))
+  const isReordered = commonR.some((id, idx) => id !== commonS[idx])
+
+  const replacements = []
+  const additions = []
+  const removals = []
+
+  const matchedRemoved = new Set()
+  const matchedAdded = new Set()
+
+  /**
+   * Pair removed and added exercises within slice segments as replacements.
+   *
+   * @param {Array<string>} rSlice - Routine exercise ID slice.
+   * @param {Array<string>} sSlice - Session exercise ID slice.
+   */
+  function pairSegments(rSlice, sSlice) {
+    const rSeg = rSlice.filter(id => trulyRemoved.includes(id) && !matchedRemoved.has(id))
+    const sSeg = sSlice.filter(id => trulyAdded.includes(id) && !matchedAdded.has(id))
+    const pairCount = Math.min(rSeg.length, sSeg.length)
+    for (let k = 0; k < pairCount; k++) {
+      replacements.push({ from: rSeg[k], to: sSeg[k] })
+      matchedRemoved.add(rSeg[k])
+      matchedAdded.add(sSeg[k])
+    }
+  }
+
+  if (rIds.length === sIds.length) {
+    for (let i = 0; i < rIds.length; i++) {
+      if (trulyRemoved.includes(rIds[i]) && trulyAdded.includes(sIds[i])) {
+        replacements.push({ from: rIds[i], to: sIds[i] })
+        matchedRemoved.add(rIds[i])
+        matchedAdded.add(sIds[i])
+      }
+    }
+  } else {
+    let rIdx = 0
+    let sIdx = 0
+    for (const commonId of commonR) {
+      const nextR = rIds.indexOf(commonId, rIdx)
+      const nextS = sIds.indexOf(commonId, sIdx)
+      pairSegments(rIds.slice(rIdx, nextR), sIds.slice(sIdx, nextS))
+      rIdx = nextR + 1
+      sIdx = nextS + 1
+    }
+    pairSegments(rIds.slice(rIdx), sIds.slice(sIdx))
+  }
+
+  for (const id of trulyRemoved) {
+    if (!matchedRemoved.has(id)) removals.push(id)
+  }
+  for (const id of trulyAdded) {
+    if (!matchedAdded.has(id)) additions.push(id)
+  }
+
+  const changes = []
+
+  // Exercise replacements
+  for (const rep of replacements) {
+    const oldName = exerciseDisplayName(rep.from, routineExercises.find(e => e.id === rep.from))
+    const newName = exerciseDisplayName(rep.to, sessionEntries.find(e => e.id === rep.to))
+    changes.push(`⇄ Replaced ${oldName} → ${newName}`)
+  }
+
+  // Added exercises
+  for (const id of additions) {
+    const name = exerciseDisplayName(id, sessionEntries.find(e => e.id === id))
+    changes.push(`+ ${name}`)
+  }
+
+  // Removed exercises
+  for (const id of removals) {
+    const name = exerciseDisplayName(id, routineExercises.find(e => e.id === id))
+    changes.push(`- ${name}`)
+  }
+
+  // Reordered exercises
+  if (isReordered) {
+    changes.push('⇅ Reordered')
+  }
+
+  return {
+    replacements,
+    additions,
+    removals,
+    isReordered,
+    changes,
+  }
+}
+
+/**
+ * Detect superset groupings created, dissolved, or modified between routine and session.
+ *
+ * Maps routine superset items through replacements so an in-place replaced exercise
+ * inside an intact superset doesn't trigger false unlinked/linked superset warnings.
+ *
+ * @param {Array<Object>} routineExercises - Originating routine exercise lineup.
+ * @param {Array<Object>} syncedExercises - Projected exercise lineup with updated superset groups.
+ * @param {Array<Object>} sessionEntries - Active session entries holding exercise metadata.
+ * @param {Array<{from: string, to: string}>} replacements - List of detected exercise replacements.
+ * @returns {Array<string>} List of human-readable superset change descriptors.
+ */
+export function detectSupersetChanges(
+  routineExercises,
+  syncedExercises,
+  sessionEntries,
+  replacements
+) {
+  const repMap = new Map(replacements.map(r => [r.from, r.to]))
+  const routineUnits = supersetUnits(routineExercises).filter(u => u.length >= 2)
+  const sessionUnits = supersetUnits(syncedExercises).filter(u => u.length >= 2)
+
+  const routineSupersets = routineUnits.map(u => u.map(idx => {
+    const origId = routineExercises[idx].id
+    return repMap.get(origId) || origId
+  }))
+  const sessionSupersets = sessionUnits.map(u => u.map(idx => syncedExercises[idx].id))
+
+  const keyOf = ids => ids.join('+')
+  const routineKeys = new Set(routineSupersets.map(keyOf))
+  const sessionKeys = new Set(sessionSupersets.map(keyOf))
+
+  const changes = []
+
+  // Newly paired or altered supersets in session
+  for (let i = 0; i < sessionSupersets.length; i++) {
+    const key = keyOf(sessionSupersets[i])
+    if (!routineKeys.has(key)) {
+      const names = sessionSupersets[i].map(id => exerciseDisplayName(id, sessionEntries.find(e => e.id === id)))
+      changes.push(`Superset: ${names.join(' + ')}`)
+    }
+  }
+
+  // Unpaired supersets
+  for (let i = 0; i < routineSupersets.length; i++) {
+    const key = keyOf(routineSupersets[i])
+    if (!sessionKeys.has(key)) {
+      const names = routineUnits[i].map(idx => exerciseDisplayName(routineExercises[idx].id, routineExercises[idx]))
+      changes.push(`Unlinked superset: ${names.join(' + ')}`)
+    }
+  }
+
+  return changes
+}
+
+/**
  * Evaluate differences between an active workout session and its originating routine,
  * and project the synchronized routine exercise lineup.
  *
@@ -116,143 +283,45 @@ export function diffRoutineWithSession(routine, activeSession) {
   // Ensure contiguous superset integrity
   cleanupSg(syncedEx)
 
-  const rList = routine.ex
-  const sList = activeSession.entries
+  const routineExercises = routine.ex
+  const sessionEntries = activeSession.entries
 
-  const rIds = rList.map(e => e.id)
-  const sIds = sList.map(e => e.id)
+  // 2. Detect structural differences
+  const {
+    replacements,
+    additions,
+    changes: structuralChanges,
+  } = detectStructuralChanges(routineExercises, sessionEntries)
 
-  const trulyRemoved = rIds.filter(id => !sIds.includes(id))
-  const trulyAdded = sIds.filter(id => !rIds.includes(id))
+  // 3. Detect superset modifications
+  const supersetChanges = detectSupersetChanges(
+    routineExercises,
+    syncedEx,
+    sessionEntries,
+    replacements
+  )
 
-  const commonR = rIds.filter(id => sIds.includes(id))
-  const commonS = sIds.filter(id => rIds.includes(id))
-  const isReordered = commonR.some((id, idx) => id !== commonS[idx])
-
-  const replacements = []
-  const additions = []
-  const removals = []
-
-  const matchedRemoved = new Set()
-  const matchedAdded = new Set()
-
-  if (rIds.length === sIds.length) {
-    for (let i = 0; i < rIds.length; i++) {
-      if (trulyRemoved.includes(rIds[i]) && trulyAdded.includes(sIds[i])) {
-        replacements.push({ from: rIds[i], to: sIds[i] })
-        matchedRemoved.add(rIds[i])
-        matchedAdded.add(sIds[i])
-      }
-    }
-  } else {
-    let rIdx = 0
-    let sIdx = 0
-    for (const commonId of commonR) {
-      const nextR = rIds.indexOf(commonId, rIdx)
-      const nextS = sIds.indexOf(commonId, sIdx)
-      const rSeg = rIds.slice(rIdx, nextR).filter(id => trulyRemoved.includes(id) && !matchedRemoved.has(id))
-      const sSeg = sIds.slice(sIdx, nextS).filter(id => trulyAdded.includes(id) && !matchedAdded.has(id))
-      const pairCount = Math.min(rSeg.length, sSeg.length)
-      for (let k = 0; k < pairCount; k++) {
-        replacements.push({ from: rSeg[k], to: sSeg[k] })
-        matchedRemoved.add(rSeg[k])
-        matchedAdded.add(sSeg[k])
-      }
-      rIdx = nextR + 1
-      sIdx = nextS + 1
-    }
-    const rSeg = rIds.slice(rIdx).filter(id => trulyRemoved.includes(id) && !matchedRemoved.has(id))
-    const sSeg = sIds.slice(sIdx).filter(id => trulyAdded.includes(id) && !matchedAdded.has(id))
-    const pairCount = Math.min(rSeg.length, sSeg.length)
-    for (let k = 0; k < pairCount; k++) {
-      replacements.push({ from: rSeg[k], to: sSeg[k] })
-      matchedRemoved.add(rSeg[k])
-      matchedAdded.add(sSeg[k])
-    }
-  }
-
-  for (const id of trulyRemoved) {
-    if (!matchedRemoved.has(id)) removals.push(id)
-  }
-  for (const id of trulyAdded) {
-    if (!matchedAdded.has(id)) additions.push(id)
-  }
-
-  const changes = []
-
-  // Exercise replacements
-  for (const rep of replacements) {
-    const oldName = exerciseDisplayName(rep.from, rList.find(e => e.id === rep.from))
-    const newName = exerciseDisplayName(rep.to, sList.find(e => e.id === rep.to))
-    changes.push(`⇄ Replaced ${oldName} → ${newName}`)
-  }
-
-  // Added exercises
-  for (const id of additions) {
-    const name = exerciseDisplayName(id, sList.find(e => e.id === id))
-    changes.push(`+ ${name}`)
-  }
-
-  // Removed exercises
-  for (const id of removals) {
-    const name = exerciseDisplayName(id, rList.find(e => e.id === id))
-    changes.push(`- ${name}`)
-  }
-
-  // Reordered exercises
-  if (isReordered) {
-    changes.push('⇅ Reordered')
-  }
-
-  // Superset changes
-  // Map routine superset items through replacements so an in-place replaced exercise
-  // inside an intact superset doesn't trigger false unlinked/linked superset warnings.
-  const repMap = new Map(replacements.map(r => [r.from, r.to]))
-  const rUnits = supersetUnits(rList).filter(u => u.length >= 2)
-  const sUnits = supersetUnits(syncedEx).filter(u => u.length >= 2)
-
-  const rSs = rUnits.map(u => u.map(idx => {
-    const origId = rList[idx].id
-    return repMap.get(origId) || origId
-  }))
-  const sSs = sUnits.map(u => u.map(idx => syncedEx[idx].id))
-
-  const keyOf = ids => ids.join('+')
-  const rKeys = new Set(rSs.map(keyOf))
-  const sKeys = new Set(sSs.map(keyOf))
-
-  // Newly paired or altered supersets in session
-  for (let i = 0; i < sSs.length; i++) {
-    const key = keyOf(sSs[i])
-    if (!rKeys.has(key)) {
-      const names = sSs[i].map(id => exerciseDisplayName(id, sList.find(e => e.id === id)))
-      changes.push(`Superset: ${names.join(' + ')}`)
-    }
-  }
-
-  // Unpaired supersets
-  for (let i = 0; i < rSs.length; i++) {
-    const key = keyOf(rSs[i])
-    if (!sKeys.has(key)) {
-      const names = rUnits[i].map(idx => exerciseDisplayName(rList[idx].id, rList[idx]))
-      changes.push(`Unlinked superset: ${names.join(' + ')}`)
-    }
-  }
-
-  // Set count adjustments
-  for (const entry of sList) {
+  // 4. Detect work set count adjustments
+  const setCountChanges = []
+  for (const entry of sessionEntries) {
     if (additions.includes(entry.id)) continue
     if (replacements.some(r => r.to === entry.id)) continue
 
-    const orig = rList.find(e => e.id === entry.id)
+    const orig = routineExercises.find(e => e.id === entry.id)
     if (!orig) continue
 
     const doneCount = doneWorkSets(entry).length
     if (doneCount > 0 && doneCount !== orig.sets) {
       const name = exerciseDisplayName(entry.id, entry)
-      changes.push(`${name}: ${orig.sets} → ${doneCount} sets`)
+      setCountChanges.push(`${name}: ${orig.sets} → ${doneCount} sets`)
     }
   }
+
+  const changes = [
+    ...structuralChanges,
+    ...supersetChanges,
+    ...setCountChanges,
+  ]
 
   const hasDiff = changes.length > 0
 
