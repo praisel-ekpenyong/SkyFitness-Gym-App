@@ -49,6 +49,10 @@ Which routine belongs to each weekday.
 A one-off replacement (or declared rest) for what the week schedule says on one specific date. In lifter-facing UI copy and badges, this is presented as "Rescheduled".
 _Avoid_: re-planning
 
+**Routine sync**:
+Updating an originating Routine from the final state of an Active workout on the workout complete sheet. Syncs structural changes (additions, removals, replacements, reorderings, supersets) and performed work set counts, leaving unperformed exercises intact with planned set counts and leaving progression-managed weights to the progression engine.
+_Avoid_: save workout as routine, auto-update plan
+
 **Plan file**:
 The shareable bundle: routines, the week schedule, and the custom exercises those routines use. Never carries workouts, weigh-ins or settings; importing it adds fresh routines, never overwrites yours.
 _Avoid_: calling it "the plan"
@@ -89,11 +93,11 @@ The placeholder for an id that resolves to nothing — a deleted custom, a forei
 _Avoid_: missing exercise
 
 **Exercise replacement**:
-Swapping an Entry in a Routine or Active workout for a different catalogue exercise. The replacement inherits the original position and superset pairing, seeds targets from its own history, and in an Active workout is strictly session-local (leaving the underlying Routine unchanged and prompting confirmation before discarding any performed sets).
+Swapping an Entry in a Routine or Active workout for a different catalogue exercise. The replacement inherits the original position and superset pairing, seeds targets from its own history, and in an Active workout is session-local during training (leaving the underlying Routine unchanged unless the lifter opts into Routine sync on the workout complete sheet, and prompting confirmation before discarding any performed sets).
 _Avoid_: exercise substitution, exercise swap
 
 **Exercise reordering**:
-Changing the sequence of entries in a routine or an active workout. In an active workout, reordering is strictly session-local, non-destructive, and adheres to positional superset rules.
+Changing the sequence of entries in a routine or an active workout. In an active workout, reordering is session-local during training, non-destructive, and adheres to positional superset rules (with an optional Routine sync on the workout complete sheet).
 _Avoid_: rearranging exercises, exercise rearranging, shuffling
 
 
