@@ -50,7 +50,7 @@ A one-off replacement (or declared rest) for what the week schedule says on one 
 _Avoid_: re-planning
 
 **Routine sync**:
-Updating an originating Routine from the final state of an Active workout on the workout complete sheet. Syncs structural changes (additions, removals, replacements, reorderings, supersets) and performed work set counts, leaving unperformed exercises intact with planned set counts and leaving progression-managed weights to the progression engine.
+Updating an originating Routine from the final state of an Active workout on the workout complete sheet. Syncs structural changes (additions, removals, replacements, reorderings, supersets), performed work set counts, and updated exercise notes, leaving unperformed exercises intact with planned set counts and leaving progression-managed weights to the progression engine.
 _Avoid_: save workout as routine, auto-update plan
 
 **Plan file**:
@@ -99,6 +99,10 @@ _Avoid_: exercise substitution, exercise swap
 **Exercise reordering**:
 Changing the sequence of entries in a routine or an active workout. In an active workout, reordering is session-local during training, non-destructive, and adheres to positional superset rules (with an optional Routine sync on the workout complete sheet).
 _Avoid_: rearranging exercises, exercise rearranging, shuffling
+
+**Exercise note**:
+A free-form text note on an Entry in a Routine or Workout, holding setup cues or session observations.
+_Avoid_: comment, exercise comment, cue (unless describing the text itself)
 
 
 
