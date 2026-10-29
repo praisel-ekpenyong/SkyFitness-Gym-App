@@ -3,18 +3,11 @@
 // Builds the Active workout, moves the cursor, discards the session, and
 // adds/removes Entry objects. Set-level surgery lives in active-sets.js,
 // the toggle decision in active-toggle.js, finishing in active-finish.js.
-import { buildSets, defaultConfig } from './workout-model.js'
+import { buildSets, defaultConfig, cleanNote } from './workout-model.js'
 import { nextPrescription, applyPrescription } from './progression.js'
 import { uid, todayISO } from './format.js'
 import { t } from './i18n.js'
 import { cleanupSg } from './supersetFlow.js'
-
-// Clean a note string: trim whitespace, clamp to 500 characters, omit/undefined when empty.
-function cleanNote(str) {
-  if (typeof str !== 'string') return undefined
-  const trimmed = str.trim()
-  return trimmed.length > 0 ? trimmed.slice(0, 500) : undefined
-}
 
 // Seed rows for a new Prescription. A new Progression stream keeps the Routine's own last
 // working weight but starts at the plan's top reps/seconds; reading the global `exWeights`
@@ -204,11 +197,21 @@ export function replaceActiveExercise(S, idx, newExId, targetCfg = {}) {
   if (!newExId) return null
 
   const oldEntry = S.active.entries[idx]
+  const note = cleanNote(targetCfg.notes)
   const cleanTarget = { ...targetCfg }
-  delete cleanTarget.notes
+  if (note) {
+    cleanTarget.notes = note
+  } else {
+    delete cleanTarget.notes
+  }
   const entry = buildActiveEntry(S, newExId, cleanTarget)
-  delete entry.notes
-  if (entry.target) delete entry.target.notes
+  if (note) {
+    entry.notes = note
+    if (entry.target) entry.target.notes = note
+  } else {
+    delete entry.notes
+    if (entry.target) delete entry.target.notes
+  }
   if (oldEntry && oldEntry.sg != null) {
     entry.sg = oldEntry.sg
   }
@@ -216,6 +219,29 @@ export function replaceActiveExercise(S, idx, newExId, targetCfg = {}) {
   S.active.entries[idx] = entry
   S.active.cur = Math.max(0, Math.min(idx, S.active.entries.length - 1))
   return entry
+}
+
+/**
+ * Update an active exercise entry's note.
+ *
+ * Mutates `entry.notes` in-place using `cleanNote`. Deletes `notes` when empty/whitespace.
+ * Preserves `entry.target.notes` without mutation as the frozen routine baseline.
+ *
+ * @param {Object} S - Application state atom.
+ * @param {number} entryIdx - Index of the exercise entry in `S.active.entries`.
+ * @param {string|null|undefined} noteText - New note text to clean and store.
+ * @returns {boolean} True if entry was found and updated, false otherwise.
+ */
+export function updateActiveExerciseNote(S, entryIdx, noteText) {
+  if (!S?.active?.entries?.[entryIdx]) return false
+  const entry = S.active.entries[entryIdx]
+  const clean = cleanNote(noteText)
+  if (clean) {
+    entry.notes = clean
+  } else {
+    delete entry.notes
+  }
+  return true
 }
 
 /**
