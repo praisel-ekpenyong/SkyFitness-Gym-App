@@ -16,7 +16,8 @@ import {
   createActiveSession, applyWorkingWeight, commitWorkingWeight, completeActiveSession,
   addActiveExercise, removeActiveExercise, replaceActiveExercise, moveActiveExercise, toggleActiveSet,
   updateActiveSetField, addActiveSet, removeActiveSet, addActiveWarmup,
-  pairActiveSuperset, unpairActiveSuperset, setActiveIndex, discardActiveSession
+  pairActiveSuperset, unpairActiveSuperset, setActiveIndex, discardActiveSession,
+  syncRoutineFromSession
 } from '../lib/active-workout.js'
 
 /**
@@ -283,6 +284,11 @@ export const useStore = create((set, get) => {
       let result = null
       get().update(s => { result = completeActiveSession(s) })
       return result
+    },
+    syncRoutineFromSession(routineId, syncedEx) {
+      let ok = false
+      get().update(s => { ok = syncRoutineFromSession(s, routineId, syncedEx) })
+      return ok
     },
 
     /**
