@@ -8,7 +8,7 @@ import { playWorkoutComplete } from '../lib/sound.js'
 import { t } from '../lib/i18n.js'
 import { nav } from '../lib/nav.js'
 import Icon from '../components/Icon.jsx'
-import { Button } from '../components/ui.jsx'
+import { Button, Switch } from '../components/ui.jsx'
 import BodyMap from '../components/BodyMap.jsx'
 import { loadOfWorkouts } from '../lib/muscles.js'
 import { bestKnownWeight, heaviestSetWeight, peekWeightCommit } from '../lib/active-workout.js'
@@ -146,10 +146,22 @@ export const workoutCompleteSheet = () => ui().openSheet(close => <WorkoutComple
  * @param {Object} w Finished workout.
  * @param {Array} prs New weight PR exercise ids.
  * @param {Array} e1prs New estimated-1RM records.
+ * @param {Object|null} routineSync Routine sync descriptor if originating from a routine with changes.
  * @param {Function} close Closes the sheet.
  */
-function FinishSummary({ w, prs, e1prs = [], close }) {
+export function FinishSummary({ w, prs, e1prs = [], routineSync = null, close }) {
   const st = useStore(s => s.S)
+  const [syncChecked, setSyncChecked] = useState(false)
+
+  const onDismiss = () => {
+    if (syncChecked && routineSync?.routineId && routineSync?.syncedEx) {
+      useStore.getState().syncRoutineFromSession(routineSync.routineId, routineSync.syncedEx)
+      toast(t('Routine “{0}” updated', routineSync.routineName))
+    }
+    close()
+    nav('/home')
+  }
+
   return <div style={{ textAlign: 'center', padding: '8px 0' }}>
     <div style={{ fontSize: 44, display: 'flex', justifyContent: 'center', color: 'var(--acc)' }}><Icon name="trophy" /></div>
     <h3 style={{ margin: '8px 0' }}>{t('Workout complete!')}</h3>
@@ -166,7 +178,30 @@ function FinishSummary({ w, prs, e1prs = [], close }) {
     <h4 className="sec" style={{ textAlign: 'left' }}>{t('What you just trained')}</h4>
     <BodyMap load={loadOfWorkouts([w])} body={st.body} />
     <div style={{ height: 14 }} />
-    <Button variant="primary" onClick={() => { close(); nav('/home') }}>{t('Nice!')}</Button>
+    {routineSync?.hasDiff && (
+      <div className="card" style={{ textAlign: 'left', margin: '0 0 14px', padding: 14 }}>
+        <div className="row between" style={{ gap: 12 }}>
+          <span style={{ fontSize: 15, fontWeight: 500, color: 'var(--label)' }}>
+            {t('Update routine “{0}”', routineSync.routineName)}
+          </span>
+          <Switch
+            checked={syncChecked}
+            onChange={setSyncChecked}
+            label={t('Update routine “{0}”', routineSync.routineName)}
+          />
+        </div>
+        {routineSync.changes?.length > 0 && (
+          <div className="row" style={{ flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
+            {routineSync.changes.map((ch, idx) => (
+              <span key={idx} className="tag nocap">
+                {ch}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+    )}
+    <Button variant="primary" onClick={onDismiss}>{t('Nice!')}</Button>
   </div>
 }
 /** Finishes the workout, confirming first when work sets remain unchecked. */
@@ -189,8 +224,8 @@ export function finishWorkout() {
 function doFinishWorkout() {
   const result = useStore.getState().finishSession()
   if (!result) return
-  const { workout: w, prs, e1prs } = result
+  const { workout: w, prs, e1prs, routineSync } = result
   useUI.getState().stopRest()
   playWorkoutComplete(snd())
-  ui().openSheet(close => <FinishSummary w={w} prs={prs} e1prs={e1prs} close={close} />, { kind: 'center', locked: true })
+  ui().openSheet(close => <FinishSummary w={w} prs={prs} e1prs={e1prs} routineSync={routineSync} close={close} />, { kind: 'center', locked: true })
 }

@@ -9,6 +9,7 @@ import { is1RMRecord } from './onerm.js'
 import { EXIDX } from './exercises.js'
 import { exerciseMuscleSnapshot } from './muscles.js'
 import { todayISO } from './format.js'
+import { diffRoutineWithSession } from './routine-sync.js'
 
 /**
  * Highest load logged for an exercise across finished workouts.
@@ -211,7 +212,7 @@ export function buildCompletedWorkout(active, { end = Date.now(), prs = [], unit
  *
  * @param {Object} S - Application state atom.
  * @param {Object} [opts] - Injectable clock options for testing (`now`).
- * @returns {{ workout: Object, prs: Array<string>, e1prs: Array<Object> }|null}
+ * @returns {{ workout: Object, prs: Array<string>, e1prs: Array<Object>, routineSync: Object|null }|null}
  *   Summary boundary data for UI recap, or null if no active workout was present.
  */
 export function completeActiveSession(S, opts = {}) {
@@ -231,6 +232,21 @@ export function completeActiveSession(S, opts = {}) {
     if (rec && !prs.includes(e.id)) e1prs.push({ id: e.id, ...rec })
   }
 
+  let routineSync = null
+  if (A.routineId && Array.isArray(S.routines)) {
+    const routine = S.routines.find(r => r.id === A.routineId)
+    if (routine) {
+      const diff = diffRoutineWithSession(routine, A)
+      if (diff?.hasDiff) {
+        routineSync = {
+          ...diff,
+          routineId: routine.id,
+          routineName: routine.name,
+        }
+      }
+    }
+  }
+
   const w = buildCompletedWorkout(A, {
     end: _now(),
     prs,
@@ -246,5 +262,5 @@ export function completeActiveSession(S, opts = {}) {
   S.workouts = [...(S.workouts || []), w]
   S.workouts.sort((a, b) => (a.d < b.d ? -1 : a.d > b.d ? 1 : a.start - b.start))
   S.active = null
-  return { workout: w, prs, e1prs }
+  return { workout: w, prs, e1prs, routineSync }
 }
