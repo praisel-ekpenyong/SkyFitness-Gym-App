@@ -9,6 +9,13 @@ import { uid, todayISO } from './format.js'
 import { t } from './i18n.js'
 import { cleanupSg } from './supersetFlow.js'
 
+// Clean a note string: trim whitespace, clamp to 500 characters, omit/undefined when empty.
+function cleanNote(str) {
+  if (typeof str !== 'string') return undefined
+  const trimmed = str.trim()
+  return trimmed.length > 0 ? trimmed.slice(0, 500) : undefined
+}
+
 // Seed rows for a new Prescription. A new Progression stream keeps the Routine's own last
 // working weight but starts at the plan's top reps/seconds; reading the global `exWeights`
 // hint here would import another Routine's heavier history into this one.
@@ -42,7 +49,17 @@ export function createActiveSession(S, routineId, bw, opts = {}) {
   const entries = (routine ? routine.ex : []).map(cfg => {
     const plan = nextPrescription(S, cfg, routine)
     const sets = applyPrescription(seedSets(S, cfg, routine?.id, plan), plan)
-    return { id: cfg.id, sg: cfg.sg, target: { ...cfg }, plan, sets }
+    const target = { ...cfg }
+    const entry = { id: cfg.id, sg: cfg.sg, target, plan, sets }
+    const note = cleanNote(cfg.notes)
+    if (note) {
+      entry.notes = note
+      entry.target.notes = note
+    } else {
+      delete entry.notes
+      delete entry.target.notes
+    }
+    return entry
   })
   return {
     id: _uid(),
@@ -107,7 +124,17 @@ export function buildActiveEntry(S, exId, targetCfg = {}) {
     ? buildSets(S, full, { preferLast: true })
     : seedSets(S, full, S?.active?.routineId, plan)
   const sets = freestyle ? baseSets : applyPrescription(baseSets, plan)
-  return { id: exId, target: { ...targetCfg }, plan, sets }
+  const target = { ...targetCfg }
+  const entry = { id: exId, target, plan, sets }
+  const note = cleanNote(targetCfg.notes)
+  if (note) {
+    entry.notes = note
+    entry.target.notes = note
+  } else {
+    delete entry.notes
+    delete entry.target.notes
+  }
+  return entry
 }
 
 /**
@@ -124,7 +151,11 @@ export function buildActiveEntry(S, exId, targetCfg = {}) {
  */
 export function addActiveExercise(S, exId, targetCfg = {}) {
   if (!S?.active) return null
-  const entry = buildActiveEntry(S, exId, targetCfg)
+  const cleanTarget = { ...targetCfg }
+  delete cleanTarget.notes
+  const entry = buildActiveEntry(S, exId, cleanTarget)
+  delete entry.notes
+  if (entry.target) delete entry.target.notes
   if (!Array.isArray(S.active.entries)) S.active.entries = []
   S.active.entries.push(entry)
   S.active.cur = S.active.entries.length - 1
@@ -173,7 +204,11 @@ export function replaceActiveExercise(S, idx, newExId, targetCfg = {}) {
   if (!newExId) return null
 
   const oldEntry = S.active.entries[idx]
-  const entry = buildActiveEntry(S, newExId, targetCfg)
+  const cleanTarget = { ...targetCfg }
+  delete cleanTarget.notes
+  const entry = buildActiveEntry(S, newExId, cleanTarget)
+  delete entry.notes
+  if (entry.target) delete entry.target.notes
   if (oldEntry && oldEntry.sg != null) {
     entry.sg = oldEntry.sg
   }

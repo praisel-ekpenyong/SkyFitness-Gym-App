@@ -6,7 +6,8 @@ describe('diffRoutineWithSession', () => {
   const ex2 = { id: '0026', name: 'Barbell Incline Bench Press', sets: 3, reps: 10, weight: 50, mode: 'reps' }
   const ex3 = { id: '0027', name: 'Cable Flyes', sets: 3, reps: 12, weight: 15, mode: 'reps' }
 
-  const makeEntry = (cfg, doneSetsCount, { warmups = 0, targetOverrides = {}, setsOverrides = null, sg = undefined } = {}) => {
+  const makeEntry = (cfg, doneSetsCount, opts = {}) => {
+    const { warmups = 0, targetOverrides = {}, setsOverrides = null, sg = undefined } = opts
     const target = { ...cfg, ...targetOverrides }
     let sets = []
     if (setsOverrides) {
@@ -25,6 +26,11 @@ describe('diffRoutineWithSession', () => {
     }
     const entry = { id: cfg.id, target, sets }
     if (sg !== undefined) entry.sg = sg
+    if ('notes' in opts) {
+      if (opts.notes !== undefined) entry.notes = opts.notes
+    } else if (cfg.notes !== undefined) {
+      entry.notes = cfg.notes
+    }
     return entry
   }
 
@@ -312,6 +318,119 @@ describe('diffRoutineWithSession', () => {
       expect(res.syncedEx[0].inc).toBe(5)
       // Must NOT overwrite baseline weight 10 with session load 25
       expect(res.syncedEx[0].weight).toBe(10)
+    })
+  })
+
+  describe('exercise notes diffing & routine projection', () => {
+    it('detects added note and generates "{name}: note updated" descriptor', () => {
+      const routine = { id: 'r1', name: 'Push', ex: [{ ...ex1 }] }
+      const session = {
+        id: 's1',
+        routineId: 'r1',
+        entries: [makeEntry(ex1, 3, { notes: 'Seat height 5, pin 8' })],
+      }
+      const res = diffRoutineWithSession(routine, session)
+      expect(res.hasDiff).toBe(true)
+      expect(res.changes).toContain('Barbell Bench Press: note updated')
+      expect(res.syncedEx[0].notes).toBe('Seat height 5, pin 8')
+    })
+
+    it('detects modified note and generates "{name}: note updated" descriptor', () => {
+      const routine = { id: 'r1', name: 'Push', ex: [{ ...ex1, notes: 'Seat height 4' }] }
+      const session = {
+        id: 's1',
+        routineId: 'r1',
+        entries: [makeEntry(ex1, 3, { notes: 'Seat height 5' })],
+      }
+      const res = diffRoutineWithSession(routine, session)
+      expect(res.hasDiff).toBe(true)
+      expect(res.changes).toContain('Barbell Bench Press: note updated')
+      expect(res.syncedEx[0].notes).toBe('Seat height 5')
+    })
+
+    it('detects cleared note and generates "{name}: note removed" descriptor', () => {
+      const routine = { id: 'r1', name: 'Push', ex: [{ ...ex1, notes: 'Seat height 5' }] }
+      const session = {
+        id: 's1',
+        routineId: 'r1',
+        entries: [makeEntry(ex1, 3, { notes: undefined })],
+      }
+      const res = diffRoutineWithSession(routine, session)
+      expect(res.hasDiff).toBe(true)
+      expect(res.changes).toContain('Barbell Bench Press: note removed')
+      expect(res.syncedEx[0].notes).toBeUndefined()
+    })
+
+    it('treats whitespace-only note as cleared and removes note', () => {
+      const routine = { id: 'r1', name: 'Push', ex: [{ ...ex1, notes: 'Seat height 5' }] }
+      const session = {
+        id: 's1',
+        routineId: 'r1',
+        entries: [makeEntry(ex1, 3, { notes: '    ' })],
+      }
+      const res = diffRoutineWithSession(routine, session)
+      expect(res.hasDiff).toBe(true)
+      expect(res.changes).toContain('Barbell Bench Press: note removed')
+      expect(res.syncedEx[0].notes).toBeUndefined()
+    })
+
+    it('produces no diff when notes match identically (including trimming)', () => {
+      const routine = { id: 'r1', name: 'Push', ex: [{ ...ex1, notes: 'Seat height 5' }] }
+      const session = {
+        id: 's1',
+        routineId: 'r1',
+        entries: [makeEntry(ex1, 3, { notes: '  Seat height 5  ' })],
+      }
+      const res = diffRoutineWithSession(routine, session)
+      expect(res.hasDiff).toBe(false)
+      expect(res.changes).toEqual([])
+      expect(res.syncedEx[0].notes).toBe('Seat height 5')
+    })
+
+    it('produces no diff when neither routine nor session has a note', () => {
+      const routine = { id: 'r1', name: 'Push', ex: [{ ...ex1 }] }
+      const session = {
+        id: 's1',
+        routineId: 'r1',
+        entries: [makeEntry(ex1, 3)],
+      }
+      const res = diffRoutineWithSession(routine, session)
+      expect(res.hasDiff).toBe(false)
+      expect(res.changes).toEqual([])
+      expect(res.syncedEx[0].notes).toBeUndefined()
+    })
+
+    it('preserves note on newly added exercise in syncedEx without duplicate note tag', () => {
+      const routine = { id: 'r1', name: 'Push', ex: [{ ...ex1 }] }
+      const session = {
+        id: 's1',
+        routineId: 'r1',
+        entries: [
+          makeEntry(ex1, 3),
+          makeEntry(ex2, 3, { notes: 'Incline bench at 30°' }),
+        ],
+      }
+      const res = diffRoutineWithSession(routine, session)
+      expect(res.hasDiff).toBe(true)
+      expect(res.changes).toContain('+ Barbell Incline Bench Press')
+      // Should NOT have a separate "note updated" change for the newly added exercise
+      expect(res.changes.filter(c => c.includes('note'))).toHaveLength(0)
+      expect(res.syncedEx).toHaveLength(2)
+      expect(res.syncedEx[1].notes).toBe('Incline bench at 30°')
+    })
+
+    it('trims note and clamps to 500 characters on syncedEx', () => {
+      const routine = { id: 'r1', name: 'Push', ex: [{ ...ex1 }] }
+      const longNote = 'A'.repeat(600)
+      const session = {
+        id: 's1',
+        routineId: 'r1',
+        entries: [makeEntry(ex1, 3, { notes: `  ${longNote}  ` })],
+      }
+      const res = diffRoutineWithSession(routine, session)
+      expect(res.hasDiff).toBe(true)
+      expect(res.syncedEx[0].notes).toHaveLength(500)
+      expect(res.syncedEx[0].notes).toBe('A'.repeat(500))
     })
   })
 })
