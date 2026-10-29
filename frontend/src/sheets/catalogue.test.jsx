@@ -1092,4 +1092,268 @@ describe('ExConfig and exConfigSheet onReplace support', () => {
   })
 })
 
+describe('ExConfig notes and cues', () => {
+  const sampleEx = {
+    id: '0001',
+    n: '3/4 sit-up',
+    bp: 'waist',
+    tg: 'abs',
+    eq: 'body weight',
+  }
+
+  const cardioEx = {
+    id: 'c1',
+    n: 'Treadmill',
+    bp: 'cardio',
+    tg: 'cardio',
+    eq: 'machine',
+  }
+
+  const setTextAreaValue = (textarea, value) => {
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set
+    setter.call(textarea, value)
+    textarea.dispatchEvent(new Event('input', { bubbles: true }))
+    textarea.dispatchEvent(new Event('change', { bubbles: true }))
+  }
+
+  it('renders TextArea for notes with 0/500 counter when notes is empty', async () => {
+    await act(async () => {
+      root.render(
+        <ExConfig
+          ex={sampleEx}
+          existing={null}
+          onSave={vi.fn()}
+          close={vi.fn()}
+        />
+      )
+    })
+
+    const textarea = container.querySelector('textarea[aria-label="Notes and cues"]')
+    expect(textarea).toBeTruthy()
+    expect(textarea.placeholder).toBe('Notes, cues, or machine setup...')
+    expect(textarea.value).toBe('')
+    expect(textarea.getAttribute('maxlength')).toBe('500')
+
+    const counter = Array.from(container.querySelectorAll('.small.dim')).find(el => el.textContent.includes('/500'))
+    expect(counter).toBeTruthy()
+    expect(counter.textContent).toBe('0/500')
+  })
+
+  it('prefills notes from existing config and displays character counter', async () => {
+    await act(async () => {
+      root.render(
+        <ExConfig
+          ex={sampleEx}
+          existing={{ id: '0001', sets: 3, reps: 10, notes: 'Seat height 5, pin 3' }}
+          onSave={vi.fn()}
+          close={vi.fn()}
+        />
+      )
+    })
+
+    const textarea = container.querySelector('textarea[aria-label="Notes and cues"]')
+    expect(textarea).toBeTruthy()
+    expect(textarea.value).toBe('Seat height 5, pin 3')
+
+    const counter = Array.from(container.querySelectorAll('.small.dim')).find(el => el.textContent.includes('/500'))
+    expect(counter.textContent).toBe('20/500')
+  })
+
+  it('prefills notes from initial config when existing is null', async () => {
+    await act(async () => {
+      root.render(
+        <ExConfig
+          ex={sampleEx}
+          existing={null}
+          initial={{ sets: 4, notes: 'Focus on slow negative' }}
+          onSave={vi.fn()}
+          close={vi.fn()}
+        />
+      )
+    })
+
+    const textarea = container.querySelector('textarea[aria-label="Notes and cues"]')
+    expect(textarea.value).toBe('Focus on slow negative')
+
+    const counter = Array.from(container.querySelectorAll('.small.dim')).find(el => el.textContent.includes('/500'))
+    expect(counter.textContent).toBe('22/500')
+  })
+
+  it('updates state and counter on typing in TextArea', async () => {
+    await act(async () => {
+      root.render(
+        <ExConfig
+          ex={sampleEx}
+          existing={null}
+          onSave={vi.fn()}
+          close={vi.fn()}
+        />
+      )
+    })
+
+    const textarea = container.querySelector('textarea[aria-label="Notes and cues"]')
+    await act(async () => {
+      setTextAreaValue(textarea, 'Keep back flat')
+    })
+
+    const counter = Array.from(container.querySelectorAll('.small.dim')).find(el => el.textContent.includes('/500'))
+    expect(counter.textContent).toBe('14/500')
+  })
+
+  it('passes trimmed notes to onSave for reps mode', async () => {
+    let saved = null
+    const onSave = vi.fn(cfg => { saved = cfg })
+
+    await act(async () => {
+      root.render(
+        <ExConfig
+          ex={sampleEx}
+          existing={null}
+          onSave={onSave}
+          close={vi.fn()}
+        />
+      )
+    })
+
+    const textarea = container.querySelector('textarea[aria-label="Notes and cues"]')
+    await act(async () => {
+      setTextAreaValue(textarea, '   Pause at peak contraction   ')
+    })
+
+    const saveBtn = container.querySelector('button.btn.primary')
+    await act(async () => {
+      saveBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    expect(onSave).toHaveBeenCalledTimes(1)
+    expect(saved.notes).toBe('Pause at peak contraction')
+  })
+
+  it('passes trimmed notes to onSave for cardio mode', async () => {
+    let saved = null
+    const onSave = vi.fn(cfg => { saved = cfg })
+
+    await act(async () => {
+      root.render(
+        <ExConfig
+          ex={cardioEx}
+          existing={null}
+          onSave={onSave}
+          close={vi.fn()}
+        />
+      )
+    })
+
+    const textarea = container.querySelector('textarea[aria-label="Notes and cues"]')
+    await act(async () => {
+      setTextAreaValue(textarea, '  Incline 3.0  ')
+    })
+
+    const saveBtn = container.querySelector('button.btn.primary')
+    await act(async () => {
+      saveBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    expect(onSave).toHaveBeenCalledTimes(1)
+    expect(saved.notes).toBe('Incline 3.0')
+  })
+
+  it('passes trimmed notes to onSave for time mode', async () => {
+    let saved = null
+    const onSave = vi.fn(cfg => { saved = cfg })
+
+    await act(async () => {
+      root.render(
+        <ExConfig
+          ex={sampleEx}
+          existing={null}
+          onSave={onSave}
+          close={vi.fn()}
+        />
+      )
+    })
+
+    // Switch to Time mode
+    const segButtons = Array.from(container.querySelectorAll('[role="radio"]'))
+    const timeBtn = segButtons.find(b => b.textContent.includes('Time'))
+    await act(async () => {
+      timeBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    const textarea = container.querySelector('textarea[aria-label="Notes and cues"]')
+    await act(async () => {
+      setTextAreaValue(textarea, 'Hold steady')
+    })
+
+    const saveBtn = container.querySelector('button.btn.primary')
+    await act(async () => {
+      saveBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    expect(onSave).toHaveBeenCalledTimes(1)
+    expect(saved.mode).toBe('time')
+    expect(saved.notes).toBe('Hold steady')
+  })
+
+  it('omits notes property when notes is empty or whitespace only', async () => {
+    let saved = null
+    const onSave = vi.fn(cfg => { saved = cfg })
+
+    await act(async () => {
+      root.render(
+        <ExConfig
+          ex={sampleEx}
+          existing={{ id: '0001', sets: 3, reps: 10, notes: 'old note' }}
+          onSave={onSave}
+          close={vi.fn()}
+        />
+      )
+    })
+
+    const textarea = container.querySelector('textarea[aria-label="Notes and cues"]')
+    await act(async () => {
+      setTextAreaValue(textarea, '     ')
+    })
+
+    const saveBtn = container.querySelector('button.btn.primary')
+    await act(async () => {
+      saveBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    expect(onSave).toHaveBeenCalledTimes(1)
+    expect('notes' in saved).toBe(false)
+  })
+
+  it('respects 500-character ceiling by truncating notes exceeding 500 chars', async () => {
+    let saved = null
+    const onSave = vi.fn(cfg => { saved = cfg })
+
+    await act(async () => {
+      root.render(
+        <ExConfig
+          ex={sampleEx}
+          existing={null}
+          onSave={onSave}
+          close={vi.fn()}
+        />
+      )
+    })
+
+    const longNote = 'A'.repeat(550)
+    const textarea = container.querySelector('textarea[aria-label="Notes and cues"]')
+    await act(async () => {
+      setTextAreaValue(textarea, longNote)
+    })
+
+    const saveBtn = container.querySelector('button.btn.primary')
+    await act(async () => {
+      saveBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    expect(onSave).toHaveBeenCalledTimes(1)
+    expect(saved.notes.length).toBe(500)
+    expect(saved.notes).toBe('A'.repeat(500))
+  })
+})
+
 

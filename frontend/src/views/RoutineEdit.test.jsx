@@ -220,8 +220,80 @@ describe('RoutineEdit exercise replacement', () => {
       onReplace()
     })
 
-    // Picker opens, but user never picks anything or cancels
     const routine = useStore.getState().S.routines.find(x => x.id === 'r-test-1')
     expect(routine.ex[0].id).toBe('0001')
+  })
+})
+
+describe('RoutineEdit exercise notes display and replacement', () => {
+  it('renders a subtitle note preview with clipboard icon when an exercise has notes', async () => {
+    useStore.getState().update(s => {
+      const r = s.routines.find(x => x.id === 'r-test-1')
+      r.ex[0].notes = 'Seat 5, incline pin 2'
+    })
+
+    await act(async () => {
+      root.render(<RoutineEdit />)
+    })
+
+    const items = container.querySelectorAll('.list .item')
+    expect(items.length).toBe(3)
+
+    // First item should have note preview
+    const firstItem = items[0]
+    const notePreview = firstItem.querySelector('.small.dim')
+    expect(notePreview).toBeTruthy()
+    expect(notePreview.textContent).toContain('Seat 5, incline pin 2')
+
+    // Clipboard icon should be present inside the note preview
+    const clipIcon = notePreview.querySelector('svg.icn')
+    expect(clipIcon).toBeTruthy()
+
+    // Second item (no notes) should NOT have note preview
+    const secondItem = items[1]
+    const secondPreview = secondItem.querySelector('.small.dim')
+    expect(secondPreview).toBeNull()
+  })
+
+  it('clears notes on exercise replacement so outgoing notes do not pollute the new exercise', async () => {
+    useStore.getState().update(s => {
+      const r = s.routines.find(x => x.id === 'r-test-1')
+      r.ex[0].notes = 'Outgoing machine setup cue'
+    })
+
+    await act(async () => {
+      root.render(<RoutineEdit />)
+    })
+
+    const items = container.querySelectorAll('.list .item')
+    // Click on first exercise (which has notes)
+    await act(async () => {
+      items[0].dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    const [, , , , , , onReplace] = mocks.exConfigSheet.mock.calls[0]
+    await act(async () => {
+      onReplace()
+    })
+
+    const pickerCallback = mocks.exercisePicker.mock.calls[0][0]
+    const newEx = { id: '0004', n: 'New Exercise', bp: 'chest', tg: 'chest', eq: 'barbell' }
+    await act(async () => {
+      pickerCallback(newEx)
+    })
+
+    const [, replExisting, replOnSave, , , replInitial] = mocks.exConfigSheet.mock.calls[1]
+    expect(replExisting).toBeNull()
+    // initial must NOT have notes from outgoing exercise
+    expect(replInitial?.notes).toBeFalsy()
+
+    // Save replacement config without notes
+    await act(async () => {
+      replOnSave({ sets: 4, reps: 10, weight: 60, mode: 'reps' })
+    })
+
+    const updatedRoutine = useStore.getState().S.routines.find(x => x.id === 'r-test-1')
+    expect(updatedRoutine.ex[0].id).toBe('0004')
+    expect(updatedRoutine.ex[0].notes).toBeUndefined()
   })
 })
