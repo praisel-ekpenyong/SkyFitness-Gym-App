@@ -129,7 +129,9 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onAddSet, onRemov
     <div className="row between" style={{ marginBottom: 6 }}>
       <h2 style={{ fontSize: compact ? 17 : 20, fontWeight: 600, letterSpacing: '-.02em', textTransform: 'capitalize', lineHeight: 1.2, margin: 0 }}>{ex.n}</h2>
       <div className="row" style={{ gap: 4 }}>
-        <button className="iconbtn" aria-label={entry.notes ? t('Edit note') : t('Add note')} title={entry.notes ? t('Edit note') : t('Add note')} onClick={() => exerciseNoteSheet(entryIdx)}><Icon name={entry.notes ? 'pencil' : 'clipboard'} /></button>
+        {!entry.notes && (
+          <button className="iconbtn" aria-label={t('Add note')} title={t('Add note')} onClick={() => exerciseNoteSheet(entryIdx)}><Icon name="clipboard" /></button>
+        )}
         <button className="iconbtn" aria-label={t('Replace exercise')} title={t('Replace exercise')} disabled={holding} onClick={() => onReplace(entryIdx)}><Icon name="shuffle" /></button>
         <button className="iconbtn" aria-label={t('Details')} onClick={() => exerciseDetailSheet(ex)}><Icon name="info" /></button>
       </div>
@@ -156,7 +158,7 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onAddSet, onRemov
       <div className="exnote" role="button" tabIndex={0} aria-label={t('Edit note')} onClick={() => exerciseNoteSheet(entryIdx)} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') exerciseNoteSheet(entryIdx) }} style={{ cursor: 'pointer', margin: '4px 0 10px', display: 'flex', alignItems: 'flex-start', gap: 8 }}>
         <Icon name="clipboard" size={16} style={{ flexShrink: 0, marginTop: 2, color: 'var(--acc)' }} />
         <div style={{ flex: 1, whiteSpace: 'pre-wrap' }}>{entry.notes}</div>
-        <Icon name="pencil" size={13} style={{ flexShrink: 0, opacity: 0.5, marginTop: 3 }} />
+        <Icon name="pencil" size={13} className="dim" style={{ flexShrink: 0, marginTop: 3, color: 'var(--label-3)' }} />
       </div>
     )}
     <div className="card" style={{ marginTop: 10, marginBottom: 0 }}>
@@ -229,6 +231,7 @@ export function replaceActiveExerciseFlow(idx) {
       const routine = curS?.routines?.find(r => r.id === curA?.routineId)
       const plannedCount = (entry.sets || []).filter(s => !isWarmupRow(s)).length || (entry.sets || []).length
       const seed = seedForReplacement(curS, newEx.id, curA?.routineId, plannedCount)
+      delete seed.notes
       exConfigSheet(newEx, null, cfg => {
         useStore.getState().replaceActiveExercise(idx, newEx.id, cfg)
       }, null, routine, seed, null, t('Replace'))

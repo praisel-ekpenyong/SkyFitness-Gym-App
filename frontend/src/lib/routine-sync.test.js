@@ -432,6 +432,60 @@ describe('diffRoutineWithSession', () => {
       expect(res.syncedEx[0].notes).toHaveLength(500)
       expect(res.syncedEx[0].notes).toBe('A'.repeat(500))
     })
+
+    it('matches multiple instances of the same exercise ID by position/unmatched index', () => {
+      const routine = {
+        id: 'r1',
+        name: 'Push',
+        ex: [
+          { ...ex1, notes: 'Flat bench cue' },
+          { ...ex1, notes: 'Close-grip bench cue' },
+        ],
+      }
+
+      // 1. Both instances unchanged: must NOT produce false diff
+      const unchangedSession = {
+        id: 's1',
+        routineId: 'r1',
+        entries: [
+          makeEntry(ex1, 3, { notes: 'Flat bench cue' }),
+          makeEntry(ex1, 3, { notes: 'Close-grip bench cue' }),
+        ],
+      }
+      const resUnchanged = diffRoutineWithSession(routine, unchangedSession)
+      expect(resUnchanged.hasDiff).toBe(false)
+      expect(resUnchanged.changes).toEqual([])
+
+      // 2. Modifying only the 2nd instance produces exactly one note updated descriptor
+      const modifiedSecondSession = {
+        id: 's1',
+        routineId: 'r1',
+        entries: [
+          makeEntry(ex1, 3, { notes: 'Flat bench cue' }),
+          makeEntry(ex1, 3, { notes: 'Close-grip bench cue (elbows tucked)' }),
+        ],
+      }
+      const resModified = diffRoutineWithSession(routine, modifiedSecondSession)
+      expect(resModified.hasDiff).toBe(true)
+      expect(resModified.changes).toEqual(['Barbell Bench Press: note updated'])
+      expect(resModified.syncedEx[0].notes).toBe('Flat bench cue')
+      expect(resModified.syncedEx[1].notes).toBe('Close-grip bench cue (elbows tucked)')
+
+      // 3. Removing note from 1st instance while keeping 2nd instance
+      const clearedFirstSession = {
+        id: 's1',
+        routineId: 'r1',
+        entries: [
+          makeEntry(ex1, 3, { notes: undefined }),
+          makeEntry(ex1, 3, { notes: 'Close-grip bench cue' }),
+        ],
+      }
+      const resCleared = diffRoutineWithSession(routine, clearedFirstSession)
+      expect(resCleared.hasDiff).toBe(true)
+      expect(resCleared.changes).toEqual(['Barbell Bench Press: note removed'])
+      expect(resCleared.syncedEx[0].notes).toBeUndefined()
+      expect(resCleared.syncedEx[1].notes).toBe('Close-grip bench cue')
+    })
   })
 })
 

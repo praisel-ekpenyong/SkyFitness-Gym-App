@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { bestKnownWeight } from './active-workout.js'
-import { modeOf, isTimed, defaultConfig, buildSets, freestyleConfig, tonnageOf, bestWeightForEntry, isBw, isPerSide, sideReps, repStep, cascadeWeight, insertWarmupRow, removeRowAt, workSetsDone, isWorkSet, isPerformed, workSets, doneWorkSets, hasWork, isExerciseDone, sessionProgress, seedForReplacement } from './workout-model.js'
+import { modeOf, isTimed, defaultConfig, buildSets, freestyleConfig, tonnageOf, bestWeightForEntry, isBw, isPerSide, sideReps, repStep, cascadeWeight, insertWarmupRow, removeRowAt, workSetsDone, isWorkSet, isPerformed, workSets, doneWorkSets, hasWork, isExerciseDone, sessionProgress, seedForReplacement, cleanNote } from './workout-model.js'
 import { fmtSec, setLabel, exLine } from './format.js'
 import { effortOf, stepEffort, capEffort } from './effort.js'
 import { pairAdjacent, unpairSuperset, supersetUnits } from './supersetFlow.js'
@@ -956,6 +956,33 @@ describe('seedForReplacement', () => {
     const res = seedForReplacement(S, BW, null, 3)
     expect(res.bodyweight).toBe(true)
     expect(res.weight).toBe(0)
+  })
+})
+
+describe('cleanNote', () => {
+  it('trims leading and trailing whitespace', () => {
+    expect(cleanNote('  hello world  ')).toBe('hello world')
+  })
+
+  it('slices strings longer than 500 characters to 500 characters', () => {
+    const long = 'x'.repeat(600)
+    const res = cleanNote(long)
+    expect(res).toHaveLength(500)
+    expect(res).toBe('x'.repeat(500))
+  })
+
+  it('returns undefined for empty strings and whitespace-only strings', () => {
+    expect(cleanNote('')).toBeUndefined()
+    expect(cleanNote('   ')).toBeUndefined()
+    expect(cleanNote('\n\t  \n')).toBeUndefined()
+  })
+
+  it('returns undefined for non-string inputs', () => {
+    expect(cleanNote(null)).toBeUndefined()
+    expect(cleanNote(undefined)).toBeUndefined()
+    expect(cleanNote(123)).toBeUndefined()
+    expect(cleanNote({})).toBeUndefined()
+    expect(cleanNote([])).toBeUndefined()
   })
 })
 
