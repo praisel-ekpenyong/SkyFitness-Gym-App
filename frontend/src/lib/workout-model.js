@@ -579,3 +579,18 @@ export function seedForReplacement(S, exId, routineId, setsCount) {
   }
 }
 
+/**
+ * Clean and clamp an exercise note string.
+ *
+ * Trims whitespace, slices to 500 characters, returns undefined if empty/whitespace-only,
+ * or the cleaned string.
+ *
+ * @param {*} value - Candidate note text.
+ * @returns {string|undefined} Cleaned note or undefined.
+ */
+export function cleanNote(value) {
+  if (typeof value !== 'string') return undefined
+  const trimmed = value.trim()
+  return trimmed.length > 0 ? trimmed.slice(0, 500) : undefined
+}
+

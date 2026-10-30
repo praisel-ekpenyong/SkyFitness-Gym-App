@@ -7,7 +7,7 @@ import {
   replaceActiveExercise, moveActiveExercise, buildActiveEntry,
   updateActiveSetField, addActiveSet, removeActiveSet, addActiveWarmup,
   pairActiveSuperset, unpairActiveSuperset, toggleActiveSet,
-  setActiveIndex, discardActiveSession
+  setActiveIndex, discardActiveSession, updateActiveExerciseNote
 } from './active-workout.js'
 
 const clone = o => JSON.parse(JSON.stringify(o))
@@ -717,6 +717,197 @@ describe('active-workout lifecycle seam', () => {
     expect(moveActiveExercise(S, 0, 1)).toBe(true)
     expect(S.active.entries[1]).toEqual(entry0)
     expect(S.active.entries[0]).toEqual(entry1)
+  })
+
+  describe('exercise notes domain model & lifecycle', () => {
+    it('createActiveSession seeds entry.notes and entry.target.notes from routine cfg.notes', () => {
+      const S = blankProfile()
+      S.routines = [
+        {
+          id: 'r1',
+          name: 'Push',
+          ex: [
+            { id: '0025', sets: 3, reps: 8, weight: 50, notes: 'Seat height 5, pin 8' },
+            { id: '0026', sets: 3, reps: 10, weight: 40, notes: '   ' },
+            { id: '0027', sets: 3, reps: 12, weight: 15 },
+          ]
+        }
+      ]
+      const active = createActiveSession(S, 'r1', 80)
+      // Normal note
+      expect(active.entries[0].notes).toBe('Seat height 5, pin 8')
+      expect(active.entries[0].target.notes).toBe('Seat height 5, pin 8')
+
+      // Whitespace-only note should be cleaned to undefined (omitted)
+      expect(active.entries[1].notes).toBeUndefined()
+      expect(active.entries[1].target.notes).toBeUndefined()
+
+      // Missing note remains undefined
+      expect(active.entries[2].notes).toBeUndefined()
+      expect(active.entries[2].target.notes).toBeUndefined()
+    })
+
+    it('createActiveSession trims note and caps length to 500 characters', () => {
+      const S = blankProfile()
+      const longNote = 'B'.repeat(600)
+      S.routines = [
+        {
+          id: 'r1',
+          name: 'Push',
+          ex: [{ id: '0025', sets: 3, reps: 8, weight: 50, notes: `  ${longNote}  ` }]
+        }
+      ]
+      const active = createActiveSession(S, 'r1', 80)
+      expect(active.entries[0].notes).toHaveLength(500)
+      expect(active.entries[0].notes).toBe('B'.repeat(500))
+      expect(active.entries[0].target.notes).toBe('B'.repeat(500))
+    })
+
+    it('buildActiveEntry accepts targetCfg.notes and cleans empty whitespace', () => {
+      const S = { active: { routineId: null, entries: [] }, workouts: [] }
+
+      // Valid note
+      const entry1 = buildActiveEntry(S, '0025', { sets: 3, notes: 'Pause 1s at bottom' })
+      expect(entry1.notes).toBe('Pause 1s at bottom')
+      expect(entry1.target.notes).toBe('Pause 1s at bottom')
+
+      // Whitespace note
+      const entry2 = buildActiveEntry(S, '0025', { sets: 3, notes: '   ' })
+      expect(entry2.notes).toBeUndefined()
+      expect(entry2.target.notes).toBeUndefined()
+
+      // Empty targetCfg
+      const entry3 = buildActiveEntry(S, '0025', { sets: 3 })
+      expect(entry3.notes).toBeUndefined()
+      expect(entry3.target.notes).toBeUndefined()
+    })
+
+    it('addActiveExercise and freestyle sessions always start with notes: undefined', () => {
+      const S = blankProfile()
+      const freestyle = createActiveSession(S, null, 80)
+      expect(freestyle.entries).toHaveLength(0)
+
+      S.active = freestyle
+      const adHoc1 = addActiveExercise(S, '0025')
+      expect(adHoc1.notes).toBeUndefined()
+      expect(adHoc1.target.notes).toBeUndefined()
+
+      // Even if targetCfg with notes is somehow passed, ad-hoc exercises must start clean
+      const adHoc2 = addActiveExercise(S, '0026', { notes: 'old cue from somewhere' })
+      expect(adHoc2.notes).toBeUndefined()
+      expect(adHoc2.target.notes).toBeUndefined()
+    })
+
+    it('replaceActiveExercise explicitly clears outgoing notes on replacement', () => {
+      const S = {
+        active: {
+          cur: 0,
+          entries: [
+            {
+              id: '0025',
+              notes: 'Seat height 5, bar on mid-chest',
+              target: { sets: 3, reps: 8, weight: 80, notes: 'Seat height 5, bar on mid-chest' },
+              sets: [{ w: 80, r: 8, done: true }]
+            }
+          ]
+        }
+      }
+
+      const replaced = replaceActiveExercise(S, 0, '0027', { sets: 3, reps: 12, weight: 20 })
+      expect(replaced).toBeDefined()
+      expect(replaced.id).toBe('0027')
+      expect(replaced.notes).toBeUndefined()
+      expect(replaced.target.notes).toBeUndefined()
+      expect(S.active.entries[0].notes).toBeUndefined()
+      expect(S.active.entries[0].target.notes).toBeUndefined()
+    })
+
+    it('replaceActiveExercise preserves targetCfg.notes when explicitly supplied', () => {
+      const S = {
+        active: {
+          cur: 0,
+          entries: [
+            {
+              id: '0025',
+              notes: 'Old note',
+              target: { sets: 3, reps: 8, weight: 80, notes: 'Old note' },
+              sets: [{ w: 80, r: 8, done: true }]
+            }
+          ]
+        }
+      }
+
+      const replaced = replaceActiveExercise(S, 0, '0027', {
+        sets: 3, reps: 12, weight: 20, notes: 'Newly typed cue in exConfigSheet'
+      })
+      expect(replaced).toBeDefined()
+      expect(replaced.id).toBe('0027')
+      expect(replaced.notes).toBe('Newly typed cue in exConfigSheet')
+      expect(replaced.target.notes).toBe('Newly typed cue in exConfigSheet')
+      expect(S.active.entries[0].notes).toBe('Newly typed cue in exConfigSheet')
+    })
+
+    it('updateActiveExerciseNote mutates entry.notes without mutating entry.target.notes', () => {
+      const S = {
+        active: {
+          cur: 0,
+          entries: [
+            {
+              id: '0025',
+              notes: 'Initial note',
+              target: { sets: 3, reps: 8, weight: 80, notes: 'Baseline routine note' },
+              sets: [{ w: 80, r: 8, done: false }]
+            }
+          ]
+        }
+      }
+
+      const res = updateActiveExerciseNote(S, 0, '  Adjusted seat to pin 6  ')
+      expect(res).toBe(true)
+      expect(S.active.entries[0].notes).toBe('Adjusted seat to pin 6')
+      // entry.target.notes must remain the frozen baseline from routine!
+      expect(S.active.entries[0].target.notes).toBe('Baseline routine note')
+
+      // Clears note when passed empty/whitespace string
+      expect(updateActiveExerciseNote(S, 0, '   ')).toBe(true)
+      expect(S.active.entries[0].notes).toBeUndefined()
+      expect('notes' in S.active.entries[0]).toBe(false)
+      expect(S.active.entries[0].target.notes).toBe('Baseline routine note')
+
+      // Returns false for out-of-bounds or missing active session
+      expect(updateActiveExerciseNote(S, 99, 'note')).toBe(false)
+      expect(updateActiveExerciseNote(null, 0, 'note')).toBe(false)
+      expect(updateActiveExerciseNote({ active: null }, 0, 'note')).toBe(false)
+    })
+
+    it('buildCompletedWorkout persists entry.notes onto completed historical entries', () => {
+      const active = {
+        id: 'active-notes',
+        d: '2026-08-08',
+        start: 1000,
+        entries: [
+          {
+            id: '0025',
+            notes: '  Right shoulder felt tight on set 2  ',
+            sets: [{ done: true, w: 80, r: 8 }],
+          },
+          {
+            id: '0026',
+            notes: '   ',
+            sets: [{ done: true, w: 50, r: 10 }],
+          },
+          {
+            id: '0027',
+            sets: [{ done: true, w: 20, r: 12 }],
+          },
+        ]
+      }
+
+      const completed = buildCompletedWorkout(active)
+      expect(completed.entries[0].notes).toBe('Right shoulder felt tight on set 2')
+      expect(completed.entries[1]).not.toHaveProperty('notes')
+      expect(completed.entries[2]).not.toHaveProperty('notes')
+    })
   })
 })
 

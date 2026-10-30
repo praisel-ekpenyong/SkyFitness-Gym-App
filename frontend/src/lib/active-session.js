@@ -3,7 +3,7 @@
 // Builds the Active workout, moves the cursor, discards the session, and
 // adds/removes Entry objects. Set-level surgery lives in active-sets.js,
 // the toggle decision in active-toggle.js, finishing in active-finish.js.
-import { buildSets, defaultConfig } from './workout-model.js'
+import { buildSets, defaultConfig, cleanNote } from './workout-model.js'
 import { nextPrescription, applyPrescription } from './progression.js'
 import { uid, todayISO } from './format.js'
 import { t } from './i18n.js'
@@ -42,7 +42,17 @@ export function createActiveSession(S, routineId, bw, opts = {}) {
   const entries = (routine ? routine.ex : []).map(cfg => {
     const plan = nextPrescription(S, cfg, routine)
     const sets = applyPrescription(seedSets(S, cfg, routine?.id, plan), plan)
-    return { id: cfg.id, sg: cfg.sg, target: { ...cfg }, plan, sets }
+    const target = { ...cfg }
+    const entry = { id: cfg.id, sg: cfg.sg, target, plan, sets }
+    const note = cleanNote(cfg.notes)
+    if (note) {
+      entry.notes = note
+      entry.target.notes = note
+    } else {
+      delete entry.notes
+      delete entry.target.notes
+    }
+    return entry
   })
   return {
     id: _uid(),
@@ -107,7 +117,17 @@ export function buildActiveEntry(S, exId, targetCfg = {}) {
     ? buildSets(S, full, { preferLast: true })
     : seedSets(S, full, S?.active?.routineId, plan)
   const sets = freestyle ? baseSets : applyPrescription(baseSets, plan)
-  return { id: exId, target: { ...targetCfg }, plan, sets }
+  const target = { ...targetCfg }
+  const entry = { id: exId, target, plan, sets }
+  const note = cleanNote(targetCfg.notes)
+  if (note) {
+    entry.notes = note
+    entry.target.notes = note
+  } else {
+    delete entry.notes
+    delete entry.target.notes
+  }
+  return entry
 }
 
 /**
@@ -124,7 +144,11 @@ export function buildActiveEntry(S, exId, targetCfg = {}) {
  */
 export function addActiveExercise(S, exId, targetCfg = {}) {
   if (!S?.active) return null
-  const entry = buildActiveEntry(S, exId, targetCfg)
+  const cleanTarget = { ...targetCfg }
+  delete cleanTarget.notes
+  const entry = buildActiveEntry(S, exId, cleanTarget)
+  delete entry.notes
+  if (entry.target) delete entry.target.notes
   if (!Array.isArray(S.active.entries)) S.active.entries = []
   S.active.entries.push(entry)
   S.active.cur = S.active.entries.length - 1
@@ -173,7 +197,21 @@ export function replaceActiveExercise(S, idx, newExId, targetCfg = {}) {
   if (!newExId) return null
 
   const oldEntry = S.active.entries[idx]
-  const entry = buildActiveEntry(S, newExId, targetCfg)
+  const note = cleanNote(targetCfg.notes)
+  const cleanTarget = { ...targetCfg }
+  if (note) {
+    cleanTarget.notes = note
+  } else {
+    delete cleanTarget.notes
+  }
+  const entry = buildActiveEntry(S, newExId, cleanTarget)
+  if (note) {
+    entry.notes = note
+    if (entry.target) entry.target.notes = note
+  } else {
+    delete entry.notes
+    if (entry.target) delete entry.target.notes
+  }
   if (oldEntry && oldEntry.sg != null) {
     entry.sg = oldEntry.sg
   }
@@ -181,6 +219,29 @@ export function replaceActiveExercise(S, idx, newExId, targetCfg = {}) {
   S.active.entries[idx] = entry
   S.active.cur = Math.max(0, Math.min(idx, S.active.entries.length - 1))
   return entry
+}
+
+/**
+ * Update an active exercise entry's note.
+ *
+ * Mutates `entry.notes` in-place using `cleanNote`. Deletes `notes` when empty/whitespace.
+ * Preserves `entry.target.notes` without mutation as the frozen routine baseline.
+ *
+ * @param {Object} S - Application state atom.
+ * @param {number} entryIdx - Index of the exercise entry in `S.active.entries`.
+ * @param {string|null|undefined} noteText - New note text to clean and store.
+ * @returns {boolean} True if entry was found and updated, false otherwise.
+ */
+export function updateActiveExerciseNote(S, entryIdx, noteText) {
+  if (!S?.active?.entries?.[entryIdx]) return false
+  const entry = S.active.entries[entryIdx]
+  const clean = cleanNote(noteText)
+  if (clean) {
+    entry.notes = clean
+  } else {
+    delete entry.notes
+  }
+  return true
 }
 
 /**

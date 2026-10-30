@@ -3,11 +3,13 @@ import { createRoot } from 'react-dom/client'
 import { parseHTML } from 'linkedom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import Workout from './Workout.jsx'
+import { ExerciseNoteSheet } from '../sheets/session.jsx'
 
 import {
   toggleActiveSet, updateActiveSetField, removeActiveExercise,
   addActiveExercise, addActiveSet, removeActiveSet, addActiveWarmup,
-  pairActiveSuperset, unpairActiveSuperset, setActiveIndex, discardActiveSession
+  pairActiveSuperset, unpairActiveSuperset, setActiveIndex, discardActiveSession,
+  updateActiveExerciseNote
 } from '../lib/active-workout.js'
 
 const mocks = vi.hoisted(() => {
@@ -17,10 +19,12 @@ const mocks = vi.hoisted(() => {
     stopRest: vi.fn(),
     topWeightSheet: vi.fn(),
     workoutCompleteSheet: vi.fn(),
+    exerciseNoteSheet: vi.fn(),
   }
   state.storeSnapshot = () => ({
     S: state.S,
     update: mut => mut(state.S),
+    updateActiveExerciseNote: (entryIdx, note) => updateActiveExerciseNote(state.S, entryIdx, note),
     toggleActiveSet: (entryIdx, setIdx) => toggleActiveSet(state.S, entryIdx, setIdx),
     updateActiveSetField: (entryIdx, setIdx, field, value) => updateActiveSetField(state.S, entryIdx, setIdx, field, value),
     removeActiveExercise: idx => removeActiveExercise(state.S, idx),
@@ -63,6 +67,7 @@ vi.mock('../sheets.jsx', () => ({
   finishWorkout: vi.fn(),
   workoutCompleteSheet: mocks.workoutCompleteSheet,
   confirmSheet: vi.fn(),
+  exerciseNoteSheet: mocks.exerciseNoteSheet,
 }))
 vi.mock('../components/Media.jsx', () => ({ default: () => null }))
 
@@ -286,3 +291,133 @@ describe('header and finish button share one progress reading', () => {
     expect(finishWorkout).toHaveBeenCalledOnce()
   })
 })
+
+describe('Workout exercise notes and note sheet', () => {
+  it('renders note callout above set table when entry.notes is present', async () => {
+    await mount([exercise('0025', [false], { notes: 'Seat height 5, pin 8' })])
+
+    const callout = container.querySelector('.exnote')
+    expect(callout).not.toBeNull()
+    expect(callout.textContent).toContain('Seat height 5, pin 8')
+    expect(callout.getAttribute('role')).toBe('button')
+    expect(callout.getAttribute('aria-label')).toBe('Edit note')
+
+    // Header row button is hidden when entry.notes is present
+    const headerBtn = container.querySelector('button[aria-label="Add note"]')
+    expect(headerBtn).toBeNull()
+  })
+
+  it('renders add note icon button in header when entry.notes is empty, without note callout', async () => {
+    await mount([exercise('0025', [false])])
+
+    expect(container.querySelector('.exnote')).toBeNull()
+
+    const headerBtn = container.querySelector('button[aria-label="Add note"]')
+    expect(headerBtn).not.toBeNull()
+    expect(headerBtn.getAttribute('title')).toBe('Add note')
+  })
+
+  it('tapping note callout opens exerciseNoteSheet', async () => {
+    await mount([exercise('0025', [false], { notes: 'Focus on chest squeeze' })])
+
+    const callout = container.querySelector('.exnote')
+    await act(async () => {
+      callout.dispatchEvent(new dom.Event('click', { bubbles: true }))
+    })
+    expect(mocks.exerciseNoteSheet).toHaveBeenCalledWith(0)
+
+    mocks.exerciseNoteSheet.mockClear()
+
+    // Keydown Enter on callout
+    const enterEv = new dom.Event('keydown', { bubbles: true })
+    enterEv.key = 'Enter'
+    await act(async () => {
+      callout.dispatchEvent(enterEv)
+    })
+    expect(mocks.exerciseNoteSheet).toHaveBeenCalledWith(0)
+
+    mocks.exerciseNoteSheet.mockClear()
+
+    // Keydown Space on callout
+    const spaceEv = new dom.Event('keydown', { bubbles: true })
+    spaceEv.key = ' '
+    await act(async () => {
+      callout.dispatchEvent(spaceEv)
+    })
+    expect(mocks.exerciseNoteSheet).toHaveBeenCalledWith(0)
+  })
+
+  it('tapping header note button when note is empty opens exerciseNoteSheet', async () => {
+    await mount([exercise('0025', [false])])
+
+    const headerBtn = container.querySelector('button[aria-label="Add note"]')
+    await act(async () => {
+      headerBtn.dispatchEvent(new dom.Event('click', { bubbles: true }))
+    })
+    expect(mocks.exerciseNoteSheet).toHaveBeenCalledWith(0)
+  })
+
+  it('ExerciseNoteSheet edits and saves note, updating active entry in store', async () => {
+    await mount([exercise('0025', [false], { notes: 'Old cue' })])
+    const close = vi.fn()
+
+    await act(async () => {
+      root.render(React.createElement(ExerciseNoteSheet, { entryIdx: 0, close }))
+    })
+
+    // Header displays "Note · {exercise name}"
+    expect(container.querySelector('h3')?.textContent).toContain('Note ·')
+
+    const textarea = container.querySelector('textarea')
+    expect(textarea).not.toBeNull()
+    expect(textarea.value).toBe('Old cue')
+    expect(textarea.getAttribute('aria-label')).toBe('Exercise note')
+    expect(textarea.getAttribute('placeholder')).toBe('Notes, cues, or machine setup...')
+    expect(textarea.getAttribute('maxLength') || textarea.getAttribute('maxlength')).toBe('500')
+
+    // Edit textarea value
+    await act(async () => {
+      const reactPropsKey = Object.keys(textarea).find(k => k.startsWith('__reactProps$'))
+      if (reactPropsKey && textarea[reactPropsKey]?.onChange) {
+        textarea[reactPropsKey].onChange({ target: { value: 'Seat height 6, pin 9' } })
+      } else {
+        textarea.value = 'Seat height 6, pin 9'
+        textarea.dispatchEvent(new dom.Event('input', { bubbles: true }))
+        textarea.dispatchEvent(new dom.Event('change', { bubbles: true }))
+      }
+    })
+
+    // Counter updates
+    expect(container.textContent).toContain('20/500')
+
+    // Save note
+    const saveBtn = Array.from(container.querySelectorAll('button')).find(b => b.textContent.includes('Save note'))
+    expect(saveBtn).not.toBeNull()
+    await act(async () => {
+      saveBtn.dispatchEvent(new dom.Event('click', { bubbles: true }))
+    })
+
+    expect(mocks.S.active.entries[0].notes).toBe('Seat height 6, pin 9')
+    expect(close).toHaveBeenCalledOnce()
+  })
+
+  it('ExerciseNoteSheet clears note, removing it from active entry in store', async () => {
+    await mount([exercise('0025', [false], { notes: 'Temporary cue to clear' })])
+    const close = vi.fn()
+
+    await act(async () => {
+      root.render(React.createElement(ExerciseNoteSheet, { entryIdx: 0, close }))
+    })
+
+    const clearBtn = Array.from(container.querySelectorAll('button')).find(b => b.textContent.includes('Clear note'))
+    expect(clearBtn).not.toBeNull()
+
+    await act(async () => {
+      clearBtn.dispatchEvent(new dom.Event('click', { bubbles: true }))
+    })
+
+    expect(mocks.S.active.entries[0].notes).toBeUndefined()
+    expect(close).toHaveBeenCalledOnce()
+  })
+})
+
