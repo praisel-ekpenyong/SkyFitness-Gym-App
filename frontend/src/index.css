@@ -670,6 +670,12 @@ h4.sec{
 .setrow.eff3 .stp .num{font-size:14px}
 .setrow.done .n{background:var(--acc);color:var(--on-acc)}
 .setrow.done{opacity:.45}
+.milestone-badge{
+  display:inline-flex;align-items:center;gap:3px;
+  background:var(--acc-soft);color:var(--acc);border-radius:99px;
+  padding:2px 7px;font-size:11px;font-weight:600;letter-spacing:-.01em;
+  white-space:nowrap;line-height:1.2;
+}
 /* why the next target is what it is (issue #17) */
 .progline{
   display:flex;align-items:flex-start;gap:7px;margin:6px 0 2px;
