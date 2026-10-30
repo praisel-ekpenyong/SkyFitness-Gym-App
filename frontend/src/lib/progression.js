@@ -734,3 +734,5 @@ export function applyPrescription(sets, p) {
   }
   return out
 }
+
+export { evaluateSetMilestone } from './milestones.js'
