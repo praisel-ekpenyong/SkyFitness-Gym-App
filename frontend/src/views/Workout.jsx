@@ -24,6 +24,7 @@ import Icon from '../components/Icon.jsx'
 import { Button, Check, NumberField } from '../components/ui.jsx'
 import { glyphOf } from '../lib/glyphs.js'
 import { isWarmupRow, isPerformed, seedForReplacement } from '../lib/workout-model.js'
+import { evaluateSetMilestone } from '../lib/milestones.js'
 
 /* ---------- start chooser (no active workout) ---------- */
 function StartChooser() {
@@ -170,6 +171,7 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onAddSet, onRemov
         const isFirstWarmup = warm && !warmBefore
         // Numbering restarts per phase: with two warm-ups the first work set reads 1, not 3.
         const phaseNum = entry.sets.slice(0, i + 1).filter(x => isWarmupRow(x) === warm).length
+        const milestone = evaluateSetMilestone(entry, i)
         return <div key={i}>
           {isFirstWarmup && <div className="setph">{t('Warm-up')}</div>}
           {!warm && warmBefore && <div className="setsep" />}
@@ -185,6 +187,11 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onAddSet, onRemov
             {warm && <button className="iconbtn" style={{ fontSize: 13 }} aria-label={t('Remove set')}
               disabled={entry.sets.length <= 1} onClick={() => onRemoveSetAt(i)}><Icon name="xmark" /></button>}
             <Check checked={s.done} aria-label={`${t('Complete')} ${warm ? t('warm-up set {0}', phaseNum) : t('set {0}', phaseNum)}`} onChange={() => onToggle(i)} />
+            {milestone && (
+              <span className="milestone-badge" role="status" aria-label={t('Milestone: {0}', milestone.label)}>
+                {milestone.label}
+              </span>
+            )}
           </div>
         </div>
       })}
