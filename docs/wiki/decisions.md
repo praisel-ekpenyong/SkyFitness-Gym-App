@@ -4,6 +4,9 @@ One entry per decision, newest first. A decision here is a settled call; the
 ticket/ADR it points to carries the reasoning. Superseded entries stay listed
 with a pointer to their successor.
 
+- **2026-10-30 — Netlify production release for progression milestones verified across 4 gates and live edge policies.**
+  Production build at commit `983ba9e` deployed to Netlify site `skyfitness-app` (`51d8627c-c73a-4802-be54-4fce0937cb28`, deploy ID `6ae4a460d786b64c2a8fc288`, live at `https://skyfitness-app.netlify.app`, unique deploy URL `https://6ae4a460d786b64c2a8fc288--skyfitness-app.netlify.app`). Automated pre-flight verified 72 test files (1,051 unit tests), 108,000 fatigue comparisons plus 14,858 randomized deletion checks, and 6-screen Playwright preview navigation. Live edge verified HTTP 200, strict CSP headers (`cdn.jsdelivr.net` pinned), SPA routing fallback, and immutable asset cache headers (`public, max-age=31536000, immutable`). Detailed in [deployment](deployment.md).
+
 - **2026-10-30 — Session boundary progression and live milestone cues established.**
   Settled that progression recommendations are applied strictly at the Session boundary for the subsequent workout, evaluating all planned work sets collectively as a unified session (preserving straight-set volume and rejecting mid-session load jumping or Dynamic Double Progression). The active workout UI provides live, inline, non-intrusive milestone cues on checked-off work sets, remaining neutral on sub-target sets and reactive to edits. `FinishSummary` introduces a dedicated Progression summary section with constructive framing for deloads and volume consolidation. Specified in `.scratch/progression-milestones/` and recorded in ADR 0016.
 
