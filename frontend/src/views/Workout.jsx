@@ -24,6 +24,7 @@ import Icon from '../components/Icon.jsx'
 import { Button, Check, NumberField } from '../components/ui.jsx'
 import { glyphOf } from '../lib/glyphs.js'
 import { isWarmupRow, isPerformed, seedForReplacement } from '../lib/workout-model.js'
+import { defaultIncrement } from '../lib/progression.js'
 import { evaluateSetMilestone } from '../lib/milestones.js'
 
 /* ---------- start chooser (no active workout) ---------- */
@@ -171,7 +172,12 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onAddSet, onRemov
         const isFirstWarmup = warm && !warmBefore
         // Numbering restarts per phase: with two warm-ups the first work set reads 1, not 3.
         const phaseNum = entry.sets.slice(0, i + 1).filter(x => isWarmupRow(x) === warm).length
-        const milestone = evaluateSetMilestone(entry, i)
+        const milestone = evaluateSetMilestone(entry, i, {
+          state: S,
+          unit: S?.unit,
+          inc: cfg.inc > 0 ? cfg.inc : defaultIncrement(entry.id, S?.unit),
+          lastEntry: last
+        })
         return <div key={i}>
           {isFirstWarmup && <div className="setph">{t('Warm-up')}</div>}
           {!warm && warmBefore && <div className="setsep" />}
