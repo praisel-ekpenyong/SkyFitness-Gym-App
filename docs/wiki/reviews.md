@@ -3,6 +3,16 @@
 One entry per review event. Findings live in tickets/reports; this page records
 what ran, against what, and where the findings went.
 
+## 2026-10-30 — Two-axis review: progression milestones and workout summary
+
+- **Range:** `master...HEAD` at `9426ed3` (feat/progression-milestones).
+- **Method:** Standards axis and Spec axis as parallel subagents (`6c63b22c...` and `0c9b6ab6...`).
+- **Spec source:** `.scratch/progression-milestones/spec.md`, ADR 0016, and tickets 01–03.
+- **Outcome:**
+  - **Standards:** 1 hard violation (`getProgressionItems` training logic placed in `sheets/session.jsx` rather than `src/lib/`), 3 baseline code smells (`toTitleCase` duplication, `resolvePolicy` duplication of `policyFor`, loose data clump in `Workout.jsx`).
+  - **Spec:** 3 partial/missing items (omission of pure `evaluateSessionProgression` domain seam, bodyweight calisthenics milestone cue handling, linear progression final set unlock cue), 2 scope creep items (unnecessary `.done:has(.milestone-badge)` opacity override, custom JS string capitalization), 2 implementation flaws (`0 kg → 0 kg` output on bodyweight advances, load advance awarded on unloaded bodyweight double progression).
+- **Disposition:** All findings addressed in commit `8a180f1`, merged into `feat/progression-milestones` in `9426ed3`. `evaluateSessionProgression` and `sessionProgressionItems` extracted to pure `src/lib/milestones.js` seam with comprehensive Vitest tests; bodyweight rep climbs and added set targets cleanly formatted; linear final set unlocks load advances; `.capitalize` CSS applied; data clump simplified; opacity override removed. Full test suite: 72/72 test files passed (1,051/1,051 tests green).
+
 ## 2026-10-28 — Comprehensive software design review and architectural re-analysis
 
 - **Scope:** Full application audit covering Active Workout Lifecycle, Domain Engine (Progression, Recovery, 1RM, Effort), Persistence & Dual-Write Protocol, Catalogue Query & Muscle Indexing, and View/Sheet Component Architecture at commit `14332f7`.
