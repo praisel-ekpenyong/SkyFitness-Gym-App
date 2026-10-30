@@ -4,6 +4,9 @@ One entry per decision, newest first. A decision here is a settled call; the
 ticket/ADR it points to carries the reasoning. Superseded entries stay listed
 with a pointer to their successor.
 
+- **2026-10-30 — Session boundary progression and live milestone cues established.**
+  Settled that progression recommendations are applied strictly at the Session boundary for the subsequent workout, evaluating all planned work sets collectively as a unified session (preserving straight-set volume and rejecting mid-session load jumping or Dynamic Double Progression). The active workout UI provides live, inline, non-intrusive milestone cues on checked-off work sets, remaining neutral on sub-target sets and reactive to edits. `FinishSummary` introduces a dedicated Progression summary section with constructive framing for deloads and volume consolidation. Specified in `.scratch/progression-milestones/` and recorded in ADR 0016.
+
 - **2026-10-28 — Comprehensive software design review establishes tactical invariant remediation and strategic boundary roadmap.**
   Full application audit across 5 subsystems identified 7 critical state/data hazards (phantom high-water marks on set deletion, orphaned hold timers, unit-blind progression, restore key drift, unmemoized catalogue walking). Adopted two-track resolution: immediate tactical invariant patches, and strategic establishment of the 'pit of success' (ESLint boundary rules, automated schema parity tests, and sheet decomposition). Detailed in [Software design & architecture](software-design.md) and [reviews](reviews.md).
 
