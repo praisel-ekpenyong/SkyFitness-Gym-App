@@ -244,6 +244,18 @@ Greyskull's final set, taken to failure. Doubling its target reps earns a double
 Reps-mode progression when every performed work set was logged at zero weight, on any exercise: reps up to a rep-range ceiling, then added sets up to a set ceiling, and past that a human choice to add load or a harder variation. The target weight stands in only when no work set was performed.
 _Avoid_: the Bodyweight exercise flag as the trigger. One heavier performed work set uses load progression instead. A timed session with no added weight stays on add-time.
 
+**Session boundary**:
+The transition when an Active workout finishes into a Workout; the sole point where progression policies evaluate performance and prescribe targets for future sessions.
+_Avoid_: intra-workout progression, dynamic set adjustment, mid-session load jumping
+
+**Milestone cue**:
+An inline visual indicator on a checked-off Work set confirming whether it met its target or unlocked a progression step for the next workout. Warm-up sets are excluded; sub-target sets remain neutral.
+_Avoid_: set alert, failure banner, progress popup
+
+**Progression summary**:
+The section on the workout complete sheet presenting the next Prescription (load advance, rep aim, hold, or deload) for each trained exercise.
+_Avoid_: session verdict, workout recap
+
 ### Strength & recovery
 
 **Estimated 1RM**:

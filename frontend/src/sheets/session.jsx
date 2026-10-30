@@ -4,6 +4,7 @@ import { useUI } from '../store/useUI.js'
 import { EXIDX } from '../lib/exercises.js'
 import { fmtNum, fmtVol, fmtDur } from '../lib/format.js'
 import { setsDone, workSetsDone, sessionProgress, isPerformed, isWarmupRow, tonnageOf } from '../lib/workout-model.js'
+import { sessionProgressionItems } from '../lib/milestones.js'
 import { playWorkoutComplete } from '../lib/sound.js'
 import { t } from '../lib/i18n.js'
 import { nav } from '../lib/nav.js'
@@ -187,6 +188,10 @@ function WorkoutComplete({ close }) {
 }
 /** Opens the workout-complete prompt to finish or continue. */
 export const workoutCompleteSheet = () => ui().openSheet(close => <WorkoutComplete close={close} />, { kind: 'center' })
+/** Re-exports pure session progression selector. */
+export const getProgressionItems = sessionProgressionItems
+
+
 /**
  * Finish summary; shows duration, volume, PRs, and trained muscles.
  *
@@ -199,6 +204,7 @@ export const workoutCompleteSheet = () => ui().openSheet(close => <WorkoutComple
 export function FinishSummary({ w, prs, e1prs = [], routineSync = null, close }) {
   const st = useStore(s => s.S)
   const [syncChecked, setSyncChecked] = useState(false)
+  const progressionItems = sessionProgressionItems(w, st)
 
   const onDismiss = () => {
     if (syncChecked && routineSync?.routineId && routineSync?.syncedEx) {
@@ -222,6 +228,59 @@ export function FinishSummary({ w, prs, e1prs = [], routineSync = null, close })
       {prs.map(id => <div key={id} className="small accent capitalize row" style={{ gap: 5 }}><Icon name="trophy" style={{ fontSize: 13 }} />{t('New PR:')} {(EXIDX[id] || {}).n || id}</div>)}
       {e1prs.map(p => <div key={p.id} className="small accent capitalize row" style={{ gap: 5 }}><Icon name="chartLine" style={{ fontSize: 13 }} />{t('Best estimated 1RM:')} {(EXIDX[p.id] || {}).n || p.id} · {fmtNum(p.est)} {st.unit}</div>)}
     </div>}
+    {progressionItems.length > 0 && <>
+      <h4 className="sec" style={{ textAlign: 'left' }}>{t('Progression')}</h4>
+      <div
+        className="progression-card progression-summary"
+        role="list"
+        aria-label={t('Progression summary')}
+        style={{ background: 'var(--surface)', borderRadius: 'var(--r-card, 16px)', textAlign: 'left', margin: '0 0 14px', padding: 14 }}
+      >
+        {progressionItems.map((item, idx) => (
+          <div
+            key={item.id}
+            className="progression-item"
+            style={{
+              padding: '8px 0',
+              borderTop: idx > 0 ? '1px solid var(--sep)' : 'none',
+            }}
+            role="listitem"
+            aria-label={item.ariaLabel}
+          >
+            <div className="row between" style={{ gap: 8, marginBottom: 4 }}>
+              <span className="capitalize" style={{ fontSize: 15, fontWeight: 600, color: 'var(--label)' }}>
+                {item.exName}
+              </span>
+              <span className="tag nocap" aria-label={t('Progression policy: {0}', item.policyName)}>
+                {item.policyName}
+              </span>
+            </div>
+            <div className="row" style={{ gap: 6, alignItems: 'center' }}>
+              <Icon
+                name={item.iconName}
+                style={{
+                  fontSize: 16,
+                  color: item.isAdvance
+                    ? 'var(--acc)'
+                    : item.kind === 'deload'
+                    ? 'var(--yellow, #e5a50a)'
+                    : 'var(--label-2)',
+                }}
+              />
+              <span
+                style={{
+                  fontSize: 14,
+                  color: item.isAdvance ? 'var(--acc)' : 'var(--label-2)',
+                  fontWeight: item.isAdvance ? 500 : 400,
+                }}
+              >
+                {item.text}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </>}
     <h4 className="sec" style={{ textAlign: 'left' }}>{t('What you just trained')}</h4>
     <BodyMap load={loadOfWorkouts([w])} body={st.body} />
     <div style={{ height: 14 }} />
