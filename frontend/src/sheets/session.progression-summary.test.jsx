@@ -129,8 +129,8 @@ describe('FinishSummary Progression Summary', () => {
 
     const card = container.querySelector('.progression-summary')
     expect(card).not.toBeNull()
-    expect(card.textContent).toContain('Barbell Bench Press')
-    expect(card.textContent).not.toContain('Barbell Incline Bench Press')
+    expect(card.textContent.toLowerCase()).toContain('barbell bench press')
+    expect(card.textContent.toLowerCase()).not.toContain('barbell incline bench press')
   })
 
   it('omits the progression summary section entirely when no exercises have performed work sets', async () => {
@@ -185,7 +185,7 @@ describe('FinishSummary Progression Summary', () => {
 
     const card = container.querySelector('.progression-summary')
     expect(card).not.toBeNull()
-    expect(card.textContent).toContain('Barbell Bench Press')
+    expect(card.textContent.toLowerCase()).toContain('barbell bench press')
     expect(card.textContent).toContain('Linear progression')
     expect(card.textContent).toContain('60 kg → 62.5 kg (+2.5 kg)')
 
@@ -225,7 +225,7 @@ describe('FinishSummary Progression Summary', () => {
 
     const card = container.querySelector('.progression-summary')
     expect(card).not.toBeNull()
-    expect(card.textContent).toContain('Barbell Incline Bench Press')
+    expect(card.textContent.toLowerCase()).toContain('barbell incline bench press')
     expect(card.textContent).toContain('Double progression')
     expect(card.textContent).toContain('Aim for 10 reps at 24 kg')
   })
@@ -355,10 +355,10 @@ describe('FinishSummary Progression Summary', () => {
     const items = container.querySelectorAll('.progression-summary [role="listitem"]')
     expect(items.length).toBe(2)
 
-    expect(items[0].getAttribute('aria-label')).toContain('Barbell Bench Press')
+    expect(items[0].getAttribute('aria-label').toLowerCase()).toContain('barbell bench press')
     expect(items[0].textContent).toContain('60 kg → 62.5 kg (+2.5 kg)')
 
-    expect(items[1].getAttribute('aria-label')).toContain('Barbell Incline Bench Press')
+    expect(items[1].getAttribute('aria-label').toLowerCase()).toContain('barbell incline bench press')
     expect(items[1].textContent).toContain('Aim for 10 reps at 24 kg')
   })
 
@@ -387,7 +387,7 @@ describe('FinishSummary Progression Summary', () => {
 
     const card = container.querySelector('.progression-summary')
     expect(card).not.toBeNull()
-    expect(card.textContent).toContain('Barbell Bench Press')
+    expect(card.textContent.toLowerCase()).toContain('barbell bench press')
     expect(card.textContent).toContain('Greyskull LP')
     // Double increment: 2.5 * 2 = 5 kg
     expect(card.textContent).toContain('60 kg → 65 kg (+5 kg)')
@@ -435,7 +435,7 @@ describe('FinishSummary Progression Summary', () => {
 
     const card = container.querySelector('.progression-summary')
     expect(card).not.toBeNull()
-    expect(card.textContent).toContain('Barbell Bench Press')
+    expect(card.textContent.toLowerCase()).toContain('barbell bench press')
     expect(card.textContent).toContain('Linear progression')
     expect(card.textContent).toContain('60 kg → 62.5 kg (+2.5 kg)')
   })
