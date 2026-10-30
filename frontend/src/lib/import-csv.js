@@ -84,7 +84,7 @@ const COLUMNS = [
   ['seconds', ['seconds', 'duration seconds']],
   ['time', ['time', 'duration']],
   ['setType', ['set type']],
-  ['note', ['comment', 'comments', 'notes', 'note']],
+  ['note', ['exercise notes', 'exercise note', 'comment', 'comments', 'notes', 'note']],
 ]
 
 /**
@@ -435,8 +435,14 @@ export function parseWorkoutCSV(text, { unit = 'kg' } = {}) {
 
     let day = byDate.get(when.d)
     if (!day) {
-      day = { ex: new Map(), name: cell(r, 'workoutName') || '', start: when.t, end: null }
+      day = { ex: new Map(), exNotes: new Map(), name: cell(r, 'workoutName') || '', start: when.t, end: null }
       byDate.set(when.d, day)
+    }
+    const rawNote = cell(r, 'note')
+    if (rawNote) {
+      day.exNotes = day.exNotes || new Map()
+      const trimmed = rawNote.trim().slice(0, 500)
+      if (trimmed) day.exNotes.set(id, trimmed)
     }
     if (!day.name) day.name = cell(r, 'workoutName') || ''
     if (map.endTime !== undefined) { const e = parseWhen(cell(r, 'endTime')); if (e && e.t != null) day.end = e.t }
@@ -470,7 +476,7 @@ export function parseWorkoutCSV(text, { unit = 'kg' } = {}) {
     const entries = [...day.ex.entries()].map(([id, ss]) => {
       const conv2 = ss.map(({ u, ...s }) => (s.w !== undefined ? { ...s, w: convRow({ ...s, u }) } : s))
       const mx = Math.max(0, ...conv2.filter(isWorkSet).map(s => s.w || 0))
-      return { id, sets: conv2, topW: mx || null }
+      return { id, sets: conv2, topW: mx || null, ...(day.exNotes?.get(id) ? { notes: day.exNotes.get(id) } : {}) }
     })
     const base = new Date(d + 'T00:00:00').getTime()
     const start = base + (day.start ?? 18 * 3600000)

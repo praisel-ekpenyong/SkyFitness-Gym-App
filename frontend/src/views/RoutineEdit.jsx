@@ -87,6 +87,7 @@ export default function RoutineEdit() {
             null,
             () => exercisePicker(newEx => {
               const initial = seedForReplacement(S, newEx.id, id, e.sets)
+              if (initial) delete initial.notes
               exConfigSheet(
                 newEx,
                 null,
@@ -103,7 +104,11 @@ export default function RoutineEdit() {
           )
         }}>
           <Thumb ex={ex} />
-          <div className="grow"><div className="tt capitalize">{ex.n}</div><div className="ss">{exLine(e, S.unit)}</div></div>
+          <div className="grow">
+            <div className="tt capitalize">{ex.n}</div>
+            <div className="ss">{exLine(e, S.unit)}</div>
+            {e.notes && <div className="small dim" style={{ marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'flex', alignItems: 'center', gap: 4 }}><Icon name="clipboard" size={13} /><span>{e.notes}</span></div>}
+          </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 'none', alignItems: 'center' }}>
             {i > 0 && <button className={'iconbtn' + (linkedPrev ? ' on-ss' : '')} title={t('Superset with exercise above')} style={{ width: 32, height: 28, borderRadius: 8, fontSize: 15 }} onClick={ev => { ev.stopPropagation(); toggleLink(i) }}><Icon name="link" /></button>}
             <div style={{ display: 'flex', gap: 2 }}>

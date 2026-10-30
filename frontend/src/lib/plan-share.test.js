@@ -104,6 +104,29 @@ describe('plan-share engine', () => {
       expect(arr.sm).toEqual(['lats'])
       expect(emp.sm).toBeUndefined()
     })
+
+    it('preserves notes on routine exercises when non-empty, trimming and capping at 500 chars', () => {
+      const longNote = 'A'.repeat(600)
+      const S = {
+        routines: [
+          {
+            id: 'r1',
+            name: 'Legs',
+            ex: [
+              { id: BARBELL_BENCH, sets: 3, reps: 5, notes: '  Seat height 4, pin 7  ' },
+              { id: PUSH_UP, sets: 3, reps: 10, notes: longNote },
+              { id: CARDIO, sets: 1, min: 20, notes: '   ' },
+            ],
+          },
+        ],
+        customEx: [],
+        week: {},
+      }
+      const bundle = buildPlanBundle(S, 'Notes Plan')
+      expect(bundle.routines[0].ex[0].notes).toBe('Seat height 4, pin 7')
+      expect(bundle.routines[0].ex[1].notes).toBe('A'.repeat(500))
+      expect(bundle.routines[0].ex[2].notes).toBeUndefined()
+    })
   })
 
   describe('parsePlan', () => {
@@ -252,6 +275,31 @@ describe('plan-share engine', () => {
       }
       mergePlan(state2, bundle2, { schedule: false })
       expect(state2.customEx[0].sm).toEqual(['lats', 'biceps'])
+    })
+
+    it('round-trips routine exercise notes across buildPlanBundle, parsePlan, and mergePlan', () => {
+      const original = {
+        routines: [
+          {
+            id: 'r1',
+            name: 'Push Routine',
+            ex: [
+              { id: BARBELL_BENCH, sets: 4, reps: 8, notes: 'Elbows 45 degrees, pause 1s' },
+              { id: PUSH_UP, sets: 3, reps: 15 },
+            ],
+          },
+        ],
+        customEx: [],
+        week: {},
+      }
+
+      const bundle = buildPlanBundle(original, 'Shared Plan')
+      const parsed = parsePlan(JSON.stringify(bundle))
+      const targetState = { routines: [], customEx: [], week: {} }
+      mergePlan(targetState, parsed)
+
+      expect(targetState.routines[0].ex[0].notes).toBe('Elbows 45 degrees, pause 1s')
+      expect(targetState.routines[0].ex[1].notes).toBeUndefined()
     })
   })
 

@@ -8,7 +8,7 @@
 //
 // Governed by ADR 0014 and GLOSSARY.md (Routine sync).
 
-import { doneWorkSets } from './workout-model.js'
+import { doneWorkSets, cleanNote } from './workout-model.js'
 import { cleanupSg, supersetUnits } from './supersetFlow.js'
 import { EXIDX, exOr } from './exercises.js'
 
@@ -277,6 +277,13 @@ export function diffRoutineWithSession(routine, activeSession) {
       delete projected.sg
     }
 
+    const note = cleanNote(entry.notes)
+    if (note) {
+      projected.notes = note
+    } else {
+      delete projected.notes
+    }
+
     return projected
   })
 
@@ -303,12 +310,27 @@ export function diffRoutineWithSession(routine, activeSession) {
 
   // 4. Detect work set count adjustments
   const setCountChanges = []
-  for (const entry of sessionEntries) {
+  const matchedRoutineIndicesForSets = new Set()
+  for (let sIdx = 0; sIdx < sessionEntries.length; sIdx++) {
+    const entry = sessionEntries[sIdx]
     if (additions.includes(entry.id)) continue
     if (replacements.some(r => r.to === entry.id)) continue
 
-    const orig = routineExercises.find(e => e.id === entry.id)
-    if (!orig) continue
+    let origIdx = -1
+    if (
+      routineExercises.length === sessionEntries.length &&
+      routineExercises[sIdx]?.id === entry.id &&
+      !matchedRoutineIndicesForSets.has(sIdx)
+    ) {
+      origIdx = sIdx
+    } else {
+      origIdx = routineExercises.findIndex(
+        (e, i) => e.id === entry.id && !matchedRoutineIndicesForSets.has(i)
+      )
+    }
+    if (origIdx === -1) continue
+    matchedRoutineIndicesForSets.add(origIdx)
+    const orig = routineExercises[origIdx]
 
     const doneCount = doneWorkSets(entry).length
     if (doneCount > 0 && doneCount !== orig.sets) {
@@ -317,10 +339,48 @@ export function diffRoutineWithSession(routine, activeSession) {
     }
   }
 
+  // 5. Detect exercise note adjustments
+  const noteChanges = []
+  const matchedRoutineIndicesForNotes = new Set()
+  for (let sIdx = 0; sIdx < sessionEntries.length; sIdx++) {
+    const entry = sessionEntries[sIdx]
+    if (additions.includes(entry.id)) continue
+    if (replacements.some(r => r.to === entry.id)) continue
+
+    let origIdx = -1
+    if (
+      routineExercises.length === sessionEntries.length &&
+      routineExercises[sIdx]?.id === entry.id &&
+      !matchedRoutineIndicesForNotes.has(sIdx)
+    ) {
+      origIdx = sIdx
+    } else {
+      origIdx = routineExercises.findIndex(
+        (e, i) => e.id === entry.id && !matchedRoutineIndicesForNotes.has(i)
+      )
+    }
+    if (origIdx === -1) continue
+    matchedRoutineIndicesForNotes.add(origIdx)
+    const orig = routineExercises[origIdx]
+
+    const sessionNote = cleanNote(entry.notes)
+    const origNote = cleanNote(orig.notes)
+
+    if (sessionNote !== origNote) {
+      const name = exerciseDisplayName(entry.id, entry)
+      if (sessionNote) {
+        noteChanges.push(`${name}: note updated`)
+      } else {
+        noteChanges.push(`${name}: note removed`)
+      }
+    }
+  }
+
   const changes = [
     ...structuralChanges,
     ...supersetChanges,
     ...setCountChanges,
+    ...noteChanges,
   ]
 
   const hasDiff = changes.length > 0

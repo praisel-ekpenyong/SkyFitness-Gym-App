@@ -177,6 +177,10 @@ export function buildCompletedWorkout(active, { end = Date.now(), prs = [], unit
       topW: entry.topW || null,
       target: entry.target || null,
     }
+    const note = typeof entry.notes === 'string' ? entry.notes.trim() : undefined
+    if (note) {
+      completed.notes = note.slice(0, 500)
+    }
     // Persist the resolved Prescription so the next session can see the duration a deload
     // actually prescribed and where a Run began. Older Entries simply have no `plan`.
     const plan = planRecord(entry.plan)

@@ -11,7 +11,7 @@ import { nav } from '../lib/nav.js'
 import Media, { Thumb } from '../components/Media.jsx'
 import Stepper from '../components/Stepper.jsx'
 import Icon from '../components/Icon.jsx'
-import { Button, Switch, Segmented, SelectRow, Row, SearchField } from '../components/ui.jsx'
+import { Button, Switch, Segmented, SelectRow, Row, SearchField, TextArea } from '../components/ui.jsx'
 import { glyphOf, DEFAULT_GLYPH } from '../lib/glyphs.js'
 import { FILTER_MUSCLES, MUSCLES, MUSCLE_NAME, primaryMuscleOf, secondaryMusclesOf } from '../lib/muscles.js'
 import { queryCatalogue } from '../lib/catalogue-query.js'
@@ -427,9 +427,11 @@ export function ExConfig({ ex, existing, onSave, onDelete, close, routine, initi
   const st = useStore(s => s.S)
   const cardio = isCardio(ex.id)
   const [c, setC] = useState(() => {
-    if (existing) return existing
-    const base = defaultConfig(ex.id)
-    return initial ? { ...base, ...initial } : base
+    const base = existing || (initial ? { ...defaultConfig(ex.id), ...initial } : defaultConfig(ex.id))
+    return {
+      ...base,
+      notes: existing?.notes || initial?.notes || '',
+    }
   })
   // Cardio keeps its own duration+speed form; the reps/time choice (issue #16) is offered for
   // everything else, which is where the gap was — planks, hangs, wall sits, loaded carries.
@@ -454,14 +456,16 @@ export function ExConfig({ ex, existing, onSave, onDelete, close, routine, initi
     // rather than carrying a flag nothing downstream can read.
     const flags = {}
     if (bw !== isBodyweightEq(ex.id)) flags.bodyweight = bw
-    if (cardio) onSave({ sets, min: Math.max(1, Math.round(c.min) || 20), speed: Math.max(0, c.speed || 8) })
-    else if (mode === 'time') onSave({ sets, mode: 'time', sec: Math.max(1, Math.round(c.sec) || 45), weight: Math.max(0, c.weight || 0), ...flags, ...prog })
+    const trimmedNotes = typeof c.notes === 'string' ? c.notes.trim().slice(0, 500) : ''
+    const noteProp = trimmedNotes ? { notes: trimmedNotes } : {}
+    if (cardio) onSave({ sets, min: Math.max(1, Math.round(c.min) || 20), speed: Math.max(0, c.speed || 8), ...noteProp })
+    else if (mode === 'time') onSave({ sets, mode: 'time', sec: Math.max(1, Math.round(c.sec) || 45), weight: Math.max(0, c.weight || 0), ...flags, ...prog, ...noteProp })
     else {
       // A unilateral target is stored even: the split has to divide, and a typed 15 would
       // otherwise plan seven reps on one side and eight on the other, every session.
       const typed = Math.max(1, Math.round(c.reps) || 10)
       const reps = perSide ? Math.ceil(typed / 2) * 2 : typed
-      const out = { sets, mode: 'reps', reps, weight: Math.max(0, c.weight || 0), ...flags, ...(perSide ? { side: true } : {}), ...prog }
+      const out = { sets, mode: 'reps', reps, weight: Math.max(0, c.weight || 0), ...flags, ...(perSide ? { side: true } : {}), ...prog, ...noteProp }
       if (policyFor({ ...c, id: ex.id }, routine, 'reps') === 'double') out.repsMin = Math.min(reps, Math.max(1, Math.round(c.repsMin) || Math.max(1, reps - 2)))
       // A ceiling below the working reps would tell you to add a set on day one.
       if (bw && !(out.weight > 0) && c.repsMax > 0) out.repsMax = Math.max(reps, Math.round(c.repsMax))
@@ -536,6 +540,14 @@ export function ExConfig({ ex, existing, onSave, onDelete, close, routine, initi
         : t('Reps climb by one whenever every set was clean. Set a ceiling to add sets instead of reps forever.')}
     </div>}
     <ProgressionFields ex={ex} mode={mode} c={c} setC={setC} routine={routine} unit={st.unit} />
+    <TextArea
+      aria-label={t('Notes and cues')}
+      placeholder={t('Notes, cues, or machine setup...')}
+      maxLength={500}
+      value={c.notes || ''}
+      onChange={e => setC(x => ({ ...x, notes: e.target.value }))}
+    />
+    <div className="small dim" style={{ textAlign: 'right', marginTop: 4, marginBottom: 12 }}>{(c.notes || '').length}/500</div>
     <Button variant="primary" onClick={save}>{actionLabel || (existing ? t('Save') : t('Add to routine'))}</Button>
     {onReplace && existing && <><div style={{ height: 8 }} /><Button icon="shuffle" onClick={() => { close(); onReplace() }}>{t('Replace exercise')}</Button></>}
     {ex.custom && <><div style={{ height: 8 }} /><Button icon="pencil" onClick={() => { close(); customExSheet(ex) }}>{t('Edit or delete this exercise')}</Button></>}

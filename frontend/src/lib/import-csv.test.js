@@ -160,3 +160,41 @@ describe('importPreview — the totalling dry-run', () => {
     expect(mergeImport(S1, parsed)).toEqual({ added: 1, skipped: 1 })
   })
 })
+
+describe('exercise notes CSV import mapping', () => {
+  it('maps Hevy exercise_notes to entry.notes, trimming and capping at 500 chars', () => {
+    const longNote = 'B'.repeat(600)
+    const csv = [
+      'title,start_time,end_time,description,exercise_title,superset_id,exercise_notes,set_index,set_type,weight_kg,reps,distance_km,duration_seconds,rpe',
+      `"Leg Day","2026-09-01 10:00:00","2026-09-01 11:00:00","","Bench Press","", " Seat 5, pin 3 ",0,"normal",80,5,,,`,
+      `"Leg Day","2026-09-01 10:00:00","2026-09-01 11:00:00","","Bench Press","","",1,"normal",80,5,,,`,
+      `"Leg Day","2026-09-01 10:00:00","2026-09-01 11:00:00","","Squat (Barbell)","","${longNote}",0,"normal",100,5,,,`,
+      `"Leg Day","2026-09-01 10:00:00","2026-09-01 11:00:00","","Deadlift (Barbell)","","   ",0,"normal",120,5,,,`,
+    ].join('\n')
+
+    const res = parseWorkoutCSV(csv, { unit: 'kg' })
+    expect(res.workouts).toHaveLength(1)
+    const entries = res.workouts[0].entries
+    expect(entries).toHaveLength(3)
+
+    // Bench Press should retain note even though set 2 had empty string
+    expect(entries[0].notes).toBe('Seat 5, pin 3')
+
+    // Squat note capped at 500 chars
+    expect(entries[1].notes).toBe('B'.repeat(500))
+
+    // Deadlift whitespace-only note omitted
+    expect(entries[2].notes).toBeUndefined()
+  })
+
+  it('maps FitNotes/Strong Comment or Notes column to entry.notes', () => {
+    const csv = [
+      'Date,Exercise,Weight,Reps,Comment',
+      '2026-09-02,Bench Press,80,5,"Right shoulder tight"',
+    ].join('\n')
+
+    const res = parseWorkoutCSV(csv, { unit: 'kg' })
+    expect(res.workouts[0].entries[0].notes).toBe('Right shoulder tight')
+  })
+})
+
