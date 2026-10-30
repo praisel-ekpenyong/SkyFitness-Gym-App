@@ -95,6 +95,7 @@ describe('Workout milestone badges', () => {
       target: { mode: 'reps', reps: 5, weight: 60, prog: 'linear' },
       sets: [
         { r: 5, w: 20, done: false, phase: 'warmup' },
+        { r: 5, w: 60, done: false },
         { r: 5, w: 60, done: false }
       ]
     }
@@ -106,10 +107,29 @@ describe('Workout milestone badges', () => {
     const setRows = view.container.querySelectorAll('.setrow')
     expect(setRows[0].querySelector('.milestone-badge')).toBeNull()
 
-    // Check off work set (index 1)
+    // Check off intermediate work set (index 1)
     toggleSet(1)
     expect(setRows[1].querySelector('.milestone-badge')).not.toBeNull()
     expect(setRows[1].querySelector('.milestone-badge').textContent).toBe('5/5 reps')
+  })
+
+  it('displays unlocked milestone on final work set under linear progression when all work sets hit target reps', () => {
+    const entry = {
+      id: 'barbell-bench-press',
+      target: { mode: 'reps', reps: 5, weight: 60, prog: 'linear', sets: 2 },
+      sets: [
+        { r: 5, w: 60, done: false },
+        { r: 5, w: 60, done: false }
+      ]
+    }
+    view = renderWorkout([entry])
+
+    toggleSet(0)
+    const setRows = view.container.querySelectorAll('.setrow')
+    expect(setRows[0].querySelector('.milestone-badge')?.textContent).toBe('5/5 reps')
+
+    toggleSet(1)
+    expect(setRows[1].querySelector('.milestone-badge')?.textContent).toBe('All sets hit! +2.5 kg unlocked next session')
   })
 
   it('quietly logs sets that fall short of target with neutral styling and no milestone badge', () => {
