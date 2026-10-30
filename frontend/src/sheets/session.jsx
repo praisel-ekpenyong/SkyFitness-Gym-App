@@ -3,8 +3,8 @@ import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { EXIDX } from '../lib/exercises.js'
 import { fmtNum, fmtVol, fmtDur } from '../lib/format.js'
-import { setsDone, workSetsDone, doneWorkSets, sessionProgress, isPerformed, isWarmupRow, tonnageOf, defaultConfig } from '../lib/workout-model.js'
-import { nextPrescription, policyFor, POLICY_NAME } from '../lib/progression.js'
+import { setsDone, workSetsDone, sessionProgress, isPerformed, isWarmupRow, tonnageOf } from '../lib/workout-model.js'
+import { sessionProgressionItems } from '../lib/milestones.js'
 import { playWorkoutComplete } from '../lib/sound.js'
 import { t } from '../lib/i18n.js'
 import { nav } from '../lib/nav.js'
@@ -188,108 +188,9 @@ function WorkoutComplete({ close }) {
 }
 /** Opens the workout-complete prompt to finish or continue. */
 export const workoutCompleteSheet = () => ui().openSheet(close => <WorkoutComplete close={close} />, { kind: 'center' })
-function toTitleCase(str) {
-  if (!str) return ''
-  return String(str)
-    .split(' ')
-    .map(word => (word ? word[0].toUpperCase() + word.slice(1) : ''))
-    .join(' ')
-}
+/** Re-exports pure session progression selector. */
+export const getProgressionItems = sessionProgressionItems
 
-/**
- * Derives the progression summary for each trained exercise in a completed workout.
- *
- * @param {Object} w Completed workout.
- * @param {Object} st Current store state S.
- * @returns {Array<Object>} List of progression descriptors for trained exercises.
- */
-export function getProgressionItems(w, st) {
-  if (!w?.entries) return []
-  const routine = (w.routineId && st?.routines?.find(r => r.id === w.routineId)) || null
-  const effectiveS = (st?.workouts || []).some(item => item.id === w.id || item === w)
-    ? st
-    : { ...(st || {}), workouts: [...(st?.workouts || []), w] }
-
-  const items = []
-  for (const entry of w.entries) {
-    if (doneWorkSets(entry).length <= 0) continue
-
-    const cfg = { ...defaultConfig(entry.id), ...(entry.target || {}), id: entry.id }
-    const p = nextPrescription(effectiveS, cfg, routine)
-    const ex = EXIDX[entry.id] || { n: entry.id }
-    const exName = toTitleCase(ex.n || entry.id)
-    const unit = st?.unit || w.unit || 'kg'
-    const policy = p.policy || policyFor(cfg, routine)
-    const policyName = POLICY_NAME[policy] || policy
-
-    const oldWeight = heaviestSetWeight(entry) || entry.target?.weight || 0
-    let text = ''
-    let iconName = 'check'
-    let isAdvance = false
-
-    if (p.kind === 'up') {
-      isAdvance = true
-      iconName = 'arrowUp'
-      if (p.weight != null) {
-        const delta = Math.round((p.weight - oldWeight) * 10) / 10
-        const deltaStr = delta > 0 ? ` (+${fmtNum(delta)} ${unit})` : ''
-        text = `${fmtNum(oldWeight)} ${unit} → ${fmtNum(p.weight)} ${unit}${deltaStr}`
-      } else if (p.sec != null) {
-        const oldSec = entry.target?.sec || 0
-        const deltaSec = p.sec - oldSec
-        const deltaStr = deltaSec > 0 ? ` (+${deltaSec}s)` : ''
-        text = `${oldSec}s → ${p.sec}s${deltaStr}`
-      } else if (p.sets != null) {
-        text = t('+1 set ({0} sets of {1} reps)', p.sets, p.reps)
-      } else if (p.reps != null) {
-        text = t('Aim for {0} reps', p.reps)
-      } else {
-        text = t('Progress earned')
-      }
-    } else if (p.kind === 'deload') {
-      iconName = 'info'
-      text = t('Deload 10% to reset and rebuild')
-    } else if (p.kind === 'hold') {
-      if (policy === 'double' && p.reps != null) {
-        iconName = 'target'
-        const wVal = p.weight ?? oldWeight
-        text = t('Aim for {0} reps at {1} {2}', p.reps, fmtNum(wVal), unit)
-      } else if (p.sec != null) {
-        iconName = 'check'
-        text = t('Hold at {0}s to solidify volume', p.sec)
-      } else if (oldWeight <= 0 && p.reps != null) {
-        iconName = 'check'
-        text = t('Hold at {0} reps to solidify volume', p.reps)
-      } else {
-        iconName = 'check'
-        const wVal = p.weight ?? oldWeight
-        text = t('Hold at {0} {1} to solidify volume', fmtNum(wVal), unit)
-      }
-    } else if (p.kind === 'first') {
-      iconName = 'target'
-      text = t('First session baseline')
-    } else {
-      iconName = 'check'
-      text = t('Targets stay where you set them')
-    }
-
-    const ariaLabel = `${exName}: ${policyName}, ${text}`
-
-    items.push({
-      id: entry.id,
-      exName,
-      policy,
-      policyName,
-      kind: p.kind,
-      text,
-      iconName,
-      isAdvance,
-      ariaLabel,
-    })
-  }
-
-  return items
-}
 
 /**
  * Finish summary; shows duration, volume, PRs, and trained muscles.
@@ -303,7 +204,7 @@ export function getProgressionItems(w, st) {
 export function FinishSummary({ w, prs, e1prs = [], routineSync = null, close }) {
   const st = useStore(s => s.S)
   const [syncChecked, setSyncChecked] = useState(false)
-  const progressionItems = getProgressionItems(w, st)
+  const progressionItems = sessionProgressionItems(w, st)
 
   const onDismiss = () => {
     if (syncChecked && routineSync?.routineId && routineSync?.syncedEx) {
@@ -347,7 +248,7 @@ export function FinishSummary({ w, prs, e1prs = [], routineSync = null, close })
             aria-label={item.ariaLabel}
           >
             <div className="row between" style={{ gap: 8, marginBottom: 4 }}>
-              <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--label)' }}>
+              <span className="capitalize" style={{ fontSize: 15, fontWeight: 600, color: 'var(--label)' }}>
                 {item.exName}
               </span>
               <span className="tag nocap" aria-label={t('Progression policy: {0}', item.policyName)}>

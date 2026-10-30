@@ -670,7 +670,6 @@ h4.sec{
 .setrow.eff3 .stp .num{font-size:14px}
 .setrow.done .n{background:var(--acc);color:var(--on-acc)}
 .setrow.done{opacity:.45}
-.setrow.done:has(.milestone-badge){opacity:.85}
 .milestone-badge{
   display:inline-flex;align-items:center;gap:3px;
   background:var(--acc-soft);color:var(--acc);border-radius:99px;
