@@ -29,6 +29,7 @@ up the duplicated walk/scan helpers (merged `f7d5f37`, `bfb0e13`).
 
 ## Resolved questions
 
+- **Session boundary and live milestone cues** — decided 2026-10-30: progression recommendations evaluate strictly at the Session boundary across a unified session, paired with live inline milestone cues during the workout and a dedicated Progression summary on `FinishSummary`. Detailed in ADR 0016 and `.scratch/progression-milestones/spec.md`.
 - **Manual mid-run weight change under linear** — decided 2026-10-27 and merged
   as `218877a`: any change of working value (Deload, up, or the lifter's hand)
   starts a new Run whose first session is a baseline, never a Stall — the same
