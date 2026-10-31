@@ -1,6 +1,6 @@
 import { describe, expect, it, afterEach } from 'vitest'
 import { EXIDX, EXDB, smOf, registerCustom } from './exercises.js'
-import { loadOfWorkouts, musclesOf, loadOf, muscleWeightsOf, lastTrainedByMuscle, primaryMuscleOf, secondaryMusclesOf } from './muscles.js'
+import { loadOfWorkouts, musclesOf, loadOf, muscleWeightsOf, lastTrainedByMuscle, primaryMuscleOf, secondaryMusclesOf, sessionMuscleDistribution } from './muscles.js'
 
 // The catalogue keeps the source dataset's secondary-muscle spellings; musclesOf maps
 // those aliases to the canonical body-map slugs and applies the 0.4 support weight.
@@ -654,6 +654,199 @@ describe('tokenized catalogue search & normalization', () => {
 
     // Multiple secondary tokens: attributes the first non-primary/non-title match
     expect(secondaryMatchForQuery(bench, 'triceps delts')).toBe('triceps')
+  })
+})
+
+describe('sessionMuscleDistribution', () => {
+  it('quantifies compound exercise distribution with 1.0 primary and 0.4 secondary effective sets', () => {
+    const workout = {
+      entries: [
+        {
+          id: '0025', // Barbell Bench Press (primary: chest, secondaries: triceps, deltoids)
+          sets: [
+            { w: 80, r: 8, done: true },
+            { w: 80, r: 8, done: true },
+            { w: 80, r: 8, done: true },
+          ],
+        },
+      ],
+    }
+
+    const dist = sessionMuscleDistribution(workout)
+    expect(dist).toHaveLength(3)
+
+    const chest = dist.find(m => m.slug === 'chest')
+    expect(chest).toEqual({
+      slug: 'chest',
+      name: 'Chest',
+      effectiveSets: 3,
+      primarySets: 3,
+      secondarySets: 0,
+      assistSets: 0,
+      compoundSets: 0,
+      exercises: ['barbell bench press'],
+    })
+
+    const triceps = dist.find(m => m.slug === 'triceps')
+    expect(triceps).toEqual({
+      slug: 'triceps',
+      name: 'Triceps',
+      effectiveSets: 1.2,
+      primarySets: 0,
+      secondarySets: 3,
+      assistSets: 1.2,
+      compoundSets: 3,
+      exercises: ['barbell bench press'],
+    })
+
+    const deltoids = dist.find(m => m.slug === 'deltoids')
+    expect(deltoids).toEqual({
+      slug: 'deltoids',
+      name: 'Shoulders',
+      effectiveSets: 1.2,
+      primarySets: 0,
+      secondarySets: 3,
+      assistSets: 1.2,
+      compoundSets: 3,
+      exercises: ['barbell bench press'],
+    })
+  })
+
+  it('excludes warm-up sets from effective sets and set counts', () => {
+    const workout = {
+      entries: [
+        {
+          id: '0025',
+          sets: [
+            { w: 40, r: 10, done: true, phase: 'warmup', warmup: true },
+            { w: 60, r: 5, done: true, warmup: true },
+            { w: 80, r: 8, done: true },
+            { w: 80, r: 8, done: false }, // undone
+          ],
+        },
+      ],
+    }
+
+    const dist = sessionMuscleDistribution(workout)
+    const chest = dist.find(m => m.slug === 'chest')
+    expect(chest.primarySets).toBe(1)
+    expect(chest.effectiveSets).toBe(1)
+
+    const triceps = dist.find(m => m.slug === 'triceps')
+    expect(triceps.secondarySets).toBe(1)
+    expect(triceps.assistSets).toBe(0.4)
+    expect(triceps.compoundSets).toBe(1)
+    expect(triceps.effectiveSets).toBe(0.4)
+  })
+
+  it('returns empty array when workout has zero completed work sets or only warm-ups', () => {
+    expect(sessionMuscleDistribution(null)).toEqual([])
+    expect(sessionMuscleDistribution({})).toEqual([])
+    expect(sessionMuscleDistribution({ entries: [] })).toEqual([])
+
+    const warmOnly = {
+      entries: [
+        {
+          id: '0025',
+          sets: [
+            { w: 40, r: 10, done: true, warmup: true },
+            { w: 80, r: 8, done: false },
+          ],
+        },
+      ],
+    }
+    expect(sessionMuscleDistribution(warmOnly)).toEqual([])
+  })
+
+  it('accumulates multi-exercise work and assistance across overlapping muscles', () => {
+    const workout = {
+      entries: [
+        {
+          id: '0025', // Barbell Bench Press (chest primary, triceps/deltoids secondary)
+          sets: [
+            { w: 100, r: 5, done: true },
+            { w: 100, r: 5, done: true },
+            { w: 100, r: 5, done: true },
+          ],
+        },
+        {
+          id: '0018', // Assisted standing triceps extension (triceps primary)
+          sets: [
+            { w: 20, r: 10, done: true },
+            { w: 20, r: 10, done: true },
+          ],
+        },
+      ],
+    }
+
+    const dist = sessionMuscleDistribution(workout)
+
+    // Triceps received 2 direct sets + 3 assist sets (1.2 effective) = 3.2 effective sets
+    const triceps = dist.find(m => m.slug === 'triceps')
+    expect(triceps.primarySets).toBe(2)
+    expect(triceps.secondarySets).toBe(3)
+    expect(triceps.assistSets).toBe(1.2)
+    expect(triceps.compoundSets).toBe(3)
+    expect(triceps.effectiveSets).toBe(3.2)
+    expect(triceps.exercises).toEqual([
+      'barbell bench press',
+      'assisted standing triceps extension (with towel)',
+    ])
+
+    // Chest has 3 direct sets = 3.0 effective sets
+    const chest = dist.find(m => m.slug === 'chest')
+    expect(chest.primarySets).toBe(3)
+    expect(chest.effectiveSets).toBe(3)
+
+    // Triceps (3.2) ranks ahead of Chest (3.0)
+    expect(dist[0].slug).toBe('triceps')
+    expect(dist[1].slug).toBe('chest')
+  })
+
+  it('sorts by effectiveSets descending, then primarySets descending, then alphabetical', () => {
+    const workout = {
+      entries: [
+        {
+          id: '0025', // Bench: 3 sets -> chest: 3, deltoids: 1.2, triceps: 1.2
+          sets: [
+            { w: 100, r: 5, done: true },
+            { w: 100, r: 5, done: true },
+            { w: 100, r: 5, done: true },
+          ],
+        },
+      ],
+    }
+
+    const dist = sessionMuscleDistribution(workout)
+    expect(dist.map(m => m.slug)).toEqual(['chest', 'deltoids', 'triceps'])
+    // Both deltoids and triceps have effectiveSets: 1.2 and primarySets: 0
+    // In English display names: 'Shoulders' < 'Triceps' alphabetically
+    expect(dist[1].name).toBe('Shoulders')
+    expect(dist[2].name).toBe('Triceps')
+  })
+
+  it('supports custom exercises with muscleWeights snapshot fallback', () => {
+    const workout = {
+      entries: [
+        {
+          id: 'custom-arms',
+          n: 'Arm Blast',
+          muscleWeights: { biceps: 0.5, triceps: 0.5 },
+          sets: [
+            { w: 20, r: 10, done: true },
+            { w: 20, r: 10, done: true },
+            { w: 20, r: 10, done: true },
+          ],
+        },
+      ],
+    }
+
+    const dist = sessionMuscleDistribution(workout)
+    expect(dist).toHaveLength(2)
+    const biceps = dist.find(m => m.slug === 'biceps')
+    expect(biceps.primarySets).toBe(1.5)
+    expect(biceps.effectiveSets).toBe(1.5)
+    expect(biceps.exercises).toEqual(['Arm Blast'])
   })
 })
 

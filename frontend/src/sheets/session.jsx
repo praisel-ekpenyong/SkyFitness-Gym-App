@@ -11,8 +11,11 @@ import { nav } from '../lib/nav.js'
 import Icon from '../components/Icon.jsx'
 import { Button, Switch, TextArea } from '../components/ui.jsx'
 import BodyMap from '../components/BodyMap.jsx'
+import SessionMuscleDistribution from '../components/SessionMuscleDistribution.jsx'
 import { loadOfWorkouts } from '../lib/muscles.js'
 import { bestKnownWeight, heaviestSetWeight, peekWeightCommit } from '../lib/active-workout.js'
+
+export { SessionMuscleDistribution }
 
 /** Reads the shared store state. */
 const S = () => useStore.getState().S
@@ -204,6 +207,7 @@ export const getProgressionItems = sessionProgressionItems
 export function FinishSummary({ w, prs, e1prs = [], routineSync = null, close }) {
   const st = useStore(s => s.S)
   const [syncChecked, setSyncChecked] = useState(false)
+  const [selectedMuscle, setSelectedMuscle] = useState(null)
   const progressionItems = sessionProgressionItems(w, st)
 
   const onDismiss = () => {
@@ -282,7 +286,19 @@ export function FinishSummary({ w, prs, e1prs = [], routineSync = null, close })
       </div>
     </>}
     <h4 className="sec" style={{ textAlign: 'left' }}>{t('What you just trained')}</h4>
-    <BodyMap load={loadOfWorkouts([w])} body={st.body} />
+    <BodyMap
+      className="tappable"
+      load={loadOfWorkouts([w])}
+      body={st.body}
+      selected={selectedMuscle}
+      onMuscle={m => setSelectedMuscle(s => s === m ? null : m)}
+    />
+    <div style={{ height: 10 }} />
+    <SessionMuscleDistribution
+      workout={w}
+      selectedMuscle={selectedMuscle}
+      onSelectMuscle={m => setSelectedMuscle(s => s === m ? null : m)}
+    />
     <div style={{ height: 14 }} />
     {routineSync?.hasDiff && (
       <div className="card" style={{ textAlign: 'left', margin: '0 0 14px', padding: 14 }}>
