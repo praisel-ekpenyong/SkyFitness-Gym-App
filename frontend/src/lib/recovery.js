@@ -8,6 +8,7 @@ import { LB_TO_KG } from './bodyweight.js'
 // 1 - exp(-stimulus / REF) maps any session size onto [0,1) so volume raises the starting
 // fatigue level without ever pinning it, and the value can then fade asymptotically.
 export const FATIGUE_REF_VOLUME = 2000  // default reference: kg of intensity-weighted volume per session
+export const FATIGUE_MIN_REF_FLOOR = FATIGUE_REF_VOLUME * 0.25  // 500 kg: floor to prevent denominator collapse during deloads
 export const FATIGUE_MIN_SESSIONS = 3  // smoothing horizon for the causal per-muscle reference
 // Computational bound for the stimulus scan, not a semantic cliff: after 30 days (20
 // half-lives) a session contributes below 1e-6 to the accumulated value.
@@ -82,7 +83,7 @@ const REP_CAP = 12
  * @param {number} reps - Completed reps; missing or falsy counts as 1 and reps cap at 12.
  * @returns {number} Estimated 1RM in the same unit as load.
  */
-const epley1RM = (load, reps) => load * (1 + Math.min(reps || 1, REP_CAP) / 30)
+const epley1RM = (load, reps) => (reps === 1 ? load : load * (1 + Math.min(reps || 1, REP_CAP) / 30))
 
 /**
  * Coerce a value to a finite number for load math.
@@ -308,7 +309,7 @@ function fatigueStimuli(workouts, current, opts = {}) {
       if (!(stimulus > 0)) continue
       byMuscle[slug].push({ slug, timestamp, stimulus: stimulus / references[slug] })
       const ewma = references[slug] + (stimulus - references[slug]) / FATIGUE_MIN_SESSIONS
-      references[slug] = Math.min(references[slug], ewma)
+      references[slug] = Math.max(FATIGUE_MIN_REF_FLOOR, Math.min(references[slug], ewma))
     }
   }
   return byMuscle
@@ -330,7 +331,8 @@ function fatigueValue(events, now) {
   let value = 0
   let lastTimestamp = events[0].timestamp
   for (const event of events) {
-    value *= halfLifeDecay(event.timestamp - lastTimestamp, FATIGUE_HALF_LIFE_MS)
+    const elapsed = Math.max(0, Math.min(event.timestamp, now) - Math.min(lastTimestamp, now))
+    value *= halfLifeDecay(elapsed, FATIGUE_HALF_LIFE_MS)
     value += event.stimulus
     lastTimestamp = event.timestamp
   }

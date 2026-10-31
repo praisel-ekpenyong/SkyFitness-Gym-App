@@ -131,6 +131,21 @@ describe('strengthExerciseRows', () => {
     expect(benchRow.decay).toBeCloseTo(benchDecay, 4)
     expect(benchRow.current).toBeCloseTo(Math.round(102 * benchDecay * 10) / 10, 2)
   })
+
+  it('yields 1.0 strength retention for future-dated workout sets', () => {
+    const futureWorkout = {
+      id: 'w-future',
+      d: new Date(NOW + 2 * DAY).toISOString().slice(0, 10),
+      start: NOW + 2 * DAY,
+      unit: 'kg',
+      entries: [bench],
+    }
+    const S = unitState([futureWorkout])
+    const rows = strengthExerciseRows(S, NOW)
+    expect(rows).toHaveLength(1)
+    expect(rows[0].decay).toBe(1)
+    expect(rows[0].current).toBe(102)
+  })
 })
 
 describe('strengthExerciseRowsForMuscle', () => {
