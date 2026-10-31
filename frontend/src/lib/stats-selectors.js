@@ -241,7 +241,7 @@ export function selectStatsOverview(S, opts = {}) {
       load,
       worked,
       missed,
-      top: worked.slice(0, 4),
+      top: worked.slice(0, 5),
     },
     fatigue: { values: fatigueValues, states: fatigueStates },
     strength: {
