@@ -41,6 +41,7 @@ vi.mock('../components/BodyMap.jsx', () => ({
       { 'data-body-map': true, 'data-selected-muscle': props.selected || '' },
       React.createElement('button', {
         'data-muscle': 'chest',
+        'aria-label': props.getA11yLabel ? props.getA11yLabel('chest', props.load?.chest) : 'Chest',
         onClick: () => props.onMuscle?.('chest'),
       }, 'Chest'),
     )
@@ -267,4 +268,102 @@ it('refreshes the body-weight chart on the shared minute clock without a Workout
   expect(before).toBeTruthy()
   await tick(60000)
   expect(chartDays()).not.toBe(before)
+})
+
+describe('MuscleBalance expansion and a11y', () => {
+  function multiMuscleWorkouts() {
+    return [
+      workout('w-7muscles', BASE_NOW - DAY, [
+        { id: 'ex-chest', muscleWeights: { chest: 1 }, sets: [set(true, { w: 100, r: 8 })] },
+        { id: 'ex-quads', muscleWeights: { quadriceps: 1 }, sets: [set(true, { w: 120, r: 8 })] },
+        { id: 'ex-hams', muscleWeights: { hamstring: 1 }, sets: [set(true, { w: 90, r: 8 })] },
+        { id: 'ex-glutes', muscleWeights: { gluteal: 1 }, sets: [set(true, { w: 80, r: 8 })] },
+        { id: 'ex-back', muscleWeights: { 'upper-back': 1 }, sets: [set(true, { w: 70, r: 8 })] },
+        { id: 'ex-shoulders', muscleWeights: { deltoids: 1 }, sets: [set(true, { w: 50, r: 8 })] },
+        { id: 'ex-biceps', muscleWeights: { biceps: 1 }, sets: [set(true, { w: 30, r: 8 })] },
+      ]),
+    ]
+  }
+
+  it('displays top 5 muscles by default and expands to show all worked muscles on toggle', async () => {
+    resetFixture(multiMuscleWorkouts())
+    await mountStats()
+
+    const card = muscleCard()
+    expect(card).toBeTruthy()
+
+    // 7 muscles worked: default view shows top 5
+    let rows = card.querySelectorAll('.mrow')
+    expect(rows).toHaveLength(5)
+
+    const toggleBtn = buttonWithText(card, 'Show all (7)')
+    expect(toggleBtn).toBeTruthy()
+
+    // Toggle expansion to show all
+    await click(toggleBtn)
+    rows = card.querySelectorAll('.mrow')
+    expect(rows).toHaveLength(7)
+    expect(buttonWithText(card, 'Show top 5')).toBeTruthy()
+
+    // Toggle back to top 5
+    await click(buttonWithText(card, 'Show top 5'))
+    rows = card.querySelectorAll('.mrow')
+    expect(rows).toHaveLength(5)
+    expect(buttonWithText(card, 'Show all (7)')).toBeTruthy()
+  })
+
+  it('makes missed muscle chips interactive and selects muscle in inspector with a11y attributes', async () => {
+    resetFixture(multiMuscleWorkouts())
+    await mountStats()
+
+    const card = muscleCard()
+    const missedChip = card.querySelector('.mchip.miss')
+    expect(missedChip).toBeTruthy()
+    expect(missedChip.getAttribute('role')).toBe('button')
+    expect(missedChip.getAttribute('tabindex')).toBe('0')
+
+    // Click missed muscle chip
+    await click(missedChip)
+
+    const inspector = card.querySelector('.muscle-inspector')
+    expect(inspector).toBeTruthy()
+    expect(inspector.getAttribute('role')).toBe('status')
+    expect(inspector.getAttribute('aria-live')).toBe('polite')
+    expect(inspector.textContent).toContain('not trained')
+
+    // Clear inspector
+    await click(buttonWithText(inspector, 'Clear'))
+    expect(card.querySelector('.muscle-inspector')).toBeNull()
+
+    // Keyboard activation via Enter key
+    const chipAgain = card.querySelector('.mchip.miss')
+    await act(async () => {
+      chipAgain.dispatchEvent(new dom.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    })
+    expect(card.querySelector('.muscle-inspector')).toBeTruthy()
+  })
+
+  it('supplies rich getA11yLabel across Balance, Fatigue, and Strength views', async () => {
+    resetFixture(multiMuscleWorkouts())
+    await mountStats()
+
+    // 1. Balance view
+    expect(lastMap().getA11yLabel).toBeTypeOf('function')
+    const balanceChest = lastMap().getA11yLabel('chest')
+    expect(balanceChest).toMatch(/Chest.*effective sets/)
+    const balanceCalves = lastMap().getA11yLabel('calves')
+    expect(balanceCalves).toMatch(/Calves.*not trained/)
+
+    // 2. Fatigue view
+    await click(viewButton('Fatigue'))
+    expect(lastMap().getA11yLabel).toBeTypeOf('function')
+    const fatigueChest = lastMap().getA11yLabel('chest')
+    expect(fatigueChest).toMatch(/Chest.*(Fatigued|Recovering|Ready)/)
+
+    // 3. Strength view
+    await click(viewButton('Strength'))
+    expect(lastMap().getA11yLabel).toBeTypeOf('function')
+    const strengthChest = lastMap().getA11yLabel('chest')
+    expect(strengthChest).toMatch(/Chest.*%/)
+  })
 })

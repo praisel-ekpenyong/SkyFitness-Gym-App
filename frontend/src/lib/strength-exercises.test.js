@@ -201,3 +201,38 @@ describe('primaryMuscleOf', () => {
     expect(loadOfWorkouts([{ entries: [entry] }]).chest).toBe(1)
   })
 })
+
+describe('strengthExerciseRows unit normalization (ADR 0017)', () => {
+  it('normalizes estimated 1RM to profile unit (kg)', () => {
+    // Stored in pounds: 220.462 lb x 1 rep -> 100 kg
+    const entryLb = {
+      id: 'bench',
+      sets: [{ phase: 'work', w: 220.462, r: 1, done: true, unit: 'lb' }],
+    }
+    const S = {
+      unit: 'kg',
+      workouts: [workout(3, [entryLb])],
+    }
+    const rows = strengthExerciseRows(S, NOW)
+    expect(rows).toHaveLength(1)
+    expect(rows[0].est).toBe(100)
+    expect(rows[0].current).toBe(100)
+  })
+
+  it('normalizes estimated 1RM to profile unit (lb)', () => {
+    // Stored in kilograms: 100 kg x 1 rep -> 220.5 lb
+    const entryKg = {
+      id: 'bench',
+      sets: [{ phase: 'work', w: 100, r: 1, done: true, unit: 'kg' }],
+    }
+    const S = {
+      unit: 'lb',
+      workouts: [workout(3, [entryKg])],
+    }
+    const rows = strengthExerciseRows(S, NOW)
+    expect(rows).toHaveLength(1)
+    expect(rows[0].est).toBe(220.5)
+    expect(rows[0].current).toBe(220.5)
+  })
+})
+
