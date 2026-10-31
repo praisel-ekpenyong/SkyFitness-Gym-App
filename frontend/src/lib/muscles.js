@@ -203,7 +203,8 @@ export function bodypartForMuscle(muscle) {
 
 /** Primary muscle slug for an exercise (canonical anatomical muscle group or 'cardio'). */
 export function primaryMuscleOf(idOrEx) {
-  const ex = typeof idOrEx === 'string' ? EXIDX[idOrEx] : idOrEx
+  const raw = typeof idOrEx === 'string' ? EXIDX[idOrEx] : idOrEx
+  const ex = hasOwnMuscleMeta(raw) ? raw : (exerciseFor(raw) || raw)
   if (!ex || typeof ex !== 'object') return null
   const source = metadataOf(ex)
   if (isCardio(source)) return 'cardio'
@@ -222,7 +223,8 @@ export function primaryMuscleOf(idOrEx) {
 
 /** Secondary supporting muscle slugs for an exercise (canonical anatomical muscle groups). */
 export function secondaryMusclesOf(idOrEx) {
-  const ex = typeof idOrEx === 'string' ? EXIDX[idOrEx] : idOrEx
+  const raw = typeof idOrEx === 'string' ? EXIDX[idOrEx] : idOrEx
+  const ex = hasOwnMuscleMeta(raw) ? raw : (exerciseFor(raw) || raw)
   if (!ex || typeof ex !== 'object') return []
   const source = metadataOf(ex)
   if (isCardio(source)) return []
@@ -599,4 +601,136 @@ export function rankOf(load) {
   const worked = MUSCLES.filter(m => (load[m] || 0) > 0).sort((a, b) => load[b] - load[a])
   const missed = MUSCLES.filter(m => !(load[m] > 0))
   return { worked, missed }
+}
+
+/**
+ * Quantified session muscle distribution across completed work sets.
+ *
+ * For each muscle trained in the workout:
+ * - Direct primary work contributes 1.0 effective sets per completed work set.
+ * - Compound assistance contributes 0.4 effective sets per completed work set.
+ * - Custom and bodypart exercises fall back to muscleWeightsOf(entry).
+ *
+ * @param {Object|null|undefined} workout - Workout object with entries.
+ * @returns {Array<{ slug: string, name: string, effectiveSets: number, primarySets: number, secondarySets: number, assistSets: number, compoundSets: number, exercises: string[] }>}
+ * Sorted by effectiveSets descending, then primarySets descending, then alphabetical.
+ */
+export function sessionMuscleDistribution(workout) {
+  if (!workout || !Array.isArray(workout.entries)) return []
+
+  const map = {}
+  let totalWorkSets = 0
+
+  for (const entry of workout.entries) {
+    if (!entry || typeof entry !== 'object') continue
+    const workSets = doneWorkSets(entry)
+    const count = workSets.length
+    if (count === 0) continue
+    totalWorkSets += count
+
+    const ex = exerciseFor(entry) || entry
+    const exName = ex?.n || entry?.muscleSnapshot?.n || entry?.n || (typeof entry.id === 'string' ? entry.id : '')
+
+    const getAcc = slug => {
+      if (!map[slug]) {
+        map[slug] = {
+          slug,
+          primarySets: 0,
+          secondarySets: 0,
+          compoundSets: 0,
+          exercises: [],
+        }
+      }
+      return map[slug]
+    }
+
+    const addPrimary = (slug, n) => {
+      const canonical = canonicalMuscle(slug)
+      if (!canonical || canonical === 'cardio') return
+      const acc = getAcc(canonical)
+      acc.primarySets += n
+      if (exName && !acc.exercises.includes(exName)) {
+        acc.exercises.push(exName)
+      }
+    }
+
+    const addSecondary = (slug, n) => {
+      const canonical = canonicalMuscle(slug)
+      if (!canonical || canonical === 'cardio') return
+      const acc = getAcc(canonical)
+      acc.secondarySets += n
+      acc.compoundSets += n
+      if (exName && !acc.exercises.includes(exName)) {
+        acc.exercises.push(exName)
+      }
+    }
+
+    const primary = primaryMuscleOf(entry)
+    const secondaries = secondaryMusclesOf(entry)
+
+    if (primary && primary !== 'cardio') {
+      addPrimary(primary, count)
+      for (const sec of secondaries) {
+        if (sec && sec !== 'cardio' && sec !== primary) {
+          addSecondary(sec, count)
+        }
+      }
+    } else {
+      // Fallback: use muscleWeightsOf(entry)
+      const weights = muscleWeightsOf(entry)
+      const weightEntries = Object.entries(weights).filter(([slug, w]) => w > 0 && slug !== 'cardio')
+      if (weightEntries.length > 0) {
+        const hasPrimaryWeight = weightEntries.some(([, w]) => w >= 1)
+        if (hasPrimaryWeight) {
+          for (const [slug, weight] of weightEntries) {
+            if (weight >= 1) {
+              addPrimary(slug, count)
+            } else {
+              addSecondary(slug, count)
+            }
+          }
+        } else {
+          for (const [slug, weight] of weightEntries) {
+            addPrimary(slug, count * weight)
+          }
+        }
+      }
+    }
+  }
+
+  if (totalWorkSets === 0) return []
+
+  const result = []
+  for (const slug of Object.keys(map)) {
+    const item = map[slug]
+    const primarySets = Math.round(item.primarySets * 10) / 10
+    const secondarySets = item.secondarySets
+    const assistSets = Math.round(secondarySets * 0.4 * 10) / 10
+    const effectiveSets = Math.round((primarySets + assistSets) * 10) / 10
+
+    if (effectiveSets <= 0 && primarySets <= 0 && secondarySets <= 0) continue
+
+    result.push({
+      slug,
+      name: MUSCLE_NAME[slug] || slug,
+      effectiveSets,
+      primarySets,
+      secondarySets,
+      assistSets,
+      compoundSets: item.compoundSets,
+      exercises: item.exercises,
+    })
+  }
+
+  result.sort((a, b) => {
+    if (b.effectiveSets !== a.effectiveSets) {
+      return b.effectiveSets - a.effectiveSets
+    }
+    if (b.primarySets !== a.primarySets) {
+      return b.primarySets - a.primarySets
+    }
+    return String(a.name).localeCompare(String(b.name)) || String(a.slug).localeCompare(String(b.slug))
+  })
+
+  return result
 }
