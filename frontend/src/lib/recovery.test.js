@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   FATIGUE_HALF_LIFE_MS,
+  FATIGUE_MIN_REF_FLOOR,
   FATIGUE_MIN_SESSIONS,
   FATIGUE_REF_VOLUME,
   FATIGUE_SCAN_MS,
@@ -56,9 +57,12 @@ const floorStrength = () => Object.fromEntries(MUSCLES.map(slug => [slug, STRENG
 
 // Numeric fatigue remains the math API; the UI boundary selector is imported from production.
 const stableFloat = value => Number(value.toFixed(12))
-const referenceAfter = (reference, stimulus) => Math.min(
-  reference,
-  reference + (stimulus - reference) / FATIGUE_MIN_SESSIONS,
+const referenceAfter = (reference, stimulus) => Math.max(
+  FATIGUE_MIN_REF_FLOOR,
+  Math.min(
+    reference,
+    reference + (stimulus - reference) / FATIGUE_MIN_SESSIONS,
+  ),
 )
 
 const expectedFatigue = sessions => {
@@ -74,6 +78,7 @@ const expectedFatigue = sessions => {
 describe('recovery constants', () => {
   it('exports the pinned windows, half-lives, floor, and state labels', () => {
     expect(FATIGUE_REF_VOLUME).toBe(2000)
+    expect(FATIGUE_MIN_REF_FLOOR).toBe(500)
     expect(FATIGUE_SCAN_MS).toBe(30 * DAY)
     expect(FATIGUE_HALF_LIFE_MS).toBe(36 * HOUR)
     expect(BODYWEIGHT_REF_LOAD).toBe(75)
@@ -316,6 +321,38 @@ describe('causal fatigue reference', () => {
     expect(at80).toBeCloseTo(1 - Math.exp(-800 / FATIGUE_REF_VOLUME), 10)
     expect(at90).toBeCloseTo(1 - Math.exp(-900 / FATIGUE_REF_VOLUME), 10)
     expect(at90).toBeGreaterThan(at80)
+  })
+
+  it('bounds the EWMA reference volume at FATIGUE_MIN_REF_FLOOR under multiple light sessions', () => {
+    const lightWorkouts = Array.from({ length: 15 }, (_, i) =>
+      workoutAt(SINGLE.id, NOW - (20 - i) * DAY, [{ done: true, w: 10, r: 1 }]),
+    )
+    const today = workoutAt(SINGLE.id, NOW, [{ done: true, w: 100, r: 1 }])
+    const fatigue = fatigueOf([...lightWorkouts, today], NOW)[SINGLE_SLUG]
+    expect(fatigue).toBeCloseTo(1 - Math.exp(-100 / FATIGUE_MIN_REF_FLOOR), 1)
+    expect(fatigue).toBeLessThan(0.25)
+  })
+
+  it('prevents future-dated workouts from decaying past events into the future', () => {
+    const past = doneWorkoutAt(SINGLE.id, NOW - 1 * HOUR)
+    const future = doneWorkoutAt(SINGLE.id, NOW + 10 * DAY)
+
+    const pastOnly = fatigueOf([past], NOW)[SINGLE_SLUG]
+    const both = fatigueOf([past, future], NOW)[SINGLE_SLUG]
+
+    expect(both).toBeGreaterThan(pastOnly)
+
+    const pastDecayed = V / FATIGUE_REF_VOLUME * halfLifeDecay(1 * HOUR, FATIGUE_HALF_LIFE_MS)
+    const refAfterPast = referenceAfter(FATIGUE_REF_VOLUME, V)
+    const futureStimulus = V / refAfterPast
+    const expected = 1 - Math.exp(-(pastDecayed + futureStimulus))
+    expect(both).toBeCloseTo(expected, 10)
+  })
+
+  it('passes through 1-rep singles with full 100% intensity factor (1.0)', () => {
+    const singleRepWorkout = workoutAt(SINGLE.id, NOW, [{ done: true, w: 100, r: 1 }])
+    const fatigue = fatigueOf([singleRepWorkout], NOW)[SINGLE_SLUG]
+    expect(fatigue).toBeCloseTo(1 - Math.exp(-100 / FATIGUE_REF_VOLUME), 10)
   })
 })
 

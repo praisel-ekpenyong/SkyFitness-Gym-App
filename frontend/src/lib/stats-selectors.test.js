@@ -78,6 +78,37 @@ describe('empties', () => {
     expect(st.points).toEqual([])
     expect(st.effort).toBe(null)
   })
+
+  it('cleanly tolerates workout.entries containing null, undefined, or non-objects', () => {
+    const corrupted = {
+      unit: 'kg',
+      effort: 'none',
+      bodyweight: [],
+      workouts: [
+        {
+          id: 'w-corrupt',
+          d: isoOfTs(NOW),
+          start: NOW,
+          entries: [
+            null,
+            undefined,
+            'invalid-entry',
+            42,
+            { id: LIFT.id, sets: [doneSet(80, 5)] },
+            null,
+          ],
+        },
+      ],
+    }
+    const overview = selectStatsOverview(corrupted, { now: NOW, catalogue })
+    expect(overview).toBeDefined()
+    expect(overview.muscles.load[LIFT_SLUG]).toBeGreaterThan(0)
+    expect(overview.counts.total).toBe(1)
+
+    const exerciseStats = selectExerciseStats(corrupted, LIFT.id, { now: NOW, catalogue })
+    expect(exerciseStats).toBeDefined()
+    expect(exerciseStats.best).toBe(80)
+  })
 })
 
 describe('window slicing', () => {

@@ -44,6 +44,7 @@ function resolveCatalogue(S, catalogue) {
   const historical = new Map()
   for (const workout of S?.workouts || []) {
     for (const entry of workout.entries || []) {
+      if (!entry || typeof entry !== 'object') continue
       const snapshot = entry.exercise || entry.muscleSnapshot || entry
       const name = snapshot.n || entry.n
       if (name) historical.set(entry.id, { ...entry, ...snapshot, n: name })
@@ -60,6 +61,7 @@ function muscleCatalogueOf(S, catalogue) {
   const logged = new Map()
   for (const workout of S?.workouts || []) {
     for (const entry of workout.entries || []) {
+      if (!entry || typeof entry !== 'object') continue
       if (logged.has(entry.id)) continue
       const snapshot = entry.exercise || entry.muscleSnapshot || entry
       const weights = snapshot && typeof snapshot === 'object' && !Array.isArray(snapshot)
@@ -81,11 +83,12 @@ function muscleCatalogueOf(S, catalogue) {
 function projectWorkouts(workouts, catalogue) {
   return (workouts || []).map(workout => ({
     ...workout,
-    entries: (workout.entries || []).map(entry => {
-      if (!entry || typeof entry !== 'object') return entry
-      const resolved = catalogue?.lookup(entry.id)
-      return resolved && typeof resolved === 'object' ? { ...resolved, ...entry } : entry
-    }),
+    entries: (workout.entries || [])
+      .filter(entry => entry && typeof entry === 'object')
+      .map(entry => {
+        const resolved = catalogue?.lookup(entry.id)
+        return resolved && typeof resolved === 'object' ? { ...resolved, ...entry } : entry
+      }),
   }))
 }
 
@@ -123,6 +126,7 @@ function workSetsOf(workouts) {
   const out = []
   for (const w of workouts || []) {
     for (const e of w?.entries || []) {
+      if (!e || typeof e !== 'object') continue
       for (const s of e?.sets || []) {
         if (isPerformed(s) && isWorkSet(s)) out.push(s)
       }
@@ -206,6 +210,7 @@ export function selectStatsOverview(S, opts = {}) {
   const index = new Map()
   for (const workout of workouts) {
     for (const entry of workout.entries || []) {
+      if (!entry || typeof entry !== 'object') continue
       const record = catalogue.lookup(entry.id)
       if (!record) continue
       const mode = metricModeForEntry(entry) || resolveMode([], record)
@@ -347,8 +352,15 @@ export function selectExerciseStats(S, exId, opts = {}) {
     if (rirs[i] != null) effortPoints.push({ t: p.t, d: p.d, y: toScale(scale, rirs[i]) })
   })
 
-  const e1rmPoints = mode === 'reps' ? e1rmSeries(S, exId) : []
-  const e1rmBest = mode === 'reps' ? best1RM(S, exId) : null
+  const cleanS = {
+    ...S,
+    workouts: (S?.workouts || []).map(w => ({
+      ...w,
+      entries: (w?.entries || []).filter(e => e && typeof e === 'object'),
+    })),
+  }
+  const e1rmPoints = mode === 'reps' ? e1rmSeries(cleanS, exId) : []
+  const e1rmBest = mode === 'reps' ? best1RM(cleanS, exId) : null
 
   return {
     id: exId,
