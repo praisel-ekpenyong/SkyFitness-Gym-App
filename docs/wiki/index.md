@@ -12,6 +12,7 @@ commit they were true at; superseded claims are marked, not erased.
 - [Software design & architecture](software-design.md) — comprehensive architectural breakdown, module depth, mutation seams, domain invariants, and structural trade-offs.
 - [Progression streams and Runs](progression-streams.md) — how `src/lib/progression.js` reads history, and its residual open questions.
 - [Exercise catalogue search](catalogue-search.md) — matching algorithms, filter evaluation pipeline, secondary attribution, and consumer integration.
+- [Stats, recovery, and post-workout distribution](stats-and-recovery.md) — fatigue decay modeling, retained strength, effective set weighting, post-workout distribution, and selector architecture.
 
 ## Decisions
 
