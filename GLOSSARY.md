@@ -256,6 +256,10 @@ _Avoid_: set alert, failure banner, progress popup
 The section on the workout complete sheet presenting the next Prescription (load advance, rep aim, hold, or deload) for each trained exercise.
 _Avoid_: session verdict, workout recap
 
+**Session muscle distribution**:
+The section on the workout complete sheet and workout detail sheet presenting the training load per muscle in effective sets, distinguishing direct primary work from compound assistance.
+_Avoid_: muscle recap, workout split
+
 ### Strength & recovery
 
 **Estimated 1RM**:

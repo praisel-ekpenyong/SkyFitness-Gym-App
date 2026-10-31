@@ -4,6 +4,9 @@ One entry per decision, newest first. A decision here is a settled call; the
 ticket/ADR it points to carries the reasoning. Superseded entries stay listed
 with a pointer to their successor.
 
+- **2026-10-31 — Read-time unit normalization for estimated 1RM and PR tracking established.**
+  Settled that estimated 1RM calculations, PR detection, and strength retention series perform read-time unit normalization against the active profile unit (`S.unit`), scaling stamped pounds to kilograms (`LB_TO_KG`) or vice versa without mutating stored history. Eliminates PR suppression and step-discontinuities on multi-unit CSV imports or unit preference toggles while maintaining static storage immutability. Detailed in ADR 0017 and [Stats, recovery, and post-workout distribution](stats-and-recovery.md).
+
 - **2026-10-30 — Netlify production release for progression milestones verified across 4 gates and live edge policies.**
   Production build at commit `983ba9e` deployed to Netlify site `skyfitness-app` (`51d8627c-c73a-4802-be54-4fce0937cb28`, deploy ID `6ae4a460d786b64c2a8fc288`, live at `https://skyfitness-app.netlify.app`, unique deploy URL `https://6ae4a460d786b64c2a8fc288--skyfitness-app.netlify.app`). Automated pre-flight verified 72 test files (1,051 unit tests), 108,000 fatigue comparisons plus 14,858 randomized deletion checks, and 6-screen Playwright preview navigation. Live edge verified HTTP 200, strict CSP headers (`cdn.jsdelivr.net` pinned), SPA routing fallback, and immutable asset cache headers (`public, max-age=31536000, immutable`). Detailed in [deployment](deployment.md).
 

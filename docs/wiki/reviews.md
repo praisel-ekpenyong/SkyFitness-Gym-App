@@ -3,6 +3,20 @@
 One entry per review event. Findings live in tickets/reports; this page records
 what ran, against what, and where the findings went.
 
+## 2026-10-30 — Comprehensive review: Stats page, muscle balance, fatigue, strength, and post-workout set distribution
+
+- **Scope:** Full audit of `views/Stats.jsx`, `lib/stats-selectors.js`, `lib/recovery.js`, `lib/recovery-view.js`, `lib/strength-exercises.js`, `lib/muscles.js`, `lib/onerm.js`, and `sheets/session.jsx` (`FinishSummary`) at commit `b7f7049`.
+- **Method:** Three specialist subagents:
+  - Domain & Mathematics Specialist (`f4ba96fe-fb12-41e8-a4ba-395d23a5e143`)
+  - Post-Workout Distribution & UX Specialist (`63049096-93e8-4972-b8fc-fab3d3d064a5`)
+  - Selectors, Architecture & Pit of Success Specialist (`27954317-5d88-47af-b749-6a195cc6f98a`)
+- **Domain Docs & ADRs:** `GLOSSARY.md`, ADR 0008, ADR 0009, ADR 0011, ADR 0016.
+- **Outcome:** Architectural synthesis recorded in [Stats, recovery, and post-workout distribution](stats-and-recovery.md).
+  - **Domain & Math:** Identified 6 critical vulnerabilities: (1) Causal EWMA reference volume collapse ($R_k \to 133\text{ kg}$ on deloads causing $>99.999\%$ false fatigue), (2) Future-dated workout decay bug destroying past valid fatigue by $>90\%$, (3) 1-rep single Epley discrepancy ($30/31^{1.5} \approx 95.2\%$ vs $100\%$ intensity in `recovery.js`), (4) Future-dated workout strength discrepancy ($1.0$ in `recovery.js` vs $0.5$ in `strength-exercises.js`), (5) Unit-blindness in `onerm.js` corrupting PRs across $\text{kg}/\text{lb}$ entries, (6) Unscaled bodyweight intensity and dead cardio tonnage in recovery model.
+  - **UX & Post-Workout Distribution:** (1) Zero numerical or list-based set distribution in `FinishSummary` (silent SVG only), (2) Ephemeral muscle data completely absent from `WorkoutDetail` and `History.jsx`, (3) Truncated top-4 bar chart in Stats Balance card concealing muscles 5+, (4) Non-interactive missed muscle chips, (5) Serious accessibility barriers: non-interactive BodyMap SVGs lack `<title>`/`aria-label`, interactive paths announce only muscle names with no load/state values, vector paths on small muscles (serratus, tibialis) have 6–14px mobile touch targets.
+  - **Architecture & Selectors:** (1) Monolithic `selectStatsOverview` coupling all domains (bodyweight window change recalculates fatigue and muscle balance), (2) Redundant passes: `projectWorkouts` called 3x, `lastTrainedByMuscle` 2x, `e1rmSeries` 2x, (3) Broad `useStore(s => s.S)` subscription in `Stats.jsx` causing re-renders on active workout timer ticks, (4) P0 uncaught crash hazard: missing null guards on `entry` in `resolveCatalogue` and `muscleCatalogueOf`.
+- **Disposition:** Synthesized into [Stats, recovery, and post-workout distribution](stats-and-recovery.md). Action plan formulated across immediate tactical fixes (P0 null guards, EWMA floor, future decay clamp, 1-rep Epley fix, post-workout set distribution card) and strategic environment improvements (selector decomposition, Zustand subscription slicing, unit normalization ADR, a11y labels). Full test suite: 72/72 test files passed (1,051/1,051 tests green).
+
 ## 2026-10-30 — Two-axis review: progression milestones and workout summary
 
 - **Range:** `master...HEAD` at `9426ed3` (feat/progression-milestones).
