@@ -67,7 +67,9 @@ function fatigueLabel(state) {
 function MuscleBalance({ S, overview, win, setWin, setHard }) {
   const [view, setView] = useState('balance')
   const [sel, setSel] = useState(null)
-  const { load, rated, hardActive: on, worked, missed, top, max, count } = overview.muscles
+  const [showAll, setShowAll] = useState(false)
+  const { load, rated, hardActive: on, worked, missed, max, count } = overview.muscles
+  const top = showAll ? worked : worked.slice(0, 5)
   const fatigue = overview.fatigue.values
   const strength = overview.strength.values
   const { volume90: vol90, detrained, weeks } = overview.strength
@@ -88,9 +90,15 @@ function MuscleBalance({ S, overview, win, setWin, setHard }) {
         options={[{ value: 7, label: t('Week') }, { value: 30, label: '30d' }, { value: 90, label: '90d' }, { value: 0, label: t('All') }]} />
       {count ? <>
         <BodyMap className="tappable" load={load} body={S.body} selected={sel}
-          onMuscle={m => setSel(s => (s === m ? null : m))} />
+          onMuscle={m => setSel(s => (s === m ? null : m))}
+          getA11yLabel={slug => {
+            const val = load[slug]
+            if (!val) return `${t(MUSCLE_NAME[slug])}, ${on ? t('no hard sets') : t('not trained')}`
+            const setsText = Number.isInteger(val) ? `${val}.0 effective sets` : `${fmtNum(val)} effective sets`
+            return `${t(MUSCLE_NAME[slug])}, ${setsText}`
+          }} />
         <BodyMapLegend />
-        {sel && <div className="muscle-inspector">
+        {sel && <div className="muscle-inspector" role="status" aria-live="polite">
           <div className="muscle-inspector-info">
             <div className="muscle-inspector-name"><b>{t(MUSCLE_NAME[sel])}</b></div>
             <div className="muscle-inspector-val">{load[sel] ? t('{0} sets', load[sel]) : on ? t('no hard sets') : t('not trained')}</div>
@@ -102,9 +110,32 @@ function MuscleBalance({ S, overview, win, setWin, setHard }) {
           <span className="bar"><i style={{ width: Math.round(load[m] / max * 100) + '%', background: on ? 'var(--yellow)' : undefined }} /></span>
           <span className="v">{t('{0} sets', load[m])}</span>
         </div>)}
+        {!sel && worked.length > 5 && (
+          <div style={{ display: 'flex', justifyContent: 'center', marginTop: 8 }}>
+            <Button size="xs" variant="ghost" onClick={() => setShowAll(s => !s)}>
+              {showAll ? t('Show top 5') : t('Show all ({0})', worked.length)}
+            </Button>
+          </div>
+        )}
         {missed.length > 0 && <div className="missed-banner">
           <div className="missed-banner-title"><Icon name="alert" /><span>{on ? t('No hard sets in this period') : t('Not trained in this period')}</span></div>
-          <div className="mchips">{missed.map(m => <span key={m} className="mchip miss">{t(MUSCLE_NAME[m])}</span>)}</div>
+          <div className="mchips">{missed.map(m => (
+            <span
+              key={m}
+              className="mchip miss"
+              role="button"
+              tabIndex={0}
+              onClick={() => setSel(m)}
+              onKeyDown={e => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  setSel(m)
+                }
+              }}
+            >
+              {t(MUSCLE_NAME[m])}
+            </span>
+          ))}</div>
         </div>}
         {!missed.length && worked.length > 0 &&
           <div className="muted small" style={{ marginTop: 10 }}>{on
@@ -115,10 +146,11 @@ function MuscleBalance({ S, overview, win, setWin, setHard }) {
       <div className="card-head">
         <h2>{t('Fatigue')}</h2>
       </div>
-      <BodyMap className="tappable hm-fatigue" load={fatigue} thresholds={FATIGUE_LEVELS} body={S.body} selected={sel} onMuscle={toggleSel} />
+      <BodyMap className="tappable hm-fatigue" load={fatigue} thresholds={FATIGUE_LEVELS} body={S.body} selected={sel} onMuscle={toggleSel}
+        getA11yLabel={slug => `${t(MUSCLE_NAME[slug])}, ${fatigueLabel(overview.fatigue.states[slug])}`} />
       <FatigueLegend />
       <div className="muted small" style={{ marginTop: 10 }}>{t('Fatigue shows how recently each muscle was trained. High means rest.')}</div>
-      {sel && <div className="muscle-inspector fatigue">
+      {sel && <div className="muscle-inspector fatigue" role="status" aria-live="polite">
         <div className="muscle-inspector-info">
           <div className="muscle-inspector-name"><b>{t(MUSCLE_NAME[sel])}</b></div>
           <div className="muscle-inspector-val">{fatigueLabel(overview.fatigue.states[sel])}</div>
@@ -129,7 +161,8 @@ function MuscleBalance({ S, overview, win, setWin, setHard }) {
       <div className="card-head">
         <h2>{t('Strength')}</h2>
       </div>
-      <BodyMap className="tappable hm-strength" load={strength} thresholds={STRENGTH_LEVELS} body={S.body} selected={sel} onMuscle={toggleSel} />
+      <BodyMap className="tappable hm-strength" load={strength} thresholds={STRENGTH_LEVELS} body={S.body} selected={sel} onMuscle={toggleSel}
+        getA11yLabel={slug => `${t(MUSCLE_NAME[slug])}, ${Math.round((strength[slug] ?? 1) * 100)}%`} />
       <StrengthLegend />
       <div className="muted small" style={{ marginTop: 10 }}>{t('Strength shows retained muscle strength. Train again to reset it.')}</div>
       {sel && <>
