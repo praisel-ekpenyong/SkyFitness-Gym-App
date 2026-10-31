@@ -187,5 +187,51 @@ describe('WorkoutDetail', () => {
     expect(exRows[0].querySelector('.exnote')?.textContent).toBe('Right shoulder felt tight on set 2')
     expect(exRows[1].querySelector('.exnote')).toBeNull()
   })
+
+  it('renders compact BodyMap and SessionMuscleDistribution before exercises list with tap selection', async () => {
+    const workout = {
+      id: 'w-2',
+      name: 'Push Day',
+      d: '2026-03-01',
+      start: 1000,
+      end: 4000,
+      entries: [
+        {
+          id: '0025',
+          sets: [
+            { w: 100, r: 5, done: true },
+            { w: 100, r: 5, done: true },
+          ],
+        },
+      ],
+    }
+
+    await act(async () => {
+      workoutDetailSheet(workout)
+    })
+    const sheet = useUI.getState().sheets.at(-1)
+    expect(sheet).toBeTruthy()
+    await act(async () => {
+      root.render(sheet.render(vi.fn()))
+    })
+
+    // Contains compact bodymap container and session muscle distribution
+    const distContainer = container.querySelector('.workout-detail-distribution')
+    expect(distContainer).toBeTruthy()
+
+    const bodyMap = distContainer?.querySelector('.bodymap')
+    expect(bodyMap).toBeTruthy()
+    expect(bodyMap?.classList.contains('compact')).toBe(true)
+
+    const distRows = distContainer?.querySelectorAll('.smd-row')
+    expect(distRows?.length).toBe(3)
+    expect(distRows?.[0].textContent).toContain('Chest')
+
+    // Tapping row selects it
+    await act(async () => {
+      distRows?.[0].dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    expect(distRows?.[0].classList.contains('selected')).toBe(true)
+  })
 })
 
