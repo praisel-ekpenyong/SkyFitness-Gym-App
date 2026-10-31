@@ -24,3 +24,4 @@ node_modules/
 frontend/.impeccable/
 .netlify/
 .scratchpad/
+.worktrees/
