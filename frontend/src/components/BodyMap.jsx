@@ -40,9 +40,9 @@ function useBodyPaths() {
  * @param {string} [selected] - Currently selected muscle slug.
  * @param {Function} [primaryOf] - Resolves which view holds the keyboard stop for a muscle.
  */
-function View({ view, viewKey, levels, onMuscle, selected, primaryOf }) {
+function View({ view, viewKey, levels, onMuscle, selected, primaryOf, getA11yLabel }) {
   return (
-    <svg className="bm-v" viewBox={view.vb} role={onMuscle ? 'group' : 'img'} aria-label={onMuscle ? t('Body map') : undefined}>
+    <svg className="bm-v" viewBox={view.vb} role={onMuscle ? 'group' : 'img'} aria-label={onMuscle ? t('Body map') : t('Trained muscles map')}>
       {INERT.map(slug => (view.p[slug] || []).map((d, i) =>
         <path key={slug + i} className="bm-sil" d={d} aria-hidden="true" />))}
       {MUSCLES.map(slug => (view.p[slug] || []).map((d, i) => {
@@ -51,13 +51,16 @@ function View({ view, viewKey, levels, onMuscle, selected, primaryOf }) {
         // back instance. Supplementary paths stay mouse-clickable but leave
         // the accessibility tree so the muscle is announced exactly once.
         const isPrimary = !!onMuscle && i === 0 && primaryOf(slug) === viewKey
+        const label = isPrimary
+          ? (getA11yLabel ? getA11yLabel(slug, levels[slug]) : t(MUSCLE_NAME[slug]))
+          : undefined
         return (
           <path
             key={slug + i}
             role={isPrimary ? 'button' : undefined}
             tabIndex={isPrimary ? 0 : undefined}
             focusable={isPrimary ? undefined : 'false'}
-            aria-label={isPrimary ? t(MUSCLE_NAME[slug]) : undefined}
+            aria-label={label}
             aria-hidden={!isPrimary && onMuscle ? true : undefined}
             aria-pressed={isPrimary ? (selected === slug) : undefined}
             className={'bm-m l' + (levels[slug] || 0) + (selected === slug ? ' sel' : '')}
@@ -65,7 +68,7 @@ function View({ view, viewKey, levels, onMuscle, selected, primaryOf }) {
             onClick={onMuscle ? () => onMuscle(slug) : undefined}
             onKeyDown={isPrimary ? e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onMuscle(slug) } } : undefined}
           >
-            {isPrimary ? <title>{t(MUSCLE_NAME[slug])}</title> : null}
+            {isPrimary ? <title>{label}</title> : null}
           </path>
         )
       }))}
@@ -80,7 +83,7 @@ function View({ view, viewKey, levels, onMuscle, selected, primaryOf }) {
  * `{ at, level, exclusive? }` `thresholds` for a fixed absolute scale (recovery views use this
  * to keep their semantic bands stable); omitting it preserves the balance behavior.
  */
-export default function BodyMap({ load = {}, thresholds, body = 'male', onMuscle, selected, className = '' }) {
+export default function BodyMap({ load = {}, thresholds, body = 'male', onMuscle, selected, className = '', getA11yLabel }) {
   const paths = useBodyPaths()
   const levels = levelsOf(load, thresholds)
   const g = paths && (paths[body] || paths.male)
@@ -88,10 +91,10 @@ export default function BodyMap({ load = {}, thresholds, body = 'male', onMuscle
   // keeps exactly one keyboard tab stop across the two views.
   const primaryOf = slug => (g.front.p[slug] ? 'front' : 'back')
   return (
-    <div className={'bodymap ' + className}>
+    <div className={'bodymap ' + className} role={!onMuscle ? 'img' : undefined} aria-label={!onMuscle ? t('Trained muscles map') : undefined}>
       {g ? <>
-        <View view={g.front} viewKey="front" levels={levels} onMuscle={onMuscle} selected={selected} primaryOf={primaryOf} />
-        <View view={g.back} viewKey="back" levels={levels} onMuscle={onMuscle} selected={selected} primaryOf={primaryOf} />
+        <View view={g.front} viewKey="front" levels={levels} onMuscle={onMuscle} selected={selected} primaryOf={primaryOf} getA11yLabel={getA11yLabel} />
+        <View view={g.back} viewKey="back" levels={levels} onMuscle={onMuscle} selected={selected} primaryOf={primaryOf} getA11yLabel={getA11yLabel} />
       </> : <div className="bm-ph" aria-hidden="true" />}
     </div>
   )
