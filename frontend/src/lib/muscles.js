@@ -644,22 +644,16 @@ export function sessionMuscleDistribution(workout) {
       return map[slug]
     }
 
-    const addPrimary = (slug, n) => {
+    const addMuscleSets = (slug, count, isSecondary = false) => {
       const canonical = canonicalMuscle(slug)
       if (!canonical || canonical === 'cardio') return
       const acc = getAcc(canonical)
-      acc.primarySets += n
-      if (exName && !acc.exercises.includes(exName)) {
-        acc.exercises.push(exName)
+      if (isSecondary) {
+        acc.secondarySets += count
+        acc.compoundSets += count
+      } else {
+        acc.primarySets += count
       }
-    }
-
-    const addSecondary = (slug, n) => {
-      const canonical = canonicalMuscle(slug)
-      if (!canonical || canonical === 'cardio') return
-      const acc = getAcc(canonical)
-      acc.secondarySets += n
-      acc.compoundSets += n
       if (exName && !acc.exercises.includes(exName)) {
         acc.exercises.push(exName)
       }
@@ -669,10 +663,10 @@ export function sessionMuscleDistribution(workout) {
     const secondaries = secondaryMusclesOf(entry)
 
     if (primary && primary !== 'cardio') {
-      addPrimary(primary, count)
+      addMuscleSets(primary, count)
       for (const sec of secondaries) {
         if (sec && sec !== 'cardio' && sec !== primary) {
-          addSecondary(sec, count)
+          addMuscleSets(sec, count, true)
         }
       }
     } else {
@@ -684,14 +678,14 @@ export function sessionMuscleDistribution(workout) {
         if (hasPrimaryWeight) {
           for (const [slug, weight] of weightEntries) {
             if (weight >= 1) {
-              addPrimary(slug, count)
+              addMuscleSets(slug, count)
             } else {
-              addSecondary(slug, count)
+              addMuscleSets(slug, count, true)
             }
           }
         } else {
           for (const [slug, weight] of weightEntries) {
-            addPrimary(slug, count * weight)
+            addMuscleSets(slug, count * weight)
           }
         }
       }

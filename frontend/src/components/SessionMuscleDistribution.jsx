@@ -34,7 +34,11 @@ export default function SessionMuscleDistribution({ workout, selectedMuscle, onS
 
         let subtitle = ''
         if (m.primarySets > 0 && m.assistSets > 0) {
-          subtitle = t('{0} direct + {1} assist', fmtNum(m.primarySets), fmtNum(m.assistSets))
+          subtitle = m.compoundSets > 0
+            ? (m.compoundSets === 1
+                ? t('{0} direct + {1} assist (1 compound set)', fmtNum(m.primarySets), fmtNum(m.assistSets))
+                : t('{0} direct + {1} assist ({2} compound sets)', fmtNum(m.primarySets), fmtNum(m.assistSets), m.compoundSets))
+            : t('{0} direct + {1} assist', fmtNum(m.primarySets), fmtNum(m.assistSets))
         } else if (m.primarySets > 0) {
           subtitle = t('{0} direct sets', fmtNum(m.primarySets))
         } else if (m.assistSets > 0) {

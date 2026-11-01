@@ -232,6 +232,12 @@ describe('WorkoutDetail', () => {
       distRows?.[0].dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
     expect(distRows?.[0].classList.contains('selected')).toBe(true)
+
+    // BodyMap buttons receive quantified accessible labels via getA11yLabel
+    const chestButton = distContainer?.querySelector('.bodymap [role="button"][aria-label*="Chest"]')
+    expect(chestButton?.getAttribute('aria-label')).toBe('Chest, 2.0 effective sets')
+    const calvesButton = distContainer?.querySelector('.bodymap [role="button"][aria-label*="Calves"]')
+    expect(calvesButton?.getAttribute('aria-label')).toBe('Calves, not trained')
   })
 })
 

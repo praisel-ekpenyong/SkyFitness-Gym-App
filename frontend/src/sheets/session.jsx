@@ -12,10 +12,8 @@ import Icon from '../components/Icon.jsx'
 import { Button, Switch, TextArea } from '../components/ui.jsx'
 import BodyMap from '../components/BodyMap.jsx'
 import SessionMuscleDistribution from '../components/SessionMuscleDistribution.jsx'
-import { loadOfWorkouts } from '../lib/muscles.js'
+import { loadOfWorkouts, MUSCLE_NAME } from '../lib/muscles.js'
 import { bestKnownWeight, heaviestSetWeight, peekWeightCommit } from '../lib/active-workout.js'
-
-export { SessionMuscleDistribution }
 
 /** Reads the shared store state. */
 const S = () => useStore.getState().S
@@ -209,6 +207,7 @@ export function FinishSummary({ w, prs, e1prs = [], routineSync = null, close })
   const [syncChecked, setSyncChecked] = useState(false)
   const [selectedMuscle, setSelectedMuscle] = useState(null)
   const progressionItems = sessionProgressionItems(w, st)
+  const load = loadOfWorkouts([w])
 
   const onDismiss = () => {
     if (syncChecked && routineSync?.routineId && routineSync?.syncedEx) {
@@ -288,10 +287,17 @@ export function FinishSummary({ w, prs, e1prs = [], routineSync = null, close })
     <h4 className="sec" style={{ textAlign: 'left' }}>{t('What you just trained')}</h4>
     <BodyMap
       className="tappable"
-      load={loadOfWorkouts([w])}
+      load={load}
       body={st.body}
       selected={selectedMuscle}
       onMuscle={m => setSelectedMuscle(s => s === m ? null : m)}
+      getA11yLabel={slug => {
+        const val = load[slug]
+        const name = t(MUSCLE_NAME[slug] || slug)
+        if (!val) return `${name}, ${t('not trained')}`
+        const setsText = Number.isInteger(val) ? `${val}.0 effective sets` : `${fmtNum(val)} effective sets`
+        return `${name}, ${setsText}`
+      }}
     />
     <div style={{ height: 10 }} />
     <SessionMuscleDistribution

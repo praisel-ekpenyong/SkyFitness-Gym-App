@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest'
 import { FinishSummary, configureSessionSheets } from './session.jsx'
 import SessionMuscleDistribution from '../components/SessionMuscleDistribution.jsx'
 import { useStore, DEF } from '../store/useStore.js'
@@ -10,6 +10,10 @@ import { setNav } from '../lib/nav.js'
 
 let container
 let root
+
+beforeAll(async () => {
+  await import('../lib/body-paths.js')
+})
 
 beforeEach(() => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true
@@ -131,9 +135,29 @@ describe('SessionMuscleDistribution Component', () => {
 
     const tricepsRow = Array.from(container.querySelectorAll('.smd-row')).find(r => r.textContent.includes('Triceps'))
     expect(tricepsRow).toBeTruthy()
-    // 2 direct + 1.2 assist
-    expect(tricepsRow?.textContent).toContain('2 direct + 1.2 assist')
+    // 2 direct + 1.2 assist (3 compound sets)
+    expect(tricepsRow?.textContent).toContain('2 direct + 1.2 assist (3 compound sets)')
     expect(tricepsRow?.textContent).toContain('3.2 sets')
+  })
+
+  it('renders singular 1 compound set when exactly one compound set supports the muscle', async () => {
+    const workout = {
+      entries: [
+        {
+          id: '0025', // Bench: 1 set
+          sets: [{ w: 80, r: 5, done: true }],
+        },
+        {
+          id: '0018', // Triceps extension: 2 sets
+          sets: [{ w: 20, r: 10, done: true }, { w: 20, r: 10, done: true }],
+        },
+      ],
+    }
+    await act(async () => {
+      root.render(<SessionMuscleDistribution workout={workout} />)
+    })
+    const tricepsRow = Array.from(container.querySelectorAll('.smd-row')).find(r => r.textContent.includes('Triceps'))
+    expect(tricepsRow?.textContent).toContain('2 direct + 0.4 assist (1 compound set)')
   })
 
   it('toggles selection and highlights the selected row with .selected', async () => {
@@ -262,6 +286,9 @@ describe('FinishSummary with SessionMuscleDistribution', () => {
     await act(async () => {
       root.render(<FinishSummary w={w} prs={[]} close={vi.fn()} />)
     })
+    await act(async () => {
+      await new Promise(r => setTimeout(r, 100))
+    })
 
     // Header "What you just trained" exists
     expect(container.textContent).toContain('What you just trained')
@@ -285,5 +312,11 @@ describe('FinishSummary with SessionMuscleDistribution', () => {
       rows?.[0].dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
     expect(rows?.[0].classList.contains('selected')).toBe(false)
+
+    // BodyMap buttons receive quantified accessible labels via getA11yLabel
+    const chestButton = container.querySelector('.bodymap [role="button"][aria-label*="Chest"]')
+    expect(chestButton?.getAttribute('aria-label')).toBe('Chest, 2.0 effective sets')
+    const calvesButton = container.querySelector('.bodymap [role="button"][aria-label*="Calves"]')
+    expect(calvesButton?.getAttribute('aria-label')).toBe('Calves, not trained')
   })
 })
