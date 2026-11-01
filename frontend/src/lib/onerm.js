@@ -59,14 +59,20 @@ export function resolveSetWeight(s, entry = null, workout = null, targetUnit = '
  * @param {number} w - Lifted load in active units.
  * @param {number} r - Repetitions performed.
  * @param {string} [formula='epley'] - Submaximal formula identifier ('epley' | 'brzycki' | 'lombardi').
+ * @param {string|null} [setUnit=null] - Unit of the lifted load ('kg' | 'lb').
+ * @param {string|null} [targetUnit=null] - Target unit for estimation ('kg' | 'lb').
  * @returns {number|null} Estimated 1RM rounded to 1 decimal place, or null if invalid/uncapped.
  */
-export function estimate1RM(w, r, formula = DEFAULT_FORMULA) {
-  const weight = Number(w)
+export function estimate1RM(w, r, formula = DEFAULT_FORMULA, setUnit = null, targetUnit = null) {
+  let weight = Number(w)
   const reps = Number(r)
   if (!isFinite(weight) || !isFinite(reps)) return null
   if (weight <= 0 || reps < 1) return null
   if (reps > REP_CAP) return null
+  if (setUnit && targetUnit && setUnit !== targetUnit) {
+    if (setUnit === 'lb' && targetUnit === 'kg') weight = weight * LB_TO_KG
+    else if (setUnit === 'kg' && targetUnit === 'lb') weight = weight / LB_TO_KG
+  }
   const fn = FORMULAS[formula] || FORMULAS[DEFAULT_FORMULA]
   const est = reps === 1 ? weight : fn(weight, Math.round(reps))
   if (!isFinite(est) || est <= 0) return null
@@ -86,16 +92,10 @@ export function estimate1RM(w, r, formula = DEFAULT_FORMULA) {
  * @returns {{ est: number, w: number, r: number }|null} Best estimate and source set details, or null if none.
  */
 export function bestSetOf(entry, formula = DEFAULT_FORMULA, targetUnit = 'kg', workout = null) {
-  let f = formula
-  let unit = targetUnit
-  if (typeof formula === 'string' && (formula === 'kg' || formula === 'lb')) {
-    unit = formula
-    f = DEFAULT_FORMULA
-  }
   let best = null
   for (const s of doneWorkSets(entry)) {
-    const normW = resolveSetWeight(s, entry, workout, unit)
-    const est = estimate1RM(normW, s.r, f)
+    const normW = resolveSetWeight(s, entry, workout, targetUnit)
+    const est = estimate1RM(normW, s.r, formula)
     if (est !== null && (!best || est > best.est)) {
       best = {
         est,
@@ -122,7 +122,7 @@ export function e1rmSeries(S, exId, formula = DEFAULT_FORMULA) {
   const pts = []
   const targetUnit = S?.unit || 'kg'
   for (const w of S?.workouts || []) {
-    const entry = (w.entries || []).find(e => e.id === exId)
+    const entry = (w.entries || []).find(e => e?.id === exId)
     if (!entry) continue
     const best = bestSetOf(entry, formula, targetUnit, w)
     if (best) pts.push({ t: workoutTimestamp(w), d: w.d, y: best.est, w: best.w, r: best.r })
@@ -152,32 +152,20 @@ export function best1RM(S, exId, formula = DEFAULT_FORMULA) {
  *
  * Compares the best set of the entry against historical workouts in `S.workouts` (which does not yet
  * include the active workout), evaluating both in the same unit (`S?.unit || 'kg'`) per ADR 0017.
- * Supports both signatures: `is1RMRecord(S, exId, entry, formula)` and `is1RMRecord(entry, S)`.
  *
- * @param {Object} S_or_entry - Application state atom OR workout entry.
- * @param {string|Object} exId_or_S - Target exercise identifier OR application state atom.
- * @param {Object|string} [entry] - Active workout entry OR formula name.
+ * @param {Object} S - Application state atom containing `workouts` and `unit`.
+ * @param {string} exId - Target exercise identifier.
+ * @param {Object} entry - Active workout entry containing `sets` array.
  * @param {string} [formula='epley'] - Formula name.
  * @param {Object|null} [workout=null] - Containing active workout context.
  * @returns {{ est: number, w: number, r: number, prev: number }|null} Record details if broken, or null otherwise.
  */
-export function is1RMRecord(S_or_entry, exId_or_S, entry, formula = DEFAULT_FORMULA, workout = null) {
-  let S, exId, targetEntry, targetFormula
-  if (S_or_entry && (Array.isArray(S_or_entry.sets) || (!S_or_entry.workouts && S_or_entry.id && exId_or_S?.workouts))) {
-    targetEntry = S_or_entry
-    S = exId_or_S
-    exId = targetEntry.id
-    targetFormula = entry || DEFAULT_FORMULA
-  } else {
-    S = S_or_entry
-    exId = exId_or_S
-    targetEntry = entry
-    targetFormula = formula
-  }
+export function is1RMRecord(S, exId, entry, formula = DEFAULT_FORMULA, workout = null) {
+  if (!entry || !Array.isArray(entry.sets) || !exId) return null
   const targetUnit = S?.unit || 'kg'
   const targetWorkout = workout || S?.active || null
-  const now = bestSetOf(targetEntry, targetFormula, targetUnit, targetWorkout)
+  const now = bestSetOf(entry, formula, targetUnit, targetWorkout)
   if (!now) return null
-  const prev = best1RM(S, exId, targetFormula)
+  const prev = best1RM(S, exId, formula)
   return !prev || now.est > prev.est ? { ...now, prev: prev ? prev.est : 0 } : null
 }

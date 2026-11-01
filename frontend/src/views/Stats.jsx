@@ -69,7 +69,7 @@ function MuscleBalance({ S, overview, win, setWin, setHard }) {
   const [sel, setSel] = useState(null)
   const [showAll, setShowAll] = useState(false)
   const { load, rated, hardActive: on, worked, missed, max, count } = overview.muscles
-  const top = showAll ? worked : worked.slice(0, 5)
+  const top = showAll ? worked : (overview?.muscles?.top || worked.slice(0, 5))
   const fatigue = overview.fatigue.values
   const strength = overview.strength.values
   const { volume90: vol90, detrained, weeks } = overview.strength
