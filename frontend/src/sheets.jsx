@@ -16,7 +16,7 @@ import Icon from './components/Icon.jsx'
 import { Button, Slider, Switch } from './components/ui.jsx'
 import BodyMap from './components/BodyMap.jsx'
 import { SessionMuscleDistribution } from './components/SessionMuscleDistribution.jsx'
-import { loadOfWorkouts } from './lib/muscles.js'
+import { loadOfWorkouts, MUSCLE_NAME } from './lib/muscles.js'
 import { glyphOf, GLYPH_GROUPS } from './lib/glyphs.js'
 import { parseImport, mergeImport, importPreview } from './lib/import-csv.js'
 import { buildPlanBundle, parsePlan, mergePlan, printPlan } from './lib/plan-share.js'
@@ -486,16 +486,24 @@ export const dayAssignSheet = day => ui().openSheet(close => <DayAssign day={day
 export function WorkoutDetail({ w, close }) {
   const st = useStore(s => s.S)
   const [selectedMuscle, setSelectedMuscle] = useState(null)
+  const workoutLoad = loadOfWorkouts([w])
   return <>
     <h3>{w.name}</h3>
     <div className="muted small" style={{ marginBottom: 12 }}>{[fmtDate(w.d, true), ...durPart(w.end - w.start), fmtVol(tonnageOf(w), st.unit), ...(w.bw ? [fmtNum(w.bw) + ' ' + st.unit] : [])].join(' · ')}</div>
     <div className="workout-detail-distribution" style={{ marginBottom: 16 }}>
       <BodyMap
         className="tappable compact"
-        load={loadOfWorkouts([w])}
+        load={workoutLoad}
         body={st.body}
         selected={selectedMuscle}
         onMuscle={m => setSelectedMuscle(s => s === m ? null : m)}
+        getA11yLabel={slug => {
+          const val = workoutLoad[slug]
+          const name = t(MUSCLE_NAME[slug] || slug)
+          if (!val) return `${name}, ${t('not trained')}`
+          const setsText = Number.isInteger(val) ? `${val}.0 effective sets` : `${fmtNum(val)} effective sets`
+          return `${name}, ${setsText}`
+        }}
       />
       <div style={{ height: 10 }} />
       <SessionMuscleDistribution
