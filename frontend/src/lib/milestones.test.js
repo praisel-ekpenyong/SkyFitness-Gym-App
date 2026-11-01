@@ -2,9 +2,8 @@ import { describe, expect, it } from 'vitest'
 import {
   evaluateSetMilestone,
   evaluateSessionProgression,
-  sessionProgressionItems,
-  resolvePolicy
-} from './milestones.js'
+  sessionProgressionItems
+} from './progression.js'
 
 describe('evaluateSetMilestone', () => {
   describe('Linear progression', () => {
@@ -120,15 +119,18 @@ describe('evaluateSetMilestone', () => {
           { r: 5, w: 135, done: true }
         ]
       }
-      const milestone = evaluateSetMilestone(entry, 1, { unit: 'lb' })
-      expect(milestone).toEqual({
-        kind: 'unlocked',
-        label: 'All sets hit! +5 lb unlocked next session',
-        inc: 5,
-        unit: 'lb',
-        reps: 5,
-        targetReps: 5
-      })
+      const milestone = evaluateSetMilestone(entry, 1, { state: { unit: 'lb' } })
+      expect(milestone.label).toBe('All sets hit! +5 lb unlocked next session')
+    })
+
+    it('shows the set hit when bodyweight work has run out of sets to add', () => {
+      const entry = {
+        id: 'push-up',
+        target: { mode: 'reps', reps: 15, repsMax: 15, weight: 0, bodyweight: true, prog: 'linear', sets: 6 },
+        sets: Array.from({ length: 6 }, () => ({ r: 15, w: 0, done: true }))
+      }
+      const milestone = evaluateSetMilestone(entry, 5, { state: { unit: 'kg' } })
+      expect(milestone.label).toBe('15/15 reps')
     })
 
     it('returns unlocked milestone for bodyweight exercise with 0 load under linear progression', () => {
@@ -168,7 +170,7 @@ describe('evaluateSetMilestone', () => {
       })
     })
 
-    it('returns hit milestone on final work set if an earlier set was below working weight', () => {
+    it('unlocks the final planned work set when a lighter row still reached the target reps', () => {
       const entry = {
         id: 'barbell-bench-press',
         target: { mode: 'reps', reps: 5, weight: 60, prog: 'linear', sets: 2 },
@@ -177,13 +179,8 @@ describe('evaluateSetMilestone', () => {
           { r: 5, w: 60, done: true }
         ]
       }
-      const milestone = evaluateSetMilestone(entry, 1)
-      expect(milestone).toEqual({
-        kind: 'hit',
-        label: '5/5 reps',
-        reps: 5,
-        targetReps: 5
-      })
+      const milestone = evaluateSetMilestone(entry, 1, { state: { unit: 'kg' } })
+      expect(milestone.label).toBe('All sets hit! +2.5 kg unlocked next session')
     })
 
     it('returns null when progression policy is explicitly off', () => {
@@ -217,38 +214,29 @@ describe('evaluateSetMilestone', () => {
   })
 
   describe('Add-time (timed hold) progression', () => {
-    it('returns a hit milestone descriptor when a timed hold set meets target seconds', () => {
+    it('unlocks the next hold when the last planned set completes a hit session', () => {
       const entry = {
         id: 'plank',
-        target: { mode: 'time', sec: 45, prog: 'time' },
+        target: { mode: 'time', sec: 45, prog: 'time', sets: 1 },
         sets: [
           { sec: 45, done: true }
         ]
       }
-      const milestone = evaluateSetMilestone(entry, 0)
-      expect(milestone).toEqual({
-        kind: 'hit',
-        label: '45s hold',
-        sec: 45,
-        targetSec: 45
-      })
+      const milestone = evaluateSetMilestone(entry, 0, { state: { unit: 'kg' } })
+      expect(milestone.label).toBe('All sets hit! +5s unlocked next session')
     })
 
-    it('returns a hit milestone descriptor when a timed hold set exceeds target seconds', () => {
+    it('shows the held seconds on an earlier set that reached the target', () => {
       const entry = {
         id: 'plank',
-        target: { mode: 'time', sec: 45, prog: 'time' },
+        target: { mode: 'time', sec: 45, prog: 'time', sets: 2 },
         sets: [
-          { sec: 50, done: true }
+          { sec: 50, done: true },
+          { sec: 45, done: false }
         ]
       }
       const milestone = evaluateSetMilestone(entry, 0)
-      expect(milestone).toEqual({
-        kind: 'hit',
-        label: '50s hold',
-        sec: 50,
-        targetSec: 45
-      })
+      expect(milestone.label).toBe('50s hold')
     })
 
     it('returns null when a timed hold set falls short of target seconds', () => {
@@ -285,20 +273,21 @@ describe('evaluateSetMilestone', () => {
       expect(evaluateSetMilestone(entry, 0)).toBeNull()
     })
 
-    it('evaluates timed hold with routine-inherited time progression', () => {
+    it('reads add-time from the routine on the profile', () => {
       const entry = {
         id: 'plank',
-        target: { mode: 'time', sec: 60 },
+        target: { mode: 'time', sec: 60, sets: 1 },
         sets: [
           { sec: 60, done: true }
         ]
       }
-      expect(evaluateSetMilestone(entry, 0, { routine: { prog: 'time' } })).toEqual({
-        kind: 'hit',
-        label: '60s hold',
-        sec: 60,
-        targetSec: 60
-      })
+      const state = {
+        unit: 'kg',
+        active: { routineId: 'r1' },
+        routines: [{ id: 'r1', prog: 'time' }]
+      }
+      const milestone = evaluateSetMilestone(entry, 0, { state })
+      expect(milestone.label).toBe('All sets hit! +5s unlocked next session')
     })
 
     it('returns null when timed exercise progression is explicitly off', () => {
@@ -399,15 +388,8 @@ describe('evaluateSetMilestone', () => {
           { r: 12, w: 30, done: true }
         ]
       }
-      const milestone = evaluateSetMilestone(entry, 1, { unit: 'lb' })
-      expect(milestone).toEqual({
-        kind: 'unlocked',
-        label: 'All sets hit! +5 lb unlocked next session',
-        inc: 5,
-        unit: 'lb',
-        reps: 12,
-        targetReps: 12
-      })
+      const milestone = evaluateSetMilestone(entry, 1, { state: { unit: 'lb' } })
+      expect(milestone.label).toBe('All sets hit! +5 lb unlocked next session')
     })
 
     it('returns hit milestone (not unlocked) on final set if an earlier work set missed the rep ceiling', () => {
@@ -429,22 +411,17 @@ describe('evaluateSetMilestone', () => {
       })
     })
 
-    it('returns hit milestone (not unlocked) on final set if an earlier work set was performed below working load', () => {
+    it('unlocks a double-progression final set when a lighter row still reached the rep ceiling', () => {
       const entry = {
         id: 'dumbbell-curl',
-        target: { mode: 'reps', reps: 12, repsMin: 8, weight: 14, prog: 'double' },
+        target: { mode: 'reps', reps: 12, repsMin: 8, weight: 14, prog: 'double', sets: 2 },
         sets: [
           { r: 12, w: 12, done: true },
           { r: 12, w: 14, done: true }
         ]
       }
-      const milestone = evaluateSetMilestone(entry, 1)
-      expect(milestone).toEqual({
-        kind: 'hit',
-        label: '12/12 reps',
-        reps: 12,
-        targetReps: 12
-      })
+      const milestone = evaluateSetMilestone(entry, 1, { state: { unit: 'kg' } })
+      expect(milestone.label).toBe('All sets hit! +2.5 kg unlocked next session')
     })
 
     it('returns hit milestone (not unlocked) on final set if an earlier work set is uncompleted', () => {
@@ -465,40 +442,83 @@ describe('evaluateSetMilestone', () => {
       })
     })
 
-    it('returns a rep progress milestone when a set falls short of rep ceiling but meets rep progress aim', () => {
+    it('keeps rep progress off an earlier set while a later planned set is still open', () => {
+      const prior = {
+        id: 'w1',
+        d: '2026-01-01',
+        entries: [{
+          id: 'dumbbell-curl',
+          target: { mode: 'reps', reps: 12, repsMin: 8, weight: 14, prog: 'double', sets: 2 },
+          sets: [{ r: 8, w: 14, done: true }, { r: 8, w: 14, done: true }]
+        }]
+      }
       const entry = {
         id: 'dumbbell-curl',
-        target: { mode: 'reps', reps: 12, repsMin: 8, weight: 14, prog: 'double' },
+        target: { mode: 'reps', reps: 12, repsMin: 8, weight: 14, prog: 'double', sets: 2 },
         sets: [
-          { r: 9, w: 14, done: true }
+          { r: 9, w: 14, done: true },
+          { r: 12, w: 14, done: false }
         ]
       }
-      const milestone = evaluateSetMilestone(entry, 0, { prevWeakest: 8 })
-      expect(milestone).toEqual({
-        kind: 'progress',
-        label: 'Rep progress (+1)',
-        step: 1,
-        reps: 9,
-        targetReps: 12
-      })
+      const milestone = evaluateSetMilestone(entry, 0, { state: { unit: 'kg', workouts: [prior] } })
+      expect(milestone).toBeNull()
     })
 
-    it('returns a rep progress milestone with step 2 for unilateral exercises', () => {
+    it('ignores a previous target shape when judging rep progress', () => {
+      const otherShape = {
+        id: 'w0',
+        d: '2026-01-01',
+        entries: [{
+          id: 'dumbbell-curl',
+          target: { mode: 'reps', reps: 5, weight: 14, prog: 'linear', sets: 1 },
+          sets: [{ r: 5, w: 14, done: true }]
+        }]
+      }
+      const entry = {
+        id: 'dumbbell-curl',
+        target: { mode: 'reps', reps: 12, repsMin: 8, weight: 14, prog: 'double', sets: 1 },
+        sets: [{ r: 9, w: 14, done: true }]
+      }
+      const milestone = evaluateSetMilestone(entry, 0, { state: { unit: 'kg', workouts: [otherShape] } })
+      expect(milestone).toBeNull()
+    })
+
+    it('badges rep progress on the last planned set when the stream aim moved', () => {
+      const prior = {
+        id: 'w1',
+        d: '2026-01-01',
+        entries: [{
+          id: 'dumbbell-curl',
+          target: { mode: 'reps', reps: 12, repsMin: 8, weight: 14, prog: 'double', sets: 1 },
+          sets: [{ r: 8, w: 14, done: true }]
+        }]
+      }
+      const entry = {
+        id: 'dumbbell-curl',
+        target: { mode: 'reps', reps: 12, repsMin: 8, weight: 14, prog: 'double', sets: 1 },
+        sets: [{ r: 9, w: 14, done: true }]
+      }
+      const milestone = evaluateSetMilestone(entry, 0, { state: { unit: 'kg', workouts: [prior] } })
+      expect(milestone.label).toBe('Rep progress (+1)')
+    })
+
+    it('badges the per-side rep step when that aim moved', () => {
+      const prior = {
+        id: 'w1',
+        d: '2026-01-01',
+        entries: [{
+          id: 'dumbbell-lunge',
+          target: { mode: 'reps', reps: 24, repsMin: 16, weight: 10, prog: 'double', side: true, sets: 1 },
+          sets: [{ r: 16, w: 10, done: true }]
+        }]
+      }
       const entry = {
         id: 'dumbbell-lunge',
-        target: { mode: 'reps', reps: 24, repsMin: 16, weight: 10, prog: 'double', side: true },
-        sets: [
-          { r: 18, w: 10, done: true }
-        ]
+        target: { mode: 'reps', reps: 24, repsMin: 16, weight: 10, prog: 'double', side: true, sets: 1 },
+        sets: [{ r: 18, w: 10, done: true }]
       }
-      const milestone = evaluateSetMilestone(entry, 0, { prevWeakest: 16 })
-      expect(milestone).toEqual({
-        kind: 'progress',
-        label: 'Rep progress (+2)',
-        step: 2,
-        reps: 18,
-        targetReps: 24
-      })
+      const milestone = evaluateSetMilestone(entry, 0, { state: { unit: 'kg', workouts: [prior] } })
+      expect(milestone.label).toBe('Rep progress (+2)')
     })
 
     it('returns null when a set falls short of rep progress aim', () => {
@@ -544,6 +564,27 @@ describe('evaluateSetMilestone', () => {
     })
   })
 
+  describe('Add-time progression', () => {
+    it('badges hold progress on the last planned set when the hold aim moved', () => {
+      const prior = {
+        id: 'w1',
+        d: '2026-01-01',
+        entries: [{
+          id: 'plank',
+          target: { mode: 'time', sec: 45, prog: 'time', sets: 1 },
+          sets: [{ sec: 35, done: true }]
+        }]
+      }
+      const entry = {
+        id: 'plank',
+        target: { mode: 'time', sec: 45, prog: 'time', sets: 1 },
+        sets: [{ sec: 40, done: true }]
+      }
+      const milestone = evaluateSetMilestone(entry, 0, { state: { unit: 'kg', workouts: [prior] } })
+      expect(milestone.label).toBe('Hold progress (+5s)')
+    })
+  })
+
   describe('Greyskull LP progression', () => {
     it('returns hit milestone for intermediate work sets meeting target reps', () => {
       const entry = {
@@ -585,14 +626,8 @@ describe('evaluateSetMilestone', () => {
           { r: 8, w: 60, done: true }
         ]
       }
-      const milestone = evaluateSetMilestone(entry, 2)
-      expect(milestone).toEqual({
-        kind: 'bonus',
-        label: 'AMRAP +3',
-        reps: 8,
-        targetReps: 5,
-        bonusReps: 3
-      })
+      const milestone = evaluateSetMilestone(entry, 2, { state: { unit: 'kg' } })
+      expect(milestone.label).toBe('AMRAP +3 · +2.5 kg unlocked next session')
     })
 
     it('returns double increment unlocked milestone cue when final AMRAP set doubles target reps', () => {
@@ -605,20 +640,11 @@ describe('evaluateSetMilestone', () => {
           { r: 10, w: 60, done: true }
         ]
       }
-      const milestone = evaluateSetMilestone(entry, 2, { unit: 'kg', inc: 2.5 })
-      expect(milestone).toEqual({
-        kind: 'bonus',
-        label: 'Double increment unlocked! (+5 kg)',
-        reps: 10,
-        targetReps: 5,
-        bonusReps: 5,
-        doubleIncrement: true,
-        inc: 5,
-        unit: 'kg'
-      })
+      const milestone = evaluateSetMilestone(entry, 2, { state: { unit: 'kg' } })
+      expect(milestone.label).toBe('AMRAP +5 · +5 kg unlocked next session')
     })
 
-    it('returns double increment unlocked milestone with lb units', () => {
+    it('names the doubled pound Increment on a Greyskull AMRAP that clears twice the target', () => {
       const entry = {
         id: 'barbell-bench-press',
         target: { mode: 'reps', reps: 5, weight: 135, prog: 'greyskull', sets: 3, inc: 5 },
@@ -628,17 +654,8 @@ describe('evaluateSetMilestone', () => {
           { r: 11, w: 135, done: true }
         ]
       }
-      const milestone = evaluateSetMilestone(entry, 2, { unit: 'lb' })
-      expect(milestone).toEqual({
-        kind: 'bonus',
-        label: 'Double increment unlocked! (+10 lb)',
-        reps: 11,
-        targetReps: 5,
-        bonusReps: 6,
-        doubleIncrement: true,
-        inc: 10,
-        unit: 'lb'
-      })
+      const milestone = evaluateSetMilestone(entry, 2, { state: { unit: 'lb' } })
+      expect(milestone.label).toBe('AMRAP +6 · +10 lb unlocked next session')
     })
 
     it('returns standard hit milestone when final AMRAP set matches target reps exactly', () => {
@@ -651,13 +668,21 @@ describe('evaluateSetMilestone', () => {
           { r: 5, w: 60, done: true }
         ]
       }
-      const milestone = evaluateSetMilestone(entry, 2)
-      expect(milestone).toEqual({
-        kind: 'hit',
-        label: '5/5 reps',
-        reps: 5,
-        targetReps: 5
-      })
+      const milestone = evaluateSetMilestone(entry, 2, { state: { unit: 'kg' } })
+      expect(milestone.label).toBe('All sets hit! +2.5 kg unlocked next session')
+    })
+
+    it('withholds the Greyskull badge when an earlier work set missed', () => {
+      const entry = {
+        id: 'barbell-bench-press',
+        target: { mode: 'reps', reps: 5, weight: 60, prog: 'greyskull', sets: 3 },
+        sets: [
+          { r: 4, w: 60, done: true },
+          { r: 5, w: 60, done: true },
+          { r: 15, w: 60, done: true }
+        ]
+      }
+      expect(evaluateSetMilestone(entry, 2, { state: { unit: 'kg' } })).toBeNull()
     })
 
     it('returns null when final AMRAP set falls short of target reps', () => {
@@ -747,6 +772,21 @@ describe('evaluateSessionProgression and sessionProgressionItems', () => {
     expect(item.label).toBe('60 kg → 62.5 kg (+2.5 kg)')
     expect(item.text).toBe(item.label)
     expect(item.ariaLabel).toContain('60 kg → 62.5 kg (+2.5 kg)')
+  })
+
+  it('paints the summary from the load the prescription judged, not a heavier bonus set', () => {
+    const entry = {
+      id: '0025',
+      target: { sets: 3, reps: 5, weight: 60, prog: 'linear' },
+      sets: [
+        { w: 60, r: 5, done: true },
+        { w: 60, r: 5, done: true },
+        { w: 60, r: 5, done: true },
+        { w: 80, r: 5, done: true }
+      ]
+    }
+    const item = evaluateSessionProgression(entry, baseState)
+    expect(item.label).toBe('60 kg → 62.5 kg (+2.5 kg)')
   })
 
   it('evaluates double progression rep climb aim without advancing weight', () => {

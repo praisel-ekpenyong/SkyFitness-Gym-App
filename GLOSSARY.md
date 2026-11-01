@@ -249,7 +249,7 @@ The transition when an Active workout finishes into a Workout; the sole point wh
 _Avoid_: intra-workout progression, dynamic set adjustment, mid-session load jumping
 
 **Milestone cue**:
-An inline visual indicator on a checked-off Work set confirming whether it met its target or unlocked a progression step for the next workout. Warm-up sets are excluded; sub-target sets remain neutral.
+An inline indicator on a checked-off Work set that reached its target, or, on the last planned Work set, the Rep progress, hold-aim progress, unlocked advance, or Greyskull AMRAP bonus the Prescription will record at the Session boundary. Warm-up sets are excluded; a sub-target set stays neutral, and a Hit on that last set still shows when the session earned no advance.
 _Avoid_: set alert, failure banner, progress popup
 
 **Progression summary**:

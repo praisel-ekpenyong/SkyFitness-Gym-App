@@ -1,37 +1,39 @@
-// Pure milestone and session progression engine.
+// Paints the Milestone cue and the Progression summary from the Prescription (ADR 0018).
 //
-// Evaluates completed work sets during active workouts to provide immediate, inline
-// progress cues (ADR 0016), and computes progression summary items for completed
-// workouts at the session boundary.
+// The cue does not keep its own Hit rule. On the last planned Work set it projects the
+// Rows checked so far as the newest session in the Progression stream, reads that
+// Prescription, and drops the copy. Nothing is written onto the Active workout.
 //
-// Milestone evaluation is purely reactive and side-effect free:
-// - Evaluates work sets only; warm-up rows are excluded and remain silent.
-// - Returns null when a set is uncompleted, missing target criteria, or below target.
-// - Sets falling short of target are recorded quietly without punitive warnings.
-// - Unchecking or lowering reps/seconds immediately removes the milestone descriptor.
+// Warm-up rows stay silent. A sub-target set stays neutral. A hold or a Deload is
+// explained on the Progression summary, not on the badge.
 import {
   isWarmupRow,
   isPerformed,
   isWorkSet,
   modeOf,
-  repStep,
-  lastEntryFor,
   doneWorkSets,
   defaultConfig,
   isBw
 } from './workout-model.js'
 import {
-  defaultIncrement,
   policyFor,
   POLICY_NAME,
-  nextPrescription
+  nextPrescription,
+  readSession,
+  projectedVerdict
 } from './progression.js'
 import { EXIDX } from './exercises.js'
 import { fmtNum } from './format.js'
 import { t } from './i18n.js'
-import { heaviestSetWeight } from './active-workout.js'
 
 const positive = v => (Number.isFinite(v) && v > 0 ? v : null)
+
+// The live cue judges the Rows checked so far as the newest session in the stream.
+// The copy is discarded. The Active workout is not written.
+function projectPrescription(entry, state) {
+  const verdict = projectedVerdict(entry, state)
+  return { prescription: verdict.prescription, unit: verdict.unit, cfg: verdict.cfg }
+}
 
 /**
  * Resolve the progression policy in force for milestone evaluation.
@@ -77,11 +79,6 @@ export function evaluateSetMilestone(entry, setIdx, context = {}) {
 
   if (policy === 'off') return null
 
-  const unit = context?.unit || S?.unit || 'kg'
-  const inc = context?.inc > 0
-    ? context.inc
-    : (target.inc > 0 ? target.inc : (typeof defaultIncrement === 'function' ? defaultIncrement(entry.id, unit) : 2.5))
-
   if (policy === 'linear') {
     const targetReps = Number(target.reps ?? target.r ?? (entry.plan && entry.plan.reps)) || 0
     if (targetReps <= 0) return null
@@ -91,33 +88,26 @@ export function evaluateSetMilestone(entry, setIdx, context = {}) {
 
     const workRows = entry.sets.filter(isWorkSet)
     const plannedCount = positive(entry?.plan?.sets) ?? positive(target.sets) ?? workRows.length
-    const plannedWorkSets = workRows.slice(0, plannedCount)
     const workIdx = workRows.indexOf(s)
 
-    // Final planned work set: check if all planned work sets met or exceeded target reps at working weight
     if (workIdx === plannedCount - 1) {
-      const targetWeight = Number(target.weight ?? (entry.plan && entry.plan.weight)) || 0
-      const baseWeight = targetWeight > 0 ? targetWeight : (Number(plannedWorkSets[0]?.w) || 0)
-      const isLoadless = baseWeight <= 0 || (isBw({ ...target, id: entry.id }) && targetWeight <= 0)
-
-      const allSetsHit = plannedWorkSets.length === plannedCount && plannedWorkSets.every(ws => {
-        if (!isPerformed(ws)) return false
-        const r = Number(ws.r ?? ws.reps) || 0
-        if (r < targetReps) return false
-        if (baseWeight > 0) {
-          const w = ws.w != null ? Number(ws.w) : baseWeight
-          if (w < baseWeight) return false
-        }
-        return true
-      })
-
-      if (allSetsHit) {
+      const { prescription: p, unit: verdictUnit, cfg } = projectedVerdict(entry, context?.state)
+      if (p.kind === 'up' && p.weight > 0) {
+        const working = readSession(entry, cfg).weight || 0
+        const step = Math.round((p.weight - working) * 10) / 10
         return {
           kind: 'unlocked',
-          label: isLoadless
-            ? t('All sets hit! Next target unlocked')
-            : t('All sets hit! +{0} {1} unlocked next session', inc, unit),
-          ...(isLoadless ? {} : { inc, unit }),
+          label: t('All sets hit! +{0} {1} unlocked next session', step, verdictUnit),
+          inc: step,
+          unit: verdictUnit,
+          reps,
+          targetReps
+        }
+      }
+      if (p.kind === 'up') {
+        return {
+          kind: 'unlocked',
+          label: t('All sets hit! Next target unlocked'),
           reps,
           targetReps
         }
@@ -137,6 +127,31 @@ export function evaluateSetMilestone(entry, setIdx, context = {}) {
     if (targetSec <= 0) return null
 
     const sec = Number(s.sec ?? s.seconds) || 0
+    const workRows = entry.sets.filter(isWorkSet)
+    const plannedCount = positive(entry?.plan?.sets) ?? positive(target.sets) ?? workRows.length
+    const workIdx = workRows.indexOf(s)
+
+    if (workIdx === plannedCount - 1) {
+      const { prescription: p, aimDelta, step } = projectedVerdict(entry, context?.state)
+      if (p.kind === 'up' && p.sec != null) {
+        return {
+          kind: 'unlocked',
+          label: t('All sets hit! +{0}s unlocked next session', step),
+          sec,
+          targetSec
+        }
+      }
+      if (aimDelta > 0) {
+        return {
+          kind: 'progress',
+          label: t('Hold progress (+{0}s)', aimDelta),
+          step: aimDelta,
+          sec,
+          targetSec
+        }
+      }
+    }
+
     if (sec < targetSec) return null
 
     return {
@@ -154,7 +169,6 @@ export function evaluateSetMilestone(entry, setIdx, context = {}) {
     const reps = Number(s.r ?? s.reps) || 0
     const workRows = entry.sets.filter(isWorkSet)
     const plannedCount = positive(entry?.plan?.sets) ?? positive(target.sets) ?? workRows.length
-    const plannedWorkSets = workRows.slice(0, plannedCount)
     const workIdx = workRows.indexOf(s)
 
     // Intermediate work set meeting rep ceiling
@@ -167,30 +181,24 @@ export function evaluateSetMilestone(entry, setIdx, context = {}) {
       }
     }
 
-    // Final planned work set: check if all planned work sets met or exceeded rep ceiling at working weight
     if (workIdx === plannedCount - 1) {
-      const targetWeight = Number(target.weight ?? (entry.plan && entry.plan.weight)) || 0
-      const baseWeight = targetWeight > 0 ? targetWeight : (Number(plannedWorkSets[0]?.w) || 0)
-      const isLoadless = baseWeight <= 0 || (isBw({ ...target, id: entry.id }) && targetWeight <= 0)
-
-      const allSetsHitCeiling = plannedWorkSets.length === plannedCount && plannedWorkSets.every(ws => {
-        if (!isPerformed(ws)) return false
-        const r = Number(ws.r ?? ws.reps) || 0
-        if (r < targetReps) return false
-        if (baseWeight > 0) {
-          const w = ws.w != null ? Number(ws.w) : baseWeight
-          if (w < baseWeight) return false
-        }
-        return true
-      })
-
-      if (allSetsHitCeiling) {
+      const { prescription: p, unit: verdictUnit, cfg } = projectedVerdict(entry, context?.state)
+      if (p.kind === 'up' && p.weight > 0) {
+        const working = readSession(entry, cfg).weight || 0
+        const step = Math.round((p.weight - working) * 10) / 10
         return {
           kind: 'unlocked',
-          label: isLoadless
-            ? t('All sets hit! Next target unlocked')
-            : t('All sets hit! +{0} {1} unlocked next session', inc, unit),
-          ...(isLoadless ? {} : { inc, unit }),
+          label: t('All sets hit! +{0} {1} unlocked next session', step, verdictUnit),
+          inc: step,
+          unit: verdictUnit,
+          reps,
+          targetReps
+        }
+      }
+      if (p.kind === 'up') {
+        return {
+          kind: 'unlocked',
+          label: t('All sets hit! Next target unlocked'),
           reps,
           targetReps
         }
@@ -206,37 +214,16 @@ export function evaluateSetMilestone(entry, setIdx, context = {}) {
       }
     }
 
-    // If work set did not hit the rep ceiling, check for rep progress against previous weakest set
-    if (reps < targetReps) {
-      let prevWeakest = null
-      if (context?.prevWeakest != null) {
-        prevWeakest = Number(context.prevWeakest)
-      } else {
-        const prevSession = context?.lastEntry ?? context?.last ?? (S ? lastEntryFor(S, entry.id) : null) ?? entry.lastEntry ?? entry.prev
-        if (prevSession) {
-          if (prevSession.low != null) {
-            prevWeakest = Number(prevSession.low)
-          } else if (Array.isArray(prevSession.sets)) {
-            const prevWork = prevSession.sets.filter(isWorkSet).filter(isPerformed)
-            if (prevWork.length > 0) {
-              prevWeakest = Math.min(...prevWork.map(ws => Number(ws.r ?? ws.reps) || 0))
-            }
-          }
-        }
-      }
-
-      if (prevWeakest != null && prevWeakest > 0) {
-        const step = repStep(target || entry)
-        const aim = prevWeakest + step
-        if (reps >= aim) {
-          const progressStep = reps - prevWeakest
-          return {
-            kind: 'progress',
-            label: t('Rep progress (+{0})', progressStep),
-            step: progressStep,
-            reps,
-            targetReps
-          }
+    // Rep progress is a session verdict. An earlier set cannot know it while a later planned set is open.
+    if (reps < targetReps && workIdx === plannedCount - 1) {
+      const { aimDelta } = projectedVerdict(entry, context?.state)
+      if (aimDelta > 0) {
+        return {
+          kind: 'progress',
+          label: t('Rep progress (+{0})', aimDelta),
+          step: aimDelta,
+          reps,
+          targetReps
         }
       }
     }
@@ -266,40 +253,31 @@ export function evaluateSetMilestone(entry, setIdx, context = {}) {
     const isAMRAP = workIdx === plannedCount - 1
 
     if (isAMRAP) {
-      if (reps >= targetReps * 2) {
+      const projected = projectPrescription(entry, context?.state)
+      const p = projected.prescription
+      if (p.kind !== 'up' || !(p.weight > 0)) return null
+      const working = readSession(entry, projected.cfg).weight || 0
+      const step = Math.round((p.weight - working) * 10) / 10
+      const bonus = reps - targetReps
+      if (bonus > 0) {
         return {
           kind: 'bonus',
-          label: t('Double increment unlocked! (+{0} {1})', inc * 2, unit),
+          label: t('AMRAP +{0} · +{1} {2} unlocked next session', bonus, step, projected.unit),
           reps,
           targetReps,
-          bonusReps: reps - targetReps,
-          doubleIncrement: true,
-          inc: inc * 2,
-          unit
+          bonusReps: bonus,
+          inc: step,
+          unit: projected.unit
         }
       }
-
-      if (reps > targetReps) {
-        const bonusReps = reps - targetReps
-        return {
-          kind: 'bonus',
-          label: t('AMRAP +{0}', bonusReps),
-          reps,
-          targetReps,
-          bonusReps
-        }
+      return {
+        kind: 'unlocked',
+        label: t('All sets hit! +{0} {1} unlocked next session', step, projected.unit),
+        inc: step,
+        unit: projected.unit,
+        reps,
+        targetReps
       }
-
-      if (reps === targetReps) {
-        return {
-          kind: 'hit',
-          label: t('{0}/{1} reps', reps, targetReps),
-          reps,
-          targetReps
-        }
-      }
-
-      return null
     }
 
     // Intermediate work set under Greyskull LP
@@ -356,13 +334,14 @@ export function evaluateSessionProgression(entry, state, context = {}) {
 
   const cfg = { ...defaultConfig(entry.id), ...(entry.target || {}), id: entry.id }
   const p = nextPrescription(effectiveS, cfg, routine)
+  const judged = readSession(entry, cfg)
   const ex = EXIDX[entry.id] || { n: entry.id }
   const exName = ex.n || entry.id
   const unit = state?.unit || workout?.unit || 'kg'
   const policy = p.policy || policyFor(cfg, routine)
   const policyName = POLICY_NAME[policy] || policy
 
-  const oldWeight = heaviestSetWeight(entry) || entry.target?.weight || 0
+  const oldWeight = judged.weight ?? entry.target?.weight ?? 0
   const isLoadless = (p.weight === 0) || (oldWeight <= 0 && isBw(cfg)) || (p.weight == null && isBw(cfg))
 
   let text = ''
