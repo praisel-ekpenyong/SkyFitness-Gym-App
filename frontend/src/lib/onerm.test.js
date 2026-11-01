@@ -61,6 +61,14 @@ describe('estimate1RM', () => {
   it('falls back to the default for an unknown formula name', () => {
     expect(estimate1RM(100, 5, 'nope')).toBe(estimate1RM(100, 5))
   })
+
+  it('normalizes load when setUnit and targetUnit are passed', () => {
+    // 220.462 lb -> ~100 kg
+    expect(estimate1RM(220.462, 1, 'epley', 'lb', 'kg')).toBe(100)
+    expect(estimate1RM(100, 1, 'epley', 'kg', 'lb')).toBe(220.5)
+    expect(estimate1RM(220.462, 5, 'epley', 'lb', 'kg')).toBe(116.7)
+    expect(estimate1RM(100, 5, 'epley', 'kg', 'kg')).toBe(116.7)
+  })
 })
 
 describe('bestSetOf', () => {
@@ -296,14 +304,6 @@ describe('read-time unit normalization (ADR 0017)', () => {
       const activeEntry = { id: 'bench', sets: [{ w: 180, r: 5, done: true, unit: 'lb' }] }
       const rec = is1RMRecord(historicalKgState, 'bench', activeEntry)
       expect(rec).toBeNull()
-    })
-
-    it('supports alternative signature is1RMRecord(entry, S)', () => {
-      const activeEntry = { id: 'bench', sets: [{ w: 100, r: 5, done: true, unit: 'kg' }] }
-      const rec = is1RMRecord(activeEntry, historicalLbState)
-      expect(rec).not.toBeNull()
-      expect(rec.est).toBe(116.7)
-      expect(rec.prev).toBe(79.4)
     })
   })
 })

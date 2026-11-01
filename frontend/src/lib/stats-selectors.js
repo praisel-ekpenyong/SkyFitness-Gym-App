@@ -352,15 +352,8 @@ export function selectExerciseStats(S, exId, opts = {}) {
     if (rirs[i] != null) effortPoints.push({ t: p.t, d: p.d, y: toScale(scale, rirs[i]) })
   })
 
-  const cleanS = {
-    ...S,
-    workouts: (S?.workouts || []).map(w => ({
-      ...w,
-      entries: (w?.entries || []).filter(e => e && typeof e === 'object'),
-    })),
-  }
-  const e1rmPoints = mode === 'reps' ? e1rmSeries(cleanS, exId) : []
-  const e1rmBest = mode === 'reps' ? best1RM(cleanS, exId) : null
+  const e1rmPoints = mode === 'reps' ? e1rmSeries(S, exId) : []
+  const e1rmBest = mode === 'reps' ? best1RM(S, exId) : null
 
   return {
     id: exId,
