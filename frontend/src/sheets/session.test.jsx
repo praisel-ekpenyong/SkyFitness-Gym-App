@@ -160,6 +160,25 @@ describe('SessionMuscleDistribution Component', () => {
     expect(tricepsRow?.textContent).toContain('2 direct + 0.4 assist (1 compound set)')
   })
 
+  it('renders singular 1 direct set and singular assist-only 1 compound set', async () => {
+    const workout = {
+      entries: [
+        {
+          id: '0025', // Bench: 1 set -> chest 1 direct set, triceps 0.4 assist (1 compound set)
+          sets: [{ w: 80, r: 5, done: true }],
+        },
+      ],
+    }
+    await act(async () => {
+      root.render(<SessionMuscleDistribution workout={workout} />)
+    })
+    const chestRow = Array.from(container.querySelectorAll('.smd-row')).find(r => r.textContent.includes('Chest'))
+    expect(chestRow?.textContent).toContain('1 direct set')
+
+    const tricepsRow = Array.from(container.querySelectorAll('.smd-row')).find(r => r.textContent.includes('Triceps'))
+    expect(tricepsRow?.textContent).toContain('0.4 assist (1 compound set)')
+  })
+
   it('toggles selection and highlights the selected row with .selected', async () => {
     const workout = {
       id: 'w-1',

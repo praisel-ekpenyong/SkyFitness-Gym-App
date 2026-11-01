@@ -90,8 +90,12 @@ export default function BodyMap({ load = {}, thresholds, body = 'male', onMuscle
   // Front wins when a muscle is drawn in both views, so each drawable muscle
   // keeps exactly one keyboard tab stop across the two views.
   const primaryOf = slug => (g.front.p[slug] ? 'front' : 'back')
+  const trainedCount = !onMuscle ? Object.keys(load || {}).filter(k => (load[k] || 0) > 0).length : 0
+  const staticAriaLabel = !onMuscle
+    ? (trainedCount > 0 ? t('Trained muscles map ({0} muscles trained)', trainedCount) : t('Trained muscles map'))
+    : undefined
   return (
-    <div className={'bodymap ' + className} role={!onMuscle ? 'img' : undefined} aria-label={!onMuscle ? t('Trained muscles map') : undefined}>
+    <div className={'bodymap ' + className} role={!onMuscle ? 'img' : undefined} aria-label={staticAriaLabel}>
       {g ? <>
         <View view={g.front} viewKey="front" levels={levels} onMuscle={onMuscle} selected={selected} primaryOf={primaryOf} getA11yLabel={getA11yLabel} />
         <View view={g.back} viewKey="back" levels={levels} onMuscle={onMuscle} selected={selected} primaryOf={primaryOf} getA11yLabel={getA11yLabel} />

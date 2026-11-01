@@ -1,13 +1,17 @@
 // @vitest-environment happy-dom
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest'
 import { RecapSheet, recapSheet, finishWorkout, workoutDetailSheet } from './sheets.jsx'
 import { useStore, DEF } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
 
 let container
 let root
+
+beforeAll(async () => {
+  await import('./lib/body-paths.js')
+})
 
 beforeEach(() => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true
@@ -213,6 +217,9 @@ describe('WorkoutDetail', () => {
     expect(sheet).toBeTruthy()
     await act(async () => {
       root.render(sheet.render(vi.fn()))
+    })
+    await act(async () => {
+      await new Promise(r => setTimeout(r, 100))
     })
 
     // Contains compact bodymap container and session muscle distribution
