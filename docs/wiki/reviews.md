@@ -3,6 +3,16 @@
 One entry per review event. Findings live in tickets/reports; this page records
 what ran, against what, and where the findings went.
 
+## 2026-11-01 — Two-axis review: post-workout set distribution, recovery model corrections, and stats UX
+
+- **Range:** `8ee663d...HEAD` at `c2b0767` (master).
+- **Method:** Standards axis and Spec axis as parallel subagents (`508f6a95-f485-45f4-9c70-d8e534e95b8e` and `041f0b32-5785-4f85-927b-aa48f6dc589f`).
+- **Spec source:** `.scratch/post-workout-distribution/spec.md`, ADR 0017, and tickets 01–03.
+- **Outcome:**
+  - **Standards:** 1 hard violation (`CONTRIBUTING.md: Match style: clear names` — parameter names `S_or_entry` and `exId_or_S` in `onerm.js:is1RMRecord`), 6 baseline code smells (dual-signature sniffing in `is1RMRecord`, parameter overloading in `bestSetOf`, duplicated `addPrimary`/`addSecondary` in `muscles.js`, selector guard repetition and `cleanS` allocation clone in `stats-selectors.js`, ignored `overview.muscles.top`, dead re-export of `SessionMuscleDistribution`).
+  - **Spec:** 2 partial/missing requirements (`FinishSummary` lacking `getA11yLabel` on `BodyMap`, `estimate1RM` unit-blindness for direct callers), 3 scope creep items (`is1RMRecord` signature sniffing, unscoped defensive guards, `.gitignore` addition), 1 implementation discrepancy (omitting compound set count from distribution subtitle when direct work exists).
+- **Disposition:** All findings addressed in ticket 04 (`.scratch/post-workout-distribution/issues/04-review-fixes.md`) via commit `1548977`, merged into `master` at commit `895f4b8`. `is1RMRecord` canonical signature restored with clear variable names; `estimate1RM` unit normalization added; `BodyMap` in `FinishSummary` and `WorkoutDetail` supplied with rich `getA11yLabel`; distribution subtitle includes compound set counts; `addMuscleSets` unified; `cleanS` selector cloning eliminated; dead re-export removed; `CODING_STANDARDS.md` established. Full test suite: 73/73 test files passed (1,088/1,088 tests green).
+
 ## 2026-10-30 — Comprehensive review: Stats page, muscle balance, fatigue, strength, and post-workout set distribution
 
 - **Scope:** Full audit of `views/Stats.jsx`, `lib/stats-selectors.js`, `lib/recovery.js`, `lib/recovery-view.js`, `lib/strength-exercises.js`, `lib/muscles.js`, `lib/onerm.js`, and `sheets/session.jsx` (`FinishSummary`) at commit `b7f7049`.
