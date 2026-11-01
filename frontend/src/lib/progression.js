@@ -296,10 +296,16 @@ function doubleNoProgress(sessions, start, range) {
 // The duration a time session was working against. The Prescription record is authoritative
 // because add-time may prescribe above the frozen Target; pre-record history falls back to
 // the Target it was logged under.
-function sessionSeconds(session, cfg) {
-  const plan = session.plan
+// The hold this session was given. A recorded Prescription wins over the frozen
+// Target: a deload can ask for 25s while the Target still says 45s.
+export function prescribedSeconds(entry) {
+  const plan = entry?.plan
   if (plan && plan.kind !== 'first' && plan.kind !== 'off' && positive(plan.sec)) return plan.sec
-  return positive(session.target?.sec) ?? positive(cfg.sec) ?? MIN_TIME_SEC
+  return positive(entry?.target?.sec) ?? null
+}
+
+function sessionSeconds(session, cfg) {
+  return prescribedSeconds(session) ?? positive(cfg.sec) ?? MIN_TIME_SEC
 }
 
 // The weakest hold that was actually performed. An unticked set is absent from this reading;
@@ -768,11 +774,15 @@ export function projectedVerdict(entry, state) {
     const base = Math.max(sessionSeconds(last, cfg), weakestPerformed(last))
     step = Math.round((prescription.sec - base) * 10) / 10
   }
+  if (prescription.kind === 'up' && mode !== 'time' && prescription.weight > 0) {
+    const working = readSession(entry, cfg).weight || 0
+    step = Math.round((prescription.weight - working) * 10) / 10
+  }
   if (prescription.kind === 'hold' && prev && mode === 'reps' && prescription.reps != null) {
     const top = Math.max(1, cfg.reps > 0 ? cfg.reps : 10)
     const bottom = cfg.repsMin > 0 ? Math.min(cfg.repsMin, top) : Math.max(1, top - 2)
-    const step = repStep(cfg)
-    const prevAim = Math.min(top, Math.max(bottom, (prev.low || 0) + step))
+    const stepRep = repStep(cfg)
+    const prevAim = Math.min(top, Math.max(bottom, (prev.low || 0) + stepRep))
     if (prescription.reps > prevAim) aimDelta = prescription.reps - prevAim
   }
   if (prescription.kind === 'hold' && prev && mode === 'time' && prescription.sec != null) {

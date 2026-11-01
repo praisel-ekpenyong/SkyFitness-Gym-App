@@ -483,6 +483,28 @@ describe('evaluateSetMilestone', () => {
       expect(milestone).toBeNull()
     })
 
+    it('badges rep progress on the last planned set when that set hit the ceiling but the aim moved', () => {
+      const prior = {
+        id: 'w1',
+        d: '2026-01-01',
+        entries: [{
+          id: 'dumbbell-curl',
+          target: { mode: 'reps', reps: 12, repsMin: 8, weight: 14, prog: 'double', sets: 2 },
+          sets: [{ r: 8, w: 14, done: true }, { r: 8, w: 14, done: true }]
+        }]
+      }
+      const entry = {
+        id: 'dumbbell-curl',
+        target: { mode: 'reps', reps: 12, repsMin: 8, weight: 14, prog: 'double', sets: 2 },
+        sets: [
+          { r: 9, w: 14, done: true },
+          { r: 12, w: 14, done: true }
+        ]
+      }
+      const milestone = evaluateSetMilestone(entry, 1, { state: { unit: 'kg', workouts: [prior] } })
+      expect(milestone.label).toBe('Rep progress (+1)')
+    })
+
     it('badges rep progress on the last planned set when the stream aim moved', () => {
       const prior = {
         id: 'w1',
@@ -565,6 +587,30 @@ describe('evaluateSetMilestone', () => {
   })
 
   describe('Add-time progression', () => {
+    it('badges an earlier hold that met the prescribed duration when the frozen target is longer', () => {
+      const entry = {
+        id: 'plank',
+        target: { mode: 'time', sec: 45, prog: 'time', sets: 2 },
+        plan: { kind: 'deload', sec: 25 },
+        sets: [
+          { sec: 25, done: true },
+          { sec: 0, done: false }
+        ]
+      }
+      const milestone = evaluateSetMilestone(entry, 0, { state: { unit: 'kg' } })
+      expect(milestone.label).toBe('25s hold')
+    })
+
+    it('stays quiet when a last hold misses the prescribed duration even if it beats the frozen target', () => {
+      const entry = {
+        id: 'plank',
+        target: { mode: 'time', sec: 45, prog: 'time', sets: 1 },
+        plan: { kind: 'hold', sec: 50 },
+        sets: [{ sec: 47, done: true }]
+      }
+      expect(evaluateSetMilestone(entry, 0, { state: { unit: 'kg' } })).toBeNull()
+    })
+
     it('badges hold progress on the last planned set when the hold aim moved', () => {
       const prior = {
         id: 'w1',
@@ -670,6 +716,27 @@ describe('evaluateSetMilestone', () => {
       }
       const milestone = evaluateSetMilestone(entry, 2, { state: { unit: 'kg' } })
       expect(milestone.label).toBe('All sets hit! +2.5 kg unlocked next session')
+    })
+
+    it('unlocks the next bodyweight target when a Greyskull session is a loadless hit', () => {
+      const entry = {
+        id: 'push-up',
+        target: { mode: 'reps', reps: 10, weight: 0, prog: 'greyskull', sets: 1 },
+        sets: [{ r: 10, done: true }]
+      }
+      const milestone = evaluateSetMilestone(entry, 0, { state: { unit: 'kg' } })
+      expect(milestone.label).toBe('All sets hit! Next target unlocked')
+    })
+
+    it('shows a set-level hit when a bodyweight Greyskull session is at the set ceiling', () => {
+      const sets = Array.from({ length: 6 }, () => ({ r: 15, done: true }))
+      const entry = {
+        id: 'push-up',
+        target: { mode: 'reps', reps: 15, weight: 0, prog: 'greyskull', sets: 6, repsMax: 15 },
+        sets
+      }
+      const milestone = evaluateSetMilestone(entry, 5, { state: { unit: 'kg' } })
+      expect(milestone.label).toBe('15/15 reps')
     })
 
     it('withholds the Greyskull badge when an earlier work set missed', () => {

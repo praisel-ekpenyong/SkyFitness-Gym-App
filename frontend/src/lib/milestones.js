@@ -4,8 +4,8 @@
 // Rows checked so far as the newest session in the Progression stream, reads that
 // Prescription, and drops the copy. Nothing is written onto the Active workout.
 //
-// Warm-up rows stay silent. A sub-target set stays neutral. A hold or a Deload is
-// explained on the Progression summary, not on the badge.
+// Warm-up rows stay silent. A sub-target set stays neutral. A repeated aim or a
+// Deload is explained on the Progression summary, not on the badge.
 import {
   isWarmupRow,
   isPerformed,
@@ -20,7 +20,8 @@ import {
   POLICY_NAME,
   nextPrescription,
   readSession,
-  projectedVerdict
+  projectedVerdict,
+  prescribedSeconds
 } from './progression.js'
 import { EXIDX } from './exercises.js'
 import { fmtNum } from './format.js'
@@ -28,11 +29,25 @@ import { t } from './i18n.js'
 
 const positive = v => (Number.isFinite(v) && v > 0 ? v : null)
 
-// The live cue judges the Rows checked so far as the newest session in the stream.
-// The copy is discarded. The Active workout is not written.
-function projectPrescription(entry, state) {
-  const verdict = projectedVerdict(entry, state)
-  return { prescription: verdict.prescription, unit: verdict.unit, cfg: verdict.cfg }
+// A loaded or loadless advance, in the cue's words. Null when the Prescription
+// did not unlock anything.
+function unlockedCue(verdict, extra) {
+  const p = verdict.prescription
+  if (p.kind !== 'up') return null
+  if (p.weight > 0) {
+    return {
+      kind: 'unlocked',
+      label: t('All sets hit! +{0} {1} unlocked next session', verdict.step, verdict.unit),
+      inc: verdict.step,
+      unit: verdict.unit,
+      ...extra
+    }
+  }
+  return {
+    kind: 'unlocked',
+    label: t('All sets hit! Next target unlocked'),
+    ...extra
+  }
 }
 
 /**
@@ -58,7 +73,7 @@ export function resolvePolicy(entry, mode, routine) {
  *
  * @param {Object} entry - Active workout entry containing `{ target, sets, plan?, id? }`.
  * @param {number} setIdx - Zero-based index of the set in `entry.sets`.
- * @param {Object} [context] - Optional context `{ state?, unit?, inc?, lastEntry?, last?, prevWeakest? }`.
+ * @param {Object} [context] - Profile `{ state }`. The routine comes from `state.active` and `state.routines`.
  * @returns {Object|null} Milestone descriptor `{ kind, label, ... }` or null if no milestone.
  */
 export function evaluateSetMilestone(entry, setIdx, context = {}) {
@@ -73,8 +88,10 @@ export function evaluateSetMilestone(entry, setIdx, context = {}) {
 
   const target = entry.target || entry || {}
   const mode = modeOf({ ...target, id: entry.id })
-  const S = context?.state || (context?.workouts || context?.unit ? context : null)
-  const routine = context?.routine || (S?.active?.routineId ? (S?.routines || []).find(r => r.id === S.active.routineId) : null)
+  const S = context?.state && typeof context.state === 'object' ? context.state : null
+  const routine = S?.active?.routineId
+    ? (S.routines || []).find(r => r.id === S.active.routineId) || null
+    : null
   const policy = resolvePolicy(entry, mode, routine)
 
   if (policy === 'off') return null
@@ -91,27 +108,8 @@ export function evaluateSetMilestone(entry, setIdx, context = {}) {
     const workIdx = workRows.indexOf(s)
 
     if (workIdx === plannedCount - 1) {
-      const { prescription: p, unit: verdictUnit, cfg } = projectedVerdict(entry, context?.state)
-      if (p.kind === 'up' && p.weight > 0) {
-        const working = readSession(entry, cfg).weight || 0
-        const step = Math.round((p.weight - working) * 10) / 10
-        return {
-          kind: 'unlocked',
-          label: t('All sets hit! +{0} {1} unlocked next session', step, verdictUnit),
-          inc: step,
-          unit: verdictUnit,
-          reps,
-          targetReps
-        }
-      }
-      if (p.kind === 'up') {
-        return {
-          kind: 'unlocked',
-          label: t('All sets hit! Next target unlocked'),
-          reps,
-          targetReps
-        }
-      }
+      const unlocked = unlockedCue(projectedVerdict(entry, S), { reps, targetReps })
+      if (unlocked) return unlocked
     }
 
     return {
@@ -123,7 +121,7 @@ export function evaluateSetMilestone(entry, setIdx, context = {}) {
   }
 
   if (policy === 'time') {
-    const targetSec = Number(target.sec ?? (entry.plan && entry.plan.sec)) || 0
+    const targetSec = prescribedSeconds(entry) || 0
     if (targetSec <= 0) return null
 
     const sec = Number(s.sec ?? s.seconds) || 0
@@ -132,7 +130,7 @@ export function evaluateSetMilestone(entry, setIdx, context = {}) {
     const workIdx = workRows.indexOf(s)
 
     if (workIdx === plannedCount - 1) {
-      const { prescription: p, aimDelta, step } = projectedVerdict(entry, context?.state)
+      const { prescription: p, aimDelta, step } = projectedVerdict(entry, S)
       if (p.kind === 'up' && p.sec != null) {
         return {
           kind: 'unlocked',
@@ -182,46 +180,22 @@ export function evaluateSetMilestone(entry, setIdx, context = {}) {
     }
 
     if (workIdx === plannedCount - 1) {
-      const { prescription: p, unit: verdictUnit, cfg } = projectedVerdict(entry, context?.state)
-      if (p.kind === 'up' && p.weight > 0) {
-        const working = readSession(entry, cfg).weight || 0
-        const step = Math.round((p.weight - working) * 10) / 10
+      const verdict = projectedVerdict(entry, S)
+      const unlocked = unlockedCue(verdict, { reps, targetReps })
+      if (unlocked) return unlocked
+      if (verdict.aimDelta > 0) {
         return {
-          kind: 'unlocked',
-          label: t('All sets hit! +{0} {1} unlocked next session', step, verdictUnit),
-          inc: step,
-          unit: verdictUnit,
+          kind: 'progress',
+          label: t('Rep progress (+{0})', verdict.aimDelta),
+          step: verdict.aimDelta,
           reps,
           targetReps
         }
       }
-      if (p.kind === 'up') {
-        return {
-          kind: 'unlocked',
-          label: t('All sets hit! Next target unlocked'),
-          reps,
-          targetReps
-        }
-      }
-
       if (reps >= targetReps) {
         return {
           kind: 'hit',
           label: t('{0}/{1} reps', reps, targetReps),
-          reps,
-          targetReps
-        }
-      }
-    }
-
-    // Rep progress is a session verdict. An earlier set cannot know it while a later planned set is open.
-    if (reps < targetReps && workIdx === plannedCount - 1) {
-      const { aimDelta } = projectedVerdict(entry, context?.state)
-      if (aimDelta > 0) {
-        return {
-          kind: 'progress',
-          label: t('Rep progress (+{0})', aimDelta),
-          step: aimDelta,
           reps,
           targetReps
         }
@@ -253,31 +227,34 @@ export function evaluateSetMilestone(entry, setIdx, context = {}) {
     const isAMRAP = workIdx === plannedCount - 1
 
     if (isAMRAP) {
-      const projected = projectPrescription(entry, context?.state)
-      const p = projected.prescription
-      if (p.kind !== 'up' || !(p.weight > 0)) return null
-      const working = readSession(entry, projected.cfg).weight || 0
-      const step = Math.round((p.weight - working) * 10) / 10
-      const bonus = reps - targetReps
-      if (bonus > 0) {
+      const verdict = projectedVerdict(entry, S)
+      const p = verdict.prescription
+      if (p.kind === 'up' && p.weight > 0 && reps >= targetReps) {
+        const bonus = reps - targetReps
+        if (bonus > 0) {
+          return {
+            kind: 'bonus',
+            label: t('AMRAP +{0} · +{1} {2} unlocked next session', bonus, verdict.step, verdict.unit),
+            reps,
+            targetReps,
+            bonusReps: bonus,
+            inc: verdict.step,
+            unit: verdict.unit
+          }
+        }
+        return unlockedCue(verdict, { reps, targetReps })
+      }
+      if (p.kind === 'up' && reps >= targetReps) return unlockedCue(verdict, { reps, targetReps })
+      // An earlier Miss keeps the AMRAP row quiet. A ceiling hold still shows the set-level Hit.
+      if (reps >= targetReps && readSession(entry, verdict.cfg).ok) {
         return {
-          kind: 'bonus',
-          label: t('AMRAP +{0} · +{1} {2} unlocked next session', bonus, step, projected.unit),
+          kind: 'hit',
+          label: t('{0}/{1} reps', reps, targetReps),
           reps,
-          targetReps,
-          bonusReps: bonus,
-          inc: step,
-          unit: projected.unit
+          targetReps
         }
       }
-      return {
-        kind: 'unlocked',
-        label: t('All sets hit! +{0} {1} unlocked next session', step, projected.unit),
-        inc: step,
-        unit: projected.unit,
-        reps,
-        targetReps
-      }
+      return null
     }
 
     // Intermediate work set under Greyskull LP
