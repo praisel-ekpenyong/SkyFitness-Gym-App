@@ -202,8 +202,8 @@ export function bodypartForMuscle(muscle) {
 }
 
 /** Primary muscle slug for an exercise (canonical anatomical muscle group or 'cardio'). */
-export function primaryMuscleOf(idOrEx) {
-  const raw = typeof idOrEx === 'string' ? EXIDX[idOrEx] : idOrEx
+export function primaryMuscleOf(exercise) {
+  const raw = typeof exercise === 'string' ? EXIDX[exercise] : exercise
   const ex = hasOwnMuscleMeta(raw) ? raw : (exerciseFor(raw) || raw)
   if (!ex || typeof ex !== 'object') return null
   const source = metadataOf(ex)
@@ -222,8 +222,8 @@ export function primaryMuscleOf(idOrEx) {
 }
 
 /** Secondary supporting muscle slugs for an exercise (canonical anatomical muscle groups). */
-export function secondaryMusclesOf(idOrEx) {
-  const raw = typeof idOrEx === 'string' ? EXIDX[idOrEx] : idOrEx
+export function secondaryMusclesOf(exercise) {
+  const raw = typeof exercise === 'string' ? EXIDX[exercise] : exercise
   const ex = hasOwnMuscleMeta(raw) ? raw : (exerciseFor(raw) || raw)
   if (!ex || typeof ex !== 'object') return []
   const source = metadataOf(ex)
@@ -684,6 +684,8 @@ export function sessionMuscleDistribution(workout) {
             }
           }
         } else {
+          // When no muscle has weight >= 1 (e.g. 50/50 split custom movements),
+          // allocate the performed work proportionally as direct primary work.
           for (const [slug, weight] of weightEntries) {
             addMuscleSets(slug, count * weight)
           }
