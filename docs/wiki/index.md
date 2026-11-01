@@ -33,6 +33,7 @@ commit they were true at; superseded claims are marked, not erased.
 ## Related, outside this folder
 
 - `GLOSSARY.md` — domain vocabulary (single source of truth for terms).
+- `CODING_STANDARDS.md` — authoritative coding standards and review rules.
 - `docs/adr/` — architecture decisions, one file each.
 - `docs/agents/*.md` — conventions for agent work (tracker, triage, domain docs).
 - `.scratch/` — the local-only issue tracker (gitignored; not in git history).

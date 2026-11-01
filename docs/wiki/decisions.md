@@ -4,6 +4,9 @@ One entry per decision, newest first. A decision here is a settled call; the
 ticket/ADR it points to carries the reasoning. Superseded entries stay listed
 with a pointer to their successor.
 
+- **2026-11-01 — Strict canonical parameter signatures and accessible SVG labels established.**
+  Settled that public domain helpers in `src/lib/` must expose single unambiguous signatures, rejecting speculative parameter sniffing or multi-type arguments (e.g. `S_or_entry`). Re-exports between presentation layers are prohibited in favor of direct imports. Interactive SVG diagrams (`BodyMap`) must provide accessible text via `getA11yLabel` announcing entity name, training state, and numerical volume. Enforced via root `CODING_STANDARDS.md` and detailed in [reviews](reviews.md).
+
 - **2026-10-31 — Read-time unit normalization for estimated 1RM and PR tracking established.**
   Settled that estimated 1RM calculations, PR detection, and strength retention series perform read-time unit normalization against the active profile unit (`S.unit`), scaling stamped pounds to kilograms (`LB_TO_KG`) or vice versa without mutating stored history. Eliminates PR suppression and step-discontinuities on multi-unit CSV imports or unit preference toggles while maintaining static storage immutability. Detailed in ADR 0017 and [Stats, recovery, and post-workout distribution](stats-and-recovery.md).
 
