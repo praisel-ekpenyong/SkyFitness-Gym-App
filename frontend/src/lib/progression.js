@@ -19,7 +19,7 @@
 //                                                           set-count edits do not trigger deloads
 // So a session that fell apart can never advance the load as though it had succeeded.
 import { EXIDX } from './exercises.js'
-import { isWorkSet, isPerformed, workSets, modeOf, repStep, makeRow, modeForSet, isBw } from './workout-model.js'
+import { isWorkSet, isPerformed, workSets, modeOf, repStep, makeRow, modeForSet, isBw, defaultConfig } from './workout-model.js'
 
 /**
  * Supported automatic progression policy identifiers.
@@ -733,6 +733,54 @@ export function applyPrescription(sets, p) {
     while (out.filter(isWorkSet).length < p.sets) out.push(makeRow(seedMode, {}, { prev: seed }))
   }
   return out
+}
+
+/**
+ * Judge the Rows checked so far as the newest session in the Progression stream.
+ * The profile copy is discarded. Nothing is written onto the Active workout.
+ *
+ * `aimDelta` is how far a rep aim moved against the previous in-stream session.
+ * A different Target shape does not count. No previous session means the aim did not move.
+ */
+export function projectedVerdict(entry, state) {
+  const S = state && typeof state === 'object' ? state : {}
+  const unit = S.unit || 'kg'
+  const routineId = S.active?.routineId ?? null
+  const workout = {
+    id: 'milestone-projection',
+    d: '9999-12-31',
+    unit,
+    routineId,
+    entries: [entry]
+  }
+  const effectiveS = { ...S, unit, workouts: [...(S.workouts || []), workout] }
+  const routine = routineId ? (S.routines || []).find(r => r.id === routineId) || null : null
+  const target = entry?.target || {}
+  const cfg = { ...defaultConfig(entry.id), ...target, id: entry.id }
+  const prescription = nextPrescription(effectiveS, cfg, routine)
+  const mode = modeOf(cfg)
+  const sessions = sessionsFor(effectiveS, entry.id, cfg).filter(s => inStream(s, cfg, mode))
+  const last = sessions[sessions.length - 1]
+  const prev = sessions.length >= 2 ? sessions[sessions.length - 2] : null
+  let aimDelta = 0
+  let step = 0
+  if (prescription.kind === 'up' && mode === 'time' && last && prescription.sec != null) {
+    const base = Math.max(sessionSeconds(last, cfg), weakestPerformed(last))
+    step = Math.round((prescription.sec - base) * 10) / 10
+  }
+  if (prescription.kind === 'hold' && prev && mode === 'reps' && prescription.reps != null) {
+    const top = Math.max(1, cfg.reps > 0 ? cfg.reps : 10)
+    const bottom = cfg.repsMin > 0 ? Math.min(cfg.repsMin, top) : Math.max(1, top - 2)
+    const step = repStep(cfg)
+    const prevAim = Math.min(top, Math.max(bottom, (prev.low || 0) + step))
+    if (prescription.reps > prevAim) aimDelta = prescription.reps - prevAim
+  }
+  if (prescription.kind === 'hold' && prev && mode === 'time' && prescription.sec != null) {
+    const inc = cfg.inc > 0 ? cfg.inc : DEFAULT_SEC_INCREMENT
+    const prevAim = timeAim(prev, cfg, inc)
+    if (prescription.sec > prevAim) aimDelta = prescription.sec - prevAim
+  }
+  return { prescription, unit, cfg, aimDelta, step }
 }
 
 export { evaluateSetMilestone, evaluateSessionProgression, sessionProgressionItems } from './milestones.js'

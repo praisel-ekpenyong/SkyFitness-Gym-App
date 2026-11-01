@@ -86,7 +86,7 @@ describe('Workout milestone badges', () => {
 
     const badge = view.container.querySelector('.milestone-badge')
     expect(badge).not.toBeNull()
-    expect(badge.textContent).toBe('45s hold')
+    expect(badge.textContent).toBe('All sets hit! +5s unlocked next session')
   })
 
   it('does not display a milestone badge for warm-up sets', () => {
@@ -242,7 +242,7 @@ describe('Workout milestone badges', () => {
         target: { mode: 'reps', reps: 12, repsMin: 8, weight: 14, prog: 'double', sets: 2 },
         sets: [
           { r: 9, w: 14, done: false },
-          { r: 8, w: 14, done: false }
+          { r: 9, w: 14, done: false }
         ]
       }
       view = renderWorkout([entry])
@@ -259,7 +259,8 @@ describe('Workout milestone badges', () => {
                 entries: [
                   {
                     id: 'dumbbell-curl',
-                    sets: [{ r: 8, w: 14, done: true }]
+                    target: { mode: 'reps', reps: 12, repsMin: 8, weight: 14, prog: 'double', sets: 2 },
+                    sets: [{ r: 8, w: 14, done: true }, { r: 8, w: 14, done: true }]
                   }
                 ]
               }
@@ -268,14 +269,13 @@ describe('Workout milestone badges', () => {
         }))
       })
 
-      // Toggle set 0 with 9 reps (8 + 1) -> rep progress (+1)
-      toggleSet(0)
-      const setRows = view.container.querySelectorAll('.setrow')
-      expect(setRows[0].querySelector('.milestone-badge')?.textContent).toBe('Rep progress (+1)')
+      const setRows = () => view.container.querySelectorAll('.setrow')
 
-      // Toggle set 1 with 8 reps -> falls short of progress aim (9 reps), no badge
+      toggleSet(0)
+      expect(setRows()[0].querySelector('.milestone-badge')).toBeNull()
+
       toggleSet(1)
-      expect(setRows[1].querySelector('.milestone-badge')).toBeNull()
+      expect(setRows()[1].querySelector('.milestone-badge')?.textContent).toBe('Rep progress (+1)')
     })
 
     it('excludes warm-up sets from double progression milestone cues', () => {
@@ -331,13 +331,12 @@ describe('Workout milestone badges', () => {
 
       // AMRAP set 2 checked off at 8 reps (beats target by 3)
       toggleSet(2)
-      expect(setRows()[2].querySelector('.milestone-badge')?.textContent).toBe('AMRAP +3')
+      expect(setRows()[2].querySelector('.milestone-badge')?.textContent).toBe('AMRAP +3 · +2.5 kg unlocked next session')
 
-      // Reactivity: bump reps up by 2 (from 8 to 10) -> doubles target reps (5 * 2) -> double increment unlocked!
       bumpReps(2, 1)
       bumpReps(2, 1)
       expect(useStore.getState().S.active.entries[0].sets[2].r).toBe(10)
-      expect(setRows()[2].querySelector('.milestone-badge')?.textContent).toBe('Double increment unlocked! (+5 kg)')
+      expect(setRows()[2].querySelector('.milestone-badge')?.textContent).toBe('AMRAP +5 · +5 kg unlocked next session')
 
       // Reactivity: bump reps down to 4 -> below target -> badge removed
       for (let k = 0; k < 6; k++) bumpReps(2, -1)
@@ -373,7 +372,7 @@ describe('Workout milestone badges', () => {
 
       // Check AMRAP set 2 at 8 reps -> AMRAP +3
       toggleSet(2)
-      expect(setRows()[2].querySelector('.milestone-badge')?.textContent).toBe('AMRAP +3')
+      expect(setRows()[2].querySelector('.milestone-badge')?.textContent).toBe('AMRAP +3 · +2.5 kg unlocked next session')
     })
   })
 })
