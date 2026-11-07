@@ -19,8 +19,10 @@
 //                                                           set-count edits do not trigger deloads
 // So a session that fell apart can never advance the load as though it had succeeded.
 import { EXIDX } from './exercises.js'
-import { isWorkSet, isPerformed, workSets, modeOf, repStep, makeRow, modeForSet, isBw, defaultConfig } from './workout-model.js'
+import { isWorkSet, isPerformed, isWarmupRow, workSets, doneWorkSets, modeOf, repStep, makeRow, modeForSet, isBw, defaultConfig } from './workout-model.js'
 import { resolveSetWeight } from './units.js'
+import { fmtNum } from './format.js'
+import { t } from './i18n.js'
 
 /**
  * Supported automatic progression policy identifiers.
@@ -299,7 +301,7 @@ function doubleNoProgress(sessions, start, range) {
 // the Target it was logged under.
 // The hold this session was given. A recorded Prescription wins over the frozen
 // Target: a deload can ask for 25s while the Target still says 45s.
-export function prescribedSeconds(entry) {
+function prescribedSeconds(entry) {
   const plan = entry?.plan
   if (plan && plan.kind !== 'first' && plan.kind !== 'off' && positive(plan.sec)) return plan.sec
   return positive(entry?.target?.sec) ?? null
@@ -755,7 +757,7 @@ export function applyPrescription(sets, p) {
  * `aimDelta` is how far a rep aim moved against the previous in-stream session.
  * A different Target shape does not count. No previous session means the aim did not move.
  */
-export function projectedVerdict(entry, state) {
+function projectedVerdict(entry, state) {
   const S = state && typeof state === 'object' ? state : {}
   const unit = S.unit || 'kg'
   const routineId = S.active?.routineId ?? null
@@ -800,4 +802,405 @@ export function projectedVerdict(entry, state) {
   return { prescription, unit, cfg, aimDelta, step }
 }
 
-export { evaluateSetMilestone, evaluateSessionProgression, sessionProgressionItems } from './milestones.js'
+// Paints the Milestone cue and the Progression summary from the Prescription (ADR 0018).
+//
+// The cue does not keep its own Hit rule. On the last planned Work set it projects the
+// Rows checked so far as the newest session in the Progression stream, reads that
+// Prescription, and drops the copy. Nothing is written onto the Active workout.
+//
+// Warm-up rows stay silent. A sub-target set stays neutral. A repeated aim or a
+// Deload is explained on the Progression summary, not on the badge.
+
+// A loaded or loadless advance, in the cue's words. Null when the Prescription
+// did not unlock anything.
+function unlockedCue(verdict, extra) {
+  const p = verdict.prescription
+  if (p.kind !== 'up') return null
+  if (p.weight > 0) {
+    return {
+      kind: 'unlocked',
+      label: t('All sets hit! +{0} {1} unlocked next session', verdict.step, verdict.unit),
+      inc: verdict.step,
+      unit: verdict.unit,
+      ...extra
+    }
+  }
+  return {
+    kind: 'unlocked',
+    label: t('All sets hit! Next target unlocked'),
+    ...extra
+  }
+}
+
+/**
+ * Resolve the progression policy in force for milestone evaluation.
+ * Reuses policyFor to maintain a single source of truth.
+ *
+ * @param {Object} entry - Active workout entry.
+ * @param {string} mode - Logging mode ('reps' | 'time' | 'cardio').
+ * @param {Object} [routine] - Optional parent routine object.
+ * @returns {string} Progression policy name.
+ */
+function resolvePolicy(entry, mode, routine) {
+  const target = entry?.target || entry || {}
+  const cfg = {
+    ...target,
+    prog: entry?.plan?.policy || target.prog || entry?.prog || target.policy || entry?.policy
+  }
+  return policyFor(cfg, routine, mode)
+}
+
+/**
+ * Evaluate whether a completed work set achieved a progression milestone.
+ *
+ * @param {Object} entry - Active workout entry containing `{ target, sets, plan?, id? }`.
+ * @param {number} setIdx - Zero-based index of the set in `entry.sets`.
+ * @param {Object} [context] - Profile `{ state }`. The routine comes from `state.active` and `state.routines`.
+ * @returns {Object|null} Milestone descriptor `{ kind, label, ... }` or null if no milestone.
+ */
+export function evaluateSetMilestone(entry, setIdx, context = {}) {
+  if (!entry || typeof entry !== 'object' || !Array.isArray(entry.sets)) return null
+  if (setIdx == null || setIdx < 0 || setIdx >= entry.sets.length) return null
+
+  const s = entry.sets[setIdx]
+  if (!s || typeof s !== 'object') return null
+
+  // Warm-up sets and uncompleted sets never receive milestone cues (ADR 0016).
+  if (!isPerformed(s) || isWarmupRow(s)) return null
+
+  const target = entry.target || entry || {}
+  const mode = modeOf({ ...target, id: entry.id })
+  const S = context?.state && typeof context.state === 'object' ? context.state : null
+  const routine = S?.active?.routineId
+    ? (S.routines || []).find(r => r.id === S.active.routineId) || null
+    : null
+  const policy = resolvePolicy(entry, mode, routine)
+
+  if (policy === 'off') return null
+
+  if (policy === 'linear') {
+    const targetReps = Number(target.reps ?? target.r ?? (entry.plan && entry.plan.reps)) || 0
+    if (targetReps <= 0) return null
+
+    const reps = Number(s.r ?? s.reps) || 0
+    if (reps < targetReps) return null
+
+    const workRows = entry.sets.filter(isWorkSet)
+    const plannedCount = positive(entry?.plan?.sets) ?? positive(target.sets) ?? workRows.length
+    const workIdx = workRows.indexOf(s)
+
+    if (workIdx === plannedCount - 1) {
+      const unlocked = unlockedCue(projectedVerdict(entry, S), { reps, targetReps })
+      if (unlocked) return unlocked
+    }
+
+    return {
+      kind: 'hit',
+      label: t('{0}/{1} reps', reps, targetReps),
+      reps,
+      targetReps
+    }
+  }
+
+  if (policy === 'time') {
+    const targetSec = prescribedSeconds(entry) || 0
+    if (targetSec <= 0) return null
+
+    const sec = Number(s.sec ?? s.seconds) || 0
+    const workRows = entry.sets.filter(isWorkSet)
+    const plannedCount = positive(entry?.plan?.sets) ?? positive(target.sets) ?? workRows.length
+    const workIdx = workRows.indexOf(s)
+
+    if (workIdx === plannedCount - 1) {
+      const { prescription: p, aimDelta, step } = projectedVerdict(entry, S)
+      if (p.kind === 'up' && p.sec != null) {
+        return {
+          kind: 'unlocked',
+          label: t('All sets hit! +{0}s unlocked next session', step),
+          sec,
+          targetSec
+        }
+      }
+      if (aimDelta > 0) {
+        return {
+          kind: 'progress',
+          label: t('Hold progress (+{0}s)', aimDelta),
+          step: aimDelta,
+          sec,
+          targetSec
+        }
+      }
+    }
+
+    if (sec < targetSec) return null
+
+    return {
+      kind: 'hit',
+      label: t('{0}s hold', sec),
+      sec,
+      targetSec
+    }
+  }
+
+  if (policy === 'double') {
+    const targetReps = Number(target.reps ?? target.r ?? (entry.plan && entry.plan.reps)) || 0
+    if (targetReps <= 0) return null
+
+    const reps = Number(s.r ?? s.reps) || 0
+    const workRows = entry.sets.filter(isWorkSet)
+    const plannedCount = positive(entry?.plan?.sets) ?? positive(target.sets) ?? workRows.length
+    const workIdx = workRows.indexOf(s)
+
+    // Intermediate work set meeting rep ceiling
+    if (workIdx >= 0 && workIdx < plannedCount - 1 && reps >= targetReps) {
+      return {
+        kind: 'hit',
+        label: t('{0}/{1} reps · On track', reps, targetReps),
+        reps,
+        targetReps
+      }
+    }
+
+    if (workIdx === plannedCount - 1) {
+      const verdict = projectedVerdict(entry, S)
+      const unlocked = unlockedCue(verdict, { reps, targetReps })
+      if (unlocked) return unlocked
+      if (verdict.aimDelta > 0) {
+        return {
+          kind: 'progress',
+          label: t('Rep progress (+{0})', verdict.aimDelta),
+          step: verdict.aimDelta,
+          reps,
+          targetReps
+        }
+      }
+      if (reps >= targetReps) {
+        return {
+          kind: 'hit',
+          label: t('{0}/{1} reps', reps, targetReps),
+          reps,
+          targetReps
+        }
+      }
+    }
+
+    // Bonus work set beyond planned count meeting rep ceiling
+    if (workIdx >= plannedCount && reps >= targetReps) {
+      return {
+        kind: 'hit',
+        label: t('{0}/{1} reps', reps, targetReps),
+        reps,
+        targetReps
+      }
+    }
+
+    return null
+  }
+
+  if (policy === 'greyskull') {
+    const targetReps = Number(target.reps ?? target.r ?? (entry.plan && entry.plan.reps)) || 0
+    if (targetReps <= 0) return null
+
+    const reps = Number(s.r ?? s.reps) || 0
+    const workRows = entry.sets.filter(isWorkSet)
+    const plannedCount = positive(entry?.plan?.sets) ?? positive(target.sets) ?? workRows.length
+    const workIdx = workRows.indexOf(s)
+
+    const isAMRAP = workIdx === plannedCount - 1
+
+    if (isAMRAP) {
+      const verdict = projectedVerdict(entry, S)
+      const p = verdict.prescription
+      if (p.kind === 'up' && p.weight > 0 && reps >= targetReps) {
+        const bonus = reps - targetReps
+        if (bonus > 0) {
+          return {
+            kind: 'bonus',
+            label: t('AMRAP +{0} · +{1} {2} unlocked next session', bonus, verdict.step, verdict.unit),
+            reps,
+            targetReps,
+            bonusReps: bonus,
+            inc: verdict.step,
+            unit: verdict.unit
+          }
+        }
+        return unlockedCue(verdict, { reps, targetReps })
+      }
+      if (p.kind === 'up' && reps >= targetReps) return unlockedCue(verdict, { reps, targetReps })
+      // An earlier Miss keeps the AMRAP row quiet. A ceiling hold still shows the set-level Hit.
+      if (reps >= targetReps && readSession(entry, verdict.cfg).ok) {
+        return {
+          kind: 'hit',
+          label: t('{0}/{1} reps', reps, targetReps),
+          reps,
+          targetReps
+        }
+      }
+      return null
+    }
+
+    // Intermediate work set under Greyskull LP
+    if (reps >= targetReps) {
+      return {
+        kind: 'hit',
+        label: t('{0}/{1} reps', reps, targetReps),
+        reps,
+        targetReps
+      }
+    }
+
+    return null
+  }
+
+  return null
+}
+
+/**
+ * Evaluates a single completed entry against its next prescription, returning a progression descriptor.
+ *
+ * @param {Object} entry Completed workout entry.
+ * @param {Object} state Store state S.
+ * @param {Object} [context] Optional { workout, routine }.
+ * @returns {Object|null} Progression descriptor or null if no performed work sets.
+ */
+export function evaluateSessionProgression(entry, state, context = {}) {
+  if (!entry || doneWorkSets(entry).length <= 0) return null
+
+  const workout = context?.workout
+  const routine = context?.routine ||
+    (workout?.routineId ? state?.routines?.find(r => r.id === workout.routineId) : null) ||
+    null
+
+  // Ensure effectiveS includes the workout containing this entry if not already present
+  let effectiveS = state
+  if (workout) {
+    const inWorkouts = (state?.workouts || []).some(w => w.id === workout.id || w === workout)
+    if (!inWorkouts) {
+      effectiveS = { ...(state || {}), workouts: [...(state?.workouts || []), workout] }
+    }
+  } else {
+    const inWorkouts = (state?.workouts || []).some(w => (w.entries || []).includes(entry))
+    if (!inWorkouts) {
+      const dummyWorkout = {
+        id: 'session-entry-' + entry.id,
+        d: entry.d || new Date().toISOString().slice(0, 10),
+        entries: [entry],
+        unit: state?.unit || 'kg'
+      }
+      effectiveS = { ...(state || {}), workouts: [...(state?.workouts || []), dummyWorkout] }
+    }
+  }
+
+  const cfg = { ...defaultConfig(entry.id), ...(entry.target || {}), id: entry.id }
+  const p = nextPrescription(effectiveS, cfg, routine)
+  const judged = readSession(entry, cfg)
+  const ex = EXIDX[entry.id] || { n: entry.id }
+  const exName = ex.n || entry.id
+  const unit = state?.unit || workout?.unit || 'kg'
+  const policy = p.policy || policyFor(cfg, routine)
+  const policyName = POLICY_NAME[policy] || policy
+
+  const oldWeight = judged.weight ?? entry.target?.weight ?? 0
+  const isLoadless = (p.weight === 0) || (oldWeight <= 0 && isBw(cfg)) || (p.weight == null && isBw(cfg))
+
+  let text = ''
+  let iconName = 'check'
+  let isAdvance = false
+
+  if (p.kind === 'up') {
+    isAdvance = true
+    iconName = 'arrowUp'
+    if (!isLoadless && p.weight != null && p.weight > 0) {
+      const delta = Math.round((p.weight - oldWeight) * 10) / 10
+      const deltaStr = delta > 0 ? ` (+${fmtNum(delta)} ${unit})` : ''
+      text = `${fmtNum(oldWeight)} ${unit} → ${fmtNum(p.weight)} ${unit}${deltaStr}`
+    } else if (p.sec != null) {
+      const oldSec = entry.target?.sec || 0
+      const deltaSec = p.sec - oldSec
+      const deltaStr = deltaSec > 0 ? ` (+${deltaSec}s)` : ''
+      text = `${oldSec}s → ${p.sec}s${deltaStr}`
+    } else if (p.sets != null) {
+      text = t('{0} sets (+1 set)', p.sets)
+    } else if (p.reps != null) {
+      text = t('Aim for {0} reps', p.reps)
+    } else {
+      text = t('Progress earned')
+    }
+  } else if (p.kind === 'deload') {
+    iconName = 'info'
+    text = t('Deload 10% to reset and rebuild')
+  } else if (p.kind === 'hold') {
+    if (policy === 'double' && p.reps != null) {
+      iconName = 'target'
+      const wVal = p.weight ?? oldWeight
+      if (wVal > 0 && !isLoadless) {
+        text = t('Aim for {0} reps at {1} {2}', p.reps, fmtNum(wVal), unit)
+      } else {
+        text = t('Aim for {0} reps', p.reps)
+      }
+    } else if (p.sec != null) {
+      iconName = 'check'
+      text = t('Hold at {0}s to solidify volume', p.sec)
+    } else if (isLoadless && p.reps != null) {
+      iconName = 'check'
+      text = t('Hold at {0} reps to solidify volume', p.reps)
+    } else if (oldWeight <= 0 && p.reps != null) {
+      iconName = 'check'
+      text = t('Hold at {0} reps to solidify volume', p.reps)
+    } else {
+      iconName = 'check'
+      const wVal = p.weight ?? oldWeight
+      text = t('Hold at {0} {1} to solidify volume', fmtNum(wVal), unit)
+    }
+  } else if (p.kind === 'first') {
+    iconName = 'target'
+    text = t('First session baseline')
+  } else {
+    iconName = 'check'
+    text = t('Targets stay where you set them')
+  }
+
+  const label = text
+  const ariaLabel = `${exName}: ${policyName}, ${text}`
+
+  return {
+    id: entry.id,
+    exName,
+    policy,
+    policyName,
+    kind: p.kind,
+    weight: p.weight,
+    reps: p.reps,
+    sec: p.sec,
+    sets: p.sets,
+    why: p.why,
+    label,
+    text,
+    iconName,
+    isAdvance,
+    ariaLabel,
+  }
+}
+
+/**
+ * Derives progression descriptors for all trained exercises in a completed workout.
+ *
+ * @param {Object} workout Completed workout.
+ * @param {Object} state Store state S.
+ * @returns {Array<Object>} List of progression descriptors for trained exercises.
+ */
+export function sessionProgressionItems(workout, state) {
+  if (!workout?.entries) return []
+  const routine = (workout.routineId && state?.routines?.find(r => r.id === workout.routineId)) || null
+  const effectiveS = (state?.workouts || []).some(item => item.id === workout.id || item === workout)
+    ? state
+    : { ...(state || {}), workouts: [...(state?.workouts || []), workout] }
+
+  const items = []
+  for (const entry of workout.entries) {
+    if (doneWorkSets(entry).length <= 0) continue
+    const item = evaluateSessionProgression(entry, effectiveS, { workout, routine })
+    if (item) items.push(item)
+  }
+  return items
+}
