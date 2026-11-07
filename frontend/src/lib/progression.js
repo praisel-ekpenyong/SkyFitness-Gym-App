@@ -862,11 +862,11 @@ export function evaluateSetMilestone(entry, setIdx, context = {}) {
   if (!entry || typeof entry !== 'object' || !Array.isArray(entry.sets)) return null
   if (setIdx == null || setIdx < 0 || setIdx >= entry.sets.length) return null
 
-  const s = entry.sets[setIdx]
-  if (!s || typeof s !== 'object') return null
+  const setRow = entry.sets[setIdx]
+  if (!setRow || typeof setRow !== 'object') return null
 
   // Warm-up sets and uncompleted sets never receive milestone cues (ADR 0016).
-  if (!isPerformed(s) || isWarmupRow(s)) return null
+  if (!isPerformed(setRow) || isWarmupRow(setRow)) return null
 
   const target = entry.target || entry || {}
   const mode = modeOf({ ...target, id: entry.id })
@@ -878,16 +878,16 @@ export function evaluateSetMilestone(entry, setIdx, context = {}) {
 
   if (policy === 'off') return null
 
+  const workRows = entry.sets.filter(isWorkSet)
+  const plannedCount = positive(entry?.plan?.sets) ?? positive(target.sets) ?? workRows.length
+  const workIdx = workRows.indexOf(setRow)
+
   if (policy === 'linear') {
     const targetReps = Number(target.reps ?? target.r ?? (entry.plan && entry.plan.reps)) || 0
     if (targetReps <= 0) return null
 
-    const reps = Number(s.r ?? s.reps) || 0
+    const reps = Number(setRow.r ?? setRow.reps) || 0
     if (reps < targetReps) return null
-
-    const workRows = entry.sets.filter(isWorkSet)
-    const plannedCount = positive(entry?.plan?.sets) ?? positive(target.sets) ?? workRows.length
-    const workIdx = workRows.indexOf(s)
 
     if (workIdx === plannedCount - 1) {
       const unlocked = unlockedCue(projectedVerdict(entry, S), { reps, targetReps })
@@ -906,10 +906,7 @@ export function evaluateSetMilestone(entry, setIdx, context = {}) {
     const targetSec = prescribedSeconds(entry) || 0
     if (targetSec <= 0) return null
 
-    const sec = Number(s.sec ?? s.seconds) || 0
-    const workRows = entry.sets.filter(isWorkSet)
-    const plannedCount = positive(entry?.plan?.sets) ?? positive(target.sets) ?? workRows.length
-    const workIdx = workRows.indexOf(s)
+    const sec = Number(setRow.sec ?? setRow.seconds) || 0
 
     if (workIdx === plannedCount - 1) {
       const { prescription: p, aimDelta, step } = projectedVerdict(entry, S)
@@ -946,10 +943,7 @@ export function evaluateSetMilestone(entry, setIdx, context = {}) {
     const targetReps = Number(target.reps ?? target.r ?? (entry.plan && entry.plan.reps)) || 0
     if (targetReps <= 0) return null
 
-    const reps = Number(s.r ?? s.reps) || 0
-    const workRows = entry.sets.filter(isWorkSet)
-    const plannedCount = positive(entry?.plan?.sets) ?? positive(target.sets) ?? workRows.length
-    const workIdx = workRows.indexOf(s)
+    const reps = Number(setRow.r ?? setRow.reps) || 0
 
     // Intermediate work set meeting rep ceiling
     if (workIdx >= 0 && workIdx < plannedCount - 1 && reps >= targetReps) {
@@ -1001,10 +995,7 @@ export function evaluateSetMilestone(entry, setIdx, context = {}) {
     const targetReps = Number(target.reps ?? target.r ?? (entry.plan && entry.plan.reps)) || 0
     if (targetReps <= 0) return null
 
-    const reps = Number(s.r ?? s.reps) || 0
-    const workRows = entry.sets.filter(isWorkSet)
-    const plannedCount = positive(entry?.plan?.sets) ?? positive(target.sets) ?? workRows.length
-    const workIdx = workRows.indexOf(s)
+    const reps = Number(setRow.r ?? setRow.reps) || 0
 
     const isAMRAP = workIdx === plannedCount - 1
 
