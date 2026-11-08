@@ -386,11 +386,14 @@ function timeNoProgress(sessions, start, cfg, inc) {
  *
  * @param {Object} entry - Finished workout entry containing `{ target?, sets?, id }`.
  * @param {Object} [fallback] - Current exercise routine target/plan used when entry has no stored target.
+ * @param {Object|string|null} [workout=null] - Parent workout object or unit label string providing workout-level unit context.
+ * @param {string} [targetUnit='kg'] - Desired unit preference for normalized output ('kg' | 'lb').
  * @returns {Object} Judged session summary.
  */
 export function readSession(entry, fallback, workout = null, targetUnit = 'kg') {
   const target = (entry && entry.target) || fallback || {}
   const mode = modeOf({ ...target, id: entry && entry.id })
+  const workoutContext = typeof workout === 'string' ? { unit: workout } : workout
   // Warm-up rows are prep, not the session: one filtered read beats guarding every consumer
   // below (an undone warm-up otherwise poisons `ok` forever and its reps drag `low`/`count`).
   const sets = workSets(entry)
@@ -403,16 +406,17 @@ export function readSession(entry, fallback, workout = null, targetUnit = 'kg') 
   const judged = sets.slice(0, planned)
   const enough = sets.length >= planned
 
+  const performed = judged.filter(isPerformed)
+  const performedWeight = performed.length
+    ? Math.max(0, ...performed.map(s => resolveSetWeight(s, entry, workoutContext, targetUnit)))
+    : null
+
   if (mode === 'time') {
     const goal = target.sec || 0
     const held = judged.map(s => (isPerformed(s) ? (s.sec || 0) : 0))
-    const performed = judged.filter(isPerformed)
-    const weight = performed.length
-      ? Math.max(0, ...performed.map(s => resolveSetWeight(s, entry, workout, targetUnit)))
-      : 0
     return {
       mode, goal, held, enough,
-      weight,
+      weight: performedWeight || 0,
       best: Math.max(0, ...held),
       low: held.length ? Math.min(...held) : 0,
       ok: goal > 0 && enough && held.length > 0 && held.every(h => h >= goal)
@@ -420,15 +424,9 @@ export function readSession(entry, fallback, workout = null, targetUnit = 'kg') 
   }
   const goal = target.reps || 0
   const reps = judged.map(s => (isPerformed(s) ? (s.r || 0) : 0))
-  const performed = judged.filter(isPerformed)
-  // Null, not 0, when nothing was performed. A logged 0 kg is a real load
-  // (bodyweight progression). The target weight may stand in only for the null.
-  const weight = performed.length
-    ? Math.max(0, ...performed.map(s => resolveSetWeight(s, entry, workout, targetUnit)))
-    : null
   return {
     mode, goal, reps, enough,
-    weight,
+    weight: performedWeight,
     // Judged Work sets only: bonus sets beyond the plan count toward volume/fatigue
     // (read from the raw rows elsewhere) but must never leak into added-set growth (#33).
     count: judged.length,
