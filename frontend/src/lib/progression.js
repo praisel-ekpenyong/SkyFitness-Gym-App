@@ -20,6 +20,7 @@
 // So a session that fell apart can never advance the load as though it had succeeded.
 import { EXIDX } from './exercises.js'
 import { isWorkSet, isPerformed, workSets, modeOf, repStep, makeRow, modeForSet, isBw, defaultConfig } from './workout-model.js'
+import { resolveSetWeight } from './units.js'
 
 /**
  * Supported automatic progression policy identifiers.
@@ -387,7 +388,7 @@ function timeNoProgress(sessions, start, cfg, inc) {
  * @param {Object} [fallback] - Current exercise routine target/plan used when entry has no stored target.
  * @returns {Object} Judged session summary.
  */
-export function readSession(entry, fallback) {
+export function readSession(entry, fallback, workout = null, targetUnit = 'kg') {
   const target = (entry && entry.target) || fallback || {}
   const mode = modeOf({ ...target, id: entry && entry.id })
   // Warm-up rows are prep, not the session: one filtered read beats guarding every consumer
@@ -405,9 +406,13 @@ export function readSession(entry, fallback) {
   if (mode === 'time') {
     const goal = target.sec || 0
     const held = judged.map(s => (isPerformed(s) ? (s.sec || 0) : 0))
+    const performed = judged.filter(isPerformed)
+    const weight = performed.length
+      ? Math.max(0, ...performed.map(s => resolveSetWeight(s, entry, workout, targetUnit)))
+      : 0
     return {
       mode, goal, held, enough,
-      weight: Math.max(0, ...judged.filter(isPerformed).map(s => s.w || 0)),
+      weight,
       best: Math.max(0, ...held),
       low: held.length ? Math.min(...held) : 0,
       ok: goal > 0 && enough && held.length > 0 && held.every(h => h >= goal)
@@ -418,7 +423,9 @@ export function readSession(entry, fallback) {
   const performed = judged.filter(isPerformed)
   // Null, not 0, when nothing was performed. A logged 0 kg is a real load
   // (bodyweight progression). The target weight may stand in only for the null.
-  const weight = performed.length ? Math.max(0, ...performed.map(s => s.w || 0)) : null
+  const weight = performed.length
+    ? Math.max(0, ...performed.map(s => resolveSetWeight(s, entry, workout, targetUnit)))
+    : null
   return {
     mode, goal, reps, enough,
     weight,
@@ -434,8 +441,9 @@ export function readSession(entry, fallback) {
 /**
  * Retrieve every past session for one exercise in chronological order (oldest first).
  * Skips entries containing only warm-up rows (prep sets are not judged training sessions).
+ * Set weights are normalized against the active profile's unit preference (ADR 0019).
  *
- * @param {Object} S - Application state atom containing `workouts` array.
+ * @param {Object} S - Application state atom containing `workouts` array and `unit`.
  * @param {string} exId - Exercise identifier from EXIDX.
  * @param {Object} [fallback] - Fallback routine configuration passed to `readSession`.
  * @returns {Array<Object>} Chronological array of judged sessions, each carrying the judged
@@ -443,7 +451,8 @@ export function readSession(entry, fallback) {
  */
 export function sessionsFor(S, exId, fallback) {
   const out = []
-  ;(S.workouts || []).forEach(w => {
+  const targetUnit = S?.unit || 'kg'
+  ;(S?.workouts || []).forEach(w => {
     const entry = (w.entries || []).find(e => e.id === exId)
     // A finished Entry with zero performed Work sets still judges — as a Miss that
     // feeds Stall counting toward Deload. An Entry with no Work sets at all
@@ -451,7 +460,7 @@ export function sessionsFor(S, exId, fallback) {
     if (workSets(entry).length) {
       out.push({
         d: w.d,
-        ...readSession(entry, fallback),
+        ...readSession(entry, fallback, w, targetUnit),
         target: entry.target || null,
         plan: entry.plan || null,
       })
@@ -775,7 +784,7 @@ export function projectedVerdict(entry, state) {
     step = Math.round((prescription.sec - base) * 10) / 10
   }
   if (prescription.kind === 'up' && mode !== 'time' && prescription.weight > 0) {
-    const working = readSession(entry, cfg).weight || 0
+    const working = readSession(entry, cfg, workout, unit).weight || 0
     step = Math.round((prescription.weight - working) * 10) / 10
   }
   if (prescription.kind === 'hold' && prev && mode === 'reps' && prescription.reps != null) {
