@@ -2,7 +2,7 @@ import { exerciseFor } from './exercises.js'
 import { MUSCLES, muscleWeightsOf, lastTrainedByMuscle } from './muscles.js'
 import { isWorkSet, isPerformed } from './workout-model.js'
 import { workoutTimestamp } from './format.js'
-import { LB_TO_KG, sanitizeUnit } from './units.js'
+import { normalizeWeight } from './units.js'
 
 // A "normal" hard session for one muscle, in primary-set equivalents. The saturation curve
 // 1 - exp(-stimulus / REF) maps any session size onto [0,1) so volume raises the starting
@@ -98,16 +98,6 @@ function numeric(value) {
 }
 
 /**
- * Report whether a unit label names imperial pounds.
- *
- * @param {*} unit - Unit label; nullish reads as empty and yields false.
- * @returns {boolean} True for lb, lbs, pound, or pounds in any case.
- */
-function isPounds(unit) {
-  return sanitizeUnit(unit) === 'lb'
-}
-
-/**
  * Find the first stamped weight unit across candidate records.
  *
  * @param {...Object} records - Records searched in order for unit, u, weightUnit, weight_unit, or loadUnit.
@@ -127,13 +117,13 @@ function unitOf(...records) {
  * Convert a logged load to kilograms, clamping negatives to zero.
  *
  * @param {*} value - Logged load; non-numeric yields 0.
- * @param {*} unit - Unit label; pound labels convert via LB_TO_KG, all else read as kg.
+ * @param {*} unit - Unit label; converted to kg via normalizeWeight (ADR 0019).
  * @returns {number} Load in kg, never negative.
  */
 function kgOf(value, unit) {
   const n = numeric(value)
   if (n === null) return 0
-  return Math.max(0, n) * (isPounds(unit) ? LB_TO_KG : 1)
+  return normalizeWeight(Math.max(0, n), unit, 'kg')
 }
 
 // A bodyweight value stamped on a workout is the best historical value. When old records do not

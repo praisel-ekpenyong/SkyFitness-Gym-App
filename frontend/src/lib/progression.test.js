@@ -68,6 +68,14 @@ describe('readSession', () => {
 
     const s3 = readSession({ id: LIFT, target: T, sets: [{ w: 45.4, r: 5, done: true }] }, null, { unit: 'kg' }, 'lb')
     expect(s3.weight).toBe(100.1)
+
+    // Raw string workoutUnit parameter
+    const s4 = readSession({ id: LIFT, target: T, sets: [{ w: 100, r: 5, done: true }] }, null, 'lb', 'kg')
+    expect(s4.weight).toBe(45.4)
+
+    // Time mode with string workoutUnit
+    const s5 = readSession({ id: LIFT, target: { sets: 2, sec: 45, mode: 'time' }, sets: [{ sec: 45, w: 100, done: true }] }, null, 'lb', 'kg')
+    expect(s5.weight).toBe(45.4)
   })
 })
 
