@@ -57,7 +57,7 @@ Documented on 2026-10-28 at commit `14332f7`:
 - **Premature Working-Weight Mutation:** Mid-session confirmation in `applyWorkingWeight` immediately mutates `S.exWeights`. If the session is subsequently discarded, the working weight is permanently retained.
 
 ### 2. Domain & Storage Vulnerabilities
-- **Unit-Blind History in Progression:** In `lib/progression.js::sessionsFor`, raw `set.w` is read without checking `workout.unit` against active `S.unit`. Toggling units in Settings alters prescriptions by 2.2x (lb -> kg) or 0.45x (kg -> lb).
+- **Unit-Blind History in Progression (RESOLVED - ADR 0019):** In `lib/progression.js::sessionsFor`, raw `set.w` was read without checking `workout.unit` against active `S.unit`. Resolved via unified `lib/units.js` read-time unit normalization across progression streams, workout tonnage, selectors, and working-weight caches.
 - **Hardcoded Schema Key Duplication:** `RESTORE_TOP_KEYS` in `lib/storage.js` manually duplicates `Object.keys(DEF)` from `store/useStore.js`. Any new top-level configuration key added to `DEF` is silently stripped on backup restore unless manually added to `storage.js`.
 - **Shallow Preference Overlays:** `normalizeState` in `useStore.js` performs a shallow merge `{ ...base, ...raw }`, with nested spreads only for `reminder`. Any new nested preference added to `DEF` will be dropped by existing stored profiles.
 - **Unsorted Workouts Array Traversal:** `sessionsFor` traverses `S.workouts` in raw array order rather than sorting by timestamp, risking incorrect stream evaluations if array ordering deviates.
@@ -75,7 +75,7 @@ Documented on 2026-10-28 at commit `14332f7`:
 2. Add `useUI.getState().stopWork()` to session Discard and Finish handlers.
 3. Disable row deletions and additions while a timed hold is active (`holding === true`).
 4. Derive `RESTORE_TOP_KEYS` dynamically from `Object.keys(DEF)`.
-5. Normalize weights by `workout.unit` in `progression.js::sessionsFor`.
+5. [RESOLVED - ADR 0019] Normalize weights by `workout.unit` in `progression.js::sessionsFor`, `stats-selectors.js`, and `workout-model.js` via `lib/units.js`.
 6. Wrap `queryCatalogue` in `useMemo` within `sheets/catalogue.jsx` (`ExercisePicker`).
 7. Add `aria-labelledby` and background `inert` trapping to `Modals.jsx`.
 

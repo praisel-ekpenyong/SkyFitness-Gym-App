@@ -48,8 +48,7 @@ As audited by three parallel specialist subagents on 2026-10-30 at commit `b7f70
 - **Causal EWMA Reference Collapse**: The downward-only EWMA reference volume in `recovery.js` (`references[slug] = Math.min(references[slug], ewma)`) lacked a lower bound. Trailing light recovery or deload sessions could drive $R_k$ down from $2000\text{ kg}$ to $<150\text{ kg}$, causing subsequent standard sessions to register $>99.999\%$ extreme fatigue.
 - **Future-Dated Workout Decay Bug**: Chronological traversal in `fatigueValue` decayed earlier workouts across intervals into future-dated events (`event.timestamp - lastTimestamp`), artificially slashing past valid fatigue by $>90\%$.
 - **1-Rep Epley Intensity Inconsistency**: `epley1RM` in `recovery.js` computed $1 + 1/30 = 31/30$ on single reps, penalizing true 1-rep max sets by treating them as $95.2\%$ intensity ($30/31^{1.5}$) instead of $100.0\%$, violating `GLOSSARY.md` ("a real single is a measurement, not an estimate").
-- **Future Age Strength Discrepancy**: For future-dated workouts ($t_{\text{workout}} > \text{now}$), `recovery.js` evaluated retained strength as 1.0 (full retention), while `strength-exercises.js` evaluated negative age as $< 0$, returning 0.5 (detrained floor).
-- **Unit Incoherence in 1RM Tracking**: `onerm.js` functions (`estimate1RM`, `bestSetOf`, `e1rmSeries`, `best1RM`) were found to be completely unit-blind, comparing raw numerical values across $\text{kg}$ and $\text{lb}$ history without conversion.
+- **Unit Incoherence in 1RM & Stats Tracking (RESOLVED - ADR 0017, ADR 0019)**: `onerm.js`, `stats-selectors.js`, and `workout-model.js` previously compared raw numerical values across $\text{kg}$ and $\text{lb}$ history. Fully resolved across all 1RM estimations, selector curves, and tonnage via read-time normalization in `lib/units.js`.
 
 ### 2. UI/UX & Post-Workout Set Distribution Gaps
 
