@@ -545,6 +545,28 @@ describe('tonnageOf', () => {
     expect(tonnageOf(w)).toBe(300)
     expect(tonnageOf(null)).toBe(0)
   })
+
+  it('normalizes tonnage across workout and set units when targetUnit is provided', () => {
+    const wLb = {
+      unit: 'lb',
+      entries: [{
+        id: LIFT,
+        sets: [{ w: 100, r: 5, done: true }],
+      }],
+    }
+    expect(tonnageOf(wLb)).toBe(500)
+    expect(tonnageOf(wLb, 'kg')).toBe(227)
+    expect(tonnageOf(wLb, 'lb')).toBe(500)
+
+    const wKg = {
+      unit: 'kg',
+      entries: [{
+        id: LIFT,
+        sets: [{ w: 50, r: 10, done: true }],
+      }],
+    }
+    expect(tonnageOf(wKg, 'lb')).toBe(1102)
+  })
 })
 
 describe('workSetsDone and bestWeightForEntry', () => {
@@ -589,6 +611,36 @@ describe('workSetsDone and bestWeightForEntry', () => {
 
     expect(bestWeightForEntry(prior)).toBe(20)
     expect(repeatedWeight > bestKnownWeight(state, LIFT)).toBe(false)
+  })
+
+  it('normalizes best weight to targetUnit using the unit cascade', () => {
+    const entryLb = {
+      id: LIFT,
+      unit: 'lb',
+      sets: [
+        { w: 100, r: 5, done: true },
+        { w: 200, r: 3, done: true },
+      ],
+    }
+    expect(bestWeightForEntry(entryLb)).toBe(200)
+    expect(bestWeightForEntry(entryLb, null, 'kg')).toBe(90.7)
+    expect(bestWeightForEntry(entryLb, null, 'lb')).toBe(200)
+
+    const entryWithLegacyTopW = {
+      id: LIFT,
+      unit: 'lb',
+      topW: 220,
+      target: { mode: 'reps' },
+      sets: [{ w: 80, r: 5, done: true }],
+    }
+    expect(bestWeightForEntry(entryWithLegacyTopW, null, 'kg')).toBe(99.8)
+
+    const entryInheritingWorkout = {
+      id: LIFT,
+      sets: [{ w: 100, r: 5, done: true }],
+    }
+    const workout = { unit: 'lb' }
+    expect(bestWeightForEntry(entryInheritingWorkout, workout, 'kg')).toBe(45.4)
   })
 })
 

@@ -398,3 +398,27 @@ it('keeps a named historical exercise selectable after its Custom exercise was d
   expect(selectExerciseStats(S, 'deleted', { now: NOW }).best).toBe(60)
   expect(over.exercisesFor('chest')[0].name).toBe('Old bench')
 })
+
+describe('read-time unit normalization across selectors (ADR 0019)', () => {
+  it('normalizes exercise stats points and overview index to active profile unit', () => {
+    const workoutLb = workoutAt(LIFT.id, 5, [doneSet(200, 5)], { unit: 'lb' })
+    const stateKg = { unit: 'kg', customEx: [LIFT], workouts: [workoutLb] }
+
+    const stKg = selectExerciseStats(stateKg, LIFT.id, { now: NOW, catalogue })
+    expect(stKg.unit).toBe('kg')
+    expect(stKg.best).toBe(90.7)
+    expect(stKg.points[0].y).toBe(90.7)
+
+    const overKg = selectStatsOverview(stateKg, { now: NOW, catalogue })
+    expect(overKg.exerciseIndex[0]).toMatchObject({ id: LIFT.id, current: 90.7, unit: 'kg' })
+
+    const stateLb = { unit: 'lb', customEx: [LIFT], workouts: [workoutLb] }
+    const stLb = selectExerciseStats(stateLb, LIFT.id, { now: NOW, catalogue })
+    expect(stLb.unit).toBe('lb')
+    expect(stLb.best).toBe(200)
+    expect(stLb.points[0].y).toBe(200)
+
+    const overLb = selectStatsOverview(stateLb, { now: NOW, catalogue })
+    expect(overLb.exerciseIndex[0]).toMatchObject({ id: LIFT.id, current: 200, unit: 'lb' })
+  })
+})
