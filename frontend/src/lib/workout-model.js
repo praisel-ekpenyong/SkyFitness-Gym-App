@@ -7,6 +7,7 @@
 import { isCardio, isBodyweightEq } from './exercises.js'
 import { isWarmupRow, ensurePlainObject, objectOf } from './warmup.js'
 import { bestKnownWeight } from './active-finish.js'
+import { resolveSetWeight, normalizeWeight, round1 } from './units.js'
 
 export { phaseForSet, isWarmupRow, ensurePlainObject, objectOf } from './warmup.js'
 
@@ -304,14 +305,20 @@ export const hasWorkSet = entry => doneWorkSets(entry).length > 0
 
 /**
  * Tonnage of one Workout: load × reps across performed Work sets.
+ * When `targetUnit` is provided, set loads are normalized to `targetUnit`.
  *
  * @param {Object|null|undefined} w - Workout with an entries array of set rows; nullish yields 0.
+ * @param {string|null} [targetUnit=null] - Desired unit ('kg' | 'lb'). Nullish preserves raw values.
  * @returns {number} Summed load × reps; 0 when none.
  */
-export function tonnageOf(w) {
+export function tonnageOf(w, targetUnit = null) {
   let v = 0
-  ;(w?.entries || []).forEach(e => doneWorkSets(e).forEach(s => { v += (s.w || 0) * (s.r || 0) }))
-  return v
+  const tu = targetUnit || w?.unit || 'kg'
+  ;(w?.entries || []).forEach(e => doneWorkSets(e).forEach(s => {
+    const load = targetUnit ? resolveSetWeight(s, e, w, tu) : (s.w || 0)
+    v += load * (s.r || 0)
+  }))
+  return targetUnit ? round1(v) : v
 }
 
 /**
@@ -526,32 +533,47 @@ export function lastEntryForRoutine(S, exId, routineId) {
   return lastEntryWalk(S, exId, w => w?.routineId === routineId)
 }
 
-/** Best load from completed work rows, with a guarded reps-only legacy topW fallback. */
-export function bestWeightForEntry(entry = {}) {
+/**
+ * Best load from completed work rows, with a guarded reps-only legacy topW fallback.
+ * When `targetUnit` is provided, set loads and legacy topW are normalized to `targetUnit`.
+ *
+ * @param {Object} [entry={}] - Workout entry.
+ * @param {Object|null} [workout=null] - Parent workout for unit cascade.
+ * @param {string|null} [targetUnit=null] - Desired unit ('kg' | 'lb'). Nullish preserves raw values.
+ * @returns {number} Best performed load.
+ */
+export function bestWeightForEntry(entry = {}, workout = null, targetUnit = null) {
   const target = entry.target || entry
   const workRows = workSets(entry)
   const repsRows = metricRowsForEntry(entry, 'reps')
   if (!repsRows.length) {
     return workRows.reduce((best, set) => {
       if (!isPerformed(set)) return best
-      const weight = Number(set.w)
+      const weight = targetUnit
+        ? resolveSetWeight(set, entry, workout, targetUnit)
+        : Number(set.w)
       return Number.isFinite(weight) && weight > best ? weight : best
     }, 0)
   }
 
   let best = 0
   repsRows.forEach(set => {
-    const weight = Number(set?.w)
+    const weight = targetUnit
+      ? resolveSetWeight(set, entry, workout, targetUnit)
+      : Number(set?.w)
     if (Number.isFinite(weight) && weight > best) best = weight
   })
 
   const parentMode = modeForSet({}, target)
   const hasNonRepsWorkRow = workRows.some(set => modeForSet(set, target) !== 'reps')
   const hasWarmupRow = Array.isArray(entry.sets) && entry.sets.some(isWarmupRow)
-  const topWeight = Number(entry.topW)
+  const rawTopWeight = Number(entry.topW)
+  const topWeight = targetUnit && Number.isFinite(rawTopWeight)
+    ? normalizeWeight(rawTopWeight, entry?.unit ?? workout?.unit ?? targetUnit, targetUnit)
+    : rawTopWeight
   if (parentMode === 'reps' && !hasNonRepsWorkRow && !hasWarmupRow
     && Number.isFinite(topWeight) && topWeight > best) best = topWeight
-  return best
+  return targetUnit ? round1(best) : best
 }
 
 /**
