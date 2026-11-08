@@ -38,7 +38,7 @@ describe('toggle next action', () => {
     const next = commitWorkingWeight(S, 0, 82.5, { todayISO: () => '2026-08-24' })
     expect(next).toEqual({ kind: 'topweight-then-finish', targetIdx: null, unitDone: true, isLastUnit: true, unitSize: 1 })
     expect(S.active.entries[0].topW).toBe(82.5)
-    expect(S.exWeights.ex1).toEqual({ w: 82.5, d: '2026-08-24' })
+    expect(S.exWeights.ex1).toEqual({ w: 82.5, d: '2026-08-24', unit: 'kg' })
   })
 
   it('finishing the first of two entries advances after commit', () => {
