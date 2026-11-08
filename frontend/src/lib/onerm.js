@@ -1,6 +1,9 @@
 import { doneWorkSets } from './workout-model.js'
 import { workoutTimestamp } from './format.js'
-import { LB_TO_KG } from './bodyweight.js'
+import { normalizeWeight, resolveSetWeight } from './units.js'
+
+export { resolveSetWeight } from './units.js'
+
 // Estimated one-rep maximum (1RM) calculation and progression tracking.
 //
 // Deliberately knows nothing about the exercise database: an estimate needs a weight AND a
@@ -27,29 +30,6 @@ export const FORMULAS = {
 export const DEFAULT_FORMULA = 'epley'
 
 /**
- * Resolve the load of a set normalized to the target unit (ADR 0017).
- *
- * Inspects `s.unit ?? entry?.unit ?? workout?.unit ?? targetUnit`.
- * - If set unit is 'lb' and targetUnit is 'kg', scales by `LB_TO_KG` (0.45359237).
- * - If set unit is 'kg' and targetUnit is 'lb', scales by `1 / LB_TO_KG` (2.20462).
- * - Otherwise returns numerical load unchanged.
- *
- * @param {Object} s - Set object with weight property `w`.
- * @param {Object|null} [entry=null] - Containing workout entry.
- * @param {Object|null} [workout=null] - Containing workout.
- * @param {string} [targetUnit='kg'] - Target profile unit ('kg' | 'lb').
- * @returns {number} Normalized load.
- */
-export function resolveSetWeight(s, entry = null, workout = null, targetUnit = 'kg') {
-  const w = Number(s?.w)
-  if (!Number.isFinite(w)) return 0
-  const unit = s?.unit ?? entry?.unit ?? workout?.unit ?? targetUnit
-  if (unit === 'lb' && targetUnit === 'kg') return w * LB_TO_KG
-  if (unit === 'kg' && targetUnit === 'lb') return w / LB_TO_KG
-  return w
-}
-
-/**
  * Estimate 1RM from a completed set weight and rep count.
  *
  * For single repetitions (`reps === 1`), the weight is the measured maximum and is returned
@@ -70,8 +50,7 @@ export function estimate1RM(w, r, formula = DEFAULT_FORMULA, setUnit = null, tar
   if (weight <= 0 || reps < 1) return null
   if (reps > REP_CAP) return null
   if (setUnit && targetUnit && setUnit !== targetUnit) {
-    if (setUnit === 'lb' && targetUnit === 'kg') weight = weight * LB_TO_KG
-    else if (setUnit === 'kg' && targetUnit === 'lb') weight = weight / LB_TO_KG
+    weight = normalizeWeight(weight, setUnit, targetUnit)
   }
   const fn = FORMULAS[formula] || FORMULAS[DEFAULT_FORMULA]
   const est = reps === 1 ? weight : fn(weight, Math.round(reps))

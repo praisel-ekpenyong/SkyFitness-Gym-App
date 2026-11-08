@@ -62,7 +62,7 @@ describe('active-workout lifecycle seam', () => {
     expect(mergeExWeight(S, 'ex1', 75, '2026-08-10')).toBe(false)
     expect(S.exWeights.ex1.w).toBe(80)
     expect(mergeExWeight(S, 'ex1', 85, '2026-08-10')).toBe(true)
-    expect(S.exWeights.ex1).toEqual({ w: 85, d: '2026-08-10' })
+    expect(S.exWeights.ex1).toEqual({ w: 85, d: '2026-08-10', unit: 'kg' })
     const S2 = { exWeights: { ex1: { w: 100, d: '2026-08-10' } } }
     expect(mergeExWeight(S2, 'ex1', 90, '2026-08-12')).toBe(false)
     expect(S2.exWeights.ex1.w).toBe(100)
@@ -315,7 +315,7 @@ describe('active-workout lifecycle seam', () => {
     const S = { active: { entries: [{ id: 'ex1', sets: [{ w: 60, r: 5, done: true }] }] }, exWeights: {} }
     expect(applyWorkingWeight(S, 0, 70, { todayISO: () => '2026-08-24' })).toBe(true)
     expect(S.active.entries[0].topW).toBe(70)
-    expect(S.exWeights.ex1).toEqual({ w: 70, d: '2026-08-24' })
+    expect(S.exWeights.ex1).toEqual({ w: 70, d: '2026-08-24', unit: 'kg' })
     expect(applyWorkingWeight(S, 0, 65, { todayISO: () => '2026-08-25' })).toBe(true)
     expect(S.active.entries[0].topW).toBe(65)
     expect(S.exWeights.ex1.w).toBe(70)
@@ -396,8 +396,8 @@ describe('active-workout lifecycle seam', () => {
     expect(S.workouts).toHaveLength(2)
     expect(S.active).toBeNull()
     expect(result.workout.unit).toBe('kg')
-    expect(S.exWeights.ex1).toEqual({ w: 90, d: '2026-08-24' })
-    expect(S.exWeights.ex2).toEqual({ w: 40, d: '2026-08-24' })
+    expect(S.exWeights.ex1).toEqual({ w: 90, d: '2026-08-24', unit: 'kg' })
+    expect(S.exWeights.ex2).toEqual({ w: 40, d: '2026-08-24', unit: 'kg' })
     expect(result.workout.vol).toBeUndefined()
     expect(tonnageOf(result.workout)).toBe(90 * 5 + 40 * 10)
   })

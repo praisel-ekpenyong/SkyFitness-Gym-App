@@ -10,6 +10,7 @@ import { EXIDX } from './exercises.js'
 import { exerciseMuscleSnapshot } from './muscles.js'
 import { todayISO } from './format.js'
 import { diffRoutineWithSession } from './routine-sync.js'
+import { normalizeWeight, round1 } from './units.js'
 
 /**
  * Highest load logged for an exercise across finished workouts.
@@ -24,10 +25,11 @@ import { diffRoutineWithSession } from './routine-sync.js'
  */
 function bestLoggedWeight(S, exId) {
   let best = 0
-  for (const w of S.workouts || []) {
-    for (const e of w.entries || []) {
-      if (e.id === exId) {
-        const cur = bestWeightForEntry(e)
+  const targetUnit = S?.unit || 'kg'
+  for (const w of S?.workouts || []) {
+    for (const e of w?.entries || []) {
+      if (e?.id === exId) {
+        const cur = bestWeightForEntry(e, w, targetUnit)
         if (cur > best) best = cur
       }
     }
@@ -39,7 +41,7 @@ function bestLoggedWeight(S, exId) {
  * Highest training load recorded for an exercise across history and working-weight cache.
  *
  * Queries all completed workout entries (excluding warm-up rows and unperformed sets via `bestWeightForEntry`)
- * and compares against the confirmed working-weight mirror (`S.exWeights[exId].w`).
+ * and compares against the confirmed working-weight mirror (`S.exWeights[exId].w`), normalized to active unit.
  *
  * @param {Object} S - Application state atom containing `workouts` and `exWeights`.
  * @param {string} exId - Exercise identifier from EXIDX.
@@ -47,9 +49,13 @@ function bestLoggedWeight(S, exId) {
  */
 export function bestKnownWeight(S, exId) {
   if (!S || !exId) return 0
+  const targetUnit = S?.unit || 'kg'
   const best = bestLoggedWeight(S, exId)
-  const cur = S.exWeights?.[exId]?.w
-  if (typeof cur === 'number' && cur > best) return cur
+  const cached = S.exWeights?.[exId]
+  if (cached && typeof cached.w === 'number') {
+    const cur = normalizeWeight(cached.w, cached.unit || targetUnit, targetUnit)
+    if (cur > best) return cur
+  }
   return best
 }
 
@@ -105,9 +111,13 @@ export function mergeExWeight(S, exId, weight, dateISO) {
   if (!Number.isFinite(w) || w <= 0) return false
   if (!exId) return false
   if (!S.exWeights) S.exWeights = {}
+  const targetUnit = S?.unit || 'kg'
   const cur = S.exWeights[exId]
-  if (!cur || w > cur.w) {
-    S.exWeights[exId] = { w: Math.round(w * 10) / 10, d: dateISO }
+  const curNormalized = cur && typeof cur.w === 'number'
+    ? normalizeWeight(cur.w, cur.unit || targetUnit, targetUnit)
+    : 0
+  if (!cur || w > curNormalized) {
+    S.exWeights[exId] = { w: round1(w), d: dateISO, unit: targetUnit }
     return true
   }
   return false

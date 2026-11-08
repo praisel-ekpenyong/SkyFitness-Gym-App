@@ -2,7 +2,7 @@ import { exerciseFor } from './exercises.js'
 import { MUSCLES, muscleWeightsOf, lastTrainedByMuscle } from './muscles.js'
 import { isWorkSet, isPerformed } from './workout-model.js'
 import { workoutTimestamp } from './format.js'
-import { LB_TO_KG } from './bodyweight.js'
+import { LB_TO_KG, sanitizeUnit } from './units.js'
 
 // A "normal" hard session for one muscle, in primary-set equivalents. The saturation curve
 // 1 - exp(-stimulus / REF) maps any session size onto [0,1) so volume raises the starting
@@ -104,7 +104,7 @@ function numeric(value) {
  * @returns {boolean} True for lb, lbs, pound, or pounds in any case.
  */
 function isPounds(unit) {
-  return /^(?:lb|lbs|pound|pounds)$/i.test(String(unit ?? '').trim())
+  return sanitizeUnit(unit) === 'lb'
 }
 
 /**
