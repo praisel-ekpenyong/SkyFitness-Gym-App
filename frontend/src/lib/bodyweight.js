@@ -10,8 +10,8 @@
 // Never touches the per-workout weigh-in (`w.bw`, GLOSSARY.md: Weigh-in) —
 // that stamp belongs to the workout lifecycle, not to this log.
 
-/** Kilograms per pound — the single conversion factor shared with the CSV parser. */
-export const LB_TO_KG = 0.45359237
+export { LB_TO_KG } from './units.js'
+import { LB_TO_KG } from './units.js'
 
 /**
  * Round a weigh-in to the stored 1-decimal policy.
