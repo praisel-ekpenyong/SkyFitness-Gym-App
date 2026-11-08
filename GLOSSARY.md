@@ -36,6 +36,10 @@ _Avoid_: sync
 **Static build**:
 Sky ships as a static frontend only; there is no backend to fall back on. Every feature must work from local data alone.
 
+**Read-time unit normalization**:
+Interpreting historical set loads, estimated 1RM calculations, and progressive overload prescriptions dynamically against the active profile unit preference on read without rewriting stored workouts. Prevents artificial progression deloads and record suppression when toggling between kilograms and pounds while keeping stored history immutable.
+_Avoid_: data migration, unit conversion migration, history rewriting
+
 ### Planning
 
 **Routine**:

@@ -4,6 +4,9 @@ One entry per decision, newest first. A decision here is a settled call; the
 ticket/ADR it points to carries the reasoning. Superseded entries stay listed
 with a pointer to their successor.
 
+- **2026-11-08 — Read-time unit normalization across training history and progression streams established.**
+  Settled that read-time unit normalization against `S.unit` applies across all historical training reads, progression streams, and workout metrics behind a single authoritative seam at `src/lib/units.js`. Eliminates progressive overload step-discontinuities and deload cascades on unit preference toggles, aligns Top Set curves with Estimated 1RM curves on Stats, and unifies conversion math across recovery and progression without mutating stored history. Detailed in ADR 0019.
+
 - **2026-11-01 — Strict canonical parameter signatures and accessible SVG labels established.**
   Settled that public domain helpers in `src/lib/` must expose single unambiguous signatures, rejecting speculative parameter sniffing or multi-type arguments (e.g. `S_or_entry`). Re-exports between presentation layers are prohibited in favor of direct imports. Interactive SVG diagrams (`BodyMap`) must provide accessible text via `getA11yLabel` announcing entity name, training state, and numerical volume. Detailed in [reviews](reviews.md).
 
