@@ -307,18 +307,17 @@ export const hasWorkSet = entry => doneWorkSets(entry).length > 0
  * Tonnage of one Workout: load × reps across performed Work sets.
  * When `targetUnit` is provided, set loads are normalized to `targetUnit`.
  *
- * @param {Object|null|undefined} w - Workout with an entries array of set rows; nullish yields 0.
+ * @param {Object|null|undefined} workout - Workout with an entries array of set rows; nullish yields 0.
  * @param {string|null} [targetUnit=null] - Desired unit ('kg' | 'lb'). Nullish preserves raw values.
  * @returns {number} Summed load × reps; 0 when none.
  */
-export function tonnageOf(w, targetUnit = null) {
-  let v = 0
-  const tu = targetUnit || w?.unit || 'kg'
-  ;(w?.entries || []).forEach(e => doneWorkSets(e).forEach(s => {
-    const load = targetUnit ? resolveSetWeight(s, e, w, tu) : (s.w || 0)
-    v += load * (s.r || 0)
+export function tonnageOf(workout, targetUnit = null) {
+  let total = 0
+  ;(workout?.entries || []).forEach(entry => doneWorkSets(entry).forEach(set => {
+    const load = targetUnit ? resolveSetWeight(set, entry, workout, targetUnit) : (set.w || 0)
+    total += load * (set.r || 0)
   }))
-  return targetUnit ? round1(v) : v
+  return targetUnit ? round1(total) : total
 }
 
 /**
