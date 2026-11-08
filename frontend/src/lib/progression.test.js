@@ -58,6 +58,17 @@ describe('readSession', () => {
     expect(s.best).toBe(50)
     expect(readSession({ id: LIFT, target: { sets: 2, sec: 45, mode: 'time' }, sets: [{ sec: 45, done: true }, { sec: 30, done: true }] }).ok).toBe(false)
   })
+
+  it('normalizes set weight against target unit (ADR 0019)', () => {
+    const s1 = readSession({ id: LIFT, target: T, sets: [{ w: 100, r: 5, done: true, unit: 'lb' }] }, null, null, 'kg')
+    expect(s1.weight).toBe(45.4)
+
+    const s2 = readSession({ id: LIFT, target: T, sets: [{ w: 100, r: 5, done: true }] }, null, { unit: 'lb' }, 'kg')
+    expect(s2.weight).toBe(45.4)
+
+    const s3 = readSession({ id: LIFT, target: T, sets: [{ w: 45.4, r: 5, done: true }] }, null, { unit: 'kg' }, 'lb')
+    expect(s3.weight).toBe(100.1)
+  })
 })
 
 describe('stallCount', () => {
@@ -430,6 +441,34 @@ describe('sessionsFor', () => {
     const S4 = { unit: 'kg' }
     expect(() => sessionsFor(S4, LIFT)).not.toThrow()
     expect(sessionsFor(S4, LIFT)).toEqual([])
+  })
+
+  it('normalizes historical session set weights to active profile unit (ADR 0019)', () => {
+    const S = {
+      unit: 'kg',
+      workouts: [
+        { d: '2026-01-01', unit: 'lb', entries: [{ id: LIFT, target: { sets: 1, reps: 5 }, sets: [{ w: 100, r: 5, done: true }] }] },
+      ]
+    }
+    const sessions = sessionsFor(S, LIFT)
+    expect(sessions[0].weight).toBe(45.4)
+
+    const Slb = { ...S, unit: 'lb' }
+    const sessionsLb = sessionsFor(Slb, LIFT)
+    expect(sessionsLb[0].weight).toBe(100)
+  })
+
+  it('evaluates progressive overload smoothly across unit preferences', () => {
+    const S = {
+      unit: 'kg',
+      workouts: [
+        { d: '2026-01-01', unit: 'lb', entries: [{ id: LIFT, target: { sets: 3, reps: 5 }, sets: [{ w: 100, r: 5, done: true }, { w: 100, r: 5, done: true }, { w: 100, r: 5, done: true }] }] }
+      ]
+    }
+    const cfg = { id: LIFT, sets: 3, reps: 5, weight: 45, prog: 'linear', inc: 2.5 }
+    const prescription = nextPrescription(S, cfg)
+    expect(prescription.kind).toBe('up')
+    expect(prescription.weight).toBe(47.9) // 45.4 kg + 2.5 kg = 47.9 kg
   })
 })
 
