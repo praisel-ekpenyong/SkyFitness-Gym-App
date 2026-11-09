@@ -1,10 +1,16 @@
 # PRODUCT.md — Sky
 
+<!-- impeccable:product-schema 1 -->
+
 Durable product truth, recorded for design work (Impeccable `/impeccable init`).
 This file holds audience, purpose, operating context, constraints, and voice —
 **not** surface-level visual direction. The visual system is documented in
 [DESIGN.md](DESIGN.md) and in the header of `frontend/src/index.css`. Domain
 vocabulary is defined in `GLOSSARY.md`.
+
+## Platform
+
+web
 
 ## What Sky is
 
@@ -16,9 +22,13 @@ Sky ships as a static frontend only — no server, no API, no cloud sync.
 
 ## Audience
 
-Exactly one person: the lifter who runs it. There is no account, no login,
-no multi-person mode — guest mode is the only mode. Every visitor is the
-owner, and every greeting on Home is addressed to them alone.
+Any lifter, one per install. Sky is free and open to anyone, and each install
+serves exactly one person: the lifter who runs it. There is no account, no
+login, no multi-person mode — guest mode is the only mode. Inside the app every
+visitor is the owner, and every greeting on Home is addressed to them alone.
+
+The landing page (`landing/index.html`) has a second audience: a lifter deciding
+whether to try Sky. Once they open the app, they are the owner.
 
 ## Purpose
 
@@ -30,6 +40,14 @@ Three jobs, in order:
 3. **Derive** — progression prescriptions, estimated 1RM and records,
    fatigue and strength-retention maps — read only from what was logged.
 
+## Positioning
+
+Your log stays on your device, and every number Sky gives you comes from that
+log and can explain why. No server, no flattery.
+
+Both halves are structural: there is no backend to send data to (ADR 0001), and
+prescriptions are read only from what was logged and carry their own `why`.
+
 ## Operating context
 
 - **Phone-first, mid-workout.** The primary surface is a phone in one hand
@@ -38,13 +56,32 @@ Three jobs, in order:
   this; desktop is a convenience, not the target.
 - **Offline, always.** Static build with no backend (ADR 0001), guest-only
   boot (ADR 0002). After first load the network is optional — exercise media
-  streams from a CDN and falls back gracefully; nothing else needs it.
+  comes from bundled files when the build includes them, otherwise from a
+  pinned public CDN, and falls back gracefully; nothing else needs it.
 - **Two homes.** The PWA in a browser, and Capacitor shells on iOS/Android
   whose native file mirror means backgrounding can never lose a session
   (ADR 0004). iOS Safari is a first-class citizen — its WebView can evict
-  localStorage, which is why state is dual-written.
+  localStorage, which is why state is dual-written. The shells wrap the same
+  interface as the PWA, so design work targets one mobile-first web interface
+  with no per-OS design language.
+- **Hosted statically.** The app is served from `skyfitness.pages.dev`
+  (Cloudflare Pages), with Netlify also configured (ADR 0010). The build stays
+  host-agnostic.
 - **One-handed reading of numbers.** Weight, reps, rest seconds and effort
   are the app's payload; they use tabular numerals and are never decorative.
+
+## Capabilities
+
+- **Catalogue:** 1,324 built-in exercises with muscle filters, plus the lifter's
+  own custom exercises.
+- **Progression:** linear, Greyskull, double progression, add-time, and a
+  bodyweight path.
+- **History in:** FitNotes, Strong, Hevy and Apple Health imports merge into the
+  profile.
+- **Data out:** one JSON backup file holds the whole profile, with a reminder
+  after 14 days without one.
+- **Plan sharing:** a plan file carries routines only — never workouts, weigh-ins
+  or settings.
 
 ## Constraints (durable)
 
@@ -77,13 +114,33 @@ missed session is reported, not punished. Domain vocabulary follows
 Accounts, multi-user, cloud sync, social features, coach marketplaces,
 push servers. A design idea that needs any of these is out of scope.
 
+## Accessibility & Inclusion
+
+WCAG AA contrast in both dark and light themes is a public commitment
+(README.md). Every interactive target is at least 44px, and reduced-motion
+preferences are respected.
+
+## Evidence on hand
+
+- **Screenshots:** `assets/screenshots/` holds five mobile screens dated
+  2026-09-24. They predate the Iron rebuild (2026-11-09) and show the old
+  interface, so they cannot stand in for the current look until retaken.
+- **Photos:** gym photos in `assets/`, with creators and licences in
+  `assets/credits.json`.
+- **Absent:** the repo holds no testimonials, user counts, reviews, press or
+  benchmarks. Future work must not invent them.
+
 ## Evidence quality
 
-- Product purpose, audience, constraints: **HIGH** — README.md, GLOSSARY.md,
-  docs/adr/, and docs/architecture.md agree with each other and with the code.
+- Audience, positioning, platform: **CONFIRMED** by the owner, 2026-11-09.
+- Product purpose, constraints: **HIGH** — README.md, GLOSSARY.md, docs/adr/,
+  and docs/architecture.md agree with each other and with the code.
+- Capabilities: **HIGH** — checked against `frontend/src/lib/`.
 - Operating context: **HIGH** — tap-target and safe-area tokens, the
   dual-write storage protocol, and Capacitor shells are all in the code.
 - Voice: **HIGH** — demonstrated by architecture-doc prose and existing copy
   conventions; spot-checked, not exhaustively audited.
+- Accessibility: **STATED** — in README.md and DESIGN.md; contrast was not
+  measured during this update.
 - Which surface needs design attention first: **not yet recorded** — chosen
   per run, not durable truth.

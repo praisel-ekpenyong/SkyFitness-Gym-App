@@ -4,6 +4,20 @@ One entry per decision, newest first. A decision here is a settled call; the
 ticket/ADR it points to carries the reasoning. Superseded entries stay listed
 with a pointer to their successor.
 
+- **2026-11-09 — The Plate prototype is dropped.** After it was removed from the repo, the owner chose to
+  leave it deleted rather than restore it. See [UI directions](ui-directions.md).
+
+- **2026-11-09 — A second UI direction ("Plate") is prototyped beside Iron.** The owner asked for "a
+  prototype with a new ui". Read by the chief of staff as a throwaway comparison, not a replacement; the
+  owner may redirect. Spec: `.scratch/ui-prototype/spec.md`. See [UI directions](ui-directions.md).
+
+- **2026-11-09 — The interface is rebuilt as the "Iron" design system.** Requested by the owner ("rebuild
+  the entire ui from scratch to be more like a high end gym app"). Committed on `ui/iron` at `1ec0dc4`,
+  not merged to `master` as of that commit. See [UI directions](ui-directions.md).
+
+- **2026-11-09 — A new profile defaults to the dark theme.** Changed in `ui/iron@1ec0dc4`. Saved themes are
+  kept, so a profile that was saved under the old `light` default stays light.
+
 - **2026-11-08 — Read-time unit normalization across training history and progression streams established.**
   Settled that read-time unit normalization against `S.unit` applies across all historical training reads, progression streams, and workout metrics behind a single authoritative seam at `src/lib/units.js`. Eliminates progressive overload step-discontinuities and deload cascades on unit preference toggles, aligns Top Set curves with Estimated 1RM curves on Stats, and unifies conversion math across recovery and progression without mutating stored history. Detailed in ADR 0019.
 
