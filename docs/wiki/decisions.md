@@ -4,6 +4,19 @@ One entry per decision, newest first. A decision here is a settled call; the
 ticket/ADR it points to carries the reasoning. Superseded entries stay listed
 with a pointer to their successor.
 
+- **2026-11-09 — Iron becomes its own repository; the old interface is frozen as a fallback.** The owner
+  chose to keep `master` "as a separate project": Iron was cloned with history into
+  `/home/sky/Desktop/SkyFitness/SkyFitness-Iron/` (its `main` is the former `ui/iron`, no remote), and
+  `SkyFitness-Gym-App-master` gets no app changes. Iron deploys to `skyfitness.pages.dev`, straight to production;
+  the old interface stays on `skyfitness-app.netlify.app`, the address the owner's phone uses. The owner's log lives
+  in one app at a time and moves by export/import. The old repository is tagged `archive/pre-iron` after 6 workouts
+  on Iron with no rollback. Spec and the full decision table: `.scratch/iron-launch/spec.md`.
+
+- **2026-11-09 — 44px tap targets are enforced, records are yellow, and three accents leave the picker.** From
+  the Iron review: the review harness fails any target under 44px; every record mark uses the record colour, never
+  the accent; gold, orange and red are no longer offered as accents (profiles already on one keep it). Tickets 02,
+  03 and 09 in `.scratch/iron-launch/`.
+
 - **2026-11-09 — The Plate prototype is dropped.** After it was removed from the repo, the owner chose to
   leave it deleted rather than restore it. See [UI directions](ui-directions.md).
 

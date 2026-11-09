@@ -26,6 +26,14 @@ records what was decided, why, and what was found.
 - As of `1ec0dc4`, exercise art from the CDN is not cached by the service worker unless it was bundled, so it
   shows an empty tile offline. Not addressed.
 
+### Outcome
+- On 2026-11-09 a review of the built app (tests, the review harness at four widths in both themes, browser
+  probes) found one core-flow bug: leaving a superset opened the next exercise scrolled past its own name. It also
+  found the session segments 4px under the 44px rule, records in two colours, and the first Log key below the fold
+  on phones shorter than ~700px. None of it was structural.
+- The owner chose Iron as the product, in its own repository (`SkyFitness-Iron`), with the old interface frozen as
+  a fallback. See the [decision log](decisions.md) and `.scratch/iron-launch/spec.md`.
+
 ## Plate (prototype, opened 2026-11-09)
 
 - Spec: `.scratch/ui-prototype/spec.md`. Ticket: `.scratch/ui-prototype/issues/01-plate-core-path.md`.
