@@ -1,0 +1,126 @@
+/* Tokens. Every colour, radius and type role downstream references these. */
+:root {
+  color-scheme: dark;
+
+  /* ground and elevation: a warm near-black (gym rubber), never navy or slate */
+  --bg:        #0a0a09;
+  --bg-el:     #121211;   /* sheets */
+  --surface:   #161615;   /* blocks */
+  --surface-2: #232321;   /* keys and nested panels */
+  --surface-3: #30302d;   /* pressed keys, controls on a nested panel */
+
+  /* ink: chalk white, then two greys far enough apart to read as two */
+  --label:   #f6f5f0;
+  --label-2: #b7b5ac;
+  --label-3: #94928a;
+  --label-4: #4d4c47;     /* marks only, never words */
+
+  /* primary is inversion */
+  --ink:    #f6f5f0;
+  --on-ink: #0a0a09;
+
+  /* lines, only where a list needs them */
+  --sep:    #232321;
+  --sep-op: #30302d;
+  --hair:   1px;
+
+  /* status */
+  --red:    #ff5b4f;   --red-text: var(--red);
+  --orange: #ff9d3d;   --orange-text: var(--orange);   --on-orange: #0a0a09;
+  --yellow: #f2c94c;   --goal-text: var(--yellow);
+
+  /* accent: the colour of work. Per profile via data-accent. */
+  --acc:      #a3e635;
+  --on-acc:   #0a0a09;
+  --acc-2:    color-mix(in srgb, var(--acc) 82%, black);   /* pressed */
+  --acc-text: var(--acc);                                  /* accent as words */
+  --data:     var(--acc);                                  /* accent as chart ink */
+  --acc-soft: color-mix(in srgb, var(--acc) 14%, transparent);
+  --acc-line: color-mix(in srgb, var(--acc) 40%, transparent);
+
+  /* competition plates: the object's own colours, used on plates and nowhere else */
+  --plate-red:    #d8352b;
+  --plate-blue:   #2a6fe0;
+  --plate-yellow: #f0c02e;
+  --plate-green:  #2ea84f;
+  --plate-white:  #ece9e0;
+  --plate-steel:  #8f8f88;
+  --plate-bar:    #6f6f69;
+
+  /* exercise art is white-ground line work: inverted it reads as an X-ray on black,
+     and the hue-rotate puts the red of the target muscle back where it was */
+  --art-filter: invert(1) hue-rotate(180deg) brightness(1.14) contrast(1.04);
+  --art-ground: #000000;
+
+  /* type */
+  --font: 'Archivo Variable', 'Archivo', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif;
+  --narrow: 62%;
+  --semi:   80%;
+
+  /* geometry */
+  --r-1: 4px;
+  --r-2: 8px;
+  --r-3: 16px;           /* sheets only */
+  --gap: 12px;
+  --pad: 16px;
+  --icon-stroke: 1.6;
+
+  /* motion */
+  --ease: cubic-bezier(.2, .8, .2, 1);
+  --fast: 120ms;
+  --med:  200ms;
+
+  /* phone geometry */
+  --tap-target: 44px;
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sat: env(safe-area-inset-top, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+  --tabbar-h: 60px;
+  --page-clearance: calc(var(--tabbar-h) + var(--sab) + 28px);
+  --timer-clearance: calc(var(--tabbar-h) + var(--sab) + 148px);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  /* chalk: the same flat steps, inverted, with no cream in them */
+  --bg:        #f3f3f0;
+  --bg-el:     #fbfbf9;
+  --surface:   #ffffff;
+  --surface-2: #ebebe7;
+  --surface-3: #deded9;
+
+  --label:   #0d0d0c;
+  --label-2: #51514c;
+  --label-3: #6a6a64;
+  --label-4: #b4b4ad;
+
+  --ink:    #0d0d0c;
+  --on-ink: #fbfbf9;
+
+  --sep:    #ebebe7;
+  --sep-op: #deded9;
+
+  --red:    #d92d20;   --red-text: #b4231a;
+  --orange: #ef8a1d;   --orange-text: #8f4c06;
+  --yellow: #e0ae12;   --goal-text: #7a5c00;
+
+  /* a bright accent still fills a key, but as ink it has to darken to be read on white */
+  --acc-text: color-mix(in srgb, var(--acc) 48%, black);
+  --data:     color-mix(in srgb, var(--acc) 72%, black);
+  --acc-soft: color-mix(in srgb, var(--acc) 26%, transparent);
+
+  --art-filter: none;
+  --art-ground: #ffffff;
+}
+
+/* Accents. All are bright enough to carry a black label on a filled key in either theme. */
+:root[data-accent="lime"]   { --acc: #a3e635 }
+:root[data-accent="sky"]    { --acc: #5cb8ff }
+:root[data-accent="orange"] { --acc: #ff8a3d }
+:root[data-accent="violet"] { --acc: #b79cff }
+:root[data-accent="pink"]   { --acc: #ff6fa3 }
+:root[data-accent="red"]    { --acc: #ff6a5e }
+:root[data-accent="teal"]   { --acc: #3dd6c4 }
+:root[data-accent="gold"]   { --acc: #f2c94c }

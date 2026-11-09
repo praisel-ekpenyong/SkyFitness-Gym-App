@@ -1,0 +1,199 @@
+/* The workout: one exercise, one set at a time, readable from the bench. */
+
+.workout { max-width: 640px; margin: 0 auto }
+
+/* ------------------------------------------------------------------ header -- */
+.wk-hdr {
+  position: sticky; top: 0; z-index: 20; background: var(--bg);
+  display: grid; grid-template-columns: var(--tap-target) 1fr auto; align-items: center; column-gap: 6px;
+  margin: calc((var(--sat) + 12px) * -1) calc(var(--pad) * -1) 0;
+  padding: calc(var(--sat) + 6px) var(--pad) 0;
+}
+.wk-hdr .wk-min { margin-left: -10px; font-size: 22px }
+.wk-title { min-width: 0; text-align: center }
+.wk-hdr h1 {
+  font-size: 15px; font-stretch: 100%; font-weight: 600; text-transform: none; line-height: 1.2; letter-spacing: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.wk-hdr .sub { font-size: 13px; margin-top: 1px; color: var(--label-2) }
+.wk-finish { min-width: 64px }
+
+/* one segment per exercise, each filling with its own sets */
+.lad { grid-column: 1 / -1; display: flex; gap: 3px; margin: 0 }
+.lad-s { flex: 1 1 0; min-width: 0; height: 40px; display: flex; align-items: center }
+.lad-b { display: block; width: 100%; height: 4px; background: var(--surface-3); border-radius: 1px; overflow: hidden; transition: height var(--fast) }
+.lad-b i { display: block; height: 100%; width: 100%; background: var(--data); transform-origin: left; transition: transform var(--med) var(--ease) }
+.lad-s.on .lad-b { height: 8px; background: var(--label-4) }
+
+.wk-meta { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: var(--tap-target); margin-top: -6px }
+.wk-meta .btn { margin-right: -12px; color: var(--label) }
+
+/* ---------------------------------------------------------------- exercise -- */
+.exblock { display: block }
+.exhead { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; align-items: start; margin-bottom: 10px }
+.exhead:has(.exmedia) { grid-template-columns: minmax(0, 1fr) 132px }
+.exhead:has(.exmedia.mini) { grid-template-columns: minmax(0, 1fr) 76px }
+.exhead-t { min-width: 0 }
+.exhead h2 { font-size: 38px; margin: 0 0 8px }
+.exhead h2.long { font-size: 30px }
+.exhead .exmedia { margin: 0 }
+.exhead .exmedia img { height: 132px }
+.exhead .exmedia.mini img { height: 76px }
+.exhead .exmedia.mini .giftoggle { width: 40px; height: 40px; left: 0; bottom: 0; font-size: 13px }
+.extags { gap: 2px 10px; flex-wrap: wrap }
+.extags .tag { background: none; padding: 0; font-size: 13px; font-weight: 400; white-space: normal }
+.extags .tag.ex-best { color: var(--label) }
+.extools { display: flex; gap: 0; margin: 4px 0 0 -12px }
+.compact .exhead:has(.exmedia) { grid-template-columns: minmax(0, 1fr) 76px }
+.compact .exhead h2 { font-size: 28px }
+.compact .exhead .exmedia img, .compact .exhead .exmedia.mini img { height: 76px }
+.compact .exhead .exmedia .giftoggle { display: none }
+.compact .exhead .exmedia .gifhint { display: none }
+
+.ex-last { margin: 0 0 4px; line-height: 1.35 }
+.progline { display: flex; align-items: flex-start; gap: 7px; margin: 0 0 8px; font-size: 13px; line-height: 1.35; color: var(--acc-text) }
+.progline.warn { color: var(--goal-text) }
+.progline .icn { flex: none; margin-top: 2px; font-size: 14px; --icon-stroke: 2 }
+.exblock .exnote { display: flex; align-items: flex-start; gap: 8px; margin: 2px 0 10px; cursor: pointer; padding: 10px 12px }
+.exblock .exnote .icn { margin-top: 2px; color: var(--label-3); flex: none }
+
+/* ------------------------------------------------------------------ ladder -- */
+.ladder { background: var(--surface); border-radius: var(--r-2); padding: 4px; margin-top: 10px }
+.setph { font-size: 12px; font-weight: 500; color: var(--label-3); padding: 9px 10px 3px }
+
+/* a set you are not on: one line, still typeable */
+.setrow {
+  display: grid; grid-template-columns: 30px minmax(0, 1fr) minmax(0, 1fr) var(--tap-target);
+  align-items: center; column-gap: 8px; padding: 3px 4px 3px 8px; min-height: 50px; border-radius: 6px; position: relative;
+  cursor: pointer;
+}
+.setrow + .setrow, div + div > .setrow { box-shadow: none }
+.setrow.solo { grid-template-columns: 30px minmax(0, 1fr) var(--tap-target) }
+.setrow.eff3 { grid-template-columns: 30px minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr) var(--tap-target) }
+.setrow.timed { grid-template-columns: 30px minmax(0, 1fr) minmax(0, 1fr) var(--tap-target) var(--tap-target) }
+.setrow.timed.solo { grid-template-columns: 30px minmax(0, 1fr) var(--tap-target) var(--tap-target) }
+.setrow.warm { grid-template-columns: 30px minmax(0, 1fr) minmax(0, 1fr) var(--tap-target) var(--tap-target) }
+.setrow.warm.eff3 { grid-template-columns: 30px minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr) var(--tap-target) var(--tap-target) }
+.setrow .n {
+  height: var(--tap-target); display: flex; align-items: center; justify-content: flex-start; color: var(--label-2);
+  font-size: 20px; font-stretch: var(--narrow); font-weight: 700;
+}
+.setrow .n b { font-weight: 700 }
+.setrow .n-l { display: none }
+.setrow .stp { background: none; overflow: visible; display: block; min-width: 0 }
+.setrow .stp > button { display: none }
+.setrow .stp .val { justify-content: flex-start; gap: 4px; align-items: baseline }
+/* figures stay tabular and right-aligned in a fixed column, so a ladder scans straight down */
+.setrow .stp .num { width: 2.3em; height: var(--tap-target); text-align: right; font-size: 24px; font-stretch: var(--narrow); font-weight: 700; flex: none }
+.setrow .stp.r .num { width: 1.5em }
+.setrow .stp.eff .num { width: 1.5em }
+.setrow .stp .val i { font-size: 12px; color: var(--label-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0 }
+.setrow .iconbtn { width: var(--tap-target); font-size: 14px }
+.setrow.done .stp .num { color: var(--label-2) }
+.setrow.done .n { color: var(--acc-text) }
+.setrow .chk { justify-self: end }
+.milestone-badge {
+  grid-column: 2 / -1; justify-self: start; margin: -4px 0 6px;
+  display: inline-flex; align-items: center; gap: 3px; color: var(--goal-text);
+  background: color-mix(in srgb, var(--yellow) 16%, transparent); border-radius: var(--r-1);
+  padding: 2px 6px; font-size: 12px; font-weight: 600; line-height: 1.25;
+}
+.setgo {
+  height: var(--tap-target); border-radius: var(--r-2); background: var(--surface-2); color: var(--label);
+  display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 15px;
+}
+.setgo:disabled { opacity: .38; cursor: default }
+.setgo .icn { font-size: 16px; --icon-stroke: 2 }
+.setgo-l { display: none }
+
+/* the set in front of you: a console */
+.setrow.cur, .setrow.cur.solo, .setrow.cur.eff3, .setrow.cur.timed, .setrow.cur.warm, .setrow.cur.warm.eff3, .setrow.cur.timed.solo {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6px; padding: 10px;
+  background: var(--surface-2); cursor: default; margin: 4px 0;
+}
+.setrow.cur .n { grid-column: 1 / -1; color: var(--label); margin: -10px 0 -8px }
+.setrow.cur .n b { display: none }
+.setrow.cur .n-l { display: block; font-size: 14px; font-stretch: 100%; font-weight: 600 }
+.setrow.cur .stp { display: grid; grid-template: "val val" auto "dec inc" 52px / 1fr 1fr; gap: 3px; background: none; overflow: visible }
+.setrow.cur .stp > button { display: flex; width: 100%; height: 52px; font-size: 20px; background: var(--surface-3); border-radius: 6px }
+.setrow.cur .stp > button:active { background: var(--label-4) }
+.setrow.cur .stp-dec { grid-area: dec }
+.setrow.cur .stp-inc { grid-area: inc }
+.setrow.cur .stp .val {
+  grid-area: val; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0;
+  padding: 4px 2px 8px;
+}
+.setrow.cur .stp .num, .setrow.cur .stp.r .num { width: 100%; height: auto; text-align: center; font-size: 66px; line-height: 1; font-weight: 700 }
+.setrow.cur .stp .val i { font-size: 13px; margin-top: 2px; color: var(--label-2) }
+.setrow.cur.solo .stp.w { grid-column: 1 / -1 }
+.setrow.cur .stp.eff { grid-column: 1 / -1; grid-template: "dec val inc" 50px / 72px 1fr 72px }
+.setrow.cur .stp.eff .val { flex-direction: row; gap: 6px; padding: 0; align-items: baseline; padding-top: 7px }
+.setrow.cur .stp.eff .num { width: 2.2em; font-size: 32px; text-align: right; height: auto }
+.setrow.cur .bbell { grid-column: 1 / -1; margin: 6px 0 2px }
+.setrow.cur .chk { grid-column: 1 / -1; width: 100%; height: 60px; justify-self: stretch; background: var(--acc); color: var(--on-acc) }
+.setrow.cur .chk .icn { font-size: 24px; --icon-stroke: 2.6 }
+.chk-l { font-size: 24px; font-stretch: var(--narrow); font-weight: 800; text-transform: uppercase; letter-spacing: .01em }
+.setrow.cur .chk.on { background: var(--surface-3); color: var(--acc-text); animation: none }
+.setrow.cur .setgo { height: 60px; background: var(--ink); color: var(--on-ink) }
+.setrow.cur .setgo-l { display: inline; font-weight: 600 }
+.setrow.cur.timed .chk { grid-column: auto; }
+.setrow.cur .set-x { position: absolute; top: 2px; right: 2px }
+.setrow.cur .milestone-badge { grid-column: 1 / -1; margin: 0; justify-self: center }
+
+.ladder-tools { display: flex; flex-wrap: wrap; gap: 0 2px; padding: 2px 2px 0; justify-content: space-between }
+.ladder-tools .btn { color: var(--label-2); padding-inline: 6px; gap: 5px; font-size: 13px; font-weight: 400; white-space: nowrap }
+.ladder-tools .btn .icn { font-size: 14px }
+
+/* ---------------------------------------------------------------- superset -- */
+.ss-card { background: none }
+.ss-hd { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px; font-weight: 500; color: var(--acc-text); margin-bottom: 10px; line-height: 1.3 }
+.ss-hd .row { gap: 6px; align-items: flex-start }
+.ss-hd .btn { color: var(--label-2); flex: none }
+.ss-ex { position: relative }
+.ss-amp { display: flex; justify-content: center; color: var(--acc-text); margin: 10px 0; font-size: 18px; --icon-stroke: 2.2 }
+.ss-label { font-size: 12px; font-weight: 600; color: var(--acc-text); margin: 8px 0 4px 2px; display: flex; align-items: center; gap: 5px }
+.ss-label .icn { font-size: 13px }
+.item.in-ss { box-shadow: inset 3px 0 0 var(--data) }
+
+/* ------------------------------------------------------------ session tools -- */
+.wk-nav { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 14px 0 6px }
+.wk-manage { display: flex; flex-wrap: wrap; justify-content: center; gap: 0 4px; margin-top: 6px }
+.wk-manage .btn { color: var(--label-2); font-weight: 400; font-size: 13px }
+.wk-manage .btn .icn { font-size: 15px }
+.wk-manage .wk-danger { color: var(--red-text) }
+.wk-discard { color: var(--red-text); margin-top: 4px; font-size: 14px }
+.item-move { display: flex; gap: 2px; flex: none; align-items: center }
+
+/* a start chooser with one clear thing to do */
+.start-today { padding-bottom: var(--pad) }
+.start-today h2 { margin-bottom: 8px; font-size: 13px; font-weight: 500 }
+.start-today-name { font-size: 58px }
+.start-today-meta { margin: 8px 0 14px }
+
+/* ------------------------------------------------------------------ desktop -- */
+@media (min-width: 1000px) {
+  /* Two columns from one source order: the exercise and session tools on the left, the ladder on
+     the right. The ladder spans into a final 1fr row so its height lands in that flexible track
+     and never stretches the rows of the column beside it. */
+  .workout {
+    max-width: 1040px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+    grid-template-rows: repeat(14, auto) 1fr; column-gap: 24px; align-items: start;
+  }
+  .workout > * { grid-column: 1 }
+  .workout > .wk-hdr, .workout > .wk-meta, .workout > .ss-card, .workout > .empty { grid-column: 1 / -1 }
+  .workout > .exblock { display: contents }
+  .workout > .exblock > * { grid-column: 1 }
+  .workout > .exblock > .ladder { grid-column: 2; grid-row: 3 / -1; margin-top: 0 }
+  .wk-hdr { margin: -36px -40px 0; padding: 14px 40px 0; grid-template-columns: var(--tap-target) 1fr auto }
+  .wk-hdr h1 { font-size: 17px }
+  .workout .exhead:has(.exmedia) { grid-template-columns: minmax(0, 1fr) 200px }
+  .workout .exhead .exmedia img { height: 200px }
+  .workout .exhead h2 { font-size: 46px }
+  .workout .exhead:has(.exmedia.mini) { grid-template-columns: minmax(0, 1fr) 96px }
+  .workout .exhead .exmedia.mini img { height: 96px }
+  .ss-card { display: grid; grid-template-columns: 1fr 1fr; gap: 0 24px; align-items: start }
+  .ss-hd { grid-column: 1 / -1 }
+  .ss-amp { display: none }
+  .workout .compact .exhead:has(.exmedia) { grid-template-columns: minmax(0, 1fr) 96px }
+  .workout .compact .exhead .exmedia img { height: 96px }
+}

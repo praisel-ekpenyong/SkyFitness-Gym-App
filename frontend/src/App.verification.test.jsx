@@ -378,21 +378,21 @@ describe('Ticket 05 — End-to-End Integration & Stats Diagram Parity', () => {
     expect(matchesMuscleFilter('c-legacy-back', 'lats')).toBe(true)
     expect(matchesMuscleFilter('c-legacy-back', 'upper-back')).toBe(true)
     expect(matchesMuscleFilter('c-legacy-back', 'lower-back')).toBe(true)
-    // 12. Theme toggle
-    expect(document.documentElement.dataset.theme).toBe('light')
-    act(() => {
-      useStore.getState().update(s => {
-        s.theme = 'dark'
-      })
-    })
+    // 12. Theme toggle (a new profile starts dark)
     expect(document.documentElement.dataset.theme).toBe('dark')
-
     act(() => {
       useStore.getState().update(s => {
         s.theme = 'light'
       })
     })
     expect(document.documentElement.dataset.theme).toBe('light')
+
+    act(() => {
+      useStore.getState().update(s => {
+        s.theme = 'dark'
+      })
+    })
+    expect(document.documentElement.dataset.theme).toBe('dark')
 
     // Ensure no unexpected console errors were emitted during the run
     const unexpectedErrors = consoleSpy.mock.calls.filter(call => {

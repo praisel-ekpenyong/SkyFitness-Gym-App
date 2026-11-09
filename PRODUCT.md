@@ -2,10 +2,9 @@
 
 Durable product truth, recorded for design work (Impeccable `/impeccable init`).
 This file holds audience, purpose, operating context, constraints, and voice —
-**not** surface-level visual direction. The incumbent visual system is already
-documented in code: see the four-rule header of `frontend/src/index.css`
-(one type scale, neutral surface ramp, hairlines not borders, motion that
-acknowledges). Domain vocabulary is defined in `GLOSSARY.md`.
+**not** surface-level visual direction. The visual system is documented in
+[DESIGN.md](DESIGN.md) and in the header of `frontend/src/index.css`. Domain
+vocabulary is defined in `GLOSSARY.md`.
 
 ## What Sky is
 

@@ -25,14 +25,14 @@ export default class ErrorBoundary extends Component {
     const active = useStore.getState().S.active
     return (
       <div className="narrow">
-        <div className="empty" style={{ marginTop: '18vh' }}>
+        <div className="empty error-empty">
           <div className="ico"><Icon name="info" /></div>
-          <div style={{ fontWeight: 600, marginBottom: 6 }}>{t('Something went wrong')}</div>
+          <div className="error-t d">{t('Something went wrong')}</div>
           {t('This screen could not be drawn. Your data is safe on this device.')}
         </div>
         <Button variant="primary" icon="reset" onClick={() => location.reload()}>{t('Reload Sky')}</Button>
         {active && <>
-          <div style={{ height: 8 }} />
+          <div className="gap8" />
           <Button variant="danger" icon="trash" onClick={() => {
             useStore.getState().update(s => { s.active = null })
             location.reload()

@@ -1,0 +1,237 @@
+/* The frame: page, screen titles, navigation, rest dock, sheets, toast. */
+
+#app {
+  min-height: 100vh; min-height: 100dvh;
+  padding-top: calc(var(--sat) + 12px);
+  padding-right: max(var(--pad), var(--sar));
+  padding-bottom: var(--page-clearance);
+  padding-left: max(var(--pad), var(--sal));
+  max-width: 640px; margin: 0 auto;
+}
+body.resting #app { padding-bottom: var(--timer-clearance) }
+/* focus mode on a phone: logging a set owns the whole screen */
+body.focus-session #app { padding-bottom: calc(var(--sab) + 28px) }
+body.focus-session.resting #app { padding-bottom: calc(var(--sab) + 140px) }
+#app.vfade { animation: fadein var(--fast) linear }
+.boot { padding-top: 44vh; display: flex; justify-content: center; color: var(--label-4) }
+
+/* ------------------------------------------------------------ screen title -- */
+.hdr { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin: 4px 0 16px }
+.hdr > div:first-child { min-width: 0 }
+.hdr h1 {
+  font-size: 44px; font-stretch: var(--narrow); font-weight: 800; text-transform: uppercase;
+  line-height: .94; letter-spacing: .002em;
+}
+.hdr .sub { color: var(--label-2); font-size: 14px; margin-top: 6px }
+.hdr-back { align-items: center; justify-content: flex-start }
+.hdr-back h1 { font-size: 34px }
+.hdr-back > div:first-child { min-width: auto }
+
+.profile-pill {
+  display: inline-flex; align-items: center; gap: 8px; height: var(--tap-target);
+  background: var(--surface-2); color: var(--label); border-radius: var(--r-2);
+  padding: 0 10px 0 6px; font-size: 14px; font-weight: 500; flex: none; max-width: 150px;
+  transition: background var(--fast);
+}
+.profile-pill:active { background: var(--surface-3) }
+.profile-pill-avatar {
+  width: 30px; height: 30px; border-radius: 6px; flex: none; background: var(--surface-3); color: var(--label);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; font-weight: 800; font-stretch: var(--narrow);
+}
+.profile-pill-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 80px }
+.profile-pill--empty { padding: 0 12px; color: var(--label-2); gap: 7px }
+
+/* ------------------------------------------------------------- navigation -- */
+#tabbar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
+  display: flex; align-items: stretch; justify-content: space-around;
+  height: calc(var(--tabbar-h) + var(--sab));
+  padding: 0 max(4px, var(--sar)) var(--sab) max(4px, var(--sal));
+  background: var(--bg); border-top: 1px solid var(--sep);
+}
+body.focus-session #tabbar { display: none }
+#tabbar button {
+  flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 3px; color: var(--label-3); font-size: 11px; font-weight: 500;
+  transition: color var(--fast);
+}
+#tabbar button .icn { font-size: 22px }
+#tabbar button.on { color: var(--label) }
+#tabbar button.on .icn { --icon-stroke: 2 }
+#tabbar .tb-brand, #tabbar .tb-desk { display: none }
+
+/* the middle slot is the one key: it starts the work */
+#tabbar button.start { color: var(--label); gap: 3px }
+#tabbar button.start .cir {
+  width: 52px; height: 32px; border-radius: 6px; background: var(--acc); color: var(--on-acc);
+  display: flex; align-items: center; justify-content: center; position: relative;
+  transition: transform var(--fast) var(--ease), background var(--fast);
+}
+#tabbar button.start:active .cir { transform: scale(.94) }
+#tabbar button.start .cir .icn { font-size: 21px; --icon-stroke: 2 }
+#tabbar button.start span:last-child { font-weight: 600 }
+#tabbar button.start.rec .cir { background: var(--orange); color: var(--on-orange) }
+
+/* ---------------------------------------------------------------- rest dock -- */
+#timer {
+  position: fixed; left: 0; right: 0; bottom: calc(var(--tabbar-h) + var(--sab)); z-index: 60;
+  background: var(--surface-2);
+  padding: 13px max(var(--pad), var(--sar)) 12px max(var(--pad), var(--sal));
+  display: flex; align-items: center; gap: 12px;
+  animation: dockup var(--med) var(--ease);
+}
+body.focus-session #timer { bottom: 0; padding-bottom: calc(12px + var(--sab)) }
+@keyframes dockup { from { transform: translateY(100%) } to { transform: none } }
+#timer .bar { position: absolute; left: 0; right: 0; top: 0; height: 3px; background: var(--surface-3); overflow: hidden }
+#timer .bar i { display: block; width: 100%; height: 100%; background: var(--data); transform-origin: left; transition: transform 1s linear }
+#timer .t {
+  font-size: 68px; font-stretch: var(--narrow); font-weight: 700; line-height: .9;
+  font-variant-numeric: tabular-nums; min-width: 2.05em; flex: none;
+}
+#timer .acts { display: flex; align-items: center; gap: 6px; flex: 1; justify-content: flex-end; min-width: 0 }
+#timer .acts .btn { min-height: 56px; padding: 8px 8px; font-size: 14px; flex: 1 1 0; max-width: 84px; gap: 2px; background: var(--surface-3) }
+#timer .acts .btn:active { background: var(--label-4) }
+#timer .acts .btn .icn { font-size: 13px; --icon-stroke: 2.2 }
+#timer .acts .btn.primary { background: var(--ink) }
+#timer.working .t { color: var(--data) }
+#timer.working .lbl { font-size: 13px; color: var(--label-2); text-transform: capitalize; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+#timer.working .grow { flex: 1; min-width: 0 }
+#timer.working .acts { flex: none }
+#timer.working .acts .btn { flex: none; max-width: none; width: auto; padding: 8px 12px }
+
+/* ------------------------------------------------------------------ sheets -- */
+#modal-root { position: fixed; inset: 0; z-index: 100; display: none }
+#modal-root.open { display: block }
+.mback {
+  position: absolute; inset: 0; background: rgba(0, 0, 0, .62);
+  touch-action: none; overscroll-behavior: none; animation: fadein var(--fast) linear;
+}
+.sheet {
+  position: absolute; left: 0; right: 0; bottom: 0; background: var(--bg-el);
+  border-radius: var(--r-3) var(--r-3) 0 0;
+  padding: 6px max(var(--pad), var(--sar)) calc(20px + var(--sab)) max(var(--pad), var(--sal));
+  max-height: 92vh; max-height: 92dvh; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  animation: sheetup 260ms var(--ease);
+  overscroll-behavior: contain; touch-action: pan-y; will-change: transform;
+}
+@keyframes sheetup { from { transform: translateY(100%) } to { transform: none } }
+.sheet .grab { width: 34px; height: 4px; border-radius: 2px; background: var(--label-4); margin: 6px auto 14px }
+.sheet h3, .center h3, .fullsheet h3 {
+  font-size: 30px; font-stretch: var(--narrow); font-weight: 800; text-transform: uppercase;
+  line-height: .96; letter-spacing: .002em; margin-bottom: 10px; overflow-wrap: anywhere;
+}
+.sheet-sub { color: var(--label-2); font-size: 14px; line-height: 1.42; margin-bottom: 14px }
+.sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px }
+.sheet-head h3 { margin: 0; text-align: center; flex: 1; min-width: 0 }
+.center {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: min(88vw, 340px); background: var(--bg-el); border-radius: var(--r-3); padding: 22px 18px 14px;
+  max-height: 90vh; overflow-y: auto;
+  box-shadow: 0 24px 60px -16px rgba(0, 0, 0, .7);
+  animation: pop 180ms var(--ease);
+}
+@keyframes pop { from { transform: translate(-50%, -50%) scale(.97); opacity: 0 } to { transform: translate(-50%, -50%) scale(1); opacity: 1 } }
+
+/* a full-screen takeover, for the moment a workout ends */
+.fullsheet {
+  position: absolute; inset: 0; background: var(--bg); overflow-y: auto; -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain; animation: fadein var(--med) linear;
+}
+.fullsheet-in { max-width: 640px; margin: 0 auto; padding: calc(var(--sat) + 24px) var(--pad) calc(var(--sab) + 24px) }
+
+/* -------------------------------------------------------------- transients -- */
+#toast {
+  position: fixed; left: 50%; transform: translateX(-50%) translateY(6px);
+  bottom: calc(var(--tabbar-h) + var(--sab) + 14px); z-index: 200;
+  background: var(--ink); color: var(--on-ink); border-radius: var(--r-2); padding: 11px 16px;
+  font-size: 14px; font-weight: 600; box-shadow: 0 12px 32px -10px rgba(0, 0, 0, .7);
+  opacity: 0; pointer-events: none; transition: opacity var(--med), transform var(--med) var(--ease);
+  width: max-content; max-width: 88vw; text-align: center;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0) }
+body.resting #toast { bottom: calc(var(--tabbar-h) + var(--sab) + 110px) }
+.offline-badge {
+  position: fixed; top: calc(8px + var(--sat)); left: 50%; transform: translateX(-50%); z-index: 200;
+  background: var(--surface-3); color: var(--label-2); border-radius: 6px; padding: 4px 10px;
+  font-size: 12px; font-weight: 500; pointer-events: none; white-space: nowrap;
+}
+
+/* ---------------------------------------------------------- larger screens -- */
+@media (min-width: 700px) {
+  :root { --pad: 24px }
+  #app { max-width: 720px }
+  .sheet { left: 50%; right: auto; width: 640px; margin-left: -320px }
+  #timer .t { min-width: 2.2em }
+}
+
+/* Desktop: the same nav, stood up as a labelled sidebar on the same ground. */
+@media (min-width: 1000px) {
+  :root { --tabbar-h: 0px; --gap: 14px }
+  #app { max-width: none; margin: 0 0 0 232px; padding: 36px 40px 48px }
+  body.focus-session #app { padding-bottom: 48px }
+  body.resting #app, body.focus-session.resting #app { padding-bottom: 160px }
+  .page { max-width: 1160px; margin: 0 auto }
+  .narrow { max-width: 640px; margin: 0 auto }
+  #tabbar, body.focus-session #tabbar {
+    display: flex; flex-direction: column; justify-content: flex-start; align-items: stretch; gap: 2px;
+    right: auto; top: 0; bottom: 0; width: 232px; height: auto; padding: 24px 14px;
+    border-top: 0; border-right: 1px solid var(--sep);
+  }
+  #tabbar .tb-brand {
+    display: flex; align-items: center; gap: 10px; padding: 2px 10px 22px; color: var(--acc);
+    font-size: 26px; font-stretch: var(--narrow); font-weight: 800; text-transform: uppercase; line-height: 1;
+  }
+  #tabbar .tb-brand b { color: var(--label); font-weight: 800 }
+  #tabbar .tb-desk { display: flex }
+  #tabbar button {
+    flex: none; flex-direction: row; justify-content: flex-start; gap: 12px; min-height: 42px; padding: 0 10px;
+    font-size: 15px; font-weight: 400; border-radius: var(--r-2); color: var(--label-2);
+  }
+  #tabbar button:hover { background: var(--surface) }
+  #tabbar button.on { color: var(--label); background: var(--surface-2); font-weight: 500 }
+  #tabbar button.via { color: var(--label-2); background: none; font-weight: 400 }
+  #tabbar button .icn { font-size: 19px }
+  #tabbar button.start { order: -1; margin: 0 0 16px; min-height: 48px; background: var(--acc); color: var(--on-acc); justify-content: center; gap: 8px }
+  #tabbar button.start:hover { background: var(--acc-2) }
+  #tabbar button.start .cir { width: auto; height: auto; background: none; color: inherit }
+  #tabbar button.start span:last-child { font-stretch: var(--narrow); font-weight: 800; font-size: 20px; text-transform: uppercase }
+  #tabbar button.start.rec, #tabbar button.start.rec:hover { background: var(--orange); color: var(--on-orange) }
+  #tabbar button.start.rec .cir { background: none; color: inherit }
+  #tabbar .tb-brand { order: -2 }
+  #tabbar .tb-desk { margin-top: auto }
+
+  .sheet {
+    left: 50%; right: auto; bottom: auto; top: 50%; width: 600px; margin: 0 0 0 -300px; max-height: 86vh;
+    border-radius: var(--r-3); transform: translateY(-50%);
+    animation: popin 180ms var(--ease); padding-bottom: 22px;
+  }
+  .sheet .grab { display: none }
+  .sheet { padding-top: 22px }
+  @keyframes popin { from { transform: translateY(-48%); opacity: 0 } to { transform: translateY(-50%); opacity: 1 } }
+  .center { width: 380px }
+  #timer, body.focus-session #timer {
+    left: 232px; right: 0; bottom: 0; padding: 14px 40px; justify-content: center; gap: 28px;
+    animation: dockup var(--med) var(--ease);
+  }
+  #timer .acts { flex: 0 1 360px }
+  #timer .acts .btn { max-width: none }
+  #toast, body.resting #toast { bottom: 24px; margin-left: 116px }
+  body.resting #toast { bottom: 118px }
+  .fullsheet-in { max-width: 720px; padding-top: 48px }
+}
+
+/* A pointer gets the feedback a thumb gets from :active, and a step of lightness is all it takes. */
+@media (hover: hover) and (pointer: fine) {
+  .btn.plain:hover, .btn.tinted:hover, .iconbtn:hover, .chip:not(.on):hover, .stp button:hover, .bw-pm:hover, .profile-pill:hover { background: var(--surface-3) }
+  .btn.ghost:hover, .iconbtn.bare:hover { background: var(--surface-2) }
+  .item:hover, .wk-row:hover, .rt-card:hover, .lrow.tap:hover, .tile.tappable:hover, .card.tappable:hover, .cal-d:not(.has):hover, .wday:not(.today):hover { background: var(--surface-2) }
+  .setrow.cur .stp > button:hover { background: var(--label-4) }
+  .btn.primary:hover { background: var(--label-2) }
+  .btn.go:hover { background: var(--acc-2) }
+  .home-edit:hover { color: var(--label) }
+}
+
+@media (prefers-reduced-motion: reduce) and (min-width: 1000px) {
+  .sheet { transform: translateY(-50%) }
+}

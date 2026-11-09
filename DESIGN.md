@@ -1,110 +1,112 @@
 # DESIGN.md — Sky
 
-The incumbent visual system, extracted from `frontend/src/index.css` and the
-views it styles. Product truth (audience, constraints, voice) lives in
-[PRODUCT.md](PRODUCT.md); domain vocabulary lives in [GLOSSARY.md](GLOSSARY.md).
+The "Iron" visual system, as built in `frontend/src/styles/`. Product truth (audience,
+constraints, voice) lives in [PRODUCT.md](PRODUCT.md); domain vocabulary lives in
+[GLOSSARY.md](GLOSSARY.md). Any new design work follows the rules below.
 
-Sky did not start from a blank page: `index.css` was rebuilt around four
-explicit rules, each aimed at a specific "generated" tell. Any new design work
-must keep obeying them.
+## The idea
 
-## Design principles (the four rules)
+**Sky's mark is a loaded bar, and every set draws your own.** The app is built like the gym floor
+it is used on: rubber-black ground, chalk-white ink, stamped condensed numbers, machined keys, and
+competition plates in their real colours. It is read at arm's length, between sets, by someone out
+of breath, so the number is always the largest thing on the screen.
 
-1. **One type scale, mostly regular weight.** Weight carries meaning — 600 for
-   a title, 400 for its content — and size does the rest. Never set 700/800 on
-   nearly every element; when everything shouts, position is the only cue left.
-   Type classes: `.t-large` (34) → `.t-cap` (12), all with iOS-negative
-   tracking and `1.29`-ish line heights.
-2. **A neutral surface ramp.** Cards are near-neutral greys a few points apart
-   (`--surface #1c1c1e → #2c2c2e → #3a3a3c`, light equivalents). Colour is
-   spent only on the accent and on status. No saturated blue-grey surfaces.
-3. **Hairlines, not borders.** Separators are sub-pixel (`--hair: .5px`) and
-   inset past the icon rail, so a list reads as one object instead of a stack
-   of outlined boxes. Exceptions are meaningful: `.tile`, `.home-hero`, and
-   `.muscle-inspector` carry a hairline *outline* or accent edge as emphasis.
-4. **Motion that acknowledges, not animates.** Presses scale ~2–8%
-   (`.btn:active` .975, `.iconbtn:active` .92), transitions run 140–220 ms on
-   `--ease: cubic-bezier(.32,.72,0,1)`. Nothing bounces or slides for
-   decoration. `prefers-reduced-motion` disables all of it.
+## The five rules
 
-## Tokens (`:root`)
+1. **The number is the hero.** One family, two widths. Condensed and heavy for what is read from the
+   bench (loads, reps, the rest clock, routine names); normal width for what is read up close.
+2. **Elevation is lightness.** A warm near-black ground and three flat steps above it. No borders or
+   shadows on anything at rest. Only what truly floats (a dialog, a toast) may cast a shadow. No
+   gradients, no glass, no glow.
+3. **Colour is work.** The accent marks work done (logged sets, progress, trained muscles, chart
+   lines) and the one control that does it (Start, Log set, Finish). Every other primary action is
+   inverted ink. Nav, tabs and ordinary buttons stay neutral.
+4. **Tight, machined shapes.** 8px on blocks and keys, 4–6px on small marks, 16px only on sheets.
+   There are no circles and no pills: a check is a square key, a switch has a square knob.
+5. **Motion acknowledges.** Presses, sheets and the rest dock respond in 120–260ms on one ease-out
+   curve. Nothing performs an entrance, bounces or runs on its own, except the one pulsing "in
+   progress" dot. `prefers-reduced-motion` drops the travel and keeps the content.
 
-- **Surfaces:** `--bg` (pure black dark / `#f2f2f7` light), `--bg-el` (sheets,
-  bars), `--surface`, `--surface-2` (pressed/nested), `--surface-3` (controls).
-- **Labels:** `--label` plus a 4-step alpha ramp: `--label-2` (.68 dark / .72 light for WCAG AA ≥ 5.2:1 contrast) / `-3` (.32) /
-  `-4` (.18) — never invent ad-hoc grey text; pick a ramp step. Status contrast tokens include `--on-orange` (`#000000`). No gray-on-colour.
-- **Lines:** `--sep` / `--sep-op` at `--hair: .5px`.
-- **Palette:** Apple's system colours (`--blue --green --red --orange --yellow
-  --teal --indigo --pink --purple --mint --brown --grey`), so a recolour never
-  looks off-system. No purple-to-blue gradients, no new hues.
-- **Accent:** user-selectable via `data-accent` (8 choices, default lime/green);
-  drives `--acc`, `--acc-2`, `--acc-soft` (16% mix), `--acc-line` (38% mix).
-  `--on-acc` is picked **per accent by measured contrast**, not taste — light
-  green/teal get black text, blue/violet/pink/red keep white. Any new accent
-  use must re-verify contrast (AA 3:1 for 17px/600 button text).
-- **Geometry:** radii `--r-sm 8 / --r 12 / --r-card 14 / --r-lg 16 / --r-xl 22`,
-  `--pad: 16px`, `--icon-stroke: 1.7`.
-- **Motion:** `--fast 140ms`, `--med 220ms`, shared `--ease`. Dynamic bars and toggles
-  use compositor-accelerated GPU transforms (`transform: scaleX`) rather than layout-thrashing width transitions.
-- **Mobile:** `--tap-target: 44px` on every interactive control; safe-area vars
-  (`--sab/sat/sal/sar`) and fixed-UI clearances (`--page-clearance`,
-  `--timer-clearance`) keep content scrollable past fixed bars.
-- **Numerals:** body sets `font-variant-numeric: tabular-nums` — weights, reps,
-  rest clocks always align.
+## Type
+
+**Archivo** (variable, OFL, bundled via `@fontsource-variable/archivo`), a single 90 KB Latin file
+carrying both axes. It is bundled, never fetched from a font host: the CSP is same-origin, the app
+must open offline, and a plain build phones nowhere.
+
+| Role | Setting | Where |
+|---|---|---|
+| Display | `wdth 62`, 800, uppercase, leading ~.94 | Screen titles, routine and exercise names, sheet titles |
+| Figure | `wdth 62`, 700, tabular | Loads, reps, KPIs, the rest clock |
+| Heading | `wdth 100`, 600, 15px, sentence case | Card titles, list groups |
+| Body | `wdth 100`, 400, 15px | Everything else |
+| Meta | `wdth 100`, 400, 12–13px, grey | Labels, sublines, axis ticks (11px is the floor) |
+
+Display sizes deliberately pass what a dashboard would use, because this screen is read from a
+bench: the open set's figures are 66px and the rest clock 68px. Labels are sentence case and
+untracked. Inputs stay at 16px or larger, the line below which iOS zooms the page on focus.
+
+## Tokens (`styles/tokens.css`)
+
+- **Ground:** `--bg` `#0a0a09` → `--surface` `#161615` → `--surface-2` `#232321` →
+  `--surface-3` `#30302d`; `--bg-el` for sheets. Light ("chalk") runs the same steps from `#f3f3f0`.
+- **Ink:** `--label`, `--label-2`, `--label-3` all hold ≥4.5:1 on every surface they sit on.
+  `--label-4` is for marks only, never words. `--ink` / `--on-ink` are the inverted primary.
+- **Accent:** `--acc` (fill, per profile via `data-accent`, default lime `#a3e635`, the app icon's
+  own colour), `--acc-text` (accent as words), `--data` (accent as chart ink). In light theme the
+  last two darken so they can be read on white; never use `--acc` itself for text or lines.
+- **Status:** `--orange` a workout is running, `--yellow` records and strength, `--red` destructive
+  and fatigued. Each has a `-text` partner where it differs.
+- **Plates:** `--plate-*`, the competition colour code. They belong to the object: used on plates and
+  nowhere else, and the only polychrome in the app.
+- **Art:** `--art-filter` turns the white-ground exercise art into an X-ray on `--art-ground` black
+  (`invert` + `hue-rotate` puts the red target muscle back); light theme shows it untouched.
+
+## Signature pieces
+
+| Piece | Where | Notes |
+|---|---|---|
+| **The barbell** | `components/Barbell.jsx`, `lib/plates.js` | The open set of a straight-bar lift, drawn with real plates, heaviest inside. Always names its bar and states in words what the colours show ("20 kg bar + 25 + 15 per side"); a load no plates can make is reported, never rounded. EZ, trap and Smith bars are not drawn: their weight is unknown. |
+| **The set ladder** | `views/Workout.jsx` | The set in front of you is one large console (figure over two keys, the bar, one Log key). Every other set is one line, still typeable, one tap from opening. The console stays on screen as it moves down the page. |
+| **Focus mode** | `App.jsx`, `body.focus-session` | While a workout is on screen the phone's tab bar steps aside. The header's chevron minimizes to the rest of the app. |
+| **The rest dock** | `components/RestTimer.jsx` | The clock is the largest thing on the phone while it runs. |
+| **Session segments** | `.lad` | One segment per exercise, filling with its work sets: position at a glance and a one-thumb jump. |
+| **Poster hero** | `views/Home.jsx` | Today's routine set huge beside the muscle map it hits. A rest day shows what is still recovering instead. |
+| **Finish screen** | `FinishSummary`, sheet `kind: 'full'` | A full-screen takeover: the workout, stated. |
 
 ## Component vocabulary
 
-| Part | Where | Notes |
+| Part | Class | Notes |
 |---|---|---|
-| Large-title header | `.hdr` + `h1` (34px) | with `.sub` under it |
-| Grouped list | `.sect` / `.sect-t` / `.sect-b` / `.lrow` | inset hairlines start at `left:14px` (55px past an icon rail) |
-| Card | `.card` | plain surface fill, no border |
-| Stat tile | `.tiles` / `.tile` | hairline outline, 26px value |
-| Buttons | `.btn` (+ `.primary` `.tinted` `.danger` `.ghost` `.sm` `.xs`) | min-height tap-target; filled accent only for primary |
-| Icon button | `.iconbtn` | 44px circular surface |
-| Tab bar | `#tabbar` | blurred `--bg-el`, center start button (accent disc, orange while recording) |
-| Chips | `.chips` / `.chip(.on)` | pill filters, accent fill when on |
-| Tag | `.tag(.acc)` | small rounded label, capitalize |
-| Fields | `.field` / `.input` / `.searchf` | focus = inset 2px accent ring, no outline |
-| Switch / segmented / stepper / slider | `.sw` `.seg` `.stp` `.sld` | iOS-dialect controls |
-| Set checkbox | `.chk` / `.ck` | 40px circle, accent when done |
-| Sheets | `.sheet` / `.center` + `Modals.jsx` | bottom sheets, grab handle, `.sheet h3` 20px |
-| Rest/work timer | `#timer(.rest/.working)` | 97%-opaque blur over rows; rest is two-row, work is accent-outlined |
-| Progress | `.wprog`, `.streak-bar-fill`, `.mrow .bar` | 4–6px accent bar on `--surface-2` |
-| Heatmap / body map | `.hm-*`, `.bodymap` / `.bm-*` | one accent level ramp `l1–l4` shared by both; fatigue view swaps to red/orange/yellow, strength pops gold |
-| Badges | `.home-badge`, `.tag`, `.pr` | status colour only (orange active, accent scheduled, green done, gold PR) |
-| Toast | `#toast` | blurred pill above tab bar |
-| Empty states | `.empty` | icon + one quiet line, never guilt-tripping |
-| Desktop ≥1000px | `.cols`, `.narrow` | 2-column grid, floating 520px tab bar, centred 640px sheets |
+| Screen title | `.hdr h1` | Display face; `.hdr-back` adds a back key |
+| Block | `.card` | `--surface`, no border |
+| Figures | `.tiles` / `.tile` | One block split by hairlines, label over value, no icons |
+| Row stack | `.list` / `.item` | Rows on a 3px gap |
+| Grouped list | `.sect-b` / `.lrow` | Settings and pickers; plain grey icons, never in a tinted square |
+| Buttons | `.btn` + `.primary` `.go` `.live` `.plain` `.ghost` `.danger` `.sm` `.xs` | `.go` is the one coloured key; `.live` is the running workout |
+| Stepper | `.stp` | One line in sheets; stacked figure-over-keys in the console |
+| Set key | `.chk` | 44px square; becomes the full-width Log key in the console |
+| Chips | `.chips` / `.chip` | Filters; selected is inverted |
+| Sheets | `.sheet` `.center` `.fullsheet` | Bottom sheet, dialog, takeover |
+| Charts | `components/LineChart.jsx` | Drawn in real pixels from a measured width; one 2px straight line on a 10% flat fill, 3–4 faint gridlines |
 
-## Conventions and gotchas (learned the hard way — kept as comments in code)
+Desktop (≥1000px) is the same DOM: `#tabbar` stands up as a labelled sidebar by CSS alone and screens
+take two columns from the same source order.
 
-- Icons are single-stroke `<svg class="icn">` from `components/Icon.jsx`,
-  inheriting `currentColor` and optical size (`--icon-stroke`) from context;
-  overlapping strokes double alpha under transparency, so fades go on the
-  `<svg>`, not the stroke colour.
-- Capitalisation is opt-out, not opt-in: dataset text arrives lowercase and
-  `.tag`/`.chip`/`.capitalize` lift it; units and sentences use `.nocap`
-  ("60 kg", never "60 Kg").
-- Cleared optional values are key-**deleted**, not zeroed; the same honesty
-  applies visually — a missing average is a dash, never a fake number.
-- Supersets are drawn with an inset accent edge (`.item.in-ss`,
-  `.ss-card` outline), not coloured fills.
-- Accent-meaning consistency: green/lime = progress & done, orange = active
-  workout & misses, yellow/gold = records & strength, red = destructive.
-- One accent level ramp (`l1–l4` via `color-mix`) means one thing everywhere
-  (heatmap, body map); a new data-colour use should reuse it rather than add a
-  second scale.
-- Layout is a single 560px column on phones, two columns ≥1000px; never design
-  a free-width layout.
+## Conventions
 
-## Anti-patterns (explicitly banned here)
+- **Hooks are contracts.** Tests bind to class names (`.setrow`, `.list .item`, `.tag`, `.home-hero-meta`,
+  `.exnote`, `#timer`) and to accessible names. Restyle freely; rename deliberately.
+- **Every target reaches the thumb.** 44px on anything interactive, by size or by a `::after` hit area
+  where the drawing is smaller (`.sw`, `.chip`, `.seg button`).
+- **Capitalisation is opt-out.** Dataset names arrive lowercase and `.capitalize` lifts them. Never
+  capitalise a string with a unit in it: "60 kg", never "60 Kg".
+- **Missing is a dash, zero is a zero.** An empty chart draws its frame; an empty map draws the body.
+- **Colour says good or bad, not up or down.** A month still under way is not behind anything yet, so
+  its shortfall reads neutral. No streak flames, no guilt.
+- **New words go through `t()`** and follow the glossary.
 
-- Inter/Arial/system-default as an identity font; font-weight 700+ on body copy.
-- Gray text on coloured backgrounds; pure black/grey without tint.
-- Cards nested inside cards; borders where a hairline would do.
-- Bounce/elastic easing; decorative slides; motion longer than ~350 ms
-  (the sheet's 340 ms is the ceiling).
-- New hues outside the system palette; gradients except the two hero tints.
-- Sub-44px interactive targets (the `.setrow.eff3` stepper exceptions are
-  computed against the row, not ad-hoc).
+## Banned here
+
+Gradients, glass, glows, drop shadows on resting blocks, icons in tinted squares, pill badges above a
+title, tracked uppercase labels, emoji, a hue per chart, circles as a shape language, type under 11px,
+targets under 44px, and any font or asset fetched from a third-party host.

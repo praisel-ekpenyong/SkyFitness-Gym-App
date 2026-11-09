@@ -109,7 +109,7 @@ export function workoutTimestamp(w) {
   const t = new Date(w.d).getTime()
   return Number.isFinite(t) ? t : NaN
 }
-export const ACCENTS = { lime: '#30d158', sky: '#0a84ff', orange: '#ff9f0a', violet: '#bf5af2', pink: '#ff375f', red: '#ff453a', teal: '#40c8e0', gold: '#ffd60a' }
+export const ACCENTS = { lime: '#a3e635', sky: '#5cb8ff', orange: '#ff8a3d', violet: '#b79cff', pink: '#ff6fa3', red: '#ff6a5e', teal: '#3dd6c4', gold: '#f2c94c' }
 
 // One minutes:seconds splitter for durations and elapsed time, so the two formatters
 // cannot drift apart. Callers clamp and round or floor before calling it.

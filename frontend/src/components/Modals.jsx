@@ -118,6 +118,14 @@ function Sheet({ sheet }) {
 
   const close = () => closeSheet(sheet.id)
   const role = sheet.kind === 'center' ? 'alertdialog' : 'dialog'
+  // A takeover has no swipe and no backdrop: it is the whole screen, for the end of a workout.
+  if (sheet.kind === 'full') {
+    return (
+      <div className="fullsheet" ref={centerRef} role={role} aria-modal="true" tabIndex={-1} onKeyDown={onKeyDown}>
+        <div className="fullsheet-in">{sheet.render(close)}</div>
+      </div>
+    )
+  }
   if (sheet.kind === 'center') {
     return (
       <div>

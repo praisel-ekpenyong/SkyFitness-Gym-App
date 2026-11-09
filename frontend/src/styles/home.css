@@ -1,0 +1,85 @@
+/* Home: today's work first, then the week, then the body. */
+.home-hdr { align-items: center; margin-bottom: 14px }
+.home-hdr h1 { font-size: 34px }
+.home-date { font-size: 13px; color: var(--label-2); margin-bottom: 3px }
+.home-hdr-tools { gap: 6px; flex: none }
+
+/* ------------------------------------------------------------------- hero -- */
+.home-hero { background: var(--surface); border-radius: var(--r-2); padding: 14px var(--pad) var(--pad); margin-bottom: var(--gap) }
+.home-hero-head { display: flex; align-items: center; justify-content: space-between; min-height: 28px; margin-bottom: 8px }
+.home-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; color: var(--label-2) }
+.home-badge .icn { font-size: 14px; --icon-stroke: 2.2 }
+.home-badge.done { color: var(--acc-text) }
+.home-badge.active { color: var(--orange-text) }
+.home-badge-dot { width: 8px; height: 8px; border-radius: 2px; background: currentColor; animation: livepulse 1.6s ease-in-out infinite }
+@keyframes livepulse { 50% { opacity: .35 } }
+.home-edit { font-size: 13px; color: var(--label-2); min-height: var(--tap-target); padding: 0 0 0 12px; margin: -8px 0 }
+.home-edit:active { color: var(--label) }
+
+.home-hero-body { display: grid; grid-template-columns: minmax(0, 1fr) 47%; gap: 8px; align-items: center; margin-bottom: 14px; min-height: 172px }
+.home-hero-title { font-size: 74px; line-height: .88 }
+.home-hero-title.m { font-size: 56px; line-height: .9 }
+.home-hero-title.s { font-size: 42px; line-height: .94 }
+.home-hero-title.xs { font-size: 34px; line-height: .96 }
+.home-hero-meta { font-size: 15px; font-weight: 600; margin-top: 12px }
+.home-hero-note { font-size: 13px; color: var(--label-2); margin-top: 3px; line-height: 1.34 }
+.home-hero-note.dim { color: var(--label-3) }
+.home-hero-map .bodymap { justify-content: flex-end }
+.home-hero-map .bm-v { max-height: 210px }
+.home-hero-recovery .home-hero-note { text-align: right; margin-top: 6px }
+.home-hero.hero-rest .home-hero-body { min-height: 150px }
+
+.welcome-t { font-size: 44px; margin-bottom: 8px }
+.welcome-b { margin-bottom: 14px }
+.home-more { color: var(--label-2); margin: 4px 0 0 auto; display: flex; padding-inline: 2px }
+
+/* ------------------------------------------------------------------- week -- */
+.week-card { padding: 6px 8px 10px }
+.week-nav { display: flex; align-items: center; justify-content: space-between }
+.week-title { gap: 8px }
+.week-lbl { font-size: 13px; font-weight: 500; color: var(--label-2) }
+.week-reset-btn { min-height: var(--tap-target); font-size: 13px; color: var(--label); padding: 0 8px; font-weight: 500 }
+.week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px }
+.wday { text-align: center; padding: 7px 0 8px; border-radius: 6px; background: var(--surface-2); transition: background var(--fast); min-width: 0 }
+.wday:active { background: var(--surface-3) }
+.wday .lbl { font-size: 11px; color: var(--label-3); font-weight: 500 }
+.wday .num { font-size: 25px; font-stretch: var(--narrow); font-weight: 700; line-height: 1.1; margin: 1px 0 4px }
+.wday .dot { width: 14px; height: 3px; margin: 0 auto; background: transparent; border-radius: 1px }
+.wday .dot.plan { background: var(--label-4) }
+.wday .dot.ovr { background: var(--orange) }
+.wday .dot.done { background: var(--data) }
+.wday.today { background: var(--ink); color: var(--on-ink) }
+.wday.today .lbl { color: var(--on-ink); opacity: .72 }
+.wday.today .dot.plan { background: var(--on-ink); opacity: .45 }
+.wday.today .dot.done { background: var(--on-ink) }
+.wday.today:active { background: var(--label-2) }
+
+/* --------------------------------------------------------- week's progress -- */
+.week-progress .chev { align-self: center }
+.wp-t { font-size: 15px; font-weight: 600; margin-bottom: 2px }
+.wp-blocks { display: flex; gap: 3px; margin-top: 12px }
+.wp-blocks i { flex: 1 1 0; height: 8px; background: var(--surface-3); border-radius: 1px }
+.wp-blocks i.on { background: var(--data) }
+
+/* ------------------------------------------------------------ body weight -- */
+.bw-card .card-head { margin-bottom: 6px }
+.bw-tools { gap: 4px; margin: -4px -6px -4px 0 }
+.bw-tools .btn { background: none; color: var(--label-2); font-weight: 500; padding-inline: 8px }
+.bw-tools .btn:active { background: var(--surface-2) }
+.bw-read-row { display: flex; align-items: baseline; gap: 10px }
+.bw-fig { font-size: 52px }
+.bw-when { margin-left: auto }
+.goal-row { font-size: 13px; color: var(--label-2); margin-top: 4px }
+.bw-chart { margin-top: 10px }
+
+@media (min-width: 1000px) {
+  .home-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: var(--gap); align-items: start }
+  .home-hero { padding: 18px 24px 24px }
+  .home-hero-body { grid-template-columns: minmax(0, 1fr) 46%; min-height: 280px; margin-bottom: 18px }
+  .home-hero-title { font-size: 104px }
+  .home-hero-title.m { font-size: 84px }
+  .home-hero-title.s { font-size: 60px }
+  .home-hero-title.xs { font-size: 48px }
+  .home-hero-map .bm-v { max-height: 300px }
+  .home-hdr h1 { font-size: 44px }
+}

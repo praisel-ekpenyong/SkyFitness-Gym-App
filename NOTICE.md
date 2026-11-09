@@ -55,6 +55,13 @@ They are not covered by Sky's MIT license. Each is credited in the page footer a
   [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Colorful_dumbbells_of_various_sizes.jpg).
   Altered versions must be shared under the same license.
 
+## Typeface
+
+Sky's interface is set in [**Archivo**](https://github.com/Omnibus-Type/Archivo) by Omnibus-Type,
+bundled through `@fontsource-variable/archivo` and used under the
+[**SIL Open Font License 1.1**](https://openfontlicense.org/). The licence text ships with the
+package (`node_modules/@fontsource-variable/archivo/LICENSE`).
+
 ## Exercise data & media
 
 Sky obtains both through

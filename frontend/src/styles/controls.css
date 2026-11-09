@@ -1,0 +1,193 @@
+/* Controls. Keys, not bubbles: flat, 8px, one height per context, 44px to the thumb. */
+
+/* ---------------------------------------------------------------- buttons -- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%;
+  min-height: 50px; padding: 12px 18px; border-radius: var(--r-2);
+  font-size: 15px; font-weight: 600; line-height: 1.2;
+  background: var(--surface-2); color: var(--label);
+  transition: transform var(--fast) var(--ease), background var(--fast), opacity var(--fast);
+}
+.btn .icn { font-size: 18px }
+.btn:active { transform: scale(.98); background: var(--surface-3) }
+/* primary is inversion */
+.btn.primary { background: var(--ink); color: var(--on-ink) }
+.btn.primary:active { background: var(--label-2) }
+/* the one coloured key: the action that does the training */
+.btn.go {
+  background: var(--acc); color: var(--on-acc); min-height: 58px;
+  font-stretch: var(--narrow); font-weight: 800; font-size: 22px; letter-spacing: .01em; text-transform: uppercase;
+}
+.btn.go .icn { font-size: 22px; --icon-stroke: 2.2 }
+.btn.go:active { background: var(--acc-2) }
+.btn.live {
+  background: var(--orange); color: var(--on-orange); min-height: 58px;
+  font-stretch: var(--narrow); font-weight: 800; font-size: 22px; letter-spacing: .01em; text-transform: uppercase;
+}
+.btn.live .icn { font-size: 22px; --icon-stroke: 2.2 }
+.btn.tinted { background: var(--surface-2); color: var(--label) }
+.btn.danger { background: color-mix(in srgb, var(--red) 13%, transparent); color: var(--red-text) }
+.btn.danger:active { background: color-mix(in srgb, var(--red) 22%, transparent) }
+.btn.plain { background: var(--surface-2); color: var(--label) }
+.btn.ghost { background: none; color: var(--label-2); font-weight: 500 }
+.btn.ghost:active { background: var(--surface-2) }
+.btn.sm { min-height: var(--tap-target); padding: 8px 12px; width: auto; font-size: 14px; gap: 6px }
+.btn.sm .icn { font-size: 16px }
+.btn.xs { min-height: 36px; padding: 6px 10px; width: auto; font-size: 13px; gap: 5px; position: relative }
+.btn.xs::after { content: ''; position: absolute; inset: -4px 0 }
+.btn.xs .icn { font-size: 14px }
+.btn:disabled { opacity: .38; pointer-events: none }
+.btn.dim { color: var(--label-3) }
+
+.iconbtn {
+  width: var(--tap-target); height: var(--tap-target); min-width: var(--tap-target); min-height: var(--tap-target);
+  border-radius: var(--r-2); flex: none; background: var(--surface-2); color: var(--label);
+  display: flex; align-items: center; justify-content: center; font-size: 19px;
+  transition: background var(--fast), transform var(--fast);
+}
+.iconbtn:active { background: var(--surface-3); transform: scale(.94) }
+.iconbtn:disabled { opacity: .38; pointer-events: none }
+.iconbtn.bare { background: none; color: var(--label-2) }
+.iconbtn.bare:active { background: var(--surface-2) }
+.iconbtn.on-ss { color: var(--acc-text) }
+
+.helpbtn {
+  color: var(--label-3); font-size: 17px; background: none; line-height: 0; flex: none;
+  min-width: var(--tap-target); min-height: var(--tap-target); display: inline-flex;
+  align-items: center; justify-content: center; margin: -8px -4px -8px -8px;
+}
+.helpbtn:active { color: var(--label) }
+
+/* ------------------------------------------------------------------ chips -- */
+.chips {
+  display: flex; gap: 6px; overflow-x: auto; padding: 4px 0;
+  scrollbar-width: none; -webkit-overflow-scrolling: touch;
+  margin-inline: calc(var(--pad) * -1); padding-inline: var(--pad);
+}
+.chips::-webkit-scrollbar { display: none }
+.chip {
+  flex: none; min-height: 36px; padding: 6px 12px; border-radius: 6px; background: var(--surface-2);
+  font-size: 14px; color: var(--label); text-transform: capitalize; position: relative;
+  transition: background var(--fast), color var(--fast);
+}
+.chip::after { content: ''; position: absolute; inset: -4px 0 }
+.chip:active { background: var(--surface-3) }
+.chip.on { background: var(--ink); color: var(--on-ink); font-weight: 600 }
+
+/* ----------------------------------------------------------------- fields -- */
+.field, .input {
+  width: 100%; background: var(--surface-2); border: none; border-radius: var(--r-2);
+  padding: 13px 14px; font-size: 16px; outline: none; transition: box-shadow var(--fast);
+}
+.field::placeholder, .input::placeholder { color: var(--label-3) }
+.field:focus, .input:focus { box-shadow: inset 0 0 0 1.5px var(--label) }
+.field.area, textarea.input { min-height: 92px; resize: vertical; line-height: 1.42 }
+
+.searchf { position: relative; display: flex; align-items: center }
+.searchf .lead { position: absolute; left: 13px; font-size: 17px; color: var(--label-3); pointer-events: none; z-index: 1 }
+.searchf .field { padding-left: 40px; padding-right: 44px; min-height: 48px }
+.searchf .clear {
+  position: absolute; right: 6px; width: 36px; height: 36px; border-radius: 6px;
+  color: var(--label-2); display: flex; align-items: center; justify-content: center; font-size: 15px;
+}
+.searchf .clear:active { background: var(--surface-3) }
+
+.timef {
+  background: var(--surface-2); border: none; border-radius: 6px; padding: 8px 10px;
+  font-size: 16px; color: var(--label); outline: none;
+}
+.timef::-webkit-calendar-picker-indicator { filter: invert(.6) }
+:root[data-theme="light"] .timef::-webkit-calendar-picker-indicator { filter: none }
+
+/* ----------------------------------------------------------------- switch -- */
+.sw {
+  width: 46px; height: 28px; border-radius: 6px; background: var(--surface-3); position: relative;
+  flex: none; padding: 3px; display: flex; align-items: center;
+  transition: background var(--med) var(--ease);
+}
+.sw::after { content: ''; position: absolute; inset: -8px -4px }   /* the thumb's target, not the drawing's */
+.sw .knob {
+  width: 22px; height: 22px; border-radius: var(--r-1); background: var(--label);
+  transition: transform var(--med) var(--ease), background var(--med);
+}
+.sw.on { background: var(--acc) }
+.sw.on .knob { transform: translateX(18px); background: var(--on-acc) }
+.sw:disabled { opacity: .4 }
+.sw-hit { width: 46px; height: var(--tap-target); flex: none; display: inline-flex; align-items: center; justify-content: center }
+
+/* -------------------------------------------------------------- segmented -- */
+/* flex, not grid: an absolutely positioned child of a grid resolves against its grid area */
+.seg {
+  position: relative; display: flex; background: var(--surface-2);
+  border-radius: var(--r-2); padding: 3px; isolation: isolate;
+}
+.seg > button { flex: 1 1 0; min-width: 0 }
+.seg-sel {
+  position: absolute; z-index: 0; top: 3px; bottom: 3px; left: 3px;
+  width: calc((100% - 6px) / var(--n));
+  transform: translateX(calc(100% * var(--i)));
+  background: var(--surface-3); border-radius: 6px;
+  transition: transform var(--med) var(--ease);
+}
+:root[data-theme="light"] .seg-sel { background: var(--surface) }
+.seg button {
+  position: relative; z-index: 1; padding: 6px 8px; font-size: 14px; font-weight: 600; color: var(--label);
+  display: flex; align-items: center; justify-content: center; gap: 5px; min-height: 38px;
+  white-space: nowrap;
+}
+.seg button::after { content: ''; position: absolute; inset: -3px 0 }   /* the track's padding is part of the target */
+.seg button .icn { font-size: 15px }
+.seg button:not(.on) { color: var(--label-2); font-weight: 400 }
+.seg-inline { flex: none; min-width: 124px }
+.seg-range { margin-bottom: 12px }
+.seg-inline button { padding: 5px 10px; font-size: 13px }
+
+/* ---------------------------------------------------------------- stepper -- */
+.stp-w { display: flex; flex-direction: column; gap: 6px; min-width: 0 }
+.stp-l { font-size: 12px; color: var(--label-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.stp {
+  display: flex; align-items: center; background: var(--surface-2);
+  border-radius: var(--r-2); overflow: hidden; min-width: 0;
+}
+.stp button {
+  width: var(--tap-target); height: 48px; min-width: var(--tap-target);
+  flex: none; color: var(--label); font-size: 17px; --icon-stroke: 2;
+  display: flex; align-items: center; justify-content: center;
+  transition: background var(--fast);
+}
+.stp button:active { background: var(--surface-3) }
+.stp .val { flex: 1; min-width: 0; display: flex; align-items: baseline; justify-content: center; gap: 3px }
+.stp .val i { font-style: normal; font-size: 12px; color: var(--label-2); flex: none }
+.stp .num {
+  width: 100%; min-width: 0; text-align: center; background: none; border: none; outline: none;
+  font-size: 22px; font-weight: 700; font-stretch: var(--narrow); padding: 0;
+  -moz-appearance: textfield; appearance: textfield;
+}
+.stp .num::-webkit-inner-spin-button { display: none }
+.cfgrow { gap: 8px; align-items: flex-end }
+.cfgrow > div { flex: 1; min-width: 0 }
+.cfgrow .stp button { width: 36px; min-width: 36px }
+
+/* ----------------------------------------------------------------- slider -- */
+.sld { position: relative; height: var(--tap-target); display: flex; align-items: center; cursor: pointer; touch-action: none }
+.sld-track { position: absolute; left: 0; right: 0; height: 6px; border-radius: 2px; background: var(--surface-3); overflow: hidden }
+.sld-fill { display: block; height: 100%; background: var(--label) }
+.sld-knob {
+  position: absolute; width: 18px; height: 30px; border-radius: var(--r-1); background: var(--label);
+  transform: translateX(-50%); transition: transform var(--fast) var(--ease);
+}
+.sld.dragging .sld-knob { transform: translateX(-50%) scaleY(1.12) }
+
+/* ------------------------------------------------------------------ check -- */
+.chk, .ck {
+  width: var(--tap-target); height: var(--tap-target); min-width: var(--tap-target); min-height: var(--tap-target);
+  border-radius: var(--r-2); flex: none; display: flex; align-items: center; justify-content: center; gap: 8px;
+  background: var(--surface-2); color: var(--label-3);
+  transition: background var(--fast), color var(--fast), transform var(--fast);
+}
+.chk .icn { font-size: 18px; --icon-stroke: 2.4 }
+@keyframes checkpop { 0% { transform: scale(.9) } 60% { transform: scale(1.04) } 100% { transform: scale(1) } }
+.chk.on, .ck.on { background: var(--acc); color: var(--on-acc); animation: checkpop var(--med) var(--ease) }
+.chk:active, .ck:active { transform: scale(.94) }
+.ck svg { width: 18px; height: 18px; stroke: transparent; fill: none; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round }
+.ck.on svg { stroke: var(--on-acc) }
