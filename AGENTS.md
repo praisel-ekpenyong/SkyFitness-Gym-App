@@ -2,6 +2,10 @@
 
 A single-user, no-login, backend-free gym & body-weight tracker.
 
+**Frozen since 2026-11-09.** This repository keeps the old interface as a fallback, deployed on
+skyfitness-app.netlify.app. The live project is `/home/sky/Desktop/SkyFitness/SkyFitness-Iron/`. Do not develop,
+commit or deploy here. It will be tagged `archive/pre-iron` once Iron has logged 6 workouts without a rollback.
+
 ## Agent skills
 
 ### Issue tracker
