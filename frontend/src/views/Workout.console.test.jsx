@@ -71,6 +71,26 @@ describe('the open set', () => {
   })
 })
 
+describe('moving to the next exercise', () => {
+  const SQUAT = '0043'   // barbell full squat
+  // The page moves one frame after the switch, so the sheet that triggered it has restored its
+  // own scroll first. A frame queued after the switch runs after the page's.
+  const nextFrame = () => act(() => new Promise(resolve => requestAnimationFrame(() => resolve())))
+
+  it('starts a single exercise at the top of the page when it follows a superset', async () => {
+    view = renderWorkout([
+      { ...entry(BENCH, sets(1)), sg: 'a' },
+      { ...entry(CURL, sets(1)), sg: 'a' },
+      entry(SQUAT, sets(2)),
+    ])
+    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
+    act(() => { useStore.getState().setActiveIndex(2) })
+    await nextFrame()
+    expect(scrollTo).toHaveBeenCalledWith(0, 0)
+    scrollTo.mockRestore()
+  })
+})
+
 describe('the barbell', () => {
   it('draws the open set of a barbell lift, with its reading in words', () => {
     view = renderWorkout([entry(BENCH, sets(2, 100))])

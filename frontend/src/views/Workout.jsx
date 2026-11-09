@@ -68,7 +68,7 @@ function Elapsed({ start }) {
 // The set ladder is the whole point of the app, so its layout follows how it is used: the set in
 // front of you is one large console (big figure over two big keys, the bar drawn, one key to log
 // it) and every other set is a single readable line, still typeable, one tap from opening up.
-function ExerciseBlock({ entryIdx, compact, isCurrent = true, onToggle, onField, onAddSet, onRemoveSet, onAddWarmup, onRemoveSetAt, onStartTimed, onReplace }) {
+function ExerciseBlock({ entryIdx, compact, isCurrent = true, arrived = false, onToggle, onField, onAddSet, onRemoveSet, onAddWarmup, onRemoveSetAt, onStartTimed, onReplace }) {
   const S = useStore(s => s.S)
   const working = useUI(s => s.work)
   const holding = useUI(s => !!s.work)
@@ -121,10 +121,13 @@ function ExerciseBlock({ entryIdx, compact, isCurrent = true, onToggle, onField,
   // whose scroll padding this measures against, and closing a sheet restores the old position.
   const openRef = useRef(null)
   const anchor = entry.id + ':' + openRow
-  const anchorAt = useRef(anchor)
+  // Seeded with the open set, so opening the workout screen leaves the page where it is. A block
+  // that mounts because the lifter moved to it (a single exercise after a superset: the two
+  // layouts are separate components) starts unseeded, so that move goes to the top as well.
+  const anchorAt = useRef(arrived && !compact ? null : anchor)
   useEffect(() => {
     if (anchorAt.current === anchor || typeof requestAnimationFrame !== 'function') return
-    const newExercise = !anchorAt.current.startsWith(entry.id + ':')
+    const newExercise = !anchorAt.current?.startsWith(entry.id + ':')
     anchorAt.current = anchor
     const raf = requestAnimationFrame(() => {
       if (newExercise && !compact) window.scrollTo(0, 0)
@@ -359,6 +362,11 @@ function ActiveWorkout() {
   const unit = A.entries.length ? unitOf(units, cur) : []
   const unitIdx = units.findIndex(u => u === unit)
   const isSuperset = unit.length > 1
+  // Whether the lifter has moved off the exercise this screen opened on. ExerciseBlock follows
+  // moves itself, except when it is mounted by one; this tells it that it arrived.
+  const unitKey = unit.map(i => i + ':' + A.entries[i].id).join('+')
+  const [shown, setShown] = useState({ key: unitKey, moved: false })
+  if (shown.key !== unitKey) setShown({ key: unitKey, moved: true })
   // Superset flow: keep the active exercise in view - completing a set scrolls to the
   // next exercise in the group, then back up to the first exercise of the next round.
   const exRefs = useRef({})
@@ -510,7 +518,7 @@ function ActiveWorkout() {
           </div>)}
         </div>
       ) : (
-        <ExerciseBlock entryIdx={cur} onToggle={i => toggle(cur, i)} onField={(i, f, v) => setField(cur, i, f, v)} onAddSet={() => addSet(cur)} onRemoveSet={() => removeSet(cur)} onAddWarmup={() => addWarmup(cur)} onRemoveSetAt={i => removeSetAt(cur, i)} onStartTimed={i => startTimed(cur, i)}
+        <ExerciseBlock entryIdx={cur} arrived={shown.moved} onToggle={i => toggle(cur, i)} onField={(i, f, v) => setField(cur, i, f, v)} onAddSet={() => addSet(cur)} onRemoveSet={() => removeSet(cur)} onAddWarmup={() => addWarmup(cur)} onRemoveSetAt={i => removeSetAt(cur, i)} onStartTimed={i => startTimed(cur, i)}
           onReplace={replaceActiveExerciseFlow} />
       )}
     </> : <div className="empty"><div className="ico"><Icon name="shuffle" /></div>{t('Freestyle workout — add your first exercise.')}</div>}
