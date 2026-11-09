@@ -88,7 +88,7 @@ describe('FinishSummary Progression Summary', () => {
     expect(container.textContent).toContain('Progression')
 
     // Document order check: PRs precede Progression section, and Progression section precedes BodyMap
-    const prSection = container.querySelector('.accent.row')
+    const prSection = container.querySelector('.finish-records .row')
     const bodyMap = container.querySelector('svg.bodymap, [aria-label*="muscle"], .bodymap')
     expect(prSection).not.toBeNull()
     expect(prSection.compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
