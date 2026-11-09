@@ -227,8 +227,8 @@ export function FinishSummary({ w, prs, e1prs = [], routineSync = null, close })
       <div className="tile"><div className="l">{t('PRs')}</div><div className="v">{prs.length || '—'}</div></div>
     </div>
     {(prs.length > 0 || e1prs.length > 0) && <div className="finish-records">
-      {prs.map(id => <div key={id} className="accent capitalize row"><Icon name="trophy" />{t('New PR:')} {(EXIDX[id] || {}).n || id}</div>)}
-      {e1prs.map(p => <div key={p.id} className="accent capitalize row"><Icon name="chartLine" />{t('Best estimated 1RM:')} {(EXIDX[p.id] || {}).n || p.id} · {fmtNum(p.est)} {st.unit}</div>)}
+      {prs.map(id => <div key={id} className="record capitalize row"><Icon name="trophy" />{t('New PR:')} {(EXIDX[id] || {}).n || id}</div>)}
+      {e1prs.map(p => <div key={p.id} className="record capitalize row"><Icon name="chartLine" />{t('Best estimated 1RM:')} {(EXIDX[p.id] || {}).n || p.id} · {fmtNum(p.est)} {st.unit}</div>)}
     </div>}
     {progressionItems.length > 0 && <>
       <h4 className="sec">{t('Progression')}</h4>

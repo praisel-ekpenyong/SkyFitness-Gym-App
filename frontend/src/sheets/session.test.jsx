@@ -339,3 +339,25 @@ describe('FinishSummary with SessionMuscleDistribution', () => {
     expect(calvesButton?.getAttribute('aria-label')).toBe('Calves, not trained')
   })
 })
+
+describe('FinishSummary records', () => {
+  // DESIGN.md: the record colour marks records; the accent marks logged work and nothing else.
+  it('marks a new PR and a best estimated 1RM in the record colour, not the accent', async () => {
+    const w = {
+      id: 'w-records', d: '2026-03-01', start: 1000, end: 4000,
+      entries: [{ id: '0025', sets: [{ w: 100, r: 5, done: true }] }],
+    }
+    await act(async () => {
+      root.render(<FinishSummary w={w} prs={['0025']} e1prs={[{ id: '0025', est: 112.5 }]} close={vi.fn()} />)
+    })
+    const lines = [...container.querySelectorAll('.finish-records > *')]
+    expect(lines.map(l => l.textContent)).toEqual([
+      expect.stringContaining('New PR:'),
+      expect.stringContaining('Best estimated 1RM:'),
+    ])
+    for (const line of lines) {
+      expect(line.classList.contains('record')).toBe(true)
+      expect(line.classList.contains('accent')).toBe(false)
+    }
+  })
+})
