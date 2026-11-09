@@ -185,7 +185,7 @@ body.resting #toast { bottom: calc(var(--tabbar-h) + var(--sab) + 110px) }
   #tabbar .tb-brand b { color: var(--label); font-weight: 800 }
   #tabbar .tb-desk { display: flex }
   #tabbar button {
-    flex: none; flex-direction: row; justify-content: flex-start; gap: 12px; min-height: 42px; padding: 0 10px;
+    flex: none; flex-direction: row; justify-content: flex-start; gap: 12px; min-height: var(--tap-target); padding: 0 10px;
     font-size: 15px; font-weight: 400; border-radius: var(--r-2); color: var(--label-2);
   }
   #tabbar button:hover { background: var(--surface) }
