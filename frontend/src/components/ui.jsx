@@ -261,8 +261,9 @@ export function Slider({ value, min = 0, max = 100, step = 1, onChange, classNam
  * @param {boolean} checked - Whether the box is ticked.
  * @param {Function} onChange - Called with the toggled value.
  * @param {number|string} [size] - Optional width/height override for the box.
+ * @param {*} [children] - Optional visible label beside the tick, for the big "Log set" key.
  */
-export function Check({ checked, onChange, className = '', size, 'aria-label': ariaLabel, ...rest }) {
+export function Check({ checked, onChange, className = '', size, children, 'aria-label': ariaLabel, ...rest }) {
   return (
     <button
       type="button"
@@ -275,6 +276,7 @@ export function Check({ checked, onChange, className = '', size, 'aria-label': a
       {...rest}
     >
       <Icon name="check" />
+      {children}
     </button>
   )
 }
@@ -297,7 +299,7 @@ export function Section({ title, footer, children, className = '' }) {
 /**
  * One inset-list row with optional icon, text, value and trailing accessory; use inside Section lists.
  * Renders as a button when pressable, otherwise as a static row.
- * @param {string} [icon] - Icon name for the leading rail.
+ * @param {string} [icon] - Icon name for the leading column.
  * @param {string} [title] - Primary row text.
  * @param {string} [subtitle] - Secondary text under the title.
  * @param {*} [value] - Trailing value shown before the accessory.
@@ -305,11 +307,11 @@ export function Section({ title, footer, children, className = '' }) {
  * @param {Function} [onClick] - Makes the row pressable when provided.
  * @param {boolean} [danger] - Whether to tint the row destructive red.
  */
-export function Row({ icon, iconTint, title, subtitle, value, accessory = 'none', onClick, danger, children, className = '' }) {
+export function Row({ icon, title, subtitle, value, accessory = 'none', onClick, danger, children, className = '' }) {
   const Tag = onClick ? 'button' : 'div'
   return (
     <Tag type={onClick ? 'button' : undefined} className={'lrow' + (onClick ? ' tap' : '') + (danger ? ' danger' : '') + ' ' + className} onClick={onClick}>
-      {icon && <span className="lrow-i" style={iconTint ? { '--tint': iconTint } : null}><Icon name={icon} /></span>}
+      {icon && <span className="lrow-i"><Icon name={icon} /></span>}
       <span className="lrow-m">
         <span className="lrow-t">{title}</span>
         {subtitle && <span className="lrow-s">{subtitle}</span>}
@@ -328,7 +330,7 @@ export function Row({ icon, iconTint, title, subtitle, value, accessory = 'none'
 // theme entirely — on dark mode it flashes a white sheet — and can't show more
 // than a bare label per option. This opens our own sheet with a checkmark on the
 // current value, which is also how iOS itself handles a long option list.
-export function SelectRow({ icon, iconTint, title, value, options, onChange, sheetTitle }) {
+export function SelectRow({ icon, title, value, options, onChange, sheetTitle }) {
   const cur = options.find(o => o.value === value)
   const open = () => {
     const { openSheet } = require_ui()
@@ -344,13 +346,13 @@ export function SelectRow({ icon, iconTint, title, value, options, onChange, she
             </button>
           ))}
         </div>
-        <div style={{ height: 8 }} />
+        <div className="gap8" />
       </>
     ))
     return h
   }
   return (
-    <Row icon={icon} iconTint={iconTint} title={title} value={cur ? cur.label : value} accessory="chevron" onClick={open} />
+    <Row icon={icon} title={title} value={cur ? cur.label : value} accessory="chevron" onClick={open} />
   )
 }
 
@@ -373,7 +375,7 @@ function require_ui() {
 
 /**
  * Themed button with optional leading/trailing icons; use for all tappable actions.
- * @param {string} [variant] - Visual style ("plain", "primary", "ghost", "danger").
+ * @param {string} [variant] - Visual style ("plain", "primary", "go", "live", "ghost", "danger").
  * @param {string} [size] - Size modifier (e.g. "sm").
  * @param {string} [icon] - Leading icon name.
  * @param {string} [trailingIcon] - Trailing icon name.

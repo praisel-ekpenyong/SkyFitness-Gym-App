@@ -36,12 +36,11 @@ const toast = m => ui().toast(m)
 
 /* ============================ custom confirm dialog ============================ */
 function ConfirmDialog({ title, message, confirmText, cancelText, danger, onConfirm, close }) {
-  return <div style={{ textAlign: 'center', padding: '4px 0' }}>
-    {title && <h3 style={{ marginBottom: 8 }}>{title}</h3>}
-    <div className="muted" style={{ marginBottom: 18, lineHeight: 1.5 }}>{message}</div>
+  return <div className="confirm">
+    {title && <h3>{title}</h3>}
+    <div className="confirm-msg">{message}</div>
     <button className={'btn ' + (danger ? 'danger' : 'primary')} onClick={() => { close(); onConfirm && onConfirm() }}>{confirmText || t('Confirm')}</button>
-    <div style={{ height: 8 }} />
-    <Button variant="ghost" className="dim" onClick={close}>{cancelText || t('Cancel')}</Button>
+    <Button variant="ghost" onClick={close}>{cancelText || t('Cancel')}</Button>
   </div>
 }
 // Themed replacement for window.confirm — callback-based (no blocking).
@@ -88,7 +87,7 @@ function WeightInput({ value, setValue, unit }) {
       <div className="bw-read">{fmtNum(value)}<span className="u"> {unit}</span></div>
       <button className="bw-pm" onClick={() => onSlide(value + 0.1)} aria-label={t('Increase by 0.1 {0}', unit)}><Icon name="plus" /></button>
     </div>
-    <div className="chips" style={{ justifyContent: 'center', margin: '8px 0' }}>
+    <div className="chips bwpad">
       <button className="chip" onClick={() => onSlide(value - 1)} aria-label={t('Decrease by 1 {0}', unit)}>−1</button>
       <button className="chip" onClick={() => onSlide(value - 0.5)} aria-label={t('Decrease by 0.5 {0}', unit)}>−0.5</button>
       <button className="chip" onClick={() => onSlide(value + 0.5)} aria-label={t('Increase by 0.5 {0}', unit)}>+0.5</button>
@@ -115,21 +114,21 @@ function BwSheet({ required, onDone, close }) {
   const delEntry = d => update(s => { deleteWeighIn(s, d) })
   return <>
     <h3>{required ? t('Quick check-in') : t('Log body weight')}</h3>
-    <div className="muted small">{required ? t('Slide or tap to set your weight — tracked before every workout so your curve stays honest.') : t('Today') + ', ' + fmtDate(todayISO(), true)}</div>
+    <div className="sheet-sub">{required ? t('Slide or tap to set your weight — tracked before every workout so your curve stays honest.') : t('Today') + ', ' + fmtDate(todayISO(), true)}</div>
     <WeightInput value={v} setValue={setV} unit={unit} />
-    <div style={{ height: 14 }} />
+    <div className="gap16" />
     <Button variant="primary" onClick={save}>{required ? t('Save & start workout') : t('Save')}</Button>
     {required && <>
-      <div style={{ height: 8 }} /><Button variant="ghost" className="dim" onClick={() => { close(); onDone && onDone(null) }}>{t('Start without weighing in')}</Button>
-      <div style={{ height: 2 }} /><Button variant="ghost" className="dim" icon="reset" onClick={() => { close(); nav('/workout') }}>{t('Choose a different workout')}</Button>
+      <div className="gap8" /><Button variant="ghost" className="dim" onClick={() => { close(); onDone && onDone(null) }}>{t('Start without weighing in')}</Button>
+      <Button variant="ghost" className="dim" icon="reset" onClick={() => { close(); nav('/workout') }}>{t('Choose a different workout')}</Button>
     </>}
     {!required && recent.length > 0 && <>
       <h4 className="sec">{t('Recent weigh-ins')}</h4>
-      <div className="list" style={{ gap: 0 }}>
-        {recent.map(b => <div key={b.d} className="row between" style={{ padding: '9px 2px', borderBottom: '1px solid var(--sep)' }}>
+      <div>
+        {recent.map(b => <div key={b.d} className="wi-log">
           <span className="small muted">{fmtDate(b.d, true)}</span>
-          <span className="row" style={{ gap: 12 }}><b>{fmtNum(b.w)} {unit}</b>
-            <button className="iconbtn" style={{ width: 32, height: 30, borderRadius: 8, fontSize: 15, color: 'var(--red)' }} onClick={() => delEntry(b.d)} aria-label={t('Delete entry for {0}', fmtDate(b.d, true))}><Icon name="trash" /></button></span>
+          <span className="row"><b>{fmtNum(b.w)} <span className="u">{unit}</span></b>
+            <button className="iconbtn bare" onClick={() => delEntry(b.d)} aria-label={t('Delete entry for {0}', fmtDate(b.d, true))}><Icon name="trash" /></button></span>
         </div>)}
       </div>
     </>}
@@ -168,36 +167,36 @@ function ImportSummary({ parsed, close }) {
 
   return <>
     <h3>{parsed.source ? t('Import from {0}', parsed.source) : t('Import history')}</h3>
-    <div className="muted small" style={{ marginBottom: 12 }}>
+    <div className="sheet-sub">
       {parsed.from === parsed.to ? fmtDate(parsed.from, true) : fmtDate(parsed.from, true) + ' – ' + fmtDate(parsed.to, true)}
     </div>
 
-    <div className="tiles" style={{ textAlign: 'left' }}>
+    <div className="tiles">
       {isBW ? <>
-        <div className="tile"><div className="l">{t('Weigh-ins')}</div><div className="v" style={{ fontSize: '1.1rem' }}>{parsed.bodyweight.length}</div></div>
-        <div className="tile"><div className="l">{t('New')}</div><div className="v" style={{ fontSize: '1.1rem' }}>{fresh}</div></div>
+        <div className="tile"><div className="l">{t('Weigh-ins')}</div><div className="v">{parsed.bodyweight.length}</div></div>
+        <div className="tile"><div className="l">{t('New')}</div><div className="v">{fresh}</div></div>
       </> : <>
-        <div className="tile"><div className="l">{t('Workouts')}</div><div className="v" style={{ fontSize: '1.1rem' }}>{parsed.workouts.length}</div></div>
-        <div className="tile"><div className="l">{t('Sets')}</div><div className="v" style={{ fontSize: '1.1rem' }}>{parsed.sets}</div></div>
-        <div className="tile"><div className="l">{t('Exercises matched')}</div><div className="v" style={{ fontSize: '1.1rem' }}>{parsed.matched}</div></div>
-        <div className="tile"><div className="l">{t('Added as your own')}</div><div className="v" style={{ fontSize: '1.1rem' }}>{parsed.created}</div></div>
+        <div className="tile"><div className="l">{t('Workouts')}</div><div className="v">{parsed.workouts.length}</div></div>
+        <div className="tile"><div className="l">{t('Sets')}</div><div className="v">{parsed.sets}</div></div>
+        <div className="tile"><div className="l">{t('Exercises matched')}</div><div className="v">{parsed.matched}</div></div>
+        <div className="tile"><div className="l">{t('Added as your own')}</div><div className="v">{parsed.created}</div></div>
       </>}
     </div>
 
-    {parsed.mixedUnits ? <div className="small" style={{ color: 'var(--yellow)', marginBottom: 10 }}>
+    {parsed.mixedUnits ? <div className="warn-note">
       {t('The file mixes kg and lb — each set is converted to {0}.', st.unit)}
-    </div> : parsed.converted ? <div className="small" style={{ color: 'var(--yellow)', marginBottom: 10 }}>
+    </div> : parsed.converted ? <div className="warn-note">
       {t('The file is in {0} and your profile is in {1} — weights will be converted.', parsed.fileUnit, st.unit)}
     </div> : null}
-    {!isBW && !parsed.fileUnit && !parsed.mixedUnits && <div className="small dim" style={{ marginBottom: 10 }}>
+    {!isBW && !parsed.fileUnit && !parsed.mixedUnits && <div className="dim-note small dim">
       {t('The file does not say which unit it uses — numbers are imported as they are.')}
     </div>}
-    {have > 0 && <div className="small dim" style={{ marginBottom: 10 }}>
+    {have > 0 && <div className="dim-note small dim">
       {t('{0} days already have data here and will be left alone.', have)}
     </div>}
     {/* The file rated its sets. Say so: the column is off by default, so the ratings would
         otherwise arrive invisibly and look like they had been dropped. */}
-    {!isBW && (parsed.rirSets + parsed.rpeSets) > 0 && <div className="small dim" style={{ marginBottom: 10 }}>
+    {!isBW && (parsed.rirSets + parsed.rpeSets) > 0 && <div className="dim-note small dim">
       {t(effortOf(st) === 'none'
         ? '{0} sets bring an {1} with them — switch on Effort per set in Settings to see it.'
         : '{0} sets bring an {1} with them.',
@@ -205,7 +204,7 @@ function ImportSummary({ parsed, close }) {
     </div>}
     {!isBW && parsed.unmatchedNames.length > 0 && <>
       <h4 className="sec">{t('Not in the library — added as your own exercises')}</h4>
-      <div className="mchips" style={{ marginBottom: 12 }}>
+      <div className="mchips import-names">
         {parsed.unmatchedNames.slice(0, 12).map(n => <span key={n} className="mchip capitalize">{n}</span>)}
         {parsed.unmatchedNames.length > 12 && <span className="mchip">+{parsed.unmatchedNames.length - 12}</span>}
       </div>
@@ -214,7 +213,7 @@ function ImportSummary({ parsed, close }) {
     <Button variant="primary" onClick={doImport} disabled={!fresh}>
       {fresh ? t('Import') : t('Nothing new to import')}
     </Button>
-    <div style={{ height: 8 }} />
+    <div className="gap8" />
     <Button variant="ghost" className="dim" onClick={close}>{t('Cancel')}</Button>
   </>
 }
@@ -250,16 +249,16 @@ function GoalSheet({ close }) {
   const [v, setV] = useState(st.targetW || (bw ? bw.w : 70))
   return <>
     <h3>{t('Target weight')}</h3>
-    <div className="muted small">{t('Your goal is drawn as a line through the weight charts, and gains/losses are colored by whether they move toward it.')}</div>
+    <div className="sheet-sub">{t('Your goal is drawn as a line through the weight charts, and gains/losses are colored by whether they move toward it.')}</div>
     <WeightInput value={v} setValue={setV} unit={st.unit} />
-    <div style={{ height: 14 }} />
+    <div className="gap16" />
     <Button variant="primary" onClick={() => {
       const n = Math.round((v || 0) * 10) / 10
       if (!n || n <= 0) { toast(t('Enter a valid weight')); return }
       update(s => { s.targetW = n }); close()
       const b = latestWeighIn(S()); toast(t('Goal set: {0}', fmtNum(n) + ' ' + st.unit) + (b ? ' (' + t('{0} to go', fmtNum(Math.abs(n - b.w))) + ')' : ''))
     }}>{t('Save goal')}</Button>
-    {st.targetW && <><div style={{ height: 8 }} /><Button variant="danger" onClick={() => { update(s => { s.targetW = null }); close(); toast(t('Goal removed')) }}>{t('Remove goal')}</Button></>}
+    {st.targetW && <><div className="gap8" /><Button variant="danger" onClick={() => { update(s => { s.targetW = null }); close(); toast(t('Goal removed')) }}>{t('Remove goal')}</Button></>}
   </>
 }
 /** Opens the target-weight sheet. */
@@ -285,7 +284,7 @@ function DisplayNameSheet({ close }) {
   }
   return <>
     <h3>{t('Your name')}</h3>
-    <div className="muted small" style={{ marginBottom: 12 }}>{t('Shown as “Hi, {0}” on Home. Only on this device.', clean || 'there')}</div>
+    <div className="sheet-sub">{t('Shown as “Hi, {0}” on Home. Only on this device.', clean || 'there')}</div>
     <input
       className="input"
       placeholder={t('Enter your name')}
@@ -296,10 +295,10 @@ function DisplayNameSheet({ close }) {
       onChange={e => setV(e.target.value)}
       onKeyDown={e => { if (e.key === 'Enter') save() }}
     />
-    <div className="small dim" style={{ textAlign: 'right', marginTop: 6 }}>{v.trim().length}/24</div>
-    <div style={{ height: 14 }} />
+    <div className="small dim char-count">{v.trim().length}/24</div>
+    <div className="gap16" />
     <Button variant="primary" onClick={save} disabled={!canSave}>{t('Save')}</Button>
-    {canClear && <><div style={{ height: 8 }} /><Button variant="ghost" onClick={clear}>{t('Clear name')}</Button></>}
+    {canClear && <><div className="gap8" /><Button variant="ghost" onClick={clear}>{t('Clear name')}</Button></>}
   </>
 }
 /** Opens the display-name sheet; saving stores the Home greeting name. */
@@ -313,8 +312,8 @@ export const glyphPicker = (current, onPick) => {
   return ui().openSheet(close => <>
     <h3>{t('Pick an icon')}</h3>
     {GLYPH_GROUPS.map(g => (
-      <div key={g.key} style={{ marginBottom: 14 }}>
-        <div className="sect-t" style={{ padding: '0 2px 7px' }}>{t(g.key)}</div>
+      <div key={g.key} className="glyph-group">
+        <div className="sect-t">{t(g.key)}</div>
         <div className="glyph-grid">
           {g.items.map(n => (
             <button key={n} className={'glyph-cell' + (n === cur ? ' on' : '')}
@@ -325,7 +324,7 @@ export const glyphPicker = (current, onPick) => {
         </div>
       </div>
     ))}
-    <div style={{ height: 4 }} />
+    <div className="gap8" />
   </>)
 }
 
@@ -363,15 +362,15 @@ function PlanTools({ close }) {
 
   return <>
     <h3>{t('Share your plan')}</h3>
-    <div className="muted small" style={{ marginBottom: 16 }}>{t('Send your routines to a friend, or put your week on paper.')}</div>
+    <div className="sheet-sub">{t('Send your routines to a friend, or put your week on paper.')}</div>
     <Button variant="primary" icon="upload" onClick={exportFile} disabled={!hasRoutines}>{t('Export plan file')}</Button>
-    <div className="dim small" style={{ margin: '7px 2px 0', lineHeight: 1.4 }}>{t('A small file a friend imports into their own Sky — routines only, none of your workouts or weigh-ins.')}</div>
+    <div className="sheet-note">{t('A small file a friend imports into their own Sky — routines only, none of your workouts or weigh-ins.')}</div>
     {!MOBILE && <>
-      <div style={{ height: 12 }} />
+      <div className="gap12" />
       <Button variant="tinted" icon="download" onClick={() => { close(); printPlan(st, '') }} disabled={!hasRoutines}>{t('Print / Save as PDF')}</Button>
-      <div className="dim small" style={{ margin: '7px 2px 0', lineHeight: 1.4 }}>{t('A clean one-page-per-plan printout — no exercise ever splits across a page.')}</div>
+      <div className="sheet-note">{t('A clean one-page-per-plan printout — no exercise ever splits across a page.')}</div>
     </>}
-    {!hasRoutines && <div className="dim small" style={{ margin: '12px 2px 0' }}>{t('Add an exercise to a routine first — an empty plan has nothing to share.')}</div>}
+    {!hasRoutines && <div className="sheet-note">{t('Add an exercise to a routine first — an empty plan has nothing to share.')}</div>}
     <h4 className="sec">{t('Got a plan from a friend?')}</h4>
     <Button variant="ghost" icon="folder" onClick={() => fileRef.current?.click()}>{t('Import a plan file')}</Button>
     <input ref={fileRef} type="file" accept="application/json,.json" onChange={pickFile} hidden />
@@ -396,25 +395,25 @@ function PlanImport({ bundle, close }) {
   }
   return <>
     <h3>{bundle.name ? t('Import “{0}”', bundle.name) : t('Import this plan')}</h3>
-    <div className="muted small" style={{ marginBottom: 14 }}>
+    <div className="sheet-sub">
       {t(bundle.routineCount === 1 ? '{0} routine' : '{0} routines', bundle.routineCount)}
       {' · ' + exCount(bundle.exerciseCount)}
       {bundle.scheduledDays > 0
         ? ' · ' + t(bundle.scheduledDays === 1 ? 'scheduled on {0} day' : 'scheduled on {0} days', bundle.scheduledDays)
         : ''}
     </div>
-    <div className="dim small" style={{ marginBottom: 14, lineHeight: 1.4 }}>{t('These are added as new routines — nothing you already have is changed.')}</div>
-    {bundle.dropped > 0 && <div className="small" style={{ color: 'var(--yellow)', marginBottom: 14, lineHeight: 1.4 }}>
+    <div className="dim-note small dim">{t('These are added as new routines — nothing you already have is changed.')}</div>
+    {bundle.dropped > 0 && <div className="warn-note">
       {t(bundle.dropped === 1
         ? '{0} exercise in the file isn’t in your library and was left out.'
         : '{0} exercises in the file aren’t in your library and were left out.', bundle.dropped)}
     </div>}
-    {bundle.scheduledDays > 0 && <div className="row between" style={{ padding: '10px 2px', borderTop: '1px solid var(--sep)', borderBottom: '1px solid var(--sep)', marginBottom: 16, gap: 12 }}>
-      <div><div className="tt" style={{ fontSize: 15 }}>{t('Use this weekly schedule')}</div><div className="small dim">{t('Replaces your current Mon–Sun assignments.')}</div></div>
+    {bundle.scheduledDays > 0 && <div className="sheet-toggle">
+      <div><div className="tt">{t('Use this weekly schedule')}</div><div className="small dim">{t('Replaces your current Mon–Sun assignments.')}</div></div>
       <Switch checked={schedule} label={t('Use this weekly schedule')} onChange={setSchedule} />
     </div>}
     <Button variant="primary" onClick={apply}>{t('Add to my plan')}</Button>
-    <div style={{ height: 8 }} />
+    <div className="gap8" />
     <Button variant="ghost" className="dim" onClick={close}>{t('Cancel')}</Button>
   </>
 }
@@ -441,14 +440,14 @@ function DayOverride({ iso, close }) {
   }
   return <>
     <h3>{fmtDate(iso, true)}</h3>
-    <div className="muted small" style={{ marginBottom: 12 }}>{t('Weekly plan:')} {weeklyR ? weeklyR.name : t('Rest')}{hasOvr && <span style={{ color: 'var(--orange)' }}> · {t('changed for this day')}</span>}<br />{t('Sick, missed a day or want a different session? Pick what to train instead.')}</div>
+    <div className="sheet-sub">{t('Weekly plan:')} {weeklyR ? weeklyR.name : t('Rest')}{hasOvr && <span className="changed-day"> · {t('changed for this day')}</span>}<br />{t('Sick, missed a day or want a different session? Pick what to train instead.')}</div>
     <div className="list">
       {st.routines.map(r => <div key={r.id} className="item" onClick={() => set(r.id)}>
         <span className="lrow-i"><Icon name={glyphOf(r.emoji)} /></span>
         <div className="grow"><div className="tt">{r.name}</div><div className="ss">{exCount(r.ex.length)}</div></div>
         {effId === r.id && <Icon name="check" className="accent" />}</div>)}
-      <div className="item" onClick={() => set('rest')}><span className="lrow-i" style={{ background: 'var(--surface-3)' }}><Icon name="moon" /></span><div className="grow"><div className="tt">{t('Rest / skip this day')}</div></div>{effId === null && <Icon name="check" className="accent" />}</div>
-      {hasOvr && <div className="item" onClick={() => set('')}><span className="lrow-i" style={{ background: 'var(--surface-3)' }}><Icon name="reset" /></span><div className="grow"><div className="tt">{t('Back to weekly plan')}</div></div></div>}
+      <div className="item" onClick={() => set('rest')}><span className="lrow-i"><Icon name="moon" /></span><div className="grow"><div className="tt">{t('Rest / skip this day')}</div></div>{effId === null && <Icon name="check" className="accent" />}</div>
+      {hasOvr && <div className="item" onClick={() => set('')}><span className="lrow-i"><Icon name="reset" /></span><div className="grow"><div className="tt">{t('Back to weekly plan')}</div></div></div>}
     </div>
   </>
 }
@@ -466,7 +465,7 @@ function DayAssign({ day, close }) {
   return <>
     <h3>{t(DAYN[day])}</h3>
     <div className="list">
-      <div className="item" onClick={() => set('')}><span className="lrow-i" style={{ background: 'var(--surface-3)' }}><Icon name="moon" /></span><div className="grow"><div className="tt">{t('Rest day')}</div></div>{!st.week[day] && <Icon name="check" className="accent" />}</div>
+      <div className="item" onClick={() => set('')}><span className="lrow-i"><Icon name="moon" /></span><div className="grow"><div className="tt">{t('Rest day')}</div></div>{!st.week[day] && <Icon name="check" className="accent" />}</div>
       {st.routines.map(r => <div key={r.id} className="item" onClick={() => set(r.id)}>
         <span className="lrow-i"><Icon name={glyphOf(r.emoji)} /></span>
         <div className="grow"><div className="tt">{r.name}</div><div className="ss">{exCount(r.ex.length)}</div></div>
@@ -489,8 +488,8 @@ export function WorkoutDetail({ w, close }) {
   const workoutLoad = loadOfWorkouts([w])
   return <>
     <h3>{w.name}</h3>
-    <div className="muted small" style={{ marginBottom: 12 }}>{[fmtDate(w.d, true), ...durPart(w.end - w.start), fmtVol(tonnageOf(w), st.unit), ...(w.bw ? [fmtNum(w.bw) + ' ' + st.unit] : [])].join(' · ')}</div>
-    <div className="workout-detail-distribution" style={{ marginBottom: 16 }}>
+    <div className="sheet-sub">{[fmtDate(w.d, true), ...durPart(w.end - w.start), fmtVol(tonnageOf(w), st.unit), ...(w.bw ? [fmtNum(w.bw) + ' ' + st.unit] : [])].join(' · ')}</div>
+    <div className="workout-detail-distribution detail-map">
       <BodyMap
         className="tappable compact"
         load={workoutLoad}
@@ -505,7 +504,7 @@ export function WorkoutDetail({ w, close }) {
           return `${name}, ${setsText}`
         }}
       />
-      <div style={{ height: 10 }} />
+      <div className="gap12" />
       <SessionMuscleDistribution
         workout={w}
         selectedMuscle={selectedMuscle}
@@ -514,11 +513,11 @@ export function WorkoutDetail({ w, close }) {
     </div>
     {w.entries.map((e, i) => {
       const ex = EXIDX[e.id]
-      return <div key={i} className="row" style={{ marginBottom: 12, alignItems: 'flex-start' }}>
+      return <div key={i} className="row ex-entry">
         {ex && <Thumb ex={ex} />}
-        <div className="grow"><div className="tt capitalize" style={{ fontWeight: 600 }}>{ex ? ex.n : (e.n || e.id)} {w.prs && w.prs.includes(e.id) && <span className="pr"><Icon name="trophy" />PR</span>}</div>
+        <div className="grow"><div className="tt capitalize">{ex ? ex.n : (e.n || e.id)} {w.prs && w.prs.includes(e.id) && <span className="pr"><Icon name="trophy" />PR</span>}</div>
           <div className="ss">{e.sets.filter(s => s.done).map(s => setLabel(e.id, s, e.target)).join('  ·  ') || t('no sets')}</div>
-          {e.notes && <div className="exnote" style={{ margin: '6px 0 0', padding: '6px 10px', fontSize: 14, color: 'var(--label-2)', lineHeight: 1.4 }}>{e.notes}</div>}
+          {e.notes && <div className="exnote">{e.notes}</div>}
         </div>
       </div>
     })}
@@ -561,19 +560,19 @@ function Calendar({ start, close }) {
     }}><span>{d}</span><i className={dotCls} /></button>)
   }
   return <>
-    <div className="row between" style={{ marginBottom: 2 }}>
+    <div className="row between sheet-head">
       <button className="iconbtn" onClick={() => setCur(new Date(y, mo - 1, 1))} aria-label="Previous month"><Icon name="chevronLeft" /></button>
-      <h3 style={{ margin: 0 }}>{t(MONTHS_LONG[mo])} {y}</h3>
+      <h3>{t(MONTHS_LONG[mo])} {y}</h3>
       <button className="iconbtn" onClick={() => setCur(new Date(y, mo + 1, 1))} aria-label="Next month"><Icon name="chevronRight" /></button>
     </div>
-    <div className="small muted" style={{ textAlign: 'center' }}>{monthWs.length ? `${t(monthWs.length === 1 ? '{0} workout' : '{0} workouts', monthWs.length)} · ${fmtDur(monthMs)} · ${fmtVol(monthVol, st.unit)}` : t('No workouts this month')}</div>
+    <div className="small muted cal-sum">{monthWs.length ? `${t(monthWs.length === 1 ? '{0} workout' : '{0} workouts', monthWs.length)} · ${fmtDur(monthMs)} · ${fmtVol(monthVol, st.unit)}` : t('No workouts this month')}</div>
     <div className="cal-grid">{['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].map(l => <div key={l} className="cal-h">{t(l)}</div>)}{cells}</div>
     <div className="cal-legend">
-      <span><i style={{ background: 'var(--acc)' }} />{t('Trained')}</span>
+      <span><i style={{ background: 'var(--data)' }} />{t('Trained')}</span>
       <span><i style={{ background: 'var(--label-3)' }} />{t('Planned')}</span>
       <span><i style={{ background: 'var(--orange)' }} />{t('Rescheduled')}</span>
     </div>
-    <div className="small dim" style={{ textAlign: 'center', marginTop: 10 }}>{t('Tap a trained day for details · tap any other day to plan a session')}</div>
+    <div className="small dim cal-sum note">{t('Tap a trained day for details · tap any other day to plan a session')}</div>
   </>
 }
 /** Opens the monthly calendar sheet starting at the given date. */
@@ -607,56 +606,56 @@ export function RecapSheet({ start, close }) {
       const pct = Math.round(v)
       label = (pct > 0 ? '+' : '') + pct + '%'
     }
-    const color = v > 0 ? 'var(--acc-text)' : v < 0 ? 'var(--red-text)' : 'var(--label-2)'
-    return <span className="delta-pill" style={{ color, background: 'color-mix(in srgb, currentColor 14%, transparent)' }}>{label}</span>
+    // A month still under way is not behind anything yet, so its shortfall reads neutral.
+    const color = v > 0 ? 'var(--acc-text)' : v < 0 && !isCurrent ? 'var(--red-text)' : 'var(--label-2)'
+    return <span className="delta-pill" style={{ color }}>{label}</span>
   }
 
   const MetricRow = ({ label, value, deltaKey }) => (
-    <div className="lrow" style={{ justifyContent: 'space-between' }}>
+    <div className="lrow">
       <div className="lrow-m"><div className="lrow-t">{label}</div></div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 12, flexShrink: 0 }}>
-        <span style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{value}</span>
+      <div className="recap-v">
+        <span className="recap-n">{value}</span>
         {deltaBadge(deltaKey)}
       </div>
     </div>
   )
 
   return <>
-    <div className="row between" style={{ marginBottom: viewedEmpty ? 4 : 12 }}>
+    <div className="row between sheet-head">
       <button className="iconbtn" onClick={() => setCur(new Date(y, mo - 1, 1))} aria-label={t('Previous month')}><Icon name="chevronLeft" /></button>
-      <h3 style={{ margin: 0, textAlign: 'center' }}>{t(MONTHS_LONG[mo])} {y}{isCurrent ? ' ' + t('so far') : ''}</h3>
+      <h3>{t(MONTHS_LONG[mo])} {y}{isCurrent ? ' ' + t('so far') : ''}</h3>
       <button className="iconbtn" onClick={() => setCur(new Date(y, mo + 1, 1))} aria-label={t('Next month')}><Icon name="chevronRight" /></button>
     </div>
     {viewedEmpty && (
-      <div className="small muted" style={{ textAlign: 'center', marginBottom: 12 }}>{t('No workouts in {0}', `${t(MONTHS_LONG[mo])} ${y}`)}</div>
+      <div className="small muted cal-sum recap-empty">{t('No workouts in {0}', `${t(MONTHS_LONG[mo])} ${y}`)}</div>
     )}
-    <div className="sect-b" style={{ maxWidth: 360, margin: '0 auto' }}>
+    <div className="sect-b">
       <MetricRow label={t('Workouts')} value={String(rec.workouts)} deltaKey="workouts" />
       <MetricRow label={t('Time trained')} value={rec.durationMs ? fmtDur(rec.durationMs) : '—'} deltaKey="durationMs" />
       <MetricRow label={t('Volume')} value={fmtVol(rec.vol, st.unit)} deltaKey="vol" />
       <MetricRow label={t('Sets')} value={fmtNum(rec.sets)} deltaKey="sets" />
     </div>
     {(rec.prs.length > 0 || rec.e1prs.length > 0) && (
-      <div style={{ marginTop: 14, maxWidth: 360, marginLeft: 'auto', marginRight: 'auto' }}>
+      <div>
         {rec.prs.length > 0 && (
           <>
-            <h4 className="sec" style={{ margin: '10px 0 6px' }}><Icon name="trophy" style={{ fontSize: 14, color: 'var(--yellow)', marginRight: 6 }} />{t('Personal records')}</h4>
+            <h4 className="sec"><Icon name="trophy" />{t('Personal records')}</h4>
             <div className="sect-b">
               {rec.prs.map(id => {
                 const name = EXIDX[id]?.n || id
-                return <div key={id} className="lrow"><div className="lrow-i" style={{ color: 'var(--yellow)' }}><Icon name="trophy" /></div><div className="lrow-m"><div className="lrow-t capitalize">{name}</div></div></div>
+                return <div key={id} className="lrow"><div className="lrow-m"><div className="lrow-t capitalize">{name}</div></div></div>
               })}
             </div>
           </>
         )}
         {rec.e1prs.length > 0 && (
           <>
-            <h4 className="sec" style={{ margin: '12px 0 6px' }}><Icon name="chartLine" style={{ fontSize: 14, color: 'var(--acc)', marginRight: 6 }} />{t('Estimated 1RM records')}</h4>
+            <h4 className="sec"><Icon name="chartLine" />{t('Estimated 1RM records')}</h4>
             <div className="sect-b">
               {rec.e1prs.map((p, i) => {
                 const name = EXIDX[p.id]?.n || p.id
                 return <div key={p.id + '-' + i} className="lrow">
-                  <div className="lrow-i" style={{ color: 'var(--acc)' }}><Icon name="chartLine" /></div>
                   <div className="lrow-m"><div className="lrow-t capitalize">{name}</div><div className="lrow-s nocap">{fmtNum(p.est)} {st.unit} · {fmtNum(p.w)} × {p.r}</div></div>
                   <div className="lrow-v nocap">{fmtDate(p.d, true)}</div>
                 </div>
@@ -667,10 +666,10 @@ export function RecapSheet({ start, close }) {
       </div>
     )}
     {rec.prs.length === 0 && rec.e1prs.length === 0 && !viewedEmpty && (
-      <div className="small muted" style={{ textAlign: 'center', marginTop: 10 }}>{t('No records this month')}</div>
+      <div className="small muted cal-sum note">{t('No records this month')}</div>
     )}
-    <div style={{ textAlign: 'center', marginTop: 14 }}>
-      <Button variant="ghost" trailingIcon="calendar" onClick={() => { close(); calendarSheet(ym + '-01') }}>{t('View calendar')}</Button>
+ <div className="more-row">
+      <Button variant="ghost" size="sm" trailingIcon="calendar" onClick={() => { close(); calendarSheet(ym + '-01') }}>{t('View calendar')}</Button>
     </div>
   </>
 }
@@ -689,7 +688,7 @@ export function WorkoutRow({ w, onClick }) {
     aria-label={`${w.name}, ${fmtDate(w.d, true)}, ${t('{0} sets', setsDone(w))}`}
     onClick={onClick}
     onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick && onClick() } }}>
-    <span className="lrow-i" style={{ width: 34, height: 34, borderRadius: 8, fontSize: 19 }}><Icon name={glyph} /></span>
+    <span className="lrow-i"><Icon name={glyph} /></span>
     <div className="grow"><div className="tt">{w.name}</div>
       <div className="ss">{[fmtDate(w.d, true), ...durPart(w.end - w.start), t('{0} sets', setsDone(w)), fmtVol(tonnageOf(w), st.unit)].join(' · ')}</div></div>
     {w.prs && w.prs.length > 0 && <span className="pr"><Icon name="trophy" />{w.prs.length} PR</span>}

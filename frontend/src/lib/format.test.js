@@ -104,10 +104,10 @@ describe('format utility module', () => {
     })
 
     it('exports all standard theme hex accents', () => {
-      expect(ACCENTS.lime).toBe('#30d158')
-      expect(ACCENTS.sky).toBe('#0a84ff')
-      expect(ACCENTS.orange).toBe('#ff9f0a')
-      expect(ACCENTS.violet).toBe('#bf5af2')
+      expect(ACCENTS.lime).toBe('#a3e635')
+      expect(ACCENTS.sky).toBe('#5cb8ff')
+      expect(ACCENTS.orange).toBe('#ff8a3d')
+      expect(ACCENTS.violet).toBe('#b79cff')
     })
   })
 

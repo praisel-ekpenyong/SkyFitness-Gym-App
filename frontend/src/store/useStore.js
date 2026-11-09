@@ -30,7 +30,7 @@ export const DEF = {
   restSec: 90,          // Default rest timer countdown in seconds
   sound: true,          // Rest timer chime audio toggle
   keepAwake: true,      // Screen Wake Lock toggle during active workouts
-  theme: 'light',       // 'light' | 'dark' UI theme token
+  theme: 'dark',        // 'light' | 'dark' UI theme token
   accent: 'lime',       // Accent color token (CSS theme class)
   body: 'male',         // 'male' | 'female' anatomical model for recovery heatmaps
   targetW: null,        // Goal body weight in current `unit`, or null if unset

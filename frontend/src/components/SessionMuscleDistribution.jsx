@@ -27,7 +27,7 @@ export default function SessionMuscleDistribution({ workout, selectedMuscle, onS
   const visible = expanded ? distribution : distribution.slice(0, 4)
 
   return (
-    <div className="session-muscle-distribution" style={{ textAlign: 'left' }}>
+    <div className="session-muscle-distribution">
       {visible.map(m => {
         const isSelected = selectedMuscle === m.slug
         const width = maxEffective > 0 ? Math.round((m.effectiveSets / maxEffective) * 100) + '%' : '0%'
@@ -64,12 +64,12 @@ export default function SessionMuscleDistribution({ workout, selectedMuscle, onS
               }
             } : undefined}
           >
-            <div className="smd-info grow" style={{ minWidth: 0 }}>
-              <div className="smd-name nm" style={{ fontWeight: 500, color: 'var(--label)' }}>
+            <div className="smd-info grow">
+              <div className="smd-name nm">
                 {t(m.name)}
               </div>
               {subtitle && (
-                <div className="smd-sub ss muted small" style={{ fontSize: 12, color: 'var(--label-2)' }}>
+                <div className="smd-sub ss muted small">
                   {subtitle}
                 </div>
               )}
@@ -83,7 +83,7 @@ export default function SessionMuscleDistribution({ workout, selectedMuscle, onS
       })}
 
       {distribution.length > 4 && (
-        <div style={{ textAlign: 'center', marginTop: 8 }}>
+        <div className="more-row">
           <Button
             variant="ghost"
             size="sm"

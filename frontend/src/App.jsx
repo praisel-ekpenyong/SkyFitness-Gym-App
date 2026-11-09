@@ -10,6 +10,7 @@ import { initBackButton } from './lib/back.js'
 import { useWakeLock } from './lib/wakelock.js'
 import { startFlow } from './sheets.jsx'
 import Icon from './components/Icon.jsx'
+import Mark from './components/Mark.jsx'
 import TabBar from './components/TabBar.jsx'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
 import Modals from './components/Modals.jsx'
@@ -42,7 +43,7 @@ function applyPrefs(theme, accent) {
   de.dataset.theme = theme === 'light' ? 'light' : 'dark'
   de.dataset.accent = ACCENTS[accent] ? accent : 'lime'
   const meta = document.querySelector('meta[name="theme-color"]')
-  if (meta) meta.content = de.dataset.theme === 'light' ? '#f2f2f7' : '#000000'
+  if (meta) meta.content = de.dataset.theme === 'light' ? '#f3f3f0' : '#0a0a09'
 }
 
 /**
@@ -65,13 +66,16 @@ function Shell() {
     document.body.classList.toggle('active-session', !!S.active)
     return () => document.body.classList.remove('active-session')
   }, [!!S.active])
+  // Focus mode: while a workout is on screen the phone's tab bar steps aside and the set owns
+  // the display. The workout header's minimize button is the way back to the rest of the app.
+  const focused = !!S.active && loc.pathname === '/workout'
+  useEffect(() => {
+    document.body.classList.toggle('focus-session', focused)
+    return () => document.body.classList.remove('focus-session')
+  }, [focused])
 
   if (!ready) return (
-    <div id="app">
-      <div style={{ paddingTop: '44vh', display: 'flex', justifyContent: 'center', fontSize: 34, color: 'var(--label-3)' }}>
-        <Icon name="dumbbell" />
-      </div>
-    </div>
+    <div id="app"><div className="boot"><Mark size={22} /></div></div>
   )
 
   return (
@@ -80,20 +84,16 @@ function Shell() {
       {/* Blocked device storage degrades to an in-memory session: training keeps
           working and this persistent alert says changes will not persist. */}
       {storageBlocked && (
-        <div role="alert" className="missed-banner" style={{ margin: '12px 16px 0' }}>
+        <div role="alert" className="missed-banner storage-banner">
           <div className="missed-banner-title"><Icon name="alert" /><span>{t('Storage blocked')}</span></div>
-          <div style={{ fontSize: 13 }}>{t('Changes will not persist on this device — training still works for this session.')}</div>
+          <div className="small">{t('Changes will not persist on this device — training still works for this session.')}</div>
         </div>
       )}
       {/* keyed on the route: a view that throws is contained, and switching tabs
           re-mounts the boundary, so the tab bar is always a way out */}
       <div id="app" className="vfade" key={loc.pathname}>
         <ErrorBoundary>
-          <Suspense fallback={
-            <div style={{ paddingTop: '44vh', display: 'flex', justifyContent: 'center', fontSize: 34, color: 'var(--label-3)' }}>
-              <Icon name="dumbbell" />
-            </div>
-          }>
+          <Suspense fallback={<div className="boot"><Mark size={22} /></div>}>
             <Routes>
               <Route path="/home" element={<Home />} />
               <Route path="/plan" element={<Plan />} />

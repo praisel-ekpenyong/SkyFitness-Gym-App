@@ -11,6 +11,7 @@ import { backupDue, validateBackup } from '../lib/storage.js'
 import { restoreFromBackup, resetProfile } from '../lib/restore.js'
 import { loadStarterPlan, confirmSheet, importFromApp, displayNameSheet } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
+import Mark from '../components/Mark.jsx'
 import { Section, Row, SelectRow, Switch, Segmented } from '../components/ui.jsx'
 
 /** Settings route; edits preferences, reminders, backup, and data. */
@@ -55,33 +56,33 @@ export default function Settings() {
     rd.readAsText(f)
   }
 
-  return <div className="narrow">
-    <div className="hdr">
+  return <div className="narrow settings">
+    <div className="hdr hdr-back">
       <button className="iconbtn" onClick={() => nav('/home')} aria-label={t('Home')}><Icon name="chevronLeft" /></button>
-      <div style={{ flex: 1, marginLeft: 10 }}><h1>{t('Settings')}</h1></div>
+      <div className="grow"><h1>{t('Settings')}</h1></div>
     </div>
 
     {/* ---------- your data ---------- */}
     <Section title={t('Your data')}>
-      <Row icon="lock" iconTint="var(--acc)" title={t('All data stays on this device')}
+      <Row icon="lock" title={t('All data stays on this device')}
         subtitle={t('No account, no cloud — back it up anytime with Export below.')} />
       {/* Gentle nag: only when there is history worth saving and the last export has gone
           stale. Tapping it exports straight away, which clears the row. */}
       {hasData(S) && backupDue(S.lastExport, Date.now()) && (
-        <Row icon="shield" iconTint="var(--yellow)" title={t('Time for a backup?')}
+        <Row icon="shield" title={t('Time for a backup?')}
           subtitle={t("It's been a while since your last export — take one so a lost phone can't take your log with it.")}
           accessory="chevron" onClick={doExport} />
       )}
     </Section>
     <Section title={t('Profile')}>
-      <Row icon="person" iconTint="var(--acc)" title={t('Display name')}
+      <Row icon="person" title={t('Display name')}
         subtitle={S.displayName ? t('Hi {0}', S.displayName) : t('Not set — shown on Home as “Hi, there”')}
         value={S.displayName || ''} accessory="chevron" onClick={displayNameSheet} />
     </Section>
     {/* ---------- general (language row removed with the non-English locales — English is
          the only option, so there is nothing left to pick) ---------- */}
     <Section title={t('General')} footer={t('Note: switching units only changes the label — logged numbers are not converted.')}>
-      <Row icon="scale" iconTint="var(--teal)" title={t('Weight unit')}>
+      <Row icon="scale" title={t('Weight unit')}>
         <Segmented className="seg-inline" label={t('Weight unit')}
           options={[{ value: 'kg', label: 'kg' }, { value: 'lb', label: 'lb' }]}
           value={S.unit} onChange={v => update(s => { s.unit = v })} />
@@ -90,22 +91,22 @@ export default function Settings() {
 
     {/* ---------- during a workout ---------- */}
     <Section title={t('During a workout')} footer={wakeOK ? t('The screen stays on while a workout is running, so you don’t have to unlock your phone between sets.') : null}>
-      <SelectRow icon="timer" iconTint="var(--orange)" title={t('Rest duration')}
+      <SelectRow icon="timer" title={t('Rest duration')}
         value={S.restSec} onChange={v => update(s => { s.restSec = v })}
         options={[60, 90, 120, 150, 180].map(v => ({ value: v, label: v + 's' }))} />
       {(wakeOK || !MOBILE) && (
-        <Row icon="sun" iconTint="var(--yellow)" title={t('Keep screen awake')}
+        <Row icon="sun" title={t('Keep screen awake')}
           subtitle={wakeOK ? null : t('Not supported in this browser.')}>
           <Switch checked={wakeOK && S.keepAwake !== false} disabled={!wakeOK} label={t('Keep screen awake')}
             onChange={v => update(s => { s.keepAwake = v })} />
         </Row>
       )}
-      <Row icon="bell" iconTint="var(--pink)" title={t('Sounds')}>
+      <Row icon="bell" title={t('Sounds')}>
         <Switch checked={!!S.sound} label={t('Sounds')} onChange={v => update(s => { s.sound = v })} />
       </Row>
       {/* Two names for the same judgement, so the column asks in the scale you already think in.
           The (i) sits before the control — you read it on the way to the choice, not after it. */}
-      <Row icon="target" iconTint="var(--purple)" title={t('Effort per set')}>
+      <Row icon="target" title={t('Effort per set')}>
         <button className="helpbtn" aria-label={t('What are RIR and RPE?')} onClick={effortHelpSheet}><Icon name="info" /></button>
         <Segmented className="seg-inline" label={t('Effort per set')}
           options={[{ value: 'none', label: t('Off') }, { value: 'rir', label: t('RIR') }, { value: 'rpe', label: t('RPE') }]}
@@ -117,7 +118,7 @@ export default function Settings() {
 
     {/* ---------- appearance ---------- */}
     <Section title={t('Appearance')}>
-      <Row icon="moon" iconTint="var(--indigo)" title={t('Theme')}>
+      <Row icon="moon" title={t('Theme')}>
         <Segmented
           className="seg-inline" label={t('Theme')}
           options={[{ value: 'dark', icon: 'moon', label: t('Dark') }, { value: 'light', icon: 'sun', label: t('Light') }]}
@@ -126,7 +127,7 @@ export default function Settings() {
         />
       </Row>
       {/* Purely how the muscle map is drawn — nothing else in the app reads this. */}
-      <Row icon="figureStrength" iconTint="var(--teal)" title={t('Body diagram')}>
+      <Row icon="figureStrength" title={t('Body diagram')}>
         <Segmented
           className="seg-inline" label={t('Body diagram')}
           options={[{ value: 'male', label: t('Male') }, { value: 'female', label: t('Female') }]}
@@ -134,7 +135,7 @@ export default function Settings() {
           onChange={v => update(s => { s.body = v })}
         />
       </Row>
-      <div className="lrow" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 12, paddingTop: 13, paddingBottom: 14 }}>
+      <div className="lrow accent-row">
         <span className="lrow-t" id="accent-label">{t('Accent color')}</span>
         <div className="swatches" role="radiogroup" aria-labelledby="accent-label">
           {Object.entries(ACCENTS).map(([k, c]) => {
@@ -152,31 +153,29 @@ export default function Settings() {
 
     {/* ---------- data: fill it, bring things over, back it up, wipe it ---------- */}
     <Section title={t('Data')}>
-      <Row icon="sparkles" iconTint="var(--acc)" title={t('Load starter plan (PPL)')} accessory="chevron" onClick={loadStarterPlan} />
-      <Row icon="shuffle" iconTint="var(--teal)" title={t('Import from another app')}
+      <Row icon="sparkles" title={t('Load starter plan (PPL)')} accessory="chevron" onClick={loadStarterPlan} />
+      <Row icon="shuffle" title={t('Import from another app')}
         subtitle={t('FitNotes, Strong, Hevy — or body weight from Apple Health')}
         accessory="chevron" onClick={() => importRef.current.click()} />
-      <Row icon="upload" iconTint="var(--blue)" title={t('Import backup')} accessory="chevron" onClick={() => fileRef.current.click()} />
-      <Row icon="download" iconTint="var(--blue)" title={t('Export backup (JSON)')} accessory="chevron" onClick={doExport} />
-      <Row icon="trash" iconTint="var(--red)" title={t('Reset everything')} danger onClick={() => confirmSheet({ title: t('Reset everything?'), message: t('Deletes your plan, workouts and body weight on this device. This cannot be undone.'), confirmText: t('Delete everything'), danger: true, onConfirm: () => { resetProfile(); nav('/home'); toast(t('All data reset')) } })} />
+      <Row icon="upload" title={t('Import backup')} accessory="chevron" onClick={() => fileRef.current.click()} />
+      <Row icon="download" title={t('Export backup (JSON)')} accessory="chevron" onClick={doExport} />
+      <Row icon="trash" title={t('Reset everything')} danger onClick={() => confirmSheet({ title: t('Reset everything?'), message: t('Deletes your plan, workouts and body weight on this device. This cannot be undone.'), confirmText: t('Delete everything'), danger: true, onConfirm: () => { resetProfile(); nav('/home'); toast(t('All data reset')) } })} />
     </Section>
-    <input ref={fileRef} type="file" accept=".json,application/json" style={{ display: 'none' }} onChange={doImport} />
+    <input ref={fileRef} type="file" accept=".json,application/json" hidden onChange={doImport} />
     {/* Reset after reading so picking the same file twice still fires onChange. */}
-    <input ref={importRef} type="file" accept=".csv,.xml,text/csv,text/xml" style={{ display: 'none' }}
+    <input ref={importRef} type="file" accept=".csv,.xml,text/csv,text/xml" hidden
       onChange={ev => { const f = ev.target.files[0]; if (f) importFromApp(f); ev.target.value = '' }} />
 
     {/* "Add to Home screen" makes no sense inside the native app */}
     {!MOBILE && <Section title={t('Tip')}>
-      <Row icon="lightbulb" iconTint="var(--yellow)"
+      <Row icon="lightbulb"
         title={IS_ANDROID ? t('In Chrome: ⋮ menu → Add to Home screen') : t('In Safari: Share → Add to Home Screen')}
         subtitle={t('to install Sky as a full-screen app.') + ' ' + t('Your data never leaves this device — export a backup now and then!')} />
     </Section>}
 
     {/* About — the one place that says what Sky is. License attribution lives here, so it
         must survive every future rewrite of the copy. */}
-    <div className="dim small" style={{ textAlign: 'center', marginTop: 4, lineHeight: 1.6 }}>
-      Sky · {t('free & open source (MIT)')}
-    </div>
+    <div className="dim small settings-about"><Mark size={12} /> Sky · {t('free & open source (MIT)')}</div>
   </div>
 }
 
@@ -198,7 +197,7 @@ const EFFORT_TYPICAL = 2
 function effortHelpSheet() {
   useUI.getState().openSheet(close => <>
     <h3>{t('Effort per set')}</h3>
-    <div className="muted small" style={{ lineHeight: 1.5 }}>
+    <div className="sheet-sub">
       {t('How hard a set was, logged next to weight and reps. Two scales for the same judgement, counted from opposite ends.')}
     </div>
     <div className="efftbl">
@@ -209,11 +208,11 @@ function effortHelpSheet() {
         </div>
       ))}
     </div>
-    <div className="dim small" style={{ lineHeight: 1.5, display: 'grid', gap: 8 }}>
+    <div className="dim small eff-notes">
       <div>{t('RIR counts the reps you left; RPE reads the same effort off a 10-point scale — so RPE ≈ 10 − RIR. Pick the one you already think in.')}</div>
       <div>{t('The highlighted row is where most working sets land. Sets you have already logged keep their own scale, and nothing else reads the value — progression and estimated 1RM are unaffected.')}</div>
     </div>
-    <div style={{ height: 8 }} />
+    <div className="gap8" />
   </>)
 }
 
@@ -233,11 +232,11 @@ function NotificationsCard({ S, update, toast }) {
   return (
     <Section title={t('Notifications')}
       footer={S.reminder?.on ? t('Reminds you at this time on days that have a routine planned.') : null}>
-      <Row icon="calendar" iconTint="var(--orange)" title={t('Workout day reminder')}>
+      <Row icon="calendar" title={t('Workout day reminder')}>
         <Switch checked={!!S.reminder?.on} label={t('Workout day reminder')} onChange={toggle} />
       </Row>
       {S.reminder?.on && (
-        <Row icon="clock" iconTint="var(--purple)" title={t('Reminder time')}>
+        <Row icon="clock" title={t('Reminder time')}>
           <input type="time" className="timef" aria-label={t('Reminder time')} value={S.reminder?.time || DEF.reminder.time}
             onChange={e => setReminder({ time: e.target.value })} />
         </Row>

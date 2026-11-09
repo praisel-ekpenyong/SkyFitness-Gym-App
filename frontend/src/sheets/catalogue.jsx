@@ -52,17 +52,17 @@ function OneRM({ ex }) {
   const est = estimate1RM(w, r)
   return <>
     <h4 className="sec">{t('Estimated 1RM')}</h4>
-    {best && <div className="small" style={{ marginBottom: 8 }}>
+    {best && <div className="onerm-now">
       {t('From your log:')} <b className="accent">{fmtNum(best.est)} {st.unit}</b>
       <span className="dim"> · {t('{0} × {1} on {2}', fmtNum(best.w) + ' ' + st.unit, best.r, fmtDate(best.d, true))}</span>
     </div>}
-    <div className="row cfgrow" style={{ marginBottom: 10 }}>
+    <div className="row cfgrow onerm-in">
       <Stepper label={t('Weight ({0})', st.unit)} value={w} step={2.5} onChange={setW} />
       <Stepper label={t('Reps')} value={r} step={1} decimal={false} onChange={setR} />
     </div>
-    <div className="row between" style={{ marginBottom: 4 }}>
+    <div className="row between onerm-out">
       <span className="muted small">{t('Estimate')}</span>
-      <b className="accent" style={{ fontSize: 20 }}>{est === null ? '—' : fmtNum(est) + ' ' + st.unit}</b>
+      <b className="onerm-est">{est === null ? '—' : fmtNum(est) + ' ' + st.unit}</b>
     </div>
     <div className="small dim">{est === null
       ? t('Enter a weight and 1–{0} reps — beyond that an estimate is guesswork.', REP_CAP)
@@ -87,11 +87,10 @@ export function ExerciseDetail({ ex, close }) {
   const primaryName = primary ? (MUSCLE_NAME[primary] || primary) : null
   const secondaries = secondaryMusclesOf(ex)
   return <>
-    <div className="row between" style={{ marginBottom: 14 }}>
-      <h3 className="capitalize" style={{ margin: 0 }}>{ex.n}</h3>
+    <div className="row between sheet-title-row">
+      <h3 className="flush">{ex.n}</h3>
       <button
-        className={'iconbtn' + (isFav ? ' on-ss' : '')}
-        style={{ width: 34, height: 34, fontSize: 18, color: isFav ? 'var(--acc)' : 'var(--label-2)' }}
+        className={'iconbtn bare' + (isFav ? ' on-ss' : '')}
         aria-label={isFav ? t('Remove from favorites') : t('Add to favorites')}
         onClick={() => {
           update(s => { catalogueWrites.toggleFavorite(s, ex.id) })
@@ -101,21 +100,22 @@ export function ExerciseDetail({ ex, close }) {
       </button>
     </div>
     <Media ex={ex} />
-    <div className="row" style={{ gap: 6, flexWrap: 'wrap', margin: '10px 0' }}>
+    <div className="row detail-tags">
       {isCardioEx ? (
-        <span className="tag acc"><Icon name="figureRun" />{t('Cardio')}</span>
+        <span className="tag acc">{t('Cardio')}</span>
       ) : (
-        primaryName && <span className="tag acc"><Icon name="target" />{t('Primary: {0}', primaryName)}</span>
+        primaryName && <span className="tag acc">{t('Primary: {0}', primaryName)}</span>
       )}
-      {ex.eq && <span className="tag"><Icon name="dumbbell" />{t(ex.eq)}</span>}
+      {ex.eq && <span className="tag">{t(ex.eq)}</span>}
       {!isCardioEx && secondaries.map((s, i) => <span key={i} className="tag">{t('Secondary: {0}', MUSCLE_NAME[s] || s)}</span>)}
     </div>
     {ex.desc && <div className="exnote">{ex.desc}</div>}
-    {best > 0 && <div className="small row" style={{ marginBottom: 6, gap: 5 }}><Icon name="trophy" style={{ fontSize: 14, color: 'var(--yellow)' }} />{t('Best:')} <b className="accent">{fmtNum(best)} {st.unit}</b>{last ? ` · ${t('last')} ${fmtDate(last.d)}: ${last.sets.map(s => setLabel(ex.id, s, last.target)).join(', ')}` : ''}</div>}
-    <Button variant="primary" icon="plus" style={{ margin: '10px 0 4px' }} onClick={() => addToRoutineSheet(ex)}>{t('Add to my plan')}</Button>
-    {ex.custom && <div className="row" style={{ gap: 8, marginTop: 8 }}>
-      <Button icon="pencil" style={{ flex: 1 }} onClick={() => { close(); customExSheet(ex) }}>{t('Edit')}</Button>
-      <Button variant="danger" icon="trash" style={{ flex: 1 }} onClick={() => deleteCustomEx(ex, close)}>{t('Delete')}</Button>
+    {best > 0 && <div className="small row best-line"><Icon name="trophy" />{t('Best:')} <b className="accent">{fmtNum(best)} {st.unit}</b>{last ? ` · ${t('last')} ${fmtDate(last.d)}: ${last.sets.map(s => setLabel(ex.id, s, last.target)).join(', ')}` : ''}</div>}
+    <div className="gap8" />
+    <Button variant="primary" icon="plus" onClick={() => addToRoutineSheet(ex)}>{t('Add to my plan')}</Button>
+    {ex.custom && <div className="split">
+      <Button icon="pencil" onClick={() => { close(); customExSheet(ex) }}>{t('Edit')}</Button>
+      <Button variant="danger" icon="trash" onClick={() => deleteCustomEx(ex, close)}>{t('Delete')}</Button>
     </div>}
     {!isCardioEx && <OneRM ex={ex} />}
     {instrFor(ex).length > 0 && <><h4 className="sec">{t('How to')}</h4><ol className="steps-list">{instrFor(ex).map((s, i) => <li key={i}>{s}</li>)}</ol></>}
@@ -150,15 +150,15 @@ function AddToRoutine({ ex, close }) {
     }, null, isNew ? null : st.routines.find(x => x.id === rid))
   }
   return <>
-    <h3 className="capitalize">{t('Add “{0}”', ex.n)}</h3>
-    <div className="muted small" style={{ marginBottom: 12 }}>{t('Pick a routine — sets, reps & weight come next.')}</div>
+    <h3>{t('Add “{0}”', ex.n)}</h3>
+    <div className="sheet-sub">{t('Pick a routine — sets, reps & weight come next.')}</div>
     <div className="list">
       {st.routines.map(r => <div key={r.id} className="item" onClick={() => pick(r.id)}>
         <span className="lrow-i"><Icon name={glyphOf(r.emoji)} /></span>
         <div className="grow"><div className="tt">{r.name}</div><div className="ss">{exCount(r.ex.length)}</div></div>
         {r.ex.some(e => e.id === ex.id) && <span className="tag">{t('already in')}</span>}<Icon name="plus" className="chev" />
       </div>)}
-      <div className="item" onClick={() => pick('_new')}><span className="lrow-i" style={{ background: 'var(--surface-3)' }}><Icon name="sparkles" /></span>
+      <div className="item" onClick={() => pick('_new')}><span className="lrow-i"><Icon name="sparkles" /></span>
         <div className="grow"><div className="tt">{t('New routine')}</div><div className="ss">{t('Create one and start with this exercise')}</div></div><Icon name="plus" className="chev" /></div>
     </div>
   </>
@@ -211,11 +211,11 @@ export function CustomExForm({ existing, prefill, onDone, close }) {
 
   return <>
     <h3>{existing ? t('Edit custom exercise') : t('Create your own exercise')}</h3>
-    <div className="muted small" style={{ marginBottom: 12 }}>{t('Name it and pick its primary and secondary muscles — it behaves like any other exercise, just without an animation.')}</div>
+    <div className="sheet-sub">{t('Name it and pick its primary and secondary muscles — it behaves like any other exercise, just without an animation.')}</div>
     <input className="input" placeholder={t('Exercise name')} aria-label={t('Exercise name')} value={name} onChange={e => setName(e.target.value)} />
     
-    <div className="small muted" style={{ margin: '12px 0 6px' }}>{t('Primary muscle')}</div>
-    <div className="chips" style={{ margin: '0 0 10px' }}>
+    <div className="field-l">{t('Primary muscle')}</div>
+    <div className="chips">
       {FILTER_MUSCLES.map(m => (
         <button
           key={m}
@@ -228,14 +228,13 @@ export function CustomExForm({ existing, prefill, onDone, close }) {
     </div>
 
     {primary === 'cardio' ? (
-      <div className="small dim row" style={{ marginBottom: 12, gap: 5 }}>
-        <Icon name="figureRun" style={{ fontSize: 13 }} />
+      <div className="small dim dim-note">
         {t('Cardio exercises log time + speed instead of weight × reps.')}
       </div>
     ) : primary ? (
       <>
-        <div className="small muted" style={{ margin: '10px 0 6px' }}>{t('Secondary muscles (optional)')}</div>
-        <div className="chips" style={{ margin: '0 0 12px' }}>
+        <div className="field-l">{t('Secondary muscles (optional)')}</div>
+        <div className="chips">
           {MUSCLES.filter(m => m !== primary).map(m => {
             const on = secondaries.includes(m)
             return (
@@ -252,11 +251,12 @@ export function CustomExForm({ existing, prefill, onDone, close }) {
       </>
     ) : null}
 
+    <div className="gap12" />
     <textarea className="input" rows={4} maxLength={1000} placeholder={t('Description (optional) — setup, cues, anything you want to remember')}
       value={desc} onChange={e => setDesc(e.target.value)} />
-    <div style={{ height: 14 }} />
+    <div className="gap16" />
     <Button variant="primary" onClick={save}>{existing ? t('Save') : t('Create exercise')}</Button>
-    {existing && <><div style={{ height: 8 }} /><Button variant="danger" icon="trash" onClick={() => { close(); deleteCustomEx(existing) }}>{t('Delete exercise')}</Button></>}
+    {existing && <><div className="gap8" /><Button variant="danger" icon="trash" onClick={() => { close(); deleteCustomEx(existing) }}>{t('Delete exercise')}</Button></>}
   </>
 }
 /**
@@ -328,21 +328,21 @@ export function ExercisePicker({ onPick }) {
       onChange={e => { setQ(e.target.value); setShown(50) }}
       onClear={() => { setQ(''); setShown(50) }}
     />
-    <div className="chips" style={{ margin: eqOpts.length > 1 ? '10px 0 6px' : '10px 0' }}>
-      {(favCount > 0 || filter === 'favorites') && <button className={'chip' + (filter === 'favorites' ? ' on' : '')} onClick={() => { setFilter('favorites'); setEq(''); setShown(50) }}><Icon name="starFill" style={{ fontSize: 12, display: 'inline-block', marginRight: 4, verticalAlign: '-1px' }} />{t('Favorites')} ({favCount})</button>}
-      {(chosenCount > 0 || filter === '★') && <button className={'chip' + (filter === '★' ? ' on' : '')} onClick={() => { setFilter('★'); setEq(''); setShown(50) }}><Icon name="starFill" style={{ fontSize: 12, display: 'inline-block', marginRight: 4, verticalAlign: '-1px' }} />{t('Chosen')} ({chosenCount})</button>}
+    <div className="chips picker-chips">
+      {(favCount > 0 || filter === 'favorites') && <button className={'chip chip-i' + (filter === 'favorites' ? ' on' : '')} onClick={() => { setFilter('favorites'); setEq(''); setShown(50) }}><Icon name="starFill" />{t('Favorites')} ({favCount})</button>}
+      {(chosenCount > 0 || filter === '★') && <button className={'chip chip-i' + (filter === '★' ? ' on' : '')} onClick={() => { setFilter('★'); setEq(''); setShown(50) }}><Icon name="starFill" />{t('Chosen')} ({chosenCount})</button>}
       <button className={'chip nocap' + (!filter ? ' on' : '')} onClick={() => { setFilter(''); setEq(''); setShown(50) }}>{t('All')}</button>
       {FILTER_MUSCLES.map(m => <button key={m} className={'chip' + (filter === m ? ' on' : '')} onClick={() => { setFilter(m); setEq(''); setShown(50) }}>{t(MUSCLE_NAME[m] || m)}</button>)}
     </div>
-    {eqOpts.length > 1 && <div className="chips" style={{ marginBottom: 10 }}>
+    {eqOpts.length > 1 && <div className="chips picker-chips">
       <button className={'chip nocap' + (!eqOn ? ' on' : '')} onClick={() => { setEq(''); setShown(50) }}>{t('Any equipment')}</button>
       {eqOpts.map(x => <button key={x} className={'chip' + (eqOn === x ? ' on' : '')} onClick={() => { setEq(x); setShown(50) }}>{t(x)}</button>)}
     </div>}
     <div className="list">
       {filter !== '★' && <div className="item" role="button" tabIndex={0} onClick={() => customExSheet(null, ex => onPick(ex), q.trim())}
         onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); customExSheet(null, ex => onPick(ex), q.trim()) } }}>
-        <div className="thumb thumb-x"><Icon name="sparkles" /></div>
-        <div className="grow"><div className="tt">{t('Create your own exercise')}</div><div className="ss">{t('name + target muscles, no animation')}</div></div><Icon name="plus" className="chev" />
+        <div className="thumb thumb-x"><Icon name="plus" /></div>
+        <div className="grow"><div className="tt">{t('Create your own exercise')}</div><div className="ss">{t('name + target muscles, no animation')}</div></div>
       </div>}
       {f.slice(0, shown).map(row => {
         const e = row.exercise
@@ -356,12 +356,11 @@ export function ExercisePicker({ onPick }) {
             <div className="tt capitalize">{e.n}</div>
             <div className="ss capitalize">
               {t(primaryLabel)} · {t(e.eq)}
-              {secondaryMuscle && <span className="tag" style={{ marginLeft: 6, fontSize: 11, padding: '1px 5px', verticalAlign: 'middle' }}>{t('Secondary: {0}', MUSCLE_NAME[secondaryMuscle] || secondaryMuscle)}</span>}
+              {secondaryMuscle && <span className="tag inline-tag">{t('Secondary: {0}', MUSCLE_NAME[secondaryMuscle] || secondaryMuscle)}</span>}
             </div>
           </div>
           <button
-            className={'iconbtn' + (row.favorite ? ' on-ss' : '')}
-            style={{ width: 34, height: 34, fontSize: 16, color: row.favorite ? 'var(--acc)' : 'var(--label-2)' }}
+            className={'iconbtn bare' + (row.favorite ? ' on-ss' : '')}
             aria-label={row.favorite ? t('Remove from favorites') : t('Add to favorites')}
             onClick={ev => {
               ev.stopPropagation()
@@ -377,7 +376,7 @@ export function ExercisePicker({ onPick }) {
       {f.length === 0 && filter === '★' && chosenCount === 0 && <div className="empty">{t('Nothing chosen yet — add exercises and they’ll show up here.')}</div>}
       {f.length === 0 && (filter !== 'favorites' || favCount > 0) && (filter !== '★' || chosenCount > 0) && <div className="empty"><div className="ico"><Icon name="magnifier" /></div>{t('No match')}</div>}
     </div>
-    {f.length > shown && <><div style={{ height: 8 }} /><Button onClick={() => setShown(s => s + 50)}>{t('Show more')}</Button></>}
+    {f.length > shown && <><div className="gap8" /><Button onClick={() => setShown(s => s + 50)}>{t('Show more')}</Button></>}
   </>
 }
 /** Opens the exercise picker calling back with the chosen exercise. */
@@ -395,13 +394,13 @@ function ProgressionFields({ ex, mode, c, setC, routine, unit }) {
   const inc = c.inc > 0 ? c.inc : (mode === 'time' ? 5 : defaultIncrement(ex.id, unit))
   return <>
     <h4 className="sec">{t('Progression')}</h4>
-    <div className="sect-b" style={{ marginBottom: 8 }}>
+    <div className="sect-b cfg-note-sm">
       <SelectRow title={t('Rule')} sheetTitle={t('Progression')} value={c.prog || ''} onChange={v => setC(x => ({ ...x, prog: v || undefined }))}
         options={[{ value: '', label: t('Follow the routine ({0})', t(POLICY_NAME[inherited])) },
           ...options.map(p => ({ value: p, label: t(POLICY_NAME[p]) }))]} />
     </div>
-    <div className="small dim" style={{ marginBottom: active === 'off' ? 18 : 10 }}>{t(POLICY_DESC[active])}</div>
-    {active !== 'off' && <div className="row cfgrow" style={{ marginBottom: 18 }}>
+    <div className={'small dim ' + (active === 'off' ? 'cfg-note' : 'cfg-note-sm')}>{t(POLICY_DESC[active])}</div>
+    {active !== 'off' && <div className="row cfgrow cfg-note">
       <Stepper label={mode === 'time' ? t('Step (seconds)') : t('Step ({0})', unit)} value={inc}
         step={mode === 'time' ? 5 : 1.25} decimal={mode !== 'time'} onChange={v => setC(x => ({ ...x, inc: v }))} />
       {active === 'double' && <Stepper label={t('Reps from')} value={c.repsMin || Math.max(1, (c.reps || 10) - 2)}
@@ -473,18 +472,18 @@ export function ExConfig({ ex, existing, onSave, onDelete, close, routine, initi
     }
   }
   return <>
-    <h3 className="capitalize">{ex.n}</h3>
+    <h3>{ex.n}</h3>
     <Media ex={ex} />
-    <div className="row" style={{ gap: 6, flexWrap: 'wrap', margin: '10px 0 14px' }}>
-      {cardio && <span className="tag acc"><Icon name="figureRun" />{t('Cardio')}</span>}
+    <div className="row detail-tags">
+      {cardio && <span className="tag acc">{t('Cardio')}</span>}
       <span className="tag">{t(ex.tg || ex.bp)}</span><span className="tag">{t(ex.eq)}</span>
     </div>
     {ex.desc && <div className="exnote">{ex.desc}</div>}
-    {!cardio && <div style={{ marginBottom: 14 }}>
+    {!cardio && <div>
       <Segmented className="seg-range" label={t('Log mode')} value={mode} onChange={setMode}
         options={[{ value: 'reps', label: t('Reps') }, { value: 'time', label: t('Time') }]} />
     </div>}
-    <div className="row cfgrow" style={{ marginBottom: mode === 'time' ? 8 : 18 }}>
+    <div className={'row cfgrow ' + (mode === 'time' ? 'cfg-note-sm' : 'cfg-note')}>
       {cardio ? <>
         <Stepper label={t('Intervals')} value={c.sets} step={1} decimal={false} onChange={v => setC(x => ({ ...x, sets: v }))} />
         <Stepper label={t('Minutes')} value={c.min} step={1} decimal={false} onChange={v => setC(x => ({ ...x, min: v }))} />
@@ -501,16 +500,16 @@ export function ExConfig({ ex, existing, onSave, onDelete, close, routine, initi
         {!bw && <Stepper label={t('Weight ({0})', st.unit)} value={c.weight} step={2.5} onChange={v => setC(x => ({ ...x, weight: v }))} />}
       </>}
     </div>
-    {mode === 'time' && !bw && <div className="small dim" style={{ marginBottom: 18 }}>
+    {mode === 'time' && !bw && <div className="small dim cfg-note">
       {t('A timer runs while you hold the set. Leave the weight at 0 for bodyweight holds.')}
     </div>}
     {/* ---------- bodyweight + per side (issues #31/#32/#33) ---------- */}
-    {!cardio && <div className="sect-b" style={{ marginBottom: 8 }}>
-      <Row icon="figureStrength" iconTint="var(--acc)" title={t('Bodyweight')}
+    {!cardio && <div className="sect-b cfg-note-sm">
+      <Row icon="figureStrength" title={t('Bodyweight')}
         subtitle={bw ? t('No weight to enter — just log the reps.') : t('Ask for a weight on every set.')}>
         <Switch checked={bw} label={t('Bodyweight')} onChange={v => setC(x => ({ ...x, bodyweight: v, weight: v ? 0 : x.weight }))} />
       </Row>
-      {mode === 'reps' && <Row icon="shuffle" iconTint="var(--blue)" title={t('Reps per side')}
+      {mode === 'reps' && <Row icon="shuffle" title={t('Reps per side')}
         subtitle={perSide ? t('You still log the total: {0} is {1} per side.', c.reps || 0, fmtNum(sideReps(c.reps))) : t('For lunges, single-arm rows and the like.')}>
         {/* Turning it on rounds the target up to an even number, since half of an odd
             total is a rep one side does not get. */}
@@ -521,20 +520,20 @@ export function ExConfig({ ex, existing, onSave, onDelete, close, routine, initi
         one word per line — so added weight gets the same full-width treatment as sets and
         reps, with its explanation underneath. */}
     {bw && <>
-      <div className="row cfgrow" style={{ marginBottom: 8 }}>
+      <div className="row cfgrow cfg-note-sm">
         <Stepper label={t('Added ({0})', st.unit)} value={c.weight || 0} step={2.5}
           onChange={v => setC(x => ({ ...x, weight: v }))} />
       </div>
-      <div className="small dim" style={{ marginBottom: 18 }}>
+      <div className="small dim cfg-note">
         {t('For dips or pull-ups with a belt. Progression then follows the weight.')}
       </div>
     </>}
     {/* The rep ceiling only means something when there is no load to add instead. */}
-    {mode === 'reps' && bw && !(c.weight > 0) && <div className="row cfgrow" style={{ marginBottom: 18 }}>
+    {mode === 'reps' && bw && !(c.weight > 0) && <div className="row cfgrow cfg-note-sm">
       <Stepper label={t('Top of the range')} value={c.repsMax || 0} step={1} decimal={false}
         onChange={v => setC(x => ({ ...x, repsMax: v }))} />
     </div>}
-    {mode === 'reps' && bw && !(c.weight > 0) && <div className="small dim" style={{ marginTop: -10, marginBottom: 18 }}>
+    {mode === 'reps' && bw && !(c.weight > 0) && <div className="small dim cfg-note">
       {c.repsMax > 0
         ? t('Reps climb to {0}, then a set is added and the reps start over. At {1} sets it asks you to add weight instead.', c.repsMax, MAX_BW_SETS)
         : t('Reps climb by one whenever every set was clean. Set a ceiling to add sets instead of reps forever.')}
@@ -547,11 +546,11 @@ export function ExConfig({ ex, existing, onSave, onDelete, close, routine, initi
       value={c.notes || ''}
       onChange={e => setC(x => ({ ...x, notes: e.target.value }))}
     />
-    <div className="small dim" style={{ textAlign: 'right', marginTop: 4, marginBottom: 12 }}>{(c.notes || '').length}/500</div>
+    <div className="small dim char-count">{(c.notes || '').length}/500</div>
     <Button variant="primary" onClick={save}>{actionLabel || (existing ? t('Save') : t('Add to routine'))}</Button>
-    {onReplace && existing && <><div style={{ height: 8 }} /><Button icon="shuffle" onClick={() => { close(); onReplace() }}>{t('Replace exercise')}</Button></>}
-    {ex.custom && <><div style={{ height: 8 }} /><Button icon="pencil" onClick={() => { close(); customExSheet(ex) }}>{t('Edit or delete this exercise')}</Button></>}
-    {onDelete && <><div style={{ height: 8 }} /><Button variant="danger" onClick={() => { close(); onDelete() }}>{t('Remove from routine')}</Button></>}
+    {onReplace && existing && <><div className="gap8" /><Button icon="shuffle" onClick={() => { close(); onReplace() }}>{t('Replace exercise')}</Button></>}
+    {ex.custom && <><div className="gap8" /><Button icon="pencil" onClick={() => { close(); customExSheet(ex) }}>{t('Edit or delete this exercise')}</Button></>}
+    {onDelete && <><div className="gap8" /><Button variant="danger" onClick={() => { close(); onDelete() }}>{t('Remove from routine')}</Button></>}
   </>
 }
 /**

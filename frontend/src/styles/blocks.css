@@ -1,0 +1,266 @@
+/* Blocks: the shared pieces every screen and sheet is built from. */
+
+/* ------------------------------------------------------------------- card -- */
+.card { background: var(--surface); border-radius: var(--r-2); padding: var(--pad); margin-bottom: var(--gap) }
+.card h2 { font-size: 15px; font-weight: 600; margin: 0 0 12px }
+.card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; min-height: 28px }
+.card-head h2, .card-head h3 { margin: 0; font-size: 15px; font-weight: 600; text-transform: none; font-stretch: 100%; line-height: 1.3; letter-spacing: 0 }
+.card-head .card-sub, .card-sub { font-size: 13px; font-weight: 400; color: var(--label-2) }
+.card .big { font-size: 40px; font-stretch: var(--narrow); font-weight: 700; line-height: 1 }
+.card.tappable { display: block; width: 100%; text-align: left; transition: background var(--fast) }
+.card.tappable:active { background: var(--surface-2) }
+
+h4.sec, .sec {
+  font-size: 13px; font-weight: 500; color: var(--label-2);
+  margin: 22px 0 8px; display: flex; align-items: center; gap: 6px;
+}
+.sec .icn { font-size: 14px }
+.sec-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 22px 0 8px; min-height: 36px }
+.sec-row .sec { margin: 0; font-size: 15px; font-weight: 600; color: var(--label) }
+
+/* ----------------------------------------------------- figures as data -- */
+/* one block split by hairlines: label over value. KPIs are type, not tiles. */
+.tiles {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--sep);
+  border-radius: var(--r-2); overflow: hidden; margin-bottom: var(--gap);
+}
+.tile { background: var(--surface); padding: 13px var(--pad) 14px; text-align: left; min-width: 0; display: block; width: 100%; transition: background var(--fast) }
+.tile.tappable { cursor: pointer }
+.tile.tappable:active { background: var(--surface-2) }
+.tile .l { color: var(--label-2); font-size: 13px; display: flex; align-items: center; gap: 6px }
+.tile .v { font-size: 36px; font-stretch: var(--narrow); font-weight: 700; line-height: 1; margin-top: 6px; overflow-wrap: anywhere }
+.tile .v .u { font-size: 14px; margin-left: 3px }
+.tile .s, .stats-tile-sub { font-size: 12px; color: var(--label-3); margin-top: 5px }
+
+.delta-pill { display: inline-flex; align-items: center; gap: 2px; font-size: 13px; font-weight: 600; flex: none }
+.delta-pill .icn { font-size: 12px; --icon-stroke: 2.2 }
+
+/* ------------------------------------------------------------ grouped list -- */
+.sect { margin-bottom: 20px }
+.sect-t { font-size: 13px; font-weight: 500; color: var(--label-2); padding: 0 2px 7px; display: block }
+.sect-b { background: var(--surface); border-radius: var(--r-2); overflow: hidden }
+.sect-f { font-size: 13px; color: var(--label-3); padding: 7px 2px 0; line-height: 1.38 }
+.lrow {
+  display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
+  padding: 10px 14px; min-height: 50px; position: relative; color: var(--label); background: none;
+}
+.lrow + .lrow::before { content: ''; position: absolute; left: 14px; right: 0; top: 0; height: 1px; background: var(--sep) }
+.lrow:has(.lrow-i) + .lrow:has(.lrow-i)::before { left: 46px }
+.lrow.tap { transition: background var(--fast) }
+.lrow.tap:active { background: var(--surface-2) }
+.lrow-i { width: 20px; flex: none; font-size: 20px; display: flex; align-items: center; justify-content: center; color: var(--label-2) }
+.lrow-m { flex: 1 1 40%; min-width: 0; display: flex; flex-direction: column; gap: 1px }
+.lrow-t { font-size: 15px; line-height: 1.3 }
+.lrow-s { font-size: 13px; color: var(--label-2); line-height: 1.35 }
+.lrow-v { color: var(--label-2); font-size: 15px; flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right }
+.lrow-c { color: var(--label-3); font-size: 14px; flex: none; --icon-stroke: 2 }
+.lrow-k { color: var(--acc-text); font-size: 18px; flex: none; --icon-stroke: 2.4 }
+.lrow.danger, .lrow.danger .lrow-t, .lrow.danger .lrow-i { color: var(--red-text) }
+
+/* -------------------------------------------------------------- row stack -- */
+.list { display: flex; flex-direction: column; gap: 3px }
+.item {
+  display: flex; align-items: center; gap: 12px; background: var(--surface); border-radius: var(--r-2);
+  padding: 9px 12px 9px 9px; min-height: 66px; transition: background var(--fast); text-align: left; width: 100%; cursor: pointer;
+}
+.item:active { background: var(--surface-2) }
+.item .tt { font-size: 15px; font-weight: 500; line-height: 1.25 }
+.item .ss { color: var(--label-2); font-size: 13px; margin-top: 2px; line-height: 1.32 }
+.item .grow { flex: 1; min-width: 0 }
+.item.pad { padding-left: 14px }
+.chev { color: var(--label-3); flex: none; font-size: 14px; --icon-stroke: 2 }
+.item > .icn:not(.chev) { font-size: 19px }
+.thumb {
+  width: 48px; height: 48px; border-radius: 6px; object-fit: cover; flex: none;
+  background: var(--art-ground); filter: var(--art-filter);
+}
+.thumb-x { display: flex; align-items: center; justify-content: center; font-size: 21px; background: var(--surface-2); color: var(--label-2); filter: none }
+
+.tag {
+  display: inline-flex; align-items: center; gap: 4px; background: var(--surface-2); color: var(--label-2);
+  border-radius: var(--r-1); padding: 3px 7px; font-size: 12px; font-weight: 500; line-height: 1.25;
+  text-transform: capitalize; flex: none; max-width: 100%; white-space: nowrap;
+}
+.tag .icn { font-size: 13px }
+.tag.acc { color: var(--acc-text); background: var(--acc-soft) }
+.pr {
+  display: inline-flex; align-items: center; gap: 4px; flex: none; vertical-align: 1px;
+  background: color-mix(in srgb, var(--yellow) 18%, transparent); color: var(--goal-text);
+  border-radius: var(--r-1); padding: 2px 6px; font-size: 12px; font-weight: 600;
+}
+.pr .icn { font-size: 13px }
+.mchips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px }
+.mchip { font-size: 12px; padding: 4px 8px; border-radius: var(--r-1); background: var(--surface-2); color: var(--label-2) }
+.mchip.miss { background: color-mix(in srgb, var(--orange) 15%, transparent); color: var(--orange-text); cursor: pointer }
+
+.empty { text-align: center; color: var(--label-2); padding: 40px 20px; font-size: 15px; line-height: 1.45 }
+.empty .ico { font-size: 30px; color: var(--label-3); margin-bottom: 10px; display: flex; justify-content: center }
+.steps-list { padding-left: 20px; color: var(--label-2); font-size: 15px; line-height: 1.5; display: flex; flex-direction: column; gap: 9px }
+.exnote { background: var(--surface-2); border-radius: var(--r-2); padding: 12px 14px; line-height: 1.45; white-space: pre-wrap; font-size: 14px; margin-bottom: 10px; color: var(--label-2) }
+
+/* ------------------------------------------------------------ exercise art -- */
+.exmedia {
+  position: relative; border-radius: var(--r-2); overflow: hidden; background: var(--art-ground);
+  margin-bottom: 12px; cursor: pointer;
+}
+.exmedia img { width: 100%; height: 240px; object-fit: contain; display: block; filter: var(--art-filter) }
+.exmedia .gifhint, .exmedia .giftoggle {
+  position: absolute; bottom: 0; display: flex; align-items: center; justify-content: center;
+  width: var(--tap-target); height: var(--tap-target); color: var(--label-2); font-size: 15px;
+}
+.exmedia .gifhint { right: 0; pointer-events: none }
+.exmedia .giftoggle { left: 0 }
+.exmedia.compact img { height: 110px }
+.exmedia.mini img { height: 72px }
+
+/* ------------------------------------------------------------------ charts -- */
+.chart { width: 100%; overflow: hidden }
+.chart svg { display: block; width: 100% }
+.chart-i { position: relative; touch-action: pan-y }
+.ctip {
+  position: absolute; left: 0; top: 0; background: var(--surface-3); color: var(--label);
+  border-radius: 6px; padding: 4px 8px; font-size: 12px; font-weight: 500; white-space: nowrap;
+  max-width: calc(100% - 8px); overflow: hidden; text-overflow: ellipsis; pointer-events: none;
+}
+.chart-nodata { font-size: 13px; color: var(--label-3); padding: 28px 0; text-align: center }
+
+/* ----------------------------------------------------------------- heatmap -- */
+.hm-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding-bottom: 2px }
+.hm-wrap::-webkit-scrollbar { display: none }
+.hm-months { display: flex; margin-left: 28px; margin-bottom: 5px }
+.hm-months span { flex: none; width: 14px; font-size: 11px; color: var(--label-3); white-space: nowrap; overflow: visible }
+.hm-body { display: flex }
+.hm-days { display: flex; flex-direction: column; gap: 3px; flex: none; width: 28px }
+.hm-days span { height: 11px; font-size: 11px; color: var(--label-3); line-height: 11px }
+.hm-grid { display: flex; gap: 3px }
+.hm-col { display: flex; flex-direction: column; gap: 3px }
+.hm-c { width: 11px; height: 11px; border-radius: 2px; background: var(--surface-2); flex: none }
+.hm-c.l1 { background: color-mix(in srgb, var(--data) 30%, var(--surface-2)) }
+.hm-c.l2 { background: color-mix(in srgb, var(--data) 55%, var(--surface-2)) }
+.hm-c.l3 { background: color-mix(in srgb, var(--data) 78%, var(--surface-2)) }
+.hm-c.l4 { background: var(--data) }
+.hm-c.today { outline: 1.5px solid var(--label); outline-offset: 0 }
+.hm-c.future { opacity: .3 }
+.hm-legend { display: flex; align-items: center; gap: 4px; justify-content: flex-end; margin-top: 10px; font-size: 12px; color: var(--label-3) }
+.hm-legend .hm-c { width: 10px; height: 10px }
+
+/* -------------------------------------------------------------- muscle map -- */
+.bodymap { display: flex; gap: 2px; justify-content: center; align-items: flex-start; --bm-base: color-mix(in srgb, var(--label) 12%, var(--surface)) }
+.bm-v { flex: 1; min-width: 0; height: auto; max-height: min(46vh, 340px) }
+.bm-ph { height: 200px }
+.bm-sil { fill: color-mix(in srgb, var(--label) 20%, var(--surface)) }
+.bm-m { fill: var(--bm-base); transition: fill var(--med) var(--ease) }
+.bm-m.l1 { fill: color-mix(in srgb, var(--data) 34%, var(--bm-base)) }
+.bm-m.l2 { fill: color-mix(in srgb, var(--data) 58%, var(--bm-base)) }
+.bm-m.l3 { fill: color-mix(in srgb, var(--data) 80%, var(--bm-base)) }
+.bm-m.l4 { fill: var(--data) }
+.hm-fatigue .bm-m.l4 { fill: var(--red) }
+.hm-fatigue .bm-m.l3 { fill: var(--orange) }
+.hm-fatigue .bm-m.l2 { fill: var(--yellow) }
+.hm-fatigue .bm-m.l1 { fill: color-mix(in srgb, var(--yellow) 32%, var(--bm-base)) }
+.hm-fatigue .hm-c.l4 { background: var(--red) }
+.hm-fatigue .hm-c.l3 { background: var(--orange) }
+.hm-fatigue .hm-c.l2 { background: var(--yellow) }
+.hm-strength .bm-m.l4 { fill: var(--yellow) }
+.hm-strength .hm-c.l4 { background: var(--yellow) }
+.bm-m.sel { stroke: var(--label); stroke-width: 7 }
+.bodymap.tappable .bm-m { cursor: pointer }
+.bm-v path { stroke: var(--surface); stroke-width: 2.5; stroke-linejoin: round }
+.bodymap.compact .bm-v { max-height: min(32vh, 220px) }
+
+.mrow { display: flex; align-items: center; gap: 10px; padding: 7px 0 }
+.mrow .nm { flex: 1; min-width: 0; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--label) }
+.mrow .bar { flex: 0 0 96px; max-width: 120px; height: 4px; border-radius: 1px; background: var(--surface-3); overflow: hidden; display: block }
+.mrow .bar i { display: block; height: 100%; background: var(--data) }
+.mrow .v { font-size: 13px; color: var(--label-2); min-width: 54px; text-align: right; flex: none }
+.smd-row.tappable { cursor: pointer; border-radius: var(--r-1); padding: 7px 8px; margin: 0 -8px; transition: background var(--fast) }
+.smd-row.tappable:active { background: var(--surface-2) }
+.smd-row.selected { background: var(--acc-soft) }
+.smd-sub { line-height: 1.3 }
+.muscle-inspector {
+  background: var(--surface-2); border-radius: var(--r-2); padding: 10px 12px; margin-top: 10px;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.muscle-inspector-info { min-width: 0 }
+.muscle-inspector-name { font-size: 15px; text-transform: capitalize }
+.muscle-inspector-val { font-size: 13px; color: var(--label-2); margin-top: 1px }
+.missed-banner { background: color-mix(in srgb, var(--orange) 10%, var(--surface)); border-radius: var(--r-2); padding: 12px 14px; margin-top: 14px }
+.missed-banner-title { font-size: 13px; font-weight: 600; color: var(--orange-text); display: flex; align-items: center; gap: 6px; margin-bottom: 8px }
+
+/* ------------------------------------------------------------- weight input -- */
+.bwstep { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 14px 0 6px }
+.bw-pm {
+  width: 52px; height: 72px; border-radius: var(--r-2); background: var(--surface-2); flex: none; color: var(--label);
+  display: flex; align-items: center; justify-content: center; font-size: 21px; --icon-stroke: 2;
+  transition: background var(--fast), transform var(--fast);
+}
+.bw-pm:active { background: var(--surface-3); transform: scale(.95) }
+.bw-read { font-size: 80px; font-stretch: var(--narrow); font-weight: 700; line-height: 1; flex: 1; min-width: 0; text-align: center; font-variant-numeric: tabular-nums }
+.bw-read .u { font-size: 16px; font-stretch: 100%; font-weight: 400; color: var(--label-2) }
+.bwpad { justify-content: center; margin: 8px 0; flex-wrap: wrap; overflow: visible; margin-inline: 0; padding-inline: 0 }
+
+/* --------------------------------------------------------------- calendar -- */
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; margin-top: 10px }
+.cal-h { text-align: center; font-size: 12px; color: var(--label-3); padding: 2px 0 4px }
+.cal-d {
+  aspect-ratio: 1; border-radius: 6px; background: var(--surface); position: relative;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 19px; font-stretch: var(--narrow); font-weight: 600; color: var(--label); transition: background var(--fast);
+}
+.cal-d:active { background: var(--surface-2) }
+.cal-d.has { background: var(--acc); color: var(--on-acc); font-weight: 800 }
+.cal-d.today { box-shadow: inset 0 0 0 1.5px var(--label) }
+.cal-d i { position: absolute; left: 50%; bottom: 6px; width: 12px; height: 2px; margin-left: -6px; background: transparent }
+.cal-d i.plan { background: var(--label-3) }
+.cal-d i.ovr { background: var(--orange) }
+.cal-d i.done { background: transparent }
+.cal-legend { display: flex; gap: 14px; justify-content: center; margin-top: 12px; font-size: 12px; color: var(--label-2) }
+.cal-legend i { display: inline-block; width: 10px; height: 3px; margin-right: 5px; vertical-align: 2px }
+
+/* ----------------------------------------------------------------- pickers -- */
+.swatches { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px }
+.swatch {
+  height: var(--tap-target); border-radius: var(--r-2); position: relative;
+  transition: transform var(--fast);
+}
+.swatch:active { transform: scale(.92) }
+.swatch.on { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--label) }
+.glyph-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px }
+.glyph-cell {
+  aspect-ratio: 1; border-radius: var(--r-2); background: var(--surface-2); color: var(--label);
+  display: flex; align-items: center; justify-content: center; font-size: 26px;
+  transition: background var(--fast), transform var(--fast);
+}
+.glyph-cell:active { transform: scale(.94) }
+.glyph-cell.on { background: var(--ink); color: var(--on-ink) }
+
+.efftbl { background: var(--surface); border-radius: var(--r-2); overflow: hidden; margin: 14px 0 12px }
+.efftbl .r { display: flex; align-items: center; gap: 10px; padding: 10px 14px; position: relative }
+.efftbl .r + .r::before { content: ''; position: absolute; left: 14px; right: 0; top: 0; height: 1px; background: var(--sep) }
+.efftbl .n { width: 36px; flex: none; text-align: center; font-size: 22px; font-stretch: var(--narrow); font-weight: 700 }
+.efftbl .f { flex: 1; min-width: 0; font-size: 14px; color: var(--label-2); line-height: 1.3 }
+.efftbl .hd .n, .efftbl .hd .f { font-size: 12px; font-stretch: 100%; font-weight: 500; color: var(--label-3) }
+.efftbl .hd::before { display: none }
+.efftbl .r.on { background: var(--surface-2) }
+.efftbl .r.on .n { color: var(--acc-text) }
+.efftbl .r.on .f { color: var(--label) }
+
+/* --------------------------------------------------------------- the barbell -- */
+/* The mark, with the lifter's real numbers on it. */
+.bbell { display: block; min-width: 0 }
+.bbell-bar { position: relative; display: flex; align-items: center; justify-content: center; height: 54px; padding: 0 2px }
+.bbell-bar::before { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 4px; margin-top: -2px; background: var(--plate-bar); border-radius: 1px }
+.bbell-side { position: relative; flex: 1 1 0; min-width: 0; display: flex; align-items: center; gap: 1px }
+.bbell-side:first-child { justify-content: flex-end }
+.bbell-side:last-child { justify-content: flex-start }
+.bbell-shaft { flex: 0 0 34%; }
+.pl { display: block; flex: none; width: 10px; border-radius: 2px }
+.pl-tiny { width: 8px } .pl-change { width: 6px }
+.pl-red { background: var(--plate-red) }
+.pl-blue { background: var(--plate-blue) }
+.pl-yellow { background: var(--plate-yellow) }
+.pl-green { background: var(--plate-green) }
+.pl-white { background: var(--plate-white) }
+.pl-steel { background: var(--plate-steel) }
+:root[data-theme="light"] .pl-white { background: #fff; box-shadow: inset 0 0 0 1px #c9c9c3 }
+.bbell figcaption { font-size: 13px; color: var(--label-2); text-align: center; margin-top: 6px; line-height: 1.3 }

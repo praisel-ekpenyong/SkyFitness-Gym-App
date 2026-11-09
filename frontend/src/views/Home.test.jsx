@@ -121,9 +121,26 @@ describe('Home hero routine exercise count binding (05)', () => {
     expect(meta.textContent).not.toMatch(/\d+ exercises?/)
   })
 
-  it('shows rest-day copy when no routine is scheduled', async () => {
+  it('opens a brand-new profile on the welcome instead of a rest day', async () => {
     useStore.getState().update(s => {
       s.routines = []
+      s.week = {}
+      s.dayPlan = {}
+      s.workouts = []
+      s.active = null
+      s.bodyweight = []
+    })
+
+    await act(async () => { root.render(<Home />) })
+
+    expect(container.textContent).toContain('Welcome!')
+    expect(container.textContent).toContain('Load starter plan (PPL)')
+    expect(container.querySelector('.home-hero-meta')).toBeNull()
+  })
+
+  it('shows rest-day copy when no routine is scheduled', async () => {
+    useStore.getState().update(s => {
+      s.routines = [routineWithEx(2)]
       s.week = {}
       s.dayPlan = {}
       s.workouts = []

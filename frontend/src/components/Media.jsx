@@ -48,14 +48,12 @@ export default function Media({ ex, id, compact, minimizable }) {
     >
       <img loading="lazy" decoding="async" width={size} height={size} src={currentSrc} onError={handleError} alt={ex.n} />
       {minimizable && (
-        <button className="giftoggle" onClick={toggleSize}>
-          <Icon name={mini ? 'expand' : 'minimize'} />{mini ? t('Expand') : t('Minimize')}
+        <button className="giftoggle" onClick={toggleSize} aria-label={mini ? t('Expand') : t('Minimize')}>
+          <Icon name={mini ? 'expand' : 'minimize'} />
         </button>
       )}
       {!mini && (
-        <span className="gifhint">
-          <Icon name={playing ? 'pause' : 'play'} />{playing ? t('tap to pause') : t('tap to play')}
-        </span>
+        <span className="gifhint" aria-hidden="true"><Icon name={playing ? 'pause' : 'play'} /></span>
       )}
     </div>
   )

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { EXIDX } from '../lib/exercises.js'
-import { fmtNum, fmtVol, fmtDur } from '../lib/format.js'
+import { fmtNum, fmtVol, fmtDur, fmtDate } from '../lib/format.js'
 import { setsDone, workSetsDone, sessionProgress, isPerformed, isWarmupRow, tonnageOf } from '../lib/workout-model.js'
 import { sessionProgressionItems } from '../lib/progression.js'
 import { playWorkoutComplete } from '../lib/sound.js'
@@ -115,14 +115,14 @@ function TopWeight({ entryIdx, close }) {
     toast(t('Tracked — next time starts at {0}', fmtNum((S().exWeights[entry.id] || {}).w ?? n) + ' ' + st.unit))
   }
   return <>
-    <h3 className="capitalize row" style={{ gap: 8 }}><Icon name="checkCircle" style={{ color: 'var(--acc)' }} />{t('{0} done', ex.n)}</h3>
-    <div className="muted small">{t('Confirm the weight you worked with — your highest becomes the default next time.')}{!unitDone && unitSize > 1 ? ' ' + t('Then finish the superset partner.') : ''}</div>
+    <h3>{t('{0} done', ex.n)}</h3>
+    <div className="sheet-sub">{t('Confirm the weight you worked with — your highest becomes the default next time.')}{!unitDone && unitSize > 1 ? ' ' + t('Then finish the superset partner.') : ''}</div>
     <WeightInput value={v} setValue={setV} unit={st.unit} />
-    <div style={{ height: 10 }} />
-    {prevBest > 0 ? <div className="small dim" style={{ textAlign: 'center', marginBottom: 12 }}>{t('Previous best:')} {fmtNum(prevBest)} {st.unit}{maxSet > prevBest && <span style={{ color: 'var(--yellow)' }}> — {t('new record!')}</span>}</div> : <div style={{ height: 4 }} />}
+    <div className="gap8" />
+    {prevBest > 0 ? <div className="small dim cal-sum tw-best">{t('Previous best:')} {fmtNum(prevBest)} {st.unit}{maxSet > prevBest && <span className="tw-new"> — {t('new record!')}</span>}</div> : <div className="gap8" />}
     {unitDone ? <>
       <Button variant="primary" trailingIcon={isLastUnit ? null : 'chevronRight'} onClick={() => commit(true)}>{isLastUnit ? t('Save') : t('Save & next exercise')}</Button>
-      <div style={{ height: 8 }} /><Button variant="ghost" className="dim" onClick={() => commit(false)}>{t('Just close')}</Button>
+      <div className="gap8" /><Button variant="ghost" className="dim" onClick={() => commit(false)}>{t('Just close')}</Button>
     </> : <Button variant="primary" onClick={() => commit(false)}>{t('Save weight')}</Button>}
   </>
 }
@@ -165,10 +165,10 @@ export function ExerciseNoteSheet({ entryIdx, close }) {
       value={val}
       onChange={e => setVal(e.target.value)}
     />
-    <div className="small dim" style={{ textAlign: 'right', marginTop: 4, marginBottom: 14 }}>{val.length}/500</div>
+    <div className="small dim char-count">{val.length}/500</div>
     <Button variant="primary" onClick={save}>{t('Save note')}</Button>
     {entry.notes ? <>
-      <div style={{ height: 8 }} />
+      <div className="gap8" />
       <Button variant="ghost" className="dim" onClick={clear}>{t('Clear note')}</Button>
     </> : null}
   </>
@@ -178,12 +178,11 @@ export const exerciseNoteSheet = entryIdx => ui().openSheet(close => <ExerciseNo
 
 // Shown when the last exercise's last set is checked — finish, or keep going.
 function WorkoutComplete({ close }) {
-  return <div style={{ textAlign: 'center', padding: '8px 0' }}>
-    <div style={{ fontSize: 44, display: 'flex', justifyContent: 'center', color: 'var(--acc)' }}><Icon name="checkCircle" /></div>
-    <h3 style={{ margin: '8px 0' }}>{t("That's the whole workout!")}</h3>
-    <div className="muted small" style={{ marginBottom: 16 }}>{t('Every exercise done — great work. Finish up, or keep going and add another exercise.')}</div>
-    <Button variant="primary" icon="flag" onClick={() => { close(); finishWorkout() }}>{t('Finish workout')}</Button>
-    <div style={{ height: 8 }} />
+  return <div className="confirm">
+    <h3>{t("That's the whole workout!")}</h3>
+    <div className="confirm-msg">{t('Every exercise done — great work. Finish up, or keep going and add another exercise.')}</div>
+    <Button variant="primary" className="go" icon="flag" onClick={() => { close(); finishWorkout() }}>{t('Finish workout')}</Button>
+    <div className="gap8" />
     <Button onClick={() => { close(); useUI.getState().toast(t('Keep going — tap “+ Add exercise” below')) }}>{t('Continue workout')}</Button>
   </div>
 }
@@ -218,98 +217,74 @@ export function FinishSummary({ w, prs, e1prs = [], routineSync = null, close })
     nav('/home')
   }
 
-  return <div style={{ textAlign: 'center', padding: '8px 0' }}>
-    <div style={{ fontSize: 44, display: 'flex', justifyContent: 'center', color: 'var(--acc)' }}><Icon name="trophy" /></div>
-    <h3 style={{ margin: '8px 0' }}>{t('Workout complete!')}</h3>
-    <div className="tiles" style={{ textAlign: 'left' }}>
-      <div className="tile"><div className="l">{t('Duration')}</div><div className="v" style={{ fontSize: '1.1rem' }}>{fmtDur(w.end - w.start)}</div></div>
-      <div className="tile"><div className="l">{t('Volume')}</div><div className="v" style={{ fontSize: '1.1rem' }}>{fmtVol(tonnageOf(w), st.unit)}</div></div>
-      <div className="tile"><div className="l">{t('Sets')}</div><div className="v" style={{ fontSize: '1.1rem' }}>{t('{0} sets · {1} work', setsDone(w), workSetsDone(w))}</div></div>
-      <div className="tile"><div className="l">{t('PRs')}</div><div className="v" style={{ fontSize: 20 }}>{prs.length || '—'}</div></div>
+  return <div className="finish">
+    <h3 className="finish-title">{t('Workout complete!')}</h3>
+    <div className="finish-kicker">{[w.name, fmtDate(w.d, true)].filter(Boolean).join(' · ')}</div>
+    <div className="tiles finish-kpis">
+      <div className="tile"><div className="l">{t('Duration')}</div><div className="v">{fmtDur(w.end - w.start)}</div></div>
+      <div className="tile"><div className="l">{t('Volume')}</div><div className="v">{fmtVol(tonnageOf(w), st.unit)}</div></div>
+      <div className="tile"><div className="l">{t('Sets')}</div><div className="v finish-sets">{t('{0} sets · {1} work', setsDone(w), workSetsDone(w))}</div></div>
+      <div className="tile"><div className="l">{t('PRs')}</div><div className="v">{prs.length || '—'}</div></div>
     </div>
-    {(prs.length > 0 || e1prs.length > 0) && <div style={{ textAlign: 'left', marginBottom: 12 }}>
-      {prs.map(id => <div key={id} className="small accent capitalize row" style={{ gap: 5 }}><Icon name="trophy" style={{ fontSize: 13 }} />{t('New PR:')} {(EXIDX[id] || {}).n || id}</div>)}
-      {e1prs.map(p => <div key={p.id} className="small accent capitalize row" style={{ gap: 5 }}><Icon name="chartLine" style={{ fontSize: 13 }} />{t('Best estimated 1RM:')} {(EXIDX[p.id] || {}).n || p.id} · {fmtNum(p.est)} {st.unit}</div>)}
+    {(prs.length > 0 || e1prs.length > 0) && <div className="finish-records">
+      {prs.map(id => <div key={id} className="accent capitalize row"><Icon name="trophy" />{t('New PR:')} {(EXIDX[id] || {}).n || id}</div>)}
+      {e1prs.map(p => <div key={p.id} className="accent capitalize row"><Icon name="chartLine" />{t('Best estimated 1RM:')} {(EXIDX[p.id] || {}).n || p.id} · {fmtNum(p.est)} {st.unit}</div>)}
     </div>}
     {progressionItems.length > 0 && <>
-      <h4 className="sec" style={{ textAlign: 'left' }}>{t('Progression')}</h4>
+      <h4 className="sec">{t('Progression')}</h4>
       <div
         className="progression-card progression-summary"
         role="list"
         aria-label={t('Progression summary')}
-        style={{ background: 'var(--surface)', borderRadius: 'var(--r-card, 16px)', textAlign: 'left', margin: '0 0 14px', padding: 14 }}
       >
-        {progressionItems.map((item, idx) => (
+        {progressionItems.map(item => (
           <div
             key={item.id}
             className="progression-item"
-            style={{
-              padding: '8px 0',
-              borderTop: idx > 0 ? '1px solid var(--sep)' : 'none',
-            }}
             role="listitem"
             aria-label={item.ariaLabel}
           >
-            <div className="row between" style={{ gap: 8, marginBottom: 4 }}>
-              <span className="capitalize" style={{ fontSize: 15, fontWeight: 600, color: 'var(--label)' }}>
-                {item.exName}
-              </span>
+            <div className="row between pi-head">
+              <span className="capitalize pi-n">{item.exName}</span>
               <span className="tag nocap" aria-label={t('Progression policy: {0}', item.policyName)}>
                 {item.policyName}
               </span>
             </div>
-            <div className="row" style={{ gap: 6, alignItems: 'center' }}>
-              <Icon
-                name={item.iconName}
-                style={{
-                  fontSize: 16,
-                  color: item.isAdvance
-                    ? 'var(--acc)'
-                    : item.kind === 'deload'
-                    ? 'var(--yellow, #e5a50a)'
-                    : 'var(--label-2)',
-                }}
-              />
-              <span
-                style={{
-                  fontSize: 14,
-                  color: item.isAdvance ? 'var(--acc)' : 'var(--label-2)',
-                  fontWeight: item.isAdvance ? 500 : 400,
-                }}
-              >
-                {item.text}
-              </span>
+            <div className={'row pi-body' + (item.isAdvance ? ' up' : item.kind === 'deload' ? ' deload' : '')}>
+              <Icon name={item.iconName} />
+              <span>{item.text}</span>
             </div>
           </div>
         ))}
       </div>
     </>}
-    <h4 className="sec" style={{ textAlign: 'left' }}>{t('What you just trained')}</h4>
-    <BodyMap
-      className="tappable"
-      load={load}
-      body={st.body}
-      selected={selectedMuscle}
-      onMuscle={m => setSelectedMuscle(s => s === m ? null : m)}
-      getA11yLabel={slug => {
-        const val = load[slug]
-        const name = t(MUSCLE_NAME[slug] || slug)
-        if (!val) return `${name}, ${t('not trained')}`
-        const setsText = Number.isInteger(val) ? `${val}.0 effective sets` : `${fmtNum(val)} effective sets`
-        return `${name}, ${setsText}`
-      }}
-    />
-    <div style={{ height: 10 }} />
-    <SessionMuscleDistribution
-      workout={w}
-      selectedMuscle={selectedMuscle}
-      onSelectMuscle={m => setSelectedMuscle(s => s === m ? null : m)}
-    />
-    <div style={{ height: 14 }} />
+    <h4 className="sec">{t('What you just trained')}</h4>
+    <div className="finish-map">
+      <BodyMap
+        className="tappable"
+        load={load}
+        body={st.body}
+        selected={selectedMuscle}
+        onMuscle={m => setSelectedMuscle(s => s === m ? null : m)}
+        getA11yLabel={slug => {
+          const val = load[slug]
+          const name = t(MUSCLE_NAME[slug] || slug)
+          if (!val) return `${name}, ${t('not trained')}`
+          const setsText = Number.isInteger(val) ? `${val}.0 effective sets` : `${fmtNum(val)} effective sets`
+          return `${name}, ${setsText}`
+        }}
+      />
+      <div className="gap12" />
+      <SessionMuscleDistribution
+        workout={w}
+        selectedMuscle={selectedMuscle}
+        onSelectMuscle={m => setSelectedMuscle(s => s === m ? null : m)}
+      />
+    </div>
     {routineSync?.hasDiff && (
-      <div className="card" style={{ textAlign: 'left', margin: '0 0 14px', padding: 14 }}>
-        <div className="row between" style={{ gap: 12 }}>
-          <span style={{ fontSize: 15, fontWeight: 500, color: 'var(--label)' }}>
+      <div className="card sync-card">
+        <div className="row between">
+          <span className="sync-title">
             {t('Update routine “{0}”', routineSync.routineName)}
           </span>
           <Switch
@@ -319,7 +294,7 @@ export function FinishSummary({ w, prs, e1prs = [], routineSync = null, close })
           />
         </div>
         {routineSync.changes?.length > 0 && (
-          <div className="row" style={{ flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
+          <div className="row sync-tags">
             {routineSync.changes.map((ch, idx) => (
               <span key={idx} className="tag nocap">
                 {ch}
@@ -329,7 +304,7 @@ export function FinishSummary({ w, prs, e1prs = [], routineSync = null, close })
         )}
       </div>
     )}
-    <Button variant="primary" onClick={onDismiss}>{t('Nice!')}</Button>
+    <div className="finish-cta"><Button variant="primary" onClick={onDismiss}>{t('Nice!')}</Button></div>
   </div>
 }
 /** Finishes the workout, confirming first when work sets remain unchecked. */
@@ -355,5 +330,5 @@ function doFinishWorkout() {
   const { workout: w, prs, e1prs, routineSync } = result
   useUI.getState().stopRest()
   playWorkoutComplete(snd())
-  ui().openSheet(close => <FinishSummary w={w} prs={prs} e1prs={e1prs} routineSync={routineSync} close={close} />, { kind: 'center', locked: true })
+  ui().openSheet(close => <FinishSummary w={w} prs={prs} e1prs={e1prs} routineSync={routineSync} close={close} />, { kind: 'full', locked: true })
 }

@@ -2,6 +2,26 @@
 
 ## Unreleased
 
+The whole interface is rebuilt from scratch as a high-end training app, around the number you read
+from the bench. Nothing about your data, the training logic or the features changed: routines,
+progression, records and backups all read exactly as they did.
+
+### The new interface
+
+- 🏋️ **The set in front of you is a console.** One huge figure over two big keys and one Log key, with every other set folded to a single line. The first set is on the first screen now, not below a full-height animation.
+- 🟢 **Your bar, drawn.** Barbell lifts show the plates for the set you are on, in competition colours and in words: "20 kg bar + 25 + 15 per side". A load no plates can make is stated, never rounded.
+- ⏱️ **A rest clock you can read from the bench.** The largest thing on the phone while it runs, docked above the Log key, which now stays in view as you work down the sets.
+- 🎯 **Focus mode.** A running workout takes the whole phone; the tab bar steps aside and a chevron minimizes it.
+- 🩻 **X-ray exercise art.** The white plates become anatomical figures on black, with the target muscle still red.
+- 📅 **Home leads with today.** The routine set poster-size beside the muscles it hits; a rest day shows what is still recovering; a new profile opens on the welcome.
+- 🖥️ **Desktop gets a real layout.** A labelled sidebar and two-column screens, from the same code.
+- 🔤 **One typeface.** Archivo, bundled with the app so it works offline and phones nowhere. New profiles start in the dark theme; a saved theme is kept, and the light theme was rebuilt too.
+
+### Offline
+
+- 📴 **Offline actually works.** A race in the service worker meant scripts and styles were never cached, so an offline reload opened a blank page. They are cached now, with a regression test.
+- 🏟️ **Every screen is ready before you lose signal.** Screens are fetched on idle after the first paint, so a workout can start at a gym with no reception. It also makes tab switches instant.
+
 Sky learns your name — optionally, and going no further than the device in your hand. Home greets
 you with "Hi, {name}" instead of the app title, a small profile pill sits beside the settings gear
 to show or change it in one tap, and Settings gains a Profile section for the same thing. The name
