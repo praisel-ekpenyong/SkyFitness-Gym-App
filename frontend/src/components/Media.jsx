@@ -46,7 +46,7 @@ export default function Media({ ex, id, compact, minimizable }) {
       onClick={() => setPlaying(p => !p)}
       onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setPlaying(p => !p) } }}
     >
-      <img loading="lazy" decoding="async" width={size} height={size} src={currentSrc} onError={handleError} alt={ex.n} />
+      <img loading="lazy" decoding="async" crossOrigin="anonymous" width={size} height={size} src={currentSrc} onError={handleError} alt={ex.n} />
       {minimizable && (
         <button className="giftoggle" onClick={toggleSize} aria-label={mini ? t('Expand') : t('Minimize')}>
           <Icon name={mini ? 'expand' : 'minimize'} />
@@ -78,6 +78,7 @@ export function Thumb({ ex }) {
   return (
     <img
       className="thumb"
+      crossOrigin="anonymous"
       loading="lazy"
       decoding="async"
       width={50}
