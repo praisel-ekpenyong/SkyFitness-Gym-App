@@ -67,7 +67,7 @@
 .exercise-session-date { font-size: 13px; color: var(--label-2); min-width: 82px; flex: none; padding-top: 1px }
 .exercise-session-sets { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 3px 10px }
 .set-pill { font-size: 15px; font-stretch: var(--semi); font-weight: 500; color: var(--label) }
-.set-pill.top { color: var(--acc-text); font-weight: 700 }
+.set-pill.top { color: var(--goal-text); font-weight: 700 }   /* a set at the exercise's best is a record */
 .mrow .bar i.quiet { background: var(--label-4) }
 
 .effort-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--sep); border-radius: var(--r-2); overflow: hidden; margin: 12px 0 8px }
@@ -102,7 +102,7 @@
 .ex-tile .ss .tag { display: table; margin-top: 4px; font-size: 11px; padding: 2px 5px; white-space: normal }
 .ex-foot { display: flex; align-items: center; justify-content: space-between; padding: 0 2px 0 10px; min-height: var(--tap-target) }
 .ex-foot .btn { color: var(--label); padding-inline: 8px; font-size: 13px }
-.ex-best-v { font-size: 18px; font-stretch: var(--narrow); font-weight: 700; color: var(--acc-text) }
+.ex-best-v { font-size: 18px; font-stretch: var(--narrow); font-weight: 700; color: var(--goal-text) }   /* a best is a record, never the accent */
 .ex-best-v .u { font-size: 11px }
 .ex-star { position: absolute; top: 0; right: 0; font-size: 18px; background: none; color: var(--label-3) }
 .ex-star.on-ss { color: var(--acc-text) }
