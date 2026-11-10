@@ -40,7 +40,8 @@
 .week-lbl { font-size: 13px; font-weight: 500; color: var(--label-2) }
 .week-reset-btn { min-height: var(--tap-target); font-size: 13px; color: var(--label); padding: 0 8px; font-weight: 500 }
 .week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px }
-.wday { text-align: center; padding: 7px 0 8px; border-radius: 6px; background: var(--surface-2); transition: background var(--fast); min-width: 0 }
+.wday { text-align: center; padding: 7px 0 8px; border-radius: 6px; background: var(--surface-2); transition: background var(--fast); min-width: 0; position: relative }
+.wday::after { content: ''; position: absolute; inset: 0 -1.5px }   /* half of each 3px gap: 44px wide from a 353px screen */
 .wday:active { background: var(--surface-3) }
 .wday .lbl { font-size: 11px; color: var(--label-3); font-weight: 500 }
 .wday .num { font-size: 25px; font-stretch: var(--narrow); font-weight: 700; line-height: 1.1; margin: 1px 0 4px }
