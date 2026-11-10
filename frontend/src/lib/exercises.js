@@ -77,9 +77,8 @@ export function registerCustom(list) {
 export const allExercises = st => [...(st?.customEx || []), ...EXDB.map(e => EXIDX[e.id])]
 
 // Pinned dataset release for media streaming and CDN fallbacks.
-export const PINNED_DATASET_COMMIT = '7455efae41b330c265e7cd4b78dfa848e7ce5ebd'
-export const CDN_IMG_BASE = `https://cdn.jsdelivr.net/gh/hasaneyldrm/exercises-dataset@${PINNED_DATASET_COMMIT}/images/`
-export const CDN_GIF_BASE = `https://cdn.jsdelivr.net/gh/hasaneyldrm/exercises-dataset@${PINNED_DATASET_COMMIT}/videos/`
+import { PINNED_DATASET_COMMIT, CDN_IMG_BASE, CDN_GIF_BASE } from './media-cdn.js'
+export { PINNED_DATASET_COMMIT, CDN_IMG_BASE, CDN_GIF_BASE }
 
 // Sky does not commit 140 MB of media to git; relative defaults serve local assets bundled
 // via `npm run media:fetch`, while CDN fallbacks keep fresh clones and missing assets functional.

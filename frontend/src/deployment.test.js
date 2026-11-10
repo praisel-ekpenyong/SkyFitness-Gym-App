@@ -60,7 +60,7 @@ describe('Cloudflare Pages deployment configuration', () => {
     // come from the pinned exercise-dataset CDN (see PINNED_DATASET_COMMIT in
     // src/lib/exercises.js). Opt-in analytics hosts are appended here, never inline.
     expect(parsed['/*']?.['Content-Security-Policy']).toBe(
-      "default-src 'self'; img-src 'self' https://cdn.jsdelivr.net; media-src 'self' https://cdn.jsdelivr.net"
+      "default-src 'self'; img-src 'self' https://cdn.jsdelivr.net; media-src 'self' https://cdn.jsdelivr.net; connect-src 'self' https://cdn.jsdelivr.net"
     )
     // Canonical twin lives in netlify.toml — edits land in both places.
     expect(content).toContain('netlify.toml')
@@ -132,7 +132,7 @@ describe('Netlify deployment configuration', () => {
     expect(content).toContain('X-Content-Type-Options = "nosniff"')
     expect(content).toContain('X-Frame-Options = "DENY"')
     expect(content).toContain(
-      `Content-Security-Policy = "default-src 'self'; img-src 'self' https://cdn.jsdelivr.net; media-src 'self' https://cdn.jsdelivr.net"`
+      `Content-Security-Policy = "default-src 'self'; img-src 'self' https://cdn.jsdelivr.net; media-src 'self' https://cdn.jsdelivr.net; connect-src 'self' https://cdn.jsdelivr.net"`
     )
     // Canonical twin lives in frontend/public/_headers — edits land in both places.
     expect(content).toContain('frontend/public/_headers')
