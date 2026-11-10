@@ -5,7 +5,7 @@ import path from 'node:path'
 // The deploy CSP is `default-src 'self'` with no 'unsafe-inline'. A script from another origin, or
 // an inline one, would be blocked in production without a sound, so it must never be committed.
 // On 2026-11-09 a design tool's live mode injected exactly such a line into this file.
-const LIVE_MODE_URL = 'http://localhost:8400/live.js?token=b8b975d9-043e-4400-a2f6-9f506c89f4e6'
+const LIVE_MODE_URL = 'http://localhost:8400/live.js?token=00000000-0000-0000-0000-000000000000'
 
 // Links that name a page rather than load a resource; any origin is fine for these.
 const NOT_FETCHED = new Set(['canonical', 'alternate', 'author', 'license', 'me'])
