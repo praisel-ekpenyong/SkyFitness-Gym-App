@@ -8,7 +8,7 @@ const cfg = config(flags), base = cfg.base
 const seed = flags.seed ? JSON.parse(readFileSync(flags.seed,'utf8')) : buildSeed({ today: cfg.today })
 const b = await launch(flags)
 const routes=['/home','/plan','/plan/r/push','/stats','/history','/library','/settings','/workout']
-const VPS={phone:[390,844],small:[320,568],tablet:[768,1024],desktop:[1440,900]}
+const VPS={phone:[390,844],small:[360,640],tablet:[768,1024],desktop:[1440,900]}
 const audit=()=>{
   const lum=c=>{const a=c.map(v=>{v/=255;return v<=.03928?v/12.92:((v+.055)/1.055)**2.4});return .2126*a[0]+.7152*a[1]+.0722*a[2]}
   const parse=s=>{ const c=document.createElement('canvas').getContext('2d'); c.fillStyle='#000'; c.fillStyle=s; const f=c.fillStyle; if(f.startsWith('#')){const n=parseInt(f.slice(1),16);return[n>>16,(n>>8)&255,n&255,1]} const m=f.match(/[\d.]+/g).map(Number);return[m[0],m[1],m[2],m[3]??1] }
