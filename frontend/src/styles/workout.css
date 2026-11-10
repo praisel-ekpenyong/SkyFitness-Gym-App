@@ -20,7 +20,7 @@
 
 /* one segment per exercise, each filling with its own sets */
 .lad { grid-column: 1 / -1; display: flex; gap: 3px; margin: 0 }
-.lad-s { flex: 1 1 0; min-width: 0; height: 40px; display: flex; align-items: center }
+.lad-s { flex: 1 1 0; min-width: 0; height: var(--tap-target); display: flex; align-items: center }   /* the key is full height; the bar inside stays thin */
 .lad-b { display: block; width: 100%; height: 4px; background: var(--surface-3); border-radius: 1px; overflow: hidden; transition: height var(--fast) }
 .lad-b i { display: block; height: 100%; width: 100%; background: var(--data); transform-origin: left; transition: transform var(--med) var(--ease) }
 .lad-s.on .lad-b { height: 8px; background: var(--label-4) }
@@ -78,6 +78,9 @@
   height: var(--tap-target); display: flex; align-items: center; justify-content: flex-start; color: var(--label-2);
   font-size: 20px; font-stretch: var(--narrow); font-weight: 700;
 }
+/* a folded row draws a 30px number; its target reaches into the row's padding and the gap, short of the weight field */
+.setrow:not(.cur) .n { position: relative }
+.setrow:not(.cur) .n::after { content: ''; position: absolute; inset: 0 -6px 0 -8px }
 .setrow .n b { font-weight: 700 }
 .setrow .n-l { display: none }
 .setrow .stp { background: none; overflow: visible; display: block; min-width: 0 }
@@ -85,8 +88,14 @@
 .setrow .stp .val { justify-content: flex-start; gap: 4px; align-items: baseline }
 /* figures stay tabular and right-aligned in a fixed column, so a ladder scans straight down */
 .setrow .stp .num { width: 2.3em; height: var(--tap-target); text-align: right; font-size: 24px; font-stretch: var(--narrow); font-weight: 700; flex: none }
-.setrow .stp.r .num { width: 1.5em }
-.setrow .stp.eff .num { width: 1.5em }
+/* a short figure is 1.5em wide; an input cannot carry a ::after, so its box reaches left into the column gap
+   to make 44px while its right edge, and the figure, stay put */
+.setrow:not(.cur) .stp.r .num, .setrow:not(.cur) .stp.eff .num { width: var(--tap-target); margin-left: calc(1.5em - var(--tap-target)) }
+/* except on screens under 360px, where a warm-up row with an effort column has no gap to spare: its weight field
+   already spills into it */
+@media (max-width: 359px) {
+  .setrow.warm.eff3:not(.cur) .stp.r .num, .setrow.warm.eff3:not(.cur) .stp.eff .num { width: 1.5em; margin-left: 0 }
+}
 .setrow .stp .val i { font-size: 12px; color: var(--label-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0 }
 .setrow .iconbtn { width: var(--tap-target); font-size: 14px }
 .setrow.done .stp .num { color: var(--label-2) }

@@ -98,6 +98,8 @@ take two columns from the same source order.
   `.exnote`, `#timer`) and to accessible names. Restyle freely; rename deliberately.
 - **Every target reaches the thumb.** 44px on anything interactive, by size or by a `::after` hit area
   where the drawing is smaller (`.sw`, `.chip`, `.seg button`).
+- **The narrowest screen is 360px.** Layouts and the 44px rule are held from 360px up (the review
+  harness audits 360x640). Narrower phones still work, but a seven-day week strip cannot give each day 44px there.
 - **Capitalisation is opt-out.** Dataset names arrive lowercase and `.capitalize` lifts them. Never
   capitalise a string with a unit in it: "60 kg", never "60 Kg".
 - **Missing is a dash, zero is a zero.** An empty chart draws its frame; an empty map draws the body.

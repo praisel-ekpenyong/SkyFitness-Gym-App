@@ -8,7 +8,7 @@ const cfg = config(flags), base = cfg.base
 const seed = flags.seed ? JSON.parse(readFileSync(flags.seed,'utf8')) : buildSeed({ today: cfg.today })
 const b = await launch(flags)
 const routes=['/home','/plan','/plan/r/push','/stats','/history','/library','/settings','/workout']
-const VPS={phone:[390,844],small:[320,568],tablet:[768,1024],desktop:[1440,900]}
+const VPS={phone:[390,844],small:[360,640],tablet:[768,1024],desktop:[1440,900]}
 const audit=()=>{
   const lum=c=>{const a=c.map(v=>{v/=255;return v<=.03928?v/12.92:((v+.055)/1.055)**2.4});return .2126*a[0]+.7152*a[1]+.0722*a[2]}
   const parse=s=>{ const c=document.createElement('canvas').getContext('2d'); c.fillStyle='#000'; c.fillStyle=s; const f=c.fillStyle; if(f.startsWith('#')){const n=parseInt(f.slice(1),16);return[n>>16,(n>>8)&255,n&255,1]} const m=f.match(/[\d.]+/g).map(Number);return[m[0],m[1],m[2],m[3]??1] }
@@ -18,7 +18,7 @@ const audit=()=>{
   if(de.scrollWidth>de.clientWidth+1) out.overflow.push(`page ${de.scrollWidth}>${de.clientWidth}`)
   const vis=e=>{const r=e.getBoundingClientRect();const s=getComputedStyle(e);return r.width>0&&r.height>0&&s.visibility!=='hidden'&&s.display!=='none'}
   for(const e of document.querySelectorAll('#app *,#tabbar *')){ if(!vis(e)) continue; const r=e.getBoundingClientRect(); if(r.right>innerWidth+1&&!e.closest('.chips,.hm-wrap')) out.overflow.push((e.className?.baseVal??e.className??e.tagName)+` right=${Math.round(r.right)}`) }
-  for(const e of document.querySelectorAll('button,[role=button],[role=checkbox],[role=radio],[role=switch],input:not([hidden]),textarea')){ if(!vis(e)||e.closest('.bodymap,.hm-grid')) continue; const r=e.getBoundingClientRect(); const a=getComputedStyle(e,'::after'); const hit=a.content!=='none'&&a.position==='absolute'?{w:parseFloat(a.width)||0,h:parseFloat(a.height)||0}:{w:0,h:0}; const hh=Math.max(r.height,hit.h), hw=Math.max(r.width,hit.w); if(hh<40||hw<30) out.tap.push(`${e.getAttribute('aria-label')||e.textContent.trim().slice(0,24)||e.className} ${Math.round(r.width)}x${Math.round(r.height)} (hit ${Math.round(hw)}x${Math.round(hh)})`) }
+  for(const e of document.querySelectorAll('button,[role=button],[role=checkbox],[role=radio],[role=switch],input:not([hidden]),textarea')){ if(!vis(e)||e.closest('.bodymap,.hm-grid')) continue; const r=e.getBoundingClientRect(); const a=getComputedStyle(e,'::after'); const hit=a.content!=='none'&&a.position==='absolute'?{w:parseFloat(a.width)||0,h:parseFloat(a.height)||0}:{w:0,h:0}; const hh=Math.max(r.height,hit.h), hw=Math.max(r.width,hit.w); if(hh<44||hw<44) out.tap.push(`${e.getAttribute('aria-label')||e.textContent.trim().slice(0,24)||e.className} ${Math.round(r.width)}x${Math.round(r.height)} (hit ${Math.round(hw)}x${Math.round(hh)})`) }
   const w=document.createTreeWalker(document.getElementById('root'),NodeFilter.SHOW_TEXT)
   while(w.nextNode()){ const t=w.currentNode; if(!t.textContent.trim()) continue; const e=t.parentElement; if(!vis(e)||e.closest('svg')) continue; const s=getComputedStyle(e); if(parseFloat(s.opacity)<1) continue; let dis=e.closest('button:disabled,[disabled]'); if(dis) continue
     const fg=parse(s.color),bg=bgOf(e); const mix=fg.slice(0,3).map((v,i)=>v*fg[3]+bg[i]*(1-fg[3])); const L1=lum(mix),L2=lum(bg); const cr=(Math.max(L1,L2)+.05)/(Math.min(L1,L2)+.05); const px=parseFloat(s.fontSize); const need=(px>=24||(px>=18.66&&+s.fontWeight>=700))?3:4.5

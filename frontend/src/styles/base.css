@@ -6,7 +6,7 @@ html {
 }
 html:has(body.resting) { scroll-padding-bottom: var(--timer-clearance) }
 /* in focus mode the sticky header sits on top and the tab bar is gone */
-html:has(body.focus-session) { scroll-padding-top: calc(var(--sat) + 92px); scroll-padding-bottom: calc(var(--sab) + 16px) }
+html:has(body.focus-session) { scroll-padding-top: calc(var(--sat) + 96px); scroll-padding-bottom: calc(var(--sab) + 16px) }
 html:has(body.focus-session.resting) { scroll-padding-bottom: calc(var(--sab) + 112px) }
 body {
   background: var(--bg); color: var(--label);

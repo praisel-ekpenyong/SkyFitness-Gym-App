@@ -54,7 +54,7 @@
 .helpbtn {
   color: var(--label-3); font-size: 17px; background: none; line-height: 0; flex: none;
   min-width: var(--tap-target); min-height: var(--tap-target); display: inline-flex;
-  align-items: center; justify-content: center; margin: -8px -4px -8px -8px;
+  align-items: center; justify-content: center; margin: -8px -4px -8px -12px;   /* the left margin only gives a wrapping title room */
 }
 .helpbtn:active { color: var(--label) }
 
@@ -66,7 +66,7 @@
 }
 .chips::-webkit-scrollbar { display: none }
 .chip {
-  flex: none; min-height: 36px; padding: 6px 12px; border-radius: 6px; background: var(--surface-2);
+  flex: none; min-height: 36px; min-width: var(--tap-target); padding: 6px 12px; border-radius: 6px; background: var(--surface-2);
   font-size: 14px; color: var(--label); text-transform: capitalize; position: relative;
   transition: background var(--fast), color var(--fast);
 }
@@ -138,7 +138,8 @@
 .seg button::after { content: ''; position: absolute; inset: -3px 0 }   /* the track's padding is part of the target */
 .seg button .icn { font-size: 15px }
 .seg button:not(.on) { color: var(--label-2); font-weight: 400 }
-.seg-inline { flex: none; min-width: 124px }
+/* every key at least 44px wide: the keys touch, so the width cannot come from a ::after */
+.seg-inline { flex: none; min-width: max(124px, calc(var(--n) * var(--tap-target) + 6px)) }
 .seg-range { margin-bottom: 12px }
 .seg-inline button { padding: 5px 10px; font-size: 13px }
 
