@@ -62,6 +62,16 @@ describe('Sky Service Worker (sw.js)', () => {
     expect(fakeCaches.delete).not.toHaveBeenCalledWith('sky-rt-v1')
   })
 
+  it('keeps the exercise art cache across a worker update, so art seen once stays offline', async () => {
+    loadServiceWorker()
+    fakeCaches.keys = vi.fn(async () => ['old-cache', 'sky-rt-v1', 'sky-media-v1'])
+    let wait
+    listeners['activate']({ waitUntil: p => { wait = p } })
+    await wait
+    expect(fakeCaches.delete).toHaveBeenCalledWith('old-cache')
+    expect(fakeCaches.delete).not.toHaveBeenCalledWith('sky-media-v1')
+  })
+
   it('precaches the app shell on install so the first offline visit opens', async () => {
     loadServiceWorker()
 
@@ -98,7 +108,7 @@ describe('Sky Service Worker (sw.js)', () => {
   })
 
   describe('exercise media routing', () => {
-    const res = body => ({ ok: true, body, clone() { return this } })
+    const res = body => ({ ok: true, body, headers: new Headers({ 'content-type': 'image/gif' }), clone() { return this } })
     const hit = async url => {
       let responded
       listeners['fetch']({
@@ -142,6 +152,34 @@ describe('Sky Service Worker (sw.js)', () => {
       const cdnUrl = 'https://cdn.jsdelivr.net/gh/exercises-dataset@abc/images/0027.jpg'
       const { responded } = await hit(cdnUrl)
       expect(responded).toBeUndefined()
+    })
+
+    const PINNED = 'https://cdn.jsdelivr.net/gh/hasaneyldrm/exercises-dataset@7455efae41b330c265e7cd4b78dfa848e7ce5ebd'
+
+    it('caches pinned CDN exercise art on first sight and serves it offline', async () => {
+      loadServiceWorker()
+      const url = PINNED + '/videos/0025.gif'
+      const fresh = { ok: true, status: 200, headers: new Headers({ 'content-type': 'image/gif' }), clone() { return this } }
+      globalThis.fetch = vi.fn(() => Promise.resolve(fresh))
+      expect((await hit(url)).result).toBe(fresh)
+      expect(fakeCaches.open).toHaveBeenCalledWith('sky-media-v1')
+
+      globalThis.fetch = vi.fn(() => Promise.reject(new TypeError('offline')))
+      expect((await hit(url)).result).toBe(fresh)
+      expect(globalThis.fetch).not.toHaveBeenCalled()
+    })
+
+    it('answers uncached CDN art offline with a 503 the page can fall back from', async () => {
+      loadServiceWorker()
+      expect((await hit(PINNED + '/images/9999.jpg')).result.status).toBe(503)
+    })
+
+    it('does not cache the app page that a missing local media file falls back to', async () => {
+      loadServiceWorker()
+      const page = { ok: true, status: 200, headers: new Headers({ 'content-type': 'text/html' }), clone() { return this } }
+      globalThis.fetch = vi.fn(() => Promise.resolve(page))
+      await hit('https://sky.app/media/images/0027.jpg')
+      expect(cacheStore['https://sky.app/media/images/0027.jpg']).toBeUndefined()
     })
 
     it('resolves a graceful fallback for uncached media offline instead of breaking the fetch', async () => {
