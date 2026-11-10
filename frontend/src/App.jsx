@@ -3,7 +3,7 @@ import { HashRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'r
 import { useStore } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
 import { bindUI } from './components/ui.jsx'
-import { ACCENTS } from './lib/format.js'
+import { ACCENTS, todayISO } from './lib/format.js'
 import { setLang, t, useLang } from './lib/i18n.js'
 import { setNav } from './lib/nav.js'
 import { initBackButton } from './lib/back.js'
@@ -66,6 +66,16 @@ function Shell() {
     document.body.classList.toggle('active-session', !!S.active)
     return () => document.body.classList.remove('active-session')
   }, [!!S.active])
+  // Once the profile is loaded and the phone is idle, fetch the art for the workout in progress and
+  // the coming week's sessions, so a workout started where the signal drops still has its pictures.
+  useEffect(() => {
+    if (!ready) return
+    const go = () => import('./lib/media-warm.js')
+      .then(m => m.warmArt(m.exercisesToWarm(useStore.getState().S, todayISO())))
+      .catch(() => {})
+    const h = window.requestIdleCallback ? window.requestIdleCallback(go, { timeout: 5000 }) : setTimeout(go, 3000)
+    return () => (window.cancelIdleCallback ? window.cancelIdleCallback(h) : clearTimeout(h))
+  }, [ready])
   // Focus mode: while a workout is on screen the phone's tab bar steps aside and the set owns
   // the display. The workout header's minimize button is the way back to the rest of the app.
   const focused = !!S.active && loc.pathname === '/workout'
