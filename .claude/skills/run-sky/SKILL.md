@@ -18,6 +18,7 @@ Tools live in `frontend/scripts/review/`. Run everything from `frontend/`. No ne
 | Service worker and offline routes | `npm run review:offline` |
 | Visible window on a dev server | `npm run review:open -- --base=http://localhost:5173/` (needs a display) |
 | Side-by-side sheet | `python3 scripts/review/sheet.py out.png a.png b.png` (Pillow) |
+| Before/after pairs from two shot folders (JPEG per name + `pairs.json`; Pillow) | `npm run review:compare -- --before=<dir> --after=<dir> --out=<dir> [--only=a,b] [--labels=Before,After]` |
 
 Output goes to `frontend/.tmp/review/` (gitignored).
 
