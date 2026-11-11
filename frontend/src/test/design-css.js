@@ -78,21 +78,46 @@ function propsOf(rules, selector) {
   return props
 }
 
+const SCOPE_PART = /^(?:\[data-theme="light"\]|:not\(\[data-theme="light"\]\)|\[data-accent="([\w-]+)"\])/
+
 /**
- * The token sheet as the browser sees it on :root: the dark base, the light overrides and one
- * `--acc` per `data-accent`. `vars(theme, accent)` merges them in cascade order.
+ * Reads a token selector: `:root` plus any of `[data-theme="light"]`, `:not([data-theme="light"])`
+ * and `[data-accent="x"]`. Returns which theme and accent it applies to and its specificity.
+ * Throws on anything else, so a token rule the guard cannot place fails loudly instead of
+ * being skipped.
+ */
+function rootScope(selector) {
+  if (!selector.startsWith(':root')) throw new Error(`tokens.css: the design guard cannot read the selector "${selector}"`)
+  const scope = { theme: null, accent: null, spec: 1 }
+  let rest = selector.slice(':root'.length)
+  while (rest) {
+    const m = SCOPE_PART.exec(rest)
+    if (!m) throw new Error(`tokens.css: the design guard cannot read the selector "${selector}"`)
+    if (m[1]) scope.accent = m[1]
+    else scope.theme = m[0].startsWith(':not') ? 'dark' : 'light'
+    scope.spec++
+    rest = rest.slice(m[0].length)
+  }
+  return scope
+}
+
+/**
+ * The token sheet as the browser sees it on :root. `vars(theme, accent)` applies every rule
+ * whose scope matches, by specificity and then source order: the dark base, the light
+ * overrides, one `--acc` per `data-accent`, and any theme-and-accent override.
  */
 export function readTokens() {
   const css = readFileSync(resolve(STYLES_DIR, 'tokens.css'), 'utf8')
   const rules = cssRules(css)
+  const scoped = rules.filter(r => !r.media).map((r, order) => ({ ...rootScope(r.selector), order, props: propsOf([r], r.selector) }))
   const base = propsOf(rules, ':root')
   const light = propsOf(rules, ':root[data-theme="light"]')
   const accents = {}
-  for (const r of rules) {
-    const m = /^:root\[data-accent="([\w-]+)"\]$/.exec(r.selector)
-    if (m) accents[m[1]] = propsOf(rules, r.selector)['--acc']
-  }
-  const vars = (theme, accent) => ({ ...base, ...(theme === 'light' ? light : {}), ...(accent ? { '--acc': accents[accent] } : {}) })
+  for (const s of scoped) if (s.accent && !s.theme && s.props['--acc']) accents[s.accent] = s.props['--acc']
+  const vars = (theme, accent) => Object.assign({}, ...scoped
+    .filter(s => (!s.theme || s.theme === (theme === 'light' ? 'light' : 'dark')) && (!s.accent || s.accent === accent))
+    .sort((a, b) => a.spec - b.spec || a.order - b.order)
+    .map(s => s.props))
   return { css, rules, base, light, accents, vars }
 }
 
