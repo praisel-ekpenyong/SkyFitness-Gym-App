@@ -478,7 +478,7 @@ export function ExConfig({ ex, existing, onSave, onDelete, close, routine, initi
     <h3>{ex.n}</h3>
     <Media ex={ex} />
     <div className="row detail-tags">
-      {cardio && <span className="tag acc">{t('Cardio')}</span>}
+      {cardio && <span className="tag">{t('Cardio')}</span>}
       <span className="tag">{t(ex.tg || ex.bp)}</span><span className="tag">{t(ex.eq)}</span>
     </div>
     {ex.desc && <div className="exnote">{ex.desc}</div>}

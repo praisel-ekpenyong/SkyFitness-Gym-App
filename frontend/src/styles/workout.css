@@ -40,7 +40,7 @@
 .exhead .exmedia.mini img { height: 76px }
 .exhead .exmedia.mini .giftoggle { width: 40px; height: 40px; left: 0; bottom: 0; font-size: var(--fs-meta) }
 .extags .tag { background: none; padding: 0; font-size: var(--fs-meta); font-weight: 400; white-space: normal }
-.extags .tag.ex-best { color: var(--label) }
+.extags .tag.ex-best { color: var(--goal-text) }   /* a best is a record */
 /* The exercise's tools are keys (an icon and a word), under the name and the art; the manual Rest
    key closes the row on the right. */
 .extools { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px }
@@ -60,8 +60,7 @@
 .compact .exhead .exmedia .gifhint { display: none }
 
 .ex-last { margin: 0 0 4px; line-height: 1.35 }
-.progline { display: flex; align-items: flex-start; gap: 7px; margin: 0 0 8px; font-size: var(--fs-meta); line-height: 1.35; color: var(--acc-text) }
-.progline.warn { color: var(--goal-text) }
+.progline { display: flex; align-items: flex-start; gap: 7px; margin: 0 0 8px; font-size: var(--fs-meta); line-height: 1.35; color: var(--label-2) }   /* a prescription, not work: neutral */
 .progline .icn { flex: none; margin-top: 2px; font-size: var(--fs-small); --icon-stroke: 2 }
 .exblock .exnote { display: flex; align-items: flex-start; gap: 8px; margin: 2px 0 10px; cursor: pointer; padding: 10px 12px }
 .exblock .exnote .icn { margin-top: 2px; color: var(--label-3); flex: none }
@@ -112,8 +111,8 @@
 .setrow .chk { justify-self: end }
 .milestone-badge {
   grid-column: 2 / -1; justify-self: start; margin: -4px 0 6px;
-  display: inline-flex; align-items: center; gap: 3px; color: var(--goal-text);
-  background: color-mix(in srgb, var(--yellow) 16%, transparent); border-radius: var(--r-1);
+  display: inline-flex; align-items: center; gap: 3px; color: var(--label-2);
+  background: var(--surface-3); border-radius: var(--r-1);
   padding: 2px 6px; font-size: var(--fs-meta); font-weight: 600; line-height: 1.25;
 }
 .setgo {
@@ -167,14 +166,14 @@
 
 /* ---------------------------------------------------------------- superset -- */
 .ss-card { background: none }
-.ss-hd { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: var(--fs-meta); font-weight: 600; color: var(--acc-text); margin-bottom: 10px; line-height: 1.3 }
+.ss-hd { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: var(--fs-meta); font-weight: 600; color: var(--label-2); margin-bottom: 10px; line-height: 1.3 }
 .ss-hd .row { gap: 6px; align-items: flex-start }
 .ss-hd .btn { color: var(--label-2); flex: none }
 .ss-ex { position: relative }
-.ss-amp { display: flex; justify-content: center; color: var(--acc-text); margin: 10px 0; font-size: var(--fs-lead); --icon-stroke: 2.2 }
-.ss-label { font-size: var(--fs-meta); font-weight: 600; color: var(--acc-text); margin: 8px 0 4px 2px; display: flex; align-items: center; gap: 5px }
+.ss-amp { display: flex; justify-content: center; color: var(--label-3); margin: 10px 0; font-size: var(--fs-lead); --icon-stroke: 2.2 }
+.ss-label { font-size: var(--fs-meta); font-weight: 600; color: var(--label-2); margin: 8px 0 4px 2px; display: flex; align-items: center; gap: 5px }
 .ss-label .icn { font-size: var(--fs-meta) }
-.item.in-ss { box-shadow: inset 3px 0 0 var(--data) }
+.item.in-ss { box-shadow: inset 3px 0 0 var(--label-3) }
 
 /* ------------------------------------------------------------ session tools -- */
 .wk-nav { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 14px 0 6px }
