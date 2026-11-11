@@ -18,29 +18,14 @@ body.focus-session.resting #app { padding-bottom: calc(var(--sab) + 140px) }
 /* ------------------------------------------------------------ screen title -- */
 .hdr { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin: 4px 0 16px }
 .hdr > div:first-child { min-width: 0 }
+/* A tab's title names a screen the tab bar already names: one step, 34px on a phone, 44px on desktop. */
 .hdr h1 {
-  font-size: var(--fs-display); font-stretch: var(--narrow); font-weight: 800; text-transform: uppercase;
+  font-size: var(--fs-title); font-stretch: var(--narrow); font-weight: 800; text-transform: uppercase;
   line-height: .94; letter-spacing: .002em;
 }
 .hdr .sub { color: var(--label-2); font-size: var(--fs-small); margin-top: 6px }
 .hdr-back { align-items: center; justify-content: flex-start }
-.hdr-back h1 { font-size: var(--fs-title) }
 .hdr-back > div:first-child { min-width: auto }
-
-.profile-pill {
-  display: inline-flex; align-items: center; gap: 8px; height: var(--tap-target);
-  background: var(--surface-2); color: var(--label); border-radius: var(--r-2);
-  padding: 0 10px 0 6px; font-size: var(--fs-small); font-weight: 600; flex: none; max-width: 150px;
-  transition: background var(--fast);
-}
-.profile-pill:active { background: var(--surface-3) }
-.profile-pill-avatar {
-  width: 30px; height: 30px; border-radius: 6px; flex: none; background: var(--surface-3); color: var(--label);
-  display: flex; align-items: center; justify-content: center;
-  font-size: var(--fs-lead); font-weight: 800; font-stretch: var(--narrow);
-}
-.profile-pill-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 80px }
-.profile-pill--empty { padding: 0 12px; color: var(--label-2); gap: 7px }
 
 /* ------------------------------------------------------------- navigation -- */
 #tabbar {
@@ -61,17 +46,9 @@ body.focus-session #tabbar { display: none }
 #tabbar button.on .icn { --icon-stroke: 2 }
 #tabbar .tb-brand, #tabbar .tb-desk { display: none }
 
-/* the middle slot is the one key: it starts the work */
-#tabbar button.start { color: var(--label); gap: 3px }
-#tabbar button.start .cir {
-  width: 52px; height: 32px; border-radius: 6px; background: var(--ink); color: var(--on-ink);
-  display: flex; align-items: center; justify-content: center; position: relative;
-  transition: transform var(--fast) var(--ease), background var(--fast);
-}
-#tabbar button.start:active .cir { transform: scale(.94) }
-#tabbar button.start .cir .icn { font-size: var(--fs-figure); --icon-stroke: 2 }
-#tabbar button.start span:last-child { font-weight: 600 }
-#tabbar button.start.rec .cir { background: var(--orange); color: var(--on-orange) }
+/* Start is a tab like the others (nav stays neutral); only a running workout colours it */
+#tabbar button.start.rec { color: var(--orange-text) }
+#tabbar button.start.rec .icn { --icon-stroke: 2 }
 
 /* ---------------------------------------------------------------- rest dock -- */
 #timer {
@@ -192,13 +169,6 @@ body.resting #toast { bottom: calc(var(--tabbar-h) + var(--sab) + 110px) }
   #tabbar button.on { color: var(--label); background: var(--surface-2); font-weight: 600 }
   #tabbar button.via { color: var(--label-2); background: none; font-weight: 400 }
   #tabbar button .icn { font-size: var(--fs-lead) }
-  #tabbar button.start { order: -1; margin: 0 0 16px; min-height: 48px; background: var(--ink); color: var(--on-ink); justify-content: center; gap: 8px }
-  #tabbar button.start:hover { opacity: .9 }
-  #tabbar button.start .cir { width: auto; height: auto; background: none; color: inherit }
-  #tabbar button.start span:last-child { font-stretch: var(--narrow); font-weight: 800; font-size: var(--fs-figure); text-transform: uppercase }
-  #tabbar button.start.rec, #tabbar button.start.rec:hover { background: var(--orange); color: var(--on-orange) }
-  #tabbar button.start.rec .cir { background: none; color: inherit }
-  #tabbar .tb-brand { order: -2 }
   #tabbar .tb-desk { margin-top: auto }
 
   .sheet {
@@ -223,7 +193,7 @@ body.resting #toast { bottom: calc(var(--tabbar-h) + var(--sab) + 110px) }
 
 /* A pointer gets the feedback a thumb gets from :active, and a step of lightness is all it takes. */
 @media (hover: hover) and (pointer: fine) {
-  .btn.plain:hover, .btn.tinted:hover, .iconbtn:hover, .chip:not(.on):hover, .stp button:hover, .bw-pm:hover, .profile-pill:hover { background: var(--surface-3) }
+  .btn.plain:hover, .btn.tinted:hover, .iconbtn:hover, .chip:not(.on):hover, .stp button:hover, .bw-pm:hover { background: var(--surface-3) }
   .btn.ghost:hover, .iconbtn.bare:hover { background: var(--surface-2) }
   .item:hover, .wk-row:hover, .rt-card:hover, .lrow.tap:hover, .tile.tappable:hover, .card.tappable:hover, .cal-d:not(.has):hover, .wday:not(.today):hover { background: var(--surface-2) }
   .setrow.cur .stp > button:hover { background: var(--label-4) }

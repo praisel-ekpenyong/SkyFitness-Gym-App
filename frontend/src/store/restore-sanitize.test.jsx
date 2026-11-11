@@ -163,9 +163,10 @@ describe('stale Day override falls back without badge', () => {
     await act(async () => { root.render(React.createElement(Home)) })
     // Falls back to the week schedule …
     expect(container.textContent).toContain('Push')
-    // … with no Rescheduled badge claiming a reschedule to something deleted.
-    expect(container.textContent).not.toMatch(/Rescheduled/i)
-    expect(container.textContent).toMatch(/Scheduled today/)
+    // … with no Rescheduled badge claiming a reschedule to something deleted. (Read the badge
+    // itself: the page's text runs "Hi there" straight into "Scheduled", which spells "reScheduled".)
+    expect(container.querySelector('.home-badge').textContent).toBe('Scheduled today')
+    expect(container.textContent).not.toMatch(/\bRescheduled/i)
   })
 })
 
