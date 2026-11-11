@@ -15,24 +15,27 @@
   background: var(--surface); border-radius: var(--r-2); text-align: left; transition: background var(--fast);
 }
 .wk-row:active { background: var(--surface-2) }
-.wk-day { font-size: var(--fs-figure); font-stretch: var(--narrow); font-weight: 800; text-transform: uppercase; width: 112px; flex: none; line-height: 1 }
-.wk-name { flex: 1; min-width: 0; font-size: var(--fs-body); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+/* the routine is the heading; the day is its label, and today is marked by weight and the word */
+.wk-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px }
+.wk-name { font-size: var(--fs-body); font-weight: 600; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.wk-day { font-size: var(--fs-meta); color: var(--label-2); line-height: 1.3 }
 .wk-meta-c { font-size: var(--fs-meta); color: var(--label-3); flex: none }
 .wk-row.off .wk-day, .wk-row.off .wk-name { color: var(--label-3); font-weight: 400 }
-.wk-row.off .wk-day { font-weight: 700 }
+.wk-row.today .wk-day { font-weight: 600 }
 .wk-row.today .wk-day { color: var(--acc-text) }
 
 .rt-list { display: flex; flex-direction: column; gap: 3px }
+/* compact: a name, a count and a thumbnail of the map, so three routines fit on one screen */
 .rt-card {
-  display: grid; grid-template-columns: minmax(0, 1fr) 42%; align-items: center; gap: 8px; width: 100%; text-align: left;
-  background: var(--surface); border-radius: var(--r-2); padding: 12px 12px 12px 14px; min-height: 132px; transition: background var(--fast);
+  display: grid; grid-template-columns: minmax(0, 1fr) 30%; align-items: center; gap: 8px; width: 100%; text-align: left;
+  background: var(--surface); border-radius: var(--r-2); padding: 8px 12px 8px 14px; min-height: 76px; transition: background var(--fast);
 }
 .rt-card:active { background: var(--surface-2) }
-.rt-text { display: flex; flex-direction: column; gap: 8px; min-width: 0 }
-.rt-name { font-size: var(--fs-title) }
+.rt-text { display: flex; flex-direction: column; gap: 5px; min-width: 0 }
+.rt-name { font-size: var(--fs-heading) }
 .rt-meta { font-size: var(--fs-meta); color: var(--label-2) }
 .rt-map .bodymap { justify-content: flex-end; pointer-events: none }
-.rt-map .bm-v { max-height: 112px }
+.rt-map .bm-v { max-height: 60px }
 
 /* --------------------------------------------------------- routine editor -- */
 .routine-edit .hdr-back { margin-bottom: 12px; gap: 8px }
@@ -142,13 +145,11 @@
 .cfg-note { margin-bottom: 18px }
 .cfg-note-sm { margin-bottom: 8px }
 
-/* the finish screen: the workout, stated */
+/* the finish screen: the workout, stated. The figures lead; the title is one step below them. */
 .finish-kicker { font-size: var(--fs-small); color: var(--label-2); margin-bottom: 18px }
-.finish-title { font-size: var(--fs-hero); line-height: .88; margin-bottom: 10px; font-stretch: var(--narrow); font-weight: 800; text-transform: uppercase; overflow-wrap: anywhere }
-.fullsheet h3.finish-title { font-size: var(--fs-hero); line-height: .88 }
+.fullsheet h3.finish-title { font-size: var(--fs-display); line-height: .94 }
 .finish-kpis .tile { background: var(--surface) }
-.finish-kpis .tile .v { font-size: var(--fs-display) }
-.finish-kpis .tile .v.finish-sets { font-size: var(--fs-heading); line-height: 40px; white-space: nowrap }
+.finish-kpis .tile .v { font-size: var(--fs-poster) }
 .finish-cta { position: sticky; bottom: 0; background: var(--bg); padding: 10px 0 calc(var(--sab) + 4px); margin-top: 6px }
 .finish-records { margin-bottom: 12px; display: flex; flex-direction: column; gap: 5px }
 .finish-records .row { gap: 6px; font-size: var(--fs-small); align-items: flex-start; line-height: 1.32 }
@@ -171,8 +172,7 @@
 
 /* ----------------------------------------------------------- larger screens -- */
 @media (min-width: 1000px) {
-  .hdr:not(.wk-hdr) h1 { font-size: var(--fs-poster) }
-  .hdr-back:not(.wk-hdr) h1, .home-hdr h1 { font-size: var(--fs-display) }
+  .hdr:not(.wk-hdr) h1 { font-size: var(--fs-display) }
   .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start }
   .cols > * { min-width: 0 }
   .cols > section + section .sec-first { margin-top: 4px }
@@ -184,8 +184,8 @@
   .recent-list { display: grid; grid-template-columns: 1fr 1fr }
   .ex-grid { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)) }
   .wk-row { min-height: 60px }
-  .rt-card { min-height: 148px }
-  .rt-map .bm-v { max-height: 128px }
+  .rt-card { min-height: 84px }
+  .rt-map .bm-v { max-height: 68px }
 }
 
 /* ------------------------------------------------------ small sheet details -- */

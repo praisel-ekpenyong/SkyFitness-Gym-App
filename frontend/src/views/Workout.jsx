@@ -68,7 +68,9 @@ function Elapsed({ start }) {
 // The set ladder is the whole point of the app, so its layout follows how it is used: the set in
 // front of you is one large console (big figure over two big keys, the bar drawn, one key to log
 // it) and every other set is a single readable line, still typeable, one tap from opening up.
-function ExerciseBlock({ entryIdx, compact, isCurrent = true, arrived = false, onToggle, onField, onAddSet, onRemoveSet, onAddWarmup, onRemoveSetAt, onStartTimed, onReplace }) {
+// `aside` is a key the session hands the first block on the screen (the manual Rest key) to sit at
+// the end of its tools row.
+function ExerciseBlock({ entryIdx, compact, isCurrent = true, arrived = false, aside = null, onToggle, onField, onAddSet, onRemoveSet, onAddWarmup, onRemoveSetAt, onStartTimed, onReplace }) {
   const S = useStore(s => s.S)
   const working = useUI(s => s.work)
   const holding = useUI(s => !!s.work)
@@ -174,15 +176,17 @@ function ExerciseBlock({ entryIdx, compact, isCurrent = true, arrived = false, o
           ex.eq && <span className="tag nocap">{sentenceCase(t(ex.eq))}</span>,
           best > 0 && <span className="tag nocap ex-best">{t('Best')} {fmtNum(best)} {S.unit}</span>,
         ])}</div>
-        <div className="extools">
-          {!entry.notes && (
-            <button className="extool" aria-label={t('Add note')} onClick={() => exerciseNoteSheet(entryIdx)}>{t('Note')}</button>
-          )}
-          <button className="extool" aria-label={t('Replace exercise')} disabled={holding} onClick={() => onReplace(entryIdx)}>{t('Replace')}</button>
-          <button className="extool" aria-label={t('Details')} onClick={() => exerciseDetailSheet(ex)}>{t('Details')}</button>
-        </div>
       </div>
       <Media ex={ex} key={entry.id} compact={compact} minimizable />
+      {/* Keys, not words in the meta line: each one an icon and a word, under the name and the art. */}
+      <div className="extools">
+        {!entry.notes && (
+          <Button size="xs" icon="clipboard" aria-label={t('Add note')} onClick={() => exerciseNoteSheet(entryIdx)}>{t('Note')}</Button>
+        )}
+        <Button size="xs" icon="shuffle" aria-label={t('Replace exercise')} disabled={holding} onClick={() => onReplace(entryIdx)}>{t('Replace')}</Button>
+        <Button size="xs" icon="info" aria-label={t('Details')} onClick={() => exerciseDetailSheet(ex)}>{t('Details')}</Button>
+        {aside}
+      </div>
     </div>
     {last && <div className="small dim ex-last">{t('Last time')} {fmtDate(last.d)} · {last.sets.map(s => setLabel(entry.id, s, last.target)).join(', ')}</div>}
     {plan && plan.why && plan.kind !== 'off' && <div className={'progline' + (plan.kind === 'deload' ? ' warn' : '')}>
@@ -511,13 +515,22 @@ function ActiveWorkout() {
     if (res.rest.start) startRest(S.restSec)
   }
 
+  // A rest can also be started by hand, between sets or exercises, without logging a set that
+  // did not happen. Disabled — never hidden — while either countdown runs, so the key keeps its
+  // place and a tap can never restart or shadow the active timer. Where you are in the session is
+  // the segments' job and the header's count, so the key sits with the first exercise's tools.
+  const restKey = <Button size="xs" icon="timer" className="ex-rest" disabled={resting || holding} onClick={() => startRest(S.restSec)}>
+    {t('Rest {0}', fmtSec(S.restSec))}
+  </Button>
+
   const discard = () => confirmSheet({ title: t('Discard workout?'), message: t('The sets you logged in this session will be lost.'), confirmText: t('Discard'), danger: true, onConfirm: () => { useStore.getState().discardSession(); stopRest(); nav('/home') } })
 
   return <div className="workout">
     <header className="hdr wk-hdr">
       <button className="iconbtn bare wk-min" aria-label={t('Minimize workout')} onClick={() => nav('/home')}><Icon name="chevronDown" /></button>
       <div className="wk-title"><h1>{A.name}</h1><div className="sub"><Elapsed start={A.start} /> · {t('{0} sets', prog.done + '/' + prog.total)}</div></div>
-      <button className="btn sm plain wk-finish" aria-label={t('Finish')} onClick={finishWorkout}>{t('Finish')}</button>
+      {/* The one Finish key. Once every work set is in it is the action left to do, so it takes the colour. */}
+      <button className={'btn sm wk-finish ' + (prog.allDone ? 'go' : 'plain')} aria-label={t('Finish')} onClick={finishWorkout}>{t('Finish')}</button>
       {/* One segment per exercise, filling as its work sets are logged: where you are in the
           session at a glance, and a one-thumb jump to anywhere in it. */}
       {units.length > 0 && <div className="lad" role="group" aria-label={t('Exercises in this workout')}>
@@ -534,15 +547,6 @@ function ActiveWorkout() {
     </header>
 
     {A.entries.length ? <>
-      {/* A rest can also be started by hand, between sets or exercises, without logging a
-          set that did not happen. Disabled — never hidden — while either countdown runs, so
-          the line keeps its place and a tap can never restart or shadow the active timer. */}
-      <div className="wk-meta">
-        <div className="muted small">{isSuperset ? t('Superset {0} / {1}', unitIdx + 1, units.length) : t('Exercise {0} / {1}', unitIdx + 1, units.length)}</div>
-        <Button size="sm" variant="ghost" icon="timer" disabled={resting || holding} onClick={() => startRest(S.restSec)}>
-          {t('Rest {0}', fmtSec(S.restSec))}
-        </Button>
-      </div>
       {isSuperset ? (
         <div className="ss-card">
           <div className="ss-hd">
@@ -551,13 +555,13 @@ function ActiveWorkout() {
           </div>
           {unit.map((idx, k) => <div key={idx} ref={el => { exRefs.current[idx] = el }} className="ss-ex" data-exidx={idx}>
             {k > 0 && <div className="ss-amp"><Icon name="plus" /></div>}
-            <ExerciseBlock entryIdx={idx} compact isCurrent={idx === cur}
+            <ExerciseBlock entryIdx={idx} compact isCurrent={idx === cur} aside={k === 0 ? restKey : null}
               onToggle={i => toggle(idx, i)} onField={(i, f, v) => setField(idx, i, f, v)} onAddSet={() => addSet(idx)} onRemoveSet={() => removeSet(idx)} onAddWarmup={() => addWarmup(idx)} onRemoveSetAt={i => removeSetAt(idx, i)} onStartTimed={i => startTimed(idx, i)}
               onReplace={replaceActiveExerciseFlow} />
           </div>)}
         </div>
       ) : (
-        <ExerciseBlock entryIdx={cur} arrived={shown.moved} onToggle={i => toggle(cur, i)} onField={(i, f, v) => setField(cur, i, f, v)} onAddSet={() => addSet(cur)} onRemoveSet={() => removeSet(cur)} onAddWarmup={() => addWarmup(cur)} onRemoveSetAt={i => removeSetAt(cur, i)} onStartTimed={i => startTimed(cur, i)}
+        <ExerciseBlock entryIdx={cur} arrived={shown.moved} aside={restKey} onToggle={i => toggle(cur, i)} onField={(i, f, v) => setField(cur, i, f, v)} onAddSet={() => addSet(cur)} onRemoveSet={() => removeSet(cur)} onAddWarmup={() => addWarmup(cur)} onRemoveSetAt={i => removeSetAt(cur, i)} onStartTimed={i => startTimed(cur, i)}
           onReplace={replaceActiveExerciseFlow} />
       )}
     </> : <div className="empty"><div className="ico"><Icon name="shuffle" /></div>{t('Freestyle workout — add your first exercise.')}</div>}
@@ -577,10 +581,6 @@ function ActiveWorkout() {
       })} icon="plus">{t('Add exercise')}</Button>
       {A.entries.length > 0 && <Button icon="pencil" onClick={editWorkoutSheet}>{t('Edit workout')}</Button>}
     </div>
-    <div className="gap12" />
-    <button className={prog.allDone ? 'btn primary go' : 'btn plain'} onClick={finishWorkout}>
-      {prog.allDone ? t('Finish workout') : t('Finish workout early · {0} exercises', prog.exDone + '/' + prog.exTotal)}
-    </button>
     <button className="btn ghost wk-discard" aria-label={t('Discard')} onClick={discard}>{t('Discard workout')}</button>
   </div>
 }

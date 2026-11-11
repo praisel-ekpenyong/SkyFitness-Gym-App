@@ -122,7 +122,8 @@ function TopWeight({ entryIdx, close }) {
   return <>
     <h3>{t('{0} done', ex.n)}</h3>
     <div className="sheet-sub">{t('Confirm the weight you worked with — your highest becomes the default next time.')}{!unitDone && unitSize > 1 ? ' ' + t('Then finish the superset partner.') : ''}</div>
-    <WeightInput value={v} setValue={setV} unit={st.unit} />
+    {/* the console's weight step, so the keys here walk the bar the way the set's keys do */}
+    <WeightInput value={v} setValue={setV} unit={st.unit} step={2.5} label={t('Working weight')} />
     <div className="gap8" />
     {prevBest > 0 ? <div className="small dim cal-sum tw-best">{t('Previous best')} {fmtNum(prevBest)} {st.unit}{maxSet > prevBest && <span className="tw-new"> · {t('new record!')}</span>}</div> : <div className="gap8" />}
     {unitDone ? <>
@@ -330,7 +331,12 @@ export function finishWorkout() {
       : { title: t('Nothing logged yet'), message: t('You haven’t checked off any sets. Finish the workout anyway?'), confirmText: t('Finish anyway'), onConfirm: doFinishWorkout })
     return
   }
-  if (prog.remaining > 0) { _confirmSheet({ title: t('Finish early?'), message: t(prog.remaining === 1 ? '{0} set still unchecked. Finish the workout now?' : '{0} sets still unchecked. Finish the workout now?', prog.remaining), confirmText: t('Finish workout'), onConfirm: doFinishWorkout }); return }
+  // The workout screen has one Finish key, so how far the session got is said here, where the choice is made.
+  if (prog.remaining > 0) {
+    const sets = t(prog.remaining === 1 ? '{0} set still unchecked' : '{0} sets still unchecked', fmtNum(prog.remaining))
+    _confirmSheet({ title: t('Finish early?'), message: t('{0} of {1} exercises done, {2}. Finish the workout now?', fmtNum(prog.exDone), fmtNum(prog.exTotal), sets), confirmText: t('Finish workout'), onConfirm: doFinishWorkout })
+    return
+  }
   doFinishWorkout()
 }
 /** Completes the session and opens the locked finish summary. */

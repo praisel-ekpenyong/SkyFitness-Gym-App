@@ -8,7 +8,8 @@ import Mark from './Mark.jsx'
 
 /**
  * The app's primary navigation: a bottom bar on a phone, stood up as a labelled sidebar on desktop by CSS alone.
- * The active tab is marked with aria-current="page"; the center button starts the scheduled routine or resumes the running workout.
+ * The active tab is marked with aria-current="page". The center tab starts the scheduled routine or
+ * resumes the running workout; it is drawn like the other tabs and only `.rec` (a workout is running) colours it.
  * @param {Function} onStart - Called with the scheduled routine id to start a workout.
  */
 export default function TabBar({ onStart }) {
@@ -39,9 +40,8 @@ export default function TabBar({ onStart }) {
       <div className="tb-brand" aria-hidden="true"><Mark size={15} /><b>Sky</b></div>
       <Tab k="home" icon="house" to="/home" label={t('Home')} />
       <Tab k="plan" icon="calendar" to="/plan" label={t('Plan')} />
-      <button type="button" className={'start' + (S.active ? ' rec' : '')} onClick={startWorkout}>
-        <span className="cir"><Icon name={S.active ? 'play' : 'barbell'} /></span>
-        <span>{S.active ? t('Resume') : t('Start')}</span>
+      <button type="button" className={(on('workout') ? 'on ' : '') + 'start' + (S.active ? ' rec' : '')} aria-current={on('workout') ? 'page' : undefined} onClick={startWorkout}>
+        <Icon name={S.active ? 'play' : 'barbell'} /><span>{S.active ? t('Resume') : t('Start')}</span>
       </button>
       <Tab k="stats" icon="chart" to="/stats" label={t('Stats')} />
       <Tab k="library" icon="list" to="/library" label={t('Exercises')} />

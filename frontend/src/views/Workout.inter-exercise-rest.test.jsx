@@ -21,6 +21,13 @@ function buttonNamed(name) {
     .find(button => (button.getAttribute('aria-label') || button.textContent.trim()) === name)
 }
 
+// Where the lifter is, read off the session segments (one per exercise or superset): the
+// screen states progress there and in the header count, not in an "Exercise N / M" line.
+function position() {
+  const segs = [...view.container.querySelectorAll('.lad-s')]
+  return `${segs.findIndex(s => s.getAttribute('aria-current') === 'step') + 1} / ${segs.length}`
+}
+
 function timerBarText() {
   const bar = view.container.querySelector('#timer')
   return bar ? bar.textContent.trim() : null
@@ -66,7 +73,7 @@ describe('inter-exercise auto-rest for solo exercises', () => {
     click(saveAndNext)
 
     // View advances to the next exercise
-    expect(view.container.textContent).toContain('Exercise 2 / 2')
+    expect(position()).toBe('2 / 2')
 
     // Rest timer continues uninterrupted
     expect(timerBarText()).toMatch(/^1:27/)
@@ -83,7 +90,7 @@ describe('inter-exercise auto-rest for solo exercises', () => {
     click(justClose)
 
     // View remains on the completed exercise
-    expect(view.container.textContent).toContain('Exercise 1 / 2')
+    expect(position()).toBe('1 / 2')
 
     // Rest timer continues uninterrupted
     expect(timerBarText()).toMatch(/^1:27/)
@@ -109,7 +116,7 @@ describe('inter-exercise auto-rest for solo exercises', () => {
     expect(timerBarText()).toMatch(/^1:27/)
 
     // View remains on the completed exercise card
-    expect(view.container.textContent).toContain('Exercise 1 / 2')
+    expect(position()).toBe('1 / 2')
     // No top-weight sheet opened
     expect(buttonNamed('Save and next exercise')).toBeFalsy()
 
@@ -119,7 +126,7 @@ describe('inter-exercise auto-rest for solo exercises', () => {
     click(nextBtn)
 
     // View navigates to exercise 2 / 2
-    expect(view.container.textContent).toContain('Exercise 2 / 2')
+    expect(position()).toBe('2 / 2')
 
     // Rest timer continues uninterrupted
     expect(timerBarText()).toMatch(/^1:27/)
@@ -142,7 +149,7 @@ describe('inter-exercise auto-rest for solo exercises', () => {
 
     // Advance to last exercise
     click(buttonNamed('Save and next exercise'))
-    expect(view.container.textContent).toContain('Exercise 2 / 2')
+    expect(position()).toBe('2 / 2')
     expect(timerBarText()).toMatch(/^1:30/)
 
     // Advance time a bit while rest is running
@@ -176,7 +183,7 @@ describe('inter-exercise auto-rest for solo exercises', () => {
 
     // Tapping Save and next exercise advances to the solo exercise
     click(buttonNamed('Save and next exercise'))
-    expect(view.container.textContent).toContain('Exercise 2 / 2')
+    expect(position()).toBe('2 / 2')
 
     // Rest timer continues uninterrupted
     expect(timerBarText()).toMatch(/^1:26/)
@@ -200,11 +207,11 @@ describe('inter-exercise auto-rest for solo exercises', () => {
     expect(timerBarText()).toMatch(/^1:27/)
 
     // View remains on the superset card
-    expect(view.container.textContent).toContain('Superset 1 / 2')
+    expect(position()).toBe('1 / 2')
 
     // Tapping Next navigates to the solo exercise while rest continues
     click(buttonNamed('Next'))
-    expect(view.container.textContent).toContain('Exercise 2 / 2')
+    expect(position()).toBe('2 / 2')
     expect(timerBarText()).toMatch(/^1:27/)
   })
 })
