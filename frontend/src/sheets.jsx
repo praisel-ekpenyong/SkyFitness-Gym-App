@@ -443,8 +443,8 @@ function DayOverride({ iso, close }) {
       {st.routines.map(r => <div key={r.id} className="item" onClick={() => set(r.id)}>
         <span className="lrow-i"><Icon name={glyphOf(r.emoji)} /></span>
         <div className="grow"><div className="tt">{r.name}</div><div className="ss">{exCount(r.ex.length)}</div></div>
-        {effId === r.id && <Icon name="check" className="accent" />}</div>)}
-      <div className="item" onClick={() => set('rest')}><span className="lrow-i"><Icon name="moon" /></span><div className="grow"><div className="tt">{t('Rest / skip this day')}</div></div>{effId === null && <Icon name="check" className="accent" />}</div>
+        {effId === r.id && <Icon name="check" />}</div>)}
+      <div className="item" onClick={() => set('rest')}><span className="lrow-i"><Icon name="moon" /></span><div className="grow"><div className="tt">{t('Rest / skip this day')}</div></div>{effId === null && <Icon name="check" />}</div>
       {hasOvr && <div className="item" onClick={() => set('')}><span className="lrow-i"><Icon name="reset" /></span><div className="grow"><div className="tt">{t('Back to weekly plan')}</div></div></div>}
     </div>
   </>
@@ -463,11 +463,11 @@ function DayAssign({ day, close }) {
   return <>
     <h3>{t(DAYN[day])}</h3>
     <div className="list">
-      <div className="item" onClick={() => set('')}><span className="lrow-i"><Icon name="moon" /></span><div className="grow"><div className="tt">{t('Rest day')}</div></div>{!st.week[day] && <Icon name="check" className="accent" />}</div>
+      <div className="item" onClick={() => set('')}><span className="lrow-i"><Icon name="moon" /></span><div className="grow"><div className="tt">{t('Rest day')}</div></div>{!st.week[day] && <Icon name="check" />}</div>
       {st.routines.map(r => <div key={r.id} className="item" onClick={() => set(r.id)}>
         <span className="lrow-i"><Icon name={glyphOf(r.emoji)} /></span>
         <div className="grow"><div className="tt">{r.name}</div><div className="ss">{exCount(r.ex.length)}</div></div>
-        {st.week[day] === r.id && <Icon name="check" className="accent" />}</div>)}
+        {st.week[day] === r.id && <Icon name="check" />}</div>)}
     </div>
   </>
 }
