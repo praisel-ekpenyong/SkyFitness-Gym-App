@@ -75,7 +75,7 @@ export default function LineChart({ points, h = 150, unit = '', color = 'var(--d
       const y = Y(v)
       grid.push(<g key={'y' + v}>
         <line x1={P.l} y1={y} x2={W - P.r} y2={y} stroke="var(--sep-op)" strokeWidth="1" />
-        <text x={P.l - 7} y={y + 4} textAnchor="end" fontSize="11" fill="var(--label-3)">{fmtNum(v)}</text>
+        <text x={P.l - 7} y={y + 4} textAnchor="end" fill="var(--label-3)">{fmtNum(v)}</text>
       </g>)
     }
     const d0 = new Date(t0), d1 = new Date(t1)
@@ -91,7 +91,7 @@ export default function LineChart({ points, h = 150, unit = '', color = 'var(--d
     const every = Math.max(1, Math.ceil(ticks.length / (W < 480 ? 6 : 10)))
     ticks.forEach((tk, i) => {
       if (i % every) return
-      grid.push(<text key={'x' + i} x={X(tk.t)} y={H - 6} textAnchor={tk.anchor || 'middle'} fontSize="11" fill="var(--label-3)">{tk.txt}</text>)
+      grid.push(<text key={'x' + i} x={X(tk.t)} y={H - 6} textAnchor={tk.anchor || 'middle'} fill="var(--label-3)">{tk.txt}</text>)
     })
   }
 
@@ -119,7 +119,7 @@ export default function LineChart({ points, h = 150, unit = '', color = 'var(--d
         {grid}
         {goal != null && isFinite(goal) && <>
           <line x1={P.l} y1={Y(goal)} x2={W - P.r} y2={Y(goal)} stroke="var(--label-2)" strokeWidth="1" strokeDasharray="3 3" />
-          <text x={W - P.r} y={Y(goal) - 5} textAnchor="end" fontSize="11" fontWeight="600" fill="var(--label-2)">{t('Goal')} {fmtNum(goal)}</text>
+          <text className="chart-goal" x={W - P.r} y={Y(goal) - 5} textAnchor="end" fill="var(--label-2)">{t('Goal')} {fmtNum(goal)}</text>
         </>}
         <polygon points={`${X(pts[0].t).toFixed(1)},${H - P.b} ${poly} ${X(last.t).toFixed(1)},${H - P.b}`} fill={color} opacity=".1" />
         <polyline points={poly} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
