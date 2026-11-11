@@ -37,7 +37,7 @@ function StartChooser() {
   return <div className="narrow">
     <div className="hdr"><div><h1>{t('Start workout')}</h1><div className="sub">{t(DAYN[new Date().getDay()])} · {todayR ? t('today is {0}', todayR.name) : (S.routines.length ? t('rest day on your plan') : t('no plan yet'))}</div></div></div>
     {todayR && <section className="card start-today">
-      <h2 className="accent">{t("Today's plan")}{todayOvr ? ' · ' + t('rescheduled') : ''}</h2>
+      <h2>{t("Today's plan")}{todayOvr ? ' · ' + t('rescheduled') : ''}</h2>
       <div className="start-today-name d">{todayR.name}</div>
       <div className="muted small start-today-meta">{exCount(todayR.ex.length)}</div>
       <Button variant="primary" className="go" icon="play" onClick={() => startFlow(todayR.id)}>{t('Start {0}', todayR.name)}</Button>

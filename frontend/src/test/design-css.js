@@ -31,6 +31,9 @@ function splitTop(s, sep) {
   return parts
 }
 
+/** The selectors of a comma-separated selector list (`.a, .b:not(.c, .d)` → two). */
+export const selectorList = selector => splitTop(selector, ',').map(([s]) => s.trim()).filter(Boolean)
+
 /**
  * Flattens a sheet into style rules: `{ selector, media, line, decls: [{ prop, value, line }] }`.
  * At-rule blocks (@media, @keyframes) only contribute their prelude as `media`. The sheets

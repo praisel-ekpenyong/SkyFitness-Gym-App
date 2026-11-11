@@ -179,7 +179,7 @@ body.resting #toast { bottom: calc(var(--tabbar-h) + var(--sab) + 110px) }
     border-top: 0; border-right: 1px solid var(--sep);
   }
   #tabbar .tb-brand {
-    display: flex; align-items: center; gap: 10px; padding: 2px 10px 22px; color: var(--acc);
+    display: flex; align-items: center; gap: 10px; padding: 2px 10px 22px; color: var(--label);
     font-size: var(--fs-heading); font-stretch: var(--narrow); font-weight: 800; text-transform: uppercase; line-height: 1;
   }
   #tabbar .tb-brand b { color: var(--label); font-weight: 800 }

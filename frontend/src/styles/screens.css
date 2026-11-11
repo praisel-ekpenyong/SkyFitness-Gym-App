@@ -20,7 +20,6 @@
 .wk-meta-c { font-size: var(--fs-meta); color: var(--label-3); flex: none }
 .wk-row.off .wk-day, .wk-row.off .wk-name { color: var(--label-3); font-weight: 400 }
 .wk-row.off .wk-day { font-weight: 700 }
-.wk-row.today .wk-day { color: var(--acc-text) }
 
 .rt-list { display: flex; flex-direction: column; gap: 3px }
 .rt-card {
@@ -50,7 +49,7 @@
 .rt-note span { overflow: hidden; text-overflow: ellipsis }
 .rt-tools { flex: 1 0 100%; display: flex; justify-content: flex-end; align-items: center; gap: 0; color: var(--label-3); margin-right: -6px }
 .rt-link { margin-right: auto; margin-left: -10px }
-.rt-link.on-ss { color: var(--acc-text) }
+.rt-link.on-ss { color: var(--label) }
 .rt-hint { margin: 12px 2px; gap: 7px; align-items: flex-start; line-height: 1.38 }
 .rt-hint .icn { margin-top: 2px; flex: none }
 
@@ -63,7 +62,7 @@
 .ex-headline { display: flex; flex-direction: column; gap: 3px; margin-bottom: 12px }
 .cap1::first-letter { text-transform: uppercase }
 .balance-none { margin-bottom: 10px }
-.ex-headline-v { font-size: var(--fs-hero) }
+.ex-headline-v { font-size: var(--fs-hero); color: var(--goal-text) }   /* a best is a record */
 .ex-sessions { margin-top: 12px }
 .exercise-session-item { display: flex; align-items: flex-start; justify-content: space-between; padding: 9px 0; gap: 10px; box-shadow: inset 0 1px 0 var(--sep) }
 .exercise-session-date { font-size: var(--fs-meta); color: var(--label-2); min-width: 82px; flex: none; padding-top: 1px }
@@ -76,7 +75,7 @@
 .effort-stat-box { background: var(--surface-2); padding: 11px 12px 12px; display: flex; flex-direction: column; gap: 5px; justify-content: space-between }
 .effort-stat-box .num { font-size: var(--fs-title); font-stretch: var(--narrow); font-weight: 700; line-height: 1 }
 .effort-stat-box .lbl { font-size: var(--fs-meta); color: var(--label-2); line-height: 1.3 }
-.eff-off { color: var(--goal-text); margin: 6px 0 10px; display: flex; align-items: center; gap: 6px }
+.eff-off { color: var(--label-2); margin: 6px 0 10px; display: flex; align-items: center; gap: 6px }
 .eff-off .icn { font-size: var(--fs-small); flex: none }
 
 .strength-exercise-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; min-height: 50px; box-shadow: inset 0 1px 0 var(--sep) }
@@ -107,7 +106,7 @@
 .ex-best-v { font-size: var(--fs-lead); font-stretch: var(--narrow); font-weight: 700; color: var(--goal-text) }   /* a best is a record, never the accent */
 .ex-best-v .u { font-size: var(--fs-micro) }
 .ex-star { position: absolute; top: 0; right: 0; font-size: var(--fs-lead); background: none; color: var(--label-3) }
-.ex-star.on-ss { color: var(--acc-text) }
+.ex-star.on-ss { color: var(--label) }
 
 /* ---------------------------------------------------------------- settings -- */
 .settings .lrow { min-height: 52px }
@@ -121,7 +120,7 @@
 .confirm-msg { color: var(--label-2); margin-bottom: 16px; line-height: 1.45 }
 .sheet-actions { display: flex; flex-direction: column; gap: 6px; margin-top: 14px }
 .sheet-note { font-size: var(--fs-meta); color: var(--label-3); line-height: 1.4; margin-top: 7px }
-.warn-note { font-size: var(--fs-meta); color: var(--goal-text); line-height: 1.4; margin-bottom: 10px }
+.warn-note { font-size: var(--fs-meta); color: var(--label-2); line-height: 1.4; margin-bottom: 10px }
 .dim-note { font-size: var(--fs-meta); color: var(--label-3); line-height: 1.4; margin-bottom: 10px }
 .wi-log { display: flex; align-items: center; justify-content: space-between; padding: 4px 0; box-shadow: inset 0 -1px 0 var(--sep) }
 .wi-log b { font-size: var(--fs-figure); font-stretch: var(--narrow); font-weight: 700 }
@@ -136,7 +135,7 @@
 .best-line { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; margin-bottom: 6px }
 .best-line .icn { font-size: var(--fs-small); color: var(--goal-text) }
 .onerm-now { font-size: var(--fs-meta); margin-bottom: 8px }
-.onerm-est { font-size: var(--fs-heading); font-stretch: var(--narrow); font-weight: 700; color: var(--acc-text) }
+.onerm-est { font-size: var(--fs-heading); font-stretch: var(--narrow); font-weight: 700; color: var(--label) }
 .stack-gap { display: flex; flex-direction: column; gap: 8px; margin-top: 8px }
 .split { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px }
 .cfg-note { margin-bottom: 18px }
@@ -160,8 +159,7 @@
 .pi-head { gap: 8px; margin-bottom: 4px }
 .pi-body { gap: 6px; align-items: flex-start; font-size: var(--fs-small); line-height: 1.32; color: var(--label-2) }
 .pi-body .icn { font-size: var(--fs-body); margin-top: 2px; flex: none }
-.pi-body.up { color: var(--acc-text); font-weight: 600 }
-.pi-body.deload .icn { color: var(--goal-text) }
+.pi-body.up { color: var(--label); font-weight: 600 }
 .finish-map { background: var(--surface); border-radius: var(--r-2); padding: 14px var(--pad); margin-bottom: 14px }
 .finish-map .bm-v { max-height: 240px }
 .sync-card { padding: 14px; margin-bottom: 14px }
