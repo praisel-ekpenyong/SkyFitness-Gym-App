@@ -25,7 +25,7 @@ export default function Plan() {
   return <div className="page">
     <div className="hdr">
       <div><h1>{t('Plan')}</h1><div className="sub">{t('Your weekly routine')}</div></div>
-      <button className="iconbtn" onClick={planToolsSheet} aria-label={t('Share your plan')} title={t('Share your plan')}><Icon name="upload" /></button>
+      <button className="btn sm plain hdr-act" onClick={planToolsSheet} aria-label={t('Share your plan')}><Icon name="upload" />{t('Share')}</button>
     </div>
     <div className="cols">
       <section>
@@ -59,7 +59,7 @@ export default function Plan() {
           </button>
         ))}</div> : <>
           <div className="empty"><div className="ico"><Icon name="clipboard" /></div>{t('No routines yet.')}<br />{t('Create one or load the starter plan.')}</div>
-          <Button icon="sparkles" onClick={loadStarterPlan}>{t('Load starter plan (Push / Pull / Legs)')}</Button>
+          <Button icon="calendar" onClick={loadStarterPlan}>{t('Load starter plan (Push / Pull / Legs)')}</Button>
         </>}
       </section>
     </div>

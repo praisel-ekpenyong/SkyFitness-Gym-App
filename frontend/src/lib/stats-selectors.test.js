@@ -295,7 +295,7 @@ describe('overview history', () => {
       workoutAt(LIFT.id, 0, [doneSet(70, 5)]),
     ] }
     const over = selectStatsOverview(S, { now: NOW, catalogue })
-    expect(over.counts).toEqual({ total: 3, month: 1, streak: 3 })
+    expect(over.counts).toEqual({ total: 3, month: 1, streak: 3, weeks12: 3 })
     expect(over.workouts.recent.map(w => w.d)).toEqual(['2026-07-01', '2026-06-23', '2026-06-16'])
     expect(over.workouts.forDay('2026-06-23')).toEqual([S.workouts[1]])
     expect(over.workouts.forDay('2026-06-24')).toEqual([])

@@ -36,8 +36,18 @@ function headerReplaceButton(index = 0) {
   return buttons[index]
 }
 
+// Exercise-level edits live in the Edit workout sheet; open it before looking for one.
+function inEditSheet(label, exact = false) {
+  const find = () => [...document.querySelectorAll('button')].find(b => exact ? b.textContent.trim() === label : b.textContent.trim().includes(label))
+  if (!find()) {
+    const edit = [...document.querySelectorAll('button')].find(b => b.textContent.trim() === 'Edit workout')
+    if (edit) act(() => { edit.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
+  }
+  return find()
+}
+
 function footerReplaceButton() {
-  return [...view.container.querySelectorAll('button')].find(b => b.textContent.trim() === 'Replace exercise')
+  return inEditSheet('Replace exercise', true)
 }
 
 function click(el) {

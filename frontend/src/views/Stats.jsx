@@ -246,7 +246,7 @@ export default function Stats() {
   const nav = useNavigate()
   const S = useStore(s => s.S)
   const [range, setRange] = useState(90)
-  const [muscleWin, setMuscleWin] = useState(7)
+  const [muscleWin, setMuscleWin] = useState(30)
   const [hard, setHard] = useState(false)
   const [effortWin, setEffortWin] = useState(90)
   const [exId, setExId] = useState(null)
@@ -307,9 +307,9 @@ export default function Stats() {
         <div className="s">{t('Active days')}</div>
       </button>
       <button type="button" className="tile tappable" onClick={() => calendarSheet()}>
-        <span className="l">{t('Week streak')}</span>
-        <div className="v">{overview.counts.streak}</div>
-        <div className="s">{overview.counts.streak === 1 ? t('1 week') : t('{0} weeks', overview.counts.streak)}</div>
+        <span className="l">{t('Weeks trained')}</span>
+        <div className="v">{overview.counts.weeks12}<span className="u"> / 12</span></div>
+        <div className="s">{t('Last 12 weeks')}</div>
       </button>
       <button type="button" className="tile tappable" onClick={() => bwSheet()}>
         <span className="l">{t('Weight 30d')}</span>

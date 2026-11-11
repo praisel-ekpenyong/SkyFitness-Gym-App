@@ -6,7 +6,21 @@ import { t } from '../lib/i18n.js'
 // GitHub-style activity heatmap, shaded by time trained per day.
 export default function Heatmap({ S, onDay }) {
   const wrapRef = useRef(null)
-  useEffect(() => { if (wrapRef.current) wrapRef.current.scrollLeft = wrapRef.current.scrollWidth }, [])
+  // Opens on the latest weeks. A month name the left edge would cut in half ("Jun" read as
+  // "in") is hidden instead, and comes back as the strip scrolls it fully into view.
+  useEffect(() => {
+    const el = wrapRef.current
+    if (!el) return
+    const clip = () => {
+      for (const s of el.querySelectorAll('.hm-months span')) {
+        s.style.visibility = s.textContent && s.offsetLeft < el.scrollLeft ? 'hidden' : ''
+      }
+    }
+    el.scrollLeft = el.scrollWidth
+    clip()
+    el.addEventListener('scroll', clip, { passive: true })
+    return () => el.removeEventListener('scroll', clip)
+  }, [])
 
   const agg = {}
   for (const w of S.workouts || []) {

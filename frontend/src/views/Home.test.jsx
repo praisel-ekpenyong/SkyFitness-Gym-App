@@ -133,8 +133,8 @@ describe('Home hero routine exercise count binding (05)', () => {
 
     await act(async () => { root.render(<Home />) })
 
-    expect(container.textContent).toContain('Welcome!')
-    expect(container.textContent).toContain('Load starter plan (PPL)')
+    expect(container.textContent).toContain('Start with a plan')
+    expect(container.textContent).toContain('Load starter plan')
     expect(container.querySelector('.home-hero-meta')).toBeNull()
   })
 
