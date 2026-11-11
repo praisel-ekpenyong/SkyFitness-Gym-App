@@ -50,6 +50,9 @@ function OneRM({ ex }) {
   const [w, setW] = useState(best ? best.w : (st.exWeights[ex.id] || {}).w || 20)
   const [r, setR] = useState(best ? best.r : 5)
   const est = estimate1RM(w, r)
+  // A body-weight movement has no load to type in until one is logged (a belt on a dip), so a
+  // calculator seeded with a barbell's 20 kg would only invent a number.
+  if (isBodyweightEq(ex) && !best) return null
   return <>
     <h4 className="sec">{t('Estimated 1RM')}</h4>
     {best && <div className="onerm-now">
@@ -102,9 +105,9 @@ export function ExerciseDetail({ ex, close }) {
     <Media ex={ex} />
     <div className="row detail-tags">
       {isCardioEx ? (
-        <span className="tag acc">{t('Cardio')}</span>
+        <span className="tag strong">{t('Cardio')}</span>
       ) : (
-        primaryName && <span className="tag acc">{t('Primary: {0}', primaryName)}</span>
+        primaryName && <span className="tag strong">{t('Primary: {0}', primaryName)}</span>
       )}
       {ex.eq && <span className="tag">{t(ex.eq)}</span>}
       {!isCardioEx && secondaries.map((s, i) => <span key={i} className="tag">{t('Secondary: {0}', MUSCLE_NAME[s] || s)}</span>)}
@@ -330,7 +333,7 @@ export function ExercisePicker({ onPick }) {
     />
     <div className="chips picker-chips">
       {(favCount > 0 || filter === 'favorites') && <button className={'chip chip-i' + (filter === 'favorites' ? ' on' : '')} onClick={() => { setFilter('favorites'); setEq(''); setShown(50) }}><Icon name="starFill" />{t('Favorites')} ({favCount})</button>}
-      {(chosenCount > 0 || filter === '★') && <button className={'chip chip-i' + (filter === '★' ? ' on' : '')} onClick={() => { setFilter('★'); setEq(''); setShown(50) }}><Icon name="starFill" />{t('Chosen')} ({chosenCount})</button>}
+      {(chosenCount > 0 || filter === '★') && <button className={'chip chip-i' + (filter === '★' ? ' on' : '')} onClick={() => { setFilter('★'); setEq(''); setShown(50) }}><Icon name="check" />{t('Chosen')} ({chosenCount})</button>}
       <button className={'chip nocap' + (!filter ? ' on' : '')} onClick={() => { setFilter(''); setEq(''); setShown(50) }}>{t('All')}</button>
       {FILTER_MUSCLES.map(m => <button key={m} className={'chip' + (filter === m ? ' on' : '')} onClick={() => { setFilter(m); setEq(''); setShown(50) }}>{t(MUSCLE_NAME[m] || m)}</button>)}
     </div>

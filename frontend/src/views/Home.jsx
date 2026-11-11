@@ -129,9 +129,9 @@ export default function Home() {
       <div className="home-main">
         {/* First run: the first action goes where the day's plan will appear. */}
         {firstRun && <section className="home-hero welcome">
-          <div className="welcome-t d">{t('Welcome!')}</div>
-          <div className="muted welcome-b">{t('Set up your weekly routine to get going — or load a ready-made Push / Pull / Legs plan.')}</div>
-          <Button variant="primary" className="go" icon="sparkles" onClick={loadStarterPlan}>{t('Load starter plan (PPL)')}</Button>
+          <div className="welcome-t d">{t('Start with a plan')}</div>
+          <div className="muted welcome-b">{t('Build your own week, or load a three-day Push / Pull / Legs plan you can edit later.')}</div>
+          <Button variant="primary" className="go" icon="calendar" onClick={loadStarterPlan}>{t('Load starter plan')}</Button>
           <div className="gap8" /><Button onClick={() => nav('/plan')}>{t('Build my own plan')}</Button>
         </section>}
 
@@ -189,7 +189,7 @@ export default function Home() {
             )
           ) : (
             <Button variant="tinted" icon="plus" onClick={() => dayOverrideSheet(todayISO())}>
-              {t('Plan or start workout')}
+              {t('Pick a workout for today')}
             </Button>
           )}
         </section>}
@@ -275,7 +275,7 @@ export default function Home() {
               </div>
             )}
             <div className="chart bw-chart"><LineChart points={bwPoints} h={120} unit={S.unit} goal={S.targetW} /></div>
-          </> : <div className="muted small">{t("No entries yet — log your weight to start the curve. It's also asked before every workout.")}</div>}
+          </> : <div className="muted small">{t('No entries yet — log your weight to start the curve. Sky also asks once a day, before your first workout.')}</div>}
         </section>
       </div>
     </div>

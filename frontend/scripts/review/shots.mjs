@@ -51,6 +51,7 @@ const scenes = {
     await clickT(p,/Start workout/); await p.waitForTimeout(300); await clickT(p,/Save & start workout/); await p.waitForTimeout(900)
     await p.locator('button[aria-label="Add note"]').first().click(); await p.waitForTimeout(350); await snap(p,'sheet-note',false); await p.keyboard.press('Escape'); await p.waitForTimeout(300)
     await p.locator('.giftoggle').first().click(); await p.waitForTimeout(350); await snap(p,'workout-mini',false); await p.locator('.giftoggle').first().click()
+    await clickT(p,/Edit workout/); await p.waitForTimeout(400); await snap(p,'sheet-edit',false)
     await clickT(p,/Reorder exercises/); await p.waitForTimeout(400); await snap(p,'sheet-reorder',false); await p.keyboard.press('Escape'); await p.waitForTimeout(300)
     await clickT(p,/Add exercise/); await p.waitForTimeout(900); await snap(p,'sheet-picker',false); await p.keyboard.press('Escape'); await p.waitForTimeout(300)
     await p.locator('button[aria-label="Discard"]').click(); await p.waitForTimeout(350); await snap(p,'sheet-confirm',false); await p.keyboard.press('Escape'); await p.waitForTimeout(300)

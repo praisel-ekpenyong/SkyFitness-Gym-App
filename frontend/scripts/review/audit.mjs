@@ -41,7 +41,7 @@ for(const theme of ['dark','light']) for(const [vp,[w,h]] of Object.entries(VPS)
   for(const r of routes){ await p.goto(base+'#'+r); await p.waitForTimeout(650); await run(r) }
   // the live workout
   await p.goto(base+'#/home'); await p.waitForTimeout(500)
-  const start=p.locator('button').filter({hasText:/Plan or start workout|Start workout/}).first()
+  const start=p.locator('button').filter({hasText:/Pick a workout for today|Start workout/}).first()
   await p.evaluate(()=>{ const S=JSON.parse(localStorage.getItem('gym_state_v1')); S.week={0:'push',1:'push',2:'push',3:'push',4:'push',5:'push',6:'push'}; localStorage.setItem('gym_state_v1',JSON.stringify(S)) }); await p.reload(); await p.waitForTimeout(600)
   await p.locator('button').filter({hasText:/Start workout/}).first().click(); await p.waitForTimeout(250); await p.locator('button').filter({hasText:/Save & start/}).first().click(); await p.waitForTimeout(800); await run('active workout')
   await p.locator('[role=checkbox]').first().click(); await p.waitForTimeout(400); await run('resting')

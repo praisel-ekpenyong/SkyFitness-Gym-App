@@ -52,10 +52,11 @@ h4.sec, .sec {
 .lrow-m { flex: 1 1 40%; min-width: 0; display: flex; flex-direction: column; gap: 1px }
 .lrow-t { font-size: 15px; line-height: 1.3 }
 .lrow-s { font-size: 13px; color: var(--label-2); line-height: 1.35 }
-.lrow-v { color: var(--label-2); font-size: 15px; flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right }
+.lrow-v { color: var(--label-2); font-size: 15px; flex: 0 1 auto; min-width: 0; max-width: 62%; text-align: right; text-wrap: balance }
 .lrow-c { color: var(--label-3); font-size: 14px; flex: none; --icon-stroke: 2 }
 .lrow-k { color: var(--acc-text); font-size: 18px; flex: none; --icon-stroke: 2.4 }
 .lrow.danger, .lrow.danger .lrow-t, .lrow.danger .lrow-i { color: var(--red-text) }
+.lrow:disabled { opacity: .38; pointer-events: none }
 
 /* -------------------------------------------------------------- row stack -- */
 .list { display: flex; flex-direction: column; gap: 3px }
@@ -83,6 +84,7 @@ h4.sec, .sec {
 }
 .tag .icn { font-size: 13px }
 .tag.acc { color: var(--acc-text); background: var(--acc-soft) }
+.tag.strong { color: var(--label); background: var(--surface-3); font-weight: 600 }
 .pr {
   display: inline-flex; align-items: center; gap: 4px; flex: none; vertical-align: 1px;
   background: color-mix(in srgb, var(--yellow) 18%, transparent); color: var(--goal-text);
@@ -90,8 +92,10 @@ h4.sec, .sec {
 }
 .pr .icn { font-size: 13px }
 .mchips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px }
+.missed-banner .mchips { gap: 16px 6px; margin: 10px 0 6px }
 .mchip { font-size: 12px; padding: 4px 8px; border-radius: var(--r-1); background: var(--surface-2); color: var(--label-2) }
-.mchip.miss { background: color-mix(in srgb, var(--orange) 15%, transparent); color: var(--orange-text); cursor: pointer }
+.mchip.miss { background: var(--orange-wash-2); color: var(--orange-text); cursor: pointer; position: relative; padding: 6px 10px }
+.mchip.miss::after { content: ''; position: absolute; inset: -8px 0 }
 
 .empty { text-align: center; color: var(--label-2); padding: 40px 20px; font-size: 15px; line-height: 1.45 }
 .empty .ico { font-size: 30px; color: var(--label-3); margin-bottom: 10px; display: flex; justify-content: center }
@@ -125,7 +129,7 @@ h4.sec, .sec {
 .chart-nodata { font-size: 13px; color: var(--label-3); padding: 28px 0; text-align: center }
 
 /* ----------------------------------------------------------------- heatmap -- */
-.hm-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding-bottom: 2px }
+.hm-wrap { position: relative; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding-bottom: 2px }
 .hm-wrap::-webkit-scrollbar { display: none }
 .hm-months { display: flex; margin-left: 28px; margin-bottom: 5px }
 .hm-months span { flex: none; width: 14px; font-size: 11px; color: var(--label-3); white-space: nowrap; overflow: visible }
@@ -184,7 +188,7 @@ h4.sec, .sec {
 .muscle-inspector-info { min-width: 0 }
 .muscle-inspector-name { font-size: 15px; text-transform: capitalize }
 .muscle-inspector-val { font-size: 13px; color: var(--label-2); margin-top: 1px }
-.missed-banner { background: color-mix(in srgb, var(--orange) 10%, var(--surface)); border-radius: var(--r-2); padding: 12px 14px; margin-top: 14px }
+.missed-banner { background: var(--orange-wash); border-radius: var(--r-2); padding: 12px 14px; margin-top: 14px }
 .missed-banner-title { font-size: 13px; font-weight: 600; color: var(--orange-text); display: flex; align-items: center; gap: 6px; margin-bottom: 8px }
 
 /* ------------------------------------------------------------- weight input -- */
