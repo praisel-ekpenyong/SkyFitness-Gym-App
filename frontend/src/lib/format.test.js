@@ -186,10 +186,10 @@ describe('format utility module', () => {
       expect(typeof id1).toBe('string')
     })
 
-    it('exports all standard theme hex accents', () => {
+    it('exports the five accents, none of which reads as a status colour', () => {
+      expect(Object.keys(ACCENTS)).toEqual(['lime', 'sky', 'violet', 'pink', 'teal'])
       expect(ACCENTS.lime).toBe('#a3e635')
       expect(ACCENTS.sky).toBe('#5cb8ff')
-      expect(ACCENTS.orange).toBe('#ff8a3d')
       expect(ACCENTS.violet).toBe('#b79cff')
     })
   })

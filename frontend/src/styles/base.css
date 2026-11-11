@@ -1,7 +1,7 @@
 /* Reset, type roles and small utilities. */
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent }
 html {
-  font-size: 16px; background: var(--bg); overscroll-behavior: none; overflow-x: clip;
+  font-size: var(--fs-field); background: var(--bg); overscroll-behavior: none; overflow-x: clip;
   -webkit-text-size-adjust: 100%; min-height: 100%; scroll-padding-bottom: var(--page-clearance);
 }
 html:has(body.resting) { scroll-padding-bottom: var(--timer-clearance) }
@@ -10,14 +10,14 @@ html:has(body.focus-session) { scroll-padding-top: calc(var(--sat) + 96px); scro
 html:has(body.focus-session.resting) { scroll-padding-bottom: calc(var(--sab) + 112px) }
 body {
   background: var(--bg); color: var(--label);
-  font-family: var(--font); font-size: 15px; line-height: 1.4; font-weight: 400;
+  font-family: var(--font); font-size: var(--fs-body); line-height: 1.4; font-weight: 400;
   min-height: 100vh; min-height: 100dvh; overscroll-behavior-y: none; overflow-x: clip;
   -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
   touch-action: manipulation; font-variant-numeric: tabular-nums;
 }
 button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; font-variant-numeric: tabular-nums }
 /* 16px is the line below which iOS Safari zooms the page on focus */
-input, select, textarea { font: inherit; font-size: 16px; color: var(--label); font-variant-numeric: tabular-nums }
+input, select, textarea { font: inherit; font-size: var(--fs-field); color: var(--label); font-variant-numeric: tabular-nums }
 b, strong { font-weight: 600 }
 img { max-width: 100% }
 a { color: var(--label); text-decoration: none }
@@ -46,11 +46,11 @@ button, .chip, .tile, .item, .wday, .cal-d, .swatch, .hm-c, .lrow, .seg button, 
   font-stretch: var(--narrow); font-weight: 700; line-height: 1;
   font-variant-numeric: tabular-nums; letter-spacing: 0;
 }
-.fig .u, .u { font-stretch: 100%; font-size: 13px; font-weight: 400; color: var(--label-2); letter-spacing: 0 }
+.fig .u, .u { font-stretch: 100%; font-size: var(--fs-meta); font-weight: 400; color: var(--label-2); letter-spacing: 0 }
 
 .muted { color: var(--label-2) }
 .dim   { color: var(--label-3) }
-.small { font-size: 13px; line-height: 1.38 }
+.small { font-size: var(--fs-meta); line-height: 1.38 }
 .accent { color: var(--acc-text) }
 .record { color: var(--goal-text) }   /* records and bests; never the accent */
 .capitalize { text-transform: capitalize }

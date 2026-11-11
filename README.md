@@ -90,7 +90,7 @@ Read your training through three front-and-back body diagrams:
 
 ### 8. Dark Mode and Appearance Customization
 - **Theme Modes**: Seamless Dark (default) and Light appearance options with WCAG AA compliant contrast.
-- **Accent Palettes**: Custom accent color choices (Green / Lime default, Sky, Orange, Violet, Pink, Red, Teal, Gold).
+- **Accent Palettes**: Five accent colours (Lime default, Sky, Violet, Pink, Teal), none of which reads as a status colour.
 - **Body Diagrams**: Male and Female anatomical models for training balance and fatigue maps.
 
 ## Data Control and Privacy

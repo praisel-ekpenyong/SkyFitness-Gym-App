@@ -4,11 +4,11 @@
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%;
   min-height: 50px; padding: 12px 18px; border-radius: var(--r-2);
-  font-size: 15px; font-weight: 600; line-height: 1.2;
+  font-size: var(--fs-body); font-weight: 600; line-height: 1.2;
   background: var(--surface-2); color: var(--label);
   transition: transform var(--fast) var(--ease), background var(--fast), opacity var(--fast);
 }
-.btn .icn { font-size: 18px }
+.btn .icn { font-size: var(--fs-lead) }
 .btn:active { transform: scale(.98); background: var(--surface-3) }
 /* primary is inversion */
 .btn.primary { background: var(--ink); color: var(--on-ink) }
@@ -16,33 +16,33 @@
 /* the one coloured key: the action that does the training */
 .btn.go {
   background: var(--acc); color: var(--on-acc); min-height: 58px;
-  font-stretch: var(--narrow); font-weight: 800; font-size: 22px; letter-spacing: .01em; text-transform: uppercase;
+  font-stretch: var(--narrow); font-weight: 800; font-size: var(--fs-figure); letter-spacing: .01em; text-transform: uppercase;
 }
-.btn.go .icn { font-size: 22px; --icon-stroke: 2.2 }
+.btn.go .icn { font-size: var(--fs-figure); --icon-stroke: 2.2 }
 .btn.go:active { background: var(--acc-2) }
 .btn.live {
   background: var(--orange); color: var(--on-orange); min-height: 58px;
-  font-stretch: var(--narrow); font-weight: 800; font-size: 22px; letter-spacing: .01em; text-transform: uppercase;
+  font-stretch: var(--narrow); font-weight: 800; font-size: var(--fs-figure); letter-spacing: .01em; text-transform: uppercase;
 }
-.btn.live .icn { font-size: 22px; --icon-stroke: 2.2 }
+.btn.live .icn { font-size: var(--fs-figure); --icon-stroke: 2.2 }
 .btn.tinted { background: var(--surface-2); color: var(--label) }
 .btn.danger { background: color-mix(in srgb, var(--red) 13%, transparent); color: var(--red-text) }
 .btn.danger:active { background: color-mix(in srgb, var(--red) 22%, transparent) }
 .btn.plain { background: var(--surface-2); color: var(--label) }
-.btn.ghost { background: none; color: var(--label-2); font-weight: 500 }
+.btn.ghost { background: none; color: var(--label-2); font-weight: 600 }
 .btn.ghost:active { background: var(--surface-2) }
-.btn.sm { min-height: var(--tap-target); padding: 8px 12px; width: auto; font-size: 14px; gap: 6px }
-.btn.sm .icn { font-size: 16px }
-.btn.xs { min-height: 36px; padding: 6px 10px; width: auto; font-size: 13px; gap: 5px; position: relative }
+.btn.sm { min-height: var(--tap-target); padding: 8px 12px; width: auto; font-size: var(--fs-small); gap: 6px }
+.btn.sm .icn { font-size: var(--fs-body) }
+.btn.xs { min-height: 36px; padding: 6px 10px; width: auto; font-size: var(--fs-meta); gap: 5px; position: relative }
 .btn.xs::after { content: ''; position: absolute; inset: -4px 0 }
-.btn.xs .icn { font-size: 14px }
+.btn.xs .icn { font-size: var(--fs-small) }
 .btn:disabled { opacity: .38; pointer-events: none }
 .btn.dim { color: var(--label-3) }
 
 .iconbtn {
   width: var(--tap-target); height: var(--tap-target); min-width: var(--tap-target); min-height: var(--tap-target);
   border-radius: var(--r-2); flex: none; background: var(--surface-2); color: var(--label);
-  display: flex; align-items: center; justify-content: center; font-size: 19px;
+  display: flex; align-items: center; justify-content: center; font-size: var(--fs-lead);
   transition: background var(--fast), transform var(--fast);
 }
 .iconbtn:active { background: var(--surface-3); transform: scale(.94) }
@@ -52,7 +52,7 @@
 .iconbtn.on-ss { color: var(--acc-text) }
 
 .helpbtn {
-  color: var(--label-3); font-size: 17px; background: none; line-height: 0; flex: none;
+  color: var(--label-3); font-size: var(--fs-lead); background: none; line-height: 0; flex: none;
   min-width: var(--tap-target); min-height: var(--tap-target); display: inline-flex;
   align-items: center; justify-content: center; margin: -8px -4px -8px -12px;   /* the left margin only gives a wrapping title room */
 }
@@ -67,7 +67,7 @@
 .chips::-webkit-scrollbar { display: none }
 .chip {
   flex: none; min-height: 36px; min-width: var(--tap-target); padding: 6px 12px; border-radius: 6px; background: var(--surface-2);
-  font-size: 14px; color: var(--label); text-transform: capitalize; position: relative;
+  font-size: var(--fs-small); color: var(--label); text-transform: capitalize; position: relative;
   transition: background var(--fast), color var(--fast);
 }
 .chip::after { content: ''; position: absolute; inset: -4px 0 }
@@ -77,24 +77,24 @@
 /* ----------------------------------------------------------------- fields -- */
 .field, .input {
   width: 100%; background: var(--surface-2); border: none; border-radius: var(--r-2);
-  padding: 13px 14px; font-size: 16px; outline: none; transition: box-shadow var(--fast);
+  padding: 13px 14px; font-size: var(--fs-field); outline: none; transition: box-shadow var(--fast);
 }
 .field::placeholder, .input::placeholder { color: var(--label-3) }
 .field:focus, .input:focus { box-shadow: inset 0 0 0 1.5px var(--label) }
 .field.area, textarea.input { min-height: 92px; resize: vertical; line-height: 1.42 }
 
 .searchf { position: relative; display: flex; align-items: center }
-.searchf .lead { position: absolute; left: 13px; font-size: 17px; color: var(--label-3); pointer-events: none; z-index: 1 }
+.searchf .lead { position: absolute; left: 13px; font-size: var(--fs-lead); color: var(--label-3); pointer-events: none; z-index: 1 }
 .searchf .field { padding-left: 40px; padding-right: 44px; min-height: 48px }
 .searchf .clear {
   position: absolute; right: 6px; width: 36px; height: 36px; border-radius: 6px;
-  color: var(--label-2); display: flex; align-items: center; justify-content: center; font-size: 15px;
+  color: var(--label-2); display: flex; align-items: center; justify-content: center; font-size: var(--fs-body);
 }
 .searchf .clear:active { background: var(--surface-3) }
 
 .timef {
   background: var(--surface-2); border: none; border-radius: 6px; padding: 8px 10px;
-  font-size: 16px; color: var(--label); outline: none;
+  font-size: var(--fs-field); color: var(--label); outline: none;
 }
 .timef::-webkit-calendar-picker-indicator { filter: invert(.6) }
 :root[data-theme="light"] .timef::-webkit-calendar-picker-indicator { filter: none }
@@ -131,37 +131,37 @@
 }
 :root[data-theme="light"] .seg-sel { background: var(--surface) }
 .seg button {
-  position: relative; z-index: 1; padding: 6px 8px; font-size: 14px; font-weight: 600; color: var(--label);
+  position: relative; z-index: 1; padding: 6px 8px; font-size: var(--fs-small); font-weight: 600; color: var(--label);
   display: flex; align-items: center; justify-content: center; gap: 5px; min-height: 38px;
   white-space: nowrap;
 }
 .seg button::after { content: ''; position: absolute; inset: -3px 0 }   /* the track's padding is part of the target */
-.seg button .icn { font-size: 15px }
+.seg button .icn { font-size: var(--fs-body) }
 .seg button:not(.on) { color: var(--label-2); font-weight: 400 }
 /* every key at least 44px wide: the keys touch, so the width cannot come from a ::after */
 .seg-inline { flex: none; min-width: max(124px, calc(var(--n) * var(--tap-target) + 6px)) }
 .seg-range { margin-bottom: 12px }
-.seg-inline button { padding: 5px 10px; font-size: 13px }
+.seg-inline button { padding: 5px 10px; font-size: var(--fs-meta) }
 
 /* ---------------------------------------------------------------- stepper -- */
 .stp-w { display: flex; flex-direction: column; gap: 6px; min-width: 0 }
-.stp-l { font-size: 12px; color: var(--label-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.stp-l { font-size: var(--fs-meta); color: var(--label-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
 .stp {
   display: flex; align-items: center; background: var(--surface-2);
   border-radius: var(--r-2); overflow: hidden; min-width: 0;
 }
 .stp button {
   width: var(--tap-target); height: 48px; min-width: var(--tap-target);
-  flex: none; color: var(--label); font-size: 17px; --icon-stroke: 2;
+  flex: none; color: var(--label); font-size: var(--fs-lead); --icon-stroke: 2;
   display: flex; align-items: center; justify-content: center;
   transition: background var(--fast);
 }
 .stp button:active { background: var(--surface-3) }
 .stp .val { flex: 1; min-width: 0; display: flex; align-items: baseline; justify-content: center; gap: 3px }
-.stp .val i { font-style: normal; font-size: 12px; color: var(--label-2); flex: none }
+.stp .val i { font-style: normal; font-size: var(--fs-meta); color: var(--label-2); flex: none }
 .stp .num {
   width: 100%; min-width: 0; text-align: center; background: none; border: none; outline: none;
-  font-size: 22px; font-weight: 700; font-stretch: var(--narrow); padding: 0;
+  font-size: var(--fs-figure); font-weight: 700; font-stretch: var(--narrow); padding: 0;
   -moz-appearance: textfield; appearance: textfield;
 }
 .stp .num::-webkit-inner-spin-button { display: none }
@@ -186,7 +186,7 @@
   background: var(--surface-2); color: var(--label-3);
   transition: background var(--fast), color var(--fast), transform var(--fast);
 }
-.chk .icn { font-size: 18px; --icon-stroke: 2.4 }
+.chk .icn { font-size: var(--fs-lead); --icon-stroke: 2.4 }
 @keyframes checkpop { 0% { transform: scale(.9) } 60% { transform: scale(1.04) } 100% { transform: scale(1) } }
 .chk.on, .ck.on { background: var(--acc); color: var(--on-acc); animation: checkpop var(--med) var(--ease) }
 .chk:active, .ck:active { transform: scale(.94) }
