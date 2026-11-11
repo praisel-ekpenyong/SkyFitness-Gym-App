@@ -27,6 +27,7 @@
   /* status */
   --red:    #ff5b4f;   --red-text: var(--red);
   --orange: #ff9d3d;   --orange-text: var(--orange);   --on-orange: #0a0a09;
+  --orange-wash: #2d2419;   --orange-wash-2: #4c361e;   /* orange 10% / +15% over --surface, precomputed so contrast is measurable */
   --yellow: #f2c94c;   --goal-text: var(--yellow);
 
   /* accent: the colour of work. Per profile via data-accent. */
@@ -104,6 +105,7 @@
 
   --red:    #d92d20;   --red-text: #b4231a;
   --orange: #ef8a1d;   --orange-text: #8f4c06;
+  --orange-wash: #fdf3e8;   --orange-wash-2: #fbe3ca;
   --yellow: #e0ae12;   --goal-text: #7a5c00;
 
   /* a bright accent still fills a key, but as ink it has to darken to be read on white */

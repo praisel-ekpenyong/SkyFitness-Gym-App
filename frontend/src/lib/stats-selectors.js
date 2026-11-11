@@ -18,7 +18,7 @@ import {
   isPerformed, isWorkSet, metricRowsForEntry, metricModeForEntry, bestWeightForEntry, modeOf,
 } from './workout-model.js'
 import { workoutTimestamp, isoOf, weekKey, monthKey } from './format.js'
-import { streakWeeks } from './history.js'
+import { streakWeeks, trainedWeeks } from './history.js'
 import { strengthExerciseRowsForMuscle } from './strength-exercises.js'
 
 const DAY_MS = 24 * 60 * 60 * 1000
@@ -227,7 +227,7 @@ export function selectStatsOverview(S, opts = {}) {
     exerciseIndex,
     bodyweightKg,
     bodyweight,
-    counts: { total: workouts.length, month: workouts.filter(w => monthKey(w) === monthKey(today)).length, streak: streakWeeks(S, now) },
+    counts: { total: workouts.length, month: workouts.filter(w => monthKey(w) === monthKey(today)).length, streak: streakWeeks(S, now), weeks12: trainedWeeks(S, 12, now) },
     workouts: { recent: [...workouts].reverse().slice(0, 6), forDay: day => workouts.filter(w => w.d === day) },
     scale,
     scaleName: scaleName(scale),

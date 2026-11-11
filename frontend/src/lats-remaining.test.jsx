@@ -178,7 +178,7 @@ describe('Ticket 03 — Library and Picker filters plus Exercise Detail presenta
     expect(tags.some(t => t === 'Primary: Lats' || t.includes('Primary: Lats'))).toBe(true)
     expect(tags).toContain('Secondary: Biceps')
     expect(tags).toContain('Secondary: Upper back')
-    const primaryTag = container.querySelector('.tag.acc')
+    const primaryTag = container.querySelector('.tag.strong')
     expect(primaryTag.textContent).toContain('Primary: Lats')
 
     await act(async () => { root.unmount() })

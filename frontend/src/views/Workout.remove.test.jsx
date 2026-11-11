@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { removeActiveExercise } from './Workout.jsx'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
-import { entry, resetViewTestState, seedActiveWorkout, renderWorkout, cleanupViewTest } from '../test/view-harness.jsx'
+import { entry, resetViewTestState, seedActiveWorkout, renderWorkout, renderWorkoutApp, cleanupViewTest } from '../test/view-harness.jsx'
 
 vi.mock('../lib/sound.js', () => ({
   beep: vi.fn(),
@@ -19,8 +19,18 @@ globalThis.IS_REACT_ACT_ENVIRONMENT = true
 
 let view
 
+// Exercise-level edits live in the Edit workout sheet; open it before looking for one.
+function inEditSheet(label, exact = false) {
+  const find = () => [...document.querySelectorAll('button')].find(b => exact ? b.textContent.trim() === label : b.textContent.trim().includes(label))
+  if (!find()) {
+    const edit = [...document.querySelectorAll('button')].find(b => b.textContent.trim() === 'Edit workout')
+    if (edit) act(() => { edit.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
+  }
+  return find()
+}
+
 function removeButton() {
-  return [...view.container.querySelectorAll('button')].find(button => button.textContent.includes('Remove exercise'))
+  return inEditSheet('Remove exercise')
 }
 
 beforeEach(() => {
@@ -36,7 +46,7 @@ afterEach(() => {
 
 describe('active-session exercise removal', () => {
   it('disables removal for the whole duration of a timed hold', () => {
-    view = renderWorkout([entry('1001')])
+    view = renderWorkoutApp([entry('1001')])
     expect(removeButton()).toBeTruthy()
     expect(removeButton().disabled).toBe(false)
 

@@ -4,7 +4,7 @@
 // workout-model.test.js line for line and was retired; effort, row, label and
 // superset coverage lives at its canonical modules.
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { deleteWorkout, effectiveRoutineId, hasEffectiveOverride, effectiveRoutine, streakWeeks } from './history.js'
+import { deleteWorkout, effectiveRoutineId, hasEffectiveOverride, effectiveRoutine, streakWeeks, trainedWeeks } from './history.js'
 
 describe('deleteWorkout — the history write seam', () => {
   const S = () => ({
@@ -102,5 +102,15 @@ describe('streakWeeks', () => {
     vi.setSystemTime(new Date('2026-01-04T12:00:00'))
     const s = { workouts: [{ d: '2026-01-04' }, { d: '2026-01-01' }, { d: '2025-12-15' }] }
     expect(streakWeeks(s)).toBe(1)
+  })
+})
+
+describe('trainedWeeks', () => {
+  it('counts weeks with a workout in the window; a gap lowers the count instead of resetting it', () => {
+    const now = new Date('2026-01-04T12:00:00').getTime() // Sunday
+    const s = { workouts: [{ d: '2026-01-04' }, { d: '2026-01-01' }, { d: '2025-12-15' }, { d: '2025-01-01' }] }
+    expect(trainedWeeks(s, 12, now)).toBe(2)
+    expect(trainedWeeks(s, 1, now)).toBe(1)
+    expect(trainedWeeks({ workouts: [] }, 12, now)).toBe(0)
   })
 })

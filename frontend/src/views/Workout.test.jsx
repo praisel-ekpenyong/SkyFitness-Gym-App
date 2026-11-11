@@ -307,14 +307,14 @@ describe('Workout exercise notes and note sheet', () => {
     expect(headerBtn).toBeNull()
   })
 
-  it('renders add note icon button in header when entry.notes is empty, without note callout', async () => {
+  it('renders a labelled add note button in header when entry.notes is empty, without note callout', async () => {
     await mount([exercise('0025', [false])])
 
     expect(container.querySelector('.exnote')).toBeNull()
 
     const headerBtn = container.querySelector('button[aria-label="Add note"]')
     expect(headerBtn).not.toBeNull()
-    expect(headerBtn.getAttribute('title')).toBe('Add note')
+    expect(headerBtn.textContent).toBe('Note')
   })
 
   it('tapping note callout opens exerciseNoteSheet', async () => {

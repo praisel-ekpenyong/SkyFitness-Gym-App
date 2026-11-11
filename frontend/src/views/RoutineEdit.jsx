@@ -60,7 +60,7 @@ export default function RoutineEdit() {
         <input className="input rt-title d" defaultValue={r.name} aria-label={t('Routine name')} placeholder={t('Routine name')}
           onChange={e => update(s => { s.routines.find(x => x.id === id).name = e.target.value.trim() || t('Routine') })} />
       </div>
-      <button className="iconbtn" aria-label={t('Pick an icon')} onClick={() => glyphPicker(r.emoji, g => update(s => { s.routines.find(x => x.id === id).emoji = g }))}><Icon name={glyphOf(r.emoji)} /></button>
+      <button className="btn sm plain hdr-act" aria-label={t('Pick an icon')} onClick={() => glyphPicker(r.emoji, g => update(s => { s.routines.find(x => x.id === id).emoji = g }))}><Icon name={glyphOf(r.emoji)} />{t('Icon')}</button>
     </div>
 
     {/* Coverage of the routine as planned, so a gap shows up while you're building it
@@ -128,7 +128,7 @@ export default function RoutineEdit() {
             {e.notes && <div className="small dim rt-note"><Icon name="clipboard" size={13} /><span>{e.notes}</span></div>}
           </div>
           <div className="rt-tools">
-            {i > 0 && <button className={'iconbtn bare' + (linkedPrev ? ' on-ss' : '')} title={t('Superset with exercise above')} aria-label={t('Superset with exercise above')} aria-pressed={!!linkedPrev} onClick={ev => { ev.stopPropagation(); toggleLink(i) }}><Icon name="link" /></button>}
+            {i > 0 && <button className={'extool rt-link' + (linkedPrev ? ' on-ss' : '')} aria-label={t('Superset with exercise above')} aria-pressed={!!linkedPrev} onClick={ev => { ev.stopPropagation(); toggleLink(i) }}><Icon name="link" /><span>{t('Superset with above')}</span></button>}
             <button className="iconbtn bare" aria-label="Move up" onClick={ev => { ev.stopPropagation(); move(i, -1) }}><Icon name="chevronUp" /></button>
             <button className="iconbtn bare" aria-label="Move down" onClick={ev => { ev.stopPropagation(); move(i, 1) }}><Icon name="chevronDown" /></button>
           </div>
@@ -136,7 +136,6 @@ export default function RoutineEdit() {
       </div>
     })}</div> : <div className="empty"><div className="ico"><Icon name="dumbbell" /></div>{t('No exercises yet — add your first one.')}</div>}
 
-    <div className="small dim row rt-hint"><Icon name="link" />{t('Tap the link button on an exercise to superset it with the one above — you’ll do them back-to-back.')}</div>
     <Button variant="primary" onClick={() => exercisePicker(ex => exConfigSheet(ex, null, cfg => edit(x => { x.push({ id: ex.id, ...cfg }) }), null, r))} icon="plus">{t('Add exercise')}</Button>
     <div className="gap8" />
     <Button variant="danger" onClick={() => confirmSheet({

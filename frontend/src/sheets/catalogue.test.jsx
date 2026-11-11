@@ -429,8 +429,8 @@ describe('ExerciseDetail primary and secondary muscle tags', () => {
     const tags = Array.from(container.querySelectorAll('.row .tag'))
     const tagTexts = tags.map(t => t.textContent.trim())
 
-    // Primary tag should have class 'tag acc' with 'Primary: Chest'
-    const primaryTag = tags.find(t => t.classList.contains('acc'))
+    // Primary tag should have class 'tag strong' with 'Primary: Chest'
+    const primaryTag = tags.find(t => t.classList.contains('strong'))
     expect(primaryTag).toBeTruthy()
     expect(primaryTag.textContent).toContain('Primary: Chest')
 
@@ -456,7 +456,7 @@ describe('ExerciseDetail primary and secondary muscle tags', () => {
     const tags = Array.from(container.querySelectorAll('.row .tag'))
     const tagTexts = tags.map(t => t.textContent.trim())
 
-    const primaryTag = tags.find(t => t.classList.contains('acc'))
+    const primaryTag = tags.find(t => t.classList.contains('strong'))
     expect(primaryTag).toBeTruthy()
     expect(primaryTag.textContent).toContain('Cardio')
     expect(primaryTag.textContent).not.toContain('Primary: Cardio')
@@ -481,7 +481,7 @@ describe('ExerciseDetail primary and secondary muscle tags', () => {
     const tags = Array.from(container.querySelectorAll('.row .tag'))
     const tagTexts = tags.map(t => t.textContent.trim())
 
-    const primaryTag = tags.find(t => t.classList.contains('acc'))
+    const primaryTag = tags.find(t => t.classList.contains('strong'))
     expect(primaryTag).toBeTruthy()
     expect(primaryTag.textContent).toContain('Primary: Biceps')
     expect(tagTexts).toContain('Secondary: Forearms')
@@ -503,7 +503,7 @@ describe('ExerciseDetail primary and secondary muscle tags', () => {
     const tags = Array.from(container.querySelectorAll('.row .tag'))
     const tagTexts = tags.map(t => t.textContent.trim())
 
-    const primaryTag = tags.find(t => t.classList.contains('acc'))
+    const primaryTag = tags.find(t => t.classList.contains('strong'))
     expect(primaryTag).toBeTruthy()
     expect(primaryTag.textContent).toContain('Primary: Quads')
     expect(tagTexts).toContain('Secondary: Hamstrings')
@@ -527,7 +527,7 @@ describe('ExerciseDetail primary and secondary muscle tags', () => {
     const tags = Array.from(container.querySelectorAll('.row .tag'))
     const tagTexts = tags.map(t => t.textContent.trim())
 
-    const primaryTag = tags.find(t => t.classList.contains('acc'))
+    const primaryTag = tags.find(t => t.classList.contains('strong'))
     expect(primaryTag).toBeTruthy()
     expect(primaryTag.textContent).toContain('Primary: Biceps')
     expect(tagTexts).toContain('dumbbell')
@@ -552,7 +552,7 @@ describe('ExerciseDetail primary and secondary muscle tags', () => {
     const tags = Array.from(container.querySelectorAll('.row .tag'))
     const tagTexts = tags.map(t => t.textContent.trim())
 
-    const primaryTag = tags.find(t => t.classList.contains('acc'))
+    const primaryTag = tags.find(t => t.classList.contains('strong'))
     expect(primaryTag).toBeTruthy()
     expect(primaryTag.textContent).toContain('Cardio')
     expect(primaryTag.textContent).not.toContain('Primary:')

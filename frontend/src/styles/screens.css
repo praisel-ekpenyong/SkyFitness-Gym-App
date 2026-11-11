@@ -48,7 +48,9 @@
 .rt-ex .grow { flex: 1 1 calc(100% - 64px) }
 .rt-note { margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 4px }
 .rt-note span { overflow: hidden; text-overflow: ellipsis }
-.rt-tools { flex: 1 0 100%; display: flex; justify-content: flex-end; gap: 0; color: var(--label-3); margin-right: -6px }
+.rt-tools { flex: 1 0 100%; display: flex; justify-content: flex-end; align-items: center; gap: 0; color: var(--label-3); margin-right: -6px }
+.rt-link { margin-right: auto; margin-left: -10px }
+.rt-link.on-ss { color: var(--acc-text) }
 .rt-hint { margin: 12px 2px; gap: 7px; align-items: flex-start; line-height: 1.38 }
 .rt-hint .icn { margin-top: 2px; flex: none }
 

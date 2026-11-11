@@ -13,7 +13,7 @@ import { nav } from './lib/nav.js'
 import { applyStarterPlan } from './lib/starter.js'
 import { Thumb } from './components/Media.jsx'
 import Icon from './components/Icon.jsx'
-import { Button, Slider, Switch } from './components/ui.jsx'
+import { Button, Switch } from './components/ui.jsx'
 import BodyMap from './components/BodyMap.jsx'
 import { SessionMuscleDistribution } from './components/SessionMuscleDistribution.jsx'
 import { loadOfWorkouts, MUSCLE_NAME } from './lib/muscles.js'
@@ -79,7 +79,6 @@ const wHi = unit => (unit === 'lb' ? 660 : 300)
 function WeightInput({ value, setValue, unit }) {
   const W_HI = wHi(unit)
   const clamp = x => Math.max(W_LO, Math.min(W_HI, Math.round((x || 0) * 10) / 10))
-  const sv = Math.max(W_LO, Math.min(W_HI, value))
   const onSlide = v => setValue(clamp(v))
   return <>
     <div className="bwstep">
@@ -93,7 +92,6 @@ function WeightInput({ value, setValue, unit }) {
       <button className="chip" onClick={() => onSlide(value + 0.5)} aria-label={t('Increase by 0.5 {0}', unit)}>+0.5</button>
       <button className="chip" onClick={() => onSlide(value + 1)} aria-label={t('Increase by 1 {0}', unit)}>+1</button>
     </div>
-    <Slider value={sv} min={W_LO} max={W_HI} step={0.5} onChange={onSlide} aria-label={t('Weight')} />
   </>
 }
 
@@ -114,10 +112,10 @@ function BwSheet({ required, onDone, close }) {
   const delEntry = d => update(s => { deleteWeighIn(s, d) })
   return <>
     <h3>{required ? t('Quick check-in') : t('Log body weight')}</h3>
-    <div className="sheet-sub">{required ? t('Slide or tap to set your weight — tracked before every workout so your curve stays honest.') : t('Today') + ', ' + fmtDate(todayISO(), true)}</div>
+    <div className="sheet-sub">{required ? t('Asked once a day, before your first workout, so the curve has a point for every training day.') : t('Today') + ', ' + fmtDate(todayISO(), true)}</div>
     <WeightInput value={v} setValue={setV} unit={unit} />
     <div className="gap16" />
-    <Button variant="primary" onClick={save}>{required ? t('Save & start workout') : t('Save')}</Button>
+    <Button variant="primary" className={required ? 'go' : undefined} onClick={save}>{required ? t('Save & start workout') : t('Save')}</Button>
     {required && <>
       <div className="gap8" /><Button variant="ghost" className="dim" onClick={() => { close(); onDone && onDone(null) }}>{t('Start without weighing in')}</Button>
       <Button variant="ghost" className="dim" icon="reset" onClick={() => { close(); nav('/workout') }}>{t('Choose a different workout')}</Button>

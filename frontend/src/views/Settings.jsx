@@ -76,7 +76,7 @@ export default function Settings() {
     </Section>
     <Section title={t('Profile')}>
       <Row icon="person" title={t('Display name')}
-        subtitle={S.displayName ? t('Hi {0}', S.displayName) : t('Not set — shown on Home as “Hi, there”')}
+        subtitle={S.displayName ? t('Shown in the greeting on Home') : t('Not set — Home says “Hi there”')}
         value={S.displayName || ''} accessory="chevron" onClick={displayNameSheet} />
     </Section>
     {/* ---------- general (language row removed with the non-English locales — English is
@@ -153,7 +153,7 @@ export default function Settings() {
 
     {/* ---------- data: fill it, bring things over, back it up, wipe it ---------- */}
     <Section title={t('Data')}>
-      <Row icon="sparkles" title={t('Load starter plan (PPL)')} accessory="chevron" onClick={loadStarterPlan} />
+      <Row icon="calendar" title={t('Load starter plan')} subtitle={t('Push / Pull / Legs, three days a week')} accessory="chevron" onClick={loadStarterPlan} />
       <Row icon="shuffle" title={t('Import from another app')}
         subtitle={t('FitNotes, Strong, Hevy — or body weight from Apple Health')}
         accessory="chevron" onClick={() => importRef.current.click()} />
@@ -170,7 +170,7 @@ export default function Settings() {
     {!MOBILE && <Section title={t('Tip')}>
       <Row icon="lightbulb"
         title={IS_ANDROID ? t('In Chrome: ⋮ menu → Add to Home screen') : t('In Safari: Share → Add to Home Screen')}
-        subtitle={t('to install Sky as a full-screen app.') + ' ' + t('Your data never leaves this device — export a backup now and then!')} />
+        subtitle={t('to install Sky as a full-screen app.') + ' ' + t('Your data never leaves this device, so export a backup now and then.')} />
     </Section>}
 
     {/* About — the one place that says what Sky is. License attribution lives here, so it

@@ -18,8 +18,18 @@ globalThis.IS_REACT_ACT_ENVIRONMENT = true
 
 let view
 
+// Exercise-level edits live in the Edit workout sheet; open it before looking for one.
+function inEditSheet(label, exact = false) {
+  const find = () => [...document.querySelectorAll('button')].find(b => exact ? b.textContent.trim() === label : b.textContent.trim().includes(label))
+  if (!find()) {
+    const edit = [...document.querySelectorAll('button')].find(b => b.textContent.trim() === 'Edit workout')
+    if (edit) act(() => { edit.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
+  }
+  return find()
+}
+
 function reorderButton() {
-  return [...view.container.querySelectorAll('button')].find(b => b.textContent.trim().includes('Reorder exercises'))
+  return inEditSheet('Reorder exercises')
 }
 
 function click(el) {

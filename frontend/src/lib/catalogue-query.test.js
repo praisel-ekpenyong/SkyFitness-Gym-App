@@ -417,5 +417,18 @@ describe('Catalogue query', () => {
     const suppressedRow = suppressedResult.rows.find(r => r.exercise.id === 'compound-bench')
     expect(suppressedRow?.secondaryMatch).toBeNull()
   })
+
+  it('ownFirst puts starred, then most-used exercises ahead of the catalogue order when browsing', () => {
+    const profile = {
+      customEx: [],
+      favorites: ['0043'],
+      routines: [{ id: 'r', ex: [{ id: '0025' }] }],
+      workouts: [{ d: '2026-01-01', entries: [{ id: '0025', sets: [] }] }],
+    }
+    const ids = queryCatalogue({ profile, scope: { kind: 'all' }, ownFirst: true }).rows.map(r => r.exercise.id)
+    expect(ids.slice(0, 2)).toEqual(['0043', '0025'])
+    const plain = queryCatalogue({ profile, scope: { kind: 'all' } }).rows.map(r => r.exercise.id)
+    expect(plain.indexOf('0043')).toBeGreaterThan(1)
+  })
 })
 

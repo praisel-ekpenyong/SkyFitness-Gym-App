@@ -34,6 +34,7 @@ export default function Library() {
     search: q,
     equipment: eq,
     searchAttribution: !isFavFilter,
+    ownFirst: true,
   }), [S.customEx, S.favorites, S.routines, S.workouts, scope, q, eq])
   const bestMap = useMemo(() => {
     const m = new Map()
