@@ -440,3 +440,37 @@ describe('FinishSummary Progression Summary', () => {
     expect(card.textContent).toContain('60 kg → 62.5 kg (+2.5 kg)')
   })
 })
+
+describe('FinishSummary tiles', () => {
+  // DESIGN.md number formatting: the figure leads, its unit is small (.u), and the label above
+  // it is the only place the word appears ("Sets" over "3", never "3 sets").
+  const tiles = () => Object.fromEntries([...container.querySelectorAll('.finish-kpis .tile')]
+    .map(tile => [tile.querySelector('.l').textContent, tile]))
+
+  it('shows each figure with a small unit and no repeated word', async () => {
+    const w = {
+      id: 'w-tiles', d: '2026-10-30', start: 0, end: 66 * 60000, routineId: 'routine-push',
+      entries: [{
+        id: '0025',
+        target: { sets: 3, reps: 5, weight: 60, prog: 'linear' },
+        sets: [
+          { w: 40, r: 5, done: true, phase: 'warmup' },
+          { w: 140, r: 5, done: true },
+          { w: 140, r: 5, done: true },
+          { w: 140, r: 5, done: true },
+        ],
+      }],
+    }
+    await act(async () => { root.render(<FinishSummary w={w} prs={[]} close={vi.fn()} />) })
+    const { Duration, Volume, Sets, PRs } = tiles()
+
+    expect(Duration.querySelector('.v').textContent).toBe('1h 6m')
+    expect([...Duration.querySelectorAll('.v .u')].map(u => u.textContent)).toEqual(['h', 'm'])
+    expect(Volume.querySelector('.v').textContent).toBe('2,100 kg')
+    expect(Volume.querySelector('.v .u').textContent.trim()).toBe('kg')
+    expect(Sets.querySelector('.v').textContent).toBe('3')
+    expect(Sets.querySelector('.s').textContent).toBe('1 warm-up')
+    // Zero is a zero, not a dash: no records is a count, not missing data.
+    expect(PRs.querySelector('.v').textContent).toBe('0')
+  })
+})

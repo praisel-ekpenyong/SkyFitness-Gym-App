@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { selectStatsOverview, selectExerciseStats } from '../lib/stats-selectors.js'
-import { fmtNum, fmtDate, todayISO, setLabel } from '../lib/format.js'
+import { fmtNum, fmtSigned, fmtDate, todayISO, setLabel } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
 import { deltaTowardGoal } from '../lib/bodyweight.js'
 import { bwSheet, goalSheet, calendarSheet, recapSheet, workoutDetailSheet, WorkoutRow } from '../sheets.jsx'
@@ -104,14 +104,14 @@ function MuscleBalance({ S, overview, win, setWin, setHard }) {
         {sel && <div className="muscle-inspector" role="status" aria-live="polite">
           <div className="muscle-inspector-info">
             <div className="muscle-inspector-name"><b>{t(MUSCLE_NAME[sel])}</b></div>
-            <div className="muscle-inspector-val">{load[sel] ? t('{0} sets', load[sel]) : on ? t('no hard sets') : t('not trained')}</div>
+            <div className="muscle-inspector-val">{load[sel] ? t('{0} sets', fmtNum(load[sel])) : on ? t('no hard sets') : t('not trained')}</div>
           </div>
           <Button size="xs" variant="ghost" icon="xmark" onClick={() => setSel(null)}>{t('Clear')}</Button>
         </div>}
         {!sel && top.map(m => <div key={m} className="mrow">
           <span className="nm">{t(MUSCLE_NAME[m])}</span>
           <span className="bar"><i style={{ width: Math.round(load[m] / max * 100) + '%' }} /></span>
-          <span className="v">{t('{0} sets', load[m])}</span>
+          <span className="v">{t('{0} sets', fmtNum(load[m]))}</span>
         </div>)}
         {!sel && worked.length > 5 && (
           <div className="more-row">
@@ -175,7 +175,7 @@ function MuscleBalance({ S, overview, win, setWin, setHard }) {
                 <span className="str-n capitalize">{row.name}</span>
                 <span className="tag">{row.primary === sel ? t('primary') : t('secondary')}</span>
               </div>
-              <div className="small dim">{t('Est. 1RM')}: {fmtNum(row.est)} {S.unit} · {fmtDate(row.estDate, true)}</div>
+              <div className="small dim">{[t('Est. 1RM') + ' ' + fmtNum(row.est) + ' ' + S.unit, fmtDate(row.estDate, true)].join(' · ')}</div>
             </div>
             <div className="str-v">
               <span className="str-kg">{fmtNum(row.current)} <span className="u">{S.unit}</span></span>
@@ -188,7 +188,7 @@ function MuscleBalance({ S, overview, win, setWin, setHard }) {
       {detrained.map(slug => <div key={slug} className="mrow">
         <span className="nm">{t(MUSCLE_NAME[slug])}</span>
         <span className="bar"><i style={{ width: Math.round(strength[slug] * 100) + '%' }} /></span>
-        <span className="v">{t('{0} sets', vol90[slug] || 0)}</span>
+        <span className="v">{t('{0} sets', fmtNum(vol90[slug] || 0))}</span>
       </div>)}
     </>}
   </div>
@@ -199,7 +199,7 @@ function EffortCard({ overview, win, setWin }) {
   const kind = overview.scale
   const hd = overview.scaleName
   const sum = overview.effort
-  const pts = (sum?.weeks || []).map(w => ({ ...w, note: t('{0} sets', w.sets) }))
+  const pts = (sum?.weeks || []).map(w => ({ ...w, note: t('{0} sets', fmtNum(w.sets)) }))
   const binLabel = b => b.tail ? (kind === 'rpe' ? '≤ ' + fmtNum(b.value) : fmtNum(b.value) + '+') : fmtNum(b.value)
 
   return <div className="card">
@@ -219,7 +219,7 @@ function EffortCard({ overview, win, setWin }) {
           <div className="num">{sum.hardPct == null ? '—' : Math.round(sum.hardPct * 100) + '%'}</div>
         </div>
       </div>
-      <div className="small dim">{t('{0} of {1} finished sets rated', sum.rated, sum.done)}</div>
+      <div className="small dim">{t('{0} of {1} finished sets rated', fmtNum(sum.rated), fmtNum(sum.done))}</div>
       {!overview.effortEnabled && <div className="small eff-off">
         <Icon name="gear" />
         <span>{t('Effort per set is switched off — turn it on in Settings to keep rating.')}</span>
@@ -232,7 +232,7 @@ function EffortCard({ overview, win, setWin }) {
       {sum.histogram.map(b => <div key={b.rir} className="mrow">
         <span className="nm">{hd} {binLabel(b)}</span>
         <span className="bar"><i className={b.hard ? '' : 'quiet'} style={{ width: b.width + '%' }} /></span>
-        <span className="v">{b.n ? b.n + ' · ' + b.percent + '%' : '—'}</span>
+        <span className="v">{b.n ? fmtNum(b.n) + ' · ' + b.percent + '%' : '—'}</span>
       </div>)}
       <div className="small dim note">
         {t('Most working sets belong close to failure without living there — half at the floor and half at the top average out to a healthy-looking middle.')}
@@ -288,7 +288,7 @@ export default function Stats() {
     <div className="hdr">
       <div>
         <h1>{t('Stats')}</h1>
-        <div className="sub">{t('Progress & history')}</div>
+        <div className="sub">{t('Progress and history')}</div>
       </div>
       <button className="iconbtn" onClick={() => nav('/history')} aria-label={t('History')}>
         <Icon name="history" />
@@ -298,12 +298,12 @@ export default function Stats() {
     <div className="tiles stats-kpis">
       <button type="button" className="tile tappable" onClick={() => nav('/history')}>
         <span className="l">{t('Workouts')}</span>
-        <div className="v">{overview.counts.total}</div>
+        <div className="v">{fmtNum(overview.counts.total)}</div>
         <div className="s">{t('View history')}</div>
       </button>
       <button type="button" className="tile tappable" onClick={() => recapSheet(todayISO())}>
         <span className="l">{t('This month')}</span>
-        <div className="v">{overview.counts.month}</div>
+        <div className="v">{fmtNum(overview.counts.month)}</div>
         <div className="s">{t('Active days')}</div>
       </button>
       <button type="button" className="tile tappable" onClick={() => calendarSheet()}>
@@ -314,7 +314,7 @@ export default function Stats() {
       <button type="button" className="tile tappable" onClick={() => bwSheet()}>
         <span className="l">{t('Weight 30d')}</span>
         <div className="v" style={{ color: bwDelta30 === null ? undefined : deltaTowardGoal(S.targetW, (bw.latest || {}).w || 0, bwDelta30) }}>
-          {bwDelta30 === null ? '—' : <>{(bwDelta30 > 0 ? '+' : '') + fmtNum(bwDelta30)}<span className="u"> {S.unit}</span></>}
+          {bwDelta30 === null ? '—' : <>{fmtSigned(bwDelta30)}<span className="u"> {S.unit}</span></>}
         </div>
         <div className="s">{bw.latest ? `${fmtNum(bw.latest.w)} ${S.unit}` : t('No weigh-ins')}</div>
       </button>
@@ -329,10 +329,10 @@ export default function Stats() {
         {exHist.length ? <>
           <div className="sect-b ex-picker">
             <SelectRow title={t('Exercise')} sheetTitle={t('Exercise progress')} value={curEx} onChange={setExId}
-              options={exHist.map(ex => ({ value: ex.id, label: <><span className="capitalize">{ex.name}</span>{ex.current ? ' — ' + fmtNum(ex.current) + ' ' + ex.unit : ''}</> }))} />
+              options={exHist.map(ex => ({ value: ex.id, label: <><span className="capitalize">{ex.name}</span>{ex.current ? ' · ' + fmtNum(ex.current) + ' ' + ex.unit : ''}</> }))} />
           </div>
           {headline > 0 && <div className="ex-headline">
-            <span className="muted small">{t('Best:')}</span>
+            <span className="muted small">{t('Best')}</span>
             <span className="fig ex-headline-v">{fmtNum(headline)}<span className="u"> {headlineUnit}</span></span>
             <span className="dim small">{onE1 ? t('Estimated 1RM per workout') : curCardio ? t('Top speed per workout') : curTimed ? t('Longest hold per workout') : t('Best set weight per workout')}</span>
           </div>}
@@ -368,7 +368,7 @@ export default function Stats() {
 
       <section className="card stats-activity">
         <div className="card-head">
-          <h2>{t('Activity — last 12 months')} <span className="card-sub">· {t('by time trained')}</span></h2>
+          <h2>{t('Activity')} <span className="card-sub">· {t('last 12 months')} · {t('by time trained')}</span></h2>
         </div>
         <Heatmap S={S} onDay={iso => { const ws = overview.workouts.forDay(iso); if (ws.length === 1) workoutDetailSheet(ws[0]); else if (ws.length) calendarSheet(iso) }} />
       </section>
@@ -392,7 +392,7 @@ export default function Stats() {
     {overview.counts.total > 0 && <section>
       <div className="sec-row">
         <h2 className="sec">{t('Recent workouts')}</h2>
-        <Button size="sm" variant="ghost" trailingIcon="chevronRight" onClick={() => nav('/history')}>{t('All')} {overview.counts.total}</Button>
+        <Button size="sm" variant="ghost" trailingIcon="chevronRight" onClick={() => nav('/history')}>{t('All')} {fmtNum(overview.counts.total)}</Button>
       </div>
       <div className="list recent-list">{overview.workouts.recent.map(w => <WorkoutRow key={w.id} w={w} onClick={() => workoutDetailSheet(w)} />)}</div>
     </section>}
