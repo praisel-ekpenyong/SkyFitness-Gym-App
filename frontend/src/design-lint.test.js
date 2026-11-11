@@ -1,11 +1,12 @@
-// Guard G2 (type part): one type scale. Every font-size in styles/*.css names a role token from
-// styles/tokens.css, weights stay on the four the system uses, and no component sets type
-// inline. Each failure names the rule, the place, and where to read about it.
+// Guard G2: one type scale and one meaning per colour. Every font-size in styles/*.css names a
+// role token from styles/tokens.css, weights stay on the four the system uses, no component
+// sets type inline, and the accent and yellow colour only what an allowlist says they may (see
+// "colour meaning" below). Each failure names the rule, the place, and where to read about it.
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { dirname, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import { cssRules, readTokens, styleSheets, stripComments } from './test/design-css.js'
+import { cssRules, readTokens, selectorList, styleSheets, stripComments } from './test/design-css.js'
 
 const SRC = dirname(fileURLToPath(import.meta.url))
 const tokens = readTokens()
@@ -91,4 +92,132 @@ describe('G2 type scale (styles/*.css)', () => {
     }
     expect(bad, `Type is set by class in styles/*.css, never inline, so the scale guard can see it. ${READ}\n${bad.join('\n')}`).toEqual([])
   })
+})
+
+// ------------------------------------------------------------------- colour meaning --
+// Guard G2 (colour part): one meaning per colour. The accent means work and yellow means a
+// record, so the tokens that carry them may colour only what is listed below. Everything else
+// is ink (--label, --label-2, --label-3) on iron. Each entry names the use it is, by the
+// iron-discipline decision that allows it: D2 for the accent, D3 for yellow (DESIGN.md › The
+// five rules › 3 and › Tokens › Status). An entry that no longer matches anything fails too,
+// so the list stays a true account of where the colours are.
+
+const ACCENT_TOKENS = ['--acc', '--acc-2', '--acc-text', '--acc-soft', '--acc-line', '--data']
+const RECORD_TOKENS = ['--goal-text', '--yellow']
+const COLOUR_READ = 'Read DESIGN.md › The five rules › 3 (Colour is work) and › Tokens › Status (yellow is records).'
+
+/** Selectors (one per entry, as written in styles/*.css) that may use an accent token. */
+const WORK = {
+  '.btn.go': 'D2 the one .go key on a screen',
+  '.btn.go:active': 'D2 the .go key, pressed',
+  '.btn.go:hover': 'D2 the .go key, hovered (desktop)',
+  '.setrow.cur .chk': 'D2 the Log key: the open set’s .go key',
+  '.chk.on': 'D2 logged-set mark: the check key of a logged set',
+  '.ck.on': 'D2 logged-set mark: the check key (older alias of .chk)',
+  '.setrow.cur .chk.on': 'D2 logged-set mark: the Log key once its set is logged',
+  '.setrow.done .n': 'D2 logged-set mark: the set number of a logged set',
+  '.lad-b i': 'D2 logged-set mark: session segments fill with logged work sets',
+  '.hm-c.l1': 'D2 data ink: the training heatmap',
+  '.hm-c.l2': 'D2 data ink: the training heatmap',
+  '.hm-c.l3': 'D2 data ink: the training heatmap',
+  '.hm-c.l4': 'D2 data ink: the training heatmap',
+  '.mrow .bar i': 'D2 data ink: volume per muscle',
+  '.wp-blocks i.on': 'D2 data ink: sessions done this week, one block each',
+  '.bm-m.l1': 'D2 the trained-muscle map',
+  '.bm-m.l2': 'D2 the trained-muscle map',
+  '.bm-m.l3': 'D2 the trained-muscle map',
+  '.bm-m.l4': 'D2 the trained-muscle map',
+  '.cal-d.has': 'D2 trained calendar days',
+  '.wday .dot.done': 'D2 trained calendar days: Home’s week strip',
+  '.home-badge.done': 'D2 trained calendar days: today’s session is logged',
+  '#timer .bar i': 'D2 the rest-dock bar',
+  '#timer.working .t': 'D2 the rest dock while a timed set is held: the clock is the work itself',
+}
+
+/** Selectors that may use a record token. */
+const RECORD = {
+  '.record': 'D3 records and bests (utility class)',
+  '.pr': 'D3 a PR badge',
+  '.tw-new': 'D3 a new record (top-weight sheet)',
+  '.set-pill.top': 'D3 a set at the exercise’s best (Stats)',
+  '.ex-headline-v': 'D3 a best: the Stats exercise headline',
+  '.extags .tag.ex-best': 'D3 a best: the workout header',
+  '.ex-best-v': 'D3 a best: Library cards',
+  '.best-line .icn': 'D3 a best: the trophy on the exercise sheet',
+}
+
+/** Lines in src/**\/*.{js,jsx} that may name an accent token, by file and a fragment of the line. */
+const WORK_JS = [
+  { file: 'components/LineChart.jsx', has: "color = 'var(--data)'", why: 'D2 chart ink: the line’s default colour' },
+  { file: 'sheets.jsx', has: "background: 'var(--data)'", why: 'D2 trained calendar days: the calendar legend' },
+  { file: 'sheets.jsx', has: "v > 0 ? 'var(--acc-text)'", why: 'D2 good or bad: a month ahead of the last (DESIGN.md › Conventions › Colour says good or bad)' },
+  { file: 'lib/bodyweight.js', has: "'var(--acc-text)' : 'var(--red-text)'", why: 'D2 the weight delta keeps its good/bad colouring' },
+]
+
+/** Lines in src/**\/*.{js,jsx} that may name a record token. */
+const RECORD_JS = []
+
+const tokenUses = (value, family) => [...value.matchAll(/--[\w-]+/g)].map(m => m[0]).filter(n => family.includes(n))
+
+/** Every use of a family's tokens in styles/*.css (outside tokens.css), one per selector. */
+function cssUses(family) {
+  const out = []
+  for (const { name, css } of sheets) {
+    if (name === 'tokens.css') continue
+    for (const r of cssRules(css)) for (const d of r.decls) {
+      const used = tokenUses(d.value, family)
+      if (!used.length) continue
+      for (const sel of selectorList(r.selector)) {
+        out.push({ sel, used, where: `styles/${name}:${d.line} (${sel}${r.media ? ' in ' + r.media : ''}): ${d.prop}: ${d.value}` })
+      }
+    }
+  }
+  return out
+}
+
+/** Every line of non-test JS/JSX under src/ that names one of a family's tokens. */
+function jsUses(family) {
+  const out = []
+  const walk = dir => {
+    for (const f of readdirSync(dir)) {
+      const p = resolve(dir, f)
+      if (statSync(p).isDirectory()) { if (f !== 'test') walk(p); continue }
+      if (!/\.jsx?$/.test(f) || /\.test\.jsx?$/.test(f)) continue
+      stripComments(readFileSync(p, 'utf8')).split('\n').forEach((line, i) => {
+        const used = tokenUses(line, family)
+        if (used.length) out.push({ file: relative(SRC, p), line, used, where: `${relative(SRC, p)}:${i + 1}: ${line.trim()}` })
+      })
+    }
+  }
+  walk(SRC)
+  return out
+}
+
+describe('G2 colour meaning: lime is work, yellow is a record', () => {
+  const families = [
+    { name: 'accent', tokens: ACCENT_TOKENS, css: WORK, js: WORK_JS, list: 'WORK', means: 'the accent means work (spec D2)' },
+    { name: 'record', tokens: RECORD_TOKENS, css: RECORD, js: RECORD_JS, list: 'RECORD', means: 'yellow means a record or a best (spec D3)' },
+  ]
+
+  for (const f of families) {
+    it(`${f.name} tokens (${f.tokens.join(', ')}) colour only allowlisted selectors in styles/*.css`, () => {
+      const bad = cssUses(f.tokens).filter(u => !Object.hasOwn(f.css, u.sel)).map(u => u.where)
+      expect(bad, `These colour something that is not on the ${f.list} list: ${f.means}; anything else is ink (--label, --label-2, --label-3). If it truly is that use, add the selector to ${f.list} in src/design-lint.test.js with the D2/D3 use it is. ${COLOUR_READ}\n${bad.join('\n')}`).toEqual([])
+    })
+
+    it(`${f.name} tokens appear in JS/JSX only on allowlisted lines`, () => {
+      const bad = jsUses(f.tokens).filter(u => !f.js.some(a => a.file === u.file && u.line.includes(a.has))).map(u => u.where)
+      expect(bad, `Inline colour with ${f.tokens.join('/')} outside the ${f.list}_JS list: ${f.means}. Prefer a class in styles/*.css; if the line truly is that use, add it to ${f.list}_JS with the D2/D3 use it is. ${COLOUR_READ}\n${bad.join('\n')}`).toEqual([])
+    })
+
+    it(`every ${f.list} entry still matches a use (no stale allowlist)`, () => {
+      const usedSel = new Set(cssUses(f.tokens).map(u => u.sel))
+      const js = jsUses(f.tokens)
+      const stale = [
+        ...Object.keys(f.css).filter(s => !usedSel.has(s)).map(s => `${f.list}: "${s}" (${f.css[s]})`),
+        ...f.js.filter(a => !js.some(u => u.file === a.file && u.line.includes(a.has))).map(a => `${f.list}_JS: ${a.file} "${a.has}" (${a.why})`),
+      ]
+      expect(stale, `These allowlist entries no longer match any ${f.name} colour; remove them from src/design-lint.test.js.\n${stale.join('\n')}`).toEqual([])
+    })
+  }
 })

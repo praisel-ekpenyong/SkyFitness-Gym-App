@@ -49,7 +49,7 @@
 .iconbtn:disabled { opacity: .38; pointer-events: none }
 .iconbtn.bare { background: none; color: var(--label-2) }
 .iconbtn.bare:active { background: var(--surface-2) }
-.iconbtn.on-ss { color: var(--acc-text) }
+.iconbtn.on-ss { color: var(--label) }
 
 .helpbtn {
   color: var(--label-3); font-size: var(--fs-lead); background: none; line-height: 0; flex: none;
@@ -107,11 +107,11 @@
 }
 .sw::after { content: ''; position: absolute; inset: -8px -4px }   /* the thumb's target, not the drawing's */
 .sw .knob {
-  width: 22px; height: 22px; border-radius: var(--r-1); background: var(--label);
+  width: 22px; height: 22px; border-radius: var(--r-1); background: var(--label-3);
   transition: transform var(--med) var(--ease), background var(--med);
 }
-.sw.on { background: var(--acc) }
-.sw.on .knob { transform: translateX(18px); background: var(--on-acc) }
+.sw.on { background: var(--ink) }   /* a setting, not work: on is inverted ink */
+.sw.on .knob { transform: translateX(18px); background: var(--on-ink) }
 .sw:disabled { opacity: .4 }
 .sw-hit { width: 46px; height: var(--tap-target); flex: none; display: inline-flex; align-items: center; justify-content: center }
 
