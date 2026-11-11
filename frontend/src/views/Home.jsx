@@ -5,7 +5,7 @@ import { effectiveRoutine, effectiveRoutineId, hasEffectiveOverride } from '../l
 import { sessionProgress, tonnageOf, setsDone } from '../lib/workout-model.js'
 import { dayStatus } from '../lib/schedule.js'
 import { latestWeighIn, prevWeighIn, deltaTowardGoal } from '../lib/bodyweight.js'
-import { fmtNum, fmtDate, fmtVol, durPart, todayISO, isoOf, weekKey, DAYS, exCount, exLine, workoutTimestamp } from '../lib/format.js'
+import { fmtNum, fmtSigned, fmtDate, fmtVol, durPart, todayISO, isoOf, weekKey, DAYS, exCount, exLine, workoutTimestamp } from '../lib/format.js'
 import { t, dateLocale } from '../lib/i18n.js'
 import { exOr } from '../lib/exercises.js'
 import { loadOfRoutine, loadOfActive, rankOf, MUSCLE_NAME } from '../lib/muscles.js'
@@ -139,7 +139,7 @@ export default function Home() {
         {!firstRun && <section className={`home-hero hero-${heroStatus}`}>
           <div className="home-hero-head">
             {S.active ? (
-              <span className="home-badge active"><span className="home-badge-dot" />{t('In Progress')}</span>
+              <span className="home-badge active"><span className="home-badge-dot" />{t('In progress')}</span>
             ) : routine ? (
               doneToday ? (
                 <span className="home-badge done"><Icon name="check" />{t('Completed today')}</span>
@@ -157,16 +157,16 @@ export default function Home() {
               <h2 className={'home-hero-title d' + titleSize(heroName)}>{heroName}</h2>
               <div className="home-hero-meta">
                 {S.active
-                  ? `${sessionProgress(S.active).done} ${t('sets logged')}`
+                  ? t('{0} sets logged', fmtNum(sessionProgress(S.active).done))
                   : (routine
                     ? (routine.ex?.length ? exCount(routine.ex.length) : t("Today's routine"))
-                    : t('Time to recover & rebuild'))}
+                    : t('Time to recover and rebuild'))}
               </div>
               {heroMuscles && <div className="home-hero-note">{heroMuscles}</div>}
               {doneToday && !S.active && <div className="home-hero-note">
-                {[...durPart(todays.reduce((n, w) => n + Math.max(0, (w.end || w.start) - w.start), 0)), t('{0} sets', todaySets), fmtVol(todayVol, S.unit)].join(' · ')}
+                {[...durPart(todays.reduce((n, w) => n + Math.max(0, (w.end || w.start) - w.start), 0)), t('{0} sets', fmtNum(todaySets)), fmtVol(todayVol, S.unit)].join(' · ')}
               </div>}
-              {lastSame && <div className="home-hero-note dim">{t('Last time')}: {fmtDate(lastSame.d)} · {fmtVol(tonnageOf(lastSame), S.unit)}</div>}
+              {lastSame && <div className="home-hero-note dim">{t('Last time')} {fmtDate(lastSame.d)} · {fmtVol(tonnageOf(lastSame), S.unit)}</div>}
             </div>
             {heroLoad
               ? <div className="home-hero-map"><BodyMap load={heroLoad} body={S.body} /></div>
@@ -237,7 +237,7 @@ export default function Home() {
                     : (wThisWeek === 1 ? t('1 workout this week') : t('{0} workouts this week', wThisWeek)))}
               </div>
               <div className="muted small">
-                {t(S.workouts.length === 1 ? '{0} workout total' : '{0} workouts total', S.workouts.length)} · {t('View calendar')}
+                {t(S.workouts.length === 1 ? '{0} workout total' : '{0} workouts total', fmtNum(S.workouts.length))} · {t('View calendar')}
               </div>
             </div>
             <Icon name="chevronRight" className="chev" />
@@ -263,8 +263,7 @@ export default function Home() {
               <div className="fig bw-fig">{fmtNum(bw.w)}<span className="u"> {S.unit}</span></div>
               {!!delta && (
                 <span className="delta-pill" style={{ color: deltaTowardGoal(S.targetW, bw.w, delta) }}>
-                  <Icon name={delta > 0 ? 'arrowUp' : 'arrowDown'} />
-                  {fmtNum(Math.abs(delta))} {S.unit}
+                  {fmtSigned(delta)} {S.unit}
                 </span>
               )}
               <span className="dim small bw-when">{fmtDate(bw.d, true)}</span>

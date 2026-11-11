@@ -11,6 +11,10 @@ import {
   durPart,
   fmtNum,
   fmtVol,
+  fmtSigned,
+  fmtDurParts,
+  sentenceCase,
+  MINUS,
   exCount,
   weekKey,
   localTZ,
@@ -75,9 +79,88 @@ describe('format utility module', () => {
       expect(fmtVol(12000, 'kg')).toContain('kg')
     })
 
+    it('fmtNum puts a thousands separator in every count and load', () => {
+      expect(fmtNum(1324)).toBe('1,324')
+      expect(fmtNum(16910)).toBe('16,910')
+      expect(fmtNum(1234.56)).toBe('1,234.6')
+      expect(fmtVol(8200, 'kg')).toBe('8,200 kg')
+    })
+
     it('exCount formats plural forms correctly', () => {
       expect(exCount(1)).toBe('1 exercise')
       expect(exCount(5)).toBe('5 exercises')
+    })
+  })
+
+  describe('fmtSigned: the one way a signed figure is written', () => {
+    it('writes a loss with the U+2212 minus sign, never a hyphen or an en dash', () => {
+      expect(MINUS).toBe('−')
+      expect(fmtSigned(-0.2)).toBe('−0.2')
+      expect(fmtSigned(-15)).toBe('−15')
+      expect(fmtSigned(-0.2)).not.toMatch(/[-–]/)
+    })
+
+    it('writes a gain with an explicit plus', () => {
+      expect(fmtSigned(2.5)).toBe('+2.5')
+      expect(fmtSigned(15)).toBe('+15')
+    })
+
+    it('gives zero, and anything that rounds to it, no sign at all', () => {
+      expect(fmtSigned(0)).toBe('0')
+      expect(fmtSigned(-0)).toBe('0')
+      expect(fmtSigned(0.04)).toBe('0')
+      expect(fmtSigned(-0.04)).toBe('0')
+      expect(fmtSigned(-20000, n => fmtVol(n, 'kg'))).toBe('−20,000 kg')
+      expect(fmtSigned(-30000, fmtDur)).toBe('0 min')
+    })
+
+    it('keeps the thousands separator and the one-decimal rounding of fmtNum', () => {
+      expect(fmtSigned(1250)).toBe('+1,250')
+      expect(fmtSigned(-1234.56)).toBe('−1,234.6')
+    })
+
+    it('signs whatever the magnitude formatter writes: volume, duration, percent', () => {
+      expect(fmtSigned(-2500, n => fmtVol(n, 'kg'))).toBe('−2,500 kg')
+      expect(fmtSigned(-5400000, fmtDur)).toBe('−1h 30m')
+      expect(fmtSigned(12, n => fmtNum(n) + '%')).toBe('+12%')
+    })
+
+    it('treats junk as zero', () => {
+      expect(fmtSigned(undefined)).toBe('0')
+      expect(fmtSigned(NaN)).toBe('0')
+      expect(fmtSigned(null)).toBe('0')
+    })
+  })
+
+  describe('fmtDurParts: a duration as figure and unit pairs', () => {
+    it('splits the same text fmtDur writes, so a tile can set the unit small', () => {
+      expect(fmtDurParts(120000)).toEqual([['2', ' min']])
+      expect(fmtDurParts(5400000)).toEqual([['1', 'h'], ['30', 'm']])
+      expect(fmtDurParts(45000)).toEqual([['0', ' min']])
+      for (const ms of [0, 45000, 120000, 3600000, 5400000, 7260000]) {
+        expect(fmtDurParts(ms).map(p => p.join('')).join(' ')).toBe(fmtDur(ms))
+      }
+    })
+  })
+
+  describe('sentenceCase: dataset names as labels', () => {
+    it('lifts only the first letter, never each word', () => {
+      expect(sentenceCase('body weight')).toBe('Body weight')
+      expect(sentenceCase('leverage machine')).toBe('Leverage machine')
+      expect(sentenceCase('Upper back')).toBe('Upper back')
+      expect(sentenceCase('')).toBe('')
+    })
+
+    it('keeps the names that are not ordinary words', () => {
+      expect(sentenceCase('ez barbell')).toBe('EZ barbell')
+      expect(sentenceCase('bosu ball')).toBe('BOSU ball')
+      expect(sentenceCase('skierg machine')).toBe('SkiErg machine')
+    })
+
+    it('never capitalises a unit', () => {
+      expect(sentenceCase('60 kg')).toBe('60 kg')
+      expect(sentenceCase('kg')).toBe('kg')
+      expect(sentenceCase('lb')).toBe('lb')
     })
   })
 

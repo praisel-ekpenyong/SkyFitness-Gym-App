@@ -57,10 +57,10 @@ afterEach(() => {
 })
 
 describe('inter-exercise auto-rest for solo exercises', () => {
-  it('counts down in background behind the top-weight sheet and preserves countdown when tapping Save & next exercise', () => {
+  it('counts down in background behind the top-weight sheet and preserves countdown when tapping Save and next exercise', () => {
     setupAndCompleteFirstExercise()
 
-    const saveAndNext = buttonNamed('Save & next exercise')
+    const saveAndNext = buttonNamed('Save and next exercise')
     expect(saveAndNext).toBeTruthy()
 
     click(saveAndNext)
@@ -111,7 +111,7 @@ describe('inter-exercise auto-rest for solo exercises', () => {
     // View remains on the completed exercise card
     expect(view.container.textContent).toContain('Exercise 1 / 2')
     // No top-weight sheet opened
-    expect(buttonNamed('Save & next exercise')).toBeFalsy()
+    expect(buttonNamed('Save and next exercise')).toBeFalsy()
 
     // Lifter taps "Next"
     const nextBtn = buttonNamed('Next')
@@ -141,7 +141,7 @@ describe('inter-exercise auto-rest for solo exercises', () => {
     expect(timerBarText()).toMatch(/^1:30/)
 
     // Advance to last exercise
-    click(buttonNamed('Save & next exercise'))
+    click(buttonNamed('Save and next exercise'))
     expect(view.container.textContent).toContain('Exercise 2 / 2')
     expect(timerBarText()).toMatch(/^1:30/)
 
@@ -174,8 +174,8 @@ describe('inter-exercise auto-rest for solo exercises', () => {
     act(() => vi.advanceTimersByTime(4000))
     expect(timerBarText()).toMatch(/^1:26/)
 
-    // Tapping Save & next exercise advances to the solo exercise
-    click(buttonNamed('Save & next exercise'))
+    // Tapping Save and next exercise advances to the solo exercise
+    click(buttonNamed('Save and next exercise'))
     expect(view.container.textContent).toContain('Exercise 2 / 2')
 
     // Rest timer continues uninterrupted

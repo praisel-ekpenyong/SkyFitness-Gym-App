@@ -38,14 +38,21 @@ export function fmtDate(iso, long) {
   return d.toLocaleDateString(dateLocale(), long ? { weekday: 'short', day: 'numeric', month: 'short' } : { day: 'numeric', month: 'short' })
 }
 /**
+ * Splits a duration into figure and unit pairs, so a tile can set each unit small (`.u`).
+ * @param {number} ms - Elapsed milliseconds; values below one minute read as `0 min`.
+ * @returns {Array<[string, string]>} `[['54', ' min']]` below one hour, otherwise
+ *   `[['1', 'h'], ['6', 'm']]`; each unit carries the space that precedes it, if any.
+ */
+export function fmtDurParts(ms) {
+  const m = Math.floor(ms / 60000)
+  return m >= 60 ? [[fmtNum(Math.floor(m / 60)), 'h'], [String(m % 60), 'm']] : [[fmtNum(m), ' min']]
+}
+/**
  * Renders a duration in milliseconds as the compact list duration the user reads.
  * @param {number} ms - Elapsed milliseconds; values below one minute read as `0 min`.
  * @returns {string} `M min` below one hour, otherwise `Hh Mm`.
  */
-export function fmtDur(ms) {
-  const m = Math.floor(ms / 60000)
-  return m >= 60 ? Math.floor(m / 60) + 'h ' + (m % 60) + 'm' : m + ' min'
-}
+export const fmtDur = ms => fmtDurParts(ms).map(p => p.join('')).join(' ')
 // Imported history has no clock — an unknown duration is left out rather than shown as "0 min".
 export const durPart = ms => (ms >= 60000 ? [fmtDur(ms)] : [])
 // Numbers follow the UI language, like the dates above — a hardcoded locale put Swiss
@@ -55,6 +62,40 @@ export const fmtNum = n => (Math.round(n * 10) / 10).toLocaleString(dateLocale()
 // 10 000 into "t", which is wrong for a pound profile and made one list mix "18.8t" with
 // "7'535 kg" — two numbers you can't compare at a glance.
 export const fmtVol = (v, unit) => fmtNum(v) + ' ' + unit
+
+/** The minus sign (U+2212). A hyphen or an en dash is never a minus in the UI. */
+export const MINUS = '\u2212'
+/**
+ * Writes a signed figure: every weight delta, step key, progression delta and comparison.
+ * The magnitude goes through `fmt`, so it keeps fmtNum's rounding and thousands separator.
+ * @param {number} n - Signed value; junk reads as zero.
+ * @param {(abs: number) => string} [fmt=fmtNum] - Formats the magnitude (fmtVol, fmtDur, …).
+ * @returns {string} `−0.2` for a loss (U+2212), `+2.5` for a gain, and no sign at all on a
+ *   figure that is written as zero ("0", "0 min"), which has no direction.
+ */
+export function fmtSigned(n, fmt = fmtNum) {
+  const v = Number(n) || 0
+  const body = fmt(Math.abs(v))
+  if (!/[1-9]/.test(body)) return body
+  return (v < 0 ? MINUS : '+') + body
+}
+
+// Names that are not ordinary words keep their own capitals in a sentence-case label.
+const PROPER = { ez: 'EZ', bosu: 'BOSU', skierg: 'SkiErg' }
+const UNIT = /^(kg|lb|lbs|km\/h|min|s|h|m)$/
+/**
+ * Sentence-cases a dataset name for a label or chip: "body weight" → "Body weight",
+ * never title case ("Body Weight"). A unit stays lowercase ("kg", "60 kg").
+ * @param {string} s - Label, usually a lowercase dataset name.
+ * @returns {string} The label with only its first letter lifted.
+ */
+export function sentenceCase(s) {
+  const words = String(s ?? '').split(' ')
+  const fixed = words.map(w => PROPER[w.toLowerCase()] || w)
+  const [first = ''] = fixed
+  if (!UNIT.test(first) && first === words[0]) fixed[0] = first.charAt(0).toUpperCase() + first.slice(1)
+  return fixed.join(' ')
+}
 // Plural forms are not automatic when the English string is the key.
 export const exCount = n => t(n === 1 ? '{0} exercise' : '{0} exercises', n)
 
@@ -153,7 +194,7 @@ export function setLabel(id, s, cfg) {
   // other set in the app.
   const reps = s.r || 0
   if (isBw({ ...c, id: c.id ?? id })) {
-    const load = s.w > 0 ? `+${fmtNum(s.w)} × ` : ''
+    const load = s.w > 0 ? `${fmtSigned(s.w)} × ` : ''
     return `${load}${reps}` + effortTail(s)
   }
   return `${fmtNum(s.w || 0)}×${reps}` + effortTail(s)
@@ -165,7 +206,7 @@ export function exLine(cfg, unit) {
   const mode = modeOf(cfg)
   const n = cfg.sets || 1
   // Added weight reads as added: "+10 kg" on a dip belt, "60 kg" on a barbell.
-  const load = cfg.weight ? ' · ' + (isBw(cfg) ? '+' : '') + fmtNum(cfg.weight) + ' ' + unit : ''
+  const load = cfg.weight ? ' · ' + (isBw(cfg) ? fmtSigned(cfg.weight) : fmtNum(cfg.weight)) + ' ' + unit : ''
   if (mode === 'cardio') return `${n} × ${cfg.min || 20} min @ ${fmtNum(cfg.speed || 8)} km/h`
   if (mode === 'time') return `${n} × ${fmtSec(cfg.sec || 45)}${load}`
   // This is the line with room for it, so the split is spelled out: "3 × 16 · 8/side".

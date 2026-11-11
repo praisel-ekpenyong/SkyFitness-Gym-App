@@ -44,11 +44,11 @@ const scenes = {
   async variants(){ const v=JSON.parse(JSON.stringify(seed)); v.effort='rir';
     v.routines.push({id:'mix',name:'Upper Body Hypertrophy',emoji:'arm',ex:[{id:'0025',sets:3,reps:8,weight:60,sg:'a'},{id:'0027',sets:3,reps:8,weight:50,sg:'a'},{id:'0662',sets:3,reps:12,weight:0},{id:'3544',sets:3,mode:'time',sec:45,weight:0,bodyweight:true},{id:'3672',sets:1,min:20,speed:9}]}); v.week[1]='mix'
     const {c,p}=await ctx(v); await go(p,'/home',800); await snap(p,'long-name',false)
-    await clickT(p,/Start workout/); await p.waitForTimeout(300); await clickT(p,/Save & start workout/); await p.waitForTimeout(900); await snap(p,'superset')
+    await clickT(p,/Start workout/); await p.waitForTimeout(300); await clickT(p,/Save (&|and) start workout/); await p.waitForTimeout(900); await snap(p,'superset')
     for (const [i,n] of [[2,'bw'],[3,'timed'],[4,'cardio']]) { await p.evaluate(k=>[...document.querySelectorAll('.lad-s')][k-1]?.click(), i); await p.waitForTimeout(500); await snap(p,'set-'+n,false) }
     await c.close() },
   async more(){ const {c,p}=await ctx(seed); await go(p,'/home',700)
-    await clickT(p,/Start workout/); await p.waitForTimeout(300); await clickT(p,/Save & start workout/); await p.waitForTimeout(900)
+    await clickT(p,/Start workout/); await p.waitForTimeout(300); await clickT(p,/Save (&|and) start workout/); await p.waitForTimeout(900)
     await p.locator('button[aria-label="Add note"]').first().click(); await p.waitForTimeout(350); await snap(p,'sheet-note',false); await p.keyboard.press('Escape'); await p.waitForTimeout(300)
     await p.locator('.giftoggle').first().click(); await p.waitForTimeout(350); await snap(p,'workout-mini',false); await p.locator('.giftoggle').first().click()
     await clickT(p,/Edit workout/); await p.waitForTimeout(400); await snap(p,'sheet-edit',false)
@@ -61,12 +61,12 @@ const scenes = {
     await c.close() },
   async workout(){ const {c,p}=await ctx(seed); await go(p,'/home',800)
     await clickT(p,/Start workout/); await p.waitForTimeout(400); await snap(p,'weighin',false)
-    await clickT(p,/Save & start workout/); await p.waitForTimeout(1000); await snap(p,'workout',false); await snap(p,'workout-full')
+    await clickT(p,/Save (&|and) start workout/); await p.waitForTimeout(1000); await snap(p,'workout',false); await snap(p,'workout-full')
     const chk = p.locator('[role=checkbox]'); await chk.nth(0).click(); await p.waitForTimeout(400); await snap(p,'workout-rest',false); await snap(p,'workout-rest-full')
     await p.evaluate(()=>{ const u=[...document.querySelectorAll('#timer button')].pop(); u&&u.click() })
     for (let i=1;i<4;i++){ await chk.nth(i).click(); await p.waitForTimeout(200) ; await p.evaluate(()=>{ const u=[...document.querySelectorAll('#timer button')].pop(); u&&u.click() }) }
     await p.waitForTimeout(400); await snap(p,'workout-topweight',false)
-    await clickT(p,/Save & next exercise|Save weight|Save/); await p.waitForTimeout(700); await snap(p,'workout-next',false)
+    await clickT(p,/Save (&|and) next exercise|Save weight|Save/); await p.waitForTimeout(700); await snap(p,'workout-next',false)
     await p.goto(base+'#/home'); await p.waitForTimeout(700); await snap(p,'home-active',false)
     await p.goto(base+'#/workout'); await p.waitForTimeout(600); await p.locator('button[aria-label="Finish"]').click(); await p.waitForTimeout(400); await snap(p,'finish-confirm',false)
     await p.locator('[role=alertdialog] button').filter({hasText:/Finish/}).first().click(); await p.waitForTimeout(900); await snap(p,'finish',false); await snap(p,'finish-full'); await p.locator('.finish-cta button').click(); await p.waitForTimeout(700); await snap(p,'home-done',false); await c.close() },
