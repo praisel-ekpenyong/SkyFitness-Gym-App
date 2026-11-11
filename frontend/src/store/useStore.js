@@ -7,7 +7,7 @@
 // Heavy active-workout business logic is delegated behind the `lib/active-workout.js` seam.
 
 import { create } from 'zustand'
-import { localTZ } from '../lib/format.js'
+import { ACCENTS, localTZ } from '../lib/format.js'
 import { registerCustom } from '../lib/exercises.js'
 import { MOBILE, syncReminder } from '../lib/mobile.js'
 import { flush, load, loadLocal, save, LOCAL_KEY, onStorageSync } from '../lib/storage.js'
@@ -80,7 +80,7 @@ const clone = o => {
  *
  * Deep-clones `DEF` as the structural baseline, overlays valid top-level fields from `raw`,
  * ensures collections are true arrays, maps (`week`, `dayPlan`, `exWeights`) are plain objects,
- * and resets `active` to null if it lacks a valid `entries` array.
+ * reads an accent outside ACCENTS as lime, and resets `active` to null if it lacks a valid `entries` array.
  */
 export function normalizeState(raw) {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return clone(DEF)
@@ -95,6 +95,9 @@ export function normalizeState(raw) {
   S.dayPlan = raw.dayPlan && typeof raw.dayPlan === 'object' && !Array.isArray(raw.dayPlan) ? { ...raw.dayPlan } : {}
   S.exWeights = raw.exWeights && typeof raw.exWeights === 'object' && !Array.isArray(raw.exWeights) ? { ...raw.exWeights } : {}
   S.reminder = { ...base.reminder, ...(raw.reminder && typeof raw.reminder === 'object' && !Array.isArray(raw.reminder) ? raw.reminder : {}) }
+  // Gold, red and orange were retired as accents (they read as status colours): a Profile that
+  // still names one, or any unknown key, reads as lime. The stored copy is left as it was.
+  S.accent = typeof raw.accent === 'string' && Object.hasOwn(ACCENTS, raw.accent) ? raw.accent : base.accent
   // A corrupt `active` (bad backup edit, truncated write) must not crash every boot:
   // Workout reads A.entries, so anything without an entries array is discarded here.
   const a = raw.active
