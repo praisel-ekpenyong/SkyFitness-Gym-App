@@ -27,7 +27,7 @@
   --hair:   1px;
 
   /* status */
-  --red:    #ff5b4f;   --red-text: var(--red);
+  --red:    #ff5b4f;   --red-text: #ff847b;   /* --red 75% toward white: the fill is too dark to be words on --surface-2/3 */
   --orange: #ff9d3d;   --orange-text: var(--orange);   --on-orange: #0a0a09;
   --orange-wash: #352c20;   --orange-wash-2: #543d25;   /* orange 10% / +15% over --surface, precomputed so contrast is measurable */
   --yellow: #f2c94c;   --goal-text: var(--yellow);
@@ -128,7 +128,7 @@
 
   /* a bright accent still fills a key, but as ink it has to darken to be read on white */
   --acc-text: color-mix(in srgb, var(--acc) 45%, black);
-  --data:     color-mix(in srgb, var(--acc) 72%, black);
+  --data:     color-mix(in srgb, var(--acc) 62%, black);   /* 3:1 on the grounds a chart sits on, for every accent */
   --acc-soft: color-mix(in srgb, var(--acc) 26%, transparent);
 
   --art-filter: none;
@@ -143,3 +143,5 @@
 :root[data-accent="violet"] { --acc: #b79cff }
 :root[data-accent="pink"]   { --acc: #ff6fa3 }
 :root[data-accent="teal"]   { --acc: #3dd6c4 }
+/* Pink is the one accent too dark to be words on --surface-3 in dark theme: as text it lifts toward white. */
+:root:not([data-theme="light"])[data-accent="pink"] { --acc-text: #ff7dac }   /* pink 90% toward white */

@@ -56,15 +56,29 @@ describe('G1 colour tokens (styles/tokens.css)', () => {
     })
   }
 
-  it('light: --acc-text holds 4.5:1 on every surface, for every accent', () => {
-    const f = ACCENT_KEYS.flatMap(a => pairFailures('light', ['--acc-text'], SURFACES, TEXT, 'DESIGN.md › Tokens › Accent: in light theme --acc-text darkens so it can be read on white.', a))
-    expect(f, f.join('\n')).toEqual([])
-  })
+  // Every token that colours words, on every surface a word can sit on, in both themes and
+  // under every accent (the status colours do not move with the accent, but a guard that
+  // walks all of them cannot miss one that someday does).
+  const WORD_TOKENS = {
+    '--acc-text': 'DESIGN.md › Tokens › Accent: --acc-text is the accent as words.',
+    '--goal-text': 'DESIGN.md › Tokens › Status: --goal-text is the record colour as words.',
+    '--red-text': 'DESIGN.md › Tokens › Status: --red-text is the destructive colour as words.',
+    '--orange-text': 'DESIGN.md › Tokens › Status: --orange-text is the running-workout colour as words.',
+  }
+  for (const theme of THEMES) for (const [token, rule] of Object.entries(WORD_TOKENS)) {
+    it(`${theme}: ${token} holds 4.5:1 on every surface, for every accent`, () => {
+      const f = ACCENT_KEYS.flatMap(a => pairFailures(theme, [token], SURFACES, TEXT, rule, a))
+      expect(f, f.join('\n')).toEqual([])
+    })
+  }
 
-  it('light: --goal-text holds 4.5:1 on every surface', () => {
-    const f = pairFailures('light', ['--goal-text'], SURFACES, TEXT, 'DESIGN.md › Tokens › Status: --goal-text is the record colour as words.')
-    expect(f, f.join('\n')).toEqual([])
-  })
+  // Chart ink is a line, not words: WCAG 1.4.11 asks 3:1 against what it is drawn on.
+  for (const theme of THEMES) {
+    it(`${theme}: --data holds 3:1 on the grounds a chart sits on, for every accent`, () => {
+      const f = ACCENT_KEYS.flatMap(a => pairFailures(theme, ['--data'], ['--bg', '--surface', '--surface-2'], 3, 'DESIGN.md › Tokens › Accent: --data is the accent as chart ink (WCAG 1.4.11, 3:1).', a))
+      expect(f, f.join('\n')).toEqual([])
+    })
+  }
 
   it('dark: each surface step is at least 1.15:1 (bg → surface → surface-2 → surface-3)', () => {
     const steps = [['--bg', '--surface'], ['--surface', '--surface-2'], ['--surface-2', '--surface-3']]
