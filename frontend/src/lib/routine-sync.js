@@ -11,6 +11,7 @@
 import { doneWorkSets, cleanNote } from './workout-model.js'
 import { cleanupSg, supersetUnits } from './supersetFlow.js'
 import { EXIDX, exOr } from './exercises.js'
+import { MINUS } from './format.js'
 
 /**
  * Convert string words to Title Case.
@@ -146,7 +147,7 @@ export function detectStructuralChanges(routineExercises, sessionEntries) {
   // Removed exercises
   for (const id of removals) {
     const name = exerciseDisplayName(id, routineExercises.find(e => e.id === id))
-    changes.push(`- ${name}`)
+    changes.push(`${MINUS} ${name}`)
   }
 
   // Reordered exercises
