@@ -119,7 +119,7 @@ describe('diffRoutineWithSession', () => {
       }
       const res = diffRoutineWithSession(routine, session)
       expect(res.hasDiff).toBe(true)
-      expect(res.changes).toContain('- Barbell Incline Bench Press')
+      expect(res.changes).toContain('\u2212 Barbell Incline Bench Press')
       expect(res.syncedEx).toHaveLength(1)
       expect(res.syncedEx[0].id).toBe(ex1.id)
     })

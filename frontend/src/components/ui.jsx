@@ -13,8 +13,19 @@
 //   · :active gives a scale/tint response so touch feels acknowledged
 //   · focus-visible draws a ring; pointer interaction never does
 
-import { useRef, useState, useEffect, useCallback, forwardRef } from 'react'
+import { Fragment, useRef, useState, useEffect, useCallback, forwardRef } from 'react'
 import Icon from './Icon.jsx'
+
+/* ============================ meta ============================ */
+
+/**
+ * Joins inline meta (muscle, equipment, best, date) with the one separator, " · ".
+ * Falsy items drop out, so callers can list conditional parts inline.
+ * @param {Array<*>} items - Strings or elements, in reading order.
+ * @returns {Array<*>} Keyed nodes to render inside a text line (not a flex row: a gap would
+ *   widen the separator).
+ */
+export const dotted = items => items.filter(Boolean).map((x, i) => <Fragment key={i}>{i > 0 && ' · '}{x}</Fragment>)
 
 /* ============================ text ============================ */
 

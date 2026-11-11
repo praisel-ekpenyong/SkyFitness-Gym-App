@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { useStore, sanitizeDisplayName } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
 import { EXIDX } from './lib/exercises.js'
-import { fmtDate, fmtNum, fmtVol, fmtDur, durPart, todayISO, exCount, DAYN, MONTHS_LONG, monthKey, setLabel } from './lib/format.js'
+import { fmtDate, fmtNum, fmtSigned, fmtVol, fmtDur, durPart, todayISO, exCount, DAYN, MONTHS_LONG, monthKey, setLabel } from './lib/format.js'
 import { effectiveRoutineId, hasEffectiveOverride, deleteWorkout } from './lib/history.js'
 import { setsDone, tonnageOf } from './lib/workout-model.js'
 import { effortOf } from './lib/effort.js'
@@ -87,10 +87,10 @@ function WeightInput({ value, setValue, unit }) {
       <button className="bw-pm" onClick={() => onSlide(value + 0.1)} aria-label={t('Increase by 0.1 {0}', unit)}><Icon name="plus" /></button>
     </div>
     <div className="chips bwpad">
-      <button className="chip" onClick={() => onSlide(value - 1)} aria-label={t('Decrease by 1 {0}', unit)}>−1</button>
-      <button className="chip" onClick={() => onSlide(value - 0.5)} aria-label={t('Decrease by 0.5 {0}', unit)}>−0.5</button>
-      <button className="chip" onClick={() => onSlide(value + 0.5)} aria-label={t('Increase by 0.5 {0}', unit)}>+0.5</button>
-      <button className="chip" onClick={() => onSlide(value + 1)} aria-label={t('Increase by 1 {0}', unit)}>+1</button>
+      <button className="chip" onClick={() => onSlide(value - 1)} aria-label={t('Decrease by 1 {0}', unit)}>{fmtSigned(-1)}</button>
+      <button className="chip" onClick={() => onSlide(value - 0.5)} aria-label={t('Decrease by 0.5 {0}', unit)}>{fmtSigned(-0.5)}</button>
+      <button className="chip" onClick={() => onSlide(value + 0.5)} aria-label={t('Increase by 0.5 {0}', unit)}>{fmtSigned(0.5)}</button>
+      <button className="chip" onClick={() => onSlide(value + 1)} aria-label={t('Increase by 1 {0}', unit)}>{fmtSigned(1)}</button>
     </div>
   </>
 }
@@ -115,7 +115,7 @@ function BwSheet({ required, onDone, close }) {
     <div className="sheet-sub">{required ? t('Asked once a day, before your first workout, so the curve has a point for every training day.') : t('Today') + ', ' + fmtDate(todayISO(), true)}</div>
     <WeightInput value={v} setValue={setV} unit={unit} />
     <div className="gap16" />
-    <Button variant="primary" className={required ? 'go' : undefined} onClick={save}>{required ? t('Save & start workout') : t('Save')}</Button>
+    <Button variant="primary" className={required ? 'go' : undefined} onClick={save}>{required ? t('Save and start workout') : t('Save')}</Button>
     {required && <>
       <div className="gap8" /><Button variant="ghost" className="dim" onClick={() => { close(); onDone && onDone(null) }}>{t('Start without weighing in')}</Button>
       <Button variant="ghost" className="dim" icon="reset" onClick={() => { close(); nav('/workout') }}>{t('Choose a different workout')}</Button>
@@ -159,8 +159,8 @@ function ImportSummary({ parsed, close }) {
     update(s => { res = mergeImport(s, parsed) })
     close()
     toast(isBW
-      ? t('{0} weigh-ins imported', res.added)
-      : t('{0} workouts imported', res.added))
+      ? t('{0} weigh-ins imported', fmtNum(res.added))
+      : t('{0} workouts imported', fmtNum(res.added)))
   }
 
   return <>
@@ -171,13 +171,13 @@ function ImportSummary({ parsed, close }) {
 
     <div className="tiles">
       {isBW ? <>
-        <div className="tile"><div className="l">{t('Weigh-ins')}</div><div className="v">{parsed.bodyweight.length}</div></div>
-        <div className="tile"><div className="l">{t('New')}</div><div className="v">{fresh}</div></div>
+        <div className="tile"><div className="l">{t('Weigh-ins')}</div><div className="v">{fmtNum(parsed.bodyweight.length)}</div></div>
+        <div className="tile"><div className="l">{t('New')}</div><div className="v">{fmtNum(fresh)}</div></div>
       </> : <>
-        <div className="tile"><div className="l">{t('Workouts')}</div><div className="v">{parsed.workouts.length}</div></div>
-        <div className="tile"><div className="l">{t('Sets')}</div><div className="v">{parsed.sets}</div></div>
-        <div className="tile"><div className="l">{t('Exercises matched')}</div><div className="v">{parsed.matched}</div></div>
-        <div className="tile"><div className="l">{t('Added as your own')}</div><div className="v">{parsed.created}</div></div>
+        <div className="tile"><div className="l">{t('Workouts')}</div><div className="v">{fmtNum(parsed.workouts.length)}</div></div>
+        <div className="tile"><div className="l">{t('Sets')}</div><div className="v">{fmtNum(parsed.sets)}</div></div>
+        <div className="tile"><div className="l">{t('Exercises matched')}</div><div className="v">{fmtNum(parsed.matched)}</div></div>
+        <div className="tile"><div className="l">{t('Added as your own')}</div><div className="v">{fmtNum(parsed.created)}</div></div>
       </>}
     </div>
 
@@ -190,7 +190,7 @@ function ImportSummary({ parsed, close }) {
       {t('The file does not say which unit it uses — numbers are imported as they are.')}
     </div>}
     {have > 0 && <div className="dim-note small dim">
-      {t('{0} days already have data here and will be left alone.', have)}
+      {t('{0} days already have data here and will be left alone.', fmtNum(have))}
     </div>}
     {/* The file rated its sets. Say so: the column is off by default, so the ratings would
         otherwise arrive invisibly and look like they had been dropped. */}
@@ -559,11 +559,11 @@ function Calendar({ start, close }) {
   }
   return <>
     <div className="row between sheet-head">
-      <button className="iconbtn" onClick={() => setCur(new Date(y, mo - 1, 1))} aria-label="Previous month"><Icon name="chevronLeft" /></button>
+      <button className="iconbtn" onClick={() => setCur(new Date(y, mo - 1, 1))} aria-label={t('Previous month')}><Icon name="chevronLeft" /></button>
       <h3>{t(MONTHS_LONG[mo])} {y}</h3>
-      <button className="iconbtn" onClick={() => setCur(new Date(y, mo + 1, 1))} aria-label="Next month"><Icon name="chevronRight" /></button>
+      <button className="iconbtn" onClick={() => setCur(new Date(y, mo + 1, 1))} aria-label={t('Next month')}><Icon name="chevronRight" /></button>
     </div>
-    <div className="small muted cal-sum">{monthWs.length ? `${t(monthWs.length === 1 ? '{0} workout' : '{0} workouts', monthWs.length)} · ${fmtDur(monthMs)} · ${fmtVol(monthVol, st.unit)}` : t('No workouts this month')}</div>
+    <div className="small muted cal-sum">{monthWs.length ? `${t(monthWs.length === 1 ? '{0} workout' : '{0} workouts', fmtNum(monthWs.length))} · ${fmtDur(monthMs)} · ${fmtVol(monthVol, st.unit)}` : t('No workouts this month')}</div>
     <div className="cal-grid">{['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].map(l => <div key={l} className="cal-h">{t(l)}</div>)}{cells}</div>
     <div className="cal-legend">
       <span><i style={{ background: 'var(--data)' }} />{t('Trained')}</span>
@@ -597,12 +597,11 @@ export function RecapSheet({ start, close }) {
     const isAbs = prevVal === 0 || prevVal == null
     let label = ''
     if (isAbs) {
-      if (key === 'vol') label = (v > 0 ? '+' : '') + fmtVol(v, st.unit)
-      else if (key === 'durationMs') label = v ? (v > 0 ? '+' : '') + fmtDur(v) : '—'
-      else label = (v > 0 ? '+' : '') + fmtNum(v)
+      if (key === 'vol') label = fmtSigned(v, n => fmtVol(n, st.unit))
+      else if (key === 'durationMs') label = v ? fmtSigned(v, fmtDur) : '—'
+      else label = fmtSigned(v)
     } else {
-      const pct = Math.round(v)
-      label = (pct > 0 ? '+' : '') + pct + '%'
+      label = fmtSigned(Math.round(v), n => fmtNum(n) + '%')
     }
     // A month still under way is not behind anything yet, so its shortfall reads neutral.
     const color = v > 0 ? 'var(--acc-text)' : v < 0 && !isCurrent ? 'var(--red-text)' : 'var(--label-2)'
@@ -629,7 +628,7 @@ export function RecapSheet({ start, close }) {
       <div className="small muted cal-sum recap-empty">{t('No workouts in {0}', `${t(MONTHS_LONG[mo])} ${y}`)}</div>
     )}
     <div className="sect-b">
-      <MetricRow label={t('Workouts')} value={String(rec.workouts)} deltaKey="workouts" />
+      <MetricRow label={t('Workouts')} value={fmtNum(rec.workouts)} deltaKey="workouts" />
       <MetricRow label={t('Time trained')} value={rec.durationMs ? fmtDur(rec.durationMs) : '—'} deltaKey="durationMs" />
       <MetricRow label={t('Volume')} value={fmtVol(rec.vol, st.unit)} deltaKey="vol" />
       <MetricRow label={t('Sets')} value={fmtNum(rec.sets)} deltaKey="sets" />
@@ -683,13 +682,13 @@ export function WorkoutRow({ w, onClick }) {
   const st = useStore(s => s.S)
   const glyph = glyphOf((st.routines.find(r => r.id === w.routineId) || {}).emoji)
   return <div className="item" role="button" tabIndex={0}
-    aria-label={`${w.name}, ${fmtDate(w.d, true)}, ${t('{0} sets', setsDone(w))}`}
+    aria-label={`${w.name}, ${fmtDate(w.d, true)}, ${t('{0} sets', fmtNum(setsDone(w)))}`}
     onClick={onClick}
     onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick && onClick() } }}>
     <span className="lrow-i"><Icon name={glyph} /></span>
     <div className="grow"><div className="tt">{w.name}</div>
-      <div className="ss">{[fmtDate(w.d, true), ...durPart(w.end - w.start), t('{0} sets', setsDone(w)), fmtVol(tonnageOf(w), st.unit)].join(' · ')}</div></div>
-    {w.prs && w.prs.length > 0 && <span className="pr"><Icon name="trophy" />{w.prs.length} PR</span>}
+      <div className="ss">{[fmtDate(w.d, true), ...durPart(w.end - w.start), t('{0} sets', fmtNum(setsDone(w))), fmtVol(tonnageOf(w), st.unit)].join(' · ')}</div></div>
+    {w.prs && w.prs.length > 0 && <span className="pr"><Icon name="trophy" />{t('{0} PR', fmtNum(w.prs.length))}</span>}
     <Icon name="chevronRight" className="chev" />
   </div>
 }
