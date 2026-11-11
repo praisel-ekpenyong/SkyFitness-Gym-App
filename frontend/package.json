@@ -18,7 +18,8 @@
     "review:shots": "node scripts/review/shots.mjs",
     "review:audit": "node scripts/review/audit.mjs",
     "review:offline": "node scripts/review/offline.mjs",
-    "review:open": "node scripts/review/open.mjs"
+    "review:open": "node scripts/review/open.mjs",
+    "review:compare": "python3 scripts/review/compare.py"
   },
   "license": "MIT",
   "dependencies": {
