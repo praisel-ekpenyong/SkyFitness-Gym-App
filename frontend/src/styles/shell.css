@@ -64,7 +64,7 @@ body.focus-session #tabbar { display: none }
 /* the middle slot is the one key: it starts the work */
 #tabbar button.start { color: var(--label); gap: 3px }
 #tabbar button.start .cir {
-  width: 52px; height: 32px; border-radius: 6px; background: var(--acc); color: var(--on-acc);
+  width: 52px; height: 32px; border-radius: 6px; background: var(--ink); color: var(--on-ink);
   display: flex; align-items: center; justify-content: center; position: relative;
   transition: transform var(--fast) var(--ease), background var(--fast);
 }
@@ -192,8 +192,8 @@ body.resting #toast { bottom: calc(var(--tabbar-h) + var(--sab) + 110px) }
   #tabbar button.on { color: var(--label); background: var(--surface-2); font-weight: 500 }
   #tabbar button.via { color: var(--label-2); background: none; font-weight: 400 }
   #tabbar button .icn { font-size: 19px }
-  #tabbar button.start { order: -1; margin: 0 0 16px; min-height: 48px; background: var(--acc); color: var(--on-acc); justify-content: center; gap: 8px }
-  #tabbar button.start:hover { background: var(--acc-2) }
+  #tabbar button.start { order: -1; margin: 0 0 16px; min-height: 48px; background: var(--ink); color: var(--on-ink); justify-content: center; gap: 8px }
+  #tabbar button.start:hover { opacity: .9 }
   #tabbar button.start .cir { width: auto; height: auto; background: none; color: inherit }
   #tabbar button.start span:last-child { font-stretch: var(--narrow); font-weight: 800; font-size: 20px; text-transform: uppercase }
   #tabbar button.start.rec, #tabbar button.start.rec:hover { background: var(--orange); color: var(--on-orange) }

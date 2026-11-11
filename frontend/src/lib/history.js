@@ -99,3 +99,25 @@ export function streakWeeks(S, now = Date.now()) {
   }
   return streak
 }
+
+/**
+ * Count how many of the last `n` calendar weeks (the current one included) hold at least one
+ * logged workout. Stats shows this instead of a streak: a missed week lowers the count by one
+ * and is reported, not punished by resetting everything to zero.
+ *
+ * @param {Object} S - Application state atom containing `workouts`.
+ * @param {number} [n] - Window size in weeks.
+ * @param {number} [now] - Clock in milliseconds.
+ * @returns {number} Weeks in the window with a workout, 0…n.
+ */
+export function trainedWeeks(S, n = 12, now = Date.now()) {
+  if (!S?.workouts?.length) return 0
+  const weeks = new Set(S.workouts.map(w => weekKey(w.d)))
+  const cur = new Date(now)
+  let count = 0
+  for (let i = 0; i < n; i++) {
+    if (weeks.has(weekKey(isoOf(cur)))) count++
+    cur.setDate(cur.getDate() - 7)
+  }
+  return count
+}

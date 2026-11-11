@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { EXIDX } from '../lib/exercises.js'
-import { fmtNum, fmtVol, fmtDur, fmtDate } from '../lib/format.js'
+import { fmtNum, fmtVol, fmtDur, fmtDate, todayISO } from '../lib/format.js'
+import { latestWeighIn } from '../lib/bodyweight.js'
 import { setsDone, workSetsDone, sessionProgress, isPerformed, isWarmupRow, tonnageOf } from '../lib/workout-model.js'
 import { sessionProgressionItems } from '../lib/progression.js'
 import { playWorkoutComplete } from '../lib/sound.js'
@@ -51,6 +52,10 @@ export function configureSessionSheets({ bwSheet, confirmSheet, WeightInput }) {
 /* ============================ workout lifecycle ============================ */
 export function startFlow(routineId) {
   if (!_bwSheet) throw new Error('session sheets not wired: missing bwSheet')
+  // Once a day: a second workout on the same day reuses the morning's weigh-in instead of
+  // asking again.
+  const weighed = latestWeighIn(useStore.getState().S)
+  if (weighed && weighed.d === todayISO()) return beginWorkout(routineId, weighed.w)
   _bwSheet({ required: true, onDone: bw => beginWorkout(routineId, bw) })
 }
 /**
@@ -218,12 +223,12 @@ export function FinishSummary({ w, prs, e1prs = [], routineSync = null, close })
   }
 
   return <div className="finish">
-    <h3 className="finish-title">{t('Workout complete!')}</h3>
+    <h3 className="finish-title">{t('Workout logged')}</h3>
     <div className="finish-kicker">{[w.name, fmtDate(w.d, true)].filter(Boolean).join(' · ')}</div>
     <div className="tiles finish-kpis">
       <div className="tile"><div className="l">{t('Duration')}</div><div className="v">{fmtDur(w.end - w.start)}</div></div>
       <div className="tile"><div className="l">{t('Volume')}</div><div className="v">{fmtVol(tonnageOf(w), st.unit)}</div></div>
-      <div className="tile"><div className="l">{t('Sets')}</div><div className="v finish-sets">{t('{0} sets · {1} work', setsDone(w), workSetsDone(w))}</div></div>
+      <div className="tile"><div className="l">{t('Sets')}</div><div className="v finish-sets">{setsDone(w) === workSetsDone(w) ? t('{0} sets', setsDone(w)) : t('{0} sets · {1} warm-up', workSetsDone(w), setsDone(w) - workSetsDone(w))}</div></div>
       <div className="tile"><div className="l">{t('PRs')}</div><div className="v">{prs.length || '—'}</div></div>
     </div>
     {(prs.length > 0 || e1prs.length > 0) && <div className="finish-records">
@@ -304,7 +309,7 @@ export function FinishSummary({ w, prs, e1prs = [], routineSync = null, close })
         )}
       </div>
     )}
-    <div className="finish-cta"><Button variant="primary" onClick={onDismiss}>{t('Nice!')}</Button></div>
+    <div className="finish-cta"><Button variant="primary" onClick={onDismiss}>{t('Done')}</Button></div>
   </div>
 }
 /** Finishes the workout, confirming first when work sets remain unchecked. */

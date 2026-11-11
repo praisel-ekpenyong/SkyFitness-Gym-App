@@ -72,7 +72,7 @@ export function scoreExerciseMatch(exercise, tokens, rawQuery = '') {
  * keeping muscle-filter attribution (used by the Library, whose Favorites view
  * deliberately shows no search badges).
  */
-export function queryCatalogue({ profile, scope = { kind: 'all' }, search = '', equipment = '', searchAttribution = true } = {}) {
+export function queryCatalogue({ profile, scope = { kind: 'all' }, search = '', equipment = '', searchAttribution = true, ownFirst = false } = {}) {
   const safeProfile = profile && typeof profile === 'object' ? profile : {}
   const favoriteList = Array.isArray(safeProfile.favorites) ? safeProfile.favorites : []
   const favoriteIds = new Set(favoriteList)
@@ -108,6 +108,11 @@ export function queryCatalogue({ profile, scope = { kind: 'all' }, search = '', 
     })
   } else if (kind === 'chosen') {
     matching.sort((a, b) => compareChosenUsage(a, b, usage))
+  } else if (ownFirst) {
+    // Browsing without a search: the lifter's own exercises (starred, then most used) lead, so
+    // the list opens on what they train rather than on whatever sorts first alphabetically.
+    const rank = ex => (favoriteIds.has(ex.id) ? 1e6 : 0) + (usage[ex.id] || 0)
+    matching.sort((a, b) => (rank(b) - rank(a)) || ((catalogueOrder.get(a.id) || 0) - (catalogueOrder.get(b.id) || 0)))
   }
 
   const equipmentOptions = equipmentOf(matching)

@@ -106,7 +106,7 @@ describe('FinishSummary Routine Sync UI Integration', () => {
     expect(badges[1].textContent).toBe('Bench Press: 3 → 4 sets')
 
     // Card sits above the primary dismissal button
-    const niceBtn = Array.from(container.querySelectorAll('button')).find(b => b.textContent.includes('Nice!'))
+    const niceBtn = Array.from(container.querySelectorAll('button')).find(b => b.textContent.includes('Done'))
     expect(niceBtn).not.toBeNull()
     expect(niceBtn.compareDocumentPosition(card) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy()
   })
@@ -133,7 +133,7 @@ describe('FinishSummary Routine Sync UI Integration', () => {
       root.render(<FinishSummary w={dummyWorkout} prs={[]} routineSync={routineSyncWithDiff} close={close} />)
     })
 
-    const niceBtn = Array.from(container.querySelectorAll('button')).find(b => b.textContent.includes('Nice!'))
+    const niceBtn = Array.from(container.querySelectorAll('button')).find(b => b.textContent.includes('Done'))
     await act(async () => {
       niceBtn.click()
     })
@@ -164,7 +164,7 @@ describe('FinishSummary Routine Sync UI Integration', () => {
     expect(toggle.getAttribute('aria-checked')).toBe('true')
 
     // Tap "Nice!"
-    const niceBtn = Array.from(container.querySelectorAll('button')).find(b => b.textContent.includes('Nice!'))
+    const niceBtn = Array.from(container.querySelectorAll('button')).find(b => b.textContent.includes('Done'))
     await act(async () => {
       niceBtn.click()
     })
@@ -243,7 +243,7 @@ describe('FinishSummary Routine Sync UI Integration', () => {
     await act(async () => {
       toggle.click()
     })
-    const niceBtn = Array.from(container.querySelectorAll('button')).find(b => b.textContent.includes('Nice!'))
+    const niceBtn = Array.from(container.querySelectorAll('button')).find(b => b.textContent.includes('Done'))
     await act(async () => {
       niceBtn.click()
     })
@@ -315,7 +315,7 @@ describe('FinishSummary Routine Sync UI Integration', () => {
     await act(async () => {
       toggle.click()
     })
-    const niceBtn = Array.from(container.querySelectorAll('button')).find(b => b.textContent.includes('Nice!'))
+    const niceBtn = Array.from(container.querySelectorAll('button')).find(b => b.textContent.includes('Done'))
     await act(async () => {
       niceBtn.click()
     })
@@ -386,7 +386,7 @@ describe('FinishSummary Routine Sync UI Integration', () => {
     await act(async () => {
       toggle.click()
     })
-    const niceBtn = Array.from(container.querySelectorAll('button')).find(b => b.textContent.includes('Nice!'))
+    const niceBtn = Array.from(container.querySelectorAll('button')).find(b => b.textContent.includes('Done'))
     await act(async () => {
       niceBtn.click()
     })

@@ -43,7 +43,15 @@
 .extags { gap: 2px 10px; flex-wrap: wrap }
 .extags .tag { background: none; padding: 0; font-size: 13px; font-weight: 400; white-space: normal }
 .extags .tag.ex-best { color: var(--label) }
-.extools { display: flex; gap: 0; margin: 4px 0 0 -12px }
+.extools { display: flex; flex-wrap: wrap; gap: 0; margin: 2px 0 0 -8px }
+/* Words, not glyphs: three short keys a thumb can read without learning an icon set. */
+.extool {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: var(--tap-target);
+  min-width: var(--tap-target); padding: 0 8px; border-radius: 6px; color: var(--label-2); font-size: 14px; font-weight: 500;
+}
+.extool .icn { font-size: 17px }
+.extool:active { background: var(--surface-2) }
+.extool:disabled { opacity: .38; pointer-events: none }
 .compact .exhead:has(.exmedia) { grid-template-columns: minmax(0, 1fr) 76px }
 .compact .exhead h2 { font-size: 28px }
 .compact .exhead .exmedia img, .compact .exhead .exmedia.mini img { height: 76px }
@@ -117,13 +125,16 @@
 
 /* the set in front of you: a console */
 .setrow.cur, .setrow.cur.solo, .setrow.cur.eff3, .setrow.cur.timed, .setrow.cur.warm, .setrow.cur.warm.eff3, .setrow.cur.timed.solo {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6px; padding: 10px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6px 22px; padding: 10px;
   background: var(--surface-2); cursor: default; margin: 4px 0;
 }
 .setrow.cur .n { grid-column: 1 / -1; color: var(--label); margin: -10px 0 -8px }
 .setrow.cur .n b { display: none }
 .setrow.cur .n-l { display: block; font-size: 14px; font-stretch: 100%; font-weight: 600 }
-.setrow.cur .stp { display: grid; grid-template: "val val" auto "dec inc" 52px / 1fr 1fr; gap: 3px; background: none; overflow: visible }
+.setrow.cur .stp { position: relative; display: grid; grid-template: "val val" auto "dec inc" 52px / 1fr 1fr; gap: 3px; background: none; overflow: visible }
+/* Weight and reps each own their pair of keys: a wide gutter and a hairline down it, so a thumb
+   between sets never reads − + − + as one row of four. */
+.setrow.cur .stp.r::before { content: ''; position: absolute; left: -11px; top: 10px; bottom: 0; width: 1px; background: var(--surface-3) }
 .setrow.cur .stp > button { display: flex; width: 100%; height: 52px; font-size: 20px; background: var(--surface-3); border-radius: 6px }
 .setrow.cur .stp > button:active { background: var(--label-4) }
 .setrow.cur .stp-dec { grid-area: dec }
@@ -166,10 +177,8 @@
 
 /* ------------------------------------------------------------ session tools -- */
 .wk-nav { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 14px 0 6px }
-.wk-manage { display: flex; flex-wrap: wrap; justify-content: center; gap: 0 4px; margin-top: 6px }
-.wk-manage .btn { color: var(--label-2); font-weight: 400; font-size: 13px }
-.wk-manage .btn .icn { font-size: 15px }
-.wk-manage .wk-danger { color: var(--red-text) }
+.wk-nav + .wk-nav { margin-top: 0 }
+.wk-nav > :only-child { grid-column: 1 / -1 }
 .wk-discard { color: var(--red-text); margin-top: 4px; font-size: 14px }
 .item-move { display: flex; gap: 2px; flex: none; align-items: center }
 

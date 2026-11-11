@@ -171,7 +171,7 @@ describe('Stats muscle recovery view runtime', () => {
   it('dispatches real clicks through Balance, Fatigue, and Strength and preserves selection', async () => {
     await mountStats()
     expectPressed(viewButton('Muscle balance'))
-    expectPressed(balanceRangeButton('Week'))
+    expectPressed(balanceRangeButton('30d'))
 
     await click(balanceRangeButton('30d'))
     await click(buttonWithText(muscleCard(), 'All'))

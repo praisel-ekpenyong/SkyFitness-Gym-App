@@ -35,7 +35,7 @@ function StartChooser() {
   const todayOvr = hasEffectiveOverride(S, todayISO())
   const others = S.routines.filter(r => r !== todayR)
   return <div className="narrow">
-    <div className="hdr"><div><h1>{t('Start workout')}</h1><div className="sub">{t(DAYN[new Date().getDay()])} — {todayR ? t('today is {0}', todayR.name) : t('rest day, but no one’s stopping you')}</div></div></div>
+    <div className="hdr"><div><h1>{t('Start workout')}</h1><div className="sub">{t(DAYN[new Date().getDay()])} — {todayR ? t('today is {0}', todayR.name) : (S.routines.length ? t('rest day on your plan') : t('no plan yet'))}</div></div></div>
     {todayR && <section className="card start-today">
       <h2 className="accent">{t("Today's plan")}{todayOvr ? ' · ' + t('rescheduled') : ''}</h2>
       <div className="start-today-name d">{todayR.name}</div>
@@ -175,10 +175,10 @@ function ExerciseBlock({ entryIdx, compact, isCurrent = true, arrived = false, o
         </div>
         <div className="extools">
           {!entry.notes && (
-            <button className="iconbtn bare" aria-label={t('Add note')} title={t('Add note')} onClick={() => exerciseNoteSheet(entryIdx)}><Icon name="clipboard" /></button>
+            <button className="extool" aria-label={t('Add note')} onClick={() => exerciseNoteSheet(entryIdx)}>{t('Note')}</button>
           )}
-          <button className="iconbtn bare" aria-label={t('Replace exercise')} title={t('Replace exercise')} disabled={holding} onClick={() => onReplace(entryIdx)}><Icon name="shuffle" /></button>
-          <button className="iconbtn bare" aria-label={t('Details')} onClick={() => exerciseDetailSheet(ex)}><Icon name="info" /></button>
+          <button className="extool" aria-label={t('Replace exercise')} disabled={holding} onClick={() => onReplace(entryIdx)}>{t('Replace')}</button>
+          <button className="extool" aria-label={t('Details')} onClick={() => exerciseDetailSheet(ex)}>{t('Details')}</button>
         </div>
       </div>
       <Media ex={ex} key={entry.id} compact={compact} minimizable />
@@ -348,6 +348,37 @@ function ReorderExercisesSheet({ close }) {
   </div>
 }
 
+/** One sheet for the exercise-level edits, so the workout screen keeps only what a set needs. */
+function EditWorkoutSheet({ close, name, count, onReorder, onReplace, onPairPrev, onPairNext, onRemove }) {
+  // Read live: a timed hold can start or end while the sheet is open.
+  const holding = useUI(s => !!s.work)
+  const run = fn => () => { close(); fn() }
+  return <div>
+    <div className="row between">
+      <h3 className="flush">{t('Edit workout')}</h3>
+      <button className="iconbtn" onClick={close} aria-label={t('Close')}><Icon name="xmark" /></button>
+    </div>
+    <div className="sheet-sub capitalize">{name}</div>
+    <div className="sect-b">
+      <button className="lrow tap" disabled={holding || count < 2} onClick={run(onReorder)}>
+        <span className="lrow-i"><Icon name="list" /></span><span className="lrow-m"><span className="lrow-t">{t('Reorder exercises')}</span></span>
+      </button>
+      <button className="lrow tap" disabled={holding} onClick={run(onReplace)}>
+        <span className="lrow-i"><Icon name="shuffle" /></span><span className="lrow-m"><span className="lrow-t">{t('Replace exercise')}</span></span>
+      </button>
+      {onPairPrev && <button className="lrow tap" onClick={run(onPairPrev)}>
+        <span className="lrow-i"><Icon name="link" /></span><span className="lrow-m"><span className="lrow-t">{t('Make superset with previous')}</span></span>
+      </button>}
+      {onPairNext && <button className="lrow tap" onClick={run(onPairNext)}>
+        <span className="lrow-i"><Icon name="link" /></span><span className="lrow-m"><span className="lrow-t">{t('Make superset with next')}</span></span>
+      </button>}
+      <button className="lrow tap danger" disabled={holding} onClick={run(onRemove)}>
+        <span className="lrow-i"><Icon name="trash" /></span><span className="lrow-m"><span className="lrow-t">{t('Remove exercise')}</span></span>
+      </button>
+    </div>
+  </div>
+}
+
 /** Active-workout route body; logs sets for the running session. */
 function ActiveWorkout() {
   const nav = useNavigate()
@@ -441,6 +472,13 @@ function ActiveWorkout() {
     useUI.getState().openSheet(close => <ReorderExercisesSheet close={close} />)
   }
 
+  const editWorkoutSheet = () => {
+    const name = unit.map(i => exOr(A.entries[i].id).n).join(' + ')
+    useUI.getState().openSheet(close => <EditWorkoutSheet close={close} name={name} count={A.entries.length}
+      onReorder={reorderExerciseSheet} onReplace={replaceExerciseSheet} onPairPrev={onPairPrev} onPairNext={onPairNext}
+      onRemove={removeExerciseSheet} />)
+  }
+
   // A timed set is held, not typed. The Hold timer records what was actually held — an early
   // finish logs 0:38 of a 0:45 target rather than crediting the full prescription — and then
   // checks the set off through the normal path, so rest, supersets and the finish prompt all
@@ -527,21 +565,17 @@ function ActiveWorkout() {
       <Button icon="chevronLeft" disabled={unitIdx <= 0} onClick={() => useStore.getState().setActiveIndex(units[unitIdx - 1][0])}>{t('Prev')}</Button>
       <Button trailingIcon="chevronRight" disabled={unitIdx < 0 || unitIdx >= units.length - 1} onClick={() => useStore.getState().setActiveIndex(units[unitIdx + 1][0])}>{t('Next')}</Button>
     </div>
-    <Button onClick={() => exercisePicker(ex => {
-      const routine = S.routines.find(r => r.id === A.routineId)
-      const freestyle = !A.routineId
-      const seed = freestyle ? freestyleConfig(S, { id: ex.id, ...defaultConfig(ex.id) }) : null
-      exConfigSheet(ex, null, cfg => {
-        useStore.getState().addActiveExercise(ex.id, cfg)
-      }, null, routine, seed)
-    })} icon="plus">{t('Add exercise')}</Button>
-    {A.entries.length > 0 && <div className="wk-manage">
-      <Button size="sm" variant="ghost" icon="list" disabled={holding || A.entries.length < 2} onClick={reorderExerciseSheet}>{t('Reorder exercises')}</Button>
-      <Button size="sm" variant="ghost" icon="shuffle" disabled={holding} onClick={replaceExerciseSheet}>{t('Replace exercise')}</Button>
-      {onPairPrev && <Button size="sm" variant="ghost" icon="link" title={t('Make superset with previous')} onClick={onPairPrev}>{t('Make superset with previous')}</Button>}
-      {onPairNext && <Button size="sm" variant="ghost" icon="link" title={t('Make superset with next')} onClick={onPairNext}>{t('Make superset with next')}</Button>}
-      <Button size="sm" variant="ghost" icon="minus" className="wk-danger" disabled={holding} onClick={removeExerciseSheet}>{t('Remove exercise')}</Button>
-    </div>}
+    <div className="wk-nav">
+      <Button onClick={() => exercisePicker(ex => {
+        const routine = S.routines.find(r => r.id === A.routineId)
+        const freestyle = !A.routineId
+        const seed = freestyle ? freestyleConfig(S, { id: ex.id, ...defaultConfig(ex.id) }) : null
+        exConfigSheet(ex, null, cfg => {
+          useStore.getState().addActiveExercise(ex.id, cfg)
+        }, null, routine, seed)
+      })} icon="plus">{t('Add exercise')}</Button>
+      {A.entries.length > 0 && <Button icon="pencil" onClick={editWorkoutSheet}>{t('Edit workout')}</Button>}
+    </div>
     <div className="gap12" />
     <button className={prog.allDone ? 'btn primary go' : 'btn plain'} onClick={finishWorkout}>
       {prog.allDone ? t('Finish workout') : t('Finish workout early · {0} exercises', prog.exDone + '/' + prog.exTotal)}
