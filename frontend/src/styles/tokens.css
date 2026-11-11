@@ -2,32 +2,34 @@
 :root {
   color-scheme: dark;
 
-  /* ground and elevation: a warm near-black (gym rubber), never navy or slate */
+  /* ground and elevation: a warm near-black (gym rubber), never navy or slate.
+     Each step is ~1.2:1 over the one below, so a block reads as a block. */
   --bg:        #0a0a09;
-  --bg-el:     #121211;   /* sheets */
-  --surface:   #161615;   /* blocks */
-  --surface-2: #232321;   /* keys and nested panels */
-  --surface-3: #30302d;   /* pressed keys, controls on a nested panel */
+  --bg-el:     #151514;   /* sheets */
+  --surface:   #1f1f1d;   /* blocks */
+  --surface-2: #2e2e2b;   /* keys and nested panels */
+  --surface-3: #3b3b37;   /* pressed keys, controls on a nested panel */
 
-  /* ink: chalk white, then two greys far enough apart to read as two */
+  /* ink: chalk white, then two greys far enough apart to read as two (~1.45:1 apart);
+     all three hold 4.5:1 on every surface, --surface-3 included */
   --label:   #f6f5f0;
-  --label-2: #b7b5ac;
-  --label-3: #94928a;
-  --label-4: #4d4c47;     /* marks only, never words */
+  --label-2: #cac8bf;
+  --label-3: #a8a69e;
+  --label-4: #5a5953;     /* marks only, never words */
 
   /* primary is inversion */
   --ink:    #f6f5f0;
   --on-ink: #0a0a09;
 
   /* lines, only where a list needs them */
-  --sep:    #232321;
-  --sep-op: #30302d;
+  --sep:    #2e2e2b;   /* = --surface-2 */
+  --sep-op: #3b3b37;   /* = --surface-3 */
   --hair:   1px;
 
   /* status */
   --red:    #ff5b4f;   --red-text: var(--red);
   --orange: #ff9d3d;   --orange-text: var(--orange);   --on-orange: #0a0a09;
-  --orange-wash: #2d2419;   --orange-wash-2: #4c361e;   /* orange 10% / +15% over --surface, precomputed so contrast is measurable */
+  --orange-wash: #352c20;   --orange-wash-2: #543d25;   /* orange 10% / +15% over --surface, precomputed so contrast is measurable */
   --yellow: #f2c94c;   --goal-text: var(--yellow);
 
   /* accent: the colour of work. Per profile via data-accent. */
@@ -57,6 +59,22 @@
   --font: 'Archivo Variable', 'Archivo', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif;
   --narrow: 62%;
   --semi:   80%;
+
+  /* The type scale: every font-size in styles/ is one of these (design-lint.test.js holds it).
+     Named by role; an icon takes the step of the text it sits with. Weights are 400 body and
+     meta, 600 headings and keys, 700 figures, 800 display. */
+  --fs-micro:   11px;   /* the floor: chart ticks, heatmap and tab labels */
+  --fs-meta:    13px;   /* labels, sublines, units, captions */
+  --fs-small:   14px;   /* secondary text, small keys, chips */
+  --fs-body:    15px;   /* body, headings, keys */
+  --fs-field:   16px;   /* form fields (iOS zooms the page below 16px) and the root */
+  --fs-lead:    18px;   /* icons on keys and rows, small figures */
+  --fs-figure:  22px;   /* figures in a row, the coloured key's label */
+  --fs-heading: 28px;   /* display: sheet titles, names in tight places */
+  --fs-title:   34px;   /* display: screen titles, KPI figures */
+  --fs-display: 44px;   /* display: desktop titles, exercise names, Finish */
+  --fs-poster:  56px;   /* display: the Home hero on a phone, desktop page titles */
+  --fs-hero:    68px;   /* the open set, the rest clock, the weigh-in: the largest thing on screen */
 
   /* geometry */
   --r-1: 4px;
@@ -93,8 +111,8 @@
   --surface-3: #deded9;
 
   --label:   #0d0d0c;
-  --label-2: #51514c;
-  --label-3: #6a6a64;
+  --label-2: #4a4a45;
+  --label-3: #62625c;
   --label-4: #b4b4ad;
 
   --ink:    #0d0d0c;
@@ -109,7 +127,7 @@
   --yellow: #e0ae12;   --goal-text: #7a5c00;
 
   /* a bright accent still fills a key, but as ink it has to darken to be read on white */
-  --acc-text: color-mix(in srgb, var(--acc) 48%, black);
+  --acc-text: color-mix(in srgb, var(--acc) 45%, black);
   --data:     color-mix(in srgb, var(--acc) 72%, black);
   --acc-soft: color-mix(in srgb, var(--acc) 26%, transparent);
 
@@ -117,12 +135,11 @@
   --art-ground: #ffffff;
 }
 
-/* Accents. All are bright enough to carry a black label on a filled key in either theme. */
+/* Accents. All are bright enough to carry a black label on a filled key in either theme, and
+   each stays clear of the status hues: no gold, red or orange, which would read as a record,
+   a warning or a running workout. Keep in step with ACCENTS in lib/format.js. */
 :root[data-accent="lime"]   { --acc: #a3e635 }
 :root[data-accent="sky"]    { --acc: #5cb8ff }
-:root[data-accent="orange"] { --acc: #ff8a3d }
 :root[data-accent="violet"] { --acc: #b79cff }
 :root[data-accent="pink"]   { --acc: #ff6fa3 }
-:root[data-accent="red"]    { --acc: #ff6a5e }
 :root[data-accent="teal"]   { --acc: #3dd6c4 }
-:root[data-accent="gold"]   { --acc: #f2c94c }
