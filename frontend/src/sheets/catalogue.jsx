@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { EXIDX, isCardio, isBodyweightEq, allExercises } from '../lib/exercises.js'
-import { fmtDate, fmtNum, exCount, uid, setLabel } from '../lib/format.js'
+import { fmtDate, fmtNum, exCount, uid, setLabel, sentenceCase } from '../lib/format.js'
 import { bestKnownWeight } from '../lib/active-workout.js'
 import { lastEntryFor, defaultConfig, modeOf, isBw, isPerSide, sideReps } from '../lib/workout-model.js'
 import * as catalogueWrites from '../lib/catalogue-writes.js'
@@ -107,13 +107,13 @@ export function ExerciseDetail({ ex, close }) {
       {isCardioEx ? (
         <span className="tag strong">{t('Cardio')}</span>
       ) : (
-        primaryName && <span className="tag strong">{t('Primary: {0}', primaryName)}</span>
+        primaryName && <span className="tag strong nocap">{t('Primary: {0}', sentenceCase(primaryName))}</span>
       )}
-      {ex.eq && <span className="tag">{t(ex.eq)}</span>}
-      {!isCardioEx && secondaries.map((s, i) => <span key={i} className="tag">{t('Secondary: {0}', MUSCLE_NAME[s] || s)}</span>)}
+      {ex.eq && <span className="tag nocap">{sentenceCase(t(ex.eq))}</span>}
+      {!isCardioEx && secondaries.map((s, i) => <span key={i} className="tag nocap">{t('Secondary: {0}', sentenceCase(MUSCLE_NAME[s] || s))}</span>)}
     </div>
     {ex.desc && <div className="exnote">{ex.desc}</div>}
-    {best > 0 && <div className="small row best-line"><Icon name="trophy" />{t('Best:')} <b className="record">{fmtNum(best)} {st.unit}</b>{last ? ` · ${t('last')} ${fmtDate(last.d)}: ${last.sets.map(s => setLabel(ex.id, s, last.target)).join(', ')}` : ''}</div>}
+    {best > 0 && <div className="small row best-line"><Icon name="trophy" /><span>{t('Best')} <b className="record">{fmtNum(best)} {st.unit}</b>{last ? ` · ${t('last')} ${fmtDate(last.d)} · ${last.sets.map(s => setLabel(ex.id, s, last.target)).join(', ')}` : ''}</span></div>}
     <div className="gap8" />
     <Button variant="primary" icon="plus" onClick={() => addToRoutineSheet(ex)}>{t('Add to my plan')}</Button>
     {ex.custom && <div className="split">
@@ -154,7 +154,7 @@ function AddToRoutine({ ex, close }) {
   }
   return <>
     <h3>{t('Add “{0}”', ex.n)}</h3>
-    <div className="sheet-sub">{t('Pick a routine — sets, reps & weight come next.')}</div>
+    <div className="sheet-sub">{t('Pick a routine — sets, reps and weight come next.')}</div>
     <div className="list">
       {st.routines.map(r => <div key={r.id} className="item" onClick={() => pick(r.id)}>
         <span className="lrow-i"><Icon name={glyphOf(r.emoji)} /></span>
@@ -222,17 +222,17 @@ export function CustomExForm({ existing, prefill, onDone, close }) {
       {FILTER_MUSCLES.map(m => (
         <button
           key={m}
-          className={'chip' + (primary === m ? ' on' : '')}
+          className={'chip nocap' + (primary === m ? ' on' : '')}
           onClick={() => selectPrimary(m)}
         >
-          {t(MUSCLE_NAME[m] || m)}
+          {sentenceCase(t(MUSCLE_NAME[m] || m))}
         </button>
       ))}
     </div>
 
     {primary === 'cardio' ? (
       <div className="small dim dim-note">
-        {t('Cardio exercises log time + speed instead of weight × reps.')}
+        {t('Cardio exercises log time and speed instead of weight × reps.')}
       </div>
     ) : primary ? (
       <>
@@ -243,10 +243,10 @@ export function CustomExForm({ existing, prefill, onDone, close }) {
             return (
               <button
                 key={m}
-                className={'chip' + (on ? ' on' : '')}
+                className={'chip nocap' + (on ? ' on' : '')}
                 onClick={() => toggleSecondary(m)}
               >
-                {t(MUSCLE_NAME[m] || m)}
+                {sentenceCase(t(MUSCLE_NAME[m] || m))}
               </button>
             )
           })}
@@ -325,27 +325,27 @@ export function ExercisePicker({ onPick }) {
   return <>
     <h3>{t('Add exercise')}</h3>
     <SearchField
-      placeholder={t('Search {0} exercises…', catalogueCount)}
+      placeholder={t('Search {0} exercises…', fmtNum(catalogueCount))}
       aria-label={t('Search exercises')}
       value={q}
       onChange={e => { setQ(e.target.value); setShown(50) }}
       onClear={() => { setQ(''); setShown(50) }}
     />
     <div className="chips picker-chips">
-      {(favCount > 0 || filter === 'favorites') && <button className={'chip chip-i' + (filter === 'favorites' ? ' on' : '')} onClick={() => { setFilter('favorites'); setEq(''); setShown(50) }}><Icon name="starFill" />{t('Favorites')} ({favCount})</button>}
-      {(chosenCount > 0 || filter === '★') && <button className={'chip chip-i' + (filter === '★' ? ' on' : '')} onClick={() => { setFilter('★'); setEq(''); setShown(50) }}><Icon name="check" />{t('Chosen')} ({chosenCount})</button>}
+      {(favCount > 0 || filter === 'favorites') && <button className={'chip chip-i' + (filter === 'favorites' ? ' on' : '')} onClick={() => { setFilter('favorites'); setEq(''); setShown(50) }}><Icon name="starFill" />{t('Favorites')} ({fmtNum(favCount)})</button>}
+      {(chosenCount > 0 || filter === '★') && <button className={'chip chip-i' + (filter === '★' ? ' on' : '')} onClick={() => { setFilter('★'); setEq(''); setShown(50) }}><Icon name="check" />{t('Chosen')} ({fmtNum(chosenCount)})</button>}
       <button className={'chip nocap' + (!filter ? ' on' : '')} onClick={() => { setFilter(''); setEq(''); setShown(50) }}>{t('All')}</button>
-      {FILTER_MUSCLES.map(m => <button key={m} className={'chip' + (filter === m ? ' on' : '')} onClick={() => { setFilter(m); setEq(''); setShown(50) }}>{t(MUSCLE_NAME[m] || m)}</button>)}
+      {FILTER_MUSCLES.map(m => <button key={m} className={'chip nocap' + (filter === m ? ' on' : '')} onClick={() => { setFilter(m); setEq(''); setShown(50) }}>{sentenceCase(t(MUSCLE_NAME[m] || m))}</button>)}
     </div>
     {eqOpts.length > 1 && <div className="chips picker-chips">
       <button className={'chip nocap' + (!eqOn ? ' on' : '')} onClick={() => { setEq(''); setShown(50) }}>{t('Any equipment')}</button>
-      {eqOpts.map(x => <button key={x} className={'chip' + (eqOn === x ? ' on' : '')} onClick={() => { setEq(x); setShown(50) }}>{t(x)}</button>)}
+      {eqOpts.map(x => <button key={x} className={'chip nocap' + (eqOn === x ? ' on' : '')} onClick={() => { setEq(x); setShown(50) }}>{sentenceCase(t(x))}</button>)}
     </div>}
     <div className="list">
       {filter !== '★' && <div className="item" role="button" tabIndex={0} onClick={() => customExSheet(null, ex => onPick(ex), q.trim())}
         onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); customExSheet(null, ex => onPick(ex), q.trim()) } }}>
         <div className="thumb thumb-x"><Icon name="plus" /></div>
-        <div className="grow"><div className="tt">{t('Create your own exercise')}</div><div className="ss">{t('name + target muscles, no animation')}</div></div>
+        <div className="grow"><div className="tt">{t('Create your own exercise')}</div><div className="ss">{t('Name and target muscles, no animation')}</div></div>
       </div>}
       {f.slice(0, shown).map(row => {
         const e = row.exercise
@@ -357,8 +357,8 @@ export function ExercisePicker({ onPick }) {
           <Thumb ex={e} />
           <div className="grow">
             <div className="tt capitalize">{e.n}</div>
-            <div className="ss capitalize">
-              {t(primaryLabel)} · {t(e.eq)}
+            <div className="ss">
+              {sentenceCase(t(primaryLabel))} · {sentenceCase(t(e.eq))}
               {secondaryMuscle && <span className="tag inline-tag">{t('Secondary: {0}', MUSCLE_NAME[secondaryMuscle] || secondaryMuscle)}</span>}
             </div>
           </div>
@@ -544,7 +544,7 @@ export function ExConfig({ ex, existing, onSave, onDelete, close, routine, initi
     <ProgressionFields ex={ex} mode={mode} c={c} setC={setC} routine={routine} unit={st.unit} />
     <TextArea
       aria-label={t('Notes and cues')}
-      placeholder={t('Notes, cues, or machine setup...')}
+      placeholder={t('Notes, cues, or machine setup…')}
       maxLength={500}
       value={c.notes || ''}
       onChange={e => setC(x => ({ ...x, notes: e.target.value }))}

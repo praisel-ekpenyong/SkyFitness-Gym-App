@@ -434,7 +434,7 @@ describe('ExerciseDetail primary and secondary muscle tags', () => {
     expect(primaryTag).toBeTruthy()
     expect(primaryTag.textContent).toContain('Primary: Chest')
 
-    expect(tagTexts).toContain('barbell')
+    expect(tagTexts).toContain('Barbell')
 
     expect(tagTexts).toContain('Secondary: Shoulders')
     expect(tagTexts).toContain('Secondary: Triceps')
@@ -530,7 +530,7 @@ describe('ExerciseDetail primary and secondary muscle tags', () => {
     const primaryTag = tags.find(t => t.classList.contains('strong'))
     expect(primaryTag).toBeTruthy()
     expect(primaryTag.textContent).toContain('Primary: Biceps')
-    expect(tagTexts).toContain('dumbbell')
+    expect(tagTexts).toContain('Dumbbell')
     expect(tagTexts.some(t => t.startsWith('Secondary:'))).toBe(false)
   })
 
@@ -556,7 +556,7 @@ describe('ExerciseDetail primary and secondary muscle tags', () => {
     expect(primaryTag).toBeTruthy()
     expect(primaryTag.textContent).toContain('Cardio')
     expect(primaryTag.textContent).not.toContain('Primary:')
-    expect(tagTexts).toContain('custom')
+    expect(tagTexts).toContain('Custom')
     expect(tagTexts.some(t => t.startsWith('Secondary:'))).toBe(false)
   })
 })
@@ -725,7 +725,7 @@ describe('CustomExForm canonical muscle selection and editing', () => {
     // Only 1 chips row should exist (primary), no secondary chips
     expect(container.querySelectorAll('.chips').length).toBe(1)
     // Cardio helper text is visible
-    expect(container.textContent).toContain('Cardio exercises log time + speed')
+    expect(container.textContent).toContain('Cardio exercises log time and speed')
 
     // Name and save
     const nameInput = container.querySelector('input.input')
@@ -1130,7 +1130,7 @@ describe('ExConfig notes and cues', () => {
 
     const textarea = container.querySelector('textarea[aria-label="Notes and cues"]')
     expect(textarea).toBeTruthy()
-    expect(textarea.placeholder).toBe('Notes, cues, or machine setup...')
+    expect(textarea.placeholder).toBe('Notes, cues, or machine setup…')
     expect(textarea.value).toBe('')
     expect(textarea.getAttribute('maxlength')).toBe('500')
 

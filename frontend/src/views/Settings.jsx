@@ -175,7 +175,7 @@ export default function Settings() {
 
     {/* About — the one place that says what Sky is. License attribution lives here, so it
         must survive every future rewrite of the copy. */}
-    <div className="dim small settings-about"><Mark size={12} /> Sky · {t('free & open source (MIT)')}</div>
+    <div className="dim small settings-about"><Mark size={12} /> Sky · {t('free and open source (MIT)')}</div>
   </div>
 }
 

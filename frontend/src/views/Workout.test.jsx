@@ -372,7 +372,7 @@ describe('Workout exercise notes and note sheet', () => {
     expect(textarea).not.toBeNull()
     expect(textarea.value).toBe('Old cue')
     expect(textarea.getAttribute('aria-label')).toBe('Exercise note')
-    expect(textarea.getAttribute('placeholder')).toBe('Notes, cues, or machine setup...')
+    expect(textarea.getAttribute('placeholder')).toBe('Notes, cues, or machine setup…')
     expect(textarea.getAttribute('maxLength') || textarea.getAttribute('maxlength')).toBe('500')
 
     // Edit textarea value

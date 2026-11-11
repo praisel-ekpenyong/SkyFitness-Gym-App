@@ -141,9 +141,9 @@ describe('manual rest control', () => {
     view = renderWorkoutApp([entry('1001')])
     click(restControl())
 
-    const fifteens = [...view.container.querySelectorAll('#timer button')]
-      .filter(button => button.textContent.trim() === '15s')
-    expect(fifteens).toHaveLength(2)
+    const fifteens = ['\u221215s', '+15s'].map(label => [...view.container.querySelectorAll('#timer button')]
+      .find(button => button.textContent.trim() === label))
+    expect(fifteens.every(Boolean)).toBe(true)
 
     click(fifteens[0])
     expect(timerBarText()).toMatch(/^1:15/)

@@ -15,14 +15,14 @@ import { supersetUnits, unitOf } from '../lib/supersetFlow.js'
 import { setLabel } from '../lib/format.js'
 import { EFFORT, effortOf, stepEffort, capEffort } from '../lib/effort.js'
 import { bestKnownWeight } from '../lib/active-workout.js'
-import { fmtNum, fmtDate, fmtSec, fmtElapsed, todayISO, exCount, DAYN } from '../lib/format.js'
+import { fmtNum, fmtDate, fmtSec, fmtElapsed, todayISO, exCount, DAYN, sentenceCase } from '../lib/format.js'
 import { playSetComplete } from '../lib/sound.js'
 import { t } from '../lib/i18n.js'
 import Media, { Thumb } from '../components/Media.jsx'
 import { startFlow, exercisePicker, exConfigSheet, exerciseDetailSheet, topWeightSheet, finishWorkout, workoutCompleteSheet, confirmSheet, exerciseNoteSheet } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
 import Barbell, { loadsOnBar } from '../components/Barbell.jsx'
-import { Button, Check, NumberField } from '../components/ui.jsx'
+import { Button, Check, NumberField, dotted } from '../components/ui.jsx'
 import { glyphOf } from '../lib/glyphs.js'
 import { isWarmupRow, isPerformed, seedForReplacement } from '../lib/workout-model.js'
 import { evaluateSetMilestone } from '../lib/progression.js'
@@ -35,7 +35,7 @@ function StartChooser() {
   const todayOvr = hasEffectiveOverride(S, todayISO())
   const others = S.routines.filter(r => r !== todayR)
   return <div className="narrow">
-    <div className="hdr"><div><h1>{t('Start workout')}</h1><div className="sub">{t(DAYN[new Date().getDay()])} — {todayR ? t('today is {0}', todayR.name) : (S.routines.length ? t('rest day on your plan') : t('no plan yet'))}</div></div></div>
+    <div className="hdr"><div><h1>{t('Start workout')}</h1><div className="sub">{t(DAYN[new Date().getDay()])} · {todayR ? t('today is {0}', todayR.name) : (S.routines.length ? t('rest day on your plan') : t('no plan yet'))}</div></div></div>
     {todayR && <section className="card start-today">
       <h2 className="accent">{t("Today's plan")}{todayOvr ? ' · ' + t('rescheduled') : ''}</h2>
       <div className="start-today-name d">{todayR.name}</div>
@@ -164,15 +164,16 @@ function ExerciseBlock({ entryIdx, compact, isCurrent = true, arrived = false, o
     <div className="exhead">
       <div className="exhead-t">
         <h2 className={'d' + (ex.n.length > 26 ? ' long' : '')}>{ex.n}</h2>
-        <div className="row extags">
-          {cardio && <span className="tag">{t('Cardio')}</span>}
-          {/* You log the total; this is the split, so the set in front of you is unambiguous
-              without the rep count having to mean two different things (issue #31). */}
-          {!cardio && !timed && isPerSide(cfg) && <span className="tag nocap">{t('{0} per side', fmtNum(sideReps(entry.sets.find(s => !s.done)?.r ?? entry.sets[0]?.r)))}</span>}
-          {(ex.tg || ex.bp) && <span className="tag">{t(ex.tg || ex.bp)}</span>}
-          {ex.eq && <span className="tag">{t(ex.eq)}</span>}
-          {best > 0 && <span className="tag nocap ex-best">{t('Best:')} {fmtNum(best)} {S.unit}</span>}
-        </div>
+        {/* One text line, not a flex row: the parts are joined by " · " like every meta line. */}
+        <div className="extags small muted">{dotted([
+          cardio && <span className="tag">{t('Cardio')}</span>,
+          // You log the total; this is the split, so the set in front of you is unambiguous
+          // without the rep count having to mean two different things (issue #31).
+          !cardio && !timed && isPerSide(cfg) && <span className="tag nocap">{t('{0} per side', fmtNum(sideReps(entry.sets.find(s => !s.done)?.r ?? entry.sets[0]?.r)))}</span>,
+          (ex.tg || ex.bp) && <span className="tag nocap">{sentenceCase(t(ex.tg || ex.bp))}</span>,
+          ex.eq && <span className="tag nocap">{sentenceCase(t(ex.eq))}</span>,
+          best > 0 && <span className="tag nocap ex-best">{t('Best')} {fmtNum(best)} {S.unit}</span>,
+        ])}</div>
         <div className="extools">
           {!entry.notes && (
             <button className="extool" aria-label={t('Add note')} onClick={() => exerciseNoteSheet(entryIdx)}>{t('Note')}</button>
@@ -183,7 +184,7 @@ function ExerciseBlock({ entryIdx, compact, isCurrent = true, arrived = false, o
       </div>
       <Media ex={ex} key={entry.id} compact={compact} minimizable />
     </div>
-    {last && <div className="small dim ex-last">{t('Last time')} ({fmtDate(last.d)}): {last.sets.map(s => setLabel(entry.id, s, last.target)).join(', ')}</div>}
+    {last && <div className="small dim ex-last">{t('Last time')} {fmtDate(last.d)} · {last.sets.map(s => setLabel(entry.id, s, last.target)).join(', ')}</div>}
     {plan && plan.why && plan.kind !== 'off' && <div className={'progline' + (plan.kind === 'deload' ? ' warn' : '')}>
       <Icon name={plan.kind === 'up' ? 'arrowUp' : plan.kind === 'deload' ? 'arrowDown' : 'lightbulb'} />
       <span>{t(...plan.why)}</span>
