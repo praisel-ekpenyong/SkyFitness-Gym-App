@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { EXIDX } from '../lib/exercises.js'
-import { fmtNum, fmtVol, fmtDur, fmtDate, todayISO } from '../lib/format.js'
+import { fmtNum, fmtDurParts, fmtDate, todayISO } from '../lib/format.js'
 import { latestWeighIn } from '../lib/bodyweight.js'
 import { setsDone, workSetsDone, sessionProgress, isPerformed, isWarmupRow, tonnageOf } from '../lib/workout-model.js'
 import { sessionProgressionItems } from '../lib/progression.js'
@@ -124,9 +124,9 @@ function TopWeight({ entryIdx, close }) {
     <div className="sheet-sub">{t('Confirm the weight you worked with — your highest becomes the default next time.')}{!unitDone && unitSize > 1 ? ' ' + t('Then finish the superset partner.') : ''}</div>
     <WeightInput value={v} setValue={setV} unit={st.unit} />
     <div className="gap8" />
-    {prevBest > 0 ? <div className="small dim cal-sum tw-best">{t('Previous best:')} {fmtNum(prevBest)} {st.unit}{maxSet > prevBest && <span className="tw-new"> — {t('new record!')}</span>}</div> : <div className="gap8" />}
+    {prevBest > 0 ? <div className="small dim cal-sum tw-best">{t('Previous best')} {fmtNum(prevBest)} {st.unit}{maxSet > prevBest && <span className="tw-new"> · {t('new record!')}</span>}</div> : <div className="gap8" />}
     {unitDone ? <>
-      <Button variant="primary" trailingIcon={isLastUnit ? null : 'chevronRight'} onClick={() => commit(true)}>{isLastUnit ? t('Save') : t('Save & next exercise')}</Button>
+      <Button variant="primary" trailingIcon={isLastUnit ? null : 'chevronRight'} onClick={() => commit(true)}>{isLastUnit ? t('Save') : t('Save and next exercise')}</Button>
       <div className="gap8" /><Button variant="ghost" className="dim" onClick={() => commit(false)}>{t('Just close')}</Button>
     </> : <Button variant="primary" onClick={() => commit(false)}>{t('Save weight')}</Button>}
   </>
@@ -165,7 +165,7 @@ export function ExerciseNoteSheet({ entryIdx, close }) {
     <TextArea
       autoFocus
       aria-label={t('Exercise note')}
-      placeholder={t('Notes, cues, or machine setup...')}
+      placeholder={t('Notes, cues, or machine setup…')}
       maxLength={500}
       value={val}
       onChange={e => setVal(e.target.value)}
@@ -212,6 +212,7 @@ export function FinishSummary({ w, prs, e1prs = [], routineSync = null, close })
   const [selectedMuscle, setSelectedMuscle] = useState(null)
   const progressionItems = sessionProgressionItems(w, st)
   const load = loadOfWorkouts([w])
+  const warmUps = setsDone(w) - workSetsDone(w)
 
   const onDismiss = () => {
     if (syncChecked && routineSync?.routineId && routineSync?.syncedEx) {
@@ -226,10 +227,14 @@ export function FinishSummary({ w, prs, e1prs = [], routineSync = null, close })
     <h3 className="finish-title">{t('Workout logged')}</h3>
     <div className="finish-kicker">{[w.name, fmtDate(w.d, true)].filter(Boolean).join(' · ')}</div>
     <div className="tiles finish-kpis">
-      <div className="tile"><div className="l">{t('Duration')}</div><div className="v">{fmtDur(w.end - w.start)}</div></div>
-      <div className="tile"><div className="l">{t('Volume')}</div><div className="v">{fmtVol(tonnageOf(w), st.unit)}</div></div>
-      <div className="tile"><div className="l">{t('Sets')}</div><div className="v finish-sets">{setsDone(w) === workSetsDone(w) ? t('{0} sets', setsDone(w)) : t('{0} sets · {1} warm-up', workSetsDone(w), setsDone(w) - workSetsDone(w))}</div></div>
-      <div className="tile"><div className="l">{t('PRs')}</div><div className="v">{prs.length || '—'}</div></div>
+      {/* The figure with a small unit (.u); the label above already names it, so no "4 sets". */}
+      <div className="tile"><div className="l">{t('Duration')}</div><div className="v">
+        {fmtDurParts(w.end - w.start).map(([n, u], i) => <Fragment key={i}>{i > 0 && ' '}{n}<span className="u">{u}</span></Fragment>)}
+      </div></div>
+      <div className="tile"><div className="l">{t('Volume')}</div><div className="v">{fmtNum(tonnageOf(w))}<span className="u"> {st.unit}</span></div></div>
+      <div className="tile"><div className="l">{t('Sets')}</div><div className="v">{fmtNum(workSetsDone(w))}</div>
+        {warmUps > 0 && <div className="s">{t(warmUps === 1 ? '{0} warm-up' : '{0} warm-ups', fmtNum(warmUps))}</div>}</div>
+      <div className="tile"><div className="l">{t('PRs')}</div><div className="v">{fmtNum(prs.length)}</div></div>
     </div>
     {(prs.length > 0 || e1prs.length > 0) && <div className="finish-records">
       {prs.map(id => <div key={id} className="record capitalize row"><Icon name="trophy" />{t('New PR:')} {(EXIDX[id] || {}).n || id}</div>)}

@@ -4,7 +4,7 @@ import { EXDB } from '../lib/exercises.js'
 import { FILTER_MUSCLES, MUSCLE_NAME } from '../lib/muscles.js'
 import { queryCatalogue } from '../lib/catalogue-query.js'
 import { bestWeightForEntry } from '../lib/workout-model.js'
-import { fmtNum } from '../lib/format.js'
+import { fmtNum, sentenceCase } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
 import { toggleFavorite } from '../lib/catalogue-writes.js'
 import { Thumb } from '../components/Media.jsx'
@@ -49,7 +49,7 @@ export default function Library() {
   }, [S.workouts])
 
   return <div className="page">
-    <div className="hdr"><div><h1>{t('Exercises')}</h1><div className="sub">{t('{0} exercises with animations', EXDB.length)}</div></div></div>
+    <div className="hdr"><div><h1>{t('Exercises')}</h1><div className="sub">{t('{0} exercises with animations', fmtNum(EXDB.length))}</div></div></div>
     <SearchField
       className="lib-search"
       placeholder={t('Search…')}
@@ -59,19 +59,19 @@ export default function Library() {
       onClear={() => { setQ(''); setShown(40) }}
     />
     <div className="chips lib-chips">
-      {favs.length > 0 && <button className={'chip chip-i' + (activeFilter === 'favorites' ? ' on' : '')} onClick={() => { setFilter('favorites'); setEq(''); setShown(40) }}><Icon name="starFill" />{t('Favorites')} ({favs.length})</button>}
+      {favs.length > 0 && <button className={'chip chip-i' + (activeFilter === 'favorites' ? ' on' : '')} onClick={() => { setFilter('favorites'); setEq(''); setShown(40) }}><Icon name="starFill" />{t('Favorites')} ({fmtNum(favs.length)})</button>}
       <button className={'chip nocap' + (!activeFilter ? ' on' : '')} onClick={() => { setFilter(''); setEq(''); setShown(40) }}>{t('All')}</button>
-      {FILTER_MUSCLES.map(m => <button key={m} className={'chip' + (activeFilter === m ? ' on' : '')} onClick={() => { setFilter(m); setEq(''); setShown(40) }}>{t(MUSCLE_NAME[m] || m)}</button>)}
+      {FILTER_MUSCLES.map(m => <button key={m} className={'chip nocap' + (activeFilter === m ? ' on' : '')} onClick={() => { setFilter(m); setEq(''); setShown(40) }}>{sentenceCase(t(MUSCLE_NAME[m] || m))}</button>)}
     </div>
     {eqOpts.length > 1 && <div className="chips lib-chips">
       <button className={'chip nocap' + (!eqOn ? ' on' : '')} onClick={() => { setEq(''); setShown(40) }}>{t('Any equipment')}</button>
-      {eqOpts.map(x => <button key={x} className={'chip' + (eqOn === x ? ' on' : '')} onClick={() => { setEq(x); setShown(40) }}>{t(x)}</button>)}
+      {eqOpts.map(x => <button key={x} className={'chip nocap' + (eqOn === x ? ' on' : '')} onClick={() => { setEq(x); setShown(40) }}>{sentenceCase(t(x))}</button>)}
     </div>}
     <div className="list ex-grid">
       <div className="item ex-create" role="button" tabIndex={0} onClick={() => customExSheet(null, ex => exerciseDetailSheet(ex), q.trim())}
         onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); customExSheet(null, ex => exerciseDetailSheet(ex), q.trim()) } }}>
         <div className="thumb thumb-x"><Icon name="plus" /></div>
-        <div className="grow"><div className="tt">{t('Create your own exercise')}</div><div className="ss">{t('name + target muscles, no animation')}</div></div>
+        <div className="grow"><div className="tt">{t('Create your own exercise')}</div><div className="ss">{t('Name and target muscles, no animation')}</div></div>
       </div>
       {rows.slice(0, shown).map(row => {
         const e = row.exercise
@@ -94,8 +94,8 @@ export default function Library() {
           </button>
           <div className="grow">
             <div className="tt capitalize">{e.n}</div>
-            <div className="ss capitalize">
-              {t(primaryLabel)} · {t(e.eq)}
+            <div className="ss">
+              {sentenceCase(t(primaryLabel))} · {sentenceCase(t(e.eq))}
               {secondaryMuscle && <span className="tag">{t('Secondary: {0}', MUSCLE_NAME[secondaryMuscle] || secondaryMuscle)}</span>}
             </div>
           </div>

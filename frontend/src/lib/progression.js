@@ -21,7 +21,7 @@
 import { EXIDX } from './exercises.js'
 import { isWorkSet, isPerformed, isWarmupRow, workSets, doneWorkSets, modeOf, repStep, makeRow, modeForSet, isBw, defaultConfig } from './workout-model.js'
 import { resolveSetWeight } from './units.js'
-import { fmtNum } from './format.js'
+import { fmtNum, fmtSigned } from './format.js'
 import { t } from './i18n.js'
 
 /**
@@ -819,7 +819,7 @@ function unlockedCue(verdict, extra) {
   if (p.weight > 0) {
     return {
       kind: 'unlocked',
-      label: t('All sets hit! +{0} {1} unlocked next session', verdict.step, verdict.unit),
+      label: t('All sets hit! {0} {1} unlocked next session', fmtSigned(verdict.step), verdict.unit),
       inc: verdict.step,
       unit: verdict.unit,
       ...extra
@@ -913,7 +913,7 @@ export function evaluateSetMilestone(entry, setIdx, context = {}) {
       if (p.kind === 'up' && p.sec != null) {
         return {
           kind: 'unlocked',
-          label: t('All sets hit! +{0}s unlocked next session', step),
+          label: t('All sets hit! {0}s unlocked next session', fmtSigned(step)),
           sec,
           targetSec
         }
@@ -921,7 +921,7 @@ export function evaluateSetMilestone(entry, setIdx, context = {}) {
       if (aimDelta > 0) {
         return {
           kind: 'progress',
-          label: t('Hold progress (+{0}s)', aimDelta),
+          label: t('Hold progress ({0}s)', fmtSigned(aimDelta)),
           step: aimDelta,
           sec,
           targetSec
@@ -962,7 +962,7 @@ export function evaluateSetMilestone(entry, setIdx, context = {}) {
       if (verdict.aimDelta > 0) {
         return {
           kind: 'progress',
-          label: t('Rep progress (+{0})', verdict.aimDelta),
+          label: t('Rep progress ({0})', fmtSigned(verdict.aimDelta)),
           step: verdict.aimDelta,
           reps,
           targetReps
@@ -1007,7 +1007,7 @@ export function evaluateSetMilestone(entry, setIdx, context = {}) {
         if (bonus > 0) {
           return {
             kind: 'bonus',
-            label: t('AMRAP +{0} · +{1} {2} unlocked next session', bonus, verdict.step, verdict.unit),
+            label: t('AMRAP {0} · {1} {2} unlocked next session', fmtSigned(bonus), fmtSigned(verdict.step), verdict.unit),
             reps,
             targetReps,
             bonusReps: bonus,
@@ -1103,15 +1103,15 @@ export function evaluateSessionProgression(entry, state, context = {}) {
     iconName = 'arrowUp'
     if (!isLoadless && p.weight != null && p.weight > 0) {
       const delta = Math.round((p.weight - oldWeight) * 10) / 10
-      const deltaStr = delta > 0 ? ` (+${fmtNum(delta)} ${unit})` : ''
+      const deltaStr = delta > 0 ? ` (${fmtSigned(delta)} ${unit})` : ''
       text = `${fmtNum(oldWeight)} ${unit} → ${fmtNum(p.weight)} ${unit}${deltaStr}`
     } else if (p.sec != null) {
       const oldSec = entry.target?.sec || 0
       const deltaSec = p.sec - oldSec
-      const deltaStr = deltaSec > 0 ? ` (+${deltaSec}s)` : ''
+      const deltaStr = deltaSec > 0 ? ` (${fmtSigned(deltaSec)}s)` : ''
       text = `${oldSec}s → ${p.sec}s${deltaStr}`
     } else if (p.sets != null) {
-      text = t('{0} sets (+1 set)', p.sets)
+      text = t('{0} sets ({1} set)', p.sets, fmtSigned(1))
     } else if (p.reps != null) {
       text = t('Aim for {0} reps', p.reps)
     } else {

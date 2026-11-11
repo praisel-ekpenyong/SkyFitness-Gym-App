@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { useUI } from '../store/useUI.js'
-import { fmtSec } from '../lib/format.js'
+import { fmtSec, fmtSigned } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
 import { Button } from './ui.jsx'
 
@@ -36,14 +36,15 @@ export default function RestTimer() {
     </div>
   )
   // −15 and +15 sit together in number-line order; Skip is pushed to the far edge, away from
-  // the button you tap to buy more time.
+  // the button you tap to buy more time. The sign is written, not drawn, so it is the same
+  // minus as every other signed figure (fmtSigned).
   return (
     <div id="timer" className="rest" role="timer">
       {bar}
       <div className="t">{fmtSec(timer.left)}</div>
       <div className="acts">
-        <Button size="sm" icon="minus" onClick={() => addRest(-15)}>15s</Button>
-        <Button size="sm" icon="plus" onClick={() => addRest(15)}>15s</Button>
+        <Button size="sm" onClick={() => addRest(-15)}>{t('{0}s', fmtSigned(-15))}</Button>
+        <Button size="sm" onClick={() => addRest(15)}>{t('{0}s', fmtSigned(15))}</Button>
         <Button size="sm" variant="primary" className="skip" onClick={stopRest}>{t('Skip')}</Button>
       </div>
     </div>

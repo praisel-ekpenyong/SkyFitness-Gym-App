@@ -151,7 +151,7 @@ describe('Home hero routine exercise count binding (05)', () => {
     await act(async () => { root.render(<Home />) })
 
     const meta = container.querySelector('.home-hero-meta')
-    expect(meta.textContent).toContain('Time to recover & rebuild')
+    expect(meta.textContent).toContain('Time to recover and rebuild')
     expect(meta.textContent).not.toMatch(/\d+ exercises?/)
     expect(meta.textContent).not.toContain("Today's routine")
   })
@@ -191,7 +191,7 @@ describe('Home hero routine exercise count binding (05)', () => {
     await act(async () => { root.render(<Home />) })
 
     const meta = container.querySelector('.home-hero-meta')
-    expect(meta.textContent).toContain('Time to recover & rebuild')
+    expect(meta.textContent).toContain('Time to recover and rebuild')
   })
 })
 
@@ -239,5 +239,19 @@ describe('Home declarative weekly progress card (non-gamified PRODUCT.md voice)'
     expect(card.textContent).toContain('No workouts this week')
     expect(card.textContent).toContain('0 workouts total')
     expect(card.textContent.toLowerCase()).not.toContain('streak')
+  })
+
+  it('writes the weight delta as a signed figure with the U+2212 minus', async () => {
+    useStore.getState().update(s => {
+      s.routines = []
+      s.week = {}
+      s.workouts = []
+      s.active = null
+      s.bodyweight = [{ d: '2026-11-01', w: 83, t: 1 }, { d: '2026-11-07', w: 82.8, t: 2 }]
+    })
+
+    await act(async () => { root.render(<Home />) })
+
+    expect(container.querySelector('.bw-card .delta-pill').textContent).toBe('\u22120.2 kg')
   })
 })
