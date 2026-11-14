@@ -68,7 +68,8 @@ untracked. Inputs stay at 16px or larger, the line below which iOS zooms the pag
   `--art-paper` is the art's white paper, painted under `--art-filter`, so an image still loading
   shows `--art-ground` in either theme. When every URL for an image fails, the thumbnail, the
   Library tile and the animation show the dumbbell tile (`.thumb-x`) at their own size, with no
-  `<img>` and no alt text.
+  `<img>` and no alt text. Inside `.exmedia`, `.ex-art` sits on whichever stands there, the art
+  `<img>` or the dumbbell tile, so size rules target `.ex-art` and never the `<img>`.
 
 ## Signature pieces
 
