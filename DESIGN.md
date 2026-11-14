@@ -60,6 +60,10 @@ untracked. Inputs stay at 16px or larger, the line below which iOS zooms the pag
   nowhere else, and the only polychrome in the app.
 - **Art:** `--art-filter` turns the white-ground exercise art into an X-ray on `--art-ground` black
   (`invert` + `hue-rotate` puts the red target muscle back); light theme shows it untouched.
+  `--art-paper` is the art's white paper, painted under `--art-filter`, so an image still loading
+  shows `--art-ground` in either theme. When every URL for an image fails, the thumbnail, the
+  Library tile and the animation show the dumbbell tile (`.thumb-x`) at their own size, with no
+  `<img>` and no alt text.
 
 ## Signature pieces
 
