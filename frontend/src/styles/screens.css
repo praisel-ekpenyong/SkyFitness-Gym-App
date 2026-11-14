@@ -196,8 +196,6 @@
 .recap-empty { margin-bottom: 12px }
 .recap-v { display: flex; align-items: baseline; gap: 8px; flex: none }
 .recap-n { font-size: var(--fs-figure); font-stretch: var(--narrow); font-weight: 700 }
-.tw-best { margin-bottom: 12px }
-.tw-new { color: var(--goal-text) }
 .sheet-title-row { margin-bottom: 12px; align-items: flex-start }
 .onerm-in { margin-bottom: 10px }
 .onerm-out { margin-bottom: 4px; align-items: baseline }

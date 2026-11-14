@@ -175,6 +175,8 @@
 .item.in-ss { box-shadow: inset 3px 0 0 var(--label-3) }
 
 /* ------------------------------------------------------------ session tools -- */
+/* The Next key: the foot of the set ladder once the unit's work is done. */
+.wk-next { margin-top: 12px }
 .wk-nav { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 14px 0 6px }
 .wk-nav + .wk-nav { margin-top: 0 }
 .wk-nav > :only-child { grid-column: 1 / -1 }

@@ -7,7 +7,7 @@ import { useStore } from '../store/useStore.js'
 
 vi.mock('../sheets.jsx', () => ({
   startFlow: vi.fn(), exercisePicker: vi.fn(), exConfigSheet: vi.fn(), exerciseDetailSheet: vi.fn(),
-  topWeightSheet: vi.fn(), finishWorkout: vi.fn(), workoutCompleteSheet: vi.fn(), confirmSheet: vi.fn(), exerciseNoteSheet: vi.fn(),
+  finishWorkout: vi.fn(), workoutCompleteSheet: vi.fn(), confirmSheet: vi.fn(), exerciseNoteSheet: vi.fn(),
 }))
 
 const BENCH = '0025'   // barbell bench press

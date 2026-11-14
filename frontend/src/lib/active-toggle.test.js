@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 // Imports cross the facade seam, not the module file directly: this pins the
 // interface the store and sheets actually consume.
-import { toggleActiveSet, peekWeightCommit, commitWorkingWeight } from './active-workout.js'
+import { toggleActiveSet, nextUnitTarget } from './active-workout.js'
 
 const solo = () => ({
   active: {
@@ -28,20 +28,18 @@ describe('toggle next action', () => {
     expect(S.active.entries[0].hw).toBe(1)
   })
 
-  it('final loaded set opens the weight prompt, commit finishes the workout', () => {
+  it('final loaded set of the last Entry opens the finish prompt and asks for no weight', () => {
     const S = solo()
     toggleActiveSet(S, 0, 0)
     const r = toggleActiveSet(S, 0, 1)
-    expect(r.next).toEqual({ kind: 'open-topweight', targetIdx: null })
+    expect(r.next).toEqual({ kind: 'open-finish', targetIdx: null })
     expect(r.rest).toEqual({ start: false, stop: true })
     expect(r.notice).toBe(null)
-    const next = commitWorkingWeight(S, 0, 82.5, { todayISO: () => '2026-08-24' })
-    expect(next).toEqual({ kind: 'topweight-then-finish', targetIdx: null, unitDone: true, isLastUnit: true, unitSize: 1 })
-    expect(S.active.entries[0].topW).toBe(82.5)
-    expect(S.exWeights.ex1).toEqual({ w: 82.5, d: '2026-08-24', unit: 'kg' })
+    expect(S.active.entries[0].topW).toBeUndefined()
+    expect(S.exWeights).toEqual({})
   })
 
-  it('finishing the first of two entries advances after commit', () => {
+  it('finishing the first of two loaded entries stays and opens nothing', () => {
     const S = {
       active: {
         cur: 0,
@@ -53,13 +51,10 @@ describe('toggle next action', () => {
       exWeights: {},
     }
     const r = toggleActiveSet(S, 0, 0)
-    expect(r.next).toEqual({ kind: 'open-topweight', targetIdx: null })
+    expect(r.next).toEqual({ kind: 'stay', targetIdx: null })
     expect(r.rest).toEqual({ start: true, stop: true })
-    const peek = peekWeightCommit(S, 0)
-    expect(peek).toEqual({ kind: 'topweight-then-advance', targetIdx: 1, unitDone: true, isLastUnit: false, unitSize: 1 })
-    const next = commitWorkingWeight(S, 0, 80, { todayISO: () => '2026-08-24' })
-    expect(next.targetIdx).toBe(1)
-    expect(next.kind).toBe('topweight-then-advance')
+    expect(S.active.cur).toBe(0)
+    expect(S.active.entries[0].topW).toBeUndefined()
   })
 
   it('performing the final set of a solo exercise starts rest when another exercise follows', () => {
@@ -74,7 +69,7 @@ describe('toggle next action', () => {
       exWeights: {},
     }
     const r = toggleActiveSet(S, 0, 1)
-    expect(r.next).toEqual({ kind: 'open-topweight', targetIdx: null })
+    expect(r.next).toEqual({ kind: 'stay', targetIdx: null })
     expect(r.rest).toEqual({ start: true, stop: true })
 
     // Unchecking and re-checking does not restart or stop rest (high-water mark respected)
@@ -154,12 +149,12 @@ describe('toggle next action', () => {
     expect(r3.notice).toBe(null)
     expect(r3.rest).toEqual({ start: true, stop: true })
 
-    // 4. Exercise whose weight was already confirmed (asked: true) followed by another exercise
+    // 4. Loaded exercise followed by another exercise
     const S4 = {
       active: {
         cur: 0,
         entries: [
-          { id: 'ex-asked', asked: true, target: { reps: 5, weight: 80 }, sets: [{ w: 80, r: 5, done: false }] },
+          { id: 'ex-loaded', target: { reps: 5, weight: 80 }, sets: [{ w: 80, r: 5, done: false }] },
           { id: 'ex2', target: { reps: 5, weight: 60 }, sets: [{ w: 60, r: 5, done: false }] },
         ],
       },
@@ -177,7 +172,7 @@ describe('toggle next action', () => {
         cur: 1,
         entries: [
           { id: 'ex1', sg: 'sg-0-1', target: { reps: 5, weight: 80 }, sets: [{ w: 80, r: 5, done: true }] },
-          { id: 'ex2', sg: 'sg-0-1', asked: true, target: { reps: 5, weight: 60 }, sets: [{ w: 60, r: 5, done: false }] },
+          { id: 'ex2', sg: 'sg-0-1', target: { reps: 5, weight: 60 }, sets: [{ w: 60, r: 5, done: false }] },
           { id: 'ex3', target: { reps: 5, weight: 70 }, sets: [{ w: 70, r: 5, done: false }] },
         ],
       },
@@ -208,7 +203,7 @@ describe('toggle next action', () => {
         cur: 1,
         entries: [
           { id: 'ex1', sg: 'sg-0-1', target: { reps: 5, weight: 80 }, sets: [{ w: 80, r: 5, done: true }] },
-          { id: 'ex2', sg: 'sg-0-1', asked: true, target: { reps: 5, weight: 60 }, sets: [{ w: 60, r: 5, done: false }] },
+          { id: 'ex2', sg: 'sg-0-1', target: { reps: 5, weight: 60 }, sets: [{ w: 60, r: 5, done: false }] },
         ],
       },
       exWeights: {},
@@ -235,10 +230,8 @@ describe('toggle next action', () => {
       exWeights: {},
     }
     const r = toggleActiveSet(S, 0, 1)
-    expect(r.next).toEqual({ kind: 'open-topweight', targetIdx: null })
+    expect(r.next).toEqual({ kind: 'open-finish', targetIdx: null })
     expect(r.notice).toBe(null)
-    const next = commitWorkingWeight(S, 0, 80, { todayISO: () => '2026-08-24' })
-    expect(next.kind).toBe('topweight-then-finish')
   })
 
   it('unchecking reports stay and reopens nothing', () => {
@@ -273,7 +266,7 @@ describe('toggle next action', () => {
     toggleActiveSet(S, 0, 0)
     expect(S.active.entries[0].hw).toBe(1)
     const r2 = toggleActiveSet(S, 0, 1)
-    expect(r2.next).toEqual({ kind: 'open-topweight', targetIdx: null })
+    expect(r2.next).toEqual({ kind: 'open-finish', targetIdx: null })
     expect(S.active.entries[0].hw).toBe(2)
   })
 
@@ -291,18 +284,88 @@ describe('toggle next action', () => {
     expect(re.rest).toEqual({ start: false, stop: false })
     expect(S.active.entries[0].hw).toBe(2)
   })
+})
 
-  it('invalid commit weight returns null and stores nothing', () => {
-    const S = solo()
-    const next = commitWorkingWeight(S, 0, -5)
-    expect(next).toBe(null)
-    expect(S.active.entries[0].topW).toBeUndefined()
-    expect(commitWorkingWeight(S, 9, 80)).toBe(null)
+const twoLoaded = () => ({
+  active: {
+    cur: 0,
+    entries: [
+      { id: 'ex1', target: { reps: 5, weight: 80 }, sets: [{ w: 80, r: 5, done: false }, { w: 80, r: 5, done: false }] },
+      { id: 'ex2', target: { reps: 5, weight: 60 }, sets: [{ w: 60, r: 5, done: false }] },
+    ],
+  },
+  exWeights: {},
+})
+
+describe('next unit target (the Next key)', () => {
+  it('is null while a Work set of the open Entry is left', () => {
+    const S = twoLoaded()
+    toggleActiveSet(S, 0, 0)
+    expect(nextUnitTarget(S, 0)).toBe(null)
   })
 
-  it('peeking a gone entry returns null instead of a lying advance', () => {
-    const S = solo()
-    expect(peekWeightCommit(S, 9)).toBe(null)
-    expect(peekWeightCommit({ active: null }, 0)).toBe(null)
+  it('names the next Entry once every Work set is performed, and goes away on an uncheck', () => {
+    const S = twoLoaded()
+    toggleActiveSet(S, 0, 0)
+    toggleActiveSet(S, 0, 1)
+    expect(nextUnitTarget(S, 0)).toBe(1)
+    toggleActiveSet(S, 0, 1)
+    expect(nextUnitTarget(S, 0)).toBe(null)
+  })
+
+  it('is null on the last Entry, where the finish prompt opens instead', () => {
+    const S = twoLoaded()
+    S.active.cur = 1
+    toggleActiveSet(S, 1, 0)
+    expect(nextUnitTarget(S, 1)).toBe(null)
+  })
+
+  it('reads the same for bodyweight, timed and cardio Entries', () => {
+    for (const first of [
+      { id: 'ex-bw', target: { mode: 'reps', reps: 10, bodyweight: true }, sets: [{ w: 0, r: 10, done: false }] },
+      { id: 'ex-timed', target: { mode: 'time', sec: 45 }, sets: [{ sec: 45, done: false }] },
+      { id: 'ex-cardio', target: { mode: 'cardio', min: 20, speed: 8 }, sets: [{ min: 20, speed: 8, done: false }] },
+    ]) {
+      const S = { active: { cur: 0, entries: [first, { id: 'ex2', target: { reps: 5 }, sets: [{ w: 60, r: 5, done: false }] }] }, exWeights: {} }
+      toggleActiveSet(S, 0, 0)
+      expect(nextUnitTarget(S, 0)).toBe(1)
+    }
+  })
+
+  it('an unticked warm-up does not hold it back', () => {
+    const S = twoLoaded()
+    S.active.entries[0].sets.unshift({ w: 40, r: 5, done: false, phase: 'warmup', warmup: true })
+    toggleActiveSet(S, 0, 1)
+    toggleActiveSet(S, 0, 2)
+    expect(nextUnitTarget(S, 0)).toBe(1)
+  })
+
+  it('a superset shows it once, after its last Work set, naming the first Entry of the next unit', () => {
+    const S = {
+      active: {
+        cur: 0,
+        entries: [
+          { id: 'ex1', sg: 'sg-0-1', target: { reps: 5, weight: 80 }, sets: [{ w: 80, r: 5, done: false }] },
+          { id: 'ex2', sg: 'sg-0-1', target: { reps: 5, weight: 60 }, sets: [{ w: 60, r: 5, done: false }] },
+          { id: 'ex3', sg: 'sg-2-3', target: { reps: 5, weight: 70 }, sets: [{ w: 70, r: 5, done: false }] },
+          { id: 'ex4', sg: 'sg-2-3', target: { reps: 5, weight: 70 }, sets: [{ w: 70, r: 5, done: false }] },
+        ],
+      },
+      exWeights: {},
+    }
+    toggleActiveSet(S, 0, 0)
+    expect(nextUnitTarget(S, 0)).toBe(null)
+    expect(nextUnitTarget(S, 1)).toBe(null)
+    toggleActiveSet(S, 1, 0)
+    expect(nextUnitTarget(S, 0)).toBe(2)
+    expect(nextUnitTarget(S, 1)).toBe(2)
+  })
+
+  it('is null for an Entry with no Work sets, or when the Entry is gone', () => {
+    const S = twoLoaded()
+    S.active.entries[0].sets = []
+    expect(nextUnitTarget(S, 0)).toBe(null)
+    expect(nextUnitTarget(S, 9)).toBe(null)
+    expect(nextUnitTarget({ active: null }, 0)).toBe(null)
   })
 })
