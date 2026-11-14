@@ -591,6 +591,8 @@ export function RecapSheet({ start, close }) {
   const viewedEmpty = rec.workouts === 0
 
   const deltaBadge = (key) => {
+    // A month still under way is not behind anything yet, so it shows no comparison.
+    if (isCurrent) return null
     const v = rec.deltas?.[key]
     if (v == null) return null
     const prevVal = rec.prev?.[key]
@@ -603,8 +605,7 @@ export function RecapSheet({ start, close }) {
     } else {
       label = fmtSigned(Math.round(v), n => fmtNum(n) + '%')
     }
-    // A month still under way is not behind anything yet, so its shortfall reads neutral.
-    const color = v > 0 ? 'var(--acc-text)' : v < 0 && !isCurrent ? 'var(--red-text)' : 'var(--label-2)'
+    const color = v > 0 ? 'var(--acc-text)' : v < 0 ? 'var(--red-text)' : 'var(--label-2)'
     return <span className="delta-pill" style={{ color }}>{label}</span>
   }
 
