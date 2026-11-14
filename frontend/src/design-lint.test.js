@@ -96,7 +96,8 @@ describe('G2 type scale (styles/*.css)', () => {
 
 // ------------------------------------------------------------------- colour meaning --
 // Guard G2 (colour part): one meaning per colour. The accent means work and yellow means a
-// Record, never a Best (design-review-fixes/04, decision E12, narrows D3), so the tokens that
+// Record, the moment a Set beats the exercise's Best or its best estimated 1RM; the standing
+// Best figure stays ink (design-review-fixes/04, decision E12, narrows D3), so the tokens that
 // carry them may colour only what is listed below. Everything else is ink (--label, --label-2,
 // --label-3) on iron. Each entry names the use it is, by the iron-discipline decision that
 // allows it: D2 for the accent, D3 for yellow (DESIGN.md › The five rules › 3 and › Tokens ›
@@ -105,7 +106,7 @@ describe('G2 type scale (styles/*.css)', () => {
 
 const ACCENT_TOKENS = ['--acc', '--acc-2', '--acc-text', '--acc-soft', '--acc-line', '--data']
 const RECORD_TOKENS = ['--goal-text', '--yellow']
-const COLOUR_READ = 'Read DESIGN.md › The five rules › 3 (Colour is work) and › Tokens › Status (yellow is a Record). A Best is neutral ink, never yellow: design-review-fixes/04 (E12) narrows D3.'
+const COLOUR_READ = 'Read DESIGN.md › The five rules › 3 (Colour is work) and › Tokens › Status (yellow is a Record: a Set that beat the Best or the best estimated 1RM). The standing Best figure is neutral ink, never yellow: design-review-fixes/04 (E12) narrows D3.'
 
 /** Selectors (one per entry, as written in styles/*.css) that may use an accent token. */
 const WORK = {
@@ -135,11 +136,11 @@ const WORK = {
   '#timer.working .t': 'D2 the rest dock while a timed set is held: the clock is the work itself',
 }
 
-/** Selectors that may use a record token. A Best (the heaviest load) is a measurement in ink, not a Record. */
+/** Selectors that may use a record token. The standing Best (the heaviest load) is a measurement in ink; beating it is a Record. */
 const RECORD = {
   '.record': 'D3 a Record (utility class)',
   '.pr': 'D3 a Record badge (Workout detail and Workout row)',
-  '.set-pill.top': 'D3 the Set that made a Record (Stats history)',
+  '.set-pill.record': 'D3 the Set that made a Record (Stats history: the session’s heaviest Set)',
 }
 
 /** Lines in src/**\/*.{js,jsx} that may name an accent token, by file and a fragment of the line. */
@@ -192,7 +193,7 @@ function jsUses(family) {
 describe('G2 colour meaning: lime is work, yellow is a record', () => {
   const families = [
     { name: 'accent', tokens: ACCENT_TOKENS, css: WORK, js: WORK_JS, list: 'WORK', means: 'the accent means work (spec D2)' },
-    { name: 'record', tokens: RECORD_TOKENS, css: RECORD, js: RECORD_JS, list: 'RECORD', means: 'yellow means a Record, never a Best (spec D3 as narrowed by design-review-fixes E12)' },
+    { name: 'record', tokens: RECORD_TOKENS, css: RECORD, js: RECORD_JS, list: 'RECORD', means: 'yellow means a Record (a Set that beat the Best or the best estimated 1RM), never the standing Best figure (spec D3 as narrowed by design-review-fixes E12)' },
   ]
 
   for (const f of families) {

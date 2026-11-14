@@ -381,6 +381,13 @@ function EditWorkoutSheet({ close, name, count, onReorder, onReplace, onPairPrev
 }
 
 /** Active-workout route body; logs sets for the running session. */
+// "Next: <exercise>", with the dataset name lifted by .capitalize and the label kept out of it.
+// One span, so the key's flex gap does not open between the label and the name.
+function NextLabel({ name }) {
+  const [before, after = ''] = t('Next: {0}').split('{0}')
+  return <span>{before}<span className="capitalize">{name}</span>{after}</span>
+}
+
 function ActiveWorkout() {
   const nav = useNavigate()
   const S = useStore(s => s.S)
@@ -562,7 +569,7 @@ function ActiveWorkout() {
           onReplace={replaceActiveExerciseFlow} />
       )}
       {nextIdx != null && <button className="btn primary wk-next" onClick={() => useStore.getState().setActiveIndex(nextIdx)}>
-        {t('Next: {0}', exOr(A.entries[nextIdx].id).n)}<Icon name="chevronRight" />
+        <NextLabel name={exOr(A.entries[nextIdx].id).n} /><Icon name="chevronRight" />
       </button>}
     </> : <div className="empty"><div className="ico"><Icon name="shuffle" /></div>{t('Freestyle workout — add your first exercise.')}</div>}
 

@@ -12,7 +12,7 @@ import { weekKey, isoOf } from './format.js'
  * Removes exactly the workout record and nothing else. Bests (`S.exWeights`)
  * and Records (`w.prs` on surviving workouts) keep standing — a Best is
  * "heaviest ever recorded", not "heaviest of what remains", so deleting history
- * never lowers a suggestion or unremembers a PR.
+ * never lowers a suggestion or unremembers a Record.
  *
  * @param {Object} S - Application state atom.
  * @param {string} id - Workout id to delete.

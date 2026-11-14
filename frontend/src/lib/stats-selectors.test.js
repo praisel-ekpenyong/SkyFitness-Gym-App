@@ -369,17 +369,24 @@ describe('exercise index and sessions', () => {
     expect(st.points[1]).toMatchObject({ effort: 2, m: 0.5 })
   })
 
-  it('marks only the Set that made a Record: the best estimate of an Entry on a Workout whose prs names it', () => {
+  it('marks only the Set that made a Record: the heaviest Set of an Entry on a Workout whose prs names it', () => {
     const S = { unit: 'kg', workouts: [
       // Same weight as the later Record, but this Workout made no Record.
       workoutAt(LIFT.id, 20, [doneSet(100, 3)]),
-      // Three Sets at 100 kg; the Record Set is the best estimate (100 × 6), not every Set at the top weight.
-      workoutAt(LIFT.id, 10, [doneSet(100, 5), doneSet(100, 6), doneSet(90, 8), doneSet(100, 4)], { prs: [LIFT.id] }),
+      // The Record is a new heaviest load: 100 × 3 earned it, not 90 × 10, the better estimate.
+      workoutAt(LIFT.id, 10, [doneSet(90, 10), doneSet(100, 3), doneSet(95, 6)], { prs: [LIFT.id] }),
       // A Record for another exercise does not mark this one.
       workoutAt(LIFT.id, 1, [doneSet(80, 5)], { prs: ['other'] }),
     ] }
     const st = selectExerciseStats(S, LIFT.id, { now: NOW, catalogue })
     expect(st.recent.map(p => p.record)).toEqual([null, 1, null])
+  })
+
+  it('marks the first Set at the heaviest load when several Sets share it', () => {
+    const S = { unit: 'kg', workouts: [
+      workoutAt(LIFT.id, 1, [doneSet(90, 8), doneSet(100, 5), doneSet(100, 6)], { prs: [LIFT.id] }),
+    ] }
+    expect(selectExerciseStats(S, LIFT.id, { now: NOW, catalogue }).recent[0].record).toBe(1)
   })
 
   it('marks no Set on a timed exercise, which has no estimate', () => {
