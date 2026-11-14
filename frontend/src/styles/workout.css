@@ -42,7 +42,7 @@
 .exhead .exmedia.mini .giftoggle { width: 40px; height: 40px; left: 0; bottom: 0; font-size: var(--fs-meta) }
 .extags { gap: 2px 10px; flex-wrap: wrap }
 .extags .tag { background: none; padding: 0; font-size: var(--fs-meta); font-weight: 400; white-space: normal }
-.extags .tag.ex-best { color: var(--goal-text) }   /* a best is a record */
+.extags .tag.ex-best { color: var(--label) }   /* a Best is ink, never yellow */
 .extools { display: flex; flex-wrap: wrap; gap: 0; margin: 2px 0 0 -8px }
 /* Words, not glyphs: three short keys a thumb can read without learning an icon set. */
 .extool {

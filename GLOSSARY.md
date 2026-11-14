@@ -272,6 +272,10 @@ _Avoid_: e1RM in user-facing prose
 
 **Record**:
 A set whose estimated 1RM beats every estimate before it, kept on the workout where it happened.
+_Avoid_: PR, personal record (in lifter-facing copy)
+
+**Best**:
+The heaviest load of a performed Work set for one exercise; a measurement, where a Record is an estimate that beat every estimate before it. Shown in neutral ink, never in the Record's yellow.
 
 **Effective sets**:
 Training load per muscle counted in sets, weighted primary 1 / secondary 0.4 — deliberately not in kilograms, because tonnage across exercises compares nothing.

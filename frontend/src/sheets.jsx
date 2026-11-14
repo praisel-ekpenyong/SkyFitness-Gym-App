@@ -513,7 +513,7 @@ export function WorkoutDetail({ w, close }) {
       const ex = EXIDX[e.id]
       return <div key={i} className="row ex-entry">
         {ex && <Thumb ex={ex} />}
-        <div className="grow"><div className="tt capitalize">{ex ? ex.n : (e.n || e.id)} {w.prs && w.prs.includes(e.id) && <span className="pr"><Icon name="trophy" />PR</span>}</div>
+        <div className="grow"><div className="tt capitalize">{ex ? ex.n : (e.n || e.id)} {w.prs && w.prs.includes(e.id) && <span className="pr"><Icon name="trophy" />{t('Record')}</span>}</div>
           <div className="ss">{e.sets.filter(s => s.done).map(s => setLabel(e.id, s, e.target)).join('  ·  ') || t('no sets')}</div>
           {e.notes && <div className="exnote">{e.notes}</div>}
         </div>
@@ -638,7 +638,7 @@ export function RecapSheet({ start, close }) {
       <div>
         {rec.prs.length > 0 && (
           <>
-            <h4 className="sec"><Icon name="trophy" />{t('Personal records')}</h4>
+            <h4 className="sec"><Icon name="trophy" />{t('Records')}</h4>
             <div className="sect-b">
               {rec.prs.map(id => {
                 const name = EXIDX[id]?.n || id
@@ -689,7 +689,7 @@ export function WorkoutRow({ w, onClick }) {
     <span className="lrow-i"><Icon name={glyph} /></span>
     <div className="grow"><div className="tt">{w.name}</div>
       <div className="ss">{[fmtDate(w.d, true), ...durPart(w.end - w.start), t('{0} sets', fmtNum(setsDone(w))), fmtVol(tonnageOf(w), st.unit)].join(' · ')}</div></div>
-    {w.prs && w.prs.length > 0 && <span className="pr"><Icon name="trophy" />{t('{0} PR', fmtNum(w.prs.length))}</span>}
+    {w.prs && w.prs.length > 0 && <span className="pr"><Icon name="trophy" />{t(w.prs.length === 1 ? '{0} record' : '{0} records', fmtNum(w.prs.length))}</span>}
     <Icon name="chevronRight" className="chev" />
   </div>
 }
