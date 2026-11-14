@@ -13,7 +13,7 @@ import { MOBILE, syncReminder } from '../lib/mobile.js'
 import { flush, load, loadLocal, save, LOCAL_KEY, onStorageSync } from '../lib/storage.js'
 import { setsDone } from '../lib/workout-model.js'
 import {
-  createActiveSession, applyWorkingWeight, commitWorkingWeight, completeActiveSession,
+  createActiveSession, completeActiveSession,
   addActiveExercise, removeActiveExercise, replaceActiveExercise, moveActiveExercise, toggleActiveSet,
   updateActiveSetField, addActiveSet, removeActiveSet, addActiveWarmup,
   pairActiveSuperset, unpairActiveSuperset, setActiveIndex, discardActiveSession,
@@ -262,16 +262,6 @@ export const useStore = create((set, get) => {
       let ok = false
       get().update(s => { ok = unpairActiveSuperset(s, entryIdx) })
       return ok
-    },
-    recordWorkingWeight(entryIdx, weight) {
-      let ok = false
-      get().update(s => { ok = applyWorkingWeight(s, entryIdx, weight) })
-      return ok
-    },
-    commitWorkingWeight(entryIdx, weight) {
-      let next = null
-      get().update(s => { next = commitWorkingWeight(s, entryIdx, weight) })
-      return next
     },
     setActiveIndex(idx) {
       let ok = false
