@@ -73,7 +73,7 @@ h4.sec, .sec {
 .item > .icn:not(.chev) { font-size: var(--fs-lead) }
 .thumb {
   width: 48px; height: 48px; border-radius: 6px; object-fit: cover; flex: none;
-  background: var(--art-ground); filter: var(--art-filter);
+  background: var(--art-paper); filter: var(--art-filter);
 }
 .thumb-x { display: flex; align-items: center; justify-content: center; font-size: var(--fs-figure); background: var(--surface-2); color: var(--label-2); filter: none }
 
@@ -106,15 +106,16 @@ h4.sec, .sec {
   position: relative; border-radius: var(--r-2); overflow: hidden; background: var(--art-ground);
   margin-bottom: 12px; cursor: pointer;
 }
-.exmedia img { width: 100%; height: 240px; object-fit: contain; display: block; filter: var(--art-filter) }
+.exmedia :is(img, .thumb-x) { width: 100%; height: 240px }   /* the dumbbell tile stands in at the art's size */
+.exmedia img { object-fit: contain; display: block; filter: var(--art-filter) }
 .exmedia .gifhint, .exmedia .giftoggle {
   position: absolute; bottom: 0; display: flex; align-items: center; justify-content: center;
   width: var(--tap-target); height: var(--tap-target); color: var(--label-2); font-size: var(--fs-body);
 }
 .exmedia .gifhint { right: 0; pointer-events: none }
 .exmedia .giftoggle { left: 0 }
-.exmedia.compact img { height: 110px }
-.exmedia.mini img { height: 72px }
+.exmedia.compact :is(img, .thumb-x) { height: 110px }
+.exmedia.mini :is(img, .thumb-x) { height: 72px }
 
 /* ------------------------------------------------------------------ charts -- */
 .chart { width: 100%; overflow: hidden }
