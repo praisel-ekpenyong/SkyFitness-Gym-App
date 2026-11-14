@@ -2,7 +2,7 @@
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest'
-import { RecapSheet, recapSheet, finishWorkout, workoutDetailSheet } from './sheets.jsx'
+import { RecapSheet, recapSheet, finishWorkout, workoutDetailSheet, WorkoutRow } from './sheets.jsx'
 import { useStore, DEF } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
 
@@ -76,8 +76,9 @@ describe('RecapSheet', () => {
     expect(rows[3].textContent).toContain('Sets')
     expect(rows[3].textContent).toContain('1')
 
-    // Records section should list the PR and Estimated 1RM record
-    expect(container.textContent).toContain('Personal records')
+    // Records section lists the Record and the Estimated 1RM record; lifter-facing copy never says PR
+    expect([...container.querySelectorAll('h4.sec')].map(h => h.textContent)).toContain('Records')
+    expect(container.textContent).not.toMatch(/\bPRs?\b|personal record/i)
     expect(container.textContent).toContain('Estimated 1RM records')
 
     // Month navigation: click previous month
@@ -189,6 +190,27 @@ describe('finishWorkout confirmation', () => {
     await act(async () => { root.render(sheet.render(vi.fn())) })
     expect(container.textContent).toContain('Only warm-ups logged so far')
     expect(container.textContent).toContain('warm-up sets are ticked')
+  })
+})
+
+describe('Record badges', () => {
+  const recordWorkout = prs => ({
+    id: 'w-rec', name: 'Push Day', d: '2026-03-01', start: 1000, end: 4000, prs,
+    entries: [{ id: '0025', sets: [{ w: 100, r: 5, done: true }] }, { id: '0047', sets: [{ w: 60, r: 8, done: true }] }],
+  })
+
+  it('names a Record on the Workout detail sheet, never PR', async () => {
+    await act(async () => { workoutDetailSheet(recordWorkout(['0025'])) })
+    const sheet = useUI.getState().sheets.at(-1)
+    await act(async () => { root.render(sheet.render(vi.fn())) })
+    expect([...container.querySelectorAll('.pr')].map(b => b.textContent)).toEqual(['Record'])
+  })
+
+  it('counts Records on a Workout row: 1 record, 2 records', async () => {
+    await act(async () => { root.render(<WorkoutRow w={recordWorkout(['0025'])} onClick={vi.fn()} />) })
+    expect(container.querySelector('.pr')?.textContent).toBe('1 record')
+    await act(async () => { root.render(<WorkoutRow w={recordWorkout(['0025', '0047'])} onClick={vi.fn()} />) })
+    expect(container.querySelector('.pr')?.textContent).toBe('2 records')
   })
 })
 
