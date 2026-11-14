@@ -16,6 +16,9 @@ with a pointer to their successor.
   the Iron review: the review harness fails any target under 44px; every record mark uses the record colour, never
   the accent; gold, orange and red are no longer offered as accents (profiles already on one keep it). Tickets 02,
   03 and 09 in `.scratch/iron-launch/`.
+  - *Superseded in part on 2026-11-11:* at `main@c566fff` the picker still offered all eight accents (seen in that
+    day's critique screenshots). D1 in `.scratch/iron-discipline/spec.md` retires the three outright: a profile on one
+    now reads as lime (ticket 01, `33a29dc`), because gold was identical to the record yellow.
 
 - **2026-11-09 — The Plate prototype is dropped.** After it was removed from the repo, the owner chose to
   leave it deleted rather than restore it. See [UI directions](ui-directions.md).
@@ -102,3 +105,30 @@ with a pointer to their successor.
   two-axis review's actionable findings became tickets 01–04 in
   `.scratch/progression-review/`, each implemented in its own worktree branch
   and merged one at a time (see [process](process.md)).
+
+- **2026-11-11 — Iron discipline: the build follows DESIGN.md, and tests hold it there.** After the second design
+  critique (see [reviews](reviews.md)), the chief of staff made decisions D1–D19 in
+  `.scratch/iron-discipline/spec.md`. The main ones: the gold, red and orange accents are removed (stored values
+  read as lime); lime marks work only; yellow marks records only; one type scale of at most 12 tokens; and rule 1
+  ("the number is the hero") applies only on bench-read screens. Also added: two guard tests, one for token
+  contrast and accent distinctness, one linting sizes, weights and colour allowlists. Why: the first critique's
+  fixes (`5bea021`) were point fixes and left the system-wide drift in place. The guards are meant to make drift
+  fail the pre-commit hook.
+
+- **2026-11-14 — Best goes neutral; yellow marks a Record only.** The owner chose path (a) of the open point in
+  `.scratch/design-review-fixes/issues/04-record-and-best.md`, which confirms E12 in that spec. This supersedes the
+  "every best is yellow" half of iron-discipline D3 (2026-11-11, above). The D3 rule that yellow is never an accent
+  still holds. Ticket 04 changes guard G2's allowlist and `DESIGN.md` to match.
+  - *Marks in part:* the 2026-11-11 entry "Iron discipline" above (D3).
+
+- **2026-11-14 — design-review-fixes is implemented on its own integration branch.** The owner chose to implement
+  `.scratch/design-review-fixes/` only, and to leave iron-discipline 03, 05 and 08 alone for now. The integration
+  branch is `integration/design-review-fixes`, cut from `main@cbac56e`. Tickets 05 and 06 stay blocked on
+  `iron-discipline/03`, which is built (`ticket/03-hierarchy-and-components@5319e5a`) but not merged.
+
+- **2026-11-14 — A Record is the moment you beat a Best or your best estimated 1RM.** The code review of
+  `integration/design-review-fixes@c2cd2a2` found that `w.prs` is set when a Set beats the heaviest load logged
+  (`frontend/src/lib/active-finish.js:218-220` at that commit), which is a new Best by the glossary. Yet ticket 04 had
+  labelled it "Record" in yellow, and the glossary defined a Record as a new best estimated 1RM only. The owner chose to
+  widen the glossary Record to cover both events, so stored Workouts and `w.prs` keep their meaning. The standing
+  Best figure stays neutral ink. Fixes are in the review-fix pass on that branch (see [reviews](reviews.md)).
