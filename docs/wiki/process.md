@@ -66,6 +66,29 @@ discipline in `AGENTS.md`.
   noticed this after the fact. `.scratch/ui-prototype/` and `.scratch/ui-review-harness/`, filed the same
   day, follow the convention.
 
+- **2026-11-11 — a recorded design decision was not in the code.** The 2026-11-09 decision to drop the gold,
+  orange and red accents from the picker ([decisions](decisions.md)) had not landed by `main@c566fff`, where the
+  picker still offered all eight. Nothing tested it, so nothing failed. Since then, design rules come with a guard test
+  (`.scratch/iron-discipline/spec.md` G1/G2) so that drift fails the pre-commit hook.
+
 ## Superseded
 
 - (none yet)
+
+- **2026-11-14 — first effort on a separate integration branch.** Earlier efforts merged tickets straight into
+  `main`. design-review-fixes uses `integration/design-review-fixes` instead (the implement-spec flow). Its ticket
+  branches are named `ticket/drf-NN-slug` so they don't collide with iron-discipline's `ticket/NN-slug`.
+  On 2026-11-14 the merger works in `.worktrees/integration-drf` (on `integration/design-review-fixes`), never in the
+  main checkout. Ticket 03 merged there as `ef1808a`, and its `DESIGN.md` doc note went in as `623b887`.
+  Screenshots are copied to `frontend/.tmp/review/drf-NN/` in the main checkout so they survive worktree removal.
+
+- **2026-11-14 — design-review-fixes 01–04 landed on `integration/design-review-fixes@bd1669e`.** The review-fix pass
+  merged as `f0095b4`, and 1245 tests passed. Ticket worktrees and branches were removed; `.worktrees/integration-drf`
+  is kept for tickets 05 and 06. Observed: `git branch -d` checks against the branch checked out where it runs, so
+  in the main checkout (on `main`) it refuses ticket branches merged only into the integration branch. Run it from
+  the integration worktree instead, never with `-D`.
+- **2026-11-14 — a ticket mis-named a domain field.** Ticket 04 said `w.prs` stores "which exercises made a
+  Record". In code (`lib/active-finish.js` at `c2cd2a2`) it is set when a Set beats the heaviest logged load. The
+  implementer followed the ticket, and only the Spec review caught the gap (see [reviews](reviews.md)). Lesson for
+  ticket writers: when a ticket names a stored field after a glossary term, check what the code that writes the
+  field does.
