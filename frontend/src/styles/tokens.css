@@ -54,6 +54,9 @@
      and the hue-rotate puts the red of the target muscle back where it was */
   --art-filter: invert(1) hue-rotate(180deg) brightness(1.14) contrast(1.04);
   --art-ground: #000000;
+  /* the art's own paper, painted under the filter: the filter turns it into --art-ground in either theme,
+     so an image that has not painted yet is the ground the lifter sees, never a white square */
+  --art-paper: #ffffff;
 
   /* type */
   --font: 'Archivo Variable', 'Archivo', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif;
