@@ -11,7 +11,6 @@ const mocks = vi.hoisted(() => ({
   exercisePicker: vi.fn(),
   exConfigSheet: vi.fn(),
   exerciseDetailSheet: vi.fn(),
-  topWeightSheet: vi.fn(),
   finishWorkout: vi.fn(),
   workoutCompleteSheet: vi.fn(),
   startFlow: vi.fn(),

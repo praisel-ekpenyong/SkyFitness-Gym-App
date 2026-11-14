@@ -66,7 +66,7 @@ untracked. Inputs stay at 16px or larger, the line below which iOS zooms the pag
 | Piece | Where | Notes |
 |---|---|---|
 | **The barbell** | `components/Barbell.jsx`, `lib/plates.js` | The open set of a straight-bar lift, drawn with real plates, heaviest inside. Always names its bar and states in words what the colours show ("20 kg bar + 25 + 15 per side"); a load no plates can make is reported, never rounded. EZ, trap and Smith bars are not drawn: their weight is unknown. |
-| **The set ladder** | `views/Workout.jsx` | The set in front of you is one large console (figure over two keys, the bar, one Log key). Every other set is one line, still typeable, one tap from opening. The console stays on screen as it moves down the page. |
+| **The set ladder** | `views/Workout.jsx` | The set in front of you is one large console (figure over two keys, the bar, one Log key). Every other set is one line, still typeable, one tap from opening. The console stays on screen as it moves down the page. Once every work set of the open entry or superset is done and another follows, the ladder ends in one inverted, full-width key, "Next: <exercise>" (`.wk-next`), in every mode; the last one opens the complete sheet instead, and an uncheck takes the key away. |
 | **Focus mode** | `App.jsx`, `body.focus-session` | While a workout is on screen the phone's tab bar steps aside. The header's chevron minimizes to the rest of the app. |
 | **The rest dock** | `components/RestTimer.jsx` | The clock is the largest thing on the phone while it runs. |
 | **Session segments** | `.lad` | One segment per exercise, filling with its work sets: position at a glance and a one-thumb jump. |
@@ -104,7 +104,7 @@ take two columns from the same source order.
   capitalise a string with a unit in it: "60 kg", never "60 Kg".
 - **Missing is a dash, zero is a zero.** An empty chart draws its frame; an empty map draws the body.
 - **Colour says good or bad, not up or down.** A month still under way is not behind anything yet, so
-  its shortfall reads neutral. No streak flames, no guilt.
+  its shortfall shows no comparison. No streak flames, no guilt.
 - **New words go through `t()`** and follow the glossary.
 
 ## Banned here

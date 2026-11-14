@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { tonnageOf } from './workout-model.js'
 import {
   bestKnownWeight, heaviestSetWeight, heaviestForEntry, mergeExWeight,
-  createActiveSession, applyWorkingWeight, completeActiveSession,
+  createActiveSession, completeActiveSession,
   buildCompletedWorkout, addActiveExercise, removeActiveExercise,
   replaceActiveExercise, moveActiveExercise, buildActiveEntry,
   updateActiveSetField, addActiveSet, removeActiveSet, addActiveWarmup,
@@ -223,7 +223,7 @@ describe('active-workout lifecycle seam', () => {
     // Toggle set 1 -> exercise and workout complete
     const r2 = toggleActiveSet(S, 0, 1)
     expect(r2.checked).toBe(true)
-    expect(r2.next).toEqual({ kind: 'open-topweight', targetIdx: null })
+    expect(r2.next).toEqual({ kind: 'open-finish', targetIdx: null })
     expect(r2.rest).toEqual({ start: false, stop: true })
     expect(r2.notice).toBe(null)
     expect(S.active.entries[0].hw).toBe(2)
@@ -266,7 +266,7 @@ describe('active-workout lifecycle seam', () => {
     expect(first.rest).toEqual({ start: true, stop: false })
 
     const last = toggleActiveSet(S, 0, 2)
-    expect(last.next).toEqual({ kind: 'open-topweight', targetIdx: null })
+    expect(last.next).toEqual({ kind: 'open-finish', targetIdx: null })
     expect(last.notice).toBe(null)
     expect(last.rest).toEqual({ start: false, stop: true })
   })
@@ -311,14 +311,17 @@ describe('active-workout lifecycle seam', () => {
     expect(r.next).toEqual({ kind: 'open-finish', targetIdx: null })
   })
 
-  it('applyWorkingWeight sets topW and merges exWeights', () => {
-    const S = { active: { entries: [{ id: 'ex1', sets: [{ w: 60, r: 5, done: true }] }] }, exWeights: {} }
-    expect(applyWorkingWeight(S, 0, 70, { todayISO: () => '2026-08-24' })).toBe(true)
-    expect(S.active.entries[0].topW).toBe(70)
-    expect(S.exWeights.ex1).toEqual({ w: 70, d: '2026-08-24', unit: 'kg' })
-    expect(applyWorkingWeight(S, 0, 65, { todayISO: () => '2026-08-25' })).toBe(true)
-    expect(S.active.entries[0].topW).toBe(65)
-    expect(S.exWeights.ex1.w).toBe(70)
+  it('buildCompletedWorkout writes no topW for a new Entry, and keeps one a resumed Entry carries', () => {
+    const active = {
+      id: 'a', d: '2026-08-08', start: 1000,
+      entries: [
+        { id: 'new', sets: [{ done: true, w: 60, r: 8 }] },
+        { id: 'legacy', sets: [{ done: true, w: 60, r: 8 }], topW: 65 },
+      ],
+    }
+    const completed = buildCompletedWorkout(active, { end: 2000 })
+    expect('topW' in completed.entries[0]).toBe(false)
+    expect(completed.entries[1].topW).toBe(65)
   })
 
   it('buildCompletedWorkout constructs record and excludes empty entries', () => {

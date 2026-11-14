@@ -1,6 +1,6 @@
 // Finishing the Active workout — one slice of the active-workout lifecycle.
 //
-// Heaviest-weight cache (`exWeights`), working-weight confirmation, PR /
+// Heaviest-weight cache (`exWeights`), PR /
 // estimated-1RM detection, and the completed-Workout boundary. Session
 // construction lives in active-session.js, set surgery in active-sets.js,
 // the toggle decision in active-toggle.js.
@@ -8,7 +8,6 @@ import { bestWeightForEntry, doneWorkSets, isPerformed } from './workout-model.j
 import { is1RMRecord } from './onerm.js'
 import { EXIDX } from './exercises.js'
 import { exerciseMuscleSnapshot } from './muscles.js'
-import { todayISO } from './format.js'
 import { diffRoutineWithSession } from './routine-sync.js'
 import { normalizeWeight, round1 } from './units.js'
 
@@ -41,7 +40,7 @@ function bestLoggedWeight(S, exId) {
  * Highest training load recorded for an exercise across history and working-weight cache.
  *
  * Queries all completed workout entries (excluding warm-up rows and unperformed sets via `bestWeightForEntry`)
- * and compares against the confirmed working-weight mirror (`S.exWeights[exId].w`), normalized to active unit.
+ * and compares against the working-weight cache (`S.exWeights[exId].w`), normalized to active unit.
  *
  * @param {Object} S - Application state atom containing `workouts` and `exWeights`.
  * @param {string} exId - Exercise identifier from EXIDX.
@@ -62,7 +61,7 @@ export function bestKnownWeight(S, exId) {
 /**
  * Highest load among completed work sets in a single workout entry.
  *
- * Excludes warm-up rows, uncompleted sets, and the post-exercise working weight (`topW`).
+ * Excludes warm-up rows, uncompleted sets, and the legacy confirmed working weight (`topW`).
  * Used as the baseline load when evaluating personal records (PRs).
  *
  * @param {Object} entry - Active or historical workout entry containing `{ sets }`.
@@ -78,9 +77,10 @@ export function heaviestSetWeight(entry) {
 }
 
 /**
- * Peak load attributable to an entry, evaluating both completed work sets and post-exercise confirmation.
+ * Peak load attributable to an entry, evaluating completed work sets and any legacy confirmation.
  *
- * Evaluates the maximum of `heaviestSetWeight(entry)` and the confirmed working load (`entry.topW`).
+ * Evaluates the maximum of `heaviestSetWeight(entry)` and the confirmed working load (`entry.topW`),
+ * which only Entries saved before ADR 0020 carry.
  * Used when updating the all-time working-weight cache (`exWeights`).
  *
  * @param {Object} entry - Completed or active workout entry.
@@ -97,8 +97,7 @@ export function heaviestForEntry(entry) {
  * Update the all-time working-weight cache (`exWeights`) under a monotonic maximum policy.
  *
  * Only a strictly greater load overwrites the stored record; ties and lower loads are rejected.
- * The stamped date reflects the source event (today's date for in-session confirmation, or workout
- * completion date `d` for historical logs). Never lowers stored weight. Mutates `S.exWeights` in-place.
+ * The stamped date reflects the source event (the workout date `d`). Never lowers stored weight. Mutates `S.exWeights` in-place.
  *
  * @param {Object} S - Application state atom containing `exWeights`.
  * @param {string} exId - Target exercise identifier.
@@ -121,29 +120,6 @@ export function mergeExWeight(S, exId, weight, dateISO) {
     return true
   }
   return false
-}
-
-/**
- * Set the confirmed working weight for an active entry and record it in `exWeights`.
- *
- * Updates `entry.topW` and applies monotonic max merge to `S.exWeights[entry.id]`.
- * Mutates `S` in-place; must be executed within `useStore.update(...)`.
- *
- * @param {Object} S - Application state atom.
- * @param {number} entryIdx - Index of entry in active session.
- * @param {number} weight - Working load in active units.
- * @param {Object} [opts] - Injectable clock options for testing (`todayISO`).
- * @returns {boolean} True if working weight was valid and applied; false otherwise.
- */
-export function applyWorkingWeight(S, entryIdx, weight, opts = {}) {
-  const _today = opts.todayISO || todayISO
-  const entry = S.active?.entries?.[entryIdx]
-  if (!entry) return false
-  const w = Math.round((Number(weight) || 0) * 10) / 10
-  if (!Number.isFinite(w) || w < 0) return false
-  entry.topW = w
-  mergeExWeight(S, entry.id, w, _today())
-  return true
 }
 
 /**
@@ -184,9 +160,10 @@ export function buildCompletedWorkout(active, { end = Date.now(), prs = [], unit
     const completed = {
       id: entry.id,
       sets: entry.sets,
-      topW: entry.topW || null,
       target: entry.target || null,
     }
+    // New Entries carry no topW (ADR 0020); one resumed from an older session keeps its own.
+    if (entry.topW) completed.topW = entry.topW
     const note = typeof entry.notes === 'string' ? entry.notes.trim() : undefined
     if (note) {
       completed.notes = note.slice(0, 500)

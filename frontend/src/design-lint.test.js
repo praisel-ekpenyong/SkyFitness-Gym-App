@@ -138,7 +138,6 @@ const WORK = {
 const RECORD = {
   '.record': 'D3 records and bests (utility class)',
   '.pr': 'D3 a PR badge',
-  '.tw-new': 'D3 a new record (top-weight sheet)',
   '.set-pill.top': 'D3 a set at the exercise’s best (Stats)',
   '.ex-headline-v': 'D3 a best: the Stats exercise headline',
   '.extags .tag.ex-best': 'D3 a best: the workout header',

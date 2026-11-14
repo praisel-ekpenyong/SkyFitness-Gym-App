@@ -71,8 +71,8 @@ const scenes = {
     const chk = p.locator('[role=checkbox]'); await chk.nth(0).click(); await p.waitForTimeout(400); await snap(p,'workout-rest',false); await snap(p,'workout-rest-full')
     await p.evaluate(()=>{ const u=[...document.querySelectorAll('#timer button')].pop(); u&&u.click() })
     for (let i=1;i<4;i++){ await chk.nth(i).click(); await p.waitForTimeout(200) ; await p.evaluate(()=>{ const u=[...document.querySelectorAll('#timer button')].pop(); u&&u.click() }) }
-    await p.waitForTimeout(400); await snap(p,'workout-topweight',false)
-    await clickT(p,/Save (&|and) next exercise|Save weight|Save/); await p.waitForTimeout(700); await snap(p,'workout-next',false)
+    await p.waitForTimeout(400); await snap(p,'workout-unit-done',false)
+    await p.locator('.wk-next').click(); await p.waitForTimeout(700); await snap(p,'workout-next',false)
     await p.goto(base+'#/home'); await p.waitForTimeout(700); await snap(p,'home-active',false)
     await p.goto(base+'#/workout'); await p.waitForTimeout(600); await p.locator('button[aria-label="Finish"]').click(); await p.waitForTimeout(400); await snap(p,'finish-confirm',false)
     await p.locator('[role=alertdialog] button').filter({hasText:/Finish/}).first().click(); await p.waitForTimeout(900); await snap(p,'finish',false); await snap(p,'finish-full'); await p.locator('.finish-cta button').click(); await p.waitForTimeout(700); await snap(p,'home-done',false); await c.close() },
