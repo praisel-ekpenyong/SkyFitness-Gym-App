@@ -9,7 +9,7 @@ import { EXDB } from './exercises.js'
 import { fatigueOf, strengthOf, fatigueStateOf } from './recovery.js'
 import { MUSCLES, loadOfWorkouts, rankOf, lastTrainedByMuscle } from './muscles.js'
 import { LB_TO_KG } from './bodyweight.js'
-import { e1rmSeries, best1RM, bestSetOf, resolveSetWeight } from './onerm.js'
+import { e1rmSeries, best1RM } from './onerm.js'
 import {
   displayScale, scaleName, toScale, avgRir,
   effortSummary, effortWeeks, effortHistogram, isHardSet, rirOf, hasEffort, effortOf, HARD_RIR,
@@ -300,16 +300,19 @@ function metricOf(entry, mode, workout = null, targetUnit = null) {
   return Number.isFinite(value) && value > 0 ? round1(value) : 0
 }
 
-// A Workout stores which exercises made a Record (`prs`), not which Set. The Set that made it is
-// the Entry's best estimate (bestSetOf); its index in the session's rows, or null when the
-// Workout made no Record for this exercise or the Mode has no estimate.
-function recordIndexOf(rows, entry, workout, exId, mode, unit) {
-  if (mode !== 'reps' || !Array.isArray(workout?.prs) || !workout.prs.includes(exId)) return null
-  const best = bestSetOf(entry, undefined, unit, workout)
-  if (!best) return null
-  const i = rows.findIndex(s => Math.round(Number(s.r)) === best.r
-    && Math.round(resolveSetWeight(s, entry, workout, unit) * 10) / 10 === best.w)
-  return i < 0 ? null : i
+// A Workout stores which exercises made a Record (`prs`), not which Set. `prs` names an exercise
+// when a Set beat its heaviest load logged (completeActiveSession), so the Set that earned it is
+// the first of the heaviest rows. Its index in the session's rows, or null when the Workout made
+// no Record for this exercise or the Mode is not reps.
+function recordIndexOf(workout, exId, rows, mode) {
+  if (mode !== 'reps' || !workout?.prs?.includes?.(exId)) return null
+  let at = null
+  let heaviest = 0
+  rows.forEach((s, i) => {
+    const w = Number(s?.w)
+    if (Number.isFinite(w) && w > heaviest) { heaviest = w; at = i }
+  })
+  return at
 }
 
 /**
@@ -345,7 +348,7 @@ export function selectExerciseStats(S, exId, opts = {}) {
       y: round1(mx),
       sets: rows,
       target: entry?.target || null,
-      record: recordIndexOf(rows, entry, workout, exId, mode, S?.unit || 'kg'),
+      record: recordIndexOf(workout, exId, rows, mode),
     })
   }
   const best = points.reduce((m, p) => Math.max(m, p.y), 0)

@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { act } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { exOr } from '../lib/exercises.js'
 import { entry, resetViewTestState, renderWorkoutApp, cleanupViewTest } from '../test/view-harness.jsx'
 
 vi.mock('../lib/sound.js', () => ({
@@ -69,6 +70,10 @@ describe('inter-exercise auto-rest for solo exercises', () => {
     const next = nextKey()
     expect(next).toBeTruthy()
     expect(next.textContent).toMatch(/^Next: /)
+    // The dataset name arrives lowercase; .capitalize lifts it (DESIGN.md › Conventions).
+    const name = next.querySelector('.capitalize')
+    expect(name?.textContent).toBe(exOr('1002').n)
+    expect(next.textContent).toBe(`Next: ${exOr('1002').n}`)
     expect(view.container.textContent).toContain('Exercise 1 / 2')
 
     click(next)

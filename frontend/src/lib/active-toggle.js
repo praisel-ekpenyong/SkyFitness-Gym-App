@@ -29,6 +29,17 @@ export function describeUnit(entries, entryIdx) {
 }
 
 /**
+ * Whether the unit's work is done: no member has an undone Work set. Warm-up rows are prep, not
+ * work, so an unticked Warm-up set never keeps a finished unit reading as unfinished. The one rule
+ * the toggle (rest, finish) and the Next key read, and the same `hasWork` rule the superset step uses.
+ *
+ * @param {Array<Object>} entries - Active workout entries array.
+ * @param {Array<number>} unit - Entry indices of the unit (`describeUnit`).
+ * @returns {boolean}
+ */
+const unitWorkDone = (entries, unit) => !unit.some(i => hasWork(entries, i))
+
+/**
  * The Entry the Next key moves to, once the open unit's work is done.
  *
  * Returns the first Entry of the following Entry or superset when every Work
@@ -47,7 +58,7 @@ export function nextUnitTarget(S, entryIdx) {
   const { units, unit, unitIdx, isLastUnit } = describeUnit(entries, entryIdx)
   if (isLastUnit) return null
   const hasWorkRows = unit.some(i => (entries[i].sets || []).some(isWorkSet))
-  if (!hasWorkRows || unit.some(i => hasWork(entries, i))) return null
+  if (!hasWorkRows || !unitWorkDone(entries, unit)) return null
   return units[unitIdx + 1]?.[0] ?? null
 }
 
@@ -100,10 +111,7 @@ export function toggleActiveSet(S, entryIdx, setIdx) {
   // (index/sg-based) is unaffected by the done-flag flip above and stays
   // valid for every completion check below.
   const { unit, isLastUnit } = describeUnit(A.entries, entryIdx)
-  // Warm-up rows are prep, not work. The unit is done when no member has an
-  // undone work row — the same `hasWork` rule the superset step below reads, so
-  // an unticked warm-up can no longer keep a finished unit reading as unfinished.
-  const unitDone = !unit.some(ui => hasWork(A.entries, ui))
+  const unitDone = unitWorkDone(A.entries, unit)
 
   let exJustDone = false
   let workoutDone = false

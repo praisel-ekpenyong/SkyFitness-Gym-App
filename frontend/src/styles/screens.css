@@ -68,7 +68,7 @@
 .exercise-session-date { font-size: var(--fs-meta); color: var(--label-2); min-width: 82px; flex: none; padding-top: 1px }
 .exercise-session-sets { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 3px 10px }
 .set-pill { font-size: var(--fs-body); font-stretch: var(--semi); font-weight: 400; color: var(--label) }
-.set-pill.top { color: var(--goal-text); font-weight: 700 }   /* the Set that made a Record */
+.set-pill.record { color: var(--goal-text); font-weight: 700 }   /* the Set that made a Record */
 .mrow .bar i.quiet { background: var(--label-4) }
 
 .effort-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--sep); border-radius: var(--r-2); overflow: hidden; margin: 12px 0 8px }
