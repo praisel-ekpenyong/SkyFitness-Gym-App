@@ -104,7 +104,7 @@ take two columns from the same source order.
   capitalise a string with a unit in it: "60 kg", never "60 Kg".
 - **Missing is a dash, zero is a zero.** An empty chart draws its frame; an empty map draws the body.
 - **Colour says good or bad, not up or down.** A month still under way is not behind anything yet, so
-  its shortfall reads neutral. No streak flames, no guilt.
+  its shortfall shows no comparison. No streak flames, no guilt.
 - **New words go through `t()`** and follow the glossary.
 
 ## Banned here
