@@ -5,7 +5,7 @@
 // - active-session.js (construction, cursor, discard, add/remove Entry)
 // - active-sets.js (field edits, Row add/remove, superset pairing)
 // - active-toggle.js (toggle decision, next action, Next key target)
-// - active-finish.js (weight cache, confirmation, PR detection, finish)
+// - active-finish.js (weight cache, Record detection, finish)
 //
 // An Active Entry (S.active.entries[i]) carries these fields, each owned by
 // one slice:

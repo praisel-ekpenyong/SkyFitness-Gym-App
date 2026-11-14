@@ -9,6 +9,23 @@ import Icon from './Icon.jsx'
 const sources = (ex, playing) =>
   [...new Set([mediaSrc(ex, { playing }), mediaSrc(ex, { playing, fallback: true })])].filter(Boolean)
 
+// The URL to show now, and the onError that moves on to the next one. Past the last URL the src is
+// undefined (every URL failed: no signal, or the file is gone) and the caller paints the dumbbell
+// tile. Failures are counted per format, so the clip and the still fail independently, and are
+// forgotten when the exercise changes.
+function useArtSource(ex, playing) {
+  const [tries, setTries] = useState({ gif: 0, img: 0 })
+  const [lastId, setLastId] = useState(ex?.id)
+  if (ex?.id !== lastId) {
+    setLastId(ex?.id)
+    setTries({ gif: 0, img: 0 })
+  }
+  const format = playing ? 'gif' : 'img'
+  const urls = sources(ex, playing)
+  const onError = () => setTries(n => ({ ...n, [format]: Math.min(n[format] + 1, urls.length) }))
+  return [urls[tries[format]], onError]
+}
+
 // Big autoplaying animation; tap toggles to the still frame. `compact` shrinks it (superset cards).
 // Custom exercises have no media — the animation stays blank by design (issue #11). When both the
 // bundled file and the CDN copy fail, the dumbbell tile stands in, with no <img> and so no alt text painted.
@@ -17,14 +34,12 @@ const sources = (ex, playing) =>
 // future workouts (issue #12).
 export default function Media({ ex, id, compact, minimizable }) {
   const [playing, setPlaying] = useState(true)
-  // Failures so far, per format: an index into `sources`. The clip and the still fail independently.
-  const [tries, setTries] = useState({ gif: 0, img: 0 })
   const [lastId, setLastId] = useState(ex?.id)
   if (ex?.id !== lastId) {
     setLastId(ex?.id)
     setPlaying(true)
-    setTries({ gif: 0, img: 0 })
   }
+  const [currentSrc, handleError] = useArtSource(ex, playing)
 
   const gifSize = useStore(s => s.S.gifSize)
   const update = useStore(s => s.update)
@@ -32,10 +47,6 @@ export default function Media({ ex, id, compact, minimizable }) {
   const mini = minimizable && gifSize === 'mini'
   const toggleSize = e => { e.stopPropagation(); update(s => { s.gifSize = mini ? 'full' : 'mini' }) }
 
-  const format = playing ? 'gif' : 'img'
-  const urls = sources(ex, playing)
-  const currentSrc = urls[tries[format]]
-  const handleError = () => setTries(n => ({ ...n, [format]: Math.min(n[format] + 1, urls.length) }))
 
   const size = mini ? 84 : compact ? 120 : 320
   return (
@@ -49,8 +60,8 @@ export default function Media({ ex, id, compact, minimizable }) {
       onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setPlaying(p => !p) } }}
     >
       {!currentSrc
-        ? <div className="thumb-x"><Icon name="dumbbell" /></div>
-        : <img loading="lazy" decoding="async" crossOrigin="anonymous" width={size} height={size} src={currentSrc} onError={handleError} alt={ex.n} />}
+        ? <div className="thumb-x ex-art"><Icon name="dumbbell" /></div>
+        : <img className="ex-art" loading="lazy" decoding="async" crossOrigin="anonymous" width={size} height={size} src={currentSrc} onError={handleError} alt={ex.n} />}
       {minimizable && (
         <button className="giftoggle" onClick={toggleSize} aria-label={mini ? t('Expand') : t('Minimize')}>
           <Icon name={mini ? 'expand' : 'minimize'} />
@@ -70,16 +81,7 @@ export default function Media({ ex, id, compact, minimizable }) {
  * @param {Object} ex - Exercise with optional image sources and id.
  */
 export function Thumb({ ex }) {
-  // Failures so far: an index into `sources`; past the end, every URL failed (no signal, or the file is gone).
-  const [tries, setTries] = useState(0)
-  const [lastId, setLastId] = useState(ex?.id)
-  if (ex?.id !== lastId) {
-    setLastId(ex?.id)
-    setTries(0)
-  }
-
-  const urls = sources(ex, false)
-  const currentSrc = urls[tries]
+  const [currentSrc, handleError] = useArtSource(ex, false)
   if (!currentSrc) return <div className="thumb thumb-x"><Icon name="dumbbell" /></div>
 
   return (
@@ -91,7 +93,7 @@ export function Thumb({ ex }) {
       width={50}
       height={50}
       src={currentSrc}
-      onError={() => setTries(n => Math.min(n + 1, urls.length))}
+      onError={handleError}
       alt=""
     />
   )

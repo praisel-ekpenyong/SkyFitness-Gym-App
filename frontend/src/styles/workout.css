@@ -37,8 +37,8 @@
 .exhead h2 { font-size: var(--fs-title); margin: 0 0 8px }
 .exhead h2.long { font-size: var(--fs-heading) }
 .exhead .exmedia { margin: 0 }
-.exhead .exmedia :is(img, .thumb-x) { height: 132px }
-.exhead .exmedia.mini :is(img, .thumb-x) { height: 76px }
+.exhead .exmedia .ex-art { height: 132px }
+.exhead .exmedia.mini .ex-art { height: 76px }
 .exhead .exmedia.mini .giftoggle { width: 40px; height: 40px; left: 0; bottom: 0; font-size: var(--fs-meta) }
 .extags { gap: 2px 10px; flex-wrap: wrap }
 .extags .tag { background: none; padding: 0; font-size: var(--fs-meta); font-weight: 400; white-space: normal }
@@ -54,7 +54,7 @@
 .extool:disabled { opacity: .38; pointer-events: none }
 .compact .exhead:has(.exmedia) { grid-template-columns: minmax(0, 1fr) 76px }
 .compact .exhead h2 { font-size: var(--fs-heading) }
-.compact .exhead .exmedia :is(img, .thumb-x), .compact .exhead .exmedia.mini :is(img, .thumb-x) { height: 76px }
+.compact .exhead .exmedia .ex-art, .compact .exhead .exmedia.mini .ex-art { height: 76px }
 .compact .exhead .exmedia .giftoggle { display: none }
 .compact .exhead .exmedia .gifhint { display: none }
 
@@ -206,13 +206,13 @@
   .wk-hdr { margin: -36px -40px 0; padding: 14px 40px 0; grid-template-columns: var(--tap-target) 1fr auto }
   .wk-hdr h1 { font-size: var(--fs-lead) }
   .workout .exhead:has(.exmedia) { grid-template-columns: minmax(0, 1fr) 200px }
-  .workout .exhead .exmedia :is(img, .thumb-x) { height: 200px }
+  .workout .exhead .exmedia .ex-art { height: 200px }
   .workout .exhead h2 { font-size: var(--fs-display) }
   .workout .exhead:has(.exmedia.mini) { grid-template-columns: minmax(0, 1fr) 96px }
-  .workout .exhead .exmedia.mini :is(img, .thumb-x) { height: 96px }
+  .workout .exhead .exmedia.mini .ex-art { height: 96px }
   .ss-card { display: grid; grid-template-columns: 1fr 1fr; gap: 0 24px; align-items: start }
   .ss-hd { grid-column: 1 / -1 }
   .ss-amp { display: none }
   .workout .compact .exhead:has(.exmedia) { grid-template-columns: minmax(0, 1fr) 96px }
-  .workout .compact .exhead .exmedia :is(img, .thumb-x) { height: 96px }
+  .workout .compact .exhead .exmedia .ex-art { height: 96px }
 }
