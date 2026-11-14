@@ -98,6 +98,45 @@ describe('RecapSheet', () => {
     expect(useUI.getState().sheets.length).toBe(1)
   })
 
+  describe('delta badges', () => {
+    // October 2026 is a full month of work; November is nine days in on 9 November.
+    const twoMonths = () => useStore.getState().update(s => {
+      const w = (id, d, kg) => ({
+        id, d, start: 1000, end: 1000 + 45 * 60000,
+        entries: [{ id: '0025', sets: [{ w: kg, r: 5, done: true }, { w: kg, r: 5, done: true }] }],
+      })
+      s.workouts = [
+        w('o1', '2026-10-02', 100), w('o2', '2026-10-09', 100), w('o3', '2026-10-16', 100),
+        w('n1', '2026-11-03', 100),
+      ]
+    })
+
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(new Date('2026-11-09T12:00:00'))
+    })
+    afterEach(() => { vi.useRealTimers() })
+
+    it('shows no comparison for the month under way', async () => {
+      twoMonths()
+      await act(async () => { root.render(<RecapSheet start="2026-11-09" close={vi.fn()} />) })
+
+      expect(container.querySelector('h3')?.textContent).toContain('November 2026 so far')
+      const rows = container.querySelectorAll('.sect-b')[0].querySelectorAll('.lrow')
+      expect(rows.length).toBe(4)
+      expect(container.querySelectorAll('.delta-pill').length).toBe(0)
+      expect(container.textContent).not.toContain('%')
+    })
+
+    it('keeps the comparison on a finished month', async () => {
+      twoMonths()
+      await act(async () => { root.render(<RecapSheet start="2026-10-01" close={vi.fn()} />) })
+
+      expect(container.querySelector('h3')?.textContent).toBe('October 2026')
+      expect(container.querySelectorAll('.delta-pill').length).toBe(4)
+    })
+  })
+
   it('renders empty month message when no workouts exist', async () => {
     await act(async () => {
       root.render(<RecapSheet start="2026-05-01" close={vi.fn()} />)
