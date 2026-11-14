@@ -17,7 +17,6 @@ const mocks = vi.hoisted(() => {
     S: null,
     startRest: vi.fn(),
     stopRest: vi.fn(),
-    topWeightSheet: vi.fn(),
     workoutCompleteSheet: vi.fn(),
     exerciseNoteSheet: vi.fn(),
   }
@@ -63,7 +62,6 @@ vi.mock('../sheets.jsx', () => ({
   exercisePicker: vi.fn(),
   exConfigSheet: vi.fn(),
   exerciseDetailSheet: vi.fn(),
-  topWeightSheet: mocks.topWeightSheet,
   finishWorkout: vi.fn(),
   workoutCompleteSheet: mocks.workoutCompleteSheet,
   confirmSheet: vi.fn(),
@@ -153,7 +151,7 @@ describe('Workout set completion flow', () => {
 
     // Final set of the only exercise in session (isLastUnit: true)
     await toggleSet(2)
-    expect(mocks.topWeightSheet).toHaveBeenCalledWith(0)
+    expect(mocks.workoutCompleteSheet).toHaveBeenCalledOnce()
     expect(mocks.stopRest).toHaveBeenCalledOnce()
     expect(mocks.startRest).not.toHaveBeenCalled()
 
@@ -169,28 +167,28 @@ describe('Workout set completion flow', () => {
     expect(mocks.workoutCompleteSheet).toHaveBeenCalledOnce()
   })
 
-  it('leaves a completed superset selected while its top-weight sheet owns the advance choice', async () => {
+  it('leaves a completed superset selected; the lifter moves on with the Next key', async () => {
     const group = 'superset-1'
     await mount([
-      exercise('superset-a', [true, true, true], { sg: group, asked: true }),
+      exercise('superset-a', [true, true, true], { sg: group }),
       exercise('superset-b', [true, true, false], { sg: group }),
       exercise('next-exercise', [false, false, false]),
     ], 1)
     await toggleSet(5)
 
-    expect(mocks.topWeightSheet).toHaveBeenCalledWith(1)
+    expect(mocks.workoutCompleteSheet).not.toHaveBeenCalled()
     expect(mocks.S.active.cur).toBe(1)
     expect(mocks.startRest).toHaveBeenCalledWith(90)
   })
 
-  it('starts rest when performing the final set of a solo exercise if another exercise follows, leaving it selected for the top-weight sheet', async () => {
+  it('starts rest when performing the final set of a solo exercise if another exercise follows, leaving it selected', async () => {
     await mount([
       exercise('plain-bench', [true, false]),
       exercise('plain-squat', [false, false]),
     ])
     await toggleSet(1)
 
-    expect(mocks.topWeightSheet).toHaveBeenCalledWith(0)
+    expect(mocks.workoutCompleteSheet).not.toHaveBeenCalled()
     expect(mocks.S.active.cur).toBe(0)
     expect(mocks.stopRest).toHaveBeenCalledOnce()
     expect(mocks.startRest).toHaveBeenCalledWith(90)
@@ -205,7 +203,6 @@ describe('Workout set completion flow', () => {
     ])
     await toggleSet(0)
 
-    expect(mocks.topWeightSheet).not.toHaveBeenCalled()
     expect(mocks.workoutCompleteSheet).not.toHaveBeenCalled()
     expect(mocks.S.active.cur).toBe(0)
     expect(mocks.stopRest).toHaveBeenCalledOnce()
@@ -221,7 +218,6 @@ describe('Workout set completion flow', () => {
     ], 1)
     await toggleSet(0)
 
-    expect(mocks.topWeightSheet).not.toHaveBeenCalled()
     expect(mocks.workoutCompleteSheet).toHaveBeenCalledOnce()
     expect(mocks.stopRest).toHaveBeenCalledOnce()
     expect(mocks.startRest).not.toHaveBeenCalled()

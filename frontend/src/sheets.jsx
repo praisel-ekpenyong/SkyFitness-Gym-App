@@ -696,10 +696,10 @@ export function WorkoutRow({ w, onClick }) {
 /* ============================ session sheets (extracted) ============================ */
 // Session domain lives in ./sheets/session.jsx. The hub re-exports every entry
 // point so existing callers keep working untouched, and performs the one-line
-// wiring for the injected weigh-in seam (plus hub-owned confirm + weight input
+// wiring for the injected weigh-in seam (plus hub-owned confirm
 // to avoid a circular hub↔session import during migration).
-export { startFlow, beginWorkout, topWeightSheet, workoutCompleteSheet, finishWorkout, exerciseNoteSheet } from './sheets/session.jsx'
-configureSessionSheets({ bwSheet, confirmSheet, WeightInput })
+export { startFlow, beginWorkout, workoutCompleteSheet, finishWorkout, exerciseNoteSheet } from './sheets/session.jsx'
+configureSessionSheets({ bwSheet, confirmSheet })
 
 /* ============================ catalogue sheets (extracted) ============================ */
 // Catalogue browsing lives in ./sheets/catalogue.jsx. The hub re-exports every

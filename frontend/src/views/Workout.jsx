@@ -14,12 +14,12 @@ import { lastEntryFor, freestyleConfig, defaultConfig, sessionProgress, modeOf, 
 import { supersetUnits, unitOf } from '../lib/supersetFlow.js'
 import { setLabel } from '../lib/format.js'
 import { EFFORT, effortOf, stepEffort, capEffort } from '../lib/effort.js'
-import { bestKnownWeight } from '../lib/active-workout.js'
+import { bestKnownWeight, nextUnitTarget } from '../lib/active-workout.js'
 import { fmtNum, fmtDate, fmtSec, fmtElapsed, todayISO, exCount, DAYN, sentenceCase } from '../lib/format.js'
 import { playSetComplete } from '../lib/sound.js'
 import { t } from '../lib/i18n.js'
 import Media, { Thumb } from '../components/Media.jsx'
-import { startFlow, exercisePicker, exConfigSheet, exerciseDetailSheet, topWeightSheet, finishWorkout, workoutCompleteSheet, confirmSheet, exerciseNoteSheet } from '../sheets.jsx'
+import { startFlow, exercisePicker, exConfigSheet, exerciseDetailSheet, finishWorkout, workoutCompleteSheet, confirmSheet, exerciseNoteSheet } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
 import Barbell, { loadsOnBar } from '../components/Barbell.jsx'
 import { Button, Check, NumberField, dotted } from '../components/ui.jsx'
@@ -409,6 +409,8 @@ function ActiveWorkout() {
   }, [cur, isSuperset, A.entries.length])
 
   const prog = sessionProgress(A)
+  // The Next key: the domain says when the open unit's work is done and where it leads.
+  const nextIdx = A.entries.length ? nextUnitTarget(S, cur) : null
 
   const setField = (idx, i, field, v) => useStore.getState().updateActiveSetField(idx, i, field, v)
   const addSet = idx => useStore.getState().addActiveSet(idx)
@@ -500,8 +502,7 @@ function ActiveWorkout() {
       playSetComplete(S.sound)
     }
 
-    if (res.next.kind === 'open-topweight') topWeightSheet(idx)
-    else if (res.next.kind === 'open-finish') workoutCompleteSheet()
+    if (res.next.kind === 'open-finish') workoutCompleteSheet()
     else if (res.notice === 'cardio') useUI.getState().toast(t('Cardio logged'))
     else if (res.notice === 'timed') useUI.getState().toast(t('Hold logged'))
 
@@ -560,6 +561,9 @@ function ActiveWorkout() {
         <ExerciseBlock entryIdx={cur} arrived={shown.moved} onToggle={i => toggle(cur, i)} onField={(i, f, v) => setField(cur, i, f, v)} onAddSet={() => addSet(cur)} onRemoveSet={() => removeSet(cur)} onAddWarmup={() => addWarmup(cur)} onRemoveSetAt={i => removeSetAt(cur, i)} onStartTimed={i => startTimed(cur, i)}
           onReplace={replaceActiveExerciseFlow} />
       )}
+      {nextIdx != null && <button className="btn primary wk-next" onClick={() => useStore.getState().setActiveIndex(nextIdx)}>
+        {t('Next: {0}', exOr(A.entries[nextIdx].id).n)}<Icon name="chevronRight" />
+      </button>}
     </> : <div className="empty"><div className="ico"><Icon name="shuffle" /></div>{t('Freestyle workout — add your first exercise.')}</div>}
 
     <div className="wk-nav">
