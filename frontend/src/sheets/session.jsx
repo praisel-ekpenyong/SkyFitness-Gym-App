@@ -130,10 +130,10 @@ export const getProgressionItems = sessionProgressionItems
 
 
 /**
- * Finish summary; shows duration, volume, PRs, and trained muscles.
+ * Finish summary; shows duration, volume, Records, and trained muscles.
  *
  * @param {Object} w Finished workout.
- * @param {Array} prs New weight PR exercise ids.
+ * @param {Array} prs Exercise ids that made a Record.
  * @param {Array} e1prs New estimated-1RM records.
  * @param {Object|null} routineSync Routine sync descriptor if originating from a routine with changes.
  * @param {Function} close Closes the sheet.
@@ -166,10 +166,10 @@ export function FinishSummary({ w, prs, e1prs = [], routineSync = null, close })
       <div className="tile"><div className="l">{t('Volume')}</div><div className="v">{fmtNum(tonnageOf(w))}<span className="u"> {st.unit}</span></div></div>
       <div className="tile"><div className="l">{t('Sets')}</div><div className="v">{fmtNum(workSetsDone(w))}</div>
         {warmUps > 0 && <div className="s">{t(warmUps === 1 ? '{0} warm-up' : '{0} warm-ups', fmtNum(warmUps))}</div>}</div>
-      <div className="tile"><div className="l">{t('PRs')}</div><div className="v">{fmtNum(prs.length)}</div></div>
+      <div className="tile"><div className="l">{t('Records')}</div><div className="v">{fmtNum(prs.length)}</div></div>
     </div>
     {(prs.length > 0 || e1prs.length > 0) && <div className="finish-records">
-      {prs.map(id => <div key={id} className="record capitalize row"><Icon name="trophy" />{t('New PR:')} {(EXIDX[id] || {}).n || id}</div>)}
+      {prs.map(id => <div key={id} className="record capitalize row"><Icon name="trophy" />{t('New record:')} {(EXIDX[id] || {}).n || id}</div>)}
       {e1prs.map(p => <div key={p.id} className="record capitalize row"><Icon name="chartLine" />{t('Best estimated 1RM:')} {(EXIDX[p.id] || {}).n || p.id} · {fmtNum(p.est)} {st.unit}</div>)}
     </div>}
     {progressionItems.length > 0 && <>

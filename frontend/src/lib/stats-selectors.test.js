@@ -368,6 +368,24 @@ describe('exercise index and sessions', () => {
     expect(st.recent[0]).toMatchObject({ y: 60, sets: [doneSet(60, 5, { rir: 2 })], target })
     expect(st.points[1]).toMatchObject({ effort: 2, m: 0.5 })
   })
+
+  it('marks only the Set that made a Record: the best estimate of an Entry on a Workout whose prs names it', () => {
+    const S = { unit: 'kg', workouts: [
+      // Same weight as the later Record, but this Workout made no Record.
+      workoutAt(LIFT.id, 20, [doneSet(100, 3)]),
+      // Three Sets at 100 kg; the Record Set is the best estimate (100 × 6), not every Set at the top weight.
+      workoutAt(LIFT.id, 10, [doneSet(100, 5), doneSet(100, 6), doneSet(90, 8), doneSet(100, 4)], { prs: [LIFT.id] }),
+      // A Record for another exercise does not mark this one.
+      workoutAt(LIFT.id, 1, [doneSet(80, 5)], { prs: ['other'] }),
+    ] }
+    const st = selectExerciseStats(S, LIFT.id, { now: NOW, catalogue })
+    expect(st.recent.map(p => p.record)).toEqual([null, 1, null])
+  })
+
+  it('marks no Set on a timed exercise, which has no estimate', () => {
+    const S = { workouts: [workoutAt(KNOWN.id, 1, [{ done: true, sec: 60 }], { prs: [KNOWN.id] })] }
+    expect(selectExerciseStats(S, KNOWN.id, { now: NOW, catalogue }).recent[0].record).toBe(null)
+  })
 })
 
 it('uses the latest entry Mode when an exercise changes from reps to time', () => {
