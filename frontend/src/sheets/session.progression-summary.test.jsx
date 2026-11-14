@@ -39,7 +39,6 @@ beforeEach(() => {
   configureSessionSheets({
     bwSheet: vi.fn(),
     confirmSheet: vi.fn(),
-    WeightInput: () => null,
   })
 
   container = document.createElement('div')
