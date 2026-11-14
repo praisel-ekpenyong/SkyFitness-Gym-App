@@ -92,3 +92,7 @@ discipline in `AGENTS.md`.
   implementer followed the ticket, and only the Spec review caught the gap (see [reviews](reviews.md)). Lesson for
   ticket writers: when a ticket names a stored field after a glossary term, check what the code that writes the
   field does.
+- **2026-11-14 — design-review-fixes 01–04 fast-forwarded into `main` (`bd1669e`), wiki committed as `1cc54a3`.**
+  All four release stages passed at `bd1669e`. The integration branch and its worktree were retired. Nothing was
+  pushed. Next: iron-discipline/03 merges `main` into its branch (it overlaps 9 files), then design-review-fixes
+  05 and 06 branch from `main`.
