@@ -13,7 +13,7 @@ Tools live in `frontend/scripts/review/`. Run everything from `frontend/`. No ne
 |---|---|
 | Build, then serve `dist/` with the deploy CSP | `npm run build && npm run review:serve` (leave running) |
 | Demo profile JSON (14 weeks of history) | `npm run review:seed` writes `.tmp/review/seed.json` |
-| Screenshots | `npm run review:shots -- --vp=phone --scenes=home,workout` (scenes: home empty rest plan stats library settings sheets variants more workout; vp: phone small tablet desktop) |
+| Screenshots | `npm run review:shots -- --vp=phone --scenes=home,workout` (scenes: home empty rest plan stats library settings sheets variants more workout noart (blocks all image requests); vp: phone small tablet desktop) |
 | Measured checks (overflow, tap size, contrast, clipping, CSP, offline) | `npm run review:audit`, exits 1 on findings |
 | Service worker and offline routes | `npm run review:offline` |
 | Visible window on a dev server | `npm run review:open -- --base=http://localhost:5173/` (needs a display) |

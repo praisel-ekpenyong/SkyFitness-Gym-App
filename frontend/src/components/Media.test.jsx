@@ -46,6 +46,21 @@ describe('Thumb component', () => {
     expect(img.getAttribute('src')).toBe(cdnImgSrc(ex))
   })
 
+  it('shows the dumbbell tile and no image when the fallback fails too', async () => {
+    const ex = { id: '0001', n: '3/4 sit-up', img: '0001-2gPfomN.jpg' }
+    await act(async () => {
+      root.render(<Thumb ex={ex} />)
+    })
+    await act(async () => {
+      container.querySelector('img.thumb').dispatchEvent(new Event('error'))
+    })
+    await act(async () => {
+      container.querySelector('img.thumb').dispatchEvent(new Event('error'))
+    })
+    expect(container.querySelector('img')).toBeNull()
+    expect(container.querySelector('.thumb.thumb-x')).toBeTruthy()
+  })
+
   it('resets fallback state when ex prop changes', async () => {
     const ex1 = { id: '0001', n: '3/4 sit-up', img: '0001-2gPfomN.jpg' }
     const ex2 = { id: '0002', n: '45° side bend', img: '0002-3hQgomO.jpg' }
@@ -89,6 +104,38 @@ describe('Media component', () => {
       img.dispatchEvent(new Event('error'))
     })
     expect(img.getAttribute('src')).toBe(cdnGifSrc(ex))
+  })
+
+  it('keeps showing the CDN copy once it loads after the bundled file fails', async () => {
+    const ex = { id: '0001', n: '3/4 sit-up', img: '0001-2gPfomN.jpg', gif: '0001-2gPfomN.gif' }
+    await act(async () => {
+      root.render(<Media ex={ex} />)
+    })
+    await act(async () => {
+      container.querySelector('.exmedia img').dispatchEvent(new Event('error'))
+    })
+    await act(async () => {
+      container.querySelector('.exmedia img').dispatchEvent(new Event('load'))
+    })
+    const img = container.querySelector('.exmedia img')
+    expect(img.getAttribute('src')).toBe(cdnGifSrc(ex))
+    expect(container.querySelector('.thumb-x')).toBeNull()
+  })
+
+  it('shows the dumbbell tile and no image or alt text when the fallback fails too', async () => {
+    const ex = { id: '0001', n: '3/4 sit-up', img: '0001-2gPfomN.jpg', gif: '0001-2gPfomN.gif' }
+    await act(async () => {
+      root.render(<Media ex={ex} />)
+    })
+    await act(async () => {
+      container.querySelector('.exmedia img').dispatchEvent(new Event('error'))
+    })
+    await act(async () => {
+      container.querySelector('.exmedia img').dispatchEvent(new Event('error'))
+    })
+    expect(container.querySelector('img')).toBeNull()
+    expect(container.querySelector('.exmedia .thumb-x')).toBeTruthy()
+    expect(container.textContent).not.toContain(ex.n)
   })
 
   it('tracks GIF and still image failure states independently', async () => {
