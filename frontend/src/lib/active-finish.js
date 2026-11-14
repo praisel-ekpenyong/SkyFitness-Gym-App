@@ -1,7 +1,7 @@
 // Finishing the Active workout — one slice of the active-workout lifecycle.
 //
-// Heaviest-weight cache (`exWeights`), PR /
-// estimated-1RM detection, and the completed-Workout boundary. Session
+// Heaviest-weight cache (`exWeights`), Record detection (a new Best or a new
+// best estimated 1RM), and the completed-Workout boundary. Session
 // construction lives in active-session.js, set surgery in active-sets.js,
 // the toggle decision in active-toggle.js.
 import { bestWeightForEntry, doneWorkSets, isPerformed } from './workout-model.js'
@@ -14,7 +14,7 @@ import { normalizeWeight, round1 } from './units.js'
 /**
  * Highest load logged for an exercise across finished workouts.
  *
- * Shared read behind both the Best tag (`bestKnownWeight`) and PR detection
+ * Shared read behind both the Best tag (`bestKnownWeight`) and Record detection
  * (`completeActiveSession`), so the two can never disagree on what history
  * says. Warm-up rows and unperformed sets never count (`bestWeightForEntry`).
  *
@@ -62,7 +62,7 @@ export function bestKnownWeight(S, exId) {
  * Highest load among completed work sets in a single workout entry.
  *
  * Excludes warm-up rows, uncompleted sets, and the legacy confirmed working weight (`topW`).
- * Used as the baseline load when evaluating personal records (PRs).
+ * The load a Set must beat to make a Record.
  *
  * @param {Object} entry - Active or historical workout entry containing `{ sets }`.
  * @returns {number} Maximum completed set load in active units, or 0 if none.
@@ -145,12 +145,12 @@ function planRecord(plan) {
  * Map an active workout session into a persistable completed workout record.
  *
  * Pure function: filters out unperformed entries (zero completed sets), freezes routine metadata,
- * attaches personal record (PR) flags, and records muscle fatigue snapshots for custom exercises.
+ * attaches the Record list (`prs`), and records muscle fatigue snapshots for custom exercises.
  * Completion options arrive as a destructured second argument.
  *
  * @param {Object} active - Active session object (`S.active`).
  * @param {number} [end=Date.now()] - Workout finish epoch timestamp in milliseconds.
- * @param {Array<string>} [prs=[]] - Exercise IDs that established personal records.
+ * @param {Array<string>} [prs=[]] - Exercise IDs whose heaviest Set beat their Best: a Record.
  * @param {string} [unit='kg'] - Active weight unit.
  * @param {(entry: Object) => Object|null} [snapshotFor] - Custom exercise muscle snapshot provider.
  * @returns {Object} Persistable workout entity for `S.workouts`.
@@ -196,7 +196,8 @@ export function buildCompletedWorkout(active, { end = Date.now(), prs = [], unit
 /**
  * Finalize the active workout session and commit it to historical log.
  *
- * Evaluates personal records (heaviest completed sets) and estimated 1RM records against history,
+ * Evaluates Records against history: a Set heavier than the exercise's Best (`prs`), else a new
+ * best estimated 1RM (`e1prs`);
  * merges peak loads into `exWeights`, appends the
  * completed workout to `S.workouts` sorted chronologically, and clears `S.active`.
  * Mutates `S` in-place; must be executed within `useStore.update(...)`.

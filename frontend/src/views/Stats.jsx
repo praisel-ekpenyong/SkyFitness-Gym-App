@@ -353,7 +353,7 @@ export default function Stats() {
                 <span className="exercise-session-date">{fmtDate(p.d, true)}</span>
                 <div className="exercise-session-sets">
                   {p.sets.map((s, si) => (
-                    <span key={si} className={`set-pill ${si === p.record ? 'top' : ''}`}>
+                    <span key={si} className={si === p.record ? 'set-pill record' : 'set-pill'}>
                       {setLabel(curEx, s, p.target)}
                     </span>
                   ))}

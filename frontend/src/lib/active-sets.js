@@ -76,7 +76,7 @@ export function removeActiveSet(S, entryIdx, setIdx = null) {
 /**
  * Insert a warm-up row before the first work row in an active exercise entry.
  *
- * Warm-up rows are marked with `warmup: true` and excluded from volume calculations, PR checks,
+ * Warm-up rows are marked with `warmup: true` and excluded from volume calculations, Record checks,
  * and completion judgments. Mutates `S.active` in-place.
  *
  * @param {Object} S - Application state atom.

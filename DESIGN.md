@@ -56,9 +56,11 @@ untracked. Inputs stay at 16px or larger, the line below which iOS zooms the pag
   last two darken so they can be read on white; never use `--acc` itself for text or lines.
 - **Status:** `--orange` a workout is running, `--yellow` a Record, `--red` destructive and
   fatigued. Each has a `-text` partner where it differs. Yellow marks a Record and nothing else: the
-  `.record` utility, the `.pr` Record badge, and the Set in Stats history that made a Record. A Best
-  (the heaviest load) is neutral ink, `--label`, wherever it shows, never yellow. This narrows
-  iron-discipline D3, per design-review-fixes E12 (path a, decided 2026-11-14).
+  moment a Set beats the exercise's Best or its best estimated 1RM. That is the `.record` utility, the
+  `.pr` Record badge, and the Set in Stats history that made a Record (`.set-pill.record`, the
+  heaviest Set of that session). The standing Best figure (the heaviest load) is neutral ink,
+  `--label`, wherever it shows, never yellow. This narrows iron-discipline D3, per design-review-fixes
+  E12 (path a) and the Record decision of 2026-11-14.
 - **Plates:** `--plate-*`, the competition colour code. They belong to the object: used on plates and
   nowhere else, and the only polychrome in the app.
 - **Art:** `--art-filter` turns the white-ground exercise art into an X-ray on `--art-ground` black
