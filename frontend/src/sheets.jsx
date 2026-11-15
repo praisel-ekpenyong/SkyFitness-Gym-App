@@ -568,7 +568,7 @@ function Calendar({ start, close }) {
     <div className="cal-legend">
       <span><i style={{ background: 'var(--data)' }} />{t('Trained')}</span>
       <span><i style={{ background: 'var(--label-3)' }} />{t('Planned')}</span>
-      <span><i style={{ background: 'var(--orange)' }} />{t('Rescheduled')}</span>
+      <span><i style={{ background: 'var(--label-2)' }} />{t('Rescheduled')}</span>
     </div>
     <div className="small dim cal-sum note">{t('Tap a trained day for details · tap any other day to plan a session')}</div>
   </>
