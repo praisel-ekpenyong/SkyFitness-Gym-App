@@ -19,6 +19,11 @@
 .home-hero-title { font-size: var(--fs-poster); line-height: .9 }
 .home-hero-title.s { font-size: var(--fs-display); line-height: .94 }
 .home-hero-title.xs { font-size: var(--fs-title); line-height: .96 }
+.home-hero-title.xxs { font-size: var(--fs-heading); line-height: .96 }
+/* a word no step fits beside the map: the name takes the card's width and the map sits below it.
+   lib/name-fit.js decides per layout; each rule holds only inside its layout's range (NAME_MEDIA). */
+@media (max-width: 699px) { .home-hero-body.name-stacked-phone { grid-template-columns: minmax(0, 1fr) } }
+@media (min-width: 700px) and (max-width: 999px) { .home-hero-body.name-stacked-tablet { grid-template-columns: minmax(0, 1fr) } }
 .home-hero-meta { font-size: var(--fs-body); font-weight: 600; margin-top: 12px }
 .home-hero-note { font-size: var(--fs-meta); color: var(--label-2); margin-top: 3px; line-height: 1.34 }
 .home-hero-note.dim { color: var(--label-3) }
@@ -76,8 +81,10 @@
   .home-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: var(--gap); align-items: start }
   .home-hero { padding: 18px 24px 24px }
   .home-hero-body { grid-template-columns: minmax(0, 1fr) 46%; min-height: 280px; margin-bottom: 18px }
+  .home-hero-body.name-stacked-desktop { grid-template-columns: minmax(0, 1fr) }
   .home-hero-title { font-size: var(--fs-hero); line-height: .88 }
   .home-hero-title.s { font-size: var(--fs-poster) }
   .home-hero-title.xs { font-size: var(--fs-display) }
+  .home-hero-title.xxs { font-size: var(--fs-title) }
   .home-hero-map .bm-v { max-height: 300px }
 }

@@ -248,7 +248,6 @@ export function selectStatsOverview(S, opts = {}) {
       values: strengthValues,
       latest,
       weeks: trainingWeeks,
-      volume90: loadOfWorkouts(projectWorkouts(inWindow(workouts, now, 90), muscleCatalogue), null),
       order: strengthOrder,
       detrained: strengthOrder.filter(slug => strengthValues[slug] < 1),
     },

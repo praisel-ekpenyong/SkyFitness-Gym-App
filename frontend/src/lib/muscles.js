@@ -201,9 +201,12 @@ export function bodypartForMuscle(muscle) {
   return MUSCLE_TO_BODYPART[slug] || (BY_BODYPART[slug] ? slug : 'chest')
 }
 
+/** An exercise given by id or as a record, as the record (undefined for an unknown id). */
+const asExercise = exercise => typeof exercise === 'string' ? EXIDX[exercise] : exercise
+
 /** Primary muscle slug for an exercise (canonical anatomical muscle group or 'cardio'). */
 export function primaryMuscleOf(exercise) {
-  const raw = typeof exercise === 'string' ? EXIDX[exercise] : exercise
+  const raw = asExercise(exercise)
   const ex = hasOwnMuscleMeta(raw) ? raw : (exerciseFor(raw) || raw)
   if (!ex || typeof ex !== 'object') return null
   const source = metadataOf(ex)
@@ -221,9 +224,20 @@ export function primaryMuscleOf(exercise) {
   return bpMuscles[0] || null
 }
 
+/**
+ * Display name of an exercise's Primary muscle: the Muscle map name ("Chest"), with the
+ * dataset spelling only for an exercise that maps to no drawable muscle. Untranslated (an i18n key).
+ */
+export function primaryMuscleName(exercise) {
+  const primary = primaryMuscleOf(exercise)
+  if (primary && MUSCLE_NAME[primary]) return MUSCLE_NAME[primary]
+  const ex = asExercise(exercise)
+  return (ex && (ex.tg || ex.bp)) || ''
+}
+
 /** Secondary supporting muscle slugs for an exercise (canonical anatomical muscle groups). */
 export function secondaryMusclesOf(exercise) {
-  const raw = typeof exercise === 'string' ? EXIDX[exercise] : exercise
+  const raw = asExercise(exercise)
   const ex = hasOwnMuscleMeta(raw) ? raw : (exerciseFor(raw) || raw)
   if (!ex || typeof ex !== 'object') return []
   const source = metadataOf(ex)

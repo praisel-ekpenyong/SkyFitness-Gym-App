@@ -118,6 +118,7 @@ const WORK = {
   '.btn.wk-finish.done:active': 'D2 the header Finish once every set is in, pressed',
   '.btn.wk-finish.done:hover': 'D2 the header Finish once every set is in, hovered (desktop)',
   '.setrow.cur .chk': 'D2 the Log key: the open set’s .go key',
+  '.setrow.cur.timed .setgo': 'D2 the Start key: a timed set’s .go key; its Log key is neutral',
   '.chk.on': 'D2 logged-set mark: the check key of a logged set',
   '.setrow.cur .chk.on': 'D2 logged-set mark: the Log key once its set is logged',
   '.setrow.done .n': 'D2 logged-set mark: the set number of a logged set',
@@ -229,6 +230,18 @@ describe('G2 colour meaning: lime is work, yellow is a record, orange is a runni
         ...f.js.filter(a => !js.some(u => u.file === a.file && u.line.includes(a.has))).map(a => `${f.list}_JS: ${a.file} "${a.has}" (${a.why})`),
       ]
       expect(stale, `These allowlist entries no longer match any ${f.name} colour; remove them from src/design-lint.test.js.\n${stale.join('\n')}`).toEqual([])
+    })
+  }
+})
+
+// A destructive text key is a ghost key in red. `.btn.ghost` sets the ghost's grey, so a rule that
+// only names the key's own class loses to it and the key renders grey.
+describe('G2 red text keys outrank the ghost key', () => {
+  for (const key of ['wk-discard', 'rt-delete']) {
+    it(`.${key} is red through .btn.ghost.${key}`, () => {
+      const red = declsOf('color').filter(d => d.value === 'var(--red-text)' && selectorList(d.selector).some(s => s.includes('.' + key)))
+      expect(red.map(d => d.selector), `.${key} sets no red text. Read DESIGN.md › Component vocabulary.`).not.toEqual([])
+      for (const d of red) expect(selectorList(d.selector), `${d.where}: .btn.ghost (controls.css) outranks this; write .btn.ghost.${key}`).toContain(`.btn.ghost.${key}`)
     })
   }
 })

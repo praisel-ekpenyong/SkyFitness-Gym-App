@@ -1,6 +1,6 @@
 import { describe, expect, it, afterEach } from 'vitest'
 import { EXIDX, EXDB, smOf, registerCustom } from './exercises.js'
-import { loadOfWorkouts, musclesOf, loadOf, muscleWeightsOf, lastTrainedByMuscle, primaryMuscleOf, secondaryMusclesOf, sessionMuscleDistribution } from './muscles.js'
+import { loadOfWorkouts, musclesOf, loadOf, muscleWeightsOf, lastTrainedByMuscle, primaryMuscleOf, primaryMuscleName, secondaryMusclesOf, sessionMuscleDistribution } from './muscles.js'
 
 // The catalogue keeps the source dataset's secondary-muscle spellings; musclesOf maps
 // those aliases to the canonical body-map slugs and applies the 0.4 support weight.
@@ -850,3 +850,15 @@ describe('sessionMuscleDistribution', () => {
   })
 })
 
+
+// One name per muscle on every screen: the Muscle map name, never the dataset spelling.
+describe('primaryMuscleName', () => {
+  it('names a bench press "Chest", not the dataset\'s "pectorals"', () => {
+    expect(EXIDX['0025'].tg).toBe('pectorals')
+    expect(primaryMuscleName(EXIDX['0025'])).toBe('Chest')
+  })
+
+  it('falls back to the dataset spelling for an exercise that maps to no drawable muscle', () => {
+    expect(primaryMuscleName({ id: 'c-odd', n: 'Jaw clench', tg: 'jaw' })).toBe('jaw')
+  })
+})

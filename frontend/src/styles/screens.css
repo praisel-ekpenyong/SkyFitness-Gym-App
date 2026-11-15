@@ -31,6 +31,10 @@
   background: var(--surface); border-radius: var(--r-2); padding: 8px 12px 8px 14px; min-height: 76px; transition: background var(--fast);
 }
 .rt-card:active { background: var(--surface-2) }
+/* a word too wide for the column beside the map: the name takes the card's width, the map sits below.
+   lib/name-fit.js decides per layout; each rule holds only inside its layout's range (NAME_MEDIA). */
+@media (max-width: 699px) { .rt-card.name-stacked-phone { grid-template-columns: minmax(0, 1fr) } }
+@media (min-width: 700px) and (max-width: 999px) { .rt-card.name-stacked-tablet { grid-template-columns: minmax(0, 1fr) } }
 .rt-text { display: flex; flex-direction: column; gap: 5px; min-width: 0 }
 .rt-name { font-size: var(--fs-heading) }
 .rt-meta { font-size: var(--fs-meta); color: var(--label-2) }
@@ -60,6 +64,8 @@
 }
 .rt-link .icn { font-size: var(--fs-lead) }
 .rt-link:active { background: var(--surface-2) }
+/* "Delete routine": a red text key with clear space above, in the manner of .wk-discard */
+.btn.ghost.rt-delete { color: var(--red-text); margin-top: calc(var(--gap) * 2); font-size: var(--fs-small) }
 .rt-link.on-ss { color: var(--label) }
 .rt-hint { margin: 12px 2px; gap: 7px; align-items: flex-start; line-height: 1.38 }
 .rt-hint .icn { margin-top: 2px; flex: none }
@@ -184,6 +190,7 @@
   .hdr:not(.wk-hdr) h1 { font-size: var(--fs-display) }
   .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start }
   .cols > * { min-width: 0 }
+  .rt-card.name-stacked-desktop { grid-template-columns: minmax(0, 1fr) }
   .cols > section + section .sec-first { margin-top: 4px }
   .tiles.stats-kpis { grid-template-columns: repeat(4, 1fr) }
   .stats-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--gap); align-items: start }

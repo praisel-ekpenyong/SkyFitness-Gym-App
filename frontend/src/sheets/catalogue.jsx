@@ -13,7 +13,7 @@ import Stepper from '../components/Stepper.jsx'
 import Icon from '../components/Icon.jsx'
 import { Button, Switch, Segmented, SelectRow, Row, SearchField, TextArea } from '../components/ui.jsx'
 import { glyphOf, DEFAULT_GLYPH } from '../lib/glyphs.js'
-import { FILTER_MUSCLES, MUSCLES, MUSCLE_NAME, primaryMuscleOf, secondaryMusclesOf } from '../lib/muscles.js'
+import { FILTER_MUSCLES, MUSCLES, MUSCLE_NAME, primaryMuscleOf, primaryMuscleName, secondaryMusclesOf } from '../lib/muscles.js'
 import { queryCatalogue } from '../lib/catalogue-query.js'
 import { estimate1RM, best1RM, REP_CAP } from '../lib/onerm.js'
 import { policyFor, defaultIncrement, POLICIES_FOR, POLICY_NAME, POLICY_DESC, MAX_BW_SETS } from '../lib/progression.js'
@@ -320,6 +320,7 @@ export function ExercisePicker({ onPick }) {
     scope,
     search: q,
     equipment: eq,
+    ownFirst: true,   // open on what the lifter trains, as the Library does
   })
   const f = rows
   return <>
@@ -479,7 +480,7 @@ export function ExConfig({ ex, existing, onSave, onDelete, close, routine, initi
     <Media ex={ex} />
     <div className="row detail-tags">
       {cardio && <span className="tag">{t('Cardio')}</span>}
-      <span className="tag">{t(ex.tg || ex.bp)}</span><span className="tag">{t(ex.eq)}</span>
+      {!cardio && <span className="tag">{t(primaryMuscleName(ex))}</span>}<span className="tag">{t(ex.eq)}</span>
     </div>
     {ex.desc && <div className="exnote">{ex.desc}</div>}
     {!cardio && <div>

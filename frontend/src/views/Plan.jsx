@@ -3,11 +3,13 @@ import { useStore } from '../store/useStore.js'
 import { DAYN, uid, exCount } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
 import { loadOfRoutine } from '../lib/muscles.js'
-import { dayAssignSheet, loadStarterPlan, planToolsSheet } from '../sheets.jsx'
+import { dayAssignSheet, planToolsSheet } from '../sheets.jsx'
 import BodyMap from '../components/BodyMap.jsx'
 import Icon from '../components/Icon.jsx'
 import { Button } from '../components/ui.jsx'
+import StarterCard from '../components/StarterCard.jsx'
 import { DEFAULT_GLYPH } from '../lib/glyphs.js'
+import { fitName, stackClasses, NAME_LAYOUTS } from '../lib/name-fit.js'
 
 /** Plan route; assigns weekdays and manages routines. */
 export default function Plan() {
@@ -27,7 +29,8 @@ export default function Plan() {
       <div><h1>{t('Plan')}</h1><div className="sub">{t('Your weekly routine')}</div></div>
       <button className="btn sm plain hdr-act" onClick={planToolsSheet} aria-label={t('Share your plan')}><Icon name="upload" />{t('Share')}</button>
     </div>
-    <div className="cols">
+    {/* No Routine yet: the same two first actions as Home's first-run hero, not seven "Rest" rows. */}
+    {!S.routines.length ? <div className="cols"><StarterCard onBuild={addRoutine} /></div> : <div className="cols">
       <section>
         <h2 className="sec sec-first">{t('Week schedule')}</h2>
         <div className="wk-list">
@@ -53,19 +56,16 @@ export default function Plan() {
           <h2 className="sec">{t('Routines')}</h2>
           <Button size="sm" icon="plus" onClick={addRoutine}>{t('New')}</Button>
         </div>
-        {S.routines.length ? <div className="rt-list">{S.routines.map(r => (
-          <button key={r.id} className="rt-card" aria-label={`${r.name}, ${exCount(r.ex.length)}`} onClick={() => nav('/plan/r/' + r.id)}>
+        <div className="rt-list">{S.routines.map(r => (
+          <button key={r.id} className={'rt-card' + stackClasses(fitName(r.name, NAME_LAYOUTS.card))} aria-label={`${r.name}, ${exCount(r.ex.length)}`} onClick={() => nav('/plan/r/' + r.id)}>
             <span className="rt-text">
               <span className="rt-name d">{r.name}</span>
               <span className="rt-meta">{exCount(r.ex.length)}</span>
             </span>
             <span className="rt-map"><BodyMap load={loadOfRoutine(r)} body={S.body} /></span>
           </button>
-        ))}</div> : <>
-          <div className="empty"><div className="ico"><Icon name="clipboard" /></div>{t('No routines yet.')}<br />{t('Create one or load the starter plan.')}</div>
-          <Button icon="calendar" onClick={loadStarterPlan}>{t('Load starter plan (Push / Pull / Legs)')}</Button>
-        </>}
+        ))}</div>
       </section>
-    </div>
+    </div>}
   </div>
 }

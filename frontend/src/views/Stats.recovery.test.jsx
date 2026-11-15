@@ -195,6 +195,20 @@ describe('Stats muscle recovery view runtime', () => {
     expect(lastMap().selected).toBe('chest')
   })
 
+  // The row's figure reads the measure its bar draws, Retained strength, not 90-day sets.
+  it('labels each Strength row with the Retained strength its bar draws', async () => {
+    await mountStats()
+    await click(viewButton('Strength'))
+
+    const rows = [...muscleCard().querySelectorAll('.mrow')]
+    expect(rows.length).toBeGreaterThan(0)
+    for (const row of rows) {
+      const bar = row.querySelector('.bar i').style.width
+      expect(bar).toMatch(/^\d+%$/)
+      expect(row.querySelector('.v').textContent).toBe(bar)
+    }
+  })
+
   it('updates the rendered Fatigue map on the real 60-second interval without remounting', async () => {
     await mountStats()
     await click(viewButton('Fatigue'))

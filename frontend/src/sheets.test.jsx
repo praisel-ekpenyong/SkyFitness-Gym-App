@@ -350,7 +350,7 @@ describe('WorkoutDetail', () => {
     expect(exRows[1].querySelector('.exnote')).toBeNull()
   })
 
-  it('renders compact BodyMap and SessionMuscleDistribution before exercises list with tap selection', async () => {
+  it('renders compact BodyMap and SessionMuscleDistribution after the exercises list with tap selection', async () => {
     const workout = {
       id: 'w-2',
       name: 'Push Day',
@@ -383,6 +383,12 @@ describe('WorkoutDetail', () => {
     // Contains compact bodymap container and session muscle distribution
     const distContainer = container.querySelector('.workout-detail-distribution')
     expect(distContainer).toBeTruthy()
+
+    // What you did comes first, then where it landed, then "Delete workout".
+    const entry = container.querySelector('.ex-entry')
+    const del = [...container.querySelectorAll('button')].find(b => b.textContent === 'Delete workout')
+    expect(entry.compareDocumentPosition(distContainer) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(distContainer.compareDocumentPosition(del) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
 
     const bodyMap = distContainer?.querySelector('.bodymap')
     expect(bodyMap).toBeTruthy()

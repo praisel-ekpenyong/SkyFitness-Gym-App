@@ -26,6 +26,7 @@ import { Button, Check, NumberField, dotted } from '../components/ui.jsx'
 import { glyphOf } from '../lib/glyphs.js'
 import { isWarmupRow, isPerformed, seedForReplacement } from '../lib/workout-model.js'
 import { evaluateSetMilestone } from '../lib/progression.js'
+import { primaryMuscleName } from '../lib/muscles.js'
 
 /* ---------- start chooser (no active workout) ---------- */
 function StartChooser() {
@@ -162,6 +163,8 @@ function ExerciseBlock({ entryIdx, compact, isCurrent = true, arrived = false, r
       </div>
     )
   }
+  // The Muscle map name ("Chest"), as the Library prints it; a cardio Entry already says "Cardio".
+  const muscleName = cardio ? '' : primaryMuscleName(ex)
   return <section className={'exblock' + (compact ? ' compact' : '')}>
     <div className="exhead">
       <div className="exhead-t">
@@ -172,7 +175,7 @@ function ExerciseBlock({ entryIdx, compact, isCurrent = true, arrived = false, r
           // You log the total; this is the split, so the set in front of you is unambiguous
           // without the rep count having to mean two different things (issue #31).
           !cardio && !timed && isPerSide(cfg) && <span className="tag nocap">{t('{0} per side', fmtNum(sideReps(entry.sets.find(s => !s.done)?.r ?? entry.sets[0]?.r)))}</span>,
-          (ex.tg || ex.bp) && <span className="tag nocap">{sentenceCase(t(ex.tg || ex.bp))}</span>,
+          muscleName && <span className="tag nocap">{sentenceCase(t(muscleName))}</span>,
           ex.eq && <span className="tag nocap">{sentenceCase(t(ex.eq))}</span>,
           best > 0 && <span className="tag nocap ex-best">{t('Best')} {fmtNum(best)} {S.unit}</span>,
         ])}</div>
