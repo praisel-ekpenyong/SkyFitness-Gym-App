@@ -165,12 +165,28 @@ clock is the largest size there is. Labels are sentence case and untracked.
 
 ## Icons
 
-- One set, `components/Icon.jsx`: drawn on a 24×24 grid, stroke only (a few small shapes are
-  solid: `starFill`, `dot`, the point of `info`), `currentColor`, round caps and joins. A name
-  with no glyph draws nothing, so `Icon.test.js` fails on any name the source uses that the set
-  lacks. `alert` (a stroked triangle and an exclamation) marks the neutral banners.
-- **Stroke** is `--icon-stroke`, 1.6 by default. A key or mark that needs more weight sets it
-  locally (2 to 2.6 on check keys, the `.go` key and selected tabs).
+- One set, `components/Icon.jsx`: [Tabler Icons](https://tabler.io/icons) outline glyphs, their
+  path data copied in (no icon package ships). Tabler draws no dumbbell, flexed arm or fist, so
+  `dumbbell`, `arm` and `boxing` are Lucide's `dumbbell`, `biceps-flexed` and `hand-fist`, drawn on
+  the same grid. A new glyph comes from Tabler first and Lucide second, and is credited in
+  `NOTICE.md`; Sky does not hand-draw icons.
+- 24×24 grid, stroke only (two small shapes are solid: `starFill` is Tabler's filled star, and
+  `dot`), `currentColor`, round caps and joins. `alert` (Tabler `alert-triangle`) marks the
+  neutral banners.
+- **Keys are Sky's names, not the libraries'.** A routine stores its glyph's key, so a key is
+  never renamed or removed: redraw it instead. A name with no glyph draws nothing, so
+  `Icon.test.js` fails on any name the source uses that the set lacks. Where the source differs:
+  `figureStrength` is Tabler `stretching-2`, `legs` `stretching`, `pullup` `gymnastics`, `abs`
+  `body-scan`, `stretch` `yoga`, `machine` `treadmill`, `kettlebell` `weight`, `plate` `disc`,
+  `swim` `swimming`, `timer` `stopwatch`, `scale` `scale-outline`, `chart` `chart-bar`,
+  `lightbulb` `bulb`, `reset` `rotate`, `shuffle` `arrows-shuffle`, `wrench` `tool`, `globe`
+  `world`, `info` `info-circle`, `checkCircle` `circle-check`, `personCircle` `user-circle`,
+  `signOut` `logout`, `expand` and `minimize` `arrows-diagonal(-minimize)`, `play` and `pause`
+  `player-play` and `player-pause`, `house` `home`, `magnifier` `search`, `gear` `settings`,
+  `person` `user`, `xmark` `x`, `bellSlash` `bell-off`.
+- **Stroke** is `--icon-stroke`, 1.6 by default; both libraries are drawn for 2, and Sky sets
+  them lighter. A key or mark that needs more weight sets it locally (2 to 2.6 on check keys, the
+  `.go` key and selected tabs).
 - **Size** is `1em`: an icon takes the `--fs-*` step of the text it sits with (`--fs-lead` on keys
   and rows, `--fs-small` on `.xs` keys, `--fs-figure` in the phone's tab bar and on the `.go` key,
   `--fs-lead` in the desktop sidebar).
