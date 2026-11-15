@@ -202,3 +202,22 @@ what ran, against what, and where the findings went.
   (pre-commit suite: 88 files, 1,290 tests, passed). The accepted reshape flags
   stay open pending one architect sketch. `asked` and `topW` were declined
   against ADR 0020. Recorded in [decisions](decisions.md).
+  - *Superseded in part 2026-11-15:* "pending one architect sketch." The sketch
+    ran the same day and the base was picked with no judge. See the next section.
+
+## 2026-11-15 — Reshape sketches, no cross-judge
+
+- **Scope:** The eighteen accepted reshape symbols from the Comment Sicko report
+  above, grounded in `.scratch/no-comments-reshape/grounding.md`. `asked` and
+  `topW` stayed out (ADR 0020).
+- **Runners:** `08a11623-a7f8-45c3-a598-243f26e79f2b` (`cursor-grok-4.6-high-fast`)
+  wrote `/tmp/arena-reshape/candidate-1/SKETCH.md`. `ca1aac20-986a-4461-8cf2-a8b0150ed3d3`
+  (`grok-4.7-high-fast`) wrote `/tmp/arena-reshape/candidate-2/SKETCH.md`.
+  Neither edited the repo.
+- **Judges:** `a45f32f5-2038-4bce-a81b-666ba92ca2a8` (Fable),
+  `814dbd0b-68b1-4eca-8fab-8072d71d8d2e` (Opus), and
+  `38a3ae6e-353d-4bc5-94a6-76022fb6ec46` (Gemini Carbon) each stopped on a
+  weekly-usage error before reading the sketches. No `judge.md`.
+- **Disposition:** Base is Sketch B. Grafts: inject `openSheet`; keep read-time
+  unit conversion. The first symbol taken is `reduceLoad`. The other seventeen,
+  including `admit`, stay open. Recorded in [decisions](decisions.md).
