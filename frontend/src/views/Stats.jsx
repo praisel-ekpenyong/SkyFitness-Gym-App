@@ -72,7 +72,7 @@ function MuscleBalance({ S, overview, win, setWin, setHard }) {
   const top = showAll ? worked : (overview?.muscles?.top || worked.slice(0, 5))
   const fatigue = overview.fatigue.values
   const strength = overview.strength.values
-  const { volume90: vol90, detrained, weeks } = overview.strength
+  const { detrained, weeks } = overview.strength
   const muscleExercises = useMemo(() => sel ? overview.exercisesFor(sel) : [], [overview, sel])
   const strengthHint = slug => weeks[slug] == null ? t('not trained') : t('Weeks since training: {0}', weeks[slug])
   const toggleSel = m => setSel(s => (s === m ? null : m))
@@ -185,11 +185,15 @@ function MuscleBalance({ S, overview, win, setWin, setHard }) {
         )) : <div className="muted small">{t('No exercises with an estimated 1RM yet.')}</div>}
       </>}
       {!sel && <div className="muted small note">{t('Tap a muscle to see its exercises.')}</div>}
-      {detrained.map(slug => <div key={slug} className="mrow">
-        <span className="nm">{t(MUSCLE_NAME[slug])}</span>
-        <span className="bar"><i style={{ width: Math.round(strength[slug] * 100) + '%' }} /></span>
-        <span className="v">{t('{0} sets', fmtNum(vol90[slug] || 0))}</span>
-      </div>)}
+      {detrained.map(slug => {
+        // The figure reads the measure the bar draws: Retained strength (E20).
+        const retained = Math.round(strength[slug] * 100) + '%'
+        return <div key={slug} className="mrow">
+          <span className="nm">{t(MUSCLE_NAME[slug])}</span>
+          <span className="bar"><i style={{ width: retained }} /></span>
+          <span className="v">{retained}</span>
+        </div>
+      })}
     </>}
   </div>
 }
