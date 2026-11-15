@@ -41,14 +41,17 @@ here and the list or scale in the test together, never one without the other.
    rather than break or shrink. A routine's name beside a muscle map (the Home hero, Plan's Routine
    cards) breaks at spaces only and steps 56/44/34/28px on a phone by the measured width of its
    longest word (`lib/name-fit.js`); if no step fits, the name takes the full width and the map
-   sits below it (`.stack`).
+   sits below it. The step is chosen on a phone; whether the map moves below is decided per layout
+   (phone, tablet, desktop), so a name stays beside the map wherever its column holds it
+   (`.name-stacked-phone`, `-tablet`, `-desktop`).
 2. **Elevation is lightness.** A warm near-black ground and three flat steps above it. No borders or
    shadows on anything at rest. Only what truly floats (a dialog, a toast) may cast a shadow. No
    gradients, no glass, no glow.
 3. **Colour is work.** The accent marks work and nothing else: the one `.go` key on a screen (Start,
-   Log set; in time Mode the console's `.go` key is "Start set" and "Log set" is a neutral
-   `--surface-3` key, per design-review-fixes E19), the workout header's Finish once every set is done (a colour state, `.wk-finish.done`,
-   on the header key's own size and words; it never takes `.go`), logged-set marks (the check key, the set number,
+   Log set; in time Mode the console's lime key is "Start set", `.setrow.cur.timed .setgo`, and
+   "Log set" is a neutral `--surface-3` key, so a console still has one `.go` key), the workout
+   header's Finish once every set is done (a colour state, `.wk-finish.done`, on the header key's
+   own size and words; it never takes `.go`), logged-set marks (the check key, the set number,
    session segments), chart and data ink (lines, the heatmap, volume bars, this week's session
    blocks), the trained-muscle map, trained days (calendar, Home's week strip, "Completed today"),
    the rest-dock bar and the clock while a timed set is held. Favourites, switches, today,
@@ -199,8 +202,9 @@ clock is the largest size there is. Labels are sentence case and untracked.
 | Grouped list | `.sect-b` / `.lrow` | Settings and pickers; plain grey icons, never in a tinted square |
 | Buttons | `.btn` + `.primary` `.go` `.live` `.plain` `.ghost` `.danger` `.sm` `.xs` | `.go` is the one coloured key; `.live` is the running workout |
 | Delete routine | `.btn.ghost.rt-delete` | A red text key (`--red-text`, no fill) on the Routine screen, with 24px clear above it. The confirm dialog stays |
-| Long routine name | `.home-hero-body.stack` / `.rt-card.stack` | The name over the full width, the map below it; set by `fitName` (`lib/name-fit.js`) when no size step fits the longest word beside the map |
-| Starter card | `.home-hero.welcome` | Home's first-run hero ("Load starter plan" / "Build my own plan"); Plan reuses it, and nothing else, when there are no Routines |
+| Long routine name | `.home-hero-body` / `.rt-card` + `.name-stacked-phone` `-tablet` `-desktop` | The name over the full width, the map below it, on each layout where no size step fits the longest word beside the map; `fitName` and `stackClasses` (`lib/name-fit.js`) decide, and each rule holds only inside its layout's media range (`NAME_MEDIA`) |
+| Starter card | `StarterCard` (`.home-hero.welcome`) | One component: Home's first-run hero and Plan with no Routines ("Load starter plan" / "Build my own plan"; each screen passes its own "Build my own plan" action) |
+| Discard workout | `.btn.ghost.wk-discard` | A red text key (`--red-text`, no fill) in the workout footer. Like `.rt-delete`, it names `.btn.ghost` so it outranks the ghost's grey |
 | Finish | `.wk-finish` | On the workout screen Finish is the header key only: `.plain` until every set is done, then `.done`, the accent fill on the same small key (never `.go`, so `.go` keeps one look). The footer holds Discard. The confirm states an early finish ("3 of 6 exercises done") |
 | Stepper | `.stp` | One line in sheets; stacked figure-over-keys in the console |
 | Set key | `.chk` | 44px square; becomes the full-width Log key in the console |
@@ -247,10 +251,12 @@ Known, measured, and kept on purpose:
 
 - The lime `.go` key has a 1.5:1 edge on a white block in light theme. Its label identifies it, and
   WCAG 1.4.11 does not ask a key with a text label for a 3:1 edge.
-- The focus-mode `scroll-padding-top` in `base.css` is 96px, stale against the 106px workout
-  header. The console makes up the gap with its own `scroll-margin-top: 10px`; at tablet width a
-  third logged Set can still leave about 4px of the exercise name under the header. The header
-  height should become a token both rules read.
+- The focus-mode `scroll-padding-top` in `base.css` is 96px against the 106px workout header; the
+  console adds `scroll-margin-top: 10px`, so its top lands at the header's foot. A 106px header
+  token in place of both was measured and moves nothing: at 360x640 the Log key ends at 518 with
+  the rest dock at 554 either way, and at 768x1024 the third logged Set still leaves part of the
+  exercise name under the header. That comes from `block: nearest` scrolling only far enough to
+  show the console's foot; fixing it needs a scroll that knows where the name is (JS).
 - The green 10 kg plate can sit beside the lime key. Plates keep the object's colours.
 - Lime is Tailwind's lime-400 (`#a3e635`). It is the app icon's colour; Sky's identity rests on the
   barbell, not the hue.
