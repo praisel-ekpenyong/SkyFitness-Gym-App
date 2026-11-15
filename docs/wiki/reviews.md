@@ -221,3 +221,17 @@ what ran, against what, and where the findings went.
 - **Disposition:** Base is Sketch B. Grafts: inject `openSheet`; keep read-time
   unit conversion. The first symbol taken is `reduceLoad`. The other seventeen,
   including `admit`, stay open. Recorded in [decisions](decisions.md).
+  - *Superseded in part 2026-11-15:* "`admit` stays open." The effort slice was
+    written the same day and was still uncommitted. See the next section.
+
+## 2026-11-15 — admit seals effort
+
+- **Scope:** The `effort` / `showRir` symbol from the reshape set. The other
+  sixteen symbols were left on the blob. `asked` and on-disk `topW` were not
+  changed.
+- **Change:** `frontend/src/lib/log/admit.js` seals `effort` on admission.
+  `normalizeState` calls it. `effortOf` reads only `effort`. A source scan
+  fails if another domain file mentions `showRir`, and another fails if
+  anything but `useStore.js` imports `admit`.
+- **Verification:** `npm test` in `frontend/` on 2026-11-15 — 89 files, 1,297 tests, passed. No browser pass. The Settings change is the same control writing `effort` only.
+- **Disposition:** committed on `chore/strip-comments` after `aaf60d5`. Recorded in [decisions](decisions.md).

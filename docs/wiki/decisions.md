@@ -172,3 +172,14 @@ with a pointer to their successor.
   which returns `{ tag: 'hold', at }` or `{ tag: 'deload', at }` and replaces
   `asHoldOrDeload`. The other seventeen symbols, including `admit` itself, stay
   open. See [reviews](reviews.md).
+  - *Superseded in part 2026-11-15:* "`admit` itself stays open." The effort
+    slice of `admit` was written the same day, after `aaf60d5`, and was still
+    uncommitted when this note was added. The other sixteen symbols stay open.
+    See the next entry.
+
+- **2026-11-15 — `admit` seals `effort` and drops `showRir`.** After
+  `chore/strip-comments@aaf60d5`, `frontend/src/lib/log/admit.js` maps a legacy
+  `showRir` flag onto `effort` and `toDisk` does not write the flag.
+  `normalizeState` in `frontend/src/store/useStore.js` is the only production
+  caller. `effortOf` no longer reads `showRir`. On-disk `topW`, `asked`, and
+  unit fields pass through. The other sixteen reshape symbols stay open.

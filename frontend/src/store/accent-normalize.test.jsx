@@ -53,6 +53,15 @@ describe('a retired accent reads as lime', () => {
     expect(normalizeState({ accent: 42 }).accent).toBe('lime')
   })
 
+  it('seals a legacy showRir flag onto effort', () => {
+    const stored = { ...cloneDef(), showRir: true }
+    const S = normalizeState(stored)
+    expect(S.effort).toBe('rir')
+    expect(S.showRir).toBeUndefined()
+    expect(stored.showRir).toBe(true)
+    expect(normalizeState({ ...cloneDef(), effort: 'rpe', showRir: true }).effort).toBe('rpe')
+  })
+
   it('restoring a backup that chose orange lands on lime', async () => {
     const { restoreFromBackup } = await import('../lib/restore.js')
     restoreFromBackup({ ...cloneDef(), accent: 'orange' })
