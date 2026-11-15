@@ -1,11 +1,4 @@
 #!/usr/bin/env node
-// Regenerates the per-language exercise instruction packs in frontend/src/instr/
-// from the dataset (hasaneyldrm/exercises-dataset). English stays inline
-// in exercises-data.js; every other language ships as its own lazy-loaded pack.
-//
-//   node scripts/build-instructions.mjs [path-to-exercises.json]
-//
-// Without an argument the dataset is downloaded from the source repo.
 
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'

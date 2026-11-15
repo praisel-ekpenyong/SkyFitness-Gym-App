@@ -29,15 +29,12 @@ describe('sanitizeDisplayName', () => {
   })
 
   it('caps length at 24 characters after collapsing whitespace', () => {
-    // 30 consecutive spaces between A and B collapse first to "A B", so it fits within 24 chars
     expect(sanitizeDisplayName('A' + ' '.repeat(30) + 'B')).toBe('A B')
 
-    // 30 characters without internal spaces truncates to 24 chars
     const longName = 'abcdefghijklmnopqrstuvwxyz1234'
     expect(sanitizeDisplayName(longName)).toBe('abcdefghijklmnopqrstuvwx')
     expect(sanitizeDisplayName(longName).length).toBe(24)
 
-    // Name with spaces truncates to exactly 24 chars
     expect(sanitizeDisplayName('Alexander The Great Champion Of The World')).toBe('Alexander The Great Cham')
     expect(sanitizeDisplayName('Alexander The Great Champion Of The World').length).toBe(24)
   })

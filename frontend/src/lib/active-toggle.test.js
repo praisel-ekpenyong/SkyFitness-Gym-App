@@ -1,6 +1,4 @@
 import { describe, it, expect } from 'vitest'
-// Imports cross the facade seam, not the module file directly: this pins the
-// interface the store and sheets actually consume.
 import { toggleActiveSet, nextUnitTarget } from './active-workout.js'
 
 const solo = () => ({
@@ -72,7 +70,6 @@ describe('toggle next action', () => {
     expect(r.next).toEqual({ kind: 'stay', targetIdx: null })
     expect(r.rest).toEqual({ start: true, stop: true })
 
-    // Unchecking and re-checking does not restart or stop rest (high-water mark respected)
     const un = toggleActiveSet(S, 0, 1)
     expect(un.checked).toBe(false)
     expect(un.rest).toEqual({ start: false, stop: false })
@@ -101,7 +98,6 @@ describe('toggle next action', () => {
   })
 
   it('unprompted exercises (cardio, timed, bodyweight without load) start rest and stay when another exercise follows', () => {
-    // 1. Cardio followed by another exercise
     const S1 = {
       active: {
         cur: 0,
@@ -117,7 +113,6 @@ describe('toggle next action', () => {
     expect(r1.notice).toBe('cardio')
     expect(r1.rest).toEqual({ start: true, stop: true })
 
-    // 2. Timed hold followed by another exercise
     const S2 = {
       active: {
         cur: 0,
@@ -133,7 +128,6 @@ describe('toggle next action', () => {
     expect(r2.notice).toBe('timed')
     expect(r2.rest).toEqual({ start: true, stop: true })
 
-    // 3. Bodyweight without load followed by another exercise
     const S3 = {
       active: {
         cur: 0,
@@ -149,7 +143,6 @@ describe('toggle next action', () => {
     expect(r3.notice).toBe(null)
     expect(r3.rest).toEqual({ start: true, stop: true })
 
-    // 4. Loaded exercise followed by another exercise
     const S4 = {
       active: {
         cur: 0,
@@ -185,7 +178,6 @@ describe('toggle next action', () => {
   })
 
   it('session finale suppresses rest and stops running rest on the final unit for unprompted and superset exercises', () => {
-    // Single unprompted cardio finale
     const S1 = {
       active: {
         cur: 0,
@@ -197,7 +189,6 @@ describe('toggle next action', () => {
     expect(r1.next).toEqual({ kind: 'open-finish', targetIdx: null })
     expect(r1.rest).toEqual({ start: false, stop: true })
 
-    // Superset as the final unit in the session
     const S2 = {
       active: {
         cur: 1,
@@ -271,8 +262,6 @@ describe('toggle next action', () => {
   })
 
   it('a resumed pre-hw Entry: uncheck then re-check never reads as new progress', () => {
-    // Sessions saved before hw existed replay here: the first interaction can
-    // be an uncheck, and the later re-check must not restart or cut rest.
     const S = solo()
     S.active.entries[0].sets[0].done = true
     S.active.entries[0].sets[1].done = true

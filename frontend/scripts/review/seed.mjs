@@ -1,4 +1,3 @@
-// Writes the demo profile to a JSON file: node seed.mjs [--today=YYYY-MM-DD] [--theme=dark|light] [--out=file.json]
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { buildSeed, config, parseArgs } from './lib.mjs'

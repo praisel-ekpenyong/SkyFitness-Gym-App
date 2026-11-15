@@ -1,10 +1,3 @@
-// Screen Wake Lock — keeps the display on while a workout is running, so nobody has to
-// unlock their phone between sets.
-//
-// The browser drops the lock on its own whenever the document stops being visible (tab
-// switch, app backgrounded, screen locked by hand). A one-shot request therefore works
-// exactly once and then silently dies, which is why `wanted` is kept as our own intent
-// and the lock is re-acquired on every visibilitychange for as long as it holds.
 import { useEffect } from 'react'
 
 /**
@@ -13,21 +6,17 @@ import { useEffect } from 'react'
  */
 export const wakeLockSupported = () => 'wakeLock' in navigator
 
-let sentinel = null       // the live WakeLockSentinel, null when we hold nothing
-let wanted = false        // do we currently want the screen to stay on?
-let pending = false       // a request() is in flight — don't stack a second one
+let sentinel = null
+let wanted = false
+let pending = false
 
-/**
- * Takes the screen lock while a workout wants it, unless one is held or requested.
- * @returns {Promise<void>} Resolves once attempted; hidden documents, refusals, and mid-flight releases all settle quietly without a lock.
- */
 async function acquire() {
   if (!wanted || sentinel || pending || !wakeLockSupported()) return
   if (document.visibilityState !== 'visible') return   // request() rejects on a hidden document
   pending = true
   try {
     const s = await navigator.wakeLock.request('screen')
-    if (!wanted) { s.release().catch(() => {}); return }   // released while we were awaiting
+    if (!wanted) { s.release().catch(() => {}); return }
     sentinel = s
     s.addEventListener('release', () => { if (sentinel === s) sentinel = null })
   } catch (e) {
@@ -38,10 +27,6 @@ async function acquire() {
   } finally { pending = false }
 }
 
-/**
- * Re-takes the screen lock when the document becomes visible again.
- * @returns {void} Nothing; hidden documents stay untouched.
- */
 const onVisible = () => { if (document.visibilityState === 'visible') acquire() }
 
 /**
@@ -67,7 +52,6 @@ export function releaseWakeLock() {
   if (s) s.release().catch(() => {})
 }
 
-// Holds the lock for as long as `enabled` stays true.
 export function useWakeLock(enabled) {
   useEffect(() => {
     if (!enabled) return

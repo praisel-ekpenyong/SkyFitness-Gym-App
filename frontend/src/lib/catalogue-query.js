@@ -15,19 +15,6 @@ import {
 
 export { tokenizeSearchQuery }
 
-/**
- * Scores an exercise against a tokenized search query.
- *
- * Score components:
- * - Each matching token: +100
- * - Exact contiguous phrase match in exercise title: +50
- * - Each token matching the title: +10
- *
- * @param {Object} exercise - Exercise to score.
- * @param {string[]|string} tokens - Token array or raw query string.
- * @param {string} [rawQuery] - Original query string for exact phrase check.
- * @returns {number} Relevance score (0 when no match).
- */
 export function scoreExerciseMatch(exercise, tokens, rawQuery = '') {
   if (!exercise) return 0
   const tokenList = [...new Set(Array.isArray(tokens) ? tokens : tokenizeSearchQuery(tokens))]
@@ -63,15 +50,6 @@ export function scoreExerciseMatch(exercise, tokens, rawQuery = '') {
 }
 
 
-/**
- * Query the Catalogue for one browsing caller.
- *
- * This pure module owns shared selection and derived browsing facts. Callers retain
- * pagination, local selection state, translation, empty-state copy, and interactions.
- * `searchAttribution: false` opts out of search-based secondary-muscle badges while
- * keeping muscle-filter attribution (used by the Library, whose Favorites view
- * deliberately shows no search badges).
- */
 export function queryCatalogue({ profile, scope = { kind: 'all' }, search = '', equipment = '', searchAttribution = true, ownFirst = false } = {}) {
   const safeProfile = profile && typeof profile === 'object' ? profile : {}
   const favoriteList = Array.isArray(safeProfile.favorites) ? safeProfile.favorites : []
@@ -109,8 +87,6 @@ export function queryCatalogue({ profile, scope = { kind: 'all' }, search = '', 
   } else if (kind === 'chosen') {
     matching.sort((a, b) => compareChosenUsage(a, b, usage))
   } else if (ownFirst) {
-    // Browsing without a search: the lifter's own exercises (starred, then most used) lead, so
-    // the list opens on what they train rather than on whatever sorts first alphabetically.
     const rank = ex => (favoriteIds.has(ex.id) ? 1e6 : 0) + (usage[ex.id] || 0)
     matching.sort((a, b) => (rank(b) - rank(a)) || ((catalogueOrder.get(a.id) || 0) - (catalogueOrder.get(b.id) || 0)))
   }
@@ -139,26 +115,12 @@ export function queryCatalogue({ profile, scope = { kind: 'all' }, search = '', 
   }
 }
 
-/**
- * Compares two exercises in the chosen scope by usage count descending, tie-breaking by name.
- *
- * @param {Object} a - First exercise.
- * @param {Object} b - Second exercise.
- * @param {Object} usage - Map of exercise id to usage count.
- * @returns {number}
- */
 function compareChosenUsage(a, b, usage) {
   const usageDiff = (usage[b.id] || 0) - (usage[a.id] || 0)
   if (usageDiff !== 0) return usageDiff
   return String(a.n || '').localeCompare(String(b.n || ''))
 }
 
-/**
- * Count routine and workout usage per exercise id.
- *
- * @param {Object} profile - Profile with optional routines and workouts arrays; missing collections count as empty.
- * @returns {Object} Counts keyed by exercise id for ids seen at least once.
- */
 function usageMap(profile) {
   const usage = {}
   const routines = Array.isArray(profile.routines) ? profile.routines : []

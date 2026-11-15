@@ -1,6 +1,3 @@
-// Opens a real, visible window on a running app (dev server or serve.mjs) with a throwaway profile and the demo history.
-// usage: node open.mjs [--base=http://localhost:5173/] [--profile=dir] [--shot=file.png] [--today=] [--seed=file.json]
-// Needs a display. The window stays open until you close it.
 import { mkdirSync, readFileSync, rmSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { buildSeed, chromium, config, findBrowser, freezeClock, parseArgs, seedStorage } from './lib.mjs'

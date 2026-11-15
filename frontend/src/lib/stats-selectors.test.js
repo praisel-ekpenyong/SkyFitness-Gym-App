@@ -24,8 +24,6 @@ const workoutAt = (id, ageDays, sets, extra = {}) => ({
 })
 const doneSet = (w, r, extra = {}) => ({ done: true, w, r, ...extra })
 
-// Fixed profile: recent progressive lift, an old lift outside a 30d window,
-// a cardio session, and rated effort on the recent work.
 const profile = () => ({
   unit: 'kg',
   effort: 'rir',
@@ -124,7 +122,6 @@ describe('window slicing', () => {
     const S = profile()
     const scoped = selectStatsOverview(S, { now: NOW, catalogue, effortDays: 5 })
     const wide = selectStatsOverview(S, { now: NOW, catalogue, effortDays: 30 })
-    // 10-day-old rated session drops out of the 5-day window
     expect(scoped.effort.done).toBeLessThan(wide.effort.done)
     expect(scoped.effort.rated).toBe(3)
     expect(wide.effort.rated).toBe(5)
@@ -276,7 +273,6 @@ describe('display-ready values', () => {
 
 describe('calendar windows', () => {
   it('uses the current calendar week for the Week muscle window', () => {
-    // NOW is Wednesday July 1. The preceding Sunday belongs to the prior week.
     const S = { workouts: [
       workoutAt(LIFT.id, 3, [doneSet(50, 5)]),
       workoutAt(LIFT.id, 1, [doneSet(60, 5), doneSet(60, 5)]),
@@ -327,7 +323,6 @@ describe('muscle attribution prefers the logged snapshot', () => {
     expect(over.fatigue.values.chest).toBe(0)
     expect(over.strength.latest.quadriceps).not.toBe(null)
     expect(over.strength.latest.chest).toBe(null)
-    // Identity stays catalogue-first: the curve still names the catalogue record.
     expect(selectExerciseStats(S, LIFT.id, { now: NOW, catalogue }).name).toBe('Bench')
   })
 })
@@ -370,11 +365,8 @@ describe('exercise index and sessions', () => {
 
   it('marks only the Set that made a Record: the heaviest Set of an Entry on a Workout whose prs names it', () => {
     const S = { unit: 'kg', workouts: [
-      // Same weight as the later Record, but this Workout made no Record.
       workoutAt(LIFT.id, 20, [doneSet(100, 3)]),
-      // The Record is a new heaviest load: 100 × 3 earned it, not 90 × 10, the better estimate.
       workoutAt(LIFT.id, 10, [doneSet(90, 10), doneSet(100, 3), doneSet(95, 6)], { prs: [LIFT.id] }),
-      // A Record for another exercise does not mark this one.
       workoutAt(LIFT.id, 1, [doneSet(80, 5)], { prs: ['other'] }),
     ] }
     const st = selectExerciseStats(S, LIFT.id, { now: NOW, catalogue })

@@ -2,10 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { modeFor, topSetSeries, currentBest, weeksSinceTraining, lastWorkSetAt } from './exercise-progress.js'
 import { EXDB } from './exercises.js'
 
-// Real ids out of the shipped catalogue, so the catalogue fallback is exercised for real.
 const CARDIO = EXDB.find(e => e.bp === 'cardio').id
-// A *loaded* lift: the catalogue's first non-cardio entry is a sit-up, which since issue #32
-// defaults to bodyweight and would quietly send every label test down the other path.
 const LIFT = EXDB.find(e => e.bp !== 'cardio' && e.eq !== 'body weight').id
 
 const w = (d, entries) => ({ d, entries })
@@ -79,8 +76,6 @@ describe('topSetSeries', () => {
         w('2026-01-08', [{ id: LIFT, sets: [{ w: 80, r: 5, done: true }] }]),
       ],
     }
-    // the latest entry is reps, so the exercise resolves to reps and the timed
-    // session drops out of the series instead of reading as a lighter top set
     expect(modeFor(S, LIFT)).toBe('reps')
     expect(topSetSeries(S, LIFT).map(p => p.d)).toEqual(['2026-01-08'])
   })
@@ -93,8 +88,6 @@ describe('topSetSeries', () => {
         { sec: 90, done: true },
       ] }])],
     }
-    // no target pins the rows, so reps wins by precedence and the hold
-    // scores nothing into the series
     expect(modeFor(S, LIFT)).toBe('reps')
     expect(topSetSeries(S, LIFT).map(p => p.y)).toEqual([80])
   })
@@ -154,8 +147,6 @@ describe('currentBest', () => {
         { sec: 90, done: false },
       ] }])],
     }
-    // metricModeForEntry is null (mixed, nothing completed), so currentBest
-    // resolves via the catalogue fallback and finds nothing scored
     expect(currentBest(S, LIFT)).toEqual({ mx: 0, unit: 'kg' })
   })
 

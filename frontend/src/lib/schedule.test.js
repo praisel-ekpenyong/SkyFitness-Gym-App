@@ -2,8 +2,6 @@ import { describe, it, expect } from 'vitest'
 import { setDayOverride, clearDayOverride, assignWeekday, detachRoutine, dayStatus, REST } from './schedule.js'
 import { effectiveRoutineId, hasEffectiveOverride } from './history.js'
 
-// Minimal profile slice the schedule seam reads: routines for id validation,
-// week + dayPlan for the two maps. active/workouts only assert detach scope.
 const mkState = (over = {}) => ({
   routines: [{ id: 'r1' }, { id: 'r2' }],
   week: {},
@@ -96,15 +94,12 @@ describe('detachRoutine', () => {
   })
 
   it('pins the read-side contract that makes the eager sweep safe: a stale override falls back to the week', () => {
-    // A dayPlan entry pointing at a deleted routine: not an override, week wins.
     const s = mkState({ routines: [{ id: 'r2' }], week: { 5: 'r2' }, dayPlan: { '2026-10-16': 'gone' } })
-    // 2026-10-16 is a Friday (getDay() === 5).
     expect(hasEffectiveOverride(s, '2026-10-16')).toBe(false)
     expect(effectiveRoutineId(s, '2026-10-16')).toBe('r2')
   })
 
   it('reads a legacy rest value in the week map as unscheduled, never a plan dot', () => {
-    // The write seam rejects 'rest' for weekdays, but older stores may hold it.
     const s = mkState({ week: { 5: 'rest' } })
     expect(effectiveRoutineId(s, '2026-10-16')).toBeNull()
     expect(dayStatus({ trained: false, effId: effectiveRoutineId(s, '2026-10-16'), ovr: false })).toBe('')
@@ -112,16 +107,15 @@ describe('detachRoutine', () => {
 })
 
 describe('dayStatus', () => {
-  // trained x effId x ovr: trained wins, then rescheduled, then planned.
   const rows = [
-    [{ trained: true, effId: 'r1', ovr: true }, 'done'], // trained + override
-    [{ trained: true, effId: 'r1', ovr: false }, 'done'], // trained, week plan
-    [{ trained: true, effId: null, ovr: false }, 'done'], // trained on rest day
-    [{ trained: true, effId: null, ovr: true }, 'done'], // trained + rest override
-    [{ trained: false, effId: 'r1', ovr: true }, 'ovr'], // rescheduled
-    [{ trained: false, effId: 'r1', ovr: false }, 'plan'], // planned
-    [{ trained: false, effId: null, ovr: true }, ''], // rest override: no dot
-    [{ trained: false, effId: null, ovr: false }, ''], // unscheduled: no dot
+    [{ trained: true, effId: 'r1', ovr: true }, 'done'],
+    [{ trained: true, effId: 'r1', ovr: false }, 'done'],
+    [{ trained: true, effId: null, ovr: false }, 'done'],
+    [{ trained: true, effId: null, ovr: true }, 'done'],
+    [{ trained: false, effId: 'r1', ovr: true }, 'ovr'],
+    [{ trained: false, effId: 'r1', ovr: false }, 'plan'],
+    [{ trained: false, effId: null, ovr: true }, ''],
+    [{ trained: false, effId: null, ovr: false }, ''],
   ]
   it.each(rows)('classifies %o as %s', (input, expected) => {
     expect(dayStatus(input)).toBe(expected)

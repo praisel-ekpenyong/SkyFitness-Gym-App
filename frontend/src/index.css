@@ -1,6 +1,3 @@
-/* Sky — "Iron" design system. The rules, the type scale and what each colour means are in
-   DESIGN.md at the repo root; design-tokens.test.js and design-lint.test.js enforce them.
-   Tokens live in styles/tokens.css, never here. */
 @import './styles/tokens.css';
 @import './styles/base.css';
 @import './styles/controls.css';

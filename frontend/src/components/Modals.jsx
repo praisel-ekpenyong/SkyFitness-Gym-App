@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useUI } from '../store/useUI.js'
 
-// One bottom sheet (or centered dialog) with swipe-to-dismiss.
 function Sheet({ sheet }) {
   const { closeSheet } = useUI()
   const ref = useRef(null)
@@ -56,8 +55,6 @@ function Sheet({ sheet }) {
 
   const onTouchStart = e => {
     const el = ref.current
-    // a gesture that begins on a slider (or opted-out control) belongs to that control,
-    // not to the sheet's swipe-to-dismiss — so it keeps working while you drag
     if (e.target.closest && e.target.closest('input[type=range], [data-nodrag]')) {
       drag.current = { startY: null, delta: 0 }
       return
@@ -82,7 +79,6 @@ function Sheet({ sheet }) {
     else el.style.transform = ''
     d.startY = null
   }
-  // Mouse drag (desktop testing / trackpads): same swipe-to-dismiss behaviour.
   const onMouseDown = e => {
     if (e.button !== 0) return
     if (e.target.closest && e.target.closest('input[type=range], [data-nodrag]')) {
@@ -118,7 +114,6 @@ function Sheet({ sheet }) {
 
   const close = () => closeSheet(sheet.id)
   const role = sheet.kind === 'center' ? 'alertdialog' : 'dialog'
-  // A takeover has no swipe and no backdrop: it is the whole screen, for the end of a workout.
   if (sheet.kind === 'full') {
     return (
       <div className="fullsheet" ref={centerRef} role={role} aria-modal="true" tabIndex={-1} onKeyDown={onKeyDown}>
@@ -149,10 +144,6 @@ function Sheet({ sheet }) {
   )
 }
 
-/**
- * Renders every open bottom sheet or centered dialog from the UI store; renders nothing when none are open.
- * Sheets trap focus, close on Escape, and lock page scroll while open.
- */
 export default function Modals() {
   const sheets = useUI(s => s.sheets)
   const closeSheet = useUI(s => s.closeSheet)
@@ -161,10 +152,6 @@ export default function Modals() {
   const pushedEntries = useRef(0)
   const sheetEntries = useRef([])
 
-  // Every opened sheet gets a history entry so Android back dismisses it instead of
-  // leaving the page (issue #63). Keep the pushed-entry count and each active sheet's
-  // live-entry status explicit: sheet count cannot tell whether popstate already spent
-  // an entry (especially for a locked sheet) or whether several sheets opened at once.
   useEffect(() => {
     const prev = prevLen.current
     prevLen.current = sheets.length
@@ -183,8 +170,6 @@ export default function Modals() {
         suppressPop.current = true
         history.go(-rewind)
       }
-      // Entries skipped because the app moved on remain in pushedEntries as deliberate
-      // leaks until a later popstate consumes them with no corresponding active sheet.
     }
   }, [sheets.length])
 
@@ -193,9 +178,6 @@ export default function Modals() {
       if (suppressPop.current) { suppressPop.current = false; return }
       if (pushedEntries.current <= 0) return
       pushedEntries.current--
-      // The browser has already spent one pushed entry. Mark the latest live active
-      // sheet entry spent even when the sheet is locked; with no active entry this is a
-      // moved-on leak, which is still accounted for by the counter decrement above.
       for (let i = sheetEntries.current.length - 1; i >= 0; i--) {
         if (sheetEntries.current[i].live) {
           sheetEntries.current[i].live = false
@@ -209,7 +191,6 @@ export default function Modals() {
     return () => window.removeEventListener('popstate', onPop)
   }, [sheets, closeSheet])
 
-  // lock the page behind any open sheet (iOS-safe)
   useEffect(() => {
     if (!sheets.length) return
     const onKey = e => { if (e.key === 'Escape') { const top = useUI.getState().sheets[useUI.getState().sheets.length - 1]; if (top && !top.locked) useUI.getState().closeSheet(top.id) } }

@@ -1,8 +1,3 @@
-// History's own seam: the schedule reads every Home/Calendar/Hero consumer
-// shares, and the history write side (deleteWorkout). The barrel-era copy of this
-// file duplicated
-// workout-model.test.js line for line and was retired; effort, row, label and
-// superset coverage lives at its canonical modules.
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { deleteWorkout, effectiveRoutineId, hasEffectiveOverride, effectiveRoutine, streakWeeks, trainedWeeks } from './history.js'
 
@@ -30,7 +25,6 @@ describe('deleteWorkout — the history write seam', () => {
   it('never unremembers a Best: the exWeights suggestion stands after deleting its workout', () => {
     const s = S()
     deleteWorkout(s, 'w-1')
-    // deleting the workout that held 100 kg cannot lower what was recorded
     expect(s.exWeights['0025']).toEqual({ w: 100, d: '2026-01-05' })
   })
 
@@ -45,8 +39,8 @@ describe('deleteWorkout — the history write seam', () => {
 describe('schedule reads shared by Home, Calendar and the hero', () => {
   const S = () => ({
     routines: [{ id: 'r-push' }, { id: 'r-pull' }],
-    week: { 1: 'r-push' },                                   // Monday: push
-    dayPlan: { '2026-01-07': 'r-pull', '2026-01-08': 'rest' } // + Wed pull, Thu rest
+    week: { 1: 'r-push' },
+    dayPlan: { '2026-01-07': 'r-pull', '2026-01-08': 'rest' }
   })
 
   it('a valid day override wins over the weekday map', () => {
@@ -54,13 +48,12 @@ describe('schedule reads shared by Home, Calendar and the hero', () => {
   })
 
   it('an override marked rest reads as unscheduled even on a scheduled weekday', () => {
-    expect(effectiveRoutineId(S(), '2026-01-08')).toBeNull() // Thursday, but rest won
+    expect(effectiveRoutineId(S(), '2026-01-08')).toBeNull()
   })
 
   it('a stale override (deleted routine) falls back to the weekday plan', () => {
     const s = S()
     s.dayPlan['2026-01-05'] = 'r-deleted'
-    // Monday per the map — the dead override cannot shadow it
     expect(effectiveRoutineId(s, '2026-01-05')).toBe('r-push')
     expect(hasEffectiveOverride(s, '2026-01-05')).toBe(false)
   })
@@ -68,7 +61,7 @@ describe('schedule reads shared by Home, Calendar and the hero', () => {
   it('a weekday left as legacy rest reads as unscheduled', () => {
     const s = S()
     s.week[2] = 'rest'
-    expect(effectiveRoutineId(s, '2026-01-06')).toBeNull() // Tuesday
+    expect(effectiveRoutineId(s, '2026-01-06')).toBeNull()
   })
 
   it('hasEffectiveOverride distinguishes no override, rest, valid and stale', () => {
@@ -92,7 +85,7 @@ describe('streakWeeks', () => {
 
   it('counts back in calendar weeks; the current week may still be in progress', () => {
     vi.useFakeTimers()
-    vi.setSystemTime(new Date('2026-01-04T12:00:00')) // Sunday — week starts Monday
+    vi.setSystemTime(new Date('2026-01-04T12:00:00'))
     const s = { workouts: [{ d: '2026-01-04' }, { d: '2026-01-02' }, { d: '2025-12-28' }, { d: '2025-12-21' }] }
     expect(streakWeeks(s)).toBe(3)
   })
@@ -107,7 +100,7 @@ describe('streakWeeks', () => {
 
 describe('trainedWeeks', () => {
   it('counts weeks with a workout in the window; a gap lowers the count instead of resetting it', () => {
-    const now = new Date('2026-01-04T12:00:00').getTime() // Sunday
+    const now = new Date('2026-01-04T12:00:00').getTime()
     const s = { workouts: [{ d: '2026-01-04' }, { d: '2026-01-01' }, { d: '2025-12-15' }, { d: '2025-01-01' }] }
     expect(trainedWeeks(s, 12, now)).toBe(2)
     expect(trainedWeeks(s, 1, now)).toBe(1)

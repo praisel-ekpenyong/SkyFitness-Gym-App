@@ -6,16 +6,12 @@ import { tonnageOf } from './workout-model.js'
 import { fatigueOf } from './recovery.js'
 import { EXDB } from './exercises.js'
 
-// Prescription-plus-Stall seam: log work, finish the Workout, assert the next
-// Prescription and its visible outcome. Vocabulary: Hit, Miss, Stall, Deload,
-// Prescription, Warm-up set, Work set.
 const LIFT = EXDB.find(e => e.bp !== 'cardio' && !['upper legs', 'lower legs', 'back', 'hips', 'glutes'].includes(e.bp)).id
 
 const work = (w, r) => ({ w, r, done: true })
 const unticked = (w, r) => ({ w, r: 0, done: false })
 const warmupUnticked = (w, r) => ({ w, r: 0, done: false, warmup: true })
 
-// A finished Workout: the Entry is judged exactly as the log left it.
 const finishedWorkout = (day, target, rows) => ({
   d: day,
   entries: [{ id: LIFT, target, sets: rows }]
@@ -110,9 +106,6 @@ describe('bonus Work sets never flip a Hit to a Miss', () => {
 
 describe('added-set growth resumes from the current Routine target', () => {
   it('cutting sets in the Routine starts a new Target shape at the new plan', () => {
-    // Planned sets are part of the Progression stream: a 4-set history is not the same
-    // shape as a 2-set plan, so the cut plan begins at its own baseline rather than
-    // pretending the old 4-set block was a Hit for it.
     const S = stateWith([
       finishedWorkout('2026-04-01', { sets: 4, reps: 15 }, [work(0, 15), work(0, 15), work(0, 15), work(0, 15)])
     ])
@@ -125,9 +118,6 @@ describe('added-set growth resumes from the current Routine target', () => {
     const S = stateWith([
       finishedWorkout('2026-04-01', { sets: 3, reps: 15 }, [work(0, 15), work(0, 15), work(0, 15), work(0, 15)])
     ])
-    // No sets in the plan (freestyle): growth falls back to what was judged —
-    // the 3 planned Work sets, not the 4th bonus row. Sets/reps stay absent so
-    // the resume point reads the judged count; the ceiling sits at the goal.
     const p = nextPrescription(S, { id: LIFT, weight: 0, repsMax: 15, prog: 'linear' })
     expect(p.kind).toBe('up')
     expect(p.sets).toBe(4)

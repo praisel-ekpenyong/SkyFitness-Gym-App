@@ -31,7 +31,7 @@ npm run build
 
 ## Guidelines
 
-- **Keep it dependency-light.** The frontend uses React 19 + React Router + Zustand and nothing else. New runtime dependencies are avoided.
+- **Keep it dependency-light.** The frontend is built on React 19, React Router and Zustand. New runtime dependencies need a reason recorded in an ADR; Capacitor is used only for the mobile shells.
 - **Match the style.** Small components, clear names, comments only where the "why" isn't obvious. State lives in the Zustand store (`src/store/useStore.js`); pure helpers live in `src/lib/`.
 - **All persistence goes through `src/lib/storage.js`.** State is mirrored between `localStorage` and `IndexedDB` with timestamp-based reconciliation at boot.
 - **Test the flow you touched.** Click through the affected screens (and workout flow) in a browser before finishing changes.

@@ -1,6 +1,4 @@
-/* Blocks: the shared pieces every screen and sheet is built from. */
 
-/* ------------------------------------------------------------------- card -- */
 .card { background: var(--surface); border-radius: var(--r-2); padding: var(--pad); margin-bottom: var(--gap) }
 .card h2 { font-size: var(--fs-body); font-weight: 600; margin: 0 0 12px }
 .card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; min-height: 28px }
@@ -18,8 +16,6 @@ h4.sec, .sec {
 .sec-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 22px 0 8px; min-height: 36px }
 .sec-row .sec { margin: 0; font-size: var(--fs-body); font-weight: 600; color: var(--label) }
 
-/* ----------------------------------------------------- figures as data -- */
-/* one block split by hairlines: label over value. KPIs are type, not tiles. */
 .tiles {
   display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--sep);
   border-radius: var(--r-2); overflow: hidden; margin-bottom: var(--gap);
@@ -34,7 +30,6 @@ h4.sec, .sec {
 
 .delta-pill { display: inline-flex; align-items: center; gap: 2px; font-size: var(--fs-meta); font-weight: 600; flex: none }
 
-/* ------------------------------------------------------------ grouped list -- */
 .sect { margin-bottom: 20px }
 .sect-t { font-size: var(--fs-meta); font-weight: 600; color: var(--label-2); padding: 0 2px 7px; display: block }
 .sect-b { background: var(--surface); border-radius: var(--r-2); overflow: hidden }
@@ -57,7 +52,6 @@ h4.sec, .sec {
 .lrow.danger, .lrow.danger .lrow-t, .lrow.danger .lrow-i { color: var(--red-text) }
 .lrow:disabled { opacity: .38; pointer-events: none }
 
-/* -------------------------------------------------------------- row stack -- */
 .list { display: flex; flex-direction: column; gap: 3px }
 .item {
   display: flex; align-items: center; gap: 12px; background: var(--surface); border-radius: var(--r-2);
@@ -100,12 +94,11 @@ h4.sec, .sec {
 .steps-list { padding-left: 20px; color: var(--label-2); font-size: var(--fs-body); line-height: 1.5; display: flex; flex-direction: column; gap: 9px }
 .exnote { background: var(--surface-2); border-radius: var(--r-2); padding: 12px 14px; line-height: 1.45; white-space: pre-wrap; font-size: var(--fs-small); margin-bottom: 10px; color: var(--label-2) }
 
-/* ------------------------------------------------------------ exercise art -- */
 .exmedia {
   position: relative; border-radius: var(--r-2); overflow: hidden; background: var(--art-ground);
   margin-bottom: 12px; cursor: pointer;
 }
-.exmedia .ex-art { width: 100%; height: 240px }   /* .ex-art: the art, or the dumbbell tile standing in at its size */
+.exmedia .ex-art { width: 100%; height: 240px }
 .exmedia img { object-fit: contain; display: block; filter: var(--art-filter) }
 .exmedia .gifhint, .exmedia .giftoggle {
   position: absolute; bottom: 0; display: flex; align-items: center; justify-content: center;
@@ -116,11 +109,10 @@ h4.sec, .sec {
 .exmedia.compact .ex-art { height: 110px }
 .exmedia.mini .ex-art { height: 72px }
 
-/* ------------------------------------------------------------------ charts -- */
 .chart { width: 100%; overflow: hidden }
 .chart svg { display: block; width: 100% }
 .chart-i { position: relative; touch-action: pan-y }
-.chart-i text { font-size: var(--fs-micro) }   /* axis ticks and the goal label */
+.chart-i text { font-size: var(--fs-micro) }
 .chart-i .chart-goal { font-weight: 600 }
 .ctip {
   position: absolute; left: 0; top: 0; background: var(--surface-3); color: var(--label);
@@ -129,7 +121,6 @@ h4.sec, .sec {
 }
 .chart-nodata { font-size: var(--fs-meta); color: var(--label-3); padding: 28px 0; text-align: center }
 
-/* ----------------------------------------------------------------- heatmap -- */
 .hm-wrap { position: relative; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding-bottom: 2px }
 .hm-wrap::-webkit-scrollbar { display: none }
 .hm-months { display: flex; margin-left: 28px; margin-bottom: 5px }
@@ -149,7 +140,6 @@ h4.sec, .sec {
 .hm-legend { display: flex; align-items: center; gap: 4px; justify-content: flex-end; margin-top: 10px; font-size: var(--fs-meta); color: var(--label-3) }
 .hm-legend .hm-c { width: 10px; height: 10px }
 
-/* -------------------------------------------------------------- muscle map -- */
 .bodymap { display: flex; gap: 2px; justify-content: center; align-items: flex-start; --bm-base: color-mix(in srgb, var(--label) 12%, var(--surface)) }
 .bm-v { flex: 1; min-width: 0; height: auto; max-height: min(46vh, 340px) }
 .bm-ph { height: 200px }
@@ -159,8 +149,6 @@ h4.sec, .sec {
 .bm-m.l2 { fill: color-mix(in srgb, var(--data) 58%, var(--bm-base)) }
 .bm-m.l3 { fill: color-mix(in srgb, var(--data) 80%, var(--bm-base)) }
 .bm-m.l4 { fill: var(--data) }
-/* Fatigue is red (DESIGN.md › Tokens › Status), on the same ramp as the trained map: more red, more
-   fatigued. Yellow stays for records and orange for a running workout. */
 .hm-fatigue .bm-m.l1 { fill: color-mix(in srgb, var(--red) 34%, var(--bm-base)) }
 .hm-fatigue .bm-m.l2 { fill: color-mix(in srgb, var(--red) 58%, var(--bm-base)) }
 .hm-fatigue .bm-m.l3 { fill: color-mix(in srgb, var(--red) 80%, var(--bm-base)) }
@@ -193,8 +181,6 @@ h4.sec, .sec {
 .missed-banner { background: var(--surface-2); border-radius: var(--r-2); padding: 12px 14px; margin-top: 14px }
 .missed-banner-title { font-size: var(--fs-meta); font-weight: 600; color: var(--label-2); display: flex; align-items: center; gap: 6px; margin-bottom: 8px }
 
-/* ------------------------------------------------------------- weight input -- */
-/* the figure, typed, between two keys that say their step; the unit sits under it as in the set console */
 .bwstep { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 14px 0 6px }
 .bw-pm {
   width: 76px; height: 76px; border-radius: var(--r-2); background: var(--surface-2); flex: none; color: var(--label);
@@ -212,7 +198,6 @@ h4.sec, .sec {
 .bw-num:focus { background: var(--surface-2) }
 .bw-read .u { margin-top: 2px }
 
-/* --------------------------------------------------------------- calendar -- */
 .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; margin-top: 10px }
 .cal-h { text-align: center; font-size: var(--fs-meta); color: var(--label-3); padding: 2px 0 4px }
 .cal-d {
@@ -230,8 +215,6 @@ h4.sec, .sec {
 .cal-legend { display: flex; gap: 14px; justify-content: center; margin-top: 12px; font-size: var(--fs-meta); color: var(--label-2) }
 .cal-legend i { display: inline-block; width: 10px; height: 3px; margin-right: 5px; vertical-align: 2px }
 
-/* ----------------------------------------------------------------- pickers -- */
-/* a one-time choice: one row of thumb-sized squares, not a block of colour */
 .swatches { display: flex; flex-wrap: wrap; gap: 8px }
 .swatch {
   width: var(--tap-target); height: var(--tap-target); flex: none; border-radius: var(--r-2); position: relative;
@@ -259,8 +242,6 @@ h4.sec, .sec {
 .efftbl .r.on .n { color: var(--label) }
 .efftbl .r.on .f { color: var(--label) }
 
-/* --------------------------------------------------------------- the barbell -- */
-/* The mark, with the lifter's real numbers on it. */
 .bbell { display: block; min-width: 0 }
 .bbell-bar { position: relative; display: flex; align-items: center; justify-content: center; height: 54px; padding: 0 2px }
 .bbell-bar::before { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 4px; margin-top: -2px; background: var(--plate-bar); border-radius: 1px }

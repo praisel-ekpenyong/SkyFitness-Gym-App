@@ -5,11 +5,9 @@ import { t } from '../lib/i18n.js'
 import { useStore } from './useStore.js'
 
 
-/** Reports whether system notifications are available. */
 const notificationsSupported = () => typeof window !== 'undefined' && 'Notification' in window
 let requestRestNotificationPermissionP = null
 
-/** Requests permission for rest-timer notifications. */
 const requestRestNotificationPermission = async () => {
   if (!notificationsSupported()) return false
   if (Notification.permission === 'granted') return true
@@ -25,14 +23,11 @@ const requestRestNotificationPermission = async () => {
   return requestRestNotificationPermissionP
 }
 
-/** Shows a rest-over notification when the app is hidden. */
 const maybeRestNotification = async () => {
   if (!notificationsSupported()) return
   if (!document.hidden && document.visibilityState !== 'hidden') return
   if (Notification.permission !== 'granted' && !(await requestRestNotificationPermission())) return
   try {
-    // Android Chrome forbids the Notification constructor (Illegal constructor) - the
-    // service-worker registration path is the one that actually pops there.
     const reg = await navigator.serviceWorker?.getRegistration?.()
     if (reg?.showNotification) {
       reg.showNotification(t('Rest over — next set!'), { body: t('Rest over — next set!') })
@@ -40,7 +35,6 @@ const maybeRestNotification = async () => {
     }
     new Notification(t('Rest over — next set!'), { body: t('Rest over — next set!') })
   } catch {
-    // Intentionally ignore: notification APIs vary by browser and policy in edge cases.
   }
 }
 
@@ -52,10 +46,10 @@ let workTick = null
 let workDone = null
 
 export const useUI = create((set, get) => ({
-  sheets: [],          // { id, render:(close)=>JSX, kind:'sheet'|'center', locked }
+  sheets: [],
   toastMsg: '',
-  timer: null,         // rest countdown between sets — { left, total, endsAt }
-  work: null,          // work countdown DURING a timed set (issue #16) — { left, total, endsAt, label }
+  timer: null,
+  work: null,
 
   openSheet(render, { kind = 'sheet', locked = false } = {}) {
     const id = uid()
@@ -96,8 +90,6 @@ export const useUI = create((set, get) => ({
     const tm = get().timer
     if (!tm) return
     const left = tm.left + sec
-    // taking off more than is left means "I'm ready now" — same as skipping, and it keeps
-    // a negative duration out of both the progress bar and the countdown clock
     if (left <= 0) { get().stopRest(); return }
     set({ timer: { ...tm, left, total: tm.total + sec, endsAt: tm.endsAt + sec * 1000 } })
   },
@@ -107,14 +99,6 @@ export const useUI = create((set, get) => ({
     set({ timer: null })
   },
 
-  /* ---- work timer (issue #16) ----
-     Times the set itself, not the recovery after it. Kept separate from the rest timer on
-     purpose: the two mean opposite things, they must never run together, and a work set is
-     something you are watching — so it gets no notification (a plank does not need one you
-     are staring at anyway).
-     `onDone(elapsedSec)` is called both when the countdown reaches zero and on an early
-     finish; the elapsed time is what actually gets logged, so stopping at 0:38 of a 0:45
-     hold records 0:38 rather than crediting the full target. */
   startWork(sec, label, onDone) {
     get().stopWork()
     get().stopRest()
@@ -141,7 +125,6 @@ export const useUI = create((set, get) => ({
     workInt = setInterval(workTick, 1000)
     document.addEventListener('visibilitychange', workTick)
   },
-  // Ended the hold early — log what was actually held.
   finishWorkEarly() {
     const wk = get().work
     if (!wk) return
@@ -151,7 +134,6 @@ export const useUI = create((set, get) => ({
     get().stopWork()
     if (done) done(elapsed)
   },
-  // Abandon without logging anything.
   stopWork() {
     if (workInt) clearInterval(workInt); workInt = null
     if (workTick) document.removeEventListener('visibilitychange', workTick); workTick = null

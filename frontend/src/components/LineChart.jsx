@@ -2,10 +2,8 @@ import { useLayoutEffect, useRef, useState } from 'react'
 import { fmtNum, fmtDate, MONTHS, isoOf } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
 
-const FALLBACK_W = 340   // before layout, and in environments that have no layout at all
+const FALLBACK_W = 340
 
-// Drawn in real pixels from a measured width rather than stretching a fixed viewBox: a viewBox
-// scales its labels with the chart, so the same 11px tick came out 30px tall on a desktop card.
 function useWidth() {
   const ref = useRef(null)
   const [w, setW] = useState(FALLBACK_W)
@@ -22,21 +20,11 @@ function useWidth() {
   return [ref, w]
 }
 
-// points: [{ t: ms, y: num, d?: iso, m?: 0..1, note?: str }] sorted by t.
-//   m    marks the point — a second reading carried by the same dot (bigger and more solid =
-//        more of it). Used for effort on the weight curve, where the two belong on one line:
-//        the same weight with less left in the tank is not the same session.
-//   note extra text for that point's tooltip.
-// opts: { h, unit, color, axes, goal, invert }
-//   invert flips the y axis, for a scale that counts down as it gets harder (RIR). Without it
-//   a curve of reps-in-reserve reads upside down, with the hardest sets at the floor.
 export default function LineChart({ points, h = 150, unit = '', color = 'var(--data)', axes = true, goal = null, invert = false }) {
   const [wrapRef, W] = useWidth()
   const tipRef = useRef(null)
-  const [hover, setHover] = useState(null)   // { x, y, iso, v }
+  const [hover, setHover] = useState(null)
 
-  // The tooltip is placed after layout, from its measured size, so it can never hang off the
-  // clip at the first or last point. Writing straight to the node keeps this off the render path.
   useLayoutEffect(() => {
     const tip = tipRef.current, wrap = wrapRef.current
     if (!hover || !tip || !wrap) return
@@ -44,7 +32,6 @@ export default function LineChart({ points, h = 150, unit = '', color = 'var(--d
     const tw = tip.offsetWidth, th = tip.offsetHeight
     const M = 4
     tip.style.left = Math.max(M, Math.min(cw - tw - M, hover.x - tw / 2)) + 'px'
-    // Parked at the top, but dropped below the point when it would cover the value it reports.
     tip.style.top = (hover.y < th + 14 ? Math.min(h - th - M, hover.y + 14) : M) + 'px'
   })
 

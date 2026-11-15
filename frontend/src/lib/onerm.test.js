@@ -9,7 +9,7 @@ describe('estimate1RM', () => {
   })
 
   it('matches Epley by hand across the usual rep ranges', () => {
-    expect(estimate1RM(100, 5)).toBe(116.7)   // 100 · (1 + 5/30)
+    expect(estimate1RM(100, 5)).toBe(116.7)
     expect(estimate1RM(100, 10)).toBe(133.3)
     expect(estimate1RM(80, 8)).toBe(101.3)
     expect(estimate1RM(60, 3)).toBe(66)
@@ -51,11 +51,11 @@ describe('estimate1RM', () => {
   it('keeps the formulas within a few percent up to 8 reps, and diverges most at the cap', () => {
     const spread = r => Math.max(...Object.keys(FORMULAS).map(f => estimate1RM(100, r, f)))
       - Math.min(...Object.keys(FORMULAS).map(f => estimate1RM(100, r, f)))
-    expect(spread(1)).toBe(0)                       // one rep is measured, not estimated
+    expect(spread(1)).toBe(0)
     for (let r = 2; r <= 8; r++) expect(spread(r)).toBeLessThan(6)
     const upTo = []
     for (let r = 1; r < REP_CAP; r++) upTo.push(spread(r))
-    expect(spread(REP_CAP)).toBeGreaterThan(Math.max(...upTo))   // why REP_CAP exists
+    expect(spread(REP_CAP)).toBeGreaterThan(Math.max(...upTo))
   })
 
   it('falls back to the default for an unknown formula name', () => {
@@ -63,7 +63,6 @@ describe('estimate1RM', () => {
   })
 
   it('normalizes load when setUnit and targetUnit are passed', () => {
-    // 220.462 lb -> ~100 kg
     expect(estimate1RM(220.462, 1, 'epley', 'lb', 'kg')).toBe(100)
     expect(estimate1RM(100, 1, 'epley', 'kg', 'lb')).toBe(220.5)
     expect(estimate1RM(220.462, 5, 'epley', 'lb', 'kg')).toBe(116.7)
@@ -74,9 +73,9 @@ describe('estimate1RM', () => {
 describe('bestSetOf', () => {
   it('picks the highest estimate, not the heaviest set', () => {
     const entry = { id: 'x', sets: [
-      { w: 100, r: 5, done: true },   // 116.7
-      { w: 110, r: 3, done: true },   // 121.0
-      { w: 120, r: 1, done: true }    // 120.0
+      { w: 100, r: 5, done: true },
+      { w: 110, r: 3, done: true },
+      { w: 120, r: 1, done: true }
     ] }
     expect(bestSetOf(entry)).toEqual({ est: 121, w: 110, r: 3 })
   })
@@ -190,11 +189,8 @@ describe('read-time unit normalization (ADR 0017)', () => {
     })
 
     it('falls back through entry unit, workout unit, and target unit', () => {
-      // Set missing unit -> uses entry.unit
       expect(resolveSetWeight({ w: 100 }, { unit: 'lb' }, null, 'kg')).toBe(45.4)
-      // Set & entry missing unit -> uses workout.unit
       expect(resolveSetWeight({ w: 100 }, null, { unit: 'lb' }, 'kg')).toBe(45.4)
-      // All missing unit -> defaults to targetUnit (no conversion)
       expect(resolveSetWeight({ w: 100 }, null, null, 'kg')).toBe(100)
     })
 
@@ -208,7 +204,6 @@ describe('read-time unit normalization (ADR 0017)', () => {
   describe('bestSetOf with mixed units', () => {
     it('normalizes a lb set to kg and rounds to 1 decimal place', () => {
       const entry = { id: 'bench', sets: [{ w: 150, r: 5, done: true, unit: 'lb' }] }
-      // 150 lb -> 68 kg -> estimate with epley (5 reps) = 68 * (1 + 5/30) = 79.333... -> 79.3
       const best = bestSetOf(entry, 'epley', 'kg')
       expect(best.est).toBe(79.3)
       expect(best.w).toBe(68)
@@ -217,7 +212,6 @@ describe('read-time unit normalization (ADR 0017)', () => {
 
     it('normalizes a kg set to lb and rounds to 1 decimal place', () => {
       const entry = { id: 'bench', sets: [{ w: 100, r: 5, done: true, unit: 'kg' }] }
-      // 100 kg -> 220.5 lb -> estimate with epley (5 reps) = 220.5 * (1 + 5/30) = 257.25 -> 257.3
       const best = bestSetOf(entry, 'epley', 'lb')
       expect(best.est).toBe(257.3)
       expect(best.w).toBe(220.5)
@@ -226,15 +220,13 @@ describe('read-time unit normalization (ADR 0017)', () => {
 
     it('selects the true physical maximum rather than the larger raw number', () => {
       const entry = { id: 'bench', sets: [
-        { w: 200, r: 5, done: true, unit: 'lb' }, // 200 lb = 90.7 kg -> est ~ 105.8 kg
-        { w: 100, r: 5, done: true, unit: 'kg' }, // 100 kg -> est = 116.7 kg
+        { w: 200, r: 5, done: true, unit: 'lb' },
+        { w: 100, r: 5, done: true, unit: 'kg' },
       ] }
-      // In kg, 100 kg beats 200 lb
       const bestKg = bestSetOf(entry, 'epley', 'kg')
       expect(bestKg.est).toBe(116.7)
       expect(bestKg.w).toBe(100)
 
-      // In lb, 100 kg (220.5 lb) also beats 200 lb
       const bestLb = bestSetOf(entry, 'epley', 'lb')
       expect(bestLb.est).toBe(257.3)
       expect(bestLb.w).toBe(220.5)
@@ -245,9 +237,7 @@ describe('read-time unit normalization (ADR 0017)', () => {
     const multiUnitState = {
       unit: 'kg',
       workouts: [
-        // Old workouts logged in pounds
         { d: '2025-10-01', start: 1, unit: 'lb', entries: [{ id: 'bench', sets: [{ w: 150, r: 5, done: true }] }] },
-        // New workouts logged in kilograms
         { d: '2026-01-15', start: 2, unit: 'kg', entries: [{ id: 'bench', sets: [{ w: 100, r: 5, done: true }] }] },
       ]
     }
@@ -255,8 +245,8 @@ describe('read-time unit normalization (ADR 0017)', () => {
     it('evaluates series and best1RM in kg when active profile unit is kg', () => {
       const pts = e1rmSeries(multiUnitState, 'bench')
       expect(pts).toHaveLength(2)
-      expect(pts[0].y).toBe(79.3) // 150 lb scaled to kg
-      expect(pts[1].y).toBe(116.7) // 100 kg unchanged
+      expect(pts[0].y).toBe(79.3)
+      expect(pts[1].y).toBe(116.7)
       const best = best1RM(multiUnitState, 'bench')
       expect(best).toEqual({ est: 116.7, w: 100, r: 5, d: '2026-01-15', t: 2 })
     })
@@ -265,8 +255,8 @@ describe('read-time unit normalization (ADR 0017)', () => {
       const lbState = { ...multiUnitState, unit: 'lb' }
       const pts = e1rmSeries(lbState, 'bench')
       expect(pts).toHaveLength(2)
-      expect(pts[0].y).toBe(175) // 150 lb unchanged
-      expect(pts[1].y).toBe(257.3) // 100 kg scaled to lb
+      expect(pts[0].y).toBe(175)
+      expect(pts[1].y).toBe(257.3)
       const best = best1RM(lbState, 'bench')
       expect(best).toEqual({ est: 257.3, w: 220.5, r: 5, d: '2026-01-15', t: 2 })
     })
@@ -281,10 +271,6 @@ describe('read-time unit normalization (ADR 0017)', () => {
     }
 
     it('prevents PR suppression when user switches from lb to kg', () => {
-      // Historical: 150 lb x 5 -> est 175.0 lb = 79.3 kg
-      // Active workout: 100 kg x 5 -> est 116.7 kg.
-      // Raw comparison: 116.7 < 175.0 (suppressed without unit awareness!).
-      // Normalized: 116.7 > 79.3 -> valid PR established!
       const activeEntry = { id: 'bench', sets: [{ w: 100, r: 5, done: true, unit: 'kg' }] }
       const rec = is1RMRecord(historicalLbState, 'bench', activeEntry)
       expect(rec).not.toBeNull()
@@ -299,8 +285,6 @@ describe('read-time unit normalization (ADR 0017)', () => {
           { d: '2025-10-01', start: 1, unit: 'kg', entries: [{ id: 'bench', sets: [{ w: 100, r: 5, done: true }] }] },
         ]
       }
-      // Historical: 100 kg x 5 -> est 116.7 kg = 257.2 lb
-      // Active: 180 lb x 5 -> est 210.0 lb (numerically 210 > 116.7, but physically 210 lb < 257.2 lb)
       const activeEntry = { id: 'bench', sets: [{ w: 180, r: 5, done: true, unit: 'lb' }] }
       const rec = is1RMRecord(historicalKgState, 'bench', activeEntry)
       expect(rec).toBeNull()

@@ -11,7 +11,6 @@ import StarterCard from '../components/StarterCard.jsx'
 import { DEFAULT_GLYPH } from '../lib/glyphs.js'
 import { fitName, stackClasses, NAME_LAYOUTS } from '../lib/name-fit.js'
 
-/** Plan route; assigns weekdays and manages routines. */
 export default function Plan() {
   const nav = useNavigate()
   const S = useStore(s => s.S)
@@ -29,12 +28,10 @@ export default function Plan() {
       <div><h1>{t('Plan')}</h1><div className="sub">{t('Your weekly routine')}</div></div>
       <button className="btn sm plain hdr-act" onClick={planToolsSheet} aria-label={t('Share your plan')}><Icon name="upload" />{t('Share')}</button>
     </div>
-    {/* No Routine yet: the same two first actions as Home's first-run hero, not seven "Rest" rows. */}
     {!S.routines.length ? <div className="cols"><StarterCard onBuild={addRoutine} /></div> : <div className="cols">
       <section>
         <h2 className="sec sec-first">{t('Week schedule')}</h2>
         <div className="wk-list">
-          {/* A row leads with what is trained; the day labels it, and today says so in words. */}
           {[1, 2, 3, 4, 5, 6, 0].map(d => {
             const r = S.routines.find(x => x.id === S.week[d])
             const today = d === todayWd

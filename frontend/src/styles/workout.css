@@ -1,8 +1,6 @@
-/* The workout: one exercise, one set at a time, readable from the bench. */
 
 .workout { max-width: 640px; margin: 0 auto }
 
-/* ------------------------------------------------------------------ header -- */
 .wk-hdr {
   position: sticky; top: 0; z-index: 20; background: var(--bg);
   display: grid; grid-template-columns: var(--tap-target) 1fr auto; align-items: center; column-gap: 6px;
@@ -17,18 +15,15 @@
 }
 .wk-hdr .sub { font-size: var(--fs-meta); margin-top: 1px; color: var(--label-2) }
 .wk-finish { min-width: 64px }
-/* once every set is in, Finish takes the accent: colour only, the header key keeps its size and words */
 .btn.wk-finish.done { background: var(--acc); color: var(--on-acc) }
 .btn.wk-finish.done:active { background: var(--acc-2) }
 
-/* one segment per exercise, each filling with its own sets */
 .lad { grid-column: 1 / -1; display: flex; gap: 3px; margin: 0 }
-.lad-s { flex: 1 1 0; min-width: 0; height: var(--tap-target); display: flex; align-items: center }   /* the key is full height; the bar inside stays thin */
+.lad-s { flex: 1 1 0; min-width: 0; height: var(--tap-target); display: flex; align-items: center }
 .lad-b { display: block; width: 100%; height: 4px; background: var(--surface-3); border-radius: 1px; overflow: hidden; transition: height var(--fast) }
 .lad-b i { display: block; height: 100%; width: 100%; background: var(--data); transform-origin: left; transition: transform var(--med) var(--ease) }
 .lad-s.on .lad-b { height: 8px; background: var(--label-4) }
 
-/* ---------------------------------------------------------------- exercise -- */
 .exblock { display: block }
 .exhead { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; align-items: start; margin-bottom: 10px }
 .exhead:has(.exmedia) { grid-template-columns: minmax(0, 1fr) 132px }
@@ -41,9 +36,7 @@
 .exhead .exmedia.mini .ex-art { height: 76px }
 .exhead .exmedia.mini .giftoggle { width: 40px; height: 40px; left: 0; bottom: 0; font-size: var(--fs-meta) }
 .extags .tag { background: none; padding: 0; font-size: var(--fs-meta); font-weight: 400; white-space: normal }
-.extags .tag.ex-best { color: var(--label) }   /* a Best is ink, never yellow */
-/* The exercise's tools are keys (an icon and a word), under the name and the art; the manual Rest
-   key closes the row on the right. */
+.extags .tag.ex-best { color: var(--label) }
 .extools { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px }
 .extools .ex-rest { margin-left: auto }
 .compact .exhead:has(.exmedia) { grid-template-columns: minmax(0, 1fr) 76px }
@@ -53,16 +46,14 @@
 .compact .exhead .exmedia .gifhint { display: none }
 
 .ex-last { margin: 0 0 4px; line-height: 1.35 }
-.progline { display: flex; align-items: flex-start; gap: 7px; margin: 0 0 8px; font-size: var(--fs-meta); line-height: 1.35; color: var(--label-2) }   /* a prescription, not work: neutral */
+.progline { display: flex; align-items: flex-start; gap: 7px; margin: 0 0 8px; font-size: var(--fs-meta); line-height: 1.35; color: var(--label-2) }
 .progline .icn { flex: none; margin-top: 2px; font-size: var(--fs-small); --icon-stroke: 2 }
 .exblock .exnote { display: flex; align-items: flex-start; gap: 8px; margin: 2px 0 10px; cursor: pointer; padding: 10px 12px }
 .exblock .exnote .icn { margin-top: 2px; color: var(--label-3); flex: none }
 
-/* ------------------------------------------------------------------ ladder -- */
 .ladder { background: var(--surface); border-radius: var(--r-2); padding: 4px; margin-top: 10px }
 .setph { font-size: var(--fs-meta); font-weight: 600; color: var(--label-3); padding: 9px 10px 3px }
 
-/* a set you are not on: one line, still typeable */
 .setrow {
   display: grid; grid-template-columns: 30px minmax(0, 1fr) minmax(0, 1fr) var(--tap-target);
   align-items: center; column-gap: 8px; padding: 3px 4px 3px 8px; min-height: 50px; border-radius: 6px; position: relative;
@@ -75,7 +66,6 @@
 .setrow.timed.solo { grid-template-columns: 30px minmax(0, 1fr) var(--tap-target) var(--tap-target) }
 .setrow.warm { grid-template-columns: 30px minmax(0, 1fr) minmax(0, 1fr) var(--tap-target) var(--tap-target) }
 .setrow.warm.eff3 { grid-template-columns: 30px minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr) var(--tap-target) var(--tap-target) }
-/* a bodyweight row has no load column: with Effort on it is reps + effort, so the Set key still ends the row */
 .setrow.solo.eff3 { grid-template-columns: 30px minmax(0, 1.2fr) minmax(0, 1fr) var(--tap-target) }
 .setrow.warm.solo { grid-template-columns: 30px minmax(0, 1fr) var(--tap-target) var(--tap-target) }
 .setrow.warm.solo.eff3 { grid-template-columns: 30px minmax(0, 1.2fr) minmax(0, 1fr) var(--tap-target) var(--tap-target) }
@@ -83,7 +73,6 @@
   height: var(--tap-target); display: flex; align-items: center; justify-content: flex-start; color: var(--label-2);
   font-size: var(--fs-figure); font-stretch: var(--narrow); font-weight: 700;
 }
-/* a folded row draws a 30px number; its target reaches into the row's padding and the gap, short of the weight field */
 .setrow:not(.cur) .n { position: relative }
 .setrow:not(.cur) .n::after { content: ''; position: absolute; inset: 0 -6px 0 -8px }
 .setrow .n b { font-weight: 700 }
@@ -91,13 +80,8 @@
 .setrow .stp { background: none; overflow: visible; display: block; min-width: 0 }
 .setrow .stp > button { display: none }
 .setrow .stp .val { justify-content: flex-start; gap: 4px; align-items: baseline }
-/* figures stay tabular and right-aligned in a fixed column, so a ladder scans straight down */
 .setrow .stp .num { width: 2.3em; height: var(--tap-target); text-align: right; font-size: var(--fs-figure); font-stretch: var(--narrow); font-weight: 700; flex: none }
-/* a short figure is 1.5em wide; an input cannot carry a ::after, so its box reaches left into the column gap
-   to make 44px while its right edge, and the figure, stay put */
 .setrow:not(.cur) .stp.r .num, .setrow:not(.cur) .stp.eff .num { width: var(--tap-target); margin-left: calc(1.5em - var(--tap-target)) }
-/* except on screens under 360px, where a warm-up row with an effort column has no gap to spare: its weight field
-   already spills into it */
 @media (max-width: 359px) {
   .setrow.warm.eff3:not(.cur) .stp.r .num, .setrow.warm.eff3:not(.cur) .stp.eff .num { width: 1.5em; margin-left: 0 }
 }
@@ -120,22 +104,16 @@
 .setgo .icn { font-size: var(--fs-body); --icon-stroke: 2 }
 .setgo-l { display: none }
 
-/* the set in front of you: a console */
 .setrow.cur, .setrow.cur.solo, .setrow.cur.eff3, .setrow.cur.timed, .setrow.cur.warm, .setrow.cur.warm.eff3, .setrow.cur.timed.solo,
 .setrow.cur.solo.eff3, .setrow.cur.warm.solo, .setrow.cur.warm.solo.eff3 {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6px 22px; padding: 10px;
   background: var(--surface-2); cursor: default; margin: 4px 0;
 }
 .setrow.cur .n { grid-column: 1 / -1; color: var(--label); margin: -10px 0 -8px }
-/* Following the open set (scrollIntoView, block: nearest) must not park it under the sticky workout header.
-   The root's focus-mode scroll-padding-top (96px) stops 10px short of the header (106px with the session
-   ladder); the console makes up the difference, so its top lands at the header's foot. */
 .setrow.cur { scroll-margin-top: 10px }
 .setrow.cur .n b { display: none }
 .setrow.cur .n-l { display: block; font-size: var(--fs-small); font-stretch: 100%; font-weight: 600 }
 .setrow.cur .stp { position: relative; display: grid; grid-template: "val val" auto "dec inc" 52px / 1fr 1fr; gap: 3px; background: none; overflow: visible }
-/* Weight and reps each own their pair of keys: a wide gutter and a hairline down it, so a thumb
-   between sets never reads − + − + as one row of four. */
 .setrow.cur .stp.r::before { content: ''; position: absolute; left: -11px; top: 10px; bottom: 0; width: 1px; background: var(--surface-3) }
 .setrow.cur .stp > button { display: flex; width: 100%; height: 52px; font-size: var(--fs-figure); background: var(--surface-3); border-radius: 6px }
 .setrow.cur .stp > button:active { background: var(--label-4) }
@@ -159,7 +137,6 @@
 .setrow.cur .setgo { height: 60px; background: var(--ink); color: var(--on-ink) }
 .setrow.cur .setgo-l { display: inline; font-weight: 600 }
 .setrow.cur.timed .chk { grid-column: auto; }
-/* A timed set is started, so Start is the console's one .go key and Log is neutral. */
 .setrow.cur.timed .setgo { background: var(--acc); color: var(--on-acc) }
 .setrow.cur.timed .chk:not(.on) { background: var(--surface-3); color: var(--label) }
 .setrow.cur .set-x { position: absolute; top: 2px; right: 2px }
@@ -169,7 +146,6 @@
 .ladder-tools .btn { color: var(--label-2); padding-inline: 6px; gap: 5px; font-size: var(--fs-meta); font-weight: 400; white-space: nowrap }
 .ladder-tools .btn .icn { font-size: var(--fs-small) }
 
-/* ---------------------------------------------------------------- superset -- */
 .ss-card { background: none }
 .ss-hd { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: var(--fs-meta); font-weight: 600; color: var(--label-2); margin-bottom: 10px; line-height: 1.3 }
 .ss-hd .row { gap: 6px; align-items: flex-start }
@@ -180,27 +156,19 @@
 .ss-label .icn { font-size: var(--fs-meta) }
 .item.in-ss { box-shadow: inset 3px 0 0 var(--label-3) }
 
-/* ------------------------------------------------------------ session tools -- */
-/* The Next key: the foot of the set ladder once the unit's work is done. */
 .wk-next { margin-top: 12px }
 .wk-nav { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 14px 0 6px }
 .wk-nav + .wk-nav { margin-top: 0 }
 .wk-nav > :only-child { grid-column: 1 / -1 }
-/* "Discard workout": a red text key; .btn.ghost sets the ghost's grey, so name it too */
 .btn.ghost.wk-discard { color: var(--red-text); margin-top: 4px; font-size: var(--fs-small) }
 .item-move { display: flex; gap: 2px; flex: none; align-items: center }
 
-/* a start chooser with one clear thing to do */
 .start-today { padding-bottom: var(--pad) }
 .start-today h2 { margin-bottom: 8px; font-size: var(--fs-meta); font-weight: 600 }
 .start-today-name { font-size: var(--fs-poster) }
 .start-today-meta { margin: 8px 0 14px }
 
-/* ------------------------------------------------------------------ desktop -- */
 @media (min-width: 1000px) {
-  /* Two columns from one source order: the exercise and session tools on the left, the ladder on
-     the right. The ladder spans into a final 1fr row so its height lands in that flexible track
-     and never stretches the rows of the column beside it. */
   .workout {
     max-width: 1040px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
     grid-template-rows: repeat(14, auto) 1fr; column-gap: 24px; align-items: start;

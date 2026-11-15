@@ -85,26 +85,21 @@ describe('FinishSummary Routine Sync UI Integration', () => {
       root.render(<FinishSummary w={dummyWorkout} prs={[]} routineSync={routineSyncWithDiff} close={close} />)
     })
 
-    // The update card should be rendered
     const card = container.querySelector('.card')
     expect(card).not.toBeNull()
 
-    // Title / label inside card
     expect(card.textContent).toContain('Update routine “Push Day”')
 
-    // Switch toggle button
     const toggle = card.querySelector('button[role="switch"]')
     expect(toggle).not.toBeNull()
     expect(toggle.getAttribute('aria-label')).toBe('Update routine “Push Day”')
-    expect(toggle.getAttribute('aria-checked')).toBe('false') // Default unchecked
+    expect(toggle.getAttribute('aria-checked')).toBe('false')
 
-    // Badges beneath toggle
     const badges = Array.from(card.querySelectorAll('.tag'))
     expect(badges.length).toBe(2)
     expect(badges[0].textContent).toBe('+ Incline Dumbbell Press')
     expect(badges[1].textContent).toBe('Bench Press: 3 → 4 sets')
 
-    // Card sits above the primary dismissal button
     const niceBtn = Array.from(container.querySelectorAll('button')).find(b => b.textContent.includes('Done'))
     expect(niceBtn).not.toBeNull()
     expect(niceBtn.compareDocumentPosition(card) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy()
@@ -119,7 +114,6 @@ describe('FinishSummary Routine Sync UI Integration', () => {
     const switchBtn = container.querySelector('button[role="switch"]')
     expect(switchBtn).toBeNull()
 
-    // Also with { hasDiff: false }
     await act(async () => {
       root.render(<FinishSummary w={dummyWorkout} prs={[]} routineSync={{ hasDiff: false }} close={close} />)
     })
@@ -137,15 +131,12 @@ describe('FinishSummary Routine Sync UI Integration', () => {
       niceBtn.click()
     })
 
-    // Routine remains unchanged
     const routine = useStore.getState().S.routines.find(r => r.id === 'routine-push')
     expect(routine.ex).toEqual([{ id: '0025', sets: 3 }])
 
-    // Sheet closed and navigated home
     expect(close).toHaveBeenCalledTimes(1)
     expect(navTarget).toBe('/home')
 
-    // No update toast emitted
     expect(useUI.getState().toastMsg).not.toContain('Push Day')
   })
 
@@ -155,36 +146,30 @@ describe('FinishSummary Routine Sync UI Integration', () => {
       root.render(<FinishSummary w={dummyWorkout} prs={[]} routineSync={routineSyncWithDiff} close={close} />)
     })
 
-    // Turn toggle ON
     const toggle = container.querySelector('button[role="switch"]')
     await act(async () => {
       toggle.click()
     })
     expect(toggle.getAttribute('aria-checked')).toBe('true')
 
-    // Tap "Nice!"
     const niceBtn = Array.from(container.querySelectorAll('button')).find(b => b.textContent.includes('Done'))
     await act(async () => {
       niceBtn.click()
     })
 
-    // Routine is updated in store
     const routine = useStore.getState().S.routines.find(r => r.id === 'routine-push')
     expect(routine.ex).toEqual([
       { id: '0025', sets: 4 },
       { id: '0026', sets: 3 },
     ])
 
-    // Toast emitted
     expect(useUI.getState().toastMsg).toBe('Routine “Push Day” updated')
 
-    // Sheet closed and navigated
     expect(close).toHaveBeenCalledTimes(1)
     expect(navTarget).toBe('/home')
   })
 
   it('integrates with finishWorkout(): computes routineSync and surfaces toggle in opened sheet', async () => {
-    // Setup active session attached to 'routine-push' with 4 performed sets (routine had 3)
     useStore.setState({
       S: {
         ...useStore.getState().S,
@@ -213,32 +198,26 @@ describe('FinishSummary Routine Sync UI Integration', () => {
       },
     })
 
-    // Finish the workout
     await act(async () => {
       finishWorkout()
     })
 
-    // A sheet should have been opened
     const sheets = useUI.getState().sheets
     expect(sheets.length).toBe(1)
 
-    // Render the sheet contents into our test root
     const closeSheet = vi.fn()
     await act(async () => {
       root.render(sheets[0].render(closeSheet))
     })
 
-    // Verify update toggle exists
     const toggle = container.querySelector('button[role="switch"]')
     expect(toggle).not.toBeNull()
     expect(toggle.getAttribute('aria-label')).toBe('Update routine “Push Day”')
     expect(toggle.getAttribute('aria-checked')).toBe('false')
 
-    // Badges reflect the change (3 -> 4 sets)
     const badge = container.querySelector('.card .tag')
     expect(badge?.textContent).toContain('4 sets')
 
-    // Tapping switch then "Nice!" commits
     await act(async () => {
       toggle.click()
     })

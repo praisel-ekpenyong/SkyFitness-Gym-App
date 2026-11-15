@@ -1,22 +1,9 @@
-// Import a training history exported from another app.
-//
-// Every one of these apps exports the same thing in a different dialect: one row per
-// *set*, carrying a date, an exercise name and some mix of weight/reps/distance/time.
-// So this reads a column MAP built from the header rather than fixed positions, which
-// means a new app is usually a few header aliases rather than another importer.
-//
 // Verified against real exports:
 //   FitNotes (Android) Date,Exercise,Category,Weight,Weight Unit,Reps,Distance,Distance Unit,Time,Comment
 //   FitNotes 2 (iOS)   Date,Exercise,Category,Weight (kg),Weight (lbs),Reps,Distance,Distance Unit,Time,Notes,Kind
 //   Strong             Date,Workout Name,Duration,Exercise Name,Set Order,Weight,Reps,Distance,Seconds,Notes,Workout Notes,RPE
 //   Hevy               title,start_time,end_time,description,exercise_title,superset_id,exercise_notes,set_index,set_type,weight_kg,reps,distance_km,duration_seconds,rpe
-// Anything else falls through to loose header matching, which covers Lyfta and the
-// spreadsheet round-trips people actually have on disk, as long as the file has a
-// date, an exercise name and something measured.
-//
-// Apple Health is a different animal — an XML dump, often hundreds of MB — and only its
-// body-weight records are interesting here. parseBodyweight() scans for those without
-// building a DOM.
+// Apple Health is an XML dump, often hundreds of MB, and only its body-weight records are read here. parseBodyweight() scans for those without building a DOM.
 
 import { EXDB, EXIDX } from './exercises.js'
 import { uid } from './format.js'
@@ -24,7 +11,6 @@ import { isWorkSet } from './workout-model.js'
 import { heaviestForEntry, mergeExWeight } from './active-workout.js'
 import { LB_TO_KG, mergeWeighIns, weighInsPreview } from './bodyweight.js'
 
-/* ----------------------------------------------------------------- CSV ---- */
 
 /**
  * A real CSV reader: quoted fields, embedded commas and newlines, doubled quotes, BOM
@@ -54,14 +40,8 @@ export function parseCSV(text) {
   return rows
 }
 
-/**
- * Normalizes a CSV header cell so dialect spellings compare equal.
- * @param {string} h - Raw header cell text.
- * @returns {string} Lower-cased, punctuation-collapsed, trimmed header key.
- */
 const norm = h => h.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()
 
-// header text -> the field we care about. Specific names first; first match wins.
 const COLUMNS = [
   ['exercise', ['exercise', 'exercise name', 'exercise title']],
   ['date', ['date', 'workout date']],
@@ -74,8 +54,6 @@ const COLUMNS = [
   ['weight', ['weight']],
   ['weightUnit', ['weight unit', 'unit']],
   ['reps', ['reps', 'repetitions']],
-  // Hevy and Strong both write an RPE per set. Nothing mainstream exports RIR, but read it
-  // when it is there rather than dropping the column on the floor.
   ['rpe', ['rpe', 'rpe rating']],
   ['rir', ['rir', 'reps in reserve']],
   ['distanceKm', ['distance km']],
@@ -87,11 +65,6 @@ const COLUMNS = [
   ['note', ['exercise notes', 'exercise note', 'comment', 'comments', 'notes', 'note']],
 ]
 
-/**
- * Maps a CSV header row onto the importer column positions.
- * @param {string[]} header - First-row header cells in file order.
- * @returns {Object} Field name to zero-based column index; unknown columns are absent and the first matching alias wins.
- */
 function mapHeader(header) {
   const map = {}
   header.forEach((h, i) => {
@@ -103,7 +76,6 @@ function mapHeader(header) {
   return map
 }
 
-/** Name of the app a header looks like — shown back to the user so they can sanity-check. */
 export function detectSource(header) {
   const h = header.map(norm)
   if (h.includes('exercise title') && h.includes('set index')) return 'Hevy'
@@ -114,12 +86,7 @@ export function detectSource(header) {
   return null
 }
 
-/* ------------------------------------------------------ exercise matching -- */
 
-// Other apps bolt qualifiers onto names — Hevy writes "Leg Press (Machine)", Strong
-// "Snatch (Barbell)", FitNotes "Lat Pulldown (Pulley)" — while the dataset writes
-// "barbell snatch". Strip the parentheses, expand the shorthand, then compare as a
-// sorted bag of words so word order stops mattering.
 const SYN = [
   [/\bbb\b/g, 'barbell'], [/\bdb\b/g, 'dumbbell'], [/\bkb\b/g, 'kettlebell'],
   [/\bohp\b/g, 'overhead press'], [/\bbw\b/g, 'body weight'], [/\bbodyweight\b/g, 'body weight'],
@@ -129,17 +96,9 @@ const SYN = [
   [/\bcurls?\b/g, 'curl'], [/\bpresses\b/g, 'press'], [/\bextensions?\b/g, 'extension'],
   [/\bcables?\b/g, 'cable'], [/\bseated\b/g, 'seated'], [/\bassisted\b/g, 'assisted'],
 ]
-// Words that say nothing about which exercise this is, so they shouldn't stop a match.
 const FILLER = new Set(['the', 'a', 'with', 'and', 'v', 'variation', 'version', 'pulley', 'weighted'])
 
-/**
- * Reduces a foreign exercise name to comparable content words for matching.
- * @param {string} name - Raw exercise name from the export; nullish or blank yields an empty array.
- * @returns {string[]} Lower-cased significant words with equipment shorthand expanded and filler dropped, in name order.
- */
 function wordsOf(name) {
-  // Parentheses are unwrapped rather than dropped: "Bench Press (Barbell)" carries its
-  // equipment in there, and the dataset writes that as "barbell bench press".
   let k = String(name || '').toLowerCase()
     .replace(/[()[\]]/g, ' ')
     .replace(/[^a-z0-9]+/g, ' ')
@@ -147,18 +106,9 @@ function wordsOf(name) {
   SYN.forEach(([re, to]) => { k = k.replace(re, to) })
   return k.split(' ').filter(w => w && !FILLER.has(w))
 }
-/**
- * Builds the order-insensitive lookup key used to de-duplicate one export's exercise names.
- * @param {string} name - Raw exercise name; nullish or blank yields an empty string.
- * @returns {string} Sorted content words joined with single spaces.
- */
 const keyOf = name => wordsOf(name).sort().join(' ')
 
 let INDEX = null
-/**
- * Returns the shared catalogue word index matchExercise resolves names against.
- * @returns {Object} Shared `{ exact, all }` index; the same instance on repeat calls.
- */
 function buildIndex() {
   if (INDEX) return INDEX
   INDEX = { exact: new Map(), all: [] }
@@ -171,15 +121,6 @@ function buildIndex() {
   return INDEX
 }
 
-// Curated: the names people actually log, mapped by hand to the dataset id they mean.
-//
-// Other apps let you name a lift "Bench Press"; the dataset only has qualified names
-// like "barbell bench press". Word-overlap alone can't resolve that — "bench press" sits
-// inside thirty-three entries — and where it *is* unique it tends to be wrong, happily
-// resolving "Squat" to "weighted squat" and "Leg Press" to "smith leg press". So the
-// common vocabulary is spelled out. The convention is that an unqualified name means the
-// canonical barbell version, which is what these apps assume when they show it to you.
-// Extending this table is the intended way to improve import accuracy.
 const ALIAS_EX = {
   'bench press': '0025', 'barbell bench press': '0025', 'flat bench press': '0025',
   'incline bench press': '0047', 'decline bench press': '0033',
@@ -201,23 +142,15 @@ const ALIAS_EX = {
   skullcrusher: '0060', 'skull crusher': '0060', 'lying triceps extension': '0061',
   lunge: '0054', lunges: '0054', 'cable crossover': '1269', 'cable cross over': '1269',
   'goblet squat': '1760', 'dumbbell goblet squat': '1760', 'kettlebell goblet squat': '0534',
-  // Reported in issue #74: these come out of Hevy under names no word-overlap can reach, so
-  // they landed as custom exercises. The catalogue's cardio vocabulary is thin (29 of 1,324
-  // entries), so each of these is the *only* candidate rather than the best of several.
+  // Reported in issue #74: these come out of Hevy under names no word-overlap can reach, so they landed as custom exercises.
   treadmill: '3666', 'treadmill walk': '3666', 'treadmill run': '3666',
   cycling: '2331', 'cross trainer': '2331', elliptical: '2141',
   'stationary bike': '2138', 'exercise bike': '2138', 'stepmill': '2311',
-  // The catalogue has only band Pallof presses, so a cable one resolves to the band entry:
-  // same movement, wrong equipment label, which beats leaving it uncategorised.
   'pallof press': '0979', 'cable pallof press': '0979', 'vertical pallof press': '1015',
   'cable core pallof press': '0979', 'core pallof press': '0979',
 }
 
 let ALIAS_IDX = null
-/**
- * Returns the shared hand-mapped alias table matchExercise consults first.
- * @returns {Map} Shared sorted-word-key to dataset-id map; the same instance on repeat calls.
- */
 const aliasIndex = () => {
   if (!ALIAS_IDX) {
     ALIAS_IDX = new Map()
@@ -226,21 +159,10 @@ const aliasIndex = () => {
   return ALIAS_IDX
 }
 
-/**
- * Find the dataset exercise a foreign name refers to, or null.
- *
- * Curated alias first, then an exact word-bag match, then entries that contain every
- * word of the query — but only when exactly one candidate is that close. Guessing
- * between "barbell bench press" and "dumbbell bench press" would file years of training
- * under the wrong lift, which is worse than leaving it as a custom exercise the user can
- * see and fix.
- */
 export function matchExercise(name) {
   const idx = buildIndex()
   const w = wordsOf(name)
   if (!w.length) return null
-  // Compared as a sorted bag of words, so "Squat (Barbell)" finds the 'barbell squat'
-  // alias — the exporters disagree about whether the equipment leads or trails.
   const sorted = w.slice().sort().join(' ')
   const aliased = aliasIndex().get(sorted)
   if (aliased && EXIDX[aliased]) return aliased
@@ -260,7 +182,6 @@ export function matchExercise(name) {
   return ties === 1 ? best : null
 }
 
-// Categories the exporters use -> the dataset's body parts, for exercises we invent.
 const CATEGORY_BP = {
   chest: 'chest', back: 'back', lats: 'back', shoulders: 'shoulders', delts: 'shoulders',
   legs: 'upper legs', quads: 'upper legs', hamstrings: 'upper legs', glutes: 'upper legs',
@@ -269,19 +190,8 @@ const CATEGORY_BP = {
   cardio: 'cardio', 'full body': 'upper legs', olympic: 'upper legs', neck: 'neck',
 }
 
-/* ----------------------------------------------------------- conversion --- */
 
-/**
- * Reads a CSV measurement cell as a finite number for weights, reps, and distances.
- * @param {string} v - Raw cell text; a comma reads as a decimal point and blank or non-numeric reads as 0.
- * @returns {number} Parsed finite value, or 0 when absent or unparseable.
- */
 const num = v => { const n = parseFloat(String(v ?? '').replace(',', '.')); return isFinite(n) ? n : 0 }
-// An effort rating out of someone else's export. A blank cell means "not rated" and has to
-// stay absent rather than becoming 0 — and 0 itself means opposite things on the two scales:
-// RIR 0 is a set taken to failure and worth keeping, while RPE has no 0 (the scale is 1–10),
-// so an app writing 0 for "nothing here" must not be read as an effort. Ratings above the
-// scale are capped rather than dropped — the set was still rated, just written oddly.
 const effortNum = (raw, zeroMeansRated) => {
   const s = String(raw ?? '').trim()
   if (!s) return null
@@ -289,15 +199,9 @@ const effortNum = (raw, zeroMeansRated) => {
   if (!isFinite(n) || n < 0 || (n === 0 && !zeroMeansRated)) return null
   return Math.min(10, Math.round(n * 100) / 100)
 }
-/**
- * Zero-pads a date or time part to two digits for ISO output.
- * @param {number|string} n - Day, month, hour, or minute value.
- * @returns {string} At least two characters, left-padded with `0`; longer input passes through unchanged.
- */
 const p2 = n => String(n).padStart(2, '0')
 const MON = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 }
 
-/** "2020-12-30 18:51:52" · "2024-03-07" · "22 Dec 2025, 08:00" · "07/03/2024" -> { d, t } */
 export function parseWhen(s) {
   const v = String(s || '').trim()
   let m = v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[T ](\d{1,2}):(\d{2}))?/)
@@ -306,8 +210,6 @@ export function parseWhen(s) {
   if (m && MON[m[2].toLowerCase()]) return { d: `${m[3]}-${p2(MON[m[2].toLowerCase()])}-${p2(m[1])}`, t: hm(m[4], m[5]) }
   m = v.match(/^([A-Za-z]{3})[a-z]*\.?\s+(\d{1,2}),?\s+(\d{4})(?:,?\s+(\d{1,2}):(\d{2}))?/)
   if (m && MON[m[1].toLowerCase()]) return { d: `${m[3]}-${p2(MON[m[1].toLowerCase()])}-${p2(m[2])}`, t: hm(m[4], m[5]) }
-  // Day-first when ambiguous: FitNotes/Strong/Hevy all write unambiguous dates, so a
-  // bare numeric one came through a spreadsheet, and those are usually European.
   m = v.match(/^(\d{1,2})[/.](\d{1,2})[/.](\d{4})(?:[, ]+(\d{1,2}):(\d{2}))?/)
   if (m) {
     const [, a, b, y] = m
@@ -317,15 +219,8 @@ export function parseWhen(s) {
   }
   return null
 }
-/**
- * Converts parsed hour and minute parts into a day-offset duration.
- * @param {string|number} h - Hour part; undefined means no time was present.
- * @param {string|number} mi - Minute part; missing or unparseable counts as 0.
- * @returns {number|null} Milliseconds after midnight, or null when no hour was given.
- */
 const hm = (h, mi) => (h === undefined ? null : (parseInt(h, 10) || 0) * 3600000 + (parseInt(mi, 10) || 0) * 60000)
 
-/** "HH:MM:SS" · "MM:SS" · "90" -> minutes */
 function toMinutes(v) {
   const s = String(v ?? '').trim()
   if (!s) return 0
@@ -334,27 +229,14 @@ function toMinutes(v) {
     const sec = p.length === 3 ? p[0] * 3600 + p[1] * 60 + p[2] : p[0] * 60 + p[1]
     return Math.round(sec / 60 * 10) / 10
   }
-  const m = s.match(/(\d+)\s*h/i), mm = s.match(/(\d+)\s*m/i)      // Strong's "2h 38m"
+  const m = s.match(/(\d+)\s*h/i), mm = s.match(/(\d+)\s*m/i)
   if (m || mm) return (m ? +m[1] * 60 : 0) + (mm ? +mm[1] : 0)
   return Math.round(num(s) * 10) / 10
 }
 const KM = { m: 0.001, km: 1, cm: 0.00001, in: 0.0000254, ft: 0.0003048, yd: 0.0009144, mi: 1.609344 }
-/**
- * Converts an exported distance into kilometres for cardio sets.
- * @param {string|number} v - Raw distance value; blank or non-numeric reads as 0.
- * @param {string} unit - Distance unit label such as `km`, `mi`, or `m`; missing or unknown reads as kilometres.
- * @returns {number} Distance in kilometres.
- */
 const toKm = (v, unit) => num(v) * (KM[String(unit || 'km').toLowerCase().trim()] ?? 1)
 
-/* --------------------------------------------------------------- parse ---- */
 
-/**
- * Read an export into workouts Sky understands, WITHOUT touching state — the caller
- * shows the summary for confirmation first. Nothing here throws on a bad row: a history
- * of several thousand sets will contain oddities, and losing the file over one of them
- * helps nobody. Bad rows are counted and reported instead.
- */
 export function parseWorkoutCSV(text, { unit = 'kg' } = {}) {
   const rows = parseCSV(text)
   if (rows.length < 2) return { error: 'empty' }
@@ -363,7 +245,7 @@ export function parseWorkoutCSV(text, { unit = 'kg' } = {}) {
   const dateCol = map.date !== undefined ? 'date' : map.startTime !== undefined ? 'startTime' : null
   if (!dateCol || map.exercise === undefined) return { error: 'unrecognised' }
 
-  const resolved = new Map()          // exercise name -> dataset id | null, resolved once
+  const resolved = new Map()
   const byDate = new Map()
   const created = new Map()
   const unmatched = new Set()
@@ -378,7 +260,6 @@ export function parseWorkoutCSV(text, { unit = 'kg' } = {}) {
     const when = parseWhen(cell(r, dateCol))
     if (!name || !when) { skipped++; continue }
 
-    // explicit kg/lb columns beat a generic column plus a unit column
     let w = 0, rowUnit = ''
     if (map.weightKg !== undefined && cell(r, 'weightKg')) { w = num(cell(r, 'weightKg')); rowUnit = 'kg' }
     else if (map.weightLb !== undefined && cell(r, 'weightLb')) { w = num(cell(r, 'weightLb')); rowUnit = 'lb' }
@@ -418,14 +299,9 @@ export function parseWorkoutCSV(text, { unit = 'kg' } = {}) {
     }
 
     const isCardio = (km > 0 || mins > 0) && !reps
-    // `u` carries the row's own unit into the conversion pass below and is dropped there —
-    // it never reaches the stored set.
     const set = isCardio
       ? { min: mins || 0, speed: mins > 0 ? Math.round(km / (mins / 60) * 10) / 10 : 0, done: true, ...(warmup ? { phase: 'warmup' } : {}) }
       : { w, r: reps || 0, done: true, u: rowUnit, ...(warmup ? { phase: 'warmup' } : {}) }
-    // Effort rides along only where the app can show it again: a weighted rep set. A treadmill
-    // row with an RPE would have nowhere to put it. A set is kept on one scale, so a file
-    // carrying both columns is read as RIR — the same precedence setLabel reads them back with.
     if (!isCardio) {
       const rir = effortNum(cell(r, 'rir'), true)
       const rpe = rir == null ? effortNum(cell(r, 'rpe'), false) : null
@@ -446,23 +322,15 @@ export function parseWorkoutCSV(text, { unit = 'kg' } = {}) {
     }
     if (!day.name) day.name = cell(r, 'workoutName') || ''
     if (map.endTime !== undefined) { const e = parseWhen(cell(r, 'endTime')); if (e && e.t != null) day.end = e.t }
-    else if (map.time !== undefined && !map.seconds && reps) { /* FitNotes' Time is per-set */ }
     if (!day.ex.has(id)) day.ex.set(id, [])
     day.ex.get(id).push(set)
     sets++
   }
 
-  // lb -> kg only where a row disagrees with the profile. The app never converts units on
-  // its own, so importing unconverted would silently rewrite someone's numbers.
-  // Converting PER ROW matters: apps like FitNotes write the unit next to every set, and a
-  // history recorded partly in lb and partly in kg used to be taken over as-is, turning
-  // "185 lb" into 185 kg.
   const fileUnit = sawLb && !sawKg ? 'lb' : sawKg && !sawLb ? 'kg' : ''
   const mixedUnits = sawLb && sawKg
   const toKg = x => Math.round(x * LB_TO_KG * 10) / 10
   const toLb = x => Math.round(x / LB_TO_KG * 10) / 10
-  // A row without its own unit follows the file's, and a file that says nothing is taken
-  // to already be in the profile's unit.
   const convRow = s => {
     const u = s.u || fileUnit
     if (!u || u === unit) return s.w
@@ -490,8 +358,6 @@ export function parseWorkoutCSV(text, { unit = 'kg' } = {}) {
 
   return {
     kind: 'workouts', source, workouts, customEx: [...created.values()],
-    // distinct library exercises behind the matched rows — the summary calls this
-    // "exercises matched", and counting rows there made three exercises read as five
     matched: new Set([...resolved.values()].filter(Boolean)).size,
     matchedSets: matched,
     created: created.size, unmatchedNames: [...unmatched].sort(),
@@ -500,19 +366,10 @@ export function parseWorkoutCSV(text, { unit = 'kg' } = {}) {
   }
 }
 
-/* ------------------------------------------------------- body weight ------ */
 
-/**
- * Body-weight history from Apple Health, or any CSV with a date and a weight.
- *
- * Health's own export is one big `export.xml` — often several hundred MB, nearly all of
- * it step counts and heart rate. Building a DOM would blow up the tab, so the body-mass
- * records are pulled out with a scan instead. Health writes weights in the unit the
- * phone is set to and labels each record, so the unit is read per record.
- */
 export function parseBodyweight(text, { unit = 'kg' } = {}) {
   const s = String(text)
-  const out = new Map()          // iso date -> { w, t }  (one weigh-in per day, the last)
+  const out = new Map()
   let fileUnit = ''
 
   if (s.includes('HKQuantityTypeIdentifierBodyMass')) {
@@ -533,7 +390,6 @@ export function parseBodyweight(text, { unit = 'kg' } = {}) {
     const rows = parseCSV(s)
     if (rows.length < 2) return { error: 'empty' }
     const map = mapHeader(rows[0])
-    // a weight-only CSV: whichever weight column it has
     const wCol = map.weightKg ?? map.weightLb ?? map.weight
     const dCol = map.date ?? map.startTime
     if (wCol === undefined || dCol === undefined) return { error: 'unrecognised' }
@@ -560,18 +416,6 @@ export function parseBodyweight(text, { unit = 'kg' } = {}) {
   }
 }
 
-/**
- * Sniff pasted file text and parse it as workouts or bodyweight.
- *
- * XML (Apple Health `HKQuantityTypeIdentifier`, or leading `<`) goes to
- * `parseBodyweight`; otherwise tries `parseWorkoutCSV` (Hevy/Strong/FitNotes)
- * first and falls back to `parseBodyweight` CSV. Returns the first success, or
- * the workout error when both fail.
- *
- * @param {string} text - Raw file text.
- * @param {Object} [opts] - `{unit}` active unit for conversion.
- * @returns {Object} `{kind:'workouts',...}`, `{kind:'bodyweight',...}`, or `{error}`.
- */
 export function parseImport(text, opts) {
   const s = String(text)
   if (s.includes('HKQuantityTypeIdentifier') || /^\s*</.test(s)) return parseBodyweight(s, opts)
@@ -581,33 +425,19 @@ export function parseImport(text, opts) {
   return asWeights.error ? asWorkouts : asWeights
 }
 
-/* --------------------------------------------------------------- merge ---- */
 
-/* ----------------------------------------------- import counts ---- */
 
-// The workout-side import dedupe rule (GLOSSARY.md: Import — existing days win),
-// stated once here and shared by the merge and its dry-run below.
 const freshWorkouts = (state, parsed) => {
   const have = new Set((state.workouts || []).map(w => w.d))
   return parsed.workouts.filter(w => !have.has(w.d))
 }
 
-/**
- * Count what an import would do without writing anything — the one read the
- * ImportSummary needs, carrying the same `{added, skipped}` shape the merge
- * returns, so the sheet cannot silently drift from the merge rule.
- *
- * @param {Object} state - Application state atom (or any Profile draft).
- * @param {Object} parsed - `parseImport` output.
- * @returns {{ added: number, skipped: number }}
- */
 export function importPreview(state, parsed) {
   if (parsed.kind === 'bodyweight') return weighInsPreview(state, parsed.bodyweight)
   const fresh = freshWorkouts(state, parsed)
   return { added: fresh.length, skipped: parsed.workouts.length - fresh.length }
 }
 
-/** Merge into state. Existing days win — importing twice never duplicates a workout. */
 export function mergeImport(S, parsed) {
   if (parsed.kind === 'bodyweight') return mergeWeighIns(S, parsed.bodyweight)
   const fresh = freshWorkouts(S, parsed)
@@ -615,9 +445,6 @@ export function mergeImport(S, parsed) {
   const customs = parsed.customEx.filter(c => used.has(c.id) && !EXIDX[c.id])
   S.customEx = [...(S.customEx || []), ...customs]
   S.workouts = [...(S.workouts || []), ...fresh].sort((a, b) => (a.d < b.d ? -1 : 1))
-  // seed the weight suggestions — single monotonic-max policy shared with
-  // the live workout lifecycle (lib/active-workout.js). Warm-ups excluded,
-  // only done work sets + topW count, and a weight never lowers the stored best.
   fresh.forEach(w => (w.entries || []).forEach(e => {
     const mx = heaviestForEntry(e)
     if (mx > 0) mergeExWeight(S, e.id, mx, w.d)

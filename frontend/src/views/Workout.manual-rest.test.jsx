@@ -57,7 +57,6 @@ describe('manual rest control', () => {
     expect(restControl().closest('.extools')).toBeTruthy()
     expect(restControl().disabled).toBe(false)
     expect(restControl().getAttribute('aria-label')).toBe('Rest 1:30')
-    // The key shows the timer and the duration only, so the tools row fits one line at 360px.
     expect(restControl().textContent.trim()).toBe('1:30')
     expect(restControl().querySelector('svg.icn')).toBeTruthy()
   })

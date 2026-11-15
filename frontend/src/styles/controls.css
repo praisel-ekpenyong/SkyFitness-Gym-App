@@ -1,6 +1,4 @@
-/* Controls. Keys, not bubbles: flat, 8px, one height per context, 44px to the thumb. */
 
-/* ---------------------------------------------------------------- buttons -- */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%;
   min-height: 50px; padding: 12px 18px; border-radius: var(--r-2);
@@ -10,10 +8,8 @@
 }
 .btn .icn { font-size: var(--fs-lead) }
 .btn:active { transform: scale(.98); background: var(--surface-3) }
-/* primary is inversion */
 .btn.primary { background: var(--ink); color: var(--on-ink) }
 .btn.primary:active { background: var(--label-2) }
-/* the one coloured key: the action that does the training */
 .btn.go {
   background: var(--acc); color: var(--on-acc); min-height: 58px;
   font-stretch: var(--narrow); font-weight: 800; font-size: var(--fs-figure); letter-spacing: .01em; text-transform: uppercase;
@@ -54,11 +50,10 @@
 .helpbtn {
   color: var(--label-3); font-size: var(--fs-lead); background: none; line-height: 0; flex: none;
   min-width: var(--tap-target); min-height: var(--tap-target); display: inline-flex;
-  align-items: center; justify-content: center; margin: -8px -4px -8px -12px;   /* the left margin only gives a wrapping title room */
+  align-items: center; justify-content: center; margin: -8px -4px -8px -12px;
 }
 .helpbtn:active { color: var(--label) }
 
-/* ------------------------------------------------------------------ chips -- */
 .chips {
   display: flex; gap: 6px; overflow-x: auto; padding: 4px 0;
   scrollbar-width: none; -webkit-overflow-scrolling: touch;
@@ -74,7 +69,6 @@
 .chip:active { background: var(--surface-3) }
 .chip.on { background: var(--ink); color: var(--on-ink); font-weight: 600 }
 
-/* ----------------------------------------------------------------- fields -- */
 .field, .input {
   width: 100%; background: var(--surface-2); border: none; border-radius: var(--r-2);
   padding: 13px 14px; font-size: var(--fs-field); outline: none; transition: box-shadow var(--fast);
@@ -99,24 +93,21 @@
 .timef::-webkit-calendar-picker-indicator { filter: invert(.6) }
 :root[data-theme="light"] .timef::-webkit-calendar-picker-indicator { filter: none }
 
-/* ----------------------------------------------------------------- switch -- */
 .sw {
   width: 46px; height: 28px; border-radius: 6px; background: var(--surface-3); position: relative;
   flex: none; padding: 3px; display: flex; align-items: center;
   transition: background var(--med) var(--ease);
 }
-.sw::after { content: ''; position: absolute; inset: -8px -4px }   /* the thumb's target, not the drawing's */
+.sw::after { content: ''; position: absolute; inset: -8px -4px }
 .sw .knob {
   width: 22px; height: 22px; border-radius: var(--r-1); background: var(--label-3);
   transition: transform var(--med) var(--ease), background var(--med);
 }
-.sw.on { background: var(--ink) }   /* a setting, not work: on is inverted ink */
+.sw.on { background: var(--ink) }
 .sw.on .knob { transform: translateX(18px); background: var(--on-ink) }
 .sw:disabled { opacity: .4 }
 .sw-hit { width: 46px; height: var(--tap-target); flex: none; display: inline-flex; align-items: center; justify-content: center }
 
-/* -------------------------------------------------------------- segmented -- */
-/* flex, not grid: an absolutely positioned child of a grid resolves against its grid area */
 .seg {
   position: relative; display: flex; background: var(--surface-2);
   border-radius: var(--r-2); padding: 3px; isolation: isolate;
@@ -135,15 +126,13 @@
   display: flex; align-items: center; justify-content: center; gap: 5px; min-height: 38px;
   white-space: nowrap;
 }
-.seg button::after { content: ''; position: absolute; inset: -3px 0 }   /* the track's padding is part of the target */
+.seg button::after { content: ''; position: absolute; inset: -3px 0 }
 .seg button .icn { font-size: var(--fs-body) }
 .seg button:not(.on) { color: var(--label-2); font-weight: 400 }
-/* every key at least 44px wide: the keys touch, so the width cannot come from a ::after */
 .seg-inline { flex: none; min-width: max(124px, calc(var(--n) * var(--tap-target) + 6px)) }
 .seg-range { margin-bottom: 12px }
 .seg-inline button { padding: 5px 10px; font-size: var(--fs-meta) }
 
-/* ---------------------------------------------------------------- stepper -- */
 .stp-w { display: flex; flex-direction: column; gap: 6px; min-width: 0 }
 .stp-l { font-size: var(--fs-meta); color: var(--label-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
 .stp {
@@ -169,7 +158,6 @@
 .cfgrow > div { flex: 1; min-width: 0 }
 .cfgrow .stp button { width: 36px; min-width: 36px }
 
-/* ----------------------------------------------------------------- slider -- */
 .sld { position: relative; height: var(--tap-target); display: flex; align-items: center; cursor: pointer; touch-action: none }
 .sld-track { position: absolute; left: 0; right: 0; height: 6px; border-radius: 2px; background: var(--surface-3); overflow: hidden }
 .sld-fill { display: block; height: 100%; background: var(--label) }
@@ -179,7 +167,6 @@
 }
 .sld.dragging .sld-knob { transform: translateX(-50%) scaleY(1.12) }
 
-/* ------------------------------------------------------------------ check -- */
 .chk {
   width: var(--tap-target); height: var(--tap-target); min-width: var(--tap-target); min-height: var(--tap-target);
   border-radius: var(--r-2); flex: none; display: flex; align-items: center; justify-content: center; gap: 8px;
