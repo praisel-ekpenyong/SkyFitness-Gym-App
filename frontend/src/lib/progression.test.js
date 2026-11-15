@@ -132,7 +132,7 @@ describe('linear progression', () => {
     expect(p.why).toEqual(['Nothing logged yet — this session sets the baseline.'])
   })
 
-  // E14: "Nothing logged yet" under "Last time 4 Nov · 85×8" reads as a contradiction.
+  // "Nothing logged yet" under "Last time 4 Nov · 85×8" reads as a contradiction.
   it('says a changed Target starts a new baseline when the exercise has history', () => {
     const p = nextPrescription(hist(LIFT, [[60, 8, 8, 8]], { sets: 3, reps: 8, weight: 60 }), cfg)
     expect(p.kind).toBe('first')

@@ -289,7 +289,7 @@ describe('ExercisePicker favorites integration', () => {
 
 })
 
-// E18: the picker opens on what the lifter trains, as the Library does, not on "3/4 Sit-Up".
+// The picker opens on what the lifter trains, as the Library does, not on "3/4 Sit-Up".
 describe('ExercisePicker own-first order', () => {
   it('sorts a favorite and a used exercise above "3/4 Sit-Up" when there is no search', async () => {
     useStore.getState().update(s => {

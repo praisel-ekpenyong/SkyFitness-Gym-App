@@ -298,7 +298,7 @@ describe('RoutineEdit exercise notes display and replacement', () => {
   })
 })
 
-// E17: a destructive key under the primary "Add exercise" is red text, not a red slab.
+// A destructive key under the primary "Add exercise" is red text, not a red slab.
 describe('RoutineEdit delete key', () => {
   it('is a red text key, not a filled danger button, and still asks first', async () => {
     mocks.confirmSheet.mockReset()

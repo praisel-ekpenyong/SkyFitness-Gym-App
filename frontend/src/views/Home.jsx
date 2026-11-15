@@ -11,13 +11,14 @@ import { exOr } from '../lib/exercises.js'
 import { loadOfRoutine, loadOfActive, rankOf, MUSCLE_NAME } from '../lib/muscles.js'
 import { selectStatsOverview } from '../lib/stats-selectors.js'
 import { FATIGUE_LEVELS } from '../lib/recovery-view.js'
-import { bwSheet, goalSheet, dayOverrideSheet, calendarSheet, startFlow, loadStarterPlan, exerciseDetailSheet } from '../sheets.jsx'
+import { bwSheet, goalSheet, dayOverrideSheet, calendarSheet, startFlow, exerciseDetailSheet } from '../sheets.jsx'
 import LineChart from '../components/LineChart.jsx'
 import BodyMap from '../components/BodyMap.jsx'
 import Icon from '../components/Icon.jsx'
 import { Thumb } from '../components/Media.jsx'
 import { Button } from '../components/ui.jsx'
-import { fitName, NAME_LAYOUTS } from '../lib/name-fit.js'
+import StarterCard from '../components/StarterCard.jsx'
+import { fitName, stackClasses, NAME_LAYOUTS } from '../lib/name-fit.js'
 
 /** The muscles a map is shaded for, named, so the picture is never the only way to read it. */
 function muscleNames(load, n = 3) {
@@ -106,12 +107,7 @@ export default function Home() {
     <div className="home-grid">
       <div className="home-main">
         {/* First run: the first action goes where the day's plan will appear. */}
-        {firstRun && <section className="home-hero welcome">
-          <div className="welcome-t d">{t('Start with a plan')}</div>
-          <div className="muted welcome-b">{t('Build your own week, or load a three-day Push / Pull / Legs plan you can edit later.')}</div>
-          <Button variant="primary" className="go" icon="calendar" onClick={loadStarterPlan}>{t('Load starter plan')}</Button>
-          <div className="gap8" /><Button onClick={() => nav('/plan')}>{t('Build my own plan')}</Button>
-        </section>}
+        {firstRun && <StarterCard onBuild={() => nav('/plan')} />}
 
         {/* The day's one answer: what am I training, and what does it hit? */}
         {!firstRun && <section className={`home-hero hero-${heroStatus}`}>
@@ -130,7 +126,7 @@ export default function Home() {
             <button className="home-edit" onClick={() => dayOverrideSheet(todayISO())}>{t('Edit schedule')}</button>
           </div>
 
-          <div className={'home-hero-body' + (heroFit.stacked ? ' stack' : '')}>
+          <div className={'home-hero-body' + stackClasses(heroFit)}>
             <div className="home-hero-text">
               <h2 className={'home-hero-title d' + (heroFit.step === 'poster' ? '' : ' ' + heroFit.step)}>{heroName}</h2>
               <div className="home-hero-meta">
