@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from 'react'
+import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { EXIDX } from '../lib/exercises.js'
@@ -130,6 +130,31 @@ export const getProgressionItems = sessionProgressionItems
 
 
 /**
+ * Keeps the Finish figures whole and on the poster step. The four tiles sit two by two while every
+ * figure fits its tile on one line; when one does not ("31,920 kg" at 360px), Duration and Volume,
+ * the two figures that grow, each take the full width, so no figure breaks or shrinks below the
+ * title. Measured, because the fit depends on the locale's digits and the font, not on a character
+ * count. Re-measured when the window width changes.
+ *
+ * @returns {{ref: Object, tight: boolean}} Ref for the tiles block, and whether it is laid out wide.
+ */
+function useFigureFit() {
+  const ref = useRef(null)
+  const [tight, setTight] = useState(false)
+  useLayoutEffect(() => {
+    if (tight || !ref.current) return
+    if ([...ref.current.querySelectorAll('.tile .v')].some(v => v.scrollWidth > v.clientWidth)) setTight(true)
+  }, [tight])
+  useEffect(() => {
+    let width = window.innerWidth
+    const onResize = () => { if (window.innerWidth !== width) { width = window.innerWidth; setTight(false) } }
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
+  return { ref, tight }
+}
+
+/**
  * Finish summary; shows duration, volume, Records, and trained muscles.
  *
  * @param {Object} w Finished workout.
@@ -145,6 +170,7 @@ export function FinishSummary({ w, prs, e1prs = [], routineSync = null, close })
   const progressionItems = sessionProgressionItems(w, st)
   const load = loadOfWorkouts([w])
   const warmUps = setsDone(w) - workSetsDone(w)
+  const fig = useFigureFit()
 
   const onDismiss = () => {
     if (syncChecked && routineSync?.routineId && routineSync?.syncedEx) {
@@ -158,7 +184,7 @@ export function FinishSummary({ w, prs, e1prs = [], routineSync = null, close })
   return <div className="finish">
     <h3 className="finish-title">{t('Workout logged')}</h3>
     <div className="finish-kicker">{[w.name, fmtDate(w.d, true)].filter(Boolean).join(' · ')}</div>
-    <div className="tiles finish-kpis">
+    <div ref={fig.ref} className={'tiles finish-kpis' + (fig.tight ? ' tight' : '')}>
       {/* The figure with a small unit (.u); the label above already names it, so no "4 sets". */}
       <div className="tile"><div className="l">{t('Duration')}</div><div className="v">
         {fmtDurParts(w.end - w.start).map(([n, u], i) => <Fragment key={i}>{i > 0 && ' '}{n}<span className="u">{u}</span></Fragment>)}

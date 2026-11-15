@@ -45,6 +45,7 @@ describe('Plan week schedule', () => {
     const row = rowFor(other)
     const name = row.querySelector('.wk-name'), day = row.querySelector('.wk-day')
     expect(name.textContent).toBe('Push Day')
+    expect(name.classList.contains('d')).toBe(true)   // a routine name is set in the display role
     expect(day.textContent).toBe(DAYN[other])
     expect(name.compareDocumentPosition(day) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     expect(row.getAttribute('aria-current')).toBeNull()

@@ -17,8 +17,9 @@
 }
 .wk-hdr .sub { font-size: var(--fs-meta); margin-top: 1px; color: var(--label-2) }
 .wk-finish { min-width: 64px }
-/* once every set is in, Finish takes the colour but keeps the header key's size and words */
-.wk-finish.go { font-stretch: 100%; font-weight: 600; text-transform: none; letter-spacing: 0 }
+/* once every set is in, Finish takes the accent: colour only, the header key keeps its size and words */
+.btn.wk-finish.done { background: var(--acc); color: var(--on-acc) }
+.btn.wk-finish.done:active { background: var(--acc-2) }
 
 /* one segment per exercise, each filling with its own sets */
 .lad { grid-column: 1 / -1; display: flex; gap: 3px; margin: 0 }
@@ -45,14 +46,6 @@
    key closes the row on the right. */
 .extools { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px }
 .extools .ex-rest { margin-left: auto }
-/* a bare word key, kept for the routine editor's superset link */
-.extool {
-  display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: var(--tap-target);
-  min-width: var(--tap-target); padding: 0 8px; border-radius: 6px; color: var(--label-2); font-size: var(--fs-small); font-weight: 600;
-}
-.extool .icn { font-size: var(--fs-lead) }
-.extool:active { background: var(--surface-2) }
-.extool:disabled { opacity: .38; pointer-events: none }
 .compact .exhead:has(.exmedia) { grid-template-columns: minmax(0, 1fr) 76px }
 .compact .exhead h2 { font-size: var(--fs-heading) }
 .compact .exhead .exmedia .ex-art, .compact .exhead .exmedia.mini .ex-art { height: 76px }

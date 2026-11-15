@@ -198,7 +198,7 @@ body.resting #toast { bottom: calc(var(--tabbar-h) + var(--sab) + 110px) }
   .item:hover, .wk-row:hover, .rt-card:hover, .lrow.tap:hover, .tile.tappable:hover, .card.tappable:hover, .cal-d:not(.has):hover, .wday:not(.today):hover { background: var(--surface-2) }
   .setrow.cur .stp > button:hover { background: var(--label-4) }
   .btn.primary:hover { background: var(--label-2) }
-  .btn.go:hover { background: var(--acc-2) }
+  .btn.go:hover, .btn.wk-finish.done:hover { background: var(--acc-2) }
   .home-edit:hover { color: var(--label) }
 }
 
