@@ -27,7 +27,13 @@ export default function Plan() {
       <div><h1>{t('Plan')}</h1><div className="sub">{t('Your weekly routine')}</div></div>
       <button className="btn sm plain hdr-act" onClick={planToolsSheet} aria-label={t('Share your plan')}><Icon name="upload" />{t('Share')}</button>
     </div>
-    <div className="cols">
+    {/* No Routine yet: the same two first actions as Home's first-run hero, not seven "Rest" rows. */}
+    {!S.routines.length ? <div className="cols"><section className="home-hero welcome">
+      <div className="welcome-t d">{t('Start with a plan')}</div>
+      <div className="muted welcome-b">{t('Build your own week, or load a three-day Push / Pull / Legs plan you can edit later.')}</div>
+      <Button variant="primary" className="go" icon="calendar" onClick={loadStarterPlan}>{t('Load starter plan')}</Button>
+      <div className="gap8" /><Button onClick={addRoutine}>{t('Build my own plan')}</Button>
+    </section></div> : <div className="cols">
       <section>
         <h2 className="sec sec-first">{t('Week schedule')}</h2>
         <div className="wk-list">
@@ -53,7 +59,7 @@ export default function Plan() {
           <h2 className="sec">{t('Routines')}</h2>
           <Button size="sm" icon="plus" onClick={addRoutine}>{t('New')}</Button>
         </div>
-        {S.routines.length ? <div className="rt-list">{S.routines.map(r => (
+        <div className="rt-list">{S.routines.map(r => (
           <button key={r.id} className="rt-card" aria-label={`${r.name}, ${exCount(r.ex.length)}`} onClick={() => nav('/plan/r/' + r.id)}>
             <span className="rt-text">
               <span className="rt-name d">{r.name}</span>
@@ -61,11 +67,8 @@ export default function Plan() {
             </span>
             <span className="rt-map"><BodyMap load={loadOfRoutine(r)} body={S.body} /></span>
           </button>
-        ))}</div> : <>
-          <div className="empty"><div className="ico"><Icon name="clipboard" /></div>{t('No routines yet.')}<br />{t('Create one or load the starter plan.')}</div>
-          <Button icon="calendar" onClick={loadStarterPlan}>{t('Load starter plan (Push / Pull / Legs)')}</Button>
-        </>}
+        ))}</div>
       </section>
-    </div>
+    </div>}
   </div>
 }
