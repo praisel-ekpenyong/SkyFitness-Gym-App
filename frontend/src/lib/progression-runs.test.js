@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  readSession, sessionsFor, stallCount, nextPrescription, DELOAD_AFTER, MIN_TIME_SEC
+  readSession, sessionsFor, stallCount, nextPrescription, reduceLoad, DELOAD_AFTER, MIN_TIME_SEC
 } from './progression.js'
 import {
   createActiveSession, buildCompletedWorkout, addActiveExercise
@@ -525,5 +525,15 @@ describe('Prescription records and the finish boundary', () => {
     expect(entry.plan.kind).toBe('first')
     expect(entry.sets.map(s => s.w)).toEqual([45, 45, 45])
     expect(entry.sets.map(s => s.r)).toEqual([12, 12, 12])
+  })
+})
+
+describe('reduceLoad', () => {
+  it('names a hold when the step cannot go lower', () => {
+    expect(reduceLoad(2.5, 2.5)).toEqual({ tag: 'hold', at: 2.5 })
+  })
+
+  it('names a deload when the load can fall by the step', () => {
+    expect(reduceLoad(100, 2.5)).toEqual({ tag: 'deload', at: 90 })
   })
 })

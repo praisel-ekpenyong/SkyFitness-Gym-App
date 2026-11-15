@@ -151,3 +151,24 @@ with a pointer to their successor.
   sitting there. Pre-commit ran the frontend suite: 88 files, 1,290 tests,
   passed. Launch notes in `docs/wiki/` were left unstaged. The accepted
   reshape set was still unsketched at this commit. See [reviews](reviews.md).
+  - *Superseded in part 2026-11-15:* the "unsketched" claim. Two sketches were
+    written that day and the base was picked without a cross-judge. See the
+    next entry.
+
+- **2026-11-15 — The reshape base is Sketch B (`admit`), picked with no cross-judge.**
+  Arena runners wrote `/tmp/arena-reshape/candidate-1/SKETCH.md` (`hydrateProfile`,
+  agent `08a11623-a7f8-45c3-a598-243f26e79f2b`) and
+  `/tmp/arena-reshape/candidate-2/SKETCH.md` (`admit`, agent
+  `ca1aac20-986a-4461-8cf2-a8b0150ed3d3`). Fable (`a45f32f5`), Opus (`814dbd0b`),
+  and Gemini Carbon (`38a3ae6e`) each returned a weekly-usage error and wrote
+  no `judge.md`. The arena rule for that case is to pick the base alone.
+  Base: Sketch B. Grafts kept from Sketch A: inject `openSheet` into `SelectRow`
+  (do not let it import the store), and keep unit conversion at read time
+  (ADR 0019). Rejected from Sketch A: an `isBw` fallback inside
+  `nextPrescription`, collapsing `w === 0` into body-mass, treating `bw-v0` as
+  equal to `bw-v1`, leftover dual readers, and record marks stored as
+  `setIdx`. `asked` and on-disk `topW` stay as ADR 0020 left them. The first
+  symbol taken from that base is `reduceLoad` in `frontend/src/lib/progression.js`,
+  which returns `{ tag: 'hold', at }` or `{ tag: 'deload', at }` and replaces
+  `asHoldOrDeload`. The other seventeen symbols, including `admit` itself, stay
+  open. See [reviews](reviews.md).

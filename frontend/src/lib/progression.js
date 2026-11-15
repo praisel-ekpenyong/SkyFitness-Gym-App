@@ -61,14 +61,14 @@ function deloadTo(cur, step) {
   return Math.max(step, next)
 }
 
-function asHoldOrDeload(cur, step, onHold, onDeload) {
+export function reduceLoad(cur, step) {
   const next = deloadTo(cur, step)
-  return next >= cur ? onHold() : onDeload(next)
+  return next >= cur ? { tag: 'hold', at: cur } : { tag: 'deload', at: next }
 }
 
-function deloadIfStalled(cur, step, noProgress, deloadAt, onHold, onDeload) {
+function deloadIfStalled(cur, step, noProgress, deloadAt) {
   if (noProgress < deloadAt) return null
-  return asHoldOrDeload(cur, step, onHold, onDeload)
+  return reduceLoad(cur, step)
 }
 
 const positive = v => (Number.isFinite(v) && v > 0 ? v : null)
@@ -244,10 +244,13 @@ function timePrescription({ policy, cfg, inc, sessions, last, deloadAt }) {
   const noProgress = timeNoProgress(sessions, start, cfg, inc)
   const weak = weakestPerformed(last)
   const base = weak > 0 ? weak : sessionSeconds(last, cfg)
-  const stalled = deloadIfStalled(base, 5, noProgress, deloadAt,
-    () => ({ policy, kind: 'hold', sec: Math.max(MIN_TIME_SEC, clampTimeSec(base)), why: ['Already at the shortest hold — same target again.'] }),
-    sec => ({ policy, kind: 'deload', sec, why: ['No progress in {0} Workouts — back off to {1}s and build up again.', noProgress, sec] }))
-  if (stalled) return stalled
+  const stalled = deloadIfStalled(base, 5, noProgress, deloadAt)
+  if (stalled?.tag === 'hold') {
+    return { policy, kind: 'hold', sec: Math.max(MIN_TIME_SEC, clampTimeSec(base)), why: ['Already at the shortest hold — same target again.'] }
+  }
+  if (stalled?.tag === 'deload') {
+    return { policy, kind: 'deload', sec: stalled.at, why: ['No progress in {0} Workouts — back off to {1}s and build up again.', noProgress, stalled.at] }
+  }
   const aim = timeAim(last, cfg, inc)
   return { policy, kind: 'hold', sec: aim, why: ['Last time came up short — aim for {0}s and build from there.', aim] }
 }
@@ -287,10 +290,13 @@ function doublePrescription({ policy, cfg, inc, unit, sessions, last, deloadAt, 
 
   const start = runStart(sessions, s => loadOf(s, cfg.weight))
   const noProgress = doubleNoProgress(sessions, start, range)
-  const stalled = deloadIfStalled(w, inc, noProgress, deloadAt,
-    () => ({ policy, kind: 'hold', weight: w, reps: bottom, why: ['Lightest load — same weight again; build reps or add the smallest plate.'] }),
-    dw => ({ policy, kind: 'deload', weight: dw, reps: bottom, why: ['No progress in {0} Workouts — deload to {1} {2}.', noProgress, dw, unit] }))
-  if (stalled) return stalled
+  const stalled = deloadIfStalled(w, inc, noProgress, deloadAt)
+  if (stalled?.tag === 'hold') {
+    return { policy, kind: 'hold', weight: w, reps: bottom, why: ['Lightest load — same weight again; build reps or add the smallest plate.'] }
+  }
+  if (stalled?.tag === 'deload') {
+    return { policy, kind: 'deload', weight: stalled.at, reps: bottom, why: ['No progress in {0} Workouts — deload to {1} {2}.', noProgress, stalled.at, unit] }
+  }
   const aim = aimUp(range, last.low)
   return { policy, kind: 'hold', weight: w, reps: aim, why: ['Same weight — aim for {0} reps this time.', aim] }
 }
@@ -301,11 +307,13 @@ function linearPrescription({ policy, inc, unit, cfg, sessions, last, deloadAt, 
     return { policy, kind: 'up', weight: round1(w + inc), why: ['Every rep last time — {0} {1} more.', inc, unit] }
   }
   if (stalls >= deloadAt) {
-    return deloadIfStalled(w, inc, stalls, deloadAt,
-      () => ({ policy, kind: 'hold', weight: w, why: ['Already at the minimum load — same weight again.'] }),
-      dw => ({ policy, kind: 'deload', weight: dw, why: stalls > 1
-        ? ['Missed reps {0} Workouts running — reset to {1} {2} and work back up.', stalls, dw, unit]
-        : ['Missed reps — reset to {0} {1} and work back up.', dw, unit] }))
+    const stalled = deloadIfStalled(w, inc, stalls, deloadAt)
+    if (stalled?.tag === 'hold') {
+      return { policy, kind: 'hold', weight: w, why: ['Already at the minimum load — same weight again.'] }
+    }
+    return { policy, kind: 'deload', weight: stalled.at, why: stalls > 1
+      ? ['Missed reps {0} Workouts running — reset to {1} {2} and work back up.', stalls, stalled.at, unit]
+      : ['Missed reps — reset to {0} {1} and work back up.', stalled.at, unit] }
   }
   return { policy, kind: 'hold', weight: w, why: ['Missed reps last time — same weight again ({0} of {1} to go).', deloadAt - stalls, deloadAt] }
 }
@@ -323,11 +331,13 @@ function greyskullPrescription({ policy, inc, unit, cfg, sessions, last, deloadA
     }
   }
   if (stalls >= deloadAt) {
-    return deloadIfStalled(w, inc, stalls, deloadAt,
-      () => ({ policy, kind: 'hold', weight: w, why: ['Already at the minimum load — same weight again.'] }),
-      dw => ({ policy, kind: 'deload', weight: dw, why: stalls > 1
-        ? ['Missed reps {0} Workouts running — reset to {1} {2} and work back up.', stalls, dw, unit]
-        : ['Missed reps — reset to {0} {1} and work back up.', dw, unit] }))
+    const stalled = deloadIfStalled(w, inc, stalls, deloadAt)
+    if (stalled?.tag === 'hold') {
+      return { policy, kind: 'hold', weight: w, why: ['Already at the minimum load — same weight again.'] }
+    }
+    return { policy, kind: 'deload', weight: stalled.at, why: stalls > 1
+      ? ['Missed reps {0} Workouts running — reset to {1} {2} and work back up.', stalls, stalled.at, unit]
+      : ['Missed reps — reset to {0} {1} and work back up.', stalled.at, unit] }
   }
   return { policy, kind: 'hold', weight: w, why: ['Missed reps last time — same weight again ({0} of {1} to go).', deloadAt - stalls, deloadAt] }
 }
