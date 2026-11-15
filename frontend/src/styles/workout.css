@@ -127,6 +127,10 @@
   background: var(--surface-2); cursor: default; margin: 4px 0;
 }
 .setrow.cur .n { grid-column: 1 / -1; color: var(--label); margin: -10px 0 -8px }
+/* Following the open set (scrollIntoView, block: nearest) must not park it under the sticky workout header.
+   The root's focus-mode scroll-padding-top (96px) stops 10px short of the header (106px with the session
+   ladder); the console makes up the difference, so its top lands at the header's foot. */
+.setrow.cur { scroll-margin-top: 10px }
 .setrow.cur .n b { display: none }
 .setrow.cur .n-l { display: block; font-size: var(--fs-small); font-stretch: 100%; font-weight: 600 }
 .setrow.cur .stp { position: relative; display: grid; grid-template: "val val" auto "dec inc" 52px / 1fr 1fr; gap: 3px; background: none; overflow: visible }
