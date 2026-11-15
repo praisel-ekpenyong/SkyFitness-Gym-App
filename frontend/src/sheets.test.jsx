@@ -255,6 +255,39 @@ describe('weigh-in', () => {
     expect(onDone).toHaveBeenCalledWith(81.4)
     expect(useStore.getState().S.bodyweight.at(-1).w).toBe(81.4)
   })
+
+  const type = async (field, raw) => {
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set.call(field, raw)
+      field.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+  }
+
+  it('holds a typed figure to the same range as the step keys once the field is left', async () => {
+    useStore.getState().update(s => { s.unit = 'kg'; s.bodyweight = [{ d: '2026-01-01', w: 82.8, t: 1 }] })
+    await openRequired(vi.fn())
+
+    const field = container.querySelector('input.bw-num')
+    await type(field, '8280')
+    await act(async () => { field.dispatchEvent(new FocusEvent('focusout', { bubbles: true })) })
+    expect(field.value).toBe('300')
+
+    await type(field, '0.4')
+    await act(async () => { field.dispatchEvent(new FocusEvent('focusout', { bubbles: true })) })
+    expect(field.value).toBe('1')
+  })
+
+  it('saves a typed figure inside the range even when Save is pressed without leaving the field', async () => {
+    useStore.getState().update(s => { s.unit = 'lb'; s.bodyweight = [{ d: '2026-01-01', w: 182, t: 1 }] })
+    const onDone = vi.fn()
+    await openRequired(onDone)
+
+    await type(container.querySelector('input.bw-num'), '18200')
+    await click([...container.querySelectorAll('button')].find(b => b.textContent === 'Save and start workout'))
+
+    expect(onDone).toHaveBeenCalledWith(660)
+    expect(useStore.getState().S.bodyweight.at(-1).w).toBe(660)
+  })
 })
 
 describe('Record badges', () => {
