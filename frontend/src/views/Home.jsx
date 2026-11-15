@@ -11,7 +11,7 @@ import { exOr } from '../lib/exercises.js'
 import { loadOfRoutine, loadOfActive, rankOf, MUSCLE_NAME } from '../lib/muscles.js'
 import { selectStatsOverview } from '../lib/stats-selectors.js'
 import { FATIGUE_LEVELS } from '../lib/recovery-view.js'
-import { bwSheet, goalSheet, dayOverrideSheet, calendarSheet, startFlow, loadStarterPlan, displayNameSheet, exerciseDetailSheet } from '../sheets.jsx'
+import { bwSheet, goalSheet, dayOverrideSheet, calendarSheet, startFlow, loadStarterPlan, exerciseDetailSheet } from '../sheets.jsx'
 import LineChart from '../components/LineChart.jsx'
 import BodyMap from '../components/BodyMap.jsx'
 import Icon from '../components/Icon.jsx'
@@ -25,7 +25,6 @@ function titleSize(name) {
   const word = Math.max(0, ...text.split(/\s+/).map(w => w.length))
   if (word > 9) return ' xs'
   if (word > 7 || text.length > 20) return ' s'
-  if (word > 5 || text.length > 10) return ' m'
   return ''
 }
 
@@ -85,9 +84,9 @@ export default function Home() {
   const plannedPerWeek = Object.keys(S.week).filter(k => S.week[k]).length
   const bwPoints = S.bodyweight.slice(-30).map(b => ({ t: workoutTimestamp(b), y: b.w, d: b.d }))
 
+  // The name is a greeting, set in Settings: Sky has no accounts, so Home shows no profile chip.
   const displayName = (S.displayName || '').trim()
   const hasName = !!displayName
-  const initial = hasName ? [...displayName][0].toUpperCase() : '?'
 
   const firstRun = !S.routines.length && !S.active && !S.workouts.length
   const heroStatus = S.active ? 'active' : (routine ? (doneToday ? 'done' : 'scheduled') : 'rest')
@@ -108,21 +107,7 @@ export default function Home() {
         <div className="home-date">{today.toLocaleDateString(dateLocale(), { weekday: 'long', day: 'numeric', month: 'long' })}</div>
         <h1>{hasName ? t('Hi {0}', displayName) : t('Hi there')}</h1>
       </div>
-      <div className="row home-hdr-tools">
-        {hasName && (
-          <button className="profile-pill" onClick={displayNameSheet} aria-label={t('Edit name')}>
-            <span className="profile-pill-avatar">{initial}</span>
-            <span className="profile-pill-name">{displayName}</span>
-          </button>
-        )}
-        {!hasName && (
-          <button className="profile-pill profile-pill--empty" onClick={displayNameSheet} aria-label={t('Set name')}>
-            <Icon name="person" />
-            <span>{t('Set name')}</span>
-          </button>
-        )}
-        <button className="iconbtn" onClick={() => nav('/settings')} aria-label={t('Settings')}><Icon name="gear" /></button>
-      </div>
+      <button className="iconbtn" onClick={() => nav('/settings')} aria-label={t('Settings')}><Icon name="gear" /></button>
     </div>
 
     <div className="home-grid">

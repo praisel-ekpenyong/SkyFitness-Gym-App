@@ -2,7 +2,7 @@
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest'
-import { RecapSheet, recapSheet, finishWorkout, workoutDetailSheet, WorkoutRow } from './sheets.jsx'
+import { RecapSheet, recapSheet, finishWorkout, workoutDetailSheet, WorkoutRow, bwSheet } from './sheets.jsx'
 import { useStore, DEF } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
 
@@ -190,6 +190,70 @@ describe('finishWorkout confirmation', () => {
     await act(async () => { root.render(sheet.render(vi.fn())) })
     expect(container.textContent).toContain('Only warm-ups logged so far')
     expect(container.textContent).toContain('warm-up sets are ticked')
+  })
+
+  it('states how far the workout got when finishing early', async () => {
+    // The workout screen has one Finish key; the count it used to carry ("0/6 exercises")
+    // is said here, where the choice is made.
+    useStore.getState().update(s => {
+      s.active = {
+        id: 'active', name: 'Test workout', start: Date.now(), cur: 0,
+        entries: [
+          { id: '0025', target: { mode: 'reps', reps: 5, weight: 100 }, sets: [{ w: 100, r: 5, done: true }] },
+          { id: '0047', target: { mode: 'reps', reps: 5, weight: 40 }, sets: [{ w: 40, r: 5, done: false }, { w: 40, r: 5, done: false }] },
+          { id: '0426', target: { mode: 'reps', reps: 5, weight: 40 }, sets: [{ w: 40, r: 5, done: false }] },
+        ],
+      }
+    })
+
+    await act(async () => { finishWorkout() })
+
+    expect(useStore.getState().S.active).not.toBeNull()
+    const sheet = useUI.getState().sheets.at(-1)
+    await act(async () => { root.render(sheet.render(vi.fn())) })
+    expect(container.textContent).toContain('Finish early?')
+    expect(container.textContent).toContain('1 of 3 exercises done')
+    expect(container.textContent).toContain('3 sets still unchecked')
+  })
+})
+
+describe('weigh-in', () => {
+  const openRequired = async onDone => {
+    bwSheet({ required: true, onDone })
+    const sheet = useUI.getState().sheets.at(-1)
+    await act(async () => { root.render(sheet.render(vi.fn())) })
+  }
+  const click = async el => { await act(async () => { el.dispatchEvent(new MouseEvent('click', { bubbles: true })) }) }
+
+  it('has two step keys that say their step, and no row of step chips', async () => {
+    useStore.getState().update(s => { s.unit = 'kg'; s.bodyweight = [{ d: '2026-01-01', w: 82.8, t: 1 }] })
+    await openRequired(vi.fn())
+
+    const keys = [...container.querySelectorAll('.bw-pm')]
+    expect(keys.map(k => k.textContent)).toEqual(['−0.1', '+0.1'])
+    expect(keys.map(k => k.getAttribute('aria-label'))).toEqual(['Decrease by 0.1 kg', 'Increase by 0.1 kg'])
+    expect(container.querySelector('.chip')).toBeNull()
+
+    await click(keys[1])
+    expect(container.querySelector('.bw-num').value).toBe('82.9')
+  })
+
+  it('takes a typed figure', async () => {
+    useStore.getState().update(s => { s.unit = 'kg'; s.bodyweight = [{ d: '2026-01-01', w: 82.8, t: 1 }] })
+    const onDone = vi.fn()
+    await openRequired(onDone)
+
+    const field = container.querySelector('input.bw-num')
+    expect(field.getAttribute('aria-label')).toBe('Body weight (kg)')
+    expect(field.getAttribute('inputmode')).toBe('decimal')
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set.call(field, '81.4')
+      field.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    await click([...container.querySelectorAll('button')].find(b => b.textContent === 'Save and start workout'))
+
+    expect(onDone).toHaveBeenCalledWith(81.4)
+    expect(useStore.getState().S.bodyweight.at(-1).w).toBe(81.4)
   })
 })
 

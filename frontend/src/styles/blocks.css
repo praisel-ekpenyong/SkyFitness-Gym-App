@@ -33,7 +33,6 @@ h4.sec, .sec {
 .tile .s, .stats-tile-sub { font-size: var(--fs-meta); color: var(--label-3); margin-top: 5px }
 
 .delta-pill { display: inline-flex; align-items: center; gap: 2px; font-size: var(--fs-meta); font-weight: 600; flex: none }
-.delta-pill .icn { font-size: var(--fs-meta); --icon-stroke: 2.2 }
 
 /* ------------------------------------------------------------ grouped list -- */
 .sect { margin-bottom: 20px }
@@ -195,16 +194,23 @@ h4.sec, .sec {
 .missed-banner-title { font-size: var(--fs-meta); font-weight: 600; color: var(--label-2); display: flex; align-items: center; gap: 6px; margin-bottom: 8px }
 
 /* ------------------------------------------------------------- weight input -- */
+/* the figure, typed, between two keys that say their step; the unit sits under it as in the set console */
 .bwstep { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 14px 0 6px }
 .bw-pm {
-  width: 52px; height: 72px; border-radius: var(--r-2); background: var(--surface-2); flex: none; color: var(--label);
-  display: flex; align-items: center; justify-content: center; font-size: var(--fs-figure); --icon-stroke: 2;
+  width: 76px; height: 76px; border-radius: var(--r-2); background: var(--surface-2); flex: none; color: var(--label);
+  display: flex; align-items: center; justify-content: center;
+  font-size: var(--fs-figure); font-stretch: var(--narrow); font-weight: 700; font-variant-numeric: tabular-nums;
   transition: background var(--fast), transform var(--fast);
 }
 .bw-pm:active { background: var(--surface-3); transform: scale(.95) }
-.bw-read { font-size: var(--fs-hero); font-stretch: var(--narrow); font-weight: 700; line-height: 1; flex: 1; min-width: 0; text-align: center; font-variant-numeric: tabular-nums }
-.bw-read .u { font-size: var(--fs-body); font-stretch: 100%; font-weight: 400; color: var(--label-2) }
-.bwpad { justify-content: center; margin: 8px 0; flex-wrap: wrap; overflow: visible; margin-inline: 0; padding-inline: 0 }
+.bw-read { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; cursor: text }
+.bw-num {
+  width: 100%; min-width: 0; height: 76px; padding: 0; border: none; outline: none; background: none; border-radius: var(--r-2);
+  text-align: center; font-size: var(--fs-hero); font-stretch: var(--narrow); font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums;
+  transition: background var(--fast);
+}
+.bw-num:focus { background: var(--surface-2) }
+.bw-read .u { margin-top: 2px }
 
 /* --------------------------------------------------------------- calendar -- */
 .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; margin-top: 10px }
