@@ -58,34 +58,37 @@ export function loadStarterPlan() {
   toast(t('Starter plan loaded — Mon Push · Wed Pull · Fri Legs'))
 }
 
-/* ============================ weight input (shared: body weight, goal, working weight) ============================ */
+/* ============================ weight input (shared: body weight, target weight) ============================ */
 // One number, read from arm's length: the figure is typed for a big change, and the two keys
 // beside it walk it by the step written on them, so neither key ever has to explain itself.
-// The keys stay inside a range that follows the profile's unit: 300 covers a body weight or a
-// working weight in kg, and 660 lb is the same ceiling in pounds.
+// Typed or stepped, the figure stays inside a range that follows the profile's unit: 300 covers
+// a body weight in kg, and 660 lb is the same ceiling in pounds.
 const W_LO = 1
-/** Ceiling the step keys stop at, for the given unit. */
+const W_STEP = 0.1
+/** Ceiling of a weigh-in or target weight, for the given unit. */
 const wHi = unit => (unit === 'lb' ? 660 : 300)
+/** A weight to the tenth it is stored at. */
+const tenth = x => Math.round((x || 0) * 10) / 10
+/** A weight to the tenth, held inside the range for the unit. */
+const clampW = (x, unit) => Math.max(W_LO, Math.min(wHi(unit), tenth(x)))
 /**
- * A typeable weight with a step key either side.
+ * A typeable weight with a step key either side. A typed figure is held to the range when the
+ * field is left; the sheets clamp again on save, so a press of Save without leaving it is held too.
  *
  * @param {number} value Current weight.
  * @param {Function} setValue Updates the weight.
  * @param {string} unit Display unit.
- * @param {number} [step=0.1] What one press of a key adds or takes away; written on the key.
- * @param {string} [label] Accessible name of the figure, without the unit.
+ * @param {string} label Accessible name of the figure, without the unit.
  */
-function WeightInput({ value, setValue, unit, step = 0.1, label = t('Weight') }) {
-  const W_HI = wHi(unit)
-  const clamp = x => Math.max(W_LO, Math.min(W_HI, Math.round((x || 0) * 10) / 10))
-  const by = dir => setValue(clamp((Number(value) || 0) + dir * step))
+function WeightInput({ value, setValue, unit, label }) {
+  const by = dir => setValue(clampW((Number(value) || 0) + dir * W_STEP, unit))
   return <div className="bwstep">
-    <button className="bw-pm" onClick={() => by(-1)} aria-label={t('Decrease by {0} {1}', fmtNum(step), unit)}>{fmtSigned(-step)}</button>
+    <button className="bw-pm" onClick={() => by(-1)} aria-label={t('Decrease by {0} {1}', fmtNum(W_STEP), unit)}>{fmtSigned(-W_STEP)}</button>
     <label className="bw-read">
-      <NumberField className="bw-num" value={value} onChange={setValue} aria-label={`${label} (${unit})`} />
+      <NumberField className="bw-num" value={value} onChange={setValue} onBlur={() => setValue(clampW(value, unit))} aria-label={`${label} (${unit})`} />
       <span className="u">{unit}</span>
     </label>
-    <button className="bw-pm" onClick={() => by(1)} aria-label={t('Increase by {0} {1}', fmtNum(step), unit)}>{fmtSigned(step)}</button>
+    <button className="bw-pm" onClick={() => by(1)} aria-label={t('Increase by {0} {1}', fmtNum(W_STEP), unit)}>{fmtSigned(W_STEP)}</button>
   </div>
 }
 
@@ -96,8 +99,8 @@ function BwSheet({ required, onDone, close }) {
   const bw = latestWeighIn(st)
   const [v, setV] = useState(bw ? bw.w : 70)
   const save = () => {
-    const n = Math.round((v || 0) * 10) / 10
-    if (!n || n <= 0) { toast(t('Enter a valid weight')); return }
+    if (!tenth(v)) { toast(t('Enter a valid weight')); return }
+    const n = clampW(v, unit)
     update(s => { recordWeighIn(s, { d: todayISO(), w: n, t: Date.now() }) })
     close()
     if (onDone) onDone(n); else toast(t('Weight saved'))
@@ -245,8 +248,8 @@ function GoalSheet({ close }) {
     <WeightInput value={v} setValue={setV} unit={st.unit} label={t('Target weight')} />
     <div className="gap16" />
     <Button variant="primary" onClick={() => {
-      const n = Math.round((v || 0) * 10) / 10
-      if (!n || n <= 0) { toast(t('Enter a valid weight')); return }
+      if (!tenth(v)) { toast(t('Enter a valid weight')); return }
+      const n = clampW(v, st.unit)
       update(s => { s.targetW = n }); close()
       const b = latestWeighIn(S()); toast(t('Goal set: {0}', fmtNum(n) + ' ' + st.unit) + (b ? ' (' + t('{0} to go', fmtNum(Math.abs(n - b.w))) + ')' : ''))
     }}>{t('Save goal')}</Button>
