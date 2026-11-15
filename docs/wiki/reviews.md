@@ -186,3 +186,19 @@ what ran, against what, and where the findings went.
   yellow Record. The fault was in the ticket text, not the implementer. The owner settled it the same day
   (see [decisions](decisions.md)).
 - **Disposition:** one fix agent on `ticket/drf-review-fixes`.
+
+## 2026-11-15 — Comment Sicko on the Iron source
+
+- **Scope:** Iron source at `main@a924ee4`, excluding `.worktrees/`. Comment Sicko
+  `7ca6f3aa-bf9f-4346-95ba-cdedc1e8d4f1` reported only; it edited nothing.
+- **Outcome:** Narration was stripped in the working tree the same day (5,641
+  lines removed, 303 added, 190 files). License and platform sentences that the
+  stripper cut in half were completed. A text scanner also deleted two empty
+  `catch` bodies and a comment-only FitNotes branch that then swallowed the
+  next statement; those were repaired before the suite was trusted.
+- **Verification:** `npm test` in `frontend/` — 88 files, 1,290 tests, passed.
+  No browser pass. The change was not committed.
+- **Disposition:** Comment deletion committed as `chore/strip-comments@4ee0b94`
+  (pre-commit suite: 88 files, 1,290 tests, passed). The accepted reshape flags
+  stay open pending one architect sketch. `asked` and `topW` were declined
+  against ADR 0020. Recorded in [decisions](decisions.md).

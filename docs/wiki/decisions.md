@@ -133,3 +133,21 @@ with a pointer to their successor.
   labelled it "Record" in yellow, and the glossary defined a Record as a new best estimated 1RM only. The owner chose to
   widen the glossary Record to cover both events, so stored Workouts and `w.prs` keep their meaning. The standing
   Best figure stays neutral ink. Fixes are in the review-fix pass on that branch (see [reviews](reviews.md)).
+
+- **2026-11-15 — `/no-comments` on the Iron tree is not closed.** Comment Sicko
+  (`7ca6f3aa-bf9f-4346-95ba-cdedc1e8d4f1`) reported the narration in the Iron
+  source. The same day the working tree on `main@a924ee4` (uncommitted) dropped
+  5,641 lines across 190 files under `frontend/`, `scripts/`, `.taste-skill`,
+  and `.scratchpad`, and `npm test` in `frontend/` passed 1,290 tests. Dead
+  `objectOf`, `NumField.jsx`, and `Stepper.jsx` were removed. `asked` and
+  `topW` were left as ADR 0020 requires. The accepted reshape set still needs
+  the one architect sketch the skill requires, and that sketch was not run.
+  See [reviews](reviews.md).
+  - *Superseded in part 2026-11-15:* the "uncommitted" claim. The strip landed as
+    `chore/strip-comments@4ee0b94`. The reshape sketch was still unrun at that commit.
+
+- **2026-11-15 — The Iron comment strip is `chore/strip-comments@4ee0b94`.**
+  Cut from `main@a924ee4` in the main checkout, because the strip was already
+  sitting there. Pre-commit ran the frontend suite: 88 files, 1,290 tests,
+  passed. Launch notes in `docs/wiki/` were left unstaged. The accepted
+  reshape set was still unsketched at this commit. See [reviews](reviews.md).
