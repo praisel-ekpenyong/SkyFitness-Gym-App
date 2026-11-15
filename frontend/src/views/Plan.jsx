@@ -39,7 +39,7 @@ export default function Plan() {
               aria-label={`${t(DAYN[d])}: ${r ? r.name : t('Rest')}`} aria-current={today ? 'date' : undefined}
               onClick={() => dayAssignSheet(d)}>
               <span className="wk-text">
-                <span className="wk-name">{r ? r.name : t('Rest')}</span>
+                <span className={'wk-name' + (r ? ' d' : '')}>{r ? r.name : t('Rest')}</span>
                 <span className="wk-day">{today ? `${t(DAYN[d])} · ${t('Today')}` : t(DAYN[d])}</span>
               </span>
               {r && <span className="wk-meta-c">{exCount(r.ex.length)}</span>}

@@ -275,10 +275,12 @@ describe('header and finish button share one progress reading', () => {
     // Header counts work sets only: 2 of 2, no phantom unchecked set.
     expect(container.querySelector('.hdr .sub')?.textContent).toContain('2/2 sets')
 
-    // The one Finish key, in the header, is the coloured key once every work set is in.
+    // The one Finish key, in the header, takes the accent once every work set is in: a colour
+    // state on the header key (.done), not a second .go key with its own look.
     const finish = container.querySelector('.wk-hdr button[aria-label="Finish"]')
     expect(finish).toBeTruthy()
-    expect(finish.className).toContain('go')
+    expect(finish.classList.contains('done')).toBe(true)
+    expect(finish.classList.contains('go')).toBe(false)
 
     await act(async () => { finish.dispatchEvent(new dom.Event('click', { bubbles: true })) })
     const { finishWorkout } = await import('../sheets.jsx')
@@ -318,7 +320,8 @@ describe('workout screen hierarchy', () => {
     const finishes = [...container.querySelectorAll('button')].filter(b => /finish/i.test(b.getAttribute('aria-label') || b.textContent))
     expect(finishes.length).toBe(1)
     expect(finishes[0].closest('.wk-hdr')).toBeTruthy()
-    expect(finishes[0].className).not.toContain('go')
+    expect(finishes[0].classList.contains('done')).toBe(false)
+    expect(finishes[0].classList.contains('go')).toBe(false)
     expect(container.textContent).not.toContain('Finish workout early')
     expect(container.querySelector('button.wk-discard')?.textContent).toBe('Discard workout')
   })

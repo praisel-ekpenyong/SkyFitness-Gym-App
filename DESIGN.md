@@ -33,14 +33,18 @@ here and the list or scale in the test together, never one without the other.
 ## The five rules
 
 1. **The number is the hero.** One family, two widths. Condensed and heavy for what is read from the
-   bench (loads, reps, the rest clock, routine names); normal width for what is read up close. On the
-   screens read from the bench (the workout, the rest dock, the weigh-in) the figure is the largest
-   thing. On Finish the workout's figures (56px) outsize its title (44px).
+   bench (loads, reps, the rest clock, a routine's name wherever one is picked: Home, Plan's cards and
+   week rows, the Start tab, the Routine screen); normal width for what is read up close (the
+   workout header's name, a logged Workout in a list). On the screens read from the bench (the
+   workout, the rest dock, the weigh-in) the figure is the largest thing. On Finish the workout's
+   figures (56px) outsize its title (44px); a figure too wide for its half takes the full width
+   rather than break or shrink.
 2. **Elevation is lightness.** A warm near-black ground and three flat steps above it. No borders or
    shadows on anything at rest. Only what truly floats (a dialog, a toast) may cast a shadow. No
    gradients, no glass, no glow.
 3. **Colour is work.** The accent marks work and nothing else: the one `.go` key on a screen (Start,
-   Log set, Finish once every set is done), logged-set marks (the check key, the set number,
+   Log set), the workout header's Finish once every set is done (a colour state, `.wk-finish.done`,
+   on the header key's own size and words; it never takes `.go`), logged-set marks (the check key, the set number,
    session segments), chart and data ink (lines, the heatmap, volume bars, this week's session
    blocks), the trained-muscle map, trained days (calendar, Home's week strip, "Completed today"),
    the rest-dock bar and the clock while a timed set is held. Favourites, switches, today,
@@ -52,7 +56,7 @@ here and the list or scale in the test together, never one without the other.
    on a chart) and the drawings inside icons (a clock face, a plate).
 5. **Motion acknowledges.** Presses, sheets and the rest dock respond in 120–260ms on one ease-out
    curve. Nothing performs an entrance, bounces or runs on its own, except the one pulsing "in
-   progress" dot. `prefers-reduced-motion` drops the travel and keeps the content.
+   progress" dot. `prefers-reduced-motion` drops the travel and keeps the content, and stills the dot.
 
 ## Type
 
@@ -78,14 +82,14 @@ sits with.
 
 | Token | px | Where |
 |---|---|---|
-| `--fs-micro` | 11 | The floor: chart ticks, heatmap labels, tab labels |
+| `--fs-micro` | 11 | The floor: chart ticks, heatmap labels, tab labels on a phone |
 | `--fs-meta` | 13 | Labels, sublines, units (`.u`), captions |
 | `--fs-small` | 14 | Secondary text, small keys, chips |
-| `--fs-body` | 15 | Body, headings, keys |
+| `--fs-body` | 15 | Body, headings, keys, tab labels in the desktop sidebar |
 | `--fs-field` | 16 | Form fields and the root (iOS zooms the page on focus below 16px) |
-| `--fs-lead` | 18 | Icons on keys and rows, small figures |
-| `--fs-figure` | 22 | Figures in a row, the `.go` key's label, tab icons |
-| `--fs-heading` | 28 | Display: sheet titles, names in tight places |
+| `--fs-lead` | 18 | Icons on keys and rows, tab icons in the desktop sidebar, small figures |
+| `--fs-figure` | 22 | Figures in a row, the `.go` key's label, tab icons on a phone |
+| `--fs-heading` | 28 | Display: sheet titles, names in tight places (a routine on Plan's week rows) |
 | `--fs-title` | 34 | Display: screen titles on a phone, KPI figures |
 | `--fs-display` | 44 | Display: screen titles on desktop, exercise names, the Finish title |
 | `--fs-poster` | 56 | Display: the Home hero on a phone, Finish's figures, the weight on Home |
@@ -155,11 +159,14 @@ clock is the largest size there is. Labels are sentence case and untracked.
 ## Icons
 
 - One set, `components/Icon.jsx`: drawn on a 24×24 grid, stroke only (a few small shapes are
-  solid: `starFill`, `dot`, the point of `info`), `currentColor`, round caps and joins.
+  solid: `starFill`, `dot`, the point of `info`), `currentColor`, round caps and joins. A name
+  with no glyph draws nothing, so `Icon.test.js` fails on any name the source uses that the set
+  lacks. `alert` (a stroked triangle and an exclamation) marks the neutral banners.
 - **Stroke** is `--icon-stroke`, 1.6 by default. A key or mark that needs more weight sets it
   locally (2 to 2.6 on check keys, the `.go` key and selected tabs).
 - **Size** is `1em`: an icon takes the `--fs-*` step of the text it sits with (`--fs-lead` on keys
-  and rows, `--fs-small` on `.xs` keys, `--fs-figure` in the tab bar and on the `.go` key).
+  and rows, `--fs-small` on `.xs` keys, `--fs-figure` in the phone's tab bar and on the `.go` key,
+  `--fs-lead` in the desktop sidebar).
 - **Colour** is the text's. An icon is never set in a tinted square or circle; a grouped-list icon
   is plain grey.
 
@@ -169,13 +176,13 @@ clock is the largest size there is. Labels are sentence case and untracked.
 |---|---|---|
 | **The barbell** | `components/Barbell.jsx`, `lib/plates.js` | The open set of a straight-bar lift, drawn with real plates, heaviest inside. Always names its bar and states in words what the colours show ("20 kg bar + 25 + 15 per side"); a load no plates can make is reported, never rounded. EZ, trap and Smith bars are not drawn: their weight is unknown. |
 | **The set ladder** | `views/Workout.jsx` | The set in front of you is one large console (figure over two keys, the bar, one Log key). Every other set is one line, still typeable, one tap from opening. The console stays on screen as it moves down the page. Once every work set of the open entry or superset is done and another follows, the ladder ends in one inverted, full-width key, "Next: <exercise>" (`.wk-next`), in every mode; the last one opens the complete sheet instead, and an uncheck takes the key away. |
-| **Exercise tools** | `.extools` | Note, Replace and Details are `.btn.xs` keys, an icon and a word each, under the name and the art; Rest closes the row on the right. |
+| **Exercise tools** | `.extools` | Note, Replace and Details are `.btn.xs` keys, an icon and a word each, under the name and the art; Rest closes the row on the right as the timer and the duration ("1:30", named "Rest 1:30"), so the row holds one line at 360px. |
 | **Focus mode** | `App.jsx`, `body.focus-session` | While a workout is on screen the phone's tab bar steps aside. The header's chevron minimizes to the rest of the app. |
 | **The rest dock** | `components/RestTimer.jsx` | The clock is on the largest step (`--fs-hero`); nothing on the phone is larger while it runs. |
 | **Session segments** | `.lad` | One segment per exercise, filling with its work sets: position at a glance and a one-thumb jump. With the header's set count ("0/19 sets") they are the workout's only progress; there is no "Exercise N / M" line. |
 | **Poster hero** | `views/Home.jsx` | Today's routine set huge beside the muscle map it hits: `--fs-poster` on a phone, `--fs-hero` on desktop, a step down when a word is still too wide. A rest day shows what is still recovering instead. |
 | **Weigh-in** | `sheets.jsx` (`.bw-num`, `.bw-pm`) | The figure is on `--fs-hero` and typeable. Two keys either side step it, each with its step written on it ("−0.1", "+0.1"). |
-| **Finish screen** | `FinishSummary`, sheet `kind: 'full'` | A full-screen takeover: the workout, stated. The figures lead (`--fs-poster`) and the title sits a step below (`--fs-display`). |
+| **Finish screen** | `FinishSummary`, sheet `kind: 'full'` | A full-screen takeover: the workout, stated. The figures lead (`--fs-poster`) and the title sits a step below (`--fs-display`). A figure never breaks: when one is too wide for its half ("31,920 kg" at 360px), Duration and Volume each take the full width (`.finish-kpis.tight`), measured, not guessed. |
 
 ## Component vocabulary
 
@@ -187,7 +194,7 @@ clock is the largest size there is. Labels are sentence case and untracked.
 | Row stack | `.list` / `.item` | Rows on a 3px gap |
 | Grouped list | `.sect-b` / `.lrow` | Settings and pickers; plain grey icons, never in a tinted square |
 | Buttons | `.btn` + `.primary` `.go` `.live` `.plain` `.ghost` `.danger` `.sm` `.xs` | `.go` is the one coloured key; `.live` is the running workout |
-| Finish | `.wk-finish` | On the workout screen Finish is the header key only: plain until every set is done, then `.go`. The footer holds Discard. The confirm states an early finish ("3 of 6 exercises done") |
+| Finish | `.wk-finish` | On the workout screen Finish is the header key only: `.plain` until every set is done, then `.done`, the accent fill on the same small key (never `.go`, so `.go` keeps one look). The footer holds Discard. The confirm states an early finish ("3 of 6 exercises done") |
 | Stepper | `.stp` | One line in sheets; stacked figure-over-keys in the console |
 | Set key | `.chk` | 44px square; becomes the full-width Log key in the console |
 | Switch | `.sw` | Square knob. On: `--ink` track, `--on-ink` knob. Off: `--surface-3` track, `--label-3` knob. A setting, not work, so never the accent |
