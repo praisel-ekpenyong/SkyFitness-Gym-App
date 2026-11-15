@@ -159,7 +159,7 @@
 .setrow.cur .setgo { height: 60px; background: var(--ink); color: var(--on-ink) }
 .setrow.cur .setgo-l { display: inline; font-weight: 600 }
 .setrow.cur.timed .chk { grid-column: auto; }
-/* A timed set is started, so Start is the console's one .go key and Log is neutral (E19). */
+/* A timed set is started, so Start is the console's one .go key and Log is neutral. */
 .setrow.cur.timed .setgo { background: var(--acc); color: var(--on-acc) }
 .setrow.cur.timed .chk:not(.on) { background: var(--surface-3); color: var(--label) }
 .setrow.cur .set-x { position: absolute; top: 2px; right: 2px }
@@ -186,7 +186,8 @@
 .wk-nav { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 14px 0 6px }
 .wk-nav + .wk-nav { margin-top: 0 }
 .wk-nav > :only-child { grid-column: 1 / -1 }
-.wk-discard { color: var(--red-text); margin-top: 4px; font-size: var(--fs-small) }
+/* "Discard workout": a red text key; .btn.ghost sets the ghost's grey, so name it too */
+.btn.ghost.wk-discard { color: var(--red-text); margin-top: 4px; font-size: var(--fs-small) }
 .item-move { display: flex; gap: 2px; flex: none; align-items: center }
 
 /* a start chooser with one clear thing to do */
