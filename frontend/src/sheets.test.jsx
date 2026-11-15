@@ -384,7 +384,7 @@ describe('WorkoutDetail', () => {
     const distContainer = container.querySelector('.workout-detail-distribution')
     expect(distContainer).toBeTruthy()
 
-    // E15: what you did comes first, then where it landed, then "Delete workout".
+    // What you did comes first, then where it landed, then "Delete workout".
     const entry = container.querySelector('.ex-entry')
     const del = [...container.querySelectorAll('button')].find(b => b.textContent === 'Delete workout')
     expect(entry.compareDocumentPosition(distContainer) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()

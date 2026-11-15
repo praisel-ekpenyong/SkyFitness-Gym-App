@@ -851,7 +851,7 @@ describe('sessionMuscleDistribution', () => {
 })
 
 
-// One name per muscle on every screen: the Muscle map name, never the dataset spelling (E13).
+// One name per muscle on every screen: the Muscle map name, never the dataset spelling.
 describe('primaryMuscleName', () => {
   it('names a bench press "Chest", not the dataset\'s "pectorals"', () => {
     expect(EXIDX['0025'].tg).toBe('pectorals')

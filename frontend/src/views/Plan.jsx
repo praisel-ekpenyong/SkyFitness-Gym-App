@@ -3,12 +3,13 @@ import { useStore } from '../store/useStore.js'
 import { DAYN, uid, exCount } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
 import { loadOfRoutine } from '../lib/muscles.js'
-import { dayAssignSheet, loadStarterPlan, planToolsSheet } from '../sheets.jsx'
+import { dayAssignSheet, planToolsSheet } from '../sheets.jsx'
 import BodyMap from '../components/BodyMap.jsx'
 import Icon from '../components/Icon.jsx'
 import { Button } from '../components/ui.jsx'
+import StarterCard from '../components/StarterCard.jsx'
 import { DEFAULT_GLYPH } from '../lib/glyphs.js'
-import { fitName, NAME_LAYOUTS } from '../lib/name-fit.js'
+import { fitName, stackClasses, NAME_LAYOUTS } from '../lib/name-fit.js'
 
 /** Plan route; assigns weekdays and manages routines. */
 export default function Plan() {
@@ -29,12 +30,7 @@ export default function Plan() {
       <button className="btn sm plain hdr-act" onClick={planToolsSheet} aria-label={t('Share your plan')}><Icon name="upload" />{t('Share')}</button>
     </div>
     {/* No Routine yet: the same two first actions as Home's first-run hero, not seven "Rest" rows. */}
-    {!S.routines.length ? <div className="cols"><section className="home-hero welcome">
-      <div className="welcome-t d">{t('Start with a plan')}</div>
-      <div className="muted welcome-b">{t('Build your own week, or load a three-day Push / Pull / Legs plan you can edit later.')}</div>
-      <Button variant="primary" className="go" icon="calendar" onClick={loadStarterPlan}>{t('Load starter plan')}</Button>
-      <div className="gap8" /><Button onClick={addRoutine}>{t('Build my own plan')}</Button>
-    </section></div> : <div className="cols">
+    {!S.routines.length ? <div className="cols"><StarterCard onBuild={addRoutine} /></div> : <div className="cols">
       <section>
         <h2 className="sec sec-first">{t('Week schedule')}</h2>
         <div className="wk-list">
@@ -61,7 +57,7 @@ export default function Plan() {
           <Button size="sm" icon="plus" onClick={addRoutine}>{t('New')}</Button>
         </div>
         <div className="rt-list">{S.routines.map(r => (
-          <button key={r.id} className={'rt-card' + (fitName(r.name, NAME_LAYOUTS.card).stacked ? ' stack' : '')} aria-label={`${r.name}, ${exCount(r.ex.length)}`} onClick={() => nav('/plan/r/' + r.id)}>
+          <button key={r.id} className={'rt-card' + stackClasses(fitName(r.name, NAME_LAYOUTS.card))} aria-label={`${r.name}, ${exCount(r.ex.length)}`} onClick={() => nav('/plan/r/' + r.id)}>
             <span className="rt-text">
               <span className="rt-name d">{r.name}</span>
               <span className="rt-meta">{exCount(r.ex.length)}</span>

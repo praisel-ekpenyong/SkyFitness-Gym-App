@@ -186,7 +186,7 @@ function MuscleBalance({ S, overview, win, setWin, setHard }) {
       </>}
       {!sel && <div className="muted small note">{t('Tap a muscle to see its exercises.')}</div>}
       {detrained.map(slug => {
-        // The figure reads the measure the bar draws: Retained strength (E20).
+        // The figure reads the measure the bar draws: Retained strength.
         const retained = Math.round(strength[slug] * 100) + '%'
         return <div key={slug} className="mrow">
           <span className="nm">{t(MUSCLE_NAME[slug])}</span>
