@@ -75,6 +75,10 @@
 .setrow.timed.solo { grid-template-columns: 30px minmax(0, 1fr) var(--tap-target) var(--tap-target) }
 .setrow.warm { grid-template-columns: 30px minmax(0, 1fr) minmax(0, 1fr) var(--tap-target) var(--tap-target) }
 .setrow.warm.eff3 { grid-template-columns: 30px minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr) var(--tap-target) var(--tap-target) }
+/* a bodyweight row has no load column: with Effort on it is reps + effort, so the Set key still ends the row */
+.setrow.solo.eff3 { grid-template-columns: 30px minmax(0, 1.2fr) minmax(0, 1fr) var(--tap-target) }
+.setrow.warm.solo { grid-template-columns: 30px minmax(0, 1fr) var(--tap-target) var(--tap-target) }
+.setrow.warm.solo.eff3 { grid-template-columns: 30px minmax(0, 1.2fr) minmax(0, 1fr) var(--tap-target) var(--tap-target) }
 .setrow .n {
   height: var(--tap-target); display: flex; align-items: center; justify-content: flex-start; color: var(--label-2);
   font-size: var(--fs-figure); font-stretch: var(--narrow); font-weight: 700;
@@ -117,7 +121,8 @@
 .setgo-l { display: none }
 
 /* the set in front of you: a console */
-.setrow.cur, .setrow.cur.solo, .setrow.cur.eff3, .setrow.cur.timed, .setrow.cur.warm, .setrow.cur.warm.eff3, .setrow.cur.timed.solo {
+.setrow.cur, .setrow.cur.solo, .setrow.cur.eff3, .setrow.cur.timed, .setrow.cur.warm, .setrow.cur.warm.eff3, .setrow.cur.timed.solo,
+.setrow.cur.solo.eff3, .setrow.cur.warm.solo, .setrow.cur.warm.solo.eff3 {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6px 22px; padding: 10px;
   background: var(--surface-2); cursor: default; margin: 4px 0;
 }
