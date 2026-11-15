@@ -158,9 +158,7 @@ const RECORD_JS = []
 const RUNNING = {
   '.btn.live': 'D20 the Resume key while a workout runs',
   '.home-badge.active': 'D20 Home’s “In progress” badge while a workout runs',
-  '#tabbar button.start.rec': 'D20 the tab bar’s Start key while a workout runs (desktop rail)',
-  '#tabbar button.start.rec:hover': 'D20 the tab bar’s Start key while a workout runs, hovered (desktop rail)',
-  '#tabbar button.start.rec .cir': 'D20 the tab bar’s Start key while a workout runs',
+  '#tabbar button.start.rec': 'D20 the tab bar’s Start key while a workout runs (D7)',
 }
 
 /** Lines in src/**\/*.{js,jsx} that may name an orange token. */
