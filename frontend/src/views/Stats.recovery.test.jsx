@@ -70,8 +70,6 @@ function entry(id, sets) {
 }
 
 function lifecycleWorkouts(now = BASE_NOW) {
-  // The old one-set session lowers the causal reference seen by the six-set session. Position
-  // that newer stimulus 30 seconds before its .5 crossing so the real interval update flips it.
   const weightedSet = 640 * (30 / 38) ** 1.5
   const referenceAfterOldSession = 2000 + (weightedSet - 2000) / 3
   const fatigueEdge = now - (
@@ -195,7 +193,6 @@ describe('Stats muscle recovery view runtime', () => {
     expect(lastMap().selected).toBe('chest')
   })
 
-  // The row's figure reads the measure its bar draws, Retained strength, not 90-day sets.
   it('labels each Strength row with the Retained strength its bar draws', async () => {
     await mountStats()
     await click(viewButton('Strength'))
@@ -228,13 +225,10 @@ describe('Stats muscle recovery view runtime', () => {
     await click(viewButton('Fatigue'))
     const first = lastMap().load
 
-    // A second passes and an unrelated selection re-renders the Muscle map: the
-    // state-derived clock has not ticked, so the memoized Fatigue rescan must not run.
     await tick(1000)
     await click(muscleCard().querySelector('[data-muscle="chest"]'))
     expect(lastMap().load).toBe(first)
 
-    // The 60-second tick advances the clock, so the rescan runs exactly then.
     await tick(59000)
     expect(lastMap().load).not.toBe(first)
   })
@@ -306,20 +300,17 @@ describe('MuscleBalance expansion and a11y', () => {
     const card = muscleCard()
     expect(card).toBeTruthy()
 
-    // 7 muscles worked: default view shows top 5
     let rows = card.querySelectorAll('.mrow')
     expect(rows).toHaveLength(5)
 
     const toggleBtn = buttonWithText(card, 'Show all (7)')
     expect(toggleBtn).toBeTruthy()
 
-    // Toggle expansion to show all
     await click(toggleBtn)
     rows = card.querySelectorAll('.mrow')
     expect(rows).toHaveLength(7)
     expect(buttonWithText(card, 'Show top 5')).toBeTruthy()
 
-    // Toggle back to top 5
     await click(buttonWithText(card, 'Show top 5'))
     rows = card.querySelectorAll('.mrow')
     expect(rows).toHaveLength(5)
@@ -336,7 +327,6 @@ describe('MuscleBalance expansion and a11y', () => {
     expect(missedChip.getAttribute('role')).toBe('button')
     expect(missedChip.getAttribute('tabindex')).toBe('0')
 
-    // Click missed muscle chip
     await click(missedChip)
 
     const inspector = card.querySelector('.muscle-inspector')
@@ -345,11 +335,9 @@ describe('MuscleBalance expansion and a11y', () => {
     expect(inspector.getAttribute('aria-live')).toBe('polite')
     expect(inspector.textContent).toContain('not trained')
 
-    // Clear inspector
     await click(buttonWithText(inspector, 'Clear'))
     expect(card.querySelector('.muscle-inspector')).toBeNull()
 
-    // Keyboard activation via Enter key
     const chipAgain = card.querySelector('.mchip.miss')
     await act(async () => {
       chipAgain.dispatchEvent(new dom.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
@@ -361,20 +349,17 @@ describe('MuscleBalance expansion and a11y', () => {
     resetFixture(multiMuscleWorkouts())
     await mountStats()
 
-    // 1. Balance view
     expect(lastMap().getA11yLabel).toBeTypeOf('function')
     const balanceChest = lastMap().getA11yLabel('chest')
     expect(balanceChest).toMatch(/Chest.*effective sets/)
     const balanceCalves = lastMap().getA11yLabel('calves')
     expect(balanceCalves).toMatch(/Calves.*not trained/)
 
-    // 2. Fatigue view
     await click(viewButton('Fatigue'))
     expect(lastMap().getA11yLabel).toBeTypeOf('function')
     const fatigueChest = lastMap().getA11yLabel('chest')
     expect(fatigueChest).toMatch(/Chest.*(Fatigued|Recovering|Ready)/)
 
-    // 3. Strength view
     await click(viewButton('Strength'))
     expect(lastMap().getA11yLabel).toBeTypeOf('function')
     const strengthChest = lastMap().getA11yLabel('chest')

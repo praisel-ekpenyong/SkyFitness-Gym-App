@@ -1,5 +1,3 @@
-// Serves frontend/dist with the CSP the deploy sends (frontend/public/_headers). Run `npm run build` first.
-// Stop it by port, never `pkill -f`: fuser -k <port>/tcp  (or kill the PID it prints).
 import { createServer } from 'node:http'
 import { readFile } from 'node:fs/promises'
 import { readFileSync } from 'node:fs'
@@ -9,7 +7,6 @@ const { flags } = parseArgs()
 const { port } = config(flags)
 const root = join(FRONTEND, flags.dir || 'dist')
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.png': 'image/png', '.jpg': 'image/jpeg', '.gif': 'image/gif', '.svg': 'image/svg+xml', '.webmanifest': 'application/manifest+json', '.woff2': 'font/woff2' }
-// Read from public/_headers (the /* block), never copied, so the review server cannot drift from the deploy.
 const headers = readFileSync(join(FRONTEND, 'public', '_headers'), 'utf8')
 const CSP = headers.match(/^\s+Content-Security-Policy:\s*(.+)$/m)?.[1].trim()
 if (!CSP) throw new Error('No Content-Security-Policy found in public/_headers')

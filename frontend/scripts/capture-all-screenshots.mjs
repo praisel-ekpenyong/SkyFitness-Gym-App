@@ -93,10 +93,9 @@ function startServer(port = 4180) {
 function generateHistoryData() {
   const now = Date.now()
   const d = new Date()
-  const todayDay = (d.getDay() + 6) % 7 // 0=Mon, 1=Tue, ..., 6=Sun (Monday-indexed for week strip)
-  const jsDay = d.getDay() // 0=Sun, 1=Mon, ..., 6=Sat
+  const todayDay = (d.getDay() + 6) % 7
+  const jsDay = d.getDay()
 
-  // Bodyweight history: 60 days of data ending today at 79.8 kg, down from 83.5 kg
   const bodyweight = []
   const baseWeight = 83.5
   for (let i = 60; i >= 0; i--) {
@@ -109,7 +108,6 @@ function generateHistoryData() {
     bodyweight.push({ d: iso, w: i === 0 ? 79.8 : (i === 2 ? 80.2 : w), t: dt.getTime() })
   }
 
-  // Workouts schedule: Push, Pull, Legs over 90 days
   const workouts = []
   const exercisePool = {
     push: [
@@ -133,14 +131,8 @@ function generateHistoryData() {
     ]
   }
 
-  // Generate 72 past workouts over the last 90 days.
-  // Note: Most recent completed workout is yesterday (dayOffset = 1), so today is NOT marked completed yet.
   let workoutCount = 0
   const routineTypes = ['push', 'pull', 'legs']
-  // Offsets in days for recent sessions:
-  // - 1 day ago: Push Day (chest, front delts, triceps fatigued = RED/ORANGE)
-  // - 2.5 days ago: Pull Day (lats, upper back, rear delts, biceps = ORANGE/YELLOW)
-  // - 4 days ago: Leg Day (quads, glutes, hamstrings, calves = YELLOW)
   const recentOffsets = [1, 2.5, 4, 6]
 
   for (let dayOffset = 90; dayOffset >= 1; dayOffset--) {
@@ -237,16 +229,14 @@ function generateHistoryData() {
         ]
       }
     ],
-    // Week schedule: Standard Monday=Push, Wednesday=Pull, Friday=Legs
-    // (Note: in JS 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat)
     week: {
-      1: 'r-push', // Monday
-      2: null,     // Tuesday
-      3: 'r-pull', // Wednesday
-      4: null,     // Thursday
-      5: 'r-legs', // Friday
-      6: null,     // Saturday
-      0: null      // Sunday
+      1: 'r-push',
+      2: null,
+      3: 'r-pull',
+      4: null,
+      5: 'r-legs',
+      6: null,
+      0: null
     },
     dayPlan: {},
     workouts,
@@ -255,8 +245,6 @@ function generateHistoryData() {
     favorites: []
   }
 
-  // For Home Screen: if today is a rest day in the Mon/Wed/Fri split, assign a routine to today's JS day
-  // so the Home hero showcases the scheduled routine card with green "Start workout" button
   if (!state.week[jsDay]) {
     state.week[jsDay] = 'r-push'
   }
@@ -280,7 +268,6 @@ async function capture() {
 
   const baseState = generateHistoryData()
 
-  // 1. Home Screen
   console.log('[1/5] Capturing Home Screen (home.png)...')
   {
     const page = await context.newPage()
@@ -298,11 +285,9 @@ async function capture() {
     await page.close()
   }
 
-  // 2. Plan Screen
   console.log('[2/5] Capturing Plan Screen (plan.png)...')
   {
     const page = await context.newPage()
-    // Make sure standard M/W/F schedule is set
     const planState = JSON.parse(JSON.stringify(baseState))
     planState.week = {
       1: 'r-push',
@@ -328,7 +313,6 @@ async function capture() {
     await page.close()
   }
 
-  // 3. Workout Screen
   console.log('[3/5] Capturing Workout Screen (workout.png)...')
   {
     const workoutState = JSON.parse(JSON.stringify(baseState))
@@ -419,7 +403,6 @@ async function capture() {
     await page.close()
   }
 
-  // 4. Stats Screen
   console.log('[4/5] Capturing Stats Screen (stats.png)...')
   {
     const page = await context.newPage()
@@ -429,13 +412,11 @@ async function capture() {
 
     await page.goto(`http://127.0.0.1:${port}/#/stats`, { waitUntil: 'networkidle' })
     await page.waitForSelector('#app', { timeout: 5000 })
-    
-    // Click 'Fatigue' tab
+
     const fatigueTab = page.locator('.seg button').filter({ hasText: 'Fatigue' })
     await fatigueTab.click()
     await page.waitForTimeout(400)
 
-    // Scroll down to frame the Muscle diagram and Effort card
     await page.evaluate(() => {
       window.scrollTo(0, 480)
     })
@@ -447,7 +428,6 @@ async function capture() {
     await page.close()
   }
 
-  // 5. Library Screen
   console.log('[5/5] Capturing Library Screen (library.png)...')
   {
     const page = await context.newPage()

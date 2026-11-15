@@ -48,7 +48,6 @@ describe('env seam validates every environment-gated behavior', () => {
       umamiSrc: 'https://stats.example/script.js',
       umamiId: 'abc-123',
     })
-    // Half-configured analytics stays disabled, never half-injected.
     expect(validateEnv({ VITE_UMAMI_SRC: 'https://stats.example/script.js' })).toMatchObject({
       umamiSrc: undefined,
       umamiId: undefined,

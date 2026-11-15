@@ -7,10 +7,6 @@ import {
 } from './active-workout.js'
 import { EXDB } from './exercises.js'
 
-// Regressions for double progression's deload cascade, wide ranges, stream
-// contamination, off-grid increments, and add-time's stale baseline. The seam is
-// the same one the app uses: log finished Workouts, ask for the next Prescription,
-// and (where it matters) run the Active workout through the finish boundary.
 
 const LIFT = EXDB.find(e => e.bp !== 'cardio' && !['upper legs', 'lower legs', 'back', 'hips', 'glutes'].includes(e.bp)).id
 const DOUBLE = { id: LIFT, sets: 3, reps: 12, repsMin: 10, weight: 40, prog: 'double' }
@@ -181,8 +177,6 @@ describe('double progression runs', () => {
     const deload = nextPrescription(S, DOUBLE)
     expect(deload).toMatchObject({ kind: 'deload', weight: 35, reps: 10 })
 
-    // The lifter opens the deload session, warms up, and skips every work set. The Entry
-    // still persists because a warm-up was performed.
     S.workouts.push(session({
       d: '2026-01-06',
       rows: [
@@ -233,18 +227,12 @@ describe('linear deload runs', () => {
   })
 
   it('keeps the all-history count for Entries written before Prescription records', () => {
-    // No plan on any session: the old after-any-Deload boundary reads as the whole
-    // history, per ADR 0011's legacy bullet.
     const S = state(repeat(3, i => session({ d: day(i), target, rows: rowsOf(60, 3) })))
     expect(S.workouts.every(w => w.entries[0].plan == null)).toBe(true)
     expect(nextPrescription(S, LINEAR).kind).toBe('deload')
   })
 
   it('reads the current plan load when a legacy Entry performed nothing, not its frozen Target', () => {
-    // No `plan` (pre-1.2.2) and every row unticked, so the load has to come from the plan.
-    // The frozen Target must not decide it: a bodyweight Target legitimately carries 0 even
-    // after the lifter has loaded the lift, and reading that 0 would prescribe a barbell
-    // exercise as bodyweight.
     const S = state([session({
       target: { sets: 3, reps: 8, weight: 0 },
       rows: [{ w: 0, r: 0, done: false }],
@@ -258,14 +246,11 @@ describe('linear deload runs', () => {
     const S = state(repeat(3, i => miss(60, day(i), { kind: 'hold', weight: 60 })))
     const deload = nextPrescription(S, LINEAR)
     S.workouts.push(miss(55, '2026-01-04', deload))
-    // Baseline at 55, then two Misses: the allowance is spent by one.
     S.workouts.push(miss(55, '2026-01-05', { kind: 'hold', weight: 55 }))
     S.workouts.push(miss(55, '2026-01-06', { kind: 'hold', weight: 55 }))
-    // The lifter hand-sets a lower load rather than taking the Deload.
     S.workouts.push(miss(50, '2026-01-07', { kind: 'hold', weight: 50 }))
     S.workouts.push(miss(50, '2026-01-08', { kind: 'hold', weight: 50 }))
 
-    // The hand-set session is the new baseline: one Miss since it, not three.
     const p = nextPrescription(S, LINEAR)
     expect(p.kind).toBe('hold')
     expect(p.weight).toBe(50)
@@ -274,8 +259,6 @@ describe('linear deload runs', () => {
   it('gives a hand-set heavier weight a fresh Miss allowance too', () => {
     const S = state(repeat(3, i => miss(60, day(i), { kind: 'hold', weight: 60 })))
     nextPrescription(S, LINEAR)
-    // The lifter hand-sets 65 instead of taking the reduced load — a baseline, never a
-    // Stall, so it does not count toward the next Deload on its own.
     S.workouts.push(miss(65, '2026-01-04', { kind: 'hold', weight: 65 }))
     S.workouts.push(miss(65, '2026-01-05', { kind: 'hold', weight: 65 }))
     expect(nextPrescription(S, LINEAR).kind).toBe('hold')
@@ -293,12 +276,10 @@ describe('linear deload runs', () => {
     expect(up).toMatchObject({ kind: 'up', weight: 62.5 })
     S.workouts.push(miss(62.5, '2026-01-02', up))
 
-    // The first session at 62.5 is the Run's baseline; two Misses since it hold.
     S.workouts.push(miss(62.5, '2026-01-03', { kind: 'up', weight: 62.5 }))
     S.workouts.push(miss(62.5, '2026-01-04', { kind: 'up', weight: 62.5 }))
     expect(nextPrescription(S, LINEAR).kind).toBe('hold')
 
-    // A third Miss past the baseline deloads.
     S.workouts.push(miss(62.5, '2026-01-05', { kind: 'up', weight: 62.5 }))
     expect(nextPrescription(S, LINEAR).kind).toBe('deload')
   })
@@ -317,7 +298,6 @@ describe('bodyweight progression runs', () => {
       })
       const e = A.entries[0]
       plans.push(e.plan.reps)
-      // Follow the Prescription exactly.
       e.sets.forEach(s => { s.done = true })
       S = { ...S, workouts: [...S.workouts, buildCompletedWorkout(A, { end: 1, unit: 'kg' })] }
     }
@@ -335,14 +315,12 @@ describe('bodyweight progression runs', () => {
       S = { ...S, workouts: [...S.workouts, buildCompletedWorkout(A, { end: 1, unit: 'kg' })] }
       return e
     }
-    // 10 → 11 → 12 → 13 → 14 → 15
     for (let i = 0; i < 6; i++) run(i)
 
     const added = run(6)
     expect(added.plan).toMatchObject({ kind: 'up', reps: 10, sets: 4 })
     expect(added.sets).toHaveLength(4)
 
-    // The added set is part of the new working volume, not a one-session bonus.
     const climbed = run(7)
     expect(climbed.plan).toMatchObject({ kind: 'up', reps: 11, sets: 4 })
     expect(climbed.sets).toHaveLength(4)
@@ -368,7 +346,6 @@ describe('bodyweight progression runs', () => {
       plan: { kind: 'up', weight: 0, reps: 10, sets: 4 },
       rows: rowsOf(0, 10),
     })])
-    // Only three of the four prescribed sets were performed.
     const p = nextPrescription(S, BW)
     expect(p.kind).toBe('hold')
     expect(p.reps).toBe(10)
@@ -488,7 +465,6 @@ describe('Prescription records and the finish boundary', () => {
     })
     const deload = first.entries[0].plan
     expect(deload).toMatchObject({ kind: 'deload', weight: 35, reps: 10 })
-    // The lifter follows the prescription exactly.
     first.entries[0].sets.forEach(s => { s.done = true })
 
     const done = buildCompletedWorkout(first, { end: 1, unit: 'kg' })
@@ -527,7 +503,6 @@ describe('Prescription records and the finish boundary', () => {
     expect(done.entries[0].plan).toMatchObject({ kind: 'deload', sec: 25 })
     S = { ...S, workouts: [...S.workouts, done] }
 
-    // The next session climbs from the 25 s actually prescribed, not the frozen 45 s Target.
     const second = createActiveSession(S, 'r1', null, {
       todayISO: () => '2026-01-11', uid: () => 'a2', now: () => 0,
     })

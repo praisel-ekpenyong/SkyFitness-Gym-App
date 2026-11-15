@@ -2,8 +2,6 @@ import { describe, expect, it, afterEach } from 'vitest'
 import { EXIDX, EXDB, smOf, registerCustom } from './exercises.js'
 import { loadOfWorkouts, musclesOf, loadOf, muscleWeightsOf, lastTrainedByMuscle, primaryMuscleOf, primaryMuscleName, secondaryMusclesOf, sessionMuscleDistribution } from './muscles.js'
 
-// The catalogue keeps the source dataset's secondary-muscle spellings; musclesOf maps
-// those aliases to the canonical body-map slugs and applies the 0.4 support weight.
 describe('catalogue secondary muscles', () => {
   it('maps a bench press to chest, triceps and deltoids', () => {
     expect(musclesOf(EXIDX['0025'])).toMatchObject({
@@ -38,17 +36,16 @@ describe('catalogue secondary additions', () => {
     const raw = EXDB.find(e => e.id === '0027')
     expect(raw.sm).not.toContain('rear deltoids')
     expect(smOf(raw)).toContain('rear deltoids')
-    // the alias collapses onto the deltoids slug in the canonical muscle map
     expect(musclesOf(raw)).toHaveProperty('deltoids')
   })
 })
 
 describe('hamstring hinge catalogue curations and set distribution', () => {
   const HINGE_IDS = [
-    '0085', '1459', // Romanian Deadlifts
-    '0116', '0432', '0434', '1009', '1023', // Stiff / Straight Leg Deadlifts
-    '1756', '1757', '2805', // Single Leg Deadlifts
-    '0115', // Stiff Leg Good Morning
+    '0085', '1459',
+    '0116', '0432', '0434', '1009', '1023',
+    '1756', '1757', '2805',
+    '0115',
   ]
 
   it('curates primary to hamstring and secondaries to gluteal and lower-back for all hinge variations', () => {
@@ -127,52 +124,39 @@ describe('canonical muscle filter taxonomy & extraction helpers', () => {
 
   it('correctly extracts primary muscle from catalogue exercises and custom exercises', async () => {
     const { primaryMuscleOf } = await import('./muscles.js')
-    // Bench press -> chest
     expect(primaryMuscleOf(EXIDX['0025'])).toBe('chest')
-    // Barbell row -> upper-back
     expect(primaryMuscleOf(EXIDX['0027'])).toBe('upper-back')
-    // Squat -> gluteal
     expect(primaryMuscleOf(EXIDX['0043'])).toBe('gluteal')
-    // Custom exercise with explicit tg
     expect(primaryMuscleOf({ id: 'c1', n: 'Incline Curl', tg: 'biceps', bp: 'upper arms' })).toBe('biceps')
-    // Custom exercise with alias tg
     expect(primaryMuscleOf({ id: 'c2', n: 'Leg Extension', tg: 'quads', bp: 'upper legs' })).toBe('quadriceps')
-    // Legacy custom exercise without tg falls back to first muscle in bodypart map (now lats for back)
     expect(primaryMuscleOf({ id: 'c3', n: 'Pullup', bp: 'back' })).toBe('lats')
     expect(primaryMuscleOf({ id: 'c4', n: 'Bench', bp: 'chest' })).toBe('chest')
-    // Cardio exercise
     expect(primaryMuscleOf({ id: 'c5', n: 'Treadmill', bp: 'cardio' })).toBe('cardio')
     expect(primaryMuscleOf({ id: 'c6', n: 'Running', tg: 'cardiovascular system', bp: 'cardio' })).toBe('cardio')
   })
 
   it('correctly extracts secondary muscles excluding the primary muscle', async () => {
     const { secondaryMusclesOf } = await import('./muscles.js')
-    // Bench press (chest) -> triceps, deltoids
     const benchSm = secondaryMusclesOf(EXIDX['0025'])
     expect(benchSm).toContain('triceps')
     expect(benchSm).toContain('deltoids')
     expect(benchSm).not.toContain('chest')
 
-    // Barbell row (upper-back) -> biceps, deltoids (via rear deltoids overlay)
     const rowSm = secondaryMusclesOf(EXIDX['0027'])
     expect(rowSm).toContain('biceps')
     expect(rowSm).toContain('deltoids')
     expect(rowSm).not.toContain('upper-back')
 
-    // Squat (gluteal) -> quadriceps, hamstring
     const squatSm = secondaryMusclesOf(EXIDX['0043'])
     expect(squatSm).toContain('quadriceps')
     expect(squatSm).toContain('hamstring')
     expect(squatSm).not.toContain('gluteal')
 
-    // Custom exercise with explicit sm array
     const customSm = secondaryMusclesOf({ id: 'c1', n: 'Hammer Curl', tg: 'biceps', sm: ['forearms', 'brachialis'] })
     expect(customSm).toEqual(['forearm'])
 
-    // Cardio exercise has no secondary muscles
     expect(secondaryMusclesOf({ id: 'c5', bp: 'cardio' })).toEqual([])
 
-    // Legacy custom exercise without explicit tg/sm falls back to secondary bodypart muscles (3-way for back)
     const legacyBackSm = secondaryMusclesOf({ id: 'c3', bp: 'back' })
     expect(legacyBackSm).toContain('upper-back')
     expect(legacyBackSm).toContain('lower-back')
@@ -181,27 +165,22 @@ describe('canonical muscle filter taxonomy & extraction helpers', () => {
 
   it('matches muscle filter for primary, secondary, and cardio movements', async () => {
     const { matchesMuscleFilter } = await import('./muscles.js')
-    const bench = EXIDX['0025'] // tg: pectorals, sm: [triceps, deltoids]
+    const bench = EXIDX['0025']
 
-    // Empty filter matches all
     expect(matchesMuscleFilter(bench, '')).toBe(true)
     expect(matchesMuscleFilter(bench, null)).toBe(true)
 
-    // Matches primary
     expect(matchesMuscleFilter(bench, 'chest')).toBe(true)
     expect(matchesMuscleFilter(bench, 'pectorals')).toBe(true)
 
-    // Matches secondary
     expect(matchesMuscleFilter(bench, 'triceps')).toBe(true)
     expect(matchesMuscleFilter(bench, 'deltoids')).toBe(true)
     expect(matchesMuscleFilter(bench, 'shoulders')).toBe(true)
 
-    // Does not match unrelated muscles
     expect(matchesMuscleFilter(bench, 'biceps')).toBe(false)
     expect(matchesMuscleFilter(bench, 'quadriceps')).toBe(false)
     expect(matchesMuscleFilter(bench, 'cardio')).toBe(false)
 
-    // Cardio exercise matches cardio
     const cardioEx = { id: 'c1', bp: 'cardio', tg: 'cardio' }
     expect(matchesMuscleFilter(cardioEx, 'cardio')).toBe(true)
     expect(matchesMuscleFilter(cardioEx, 'chest')).toBe(false)
@@ -235,15 +214,13 @@ describe('canonical muscle filter taxonomy & extraction helpers', () => {
 
   it('determines whether an exercise matched as a secondary muscle', async () => {
     const { isSecondaryMuscleMatch } = await import('./muscles.js')
-    const bench = EXIDX['0025'] // primary: chest, secondary: triceps, deltoids
+    const bench = EXIDX['0025']
 
-    // Bench press matches triceps and deltoids as secondary
     expect(isSecondaryMuscleMatch(bench, 'triceps')).toBe(true)
     expect(isSecondaryMuscleMatch(bench, 'deltoids')).toBe(true)
     expect(isSecondaryMuscleMatch(bench, 'shoulders')).toBe(true)
     expect(isSecondaryMuscleMatch('0025', 'triceps')).toBe(true)
 
-    // Primary matches and unrelated muscles return false
     expect(isSecondaryMuscleMatch(bench, 'chest')).toBe(false)
     expect(isSecondaryMuscleMatch(bench, 'biceps')).toBe(false)
     expect(isSecondaryMuscleMatch(bench, 'cardio')).toBe(false)
@@ -253,7 +230,7 @@ describe('canonical muscle filter taxonomy & extraction helpers', () => {
 
   it('matches keyword search across name, target, canonical muscles, secondary muscles, and equipment', async () => {
     const { matchesExerciseSearch } = await import('./muscles.js')
-    const bench = EXIDX['0025'] // Barbell Bench Press (chest, triceps, deltoids, barbell)
+    const bench = EXIDX['0025']
 
     expect(matchesExerciseSearch(bench, '')).toBe(true)
     expect(matchesExerciseSearch(bench, 'bench')).toBe(true)
@@ -266,14 +243,11 @@ describe('canonical muscle filter taxonomy & extraction helpers', () => {
 
   it('extracts matching secondary muscle slug for search queries', async () => {
     const { secondaryMatchForQuery } = await import('./muscles.js')
-    const bench = EXIDX['0025'] // primary: chest, secondary: triceps, deltoids
+    const bench = EXIDX['0025']
 
-    // Matches secondary triceps when query is "triceps"
     expect(secondaryMatchForQuery(bench, 'triceps')).toBe('triceps')
     expect(secondaryMatchForQuery('0025', 'triceps')).toBe('triceps')
-    // Matches secondary deltoids when query is "delts"
     expect(secondaryMatchForQuery(bench, 'delts')).toBe('deltoids')
-    // Returns null when query matches primary or exercise name
     expect(secondaryMatchForQuery(bench, 'bench')).toBeNull()
     expect(secondaryMatchForQuery(bench, 'chest')).toBeNull()
     expect(secondaryMatchForQuery(bench, 'biceps')).toBeNull()
@@ -313,10 +287,8 @@ describe('lats taxonomy expansion', () => {
     expect(sum).toBeCloseTo(1.0, 5)
   })
 
-  // placeholder to hold sum check variable scope - actual test above covers distribution
   it('correctly handles lat-dominant and upper-back-dominant catalogue entries with cross-credit', async () => {
     const { primaryMuscleOf, secondaryMusclesOf, matchesMuscleFilter, isSecondaryMuscleMatch, musclesOf, loadOf } = await import('./muscles.js')
-    // lat-dominant catalogue entry: alternate lateral pulldown (id 0007) tg lats, sm biceps + rhomboids
     const latEx = EXIDX['0007']
     expect(primaryMuscleOf(latEx)).toBe('lats')
     const latSm = secondaryMusclesOf(latEx)
@@ -329,7 +301,6 @@ describe('lats taxonomy expansion', () => {
     expect(isSecondaryMuscleMatch(latEx, 'upper-back')).toBe(true)
     expect(isSecondaryMuscleMatch(latEx, 'lats')).toBe(false)
 
-    // upper-back-dominant entry: barbell bent over row
     const rowEx = EXIDX['0027']
     expect(primaryMuscleOf(rowEx)).toBe('upper-back')
     const rowSm = secondaryMusclesOf(rowEx)
@@ -338,17 +309,14 @@ describe('lats taxonomy expansion', () => {
     expect(matchesMuscleFilter(rowEx, 'upper-back')).toBe(true)
     expect(matchesMuscleFilter(rowEx, 'lats')).toBe(false)
 
-    // intentional secondary cross-credit: lat primary listing rhomboids as secondary
     const latWithRhomboids = { id: 'c-lat', n: 'Custom Pulldown', tg: 'lats', sm: ['rhomboids'], bp: 'back' }
     expect(primaryMuscleOf(latWithRhomboids)).toBe('lats')
     expect(secondaryMusclesOf(latWithRhomboids)).toEqual(['upper-back'])
     expect(musclesOf(latWithRhomboids)).toEqual({ lats: 1, 'upper-back': 0.4 })
-    // deduplication excludes primary slug
     const dup = { id: 'c-dup', n: 'Dup', tg: 'lats', sm: ['lats', 'latissimus dorsi'], bp: 'back' }
     expect(secondaryMusclesOf(dup)).toEqual([])
     expect(musclesOf(dup)).toEqual({ lats: 1 })
 
-    // loadOf for legacy back exercise uses three-way split
     const legacyBack = { id: 'c-back', n: 'Old Pull', bp: 'back' }
     const legacyLoad = loadOf([{ id: 'c-back', ex: legacyBack, sets: 2 }])
     expect(legacyLoad).toEqual({ lats: 1.0, 'upper-back': 0.7, 'lower-back': 0.3 })
@@ -368,20 +336,15 @@ describe('lats taxonomy expansion', () => {
 
   it('reinterprets historic 2-way back snapshots live as 3-way lats split (no migration)', async () => {
     const { musclesOf, loadOfWorkouts } = await import('./muscles.js')
-    // Old snapshot stored before lats taxonomy: back 0.75/0.25 without lats
     const staleSnapshot = { n: 'Old Back Lift', bp: 'back', muscleWeights: { 'upper-back': 0.75, 'lower-back': 0.25 } }
     expect(musclesOf(staleSnapshot)).toEqual({ lats: 0.5, 'upper-back': 0.35, 'lower-back': 0.15 })
-    // New snapshot with lats is preserved verbatim
     const freshSnapshot = { n: 'New Back Lift', bp: 'back', muscleWeights: { lats: 0.5, 'upper-back': 0.35, 'lower-back': 0.15 } }
     expect(musclesOf(freshSnapshot)).toEqual({ lats: 0.5, 'upper-back': 0.35, 'lower-back': 0.15 })
-    // Explicit primary snapshot (e.g., row) is never reinterpreted
     const explicitSnapshot = { n: 'Row', bp: 'back', muscleWeights: { 'upper-back': 1, biceps: 0.4 }, muscleGroups: ['upper-back', 'biceps'] }
     expect(musclesOf(explicitSnapshot)).toEqual({ 'upper-back': 1, biceps: 0.4 })
-    // Bare latissimus alias (User Story 11) resolves to lats
     const { canonicalMuscle } = await import('./muscles.js')
     expect(canonicalMuscle('latissimus')).toBe('lats')
 
-    // loadOfWorkouts with stale muscleSnapshot in historic entry reinterprets
     const histW = {
       id: 'w-hist', d: '2026-01-01', start: Date.UTC(2026, 0, 1, 10), unit: 'kg',
       entries: [{ id: 'c-old', sets: [{ done: true, w: 50, r: 10 }, { done: true, w: 50, r: 10 }], muscleSnapshot: staleSnapshot }],
@@ -490,7 +453,6 @@ describe('legacy custom exercises and BY_BODYPART fallbacks', () => {
     }
 
     expect(primaryMuscleOf(explicitBicepIsolation)).toBe('biceps')
-    // Should be empty array, NOT ['triceps']
     expect(secondaryMusclesOf(explicitBicepIsolation)).toEqual([])
   })
 })
@@ -502,19 +464,14 @@ describe('muscleWeightsOf and lastTrainedByMuscle', () => {
 
   it('reads own metadata first, then the live catalogue, then a deleted custom snapshot', () => {
     registerCustom([{ id: 'c-live', n: 'Curl', tg: 'biceps' }])
-    // The live catalogue beats a stale snapshot logged under the same id.
     expect(muscleWeightsOf({ id: 'c-live', muscleSnapshot: { muscleWeights: { chest: 1 } } })).toEqual({ biceps: 1 })
-    // The entry's own stamped weights beat the catalogue.
     expect(muscleWeightsOf({ id: 'c-live', muscleWeights: { triceps: 1 } })).toEqual({ triceps: 1 })
-    // Own logged weights beat a nested snapshot too; the snapshot is only the fallback copy.
     expect(muscleWeightsOf({
       id: 'c-gone',
       muscleWeights: { triceps: 1 },
       muscleSnapshot: { muscleWeights: { chest: 1 } },
     })).toEqual({ triceps: 1 })
-    // A deleted custom keeps its logged snapshot.
     expect(muscleWeightsOf({ id: 'c-gone', muscleSnapshot: { muscleWeights: { chest: 1 } } })).toEqual({ chest: 1 })
-    // Nothing readable reads as no muscles.
     expect(muscleWeightsOf({ id: 'c-gone' })).toEqual({})
     expect(muscleWeightsOf(null)).toEqual({})
   })
@@ -558,30 +515,24 @@ describe('tokenized catalogue search & normalization', () => {
     expect(SEARCH_STOP_WORDS.has('with')).toBe(true)
     expect(SEARCH_STOP_WORDS.has('on')).toBe(true)
 
-    // Normal splitting and lowercasing
     expect(tokenizeSearchQuery('Dumbbell Bench Press')).toEqual(['dumbbell', 'bench', 'press'])
 
-    // Hyphen and punctuation normalization
     expect(tokenizeSearchQuery('push-up')).toEqual(['push', 'up'])
     expect(tokenizeSearchQuery('45-degree leg-press!')).toEqual(['45', 'degree', 'leg', 'press'])
 
-    // Conversational stop words stripped
     expect(tokenizeSearchQuery('curls with band')).toEqual(['curls', 'band'])
     expect(tokenizeSearchQuery('squat on the box')).toEqual(['squat', 'box'])
     expect(tokenizeSearchQuery('press for chest')).toEqual(['press', 'chest'])
 
-    // Single-character noise stripped unless digit
     expect(tokenizeSearchQuery('bench x')).toEqual(['bench'])
     expect(tokenizeSearchQuery('bench 1')).toEqual(['bench', '1'])
     expect(tokenizeSearchQuery('plan b')).toEqual(['plan'])
 
-    // Fallback when query consists solely of stop words or 1-char tokens
     expect(tokenizeSearchQuery('on')).toEqual(['on'])
     expect(tokenizeSearchQuery('for the')).toEqual(['for', 'the'])
     expect(tokenizeSearchQuery('a')).toEqual(['a'])
     expect(tokenizeSearchQuery('x')).toEqual(['x'])
 
-    // Empty or whitespace / punctuation only
     expect(tokenizeSearchQuery('')).toEqual([])
     expect(tokenizeSearchQuery('   ')).toEqual([])
     expect(tokenizeSearchQuery('---')).toEqual([])
@@ -591,21 +542,17 @@ describe('tokenized catalogue search & normalization', () => {
 
   it('matches exercises out of order, across attributes, and with hyphen normalization', async () => {
     const { matchesExerciseSearch } = await import('./muscles.js')
-    const bench = EXIDX['0025'] // Barbell Bench Press (chest, triceps, deltoids, eq: barbell)
+    const bench = EXIDX['0025']
 
-    // Out-of-order words
     expect(matchesExerciseSearch(bench, 'bench barbell')).toBe(true)
     expect(matchesExerciseSearch(bench, 'press barbell bench')).toBe(true)
 
-    // Cross-attribute matching (equipment + primary muscle)
     expect(matchesExerciseSearch(bench, 'barbell chest')).toBe(true)
     expect(matchesExerciseSearch(bench, 'barbell pectorals')).toBe(true)
 
-    // Cross-attribute matching (title + secondary muscle)
     expect(matchesExerciseSearch(bench, 'bench triceps')).toBe(true)
     expect(matchesExerciseSearch(bench, 'bench deltoids')).toBe(true)
 
-    // Hyphen normalization
     const pushupEx = { id: 'c-pu', n: 'Close-Grip Push-Up', tg: 'chest', bp: 'chest', eq: 'body weight' }
     expect(matchesExerciseSearch(pushupEx, 'push up')).toBe(true)
     expect(matchesExerciseSearch(pushupEx, 'push-up')).toBe(true)
@@ -615,16 +562,13 @@ describe('tokenized catalogue search & normalization', () => {
     expect(matchesExerciseSearch(spacePushup, 'push-up')).toBe(true)
     expect(matchesExerciseSearch(spacePushup, 'push up')).toBe(true)
 
-    // Disjunctive OR matching: matches ANY token
     expect(matchesExerciseSearch(bench, 'bench squat')).toBe(true)
     expect(matchesExerciseSearch(bench, 'unrelated bench')).toBe(true)
     expect(matchesExerciseSearch(bench, 'unrelated squat')).toBe(false)
 
-    // Stop-word filtering in action
     const bandCurl = { id: 'c-bc', n: 'Band Bicep Curl', tg: 'biceps', eq: 'band' }
     expect(matchesExerciseSearch(bandCurl, 'curls with band')).toBe(true)
 
-    // Matching in exercise description / notes
     const withDesc = { id: 'c-desc', n: 'Custom Lift', tg: 'chest', bp: 'chest', desc: 'Keep elbows tucked' }
     expect(matchesExerciseSearch(withDesc, 'elbows')).toBe(true)
     expect(matchesExerciseSearch(withDesc, 'tucked')).toBe(true)
@@ -632,27 +576,22 @@ describe('tokenized catalogue search & normalization', () => {
 
   it('attributes secondary muscles on tokenized queries while suppressing title and primary hits', async () => {
     const { secondaryMatchForQuery } = await import('./muscles.js')
-    const bench = EXIDX['0025'] // Barbell Bench Press (primary: chest, secondaries: triceps, deltoids)
+    const bench = EXIDX['0025']
 
-    // Secondary matches when paired with title words
     expect(secondaryMatchForQuery(bench, 'bench triceps')).toBe('triceps')
     expect(secondaryMatchForQuery(bench, 'triceps bench')).toBe('triceps')
     expect(secondaryMatchForQuery(bench, 'barbell triceps')).toBe('triceps')
 
-    // Secondary alias resolution in tokenized search
     expect(secondaryMatchForQuery(bench, 'bench delts')).toBe('deltoids')
     expect(secondaryMatchForQuery(bench, 'bench shoulders')).toBe('deltoids')
 
-    // Suppression when query matches primary muscle
     expect(secondaryMatchForQuery(bench, 'chest')).toBeNull()
     expect(secondaryMatchForQuery(bench, 'bench chest')).toBeNull()
     expect(secondaryMatchForQuery(bench, 'pectorals')).toBeNull()
 
-    // Suppression when query matches only title
     expect(secondaryMatchForQuery(bench, 'bench press')).toBeNull()
     expect(secondaryMatchForQuery(bench, 'barbell')).toBeNull()
 
-    // Multiple secondary tokens: attributes the first non-primary/non-title match
     expect(secondaryMatchForQuery(bench, 'triceps delts')).toBe('triceps')
   })
 })
@@ -662,7 +601,7 @@ describe('sessionMuscleDistribution', () => {
     const workout = {
       entries: [
         {
-          id: '0025', // Barbell Bench Press (primary: chest, secondaries: triceps, deltoids)
+          id: '0025',
           sets: [
             { w: 80, r: 8, done: true },
             { w: 80, r: 8, done: true },
@@ -721,7 +660,7 @@ describe('sessionMuscleDistribution', () => {
             { w: 40, r: 10, done: true, phase: 'warmup', warmup: true },
             { w: 60, r: 5, done: true, warmup: true },
             { w: 80, r: 8, done: true },
-            { w: 80, r: 8, done: false }, // undone
+            { w: 80, r: 8, done: false },
           ],
         },
       ],
@@ -762,7 +701,7 @@ describe('sessionMuscleDistribution', () => {
     const workout = {
       entries: [
         {
-          id: '0025', // Barbell Bench Press (chest primary, triceps/deltoids secondary)
+          id: '0025',
           sets: [
             { w: 100, r: 5, done: true },
             { w: 100, r: 5, done: true },
@@ -770,7 +709,7 @@ describe('sessionMuscleDistribution', () => {
           ],
         },
         {
-          id: '0018', // Assisted standing triceps extension (triceps primary)
+          id: '0018',
           sets: [
             { w: 20, r: 10, done: true },
             { w: 20, r: 10, done: true },
@@ -781,7 +720,6 @@ describe('sessionMuscleDistribution', () => {
 
     const dist = sessionMuscleDistribution(workout)
 
-    // Triceps received 2 direct sets + 3 assist sets (1.2 effective) = 3.2 effective sets
     const triceps = dist.find(m => m.slug === 'triceps')
     expect(triceps.primarySets).toBe(2)
     expect(triceps.secondarySets).toBe(3)
@@ -793,12 +731,10 @@ describe('sessionMuscleDistribution', () => {
       'assisted standing triceps extension (with towel)',
     ])
 
-    // Chest has 3 direct sets = 3.0 effective sets
     const chest = dist.find(m => m.slug === 'chest')
     expect(chest.primarySets).toBe(3)
     expect(chest.effectiveSets).toBe(3)
 
-    // Triceps (3.2) ranks ahead of Chest (3.0)
     expect(dist[0].slug).toBe('triceps')
     expect(dist[1].slug).toBe('chest')
   })
@@ -807,7 +743,7 @@ describe('sessionMuscleDistribution', () => {
     const workout = {
       entries: [
         {
-          id: '0025', // Bench: 3 sets -> chest: 3, deltoids: 1.2, triceps: 1.2
+          id: '0025',
           sets: [
             { w: 100, r: 5, done: true },
             { w: 100, r: 5, done: true },
@@ -819,8 +755,6 @@ describe('sessionMuscleDistribution', () => {
 
     const dist = sessionMuscleDistribution(workout)
     expect(dist.map(m => m.slug)).toEqual(['chest', 'deltoids', 'triceps'])
-    // Both deltoids and triceps have effectiveSets: 1.2 and primarySets: 0
-    // In English display names: 'Shoulders' < 'Triceps' alphabetically
     expect(dist[1].name).toBe('Shoulders')
     expect(dist[2].name).toBe('Triceps')
   })
@@ -851,7 +785,6 @@ describe('sessionMuscleDistribution', () => {
 })
 
 
-// One name per muscle on every screen: the Muscle map name, never the dataset spelling.
 describe('primaryMuscleName', () => {
   it('names a bench press "Chest", not the dataset\'s "pectorals"', () => {
     expect(EXIDX['0025'].tg).toBe('pectorals')

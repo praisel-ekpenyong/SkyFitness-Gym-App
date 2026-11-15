@@ -59,11 +59,9 @@ describe('RecapSheet', () => {
       root.render(<RecapSheet start="2026-02-01" close={close} />)
     })
 
-    // Header with month title
     const header = container.querySelector('h3')
     expect(header?.textContent).toContain('February 2026')
 
-    // Headline numbers
     const headlineSection = container.querySelectorAll('.sect-b')[0]
     const rows = Array.from(headlineSection.querySelectorAll('.lrow'))
     expect(rows.length).toBe(4)
@@ -76,12 +74,10 @@ describe('RecapSheet', () => {
     expect(rows[3].textContent).toContain('Sets')
     expect(rows[3].textContent).toContain('1')
 
-    // Records section lists the Record and the Estimated 1RM record; lifter-facing copy never says PR
     expect([...container.querySelectorAll('h4.sec')].map(h => h.textContent)).toContain('Records')
     expect(container.textContent).not.toMatch(/\bPRs?\b|personal record/i)
     expect(container.textContent).toContain('Estimated 1RM records')
 
-    // Month navigation: click previous month
     const prevBtn = container.querySelector('button[aria-label="Previous month"]')
     expect(prevBtn).toBeTruthy()
     await act(async () => {
@@ -100,7 +96,6 @@ describe('RecapSheet', () => {
   })
 
   describe('delta badges', () => {
-    // October 2026 is a full month of work; November is nine days in on 9 November.
     const twoMonths = () => useStore.getState().update(s => {
       const w = (id, d, kg) => ({
         id, d, start: 1000, end: 1000 + 45 * 60000,
@@ -148,10 +143,6 @@ describe('RecapSheet', () => {
 })
 
 describe('finishWorkout confirmation', () => {
-  // The deleted __probe2.test.js proved the confirm counted an unticked warm-up as an
-  // unchecked set while the finish button said everything was done. Both now read
-  // sessionProgress (GLOSSARY.md: Session progress), so the confirm only ever asks
-  // about work sets.
   const activeWith = sets => ({
     id: 'active', name: 'Test workout', start: Date.now(), cur: 0,
     entries: [{ id: '0025', target: { mode: 'reps', reps: 5, weight: 100, bodyweight: false }, sets }],
@@ -168,7 +159,6 @@ describe('finishWorkout confirmation', () => {
 
     await act(async () => { finishWorkout() })
 
-    // No confirm blocked it: the session closed and the workout landed in history.
     expect(useStore.getState().S.active).toBeNull()
     expect(useStore.getState().S.workouts.length).toBe(1)
   })
@@ -183,7 +173,6 @@ describe('finishWorkout confirmation', () => {
 
     await act(async () => { finishWorkout() })
 
-    // The session survives until confirmed, and the confirm names warm-ups, not "sets".
     expect(useStore.getState().S.active).not.toBeNull()
     const sheet = useUI.getState().sheets.at(-1)
     expect(sheet).toBeTruthy()
@@ -193,8 +182,6 @@ describe('finishWorkout confirmation', () => {
   })
 
   it('states how far the workout got when finishing early', async () => {
-    // The workout screen has one Finish key; the count it used to carry ("0/6 exercises")
-    // is said here, where the choice is made.
     useStore.getState().update(s => {
       s.active = {
         id: 'active', name: 'Test workout', start: Date.now(), cur: 0,
@@ -380,11 +367,9 @@ describe('WorkoutDetail', () => {
       await new Promise(r => setTimeout(r, 100))
     })
 
-    // Contains compact bodymap container and session muscle distribution
     const distContainer = container.querySelector('.workout-detail-distribution')
     expect(distContainer).toBeTruthy()
 
-    // What you did comes first, then where it landed, then "Delete workout".
     const entry = container.querySelector('.ex-entry')
     const del = [...container.querySelectorAll('button')].find(b => b.textContent === 'Delete workout')
     expect(entry.compareDocumentPosition(distContainer) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
@@ -398,13 +383,11 @@ describe('WorkoutDetail', () => {
     expect(distRows?.length).toBe(3)
     expect(distRows?.[0].textContent).toContain('Chest')
 
-    // Tapping row selects it
     await act(async () => {
       distRows?.[0].dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
     expect(distRows?.[0].classList.contains('selected')).toBe(true)
 
-    // BodyMap buttons receive quantified accessible labels via getA11yLabel
     const chestButton = distContainer?.querySelector('.bodymap [role="button"][aria-label*="Chest"]')
     expect(chestButton?.getAttribute('aria-label')).toBe('Chest, 2.0 effective sets')
     const calvesButton = distContainer?.querySelector('.bodymap [role="button"][aria-label*="Calves"]')

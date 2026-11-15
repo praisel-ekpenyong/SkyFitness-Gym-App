@@ -1,15 +1,10 @@
-// Workout domain model: pure workout domain helpers for set rows and session state.
-// Owns canonical definitions of work sets vs warm-ups, targets, session progress,
-// set row builders and mutators, and volume and tonnage calculations.
-// Active workout UI orchestration stays in views/Workout.jsx, while progression
-// algorithms live in lib/progression.js.
 
 import { isCardio, isBodyweightEq } from './exercises.js'
-import { isWarmupRow, ensurePlainObject, objectOf } from './warmup.js'
+import { isWarmupRow, ensurePlainObject } from './warmup.js'
 import { bestKnownWeight } from './active-finish.js'
 import { resolveSetWeight, normalizeWeight, round1 } from './units.js'
 
-export { phaseForSet, isWarmupRow, ensurePlainObject, objectOf } from './warmup.js'
+export { phaseForSet, isWarmupRow, ensurePlainObject } from './warmup.js'
 
 export const MODES = Object.freeze(['reps', 'time', 'cardio'])
 export const PHASES = Object.freeze({ WORK: 'work', WARMUP: 'warmup' })
@@ -27,12 +22,6 @@ export function normalizeMode(value, fallback = 'reps') {
   return MODES.includes(fallback) ? fallback : 'reps'
 }
 
-/**
- * Translate a weight-unit token to its logging mode.
- *
- * @param {*} value - Unit label such as 'reps', 'sec', or 'min'; non-strings yield null.
- * @returns {string|null} 'reps', 'time', 'cardio', or null when unrecognized.
- */
 function modeFromUnit(value) {
   const token = typeof value === 'string' ? value.trim().toLowerCase() : ''
   if (['rep', 'reps', 'repetition', 'repetitions'].includes(token)) return 'reps'
@@ -41,12 +30,6 @@ function modeFromUnit(value) {
   return null
 }
 
-/**
- * Read the explicitly stored mode from a set, row, or target object.
- *
- * @param {*} source - Set, row, or config possibly carrying mode or unit; non-objects read as empty.
- * @returns {string|null} Stored mode, or null when neither mode nor unit names one.
- */
 function explicitMode(source) {
   const obj = ensurePlainObject(source)
   const value = obj.mode
@@ -54,14 +37,6 @@ function explicitMode(source) {
   return MODES.includes(token) ? token : modeFromUnit(obj.unit)
 }
 
-/**
- * Infer a logging mode from stored fields when no explicit mode is present.
- *
- * Explicit mode wins; otherwise legacy duration and count fields decide.
- *
- * @param {*} source - Set, row, or target possibly carrying mode, unit, or legacy result fields; non-objects read as empty.
- * @returns {string|null} Inferred mode, or null when nothing indicates one.
- */
 function inferredMode(source) {
   const value = ensurePlainObject(source)
   const explicit = explicitMode(value)
@@ -73,12 +48,10 @@ function inferredMode(source) {
   return null
 }
 
-/** Resolve one row's mode: explicit row, parent target, then legacy result fields. */
 export function modeForSet(set, target = {}) {
   return explicitMode(set) || inferredMode(target) || inferredMode(set) || 'reps'
 }
 
-/** Resolve a single mode for an entry; mixed work-row modes intentionally return null. */
 export function modeForEntry(entry, fallback = null) {
   const source = ensurePlainObject(entry)
   const target = ensurePlainObject(source.target || source)
@@ -141,10 +114,6 @@ export const sideReps = reps => (reps || 0) / 2
  */
 export const repStep = cfg => (isPerSide(cfg) ? 2 : 1)
 
-// --- Row construction (deep seam) -----------------------------------------
-// One home for the shape and fallback defaults of a reps/time/cardio row.
-// Every site that once hand-rolled `{w,r} | {sec,w} | {min,speed}` now calls
-// this, so a new Mode or a renamed field touches one file.
 export const ROW_DEFAULTS = Object.freeze({
   cardio: Object.freeze({ min: 20, speed: 8 }),
   time: Object.freeze({ sec: 45, weight: 0 }),
@@ -152,20 +121,6 @@ export const ROW_DEFAULTS = Object.freeze({
 })
 export const SETS_DEFAULTS = Object.freeze({ cardio: 1, time: 3, reps: 3 })
 
-/**
- * Make one work or warm-up row for `mode` from `target` and an optional `prev` row.
- *
- * `target` carries the exercise config ({min,speed} for cardio, {sec,weight} for
- * time, {reps,weight} for reps); `prev` is the history or last row to copy.
- * Warm-up rows carry `phase:'warmup'+warmup:true` for legacy readers. Options
- * arrive as a destructured third argument.
- *
- * @param {string} mode - 'reps' | 'time' | 'cardio'.
- * @param {Object} [target] - Exercise config holding the mode's fields.
- * @param {Object|null} [prev=null] - Row to copy values from.
- * @param {boolean} [warmup=false] - Mark the row as a warm-up row.
- * @returns {Object} New set row with `done:false`.
- */
 export function makeRow(mode, target = {}, { prev = null, warmup = false } = {}) {
   const m = normalizeMode(mode, 'reps')
   const base = warmup ? { done: false, phase: 'warmup', warmup: true } : { done: false }
@@ -184,7 +139,6 @@ export function makeRow(mode, target = {}, { prev = null, warmup = false } = {})
   return { w, r, ...base }
 }
 
-// Default config for a freshly added exercise.
 export function defaultConfig(id, mode) {
   const m = mode || modeOf({ id })
   if (m === 'cardio') return { sets: SETS_DEFAULTS.cardio, min: ROW_DEFAULTS.cardio.min, speed: ROW_DEFAULTS.cardio.speed }
@@ -211,23 +165,6 @@ export function freestyleConfig(S, cfg) {
   }
 }
 
-/**
- * Build fresh uncompleted set rows for an exercise from plan and history.
- *
- * Rows reuse last logged values within the same mode and fall back to the plan.
- *
- * Routine-backed sessions pass `routineId` so a new Target shape seeds from that Routine's
- * own last working weight, never another Routine's `exWeights` high. `seedWeightOnly` keeps
- * the plan's top reps/seconds for a new Progression stream while still carrying that weight.
- *
- * @param {Object} S - App state with workouts history and optional exWeights working-weight hints.
- * @param {Object} cfg - Exercise plan carrying id, sets count, and mode fields.
- * @param {Object} options - Build flags:
- *   `preferLast` keeps each last set weight over the hint; `routineId` scopes history and
- *   disables the global working-weight hint; `seedWeightOnly` takes only the weight from
- *   history.
- * @returns {Array<Object>} New set rows with done:false, at least one row.
- */
 export function buildSets(S, cfg, options = {}) {
   const routineId = options.routineId || null
   const last = routineId ? lastEntryForRoutine(S, cfg.id, routineId) : lastEntryFor(S, cfg.id)
@@ -250,7 +187,6 @@ export function buildSets(S, cfg, options = {}) {
     for (let i = 0; i < n; i++) {
       const prev = prevAt(i)
       const usable = prev && prev.sec > 0 ? prev : null
-      // A new stream takes the working weight but not the old Target's duration.
       const carried = seedWeightOnly && usable ? { w: usable.w } : usable
       sets.push(makeRow('time', cfg, { prev: carried }))
     }
@@ -262,55 +198,22 @@ export function buildSets(S, cfg, options = {}) {
     const usable = prev && prev.r > 0 ? prev : null
     const w = preferLast && usable ? usable.w : (conf && conf.w > 0 ? conf.w : (usable ? usable.w : cfg.weight))
     const r = seedWeightOnly ? cfg.reps : (usable ? usable.r : cfg.reps)
-    // makeRow would otherwise re-derive r from prev, but w is already resolved
-    // via exWeights/preferLast — so seed r from usable and override w explicitly.
     const row = makeRow('reps', { ...cfg, reps: r, weight: w }, { prev: null })
     sets.push(row)
   }
   return sets
 }
 
-/**
- * Whether a row is a work set — the phase reading, complement of `isWarmupRow`.
- *
- * GLOSSARY.md: Work set — any set that is not a warm-up; all metrics, judgements
- * and policies read work sets only. A missing or unrecognised phase reads as
- * work (the `phaseForSet` contract), so the predicate is for real rows.
- *
- * @param {Object|null|undefined} set - Set/row object.
- * @returns {boolean} True when the row is a work set.
- */
 export const isWorkSet = set => !isWarmupRow(set)
 
-/**
- * Whether a set or row was performed (checked off).
- *
- * GLOSSARY.md: Performed — an unchecked set counts as not having happened,
- * everywhere. Read as truthy: production writes booleans, and a hand-edited
- * `done: 1` counts rather than silently disappearing from the strict readers.
- *
- * Parameter: (row) Set or row object with a `done` property.
- * @returns {boolean} True when the row is checked off (truthy `done`).
- */
 export const isPerformed = set => !!set?.done
 
-/** The work sets of an entry, performed or not (the phase-only list). */
 export const workSets = entry => (Array.isArray(entry?.sets) ? entry.sets : []).filter(isWorkSet)
 
-/** The performed work sets of an entry — the list metrics read. */
 export const doneWorkSets = entry => workSets(entry).filter(isPerformed)
 
-/** Whether an entry has at least one performed work set — the entry-counts-as-trained test. */
 export const hasWorkSet = entry => doneWorkSets(entry).length > 0
 
-/**
- * Tonnage of one Workout: load × reps across performed Work sets.
- * When `targetUnit` is provided, set loads are normalized to `targetUnit`.
- *
- * @param {Object|null|undefined} workout - Workout with an entries array of set rows; nullish yields 0.
- * @param {string|null} [targetUnit=null] - Desired unit ('kg' | 'lb'). Nullish preserves raw values.
- * @returns {number} Summed load × reps; 0 when none.
- */
 export function tonnageOf(workout, targetUnit = null) {
   let total = 0
   ;(workout?.entries || []).forEach(entry => doneWorkSets(entry).forEach(set => {
@@ -332,10 +235,6 @@ export function setsDone(w) {
   return n
 }
 
-/**
- * Cascade a weight change forward: following sets of the same warm-up flag that are still
- * undone take the new value (null deletes the key). Done sets are never rewritten.
- */
 export function cascadeWeight(rows, from, value) {
   const warm = isWarmupRow(rows[from])
   const next = rows.slice()
@@ -349,7 +248,6 @@ export function cascadeWeight(rows, from, value) {
   return next
 }
 
-/** Insert a warm-up row before the first work row, copying the preceding warm-up's values. */
 export function insertWarmupRow(rows, mode, target = {}) {
   const firstWork = rows.findIndex(isWorkSet)
   const at = firstWork === -1 ? rows.length : firstWork
@@ -360,7 +258,6 @@ export function insertWarmupRow(rows, mode, target = {}) {
   return next
 }
 
-/** Remove the row at `i`, never emptying the entry below one row. */
 export function removeRowAt(rows, i) {
   if (rows.length <= 1) return rows.slice()
   const next = rows.slice()
@@ -368,58 +265,20 @@ export function removeRowAt(rows, i) {
   return next
 }
 
-/** Performed work sets across a workout's entries. */
 export function workSetsDone(w) {
   return (w?.entries || []).reduce((n, e) => n + doneWorkSets(e).length, 0)
 }
 
-/**
- * Whether an entry still has work sets left to tick.
- *
- * The one definition of "work left" that every completion check reads: the
- * superset step, the set toggle, the working-weight sheet and the finish
- * surfaces. Warm-up rows are preparatory and never count as work left.
- * Accepts either an entry directly, or an entries array with an index.
- *
- * @param {Array<Object>|Object} entryOrEntries - Entries array or a single entry object.
- * @param {number} [idx] - Index when passing an entries array.
- * @returns {boolean} True if the entry has an unticked work set; missing entries read as none.
- */
 export const hasWork = (entryOrEntries, idx) => {
   const entry = idx == null ? entryOrEntries : entryOrEntries?.[idx]
   return workSets(entry).some(set => !isPerformed(set))
 }
 
-/**
- * Whether an entry has nothing left to do.
- *
- * An entry counts as done when no work set remains unticked (GLOSSARY.md:
- * Session progress). An entry left with only warm-up rows — or none at all —
- * has nothing left to do and counts as done, so a session can always be
- * finished without a false "unchecked" claim. Nullish entries are not done.
- *
- * @param {Object} entry - Workout entry containing a sets array.
- * @returns {boolean} True when no work set is left to tick.
- */
 export function isExerciseDone(entry) {
   if (!entry || !Array.isArray(entry.sets)) return false
   return !hasWork(entry)
 }
 
-/**
- * The one reading of Active workout progress (GLOSSARY.md: Session progress).
- *
- * Work sets only: warm-up rows never move any number here. Every surface that
- * shows or asks how far the session has come reads this — `done`/`total` the
- * header, `remaining` the finish confirm, `exDone`/`exTotal`/`allDone` the
- * finish button — so the surfaces cannot disagree. `allDone` means every entry
- * has nothing left to do; an empty session is not done.
- *
- * @param {Object|null} A - Active workout with an entries array; nullish yields zeroes.
- * @returns {{ done: number, total: number, remaining: number, exDone: number, exTotal: number, allDone: boolean }}
- *   done/total: ticked vs all work sets. exDone/exTotal: entries with nothing
- *   left to do vs all entries.
- */
 export function sessionProgress(A) {
   const entries = A?.entries || []
   const total = entries.reduce((n, e) => n + workSets(e).length, 0)
@@ -429,13 +288,6 @@ export function sessionProgress(A) {
   return { done, total, remaining: total - done, exDone, exTotal, allDone: exTotal > 0 && exDone === exTotal }
 }
 
-/**
- * Select work-phase rows of one mode from an entry.
- *
- * @param {Object} entry - Workout entry with sets and optional target; missing sets count as empty.
- * @param {string} mode - Requested mode; unknown values normalize to 'reps'.
- * @returns {Array<Object>} Work rows matching the normalized mode, in logged order.
- */
 const workRowsForMode = (entry = {}, mode = 'reps') => {
   const source = ensurePlainObject(entry)
   const target = ensurePlainObject(source.target || source)
@@ -444,13 +296,6 @@ const workRowsForMode = (entry = {}, mode = 'reps') => {
     .filter(set => isWorkSet(set) && modeForSet(set, target) === expectedMode)
 }
 
-/**
- * Select completed work rows of one mode from an entry.
- *
- * @param {Object} entry - Workout entry passed to workRowsForMode.
- * @param {string} mode - Requested mode passed to workRowsForMode.
- * @returns {Array<Object>} Done work rows of that mode, excluding warm-ups.
- */
 const completedRowsForMode = (entry, mode) => workRowsForMode(entry, mode).filter(isPerformed)
 
 /**
@@ -466,7 +311,6 @@ export function metricRowsForEntry(entry, mode) {
   return resolved ? completedRowsForMode(entry, resolved) : []
 }
 
-/** The authoritative metric for an entry; reps rows take precedence over timed/cardio rows. */
 export function metricModeForEntry(entry, fallback = null) {
   for (const mode of MODES) {
     if (completedRowsForMode(entry, mode).length) return mode
@@ -474,26 +318,12 @@ export function metricModeForEntry(entry, fallback = null) {
   return modeForEntry(entry, fallback)
 }
 
-/**
- * Backwards walk shared by the last-entry readers.
- *
- * Scans workouts in reverse order, keeping only those the `match` predicate accepts, and returns
- * the first matching exercise entry that has performed work sets. Callers add their filter
- * (any-Routine vs one Routine) as the predicate; the entry shape is fixed here.
- *
- * @param {Object} S - Application state atom containing `workouts`.
- * @param {string} exId - Exercise identifier from EXIDX.
- * @param {(w: Object) => boolean} match - Workout filter; false skips the workout entirely.
- * @returns {{ d: string, sets: Array<Object>, target: Object|null }|null} Last entry summary, or null.
- */
 const lastEntryWalk = (S, exId, match) => {
   const workouts = S?.workouts || []
   for (let i = workouts.length - 1; i >= 0; i--) {
     const w = workouts[i]
     if (!match(w)) continue
     const en = (w.entries || []).find(e => e.id === exId)
-    // `target` is what the session prescribed; finished workouts carry it so labels and the
-    // progression engine can read a session back the way it was logged.
     if (!en?.sets) continue
     const workDone = doneWorkSets(en)
     if (workDone.length) return { d: w.d, sets: workDone, target: en.target || null }
@@ -501,46 +331,15 @@ const lastEntryWalk = (S, exId, match) => {
   return null
 }
 
-/**
- * Find the most recent workout entry for an exercise containing completed work sets.
- *
- * Scans workouts in reverse chronological order. Warm-up rows are excluded so prep sets
- * never masquerade as training sessions. Retains the prescribed `target` for progression audits.
- *
- * @param {Object} S - Application state atom containing `workouts`.
- * @param {string} exId - Exercise identifier from EXIDX.
- * @returns {{ d: string, sets: Array<Object>, target: Object|null }|null} Last entry summary, or null if never performed.
- */
 export function lastEntryFor(S, exId) {
   return lastEntryWalk(S, exId, () => true)
 }
 
-/**
- * Find the most recent workout entry for an exercise within one Routine.
- *
- * A new Progression stream seeds its first rows from the Routine it belongs to. Reading the
- * global last Entry (or `exWeights`) instead would let a heavy Routine's 100 kg session seed
- * a light Routine's 40 kg plan. Falls back to the global read when no Routine is supplied.
- *
- * @param {Object} S - Application state atom containing `workouts`.
- * @param {string} exId - Exercise identifier from EXIDX.
- * @param {string} [routineId] - Routine whose history to read; falsy means any Routine.
- * @returns {{ d: string, sets: Array<Object>, target: Object|null }|null} Last entry summary.
- */
 export function lastEntryForRoutine(S, exId, routineId) {
   if (!routineId) return lastEntryFor(S, exId)
   return lastEntryWalk(S, exId, w => w?.routineId === routineId)
 }
 
-/**
- * Best load from completed work rows, with a guarded reps-only legacy topW fallback.
- * When `targetUnit` is provided, set loads and legacy topW are normalized to `targetUnit`.
- *
- * @param {Object} [entry={}] - Workout entry.
- * @param {Object|null} [workout=null] - Parent workout for unit cascade.
- * @param {string|null} [targetUnit=null] - Desired unit ('kg' | 'lb'). Nullish preserves raw values.
- * @returns {number} Best performed load.
- */
 export function bestWeightForEntry(entry = {}, workout = null, targetUnit = null) {
   const target = entry.target || entry
   const workRows = workSets(entry)
@@ -575,19 +374,6 @@ export function bestWeightForEntry(entry = {}, workout = null, targetUnit = null
   return targetUnit ? round1(best) : best
 }
 
-/**
- * Seed an exercise config for replacement from its history and best known weight.
- *
- * Scans the parent routine's history (if provided) before falling back to any routine's history.
- * Pre-populates the target with the last logged target, overrides with bestKnownWeight
- * for weighted exercises, and preserves the requested sets count (falling back to base defaults).
- *
- * @param {Object} S - Application state atom containing workouts and exWeights.
- * @param {string} exId - Exercise identifier from EXIDX.
- * @param {string|null} [routineId] - ID of routine context, or null/undefined.
- * @param {number|null} [setsCount] - Prescribed sets count from the outgoing exercise, or null/undefined.
- * @returns {Object} Pre-seeded config object for exConfigSheet / replacement.
- */
 export function seedForReplacement(S, exId, routineId, setsCount) {
   const base = defaultConfig(exId)
   const last = lastEntryForRoutine(S, exId, routineId) || lastEntryFor(S, exId)
@@ -600,15 +386,6 @@ export function seedForReplacement(S, exId, routineId, setsCount) {
   }
 }
 
-/**
- * Clean and clamp an exercise note string.
- *
- * Trims whitespace, slices to 500 characters, returns undefined if empty/whitespace-only,
- * or the cleaned string.
- *
- * @param {*} value - Candidate note text.
- * @returns {string|undefined} Cleaned note or undefined.
- */
 export function cleanNote(value) {
   if (typeof value !== 'string') return undefined
   const trimmed = value.trim()

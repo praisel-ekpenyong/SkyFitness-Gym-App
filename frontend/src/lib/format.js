@@ -1,7 +1,3 @@
-// Formatting utilities: presentation helpers for dates, timestamps, elapsed
-// durations, numbers, unit labels, and human-readable set/exercise summaries.
-// Owns locale-aware string conversions across the UI, leaving raw time math to
-// callers and training domain logic to lib/workout-model.js.
 
 import { dateLocale, t } from './i18n-core.js'
 import { modeOf, isBw, isPerSide, sideReps } from './workout-model.js'
@@ -37,12 +33,6 @@ export function fmtDate(iso, long) {
   const d = new Date(iso + 'T12:00:00')
   return d.toLocaleDateString(dateLocale(), long ? { weekday: 'short', day: 'numeric', month: 'short' } : { day: 'numeric', month: 'short' })
 }
-/**
- * Splits a duration into figure and unit pairs, so a tile can set each unit small (`.u`).
- * @param {number} ms - Elapsed milliseconds; values below one minute read as `0 min`.
- * @returns {Array<[string, string]>} `[['54', ' min']]` below one hour, otherwise
- *   `[['1', 'h'], ['6', 'm']]`; each unit carries the space that precedes it, if any.
- */
 export function fmtDurParts(ms) {
   const m = Math.floor(ms / 60000)
   return m >= 60 ? [[fmtNum(Math.floor(m / 60)), 'h'], [String(m % 60), 'm']] : [[fmtNum(m), ' min']]
@@ -53,26 +43,11 @@ export function fmtDurParts(ms) {
  * @returns {string} `M min` below one hour, otherwise `Hh Mm`.
  */
 export const fmtDur = ms => fmtDurParts(ms).map(p => p.join('')).join(' ')
-// Imported history has no clock — an unknown duration is left out rather than shown as "0 min".
 export const durPart = ms => (ms >= 60000 ? [fmtDur(ms)] : [])
-// Numbers follow the UI language, like the dates above — a hardcoded locale put Swiss
-// apostrophes ("7'535 kg") in front of every user, in every language.
 export const fmtNum = n => (Math.round(n * 10) / 10).toLocaleString(dateLocale())
-// Volume stays in the profile's unit throughout: the old shorthand turned anything over
-// 10 000 into "t", which is wrong for a pound profile and made one list mix "18.8t" with
-// "7'535 kg" — two numbers you can't compare at a glance.
 export const fmtVol = (v, unit) => fmtNum(v) + ' ' + unit
 
-/** The minus sign (U+2212). A hyphen or an en dash is never a minus in the UI. */
 export const MINUS = '\u2212'
-/**
- * Writes a signed figure: every weight delta, step key, progression delta and comparison.
- * The magnitude goes through `fmt`, so it keeps fmtNum's rounding and thousands separator.
- * @param {number} n - Signed value; junk reads as zero.
- * @param {(abs: number) => string} [fmt=fmtNum] - Formats the magnitude (fmtVol, fmtDur, …).
- * @returns {string} `−0.2` for a loss (U+2212), `+2.5` for a gain, and no sign at all on a
- *   figure that is written as zero ("0", "0 min"), which has no direction.
- */
 export function fmtSigned(n, fmt = fmtNum) {
   const v = Number(n) || 0
   const body = fmt(Math.abs(v))
@@ -80,15 +55,8 @@ export function fmtSigned(n, fmt = fmtNum) {
   return (v < 0 ? MINUS : '+') + body
 }
 
-// Names that are not ordinary words keep their own capitals in a sentence-case label.
 const PROPER = { ez: 'EZ', bosu: 'BOSU', skierg: 'SkiErg' }
 const UNIT = /^(kg|lb|lbs|km\/h|min|s|h|m)$/
-/**
- * Sentence-cases a dataset name for a label or chip: "body weight" → "Body weight",
- * never title case ("Body Weight"). A unit stays lowercase ("kg", "60 kg").
- * @param {string} s - Label, usually a lowercase dataset name.
- * @returns {string} The label with only its first letter lifted.
- */
 export function sentenceCase(s) {
   const words = String(s ?? '').split(' ')
   const fixed = words.map(w => PROPER[w.toLowerCase()] || w)
@@ -96,7 +64,6 @@ export function sentenceCase(s) {
   if (!UNIT.test(first) && first === words[0]) fixed[0] = first.charAt(0).toUpperCase() + first.slice(1)
   return fixed.join(' ')
 }
-// Plural forms are not automatic when the English string is the key.
 export const exCount = n => t(n === 1 ? '{0} exercise' : '{0} exercises', n)
 
 /**
@@ -152,8 +119,6 @@ export function workoutTimestamp(w) {
 }
 export const ACCENTS = { lime: '#a3e635', sky: '#5cb8ff', violet: '#b79cff', pink: '#ff6fa3', teal: '#3dd6c4' }
 
-// One minutes:seconds splitter for durations and elapsed time, so the two formatters
-// cannot drift apart. Callers clamp and round or floor before calling it.
 const clockText = n => Math.floor(n / 60) + ':' + String(n % 60).padStart(2, '0')
 
 /**
@@ -165,33 +130,20 @@ export function fmtSec(sec) {
   return clockText(Math.max(0, Math.round(Number(sec) || 0)))
 }
 
-/**
- * Formats elapsed time in seconds as `m:ss`, flooring so the clock never shows a
- * second before it has passed.
- * @param {number} sec - Elapsed seconds; negatives and junk clamp to zero.
- * @returns {string} Minutes and seconds such as `1:30`.
- */
 export function fmtElapsed(sec) {
   return clockText(Math.max(0, Math.floor(Number(sec) || 0)))
 }
 
-// The "(RIR 2)" / "(RPE 8)" tail on a set summary, empty when nothing was logged.
 const effortTail = s => {
   const k = s?.rir != null ? 'rir' : s?.rpe != null ? 'rpe' : null
   return k && EFFORT[k] ? ` (${EFFORT[k].hd} ${fmtNum(s[k])})` : ''
 }
 
-// One-line summary of a logged set. `cfg` carries the mode when the caller has it (a routine
-// entry or a workout entry); passing an id alone keeps the old body-part behaviour.
 export function setLabel(id, s, cfg) {
   const c = cfg || { id }
   const mode = modeOf(c)
   if (mode === 'cardio') return `${s.min || 0} min @ ${fmtNum(s.speed || 0)} km/h`
   if (mode === 'time') return fmtSec(s.sec) + (s.w > 0 ? ` · ${fmtNum(s.w)}` : '')
-  // Bodyweight reads as what you did — "12", or "+10 × 12" once there is a belt involved —
-  // rather than "0×12", which says a set was performed with no weight and means nothing.
-  // A per-side set needs no mark here: the number logged is the total, the same as every
-  // other set in the app.
   const reps = s.r || 0
   if (isBw({ ...c, id: c.id ?? id })) {
     const load = s.w > 0 ? `${fmtSigned(s.w)} × ` : ''
@@ -200,16 +152,12 @@ export function setLabel(id, s, cfg) {
   return `${fmtNum(s.w || 0)}×${reps}` + effortTail(s)
 }
 
-// One-line summary of a planned exercise ("3 × 10 · 60 kg"), shared by the routine editor
-// and the plan export so a mode is described the same way everywhere.
 export function exLine(cfg, unit) {
   const mode = modeOf(cfg)
   const n = cfg.sets || 1
-  // Added weight reads as added: "+10 kg" on a dip belt, "60 kg" on a barbell.
   const load = cfg.weight ? ' · ' + (isBw(cfg) ? fmtSigned(cfg.weight) : fmtNum(cfg.weight)) + ' ' + unit : ''
   if (mode === 'cardio') return `${n} × ${cfg.min || 20} min @ ${fmtNum(cfg.speed || 8)} km/h`
   if (mode === 'time') return `${n} × ${fmtSec(cfg.sec || 45)}${load}`
-  // This is the line with room for it, so the split is spelled out: "3 × 16 · 8/side".
   const split = isPerSide(cfg) ? ' · ' + t('{0}/side', fmtNum(sideReps(cfg.reps))) : ''
   return `${n} × ${cfg.reps}${load}${split}`
 }

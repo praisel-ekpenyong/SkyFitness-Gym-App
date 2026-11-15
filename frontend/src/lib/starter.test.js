@@ -13,7 +13,6 @@ describe('starter routines factory', () => {
     expect(routines1.map(r => r.name)).toEqual(['Push Day', 'Pull Day', 'Leg Day'])
     expect(routines1.map(r => r.emoji)).toEqual(['barbell', 'pullup', 'legs'])
 
-    // IDs must be unique per call
     const ids1 = routines1.map(r => r.id)
     const ids2 = routines2.map(r => r.id)
     expect(new Set([...ids1, ...ids2]).size).toBe(6)

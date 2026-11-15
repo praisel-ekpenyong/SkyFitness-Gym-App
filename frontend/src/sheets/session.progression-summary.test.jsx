@@ -83,10 +83,8 @@ describe('FinishSummary Progression Summary', () => {
     expect(card).not.toBeNull()
     expect(card.getAttribute('aria-label')).toBe('Progression summary')
 
-    // Verify section header "Progression"
     expect(container.textContent).toContain('Progression')
 
-    // Document order check: Records precede Progression section, and Progression section precedes BodyMap
     const prSection = container.querySelector('.finish-records .row')
     const bodyMap = container.querySelector('svg.bodymap, [aria-label*="muscle"], .bodymap')
     expect(prSection).not.toBeNull()
@@ -115,7 +113,7 @@ describe('FinishSummary Progression Summary', () => {
           id: '0047',
           target: { sets: 3, reps: 12, repsMin: 8, weight: 24, prog: 'double' },
           sets: [
-            { w: 24, r: 10, done: false }, // unticked / skipped
+            { w: 24, r: 10, done: false },
             { w: 24, r: 10, done: false },
           ],
         },
@@ -188,11 +186,9 @@ describe('FinishSummary Progression Summary', () => {
     expect(card.textContent).toContain('Linear progression')
     expect(card.textContent).toContain('60 kg → 62.5 kg (+2.5 kg)')
 
-    // Advance indicator arrow
     const arrow = card.querySelector('svg')
     expect(arrow).not.toBeNull()
 
-    // Accessible item label
     const item = card.querySelector('[role="listitem"]')
     expect(item).not.toBeNull()
     expect(item.getAttribute('aria-label')).toContain('60 kg → 62.5 kg (+2.5 kg)')
@@ -230,7 +226,6 @@ describe('FinishSummary Progression Summary', () => {
   })
 
   it('displays constructive coaching context on deload without punitive failure language', async () => {
-    // 2 prior misses in history at 100 kg
     const priorWorkouts = [
       {
         id: 'w-prev-1',
@@ -263,7 +258,6 @@ describe('FinishSummary Progression Summary', () => {
       },
     })
 
-    // 3rd miss triggers deload
     const w = {
       id: 'w-current',
       d: '2026-10-30',
@@ -286,7 +280,6 @@ describe('FinishSummary Progression Summary', () => {
     expect(card).not.toBeNull()
     expect(card.textContent).toContain('Deload 10% to reset and rebuild')
 
-    // No punitive failure language
     expect(card.textContent.toLowerCase()).not.toContain('failed')
     expect(card.textContent.toLowerCase()).not.toContain('failure')
     expect(card.textContent.toLowerCase()).not.toContain('penalty')
@@ -303,7 +296,7 @@ describe('FinishSummary Progression Summary', () => {
           id: '0025',
           target: { sets: 3, reps: 5, weight: 60, prog: 'linear' },
           sets: [
-            { w: 60, r: 4, done: true }, // missed 5 reps, 1st stall -> hold
+            { w: 60, r: 4, done: true },
           ],
         },
       ],
@@ -374,7 +367,7 @@ describe('FinishSummary Progression Summary', () => {
           sets: [
             { w: 60, r: 5, done: true },
             { w: 60, r: 5, done: true },
-            { w: 60, r: 10, done: true }, // Doubled target (10 reps on final AMRAP set)
+            { w: 60, r: 10, done: true },
           ],
         },
       ],
@@ -388,7 +381,6 @@ describe('FinishSummary Progression Summary', () => {
     expect(card).not.toBeNull()
     expect(card.textContent.toLowerCase()).toContain('barbell bench press')
     expect(card.textContent).toContain('Greyskull LP')
-    // Double increment: 2.5 * 2 = 5 kg
     expect(card.textContent).toContain('60 kg → 65 kg (+5 kg)')
   })
 
@@ -441,8 +433,6 @@ describe('FinishSummary Progression Summary', () => {
 })
 
 describe('FinishSummary tiles', () => {
-  // DESIGN.md number formatting: the figure leads, its unit is small (.u), and the label above
-  // it is the only place the word appears ("Sets" over "3", never "3 sets").
   const tiles = () => Object.fromEntries([...container.querySelectorAll('.finish-kpis .tile')]
     .map(tile => [tile.querySelector('.l').textContent, tile]))
 
@@ -469,7 +459,6 @@ describe('FinishSummary tiles', () => {
     expect(Volume.querySelector('.v .u').textContent.trim()).toBe('kg')
     expect(Sets.querySelector('.v').textContent).toBe('3')
     expect(Sets.querySelector('.s').textContent).toBe('1 warm-up')
-    // Zero is a zero, not a dash: no records is a count, not missing data.
     expect(Records.querySelector('.v').textContent).toBe('0')
   })
 })

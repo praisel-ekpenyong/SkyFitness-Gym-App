@@ -40,8 +40,6 @@ describe('production recovery view selectors', () => {
   })
 
   it('Fatigue Muscle map shade and inspector label agree at the canonical boundaries', () => {
-    // Ready below 0.25 shades l0/l1, recovering through 0.5 shades l2/l3, fatigued
-    // above shades l4 — the same agreement the Strength view pins through its bands.
     const probes = [
       { value: 0.2499, label: 'ready', levels: [0, 1] },
       { value: 0.25, label: 'recovering', levels: [2, 3] },

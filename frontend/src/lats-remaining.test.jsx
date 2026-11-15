@@ -48,7 +48,6 @@ function getChip(scope, label) {
   return Array.from(scope.querySelectorAll('.chips button.chip')).find(b => b.textContent.trim() === label)
 }
 
-// Shared head-to-toe order for 19 muscles + cardio, per GLOSSARY.md / muscles.js MUSCLES
 const HEAD_TO_TOE_DISPLAY = ['Traps', 'Shoulders', 'Chest', 'Upper back', 'Lats', 'Serratus', 'Biceps', 'Triceps', 'Forearms', 'Abs', 'Obliques', 'Lower back', 'Glutes', 'Quads', 'Hamstrings', 'Adductors', 'Hip flexors', 'Calves', 'Shins', 'Cardio']
 const EXPECTED_LIBRARY_CHIPS = ['Favorites (1)', 'All', ...HEAD_TO_TOE_DISPLAY]
 
@@ -68,7 +67,6 @@ describe('Ticket 03 — Library and Picker filters plus Exercise Detail presenta
     const firstChipsRow = container.querySelectorAll('.chips')[0]
     const chips = Array.from(firstChipsRow.querySelectorAll('button.chip')).map(c => c.textContent.trim())
     expect(chips).toEqual(EXPECTED_LIBRARY_CHIPS)
-    // Ensure Lats immediately after Upper back and before Serratus
     expect(chips.indexOf('Lats')).toBe(chips.indexOf('Upper back') + 1)
     expect(chips.indexOf('Serratus')).toBe(chips.indexOf('Lats') + 1)
   })
@@ -79,25 +77,20 @@ describe('Ticket 03 — Library and Picker filters plus Exercise Detail presenta
     expect(latsChip).toBeTruthy()
     await act(async () => { latsChip.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
     const latsItems = Array.from(container.querySelectorAll('.list .item'))
-    // 0007 alternate lateral pulldown is lats primary
     const latPulldown = latsItems.find(it => it.textContent.toLowerCase().includes('alternate lateral pulldown'))
     expect(latPulldown).toBeTruthy()
-    // 0027 barbell bent over row is upper-back primary, should NOT appear under Lats filter
     const rowItemUnderLats = latsItems.find(it => it.textContent.toLowerCase().includes('barbell bent over row'))
     expect(rowItemUnderLats).toBeFalsy()
 
-    // Click Upper back
     const upperChip = getChip(container, 'Upper back')
     expect(upperChip).toBeTruthy()
     await act(async () => { upperChip.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
     const upperItems = Array.from(container.querySelectorAll('.list .item'))
     const rowItem = upperItems.find(it => it.textContent.toLowerCase().includes('barbell bent over row'))
     expect(rowItem).toBeTruthy()
-    // Lat pulldown under Upper back should appear as secondary (since 0007 lists rhomboids -> upper-back)
     const latUnderUpper = upperItems.find(it => it.textContent.toLowerCase().includes('alternate lateral pulldown'))
     expect(latUnderUpper).toBeTruthy()
     expect(latUnderUpper.querySelector('.ss .tag')?.textContent).toContain('Secondary: Upper back')
-    // But lat pulldown under Lats should NOT have secondary badge for Lats
     await act(async () => { latsChip.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
     const latsItems2 = Array.from(container.querySelectorAll('.list .item'))
     const latItemAgain = latsItems2.find(it => it.textContent.toLowerCase().includes('alternate lateral pulldown'))
@@ -106,20 +99,15 @@ describe('Ticket 03 — Library and Picker filters plus Exercise Detail presenta
 
   it('crossover compounds display inline Secondary: Lats or Secondary: Upper back badges', async () => {
     await act(async () => { root.render(<Library />) })
-    // Filter by Upper back -> lat pulldown should show Secondary: Upper back
     const upperChip = getChip(container, 'Upper back')
     await act(async () => { upperChip.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
     let items = Array.from(container.querySelectorAll('.list .item'))
     let latUnderUpper = items.find(it => it.textContent.toLowerCase().includes('alternate lateral pulldown'))
     expect(latUnderUpper.querySelector('.ss .tag').textContent).toContain('Secondary: Upper back')
 
-    // For Lats filter, an upper-back primary that lists lats secondary would show Secondary: Lats
-    // Create a custom that is upper-back primary with lats secondary to test generic badge
     const custom = { id: 'c-test-latsec', n: 'Custom Row to Lats', bp: 'back', tg: 'upper-back', sm: ['lats'], eq: 'custom', custom: true }
     useStore.getState().update(s => { s.customEx.push(custom) })
-    // Need to re-render? Library reads from allExercises(S) which includes customEx
     await act(async () => { root.render(<Library />) })
-    // After re-render, click Lats again
     const latsChip = getChip(container, 'Lats')
     await act(async () => { latsChip.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
     items = Array.from(container.querySelectorAll('.list .item'))
@@ -133,10 +121,8 @@ describe('Ticket 03 — Library and Picker filters plus Exercise Detail presenta
     await act(async () => { root.render(<ExercisePicker onPick={vi.fn()} close={vi.fn()} />) })
     const firstChipsRow = container.querySelectorAll('.chips')[0]
     const chips = Array.from(firstChipsRow.querySelectorAll('button.chip')).map(c => c.textContent.trim())
-    // Picker has Favorites, Chosen? Without routines, Chosen not present. So check core muscles sequence
     HEAD_TO_TOE_DISPLAY.forEach(m => expect(chips).toContain(m))
     expect(chips.indexOf('Lats')).toBe(chips.indexOf('Upper back') + 1)
-    // Filter Picker by Lats and by Upper back same as Library
     const latsChip = getChip(container, 'Lats')
     await act(async () => { latsChip.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
     let items = Array.from(container.querySelectorAll('.list .item'))
@@ -162,7 +148,6 @@ describe('Ticket 03 — Library and Picker filters plus Exercise Detail presenta
     await doSearch('lats')
     let items = Array.from(container.querySelectorAll('.list .item'))
     expect(items.some(it => it.textContent.toLowerCase().includes('alternate lateral pulldown'))).toBe(true)
-    // rhomboids maps to upper-back so row variations should appear
     await doSearch('rhomboids')
     items = Array.from(container.querySelectorAll('.list .item'))
     expect(items.some(it => it.textContent.toLowerCase().includes('barbell bent over row'))).toBe(true)
@@ -172,7 +157,7 @@ describe('Ticket 03 — Library and Picker filters plus Exercise Detail presenta
   })
 
   it('ExerciseDetail shows Primary: Lats with secondaries for vertical pull and Primary: Upper back for row', async () => {
-    const latEx = EXIDX['0007'] // alternate lateral pulldown tg lats
+    const latEx = EXIDX['0007']
     await act(async () => { root.render(<ExerciseDetail ex={latEx} close={vi.fn()} />) })
     let tags = Array.from(container.querySelectorAll('.row .tag')).map(t => t.textContent.trim())
     expect(tags.some(t => t === 'Primary: Lats' || t.includes('Primary: Lats'))).toBe(true)
@@ -184,11 +169,10 @@ describe('Ticket 03 — Library and Picker filters plus Exercise Detail presenta
     await act(async () => { root.unmount() })
     container.innerHTML = ''
     root = createRoot(container)
-    const rowEx = EXIDX['0027'] // barbell bent over row tg upper back
+    const rowEx = EXIDX['0027']
     await act(async () => { root.render(<ExerciseDetail ex={rowEx} close={vi.fn()} />) })
     tags = Array.from(container.querySelectorAll('.row .tag')).map(t => t.textContent.trim())
     expect(tags.some(t => t.includes('Primary: Upper back'))).toBe(true)
-    // Should have secondaries Biceps, Shoulders (via rear deltoids alias)
     expect(tags).toContain('Secondary: Biceps')
     expect(tags.some(t => t.includes('Shoulders'))).toBe(true)
   })
@@ -203,7 +187,6 @@ describe('Ticket 04 — Custom exercise lifecycle with lats', () => {
     expect(primaryChips.indexOf('Lats')).toBe(primaryChips.indexOf('Upper back') + 1)
     const latsPrimary = Array.from(container.querySelectorAll('.chips')[0].querySelectorAll('button.chip')).find(c => c.textContent.trim() === 'Lats')
     await act(async () => { latsPrimary.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
-    // Secondary row should appear and contain Upper back but not Lats
     const secChips = Array.from(container.querySelectorAll('.chips')[1].querySelectorAll('button.chip')).map(c => c.textContent.trim())
     expect(secChips).toContain('Upper back')
     expect(secChips).not.toContain('Lats')
@@ -230,7 +213,6 @@ describe('Ticket 04 — Custom exercise lifecycle with lats', () => {
     expect(created.tg).toBe('lats')
     expect(created.sm).toEqual(['upper-back'])
     expect(created.bp).toBe('back')
-    // Re-open form pre-fills
     await act(async () => { root.unmount() })
     container.innerHTML = ''
     root = createRoot(container)
@@ -270,13 +252,11 @@ describe('Ticket 04 — Custom exercise lifecycle with lats', () => {
     expect(matchesMuscleFilter('c-legacy-back', 'lats')).toBe(true)
     expect(matchesMuscleFilter('c-legacy-back', 'upper-back')).toBe(true)
     expect(matchesMuscleFilter('c-legacy-back', 'lower-back')).toBe(true)
-    // Verify Library shows it under both Lats and Upper back filters
     await act(async () => { root.render(<Library />) })
     let latsChip = getChip(container, 'Lats')
     await act(async () => { latsChip.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
     let items = Array.from(container.querySelectorAll('.list .item'))
     expect(items.some(it => it.textContent.includes('Old Back Lift'))).toBe(true)
-    // Should have secondary badge for Upper back? Since primary is lats, secondary includes upper-back, badge when filtering by upper-back
     let upperChip = getChip(container, 'Upper back')
     await act(async () => { upperChip.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
     items = Array.from(container.querySelectorAll('.list .item'))
@@ -289,14 +269,12 @@ describe('Ticket 04 — Custom exercise lifecycle with lats', () => {
     const custom = { id: 'c-lats-1', n: 'Lat Machine Custom', bp: 'back', tg: 'lats', sm: ['upper-back'], eq: 'custom', custom: true }
     const routine = { id: 'r1', name: 'Back Day', emoji: '💪', ex: [{ id: 'c-lats-1', sets: 3, reps: 10 }] }
     useStore.getState().update(s => { s.customEx = [custom]; s.routines = [routine] })
-    // Full profile export preserves via store JSON
     const exported = JSON.parse(JSON.stringify(useStore.getState().S))
     expect(exported.customEx.find(c => c.id === 'c-lats-1').tg).toBe('lats')
     expect(exported.customEx.find(c => c.id === 'c-lats-1').sm).toEqual(['upper-back'])
     const bundle = buildPlanBundle(useStore.getState().S, 'Test Plan')
     expect(bundle.customEx.find(c => c.id === 'c-lats-1').tg).toBe('lats')
     expect(bundle.customEx.find(c => c.id === 'c-lats-1').sm).toEqual(['upper-back'])
-    // Parse and merge into fresh state
     const json = JSON.stringify(bundle)
     const parsed = parsePlan(json)
     expect(parsed.customEx[0].tg).toBe('lats')
@@ -304,11 +282,8 @@ describe('Ticket 04 — Custom exercise lifecycle with lats', () => {
     mergePlan(target, parsed)
     expect(target.customEx[0].tg).toBe('lats')
     expect(target.customEx[0].sm).toEqual(['upper-back'])
-    // Derived bp should be back (via bodypartForMuscle or stored) — mergePlan stores as is, but lookup should resolve
-    // After merge, id is remapped to fresh uid; use new id
     const newId = target.customEx[0].id
     expect(newId).not.toBe('c-lats-1')
-    // Simulate store registration
     useStore.getState().update(s => { s.customEx = target.customEx })
     expect(primaryMuscleOf(newId)).toBe('lats')
     expect(matchesMuscleFilter(newId, 'lats')).toBe(true)
@@ -332,11 +307,10 @@ describe('Ticket 05 — Stats Muscle Balance integration', () => {
     const rowLoad = loadOfWorkouts([rowW], null)
     expect(rowLoad['upper-back']).toBeCloseTo(2, 5)
     expect(rowLoad.lats || 0).toBe(0)
-    // Synthetic isolated loads produce independent heat levels
     const latLevels = levelsOf(latLoad)
     const rowLevels = levelsOf(rowLoad)
     expect(latLevels.lats).toBe(4)
-    expect(latLevels['upper-back']).toBe(2) // 0.8/2*4=1.6 ceil 2 with cross-credit
+    expect(latLevels['upper-back']).toBe(2)
     expectIsolatedLatsLevels()
   })
 
@@ -346,39 +320,28 @@ describe('Ticket 05 — Stats Muscle Balance integration', () => {
     expect(worked[0]).toBe('upper-back')
     expect(worked[1]).toBe('lats')
     expect(worked[2]).toBe('chest')
-    // Missed should be MUSCLES filtered minus worked, in original MUSCLES order
     const expectedMissed = MUSCLES.filter(m => !worked.includes(m))
     expect(missed).toEqual(expectedMissed)
     expect(MUSCLES.indexOf('lats')).toBe(MUSCLES.indexOf('upper-back') + 1)
   })
 
   it('historic workouts reinterpret live under new split (no migration) - long-term balance reflects precise model', () => {
-    // Create a historic workout with legacy bp:back custom exercise (before taxonomy existed)
-    // Now with new code, it should split via 3-way fallback
     const legacyEx = { id: 'c-legacy-hist', n: 'Old Back Lift Hist', bp: 'back' }
-    // Simulate historic workout entry using that exercise id
     const histW = {
       id: 'w-hist', d: '2026-01-01', start: Date.UTC(2026, 0, 1, 10), unit: 'kg',
       entries: [{ id: 'c-legacy-hist', sets: [{ done: true, w: 50, r: 10 }, { done: true, w: 50, r: 10 }] }],
     }
-    // Register custom for lookup
     useStore.getState().update(s => { s.customEx = [{ id: 'c-legacy-hist', n: 'Old Back Lift Hist', bp: 'back', eq: 'custom', custom: true }] })
     const load = loadOfWorkouts([histW], null)
-    // Should be 3-way split, not old 2-way
     expect(load.lats).toBeCloseTo(1.0, 5)
     expect(load['upper-back']).toBeCloseTo(0.7, 5)
     expect(load['lower-back']).toBeCloseTo(0.3, 5)
   })
 
   it('clicking Lats or Upper back region on map drives same filter semantics as Library chips (via BodyMap onMuscle)', async () => {
-    // This test validates the contract without needing full BodyMap geometry:
-    // BodyMap renders {MUSCLES.map(slug => ... onClick={()=>onMuscle(slug)})}
-    // So selecting lats vs upper-back via onMuscle should be distinct.
-    // We simulate by ensuring MUSCLES contains both and levelsOf distinct.
     const load = { lats: 10, 'upper-back': 0 }
     const levels = levelsOf(load)
     expect(levels.lats).not.toBe(levels['upper-back'])
-    // Verify that BodyMap would shade via shared level helper identically for both
     expect(MUSCLE_NAME.lats).toBe('Lats')
     expect(MUSCLE_NAME['upper-back']).toBe('Upper back')
   })

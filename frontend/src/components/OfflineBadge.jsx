@@ -1,11 +1,6 @@
 import { useSyncExternalStore } from 'react'
 import { t } from '../lib/i18n.js'
 
-/**
- * Subscribes to browser online/offline changes for the offline badge.
- * @param {Function} fn - Listener invoked whenever connectivity changes.
- * @returns {Function} Unsubscribe function removing both listeners.
- */
 function subscribe(fn) {
   window.addEventListener('online', fn)
   window.addEventListener('offline', fn)
@@ -15,8 +10,6 @@ function subscribe(fn) {
   }
 }
 
-// Tiny local-serving indicator: hidden while online, a status badge while the
-// service worker is serving the shell from cache.
 export default function OfflineBadge() {
   const online = useSyncExternalStore(subscribe, () => navigator.onLine, () => true)
   if (online) return null

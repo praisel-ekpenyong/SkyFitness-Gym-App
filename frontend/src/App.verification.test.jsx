@@ -65,7 +65,6 @@ describe('Ticket 05 — End-to-End Integration & Stats Diagram Parity', () => {
   it('passes the end-to-end user journey: boot -> custom exercises -> library & picker filtering -> routine -> workout -> stats body diagram parity -> export -> wipe -> import -> plan share -> legacy fallbacks -> theme', async () => {
     const consoleSpy = vi.spyOn(console, 'error')
 
-    // 1. Boot to empty Sky log
     await boot()
     expect(useStore.getState().ready).toBe(true)
     expect(useStore.getState().S.workouts).toHaveLength(0)
@@ -74,7 +73,6 @@ describe('Ticket 05 — End-to-End Integration & Stats Diagram Parity', () => {
     expect(useStore.getState().S.customEx).toEqual([])
     expect(document.querySelector('#tabbar')).toBeTruthy()
 
-    // 2. Create custom exercises with canonical primary and secondary muscles
     const customExercise = {
       id: 'c-incline-curl',
       n: 'Incline Hammer Curl',
@@ -111,7 +109,6 @@ describe('Ticket 05 — End-to-End Integration & Stats Diagram Parity', () => {
     expect(primaryMuscleOf('c-sprint-hiit')).toBe('cardio')
     expect(secondaryMusclesOf('c-sprint-hiit')).toEqual([])
 
-    // 3. Verify Library filter chips and secondary badges in DOM
     const exercisesTab = Array.from(document.querySelectorAll('#tabbar button')).find(b => b.textContent.includes('Exercises'))
     expect(exercisesTab).toBeTruthy()
     await act(async () => {
@@ -123,7 +120,6 @@ describe('Ticket 05 — End-to-End Integration & Stats Diagram Parity', () => {
       await act(async () => { await new Promise(r => setTimeout(r, 50)) })
     }
 
-    // Filter chips row should contain Favorites, All, 19 canonical muscles in anatomical order, and Cardio
     const filterChips = Array.from(document.querySelectorAll('.chips button.chip'))
     const chipLabels = filterChips.map(c => c.textContent.trim())
     expect(chipLabels).toContain('Biceps')
@@ -138,33 +134,28 @@ describe('Ticket 05 — End-to-End Integration & Stats Diagram Parity', () => {
       })
     }
 
-    // Filter by Biceps -> c-incline-curl appears as primary match (no secondary badge)
     await clickChip(document, 'Biceps')
     const bicepsListItems = Array.from(document.querySelectorAll('.list .item'))
     const inclineItemPrimary = bicepsListItems.find(it => it.textContent.includes('Incline Hammer Curl'))
     expect(inclineItemPrimary).toBeTruthy()
     expect(inclineItemPrimary.querySelector('.ss .tag')).toBeNull()
 
-    // Filter by Forearms -> c-incline-curl appears with inline secondary badge
     await clickChip(document, 'Forearms')
     const forearmsListItems = Array.from(document.querySelectorAll('.list .item'))
     const inclineItemSecondary = forearmsListItems.find(it => it.textContent.includes('Incline Hammer Curl'))
     expect(inclineItemSecondary).toBeTruthy()
     expect(inclineItemSecondary.querySelector('.ss .tag')?.textContent).toContain('Secondary: Forearms')
 
-    // Filter by Cardio -> c-sprint-hiit appears
     await clickChip(document, 'Cardio')
     const cardioListItems = Array.from(document.querySelectorAll('.list .item'))
     const sprintItem = cardioListItems.find(it => it.textContent.includes('Sprint Intervals'))
     expect(sprintItem).toBeTruthy()
 
-    // Filter by Quads -> neither appears
     await clickChip(document, 'Quads')
     const quadsListItems = Array.from(document.querySelectorAll('.list .item'))
     expect(quadsListItems.some(it => it.textContent.includes('Incline Hammer Curl'))).toBe(false)
     expect(quadsListItems.some(it => it.textContent.includes('Sprint Intervals'))).toBe(false)
 
-    // 4. Verify ExercisePicker sheet filtering parity
     const pickerContainer = document.createElement('div')
     document.body.appendChild(pickerContainer)
     const pickerRoot = createRoot(pickerContainer)
@@ -173,12 +164,10 @@ describe('Ticket 05 — End-to-End Integration & Stats Diagram Parity', () => {
       pickerRoot.render(<ExercisePicker onPick={onPick} close={vi.fn()} />)
     })
 
-    // Filter picker by Biceps
     await clickChip(pickerContainer, 'Biceps')
     const pickerBicepsItems = Array.from(pickerContainer.querySelectorAll('.list .item'))
     expect(pickerBicepsItems.some(it => it.textContent.includes('Incline Hammer Curl'))).toBe(true)
 
-    // Filter picker by Forearms -> secondary badge rendered
     await clickChip(pickerContainer, 'Forearms')
     const pickerForearmsItems = Array.from(pickerContainer.querySelectorAll('.list .item'))
     const pickerInclineSec = pickerForearmsItems.find(it => it.textContent.includes('Incline Hammer Curl'))
@@ -190,7 +179,6 @@ describe('Ticket 05 — End-to-End Integration & Stats Diagram Parity', () => {
     })
     pickerContainer.remove()
 
-    // 5. Create routine and log a workout containing built-in (0025 Bench Press) and custom exercise (c-incline-curl)
     const routine = {
       id: 'routine-push-pull-1',
       name: 'Push Pull Day',
@@ -243,10 +231,6 @@ describe('Ticket 05 — End-to-End Integration & Stats Diagram Parity', () => {
     expect(useStore.getState().S.workouts).toHaveLength(1)
     expect(useStore.getState().S.workouts[0].entries).toHaveLength(2)
 
-    // 6. Stats & body diagram parity verification:
-    // Custom exercise with 2 sets contributes 1.0 load per set (2.0 sets total) to primary (biceps)
-    // and 0.4 load per set (0.8 sets total) to secondary (forearm).
-    // Bench press with 2 sets contributes 2.0 to primary (chest) and 0.8 to secondaries (triceps, deltoids).
     const workouts = useStore.getState().S.workouts
     const load = loadOfWorkouts(workouts, null)
     expect(load.biceps).toBeCloseTo(2.0, 5)
@@ -268,7 +252,6 @@ describe('Ticket 05 — End-to-End Integration & Stats Diagram Parity', () => {
     expect(strength.biceps).toBe(1)
     expect(strength.forearm).toBe(1)
 
-    // Navigate to Stats view and assert Muscle balance card
     const statsTab = Array.from(document.querySelectorAll('#tabbar button')).find(b => b.textContent.includes('Stats'))
     expect(statsTab).toBeTruthy()
     await act(async () => {
@@ -276,7 +259,6 @@ describe('Ticket 05 — End-to-End Integration & Stats Diagram Parity', () => {
     })
     await act(async () => { await new Promise(r => setTimeout(r, 0)) })
     await act(async () => { await new Promise(r => setTimeout(r, 50)) })
-    // poll for lazy chunk — Stats is code-split and may need a tick longer under load
     for (let i = 0; i < 10 && !document.body.textContent.includes('Muscle balance'); i++) {
       await act(async () => { await new Promise(r => setTimeout(r, 50)) })
     }
@@ -285,7 +267,6 @@ describe('Ticket 05 — End-to-End Integration & Stats Diagram Parity', () => {
     expect(statsText).toContain('Muscle balance')
     expect(statsText).toContain('Workouts')
 
-    // 7. Full profile JSON export preserving tg/sm metadata and favorites
     const exportedState = JSON.parse(JSON.stringify(useStore.getState().S))
     act(() => {
       useStore.getState().update(s => {
@@ -301,7 +282,6 @@ describe('Ticket 05 — End-to-End Integration & Stats Diagram Parity', () => {
     expect(exportedIncline.tg).toBe('biceps')
     expect(exportedIncline.sm).toEqual(['forearm'])
 
-    // 8. Wipe storage
     act(() => {
       useStore.getState().replaceState(JSON.parse(JSON.stringify(DEF)))
     })
@@ -310,7 +290,6 @@ describe('Ticket 05 — End-to-End Integration & Stats Diagram Parity', () => {
     expect(useStore.getState().S.favorites).toEqual([])
     expect(useStore.getState().S.customEx).toEqual([])
 
-    // 9. Restore JSON backup to recreate data including favorites and custom exercise tg/sm fields
     act(() => {
       useStore.getState().replaceState(Object.assign(JSON.parse(JSON.stringify(DEF)), exportedState))
     })
@@ -325,10 +304,9 @@ describe('Ticket 05 — End-to-End Integration & Stats Diagram Parity', () => {
     expect(matchesMuscleFilter('c-incline-curl', 'biceps')).toBe(true)
     expect(matchesMuscleFilter('c-incline-curl', 'forearm')).toBe(true)
 
-    // 10. Plan bundle sharing isolation & preservation
     const planBundle = buildPlanBundle(useStore.getState().S, 'Push Pull Plan')
     expect(planBundle.sky_plan).toBe(1)
-    expect(planBundle.customEx.length).toBe(1) // only referenced c-incline-curl included
+    expect(planBundle.customEx.length).toBe(1)
     expect(planBundle.customEx[0].tg).toBe('biceps')
     expect(planBundle.customEx[0].sm).toEqual(['forearm'])
     expect(planBundle.favorites).toBeUndefined()
@@ -344,7 +322,6 @@ describe('Ticket 05 — End-to-End Integration & Stats Diagram Parity', () => {
     expect(targetState.customEx[0].tg).toBe('biceps')
     expect(targetState.customEx[0].sm).toEqual(['forearm'])
 
-    // 11. Legacy JSON restore without explicit tg/sm defaults gracefully to BY_BODYPART fallbacks
     const legacyBackup = {
       workouts: [{ id: 'w-legacy' }],
       routines: [{ id: 'r-legacy', name: 'Legacy Routine' }],
@@ -360,7 +337,6 @@ describe('Ticket 05 — End-to-End Integration & Stats Diagram Parity', () => {
     expect(useStore.getState().S.routines).toHaveLength(1)
     expect(useStore.getState().S.customEx).toHaveLength(2)
 
-    // Legacy custom exercises resolve primary and secondary muscles via BY_BODYPART fallbacks
     expect(primaryMuscleOf('c-legacy-legs')).toBe('quadriceps')
     expect(secondaryMusclesOf('c-legacy-legs')).toEqual(['hamstring', 'gluteal'])
     expect(matchesMuscleFilter('c-legacy-legs', 'quadriceps')).toBe(true)
@@ -378,7 +354,6 @@ describe('Ticket 05 — End-to-End Integration & Stats Diagram Parity', () => {
     expect(matchesMuscleFilter('c-legacy-back', 'lats')).toBe(true)
     expect(matchesMuscleFilter('c-legacy-back', 'upper-back')).toBe(true)
     expect(matchesMuscleFilter('c-legacy-back', 'lower-back')).toBe(true)
-    // 12. Theme toggle (a new profile starts dark)
     expect(document.documentElement.dataset.theme).toBe('dark')
     act(() => {
       useStore.getState().update(s => {
@@ -394,7 +369,6 @@ describe('Ticket 05 — End-to-End Integration & Stats Diagram Parity', () => {
     })
     expect(document.documentElement.dataset.theme).toBe('dark')
 
-    // Ensure no unexpected console errors were emitted during the run
     const unexpectedErrors = consoleSpy.mock.calls.filter(call => {
       const msg = call.map(c => String(c)).join(' ')
       return !msg.includes('not configured to support act')

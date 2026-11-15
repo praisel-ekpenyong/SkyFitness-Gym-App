@@ -25,7 +25,6 @@ const HOUR = 60 * 60 * 1000
 const DAY = 24 * HOUR
 const NOW = Date.UTC(2026, 0, 1, 12)
 
-// Keep fixtures tied to the shipped catalogue while making the expected stimulus explicit.
 const SINGLE = EXDB.find(ex => {
   const weights = musclesOf(ex)
   return ex.bp !== 'cardio' && Object.keys(weights).length === 1 && Object.values(weights)[0] === 1
@@ -48,14 +47,13 @@ const workoutAt = (id, start, sets = [{ done: true }]) => ({
   start,
   entries: [{ id, sets: sets.map(set => ({ ...set })) }],
 })
-const V = 640 * (30 / 38) ** 1.5  // intensity-weighted tonnage of one 80x8 fixture set (its own Epley estimate implies intensity 30/38)
+const V = 640 * (30 / 38) ** 1.5
 
 const doneWorkoutAt = (id, start, count = 1) =>
   workoutAt(id, start, Array.from({ length: count }, () => ({ done: true, w: 80, r: 8 })))
 const zeroFatigue = () => Object.fromEntries(MUSCLES.map(slug => [slug, 0]))
 const floorStrength = () => Object.fromEntries(MUSCLES.map(slug => [slug, STRENGTH_FLOOR]))
 
-// Numeric fatigue remains the math API; the UI boundary selector is imported from production.
 const stableFloat = value => Number(value.toFixed(12))
 const referenceAfter = (reference, stimulus) => Math.max(
   FATIGUE_MIN_REF_FLOOR,
@@ -117,11 +115,8 @@ describe('fatigueOf and strengthOf', () => {
       expect(fatigue[slug]).toBeCloseTo(1 - Math.exp(-V * weight / FATIGUE_REF_VOLUME), 10)
       expect(strength[slug]).toBe(weight ? 1 : STRENGTH_FLOOR)
     }
-    // one set (80 x 8) never crosses the fatigued threshold on the saturating curve
     expect(fatiguedMuscles(workouts, NOW)).toEqual([])
 
-    // pure volume: one high-rep set at medium weight registers real tonnage (weighted by
-    // its intensity - its own Epley estimate with the 12-rep cap is 50 x 40/30 = 70 kg)
     const highRep = [doneWorkoutAt(SINGLE.id, NOW, 1)]
     highRep[0].entries[0].sets[0].w = 50
     highRep[0].entries[0].sets[0].r = 50
@@ -141,11 +136,9 @@ describe('fatigueOf and strengthOf', () => {
     expect(at0(12)).toBeGreaterThan(at0(5))
     expect(at0(5)).toBeGreaterThan(at0(1))
     expect(at0(12)).toBeLessThan(1)
-    // one half-life later the gradient is still visible at any volume
     const later = fatigueOf([doneWorkoutAt(SINGLE.id, NOW - FATIGUE_HALF_LIFE_MS, 12)], NOW)[SINGLE_SLUG]
     expect(later).toBeCloseTo(1 - Math.exp(-6 * V / FATIGUE_REF_VOLUME), 10)
     expect(later).toBeLessThan(at0(12))
-    // no cliff: 72h keeps decaying instead of snapping to zero
     const old = fatigueOf([doneWorkoutAt(SINGLE.id, NOW - 72 * HOUR)], NOW)[SINGLE_SLUG]
     expect(old).toBeGreaterThan(0)
     expect(old).toBeLessThan(0.25)
@@ -195,7 +188,6 @@ describe('fatigueOf and strengthOf', () => {
 })
 
 describe('fatigue state boundaries', () => {
-  // Inverse of the saturation curve: raw stimulus needed to land exactly on a target level.
   const rawAt = target => -FATIGUE_REF_VOLUME * Math.log(1 - target)
 
   it('classifies exactly .25 as recovering and .2499 as ready', () => {
@@ -432,30 +424,26 @@ describe('warm-up flag in strength and fatigue', () => {
       entries: [{ id: '1254', sets: [{ done: true, warmup: true, w: 20, r: 8 }] }] }
     const workouts = [oldWork, warm]
     const strength = strengthOf(workouts, now)
-    // the strength edge is 20 days old: the fresh warm-up must NOT be the latest training event
     expect(strength.chest).toBeLessThan(1)
-    // warm-up sets are strictly prep and must NOT contribute to fatigue stimulus
     const fatigue = fatigueOf([warm], now)
     expect(fatigue.chest).toBe(0)
   })
 
   it('excludes warm-up sets from session 1RM calculations and tonnage accumulation', () => {
     const now = Date.UTC(2026, 7, 1, 12)
-    // Workout with 2 warm-ups (including a heavy single) and 3 working sets of 80x8
     const workoutWithWarmups = {
       id: 'w1', d: '2026-08-01', start: now - 3600000, unit: 'kg',
       entries: [{
         id: '1254',
         sets: [
           { done: true, warmup: true, w: 40, r: 10 },
-          { done: true, phase: 'warmup', w: 120, r: 1 }, // heavy single warm-up
+          { done: true, phase: 'warmup', w: 120, r: 1 },
           { done: true, w: 80, r: 8 },
           { done: true, w: 80, r: 8 },
           { done: true, w: 80, r: 8 },
         ]
       }]
     }
-    // Identical workout with only the 3 working sets of 80x8
     const workoutWorkOnly = {
       id: 'w2', d: '2026-08-01', start: now - 3600000, unit: 'kg',
       entries: [{
@@ -471,7 +459,6 @@ describe('warm-up flag in strength and fatigue', () => {
     const fatigueWithWarmups = fatigueOf([workoutWithWarmups], now)
     const fatigueWorkOnly = fatigueOf([workoutWorkOnly], now)
 
-    // Fatigue must be identical because warm-ups are excluded from both tonnage and session 1RM
     expect(fatigueWithWarmups.chest).toBeCloseTo(fatigueWorkOnly.chest, 10)
   })
 })
@@ -488,7 +475,6 @@ describe('deleted custom exercises', () => {
     expect(fatigueOf(workouts, now)[SINGLE_SLUG]).toBeGreaterThan(0)
     expect(strengthOf(workouts, now)[SINGLE_SLUG]).toBe(1)
 
-    // No catalogue id and no snapshot still contributes nothing.
     const bare = { id: 'c-bare', sets: [{ done: true, w: 80, r: 8 }] }
     const bareWorkouts = [{ id: 'w2', d: '2026-08-01', start: now - 3600000, unit: 'kg', entries: [bare] }]
     expect(fatigueOf(bareWorkouts, now)[SINGLE_SLUG]).toBe(0)
@@ -569,9 +555,6 @@ describe('canonical loads and configured bodyweight', () => {
   })
 
   it('treats a future-dated workout as its own timestamp, never amplified', () => {
-    // A CSV import with a bad timezone can date a workout 10 days in the future. The final
-    // decay clamps the age to zero instead of exponentiating, so the session counts exactly
-    // like the same workout dated now - no 2^(10d/36h) ~ 102x amplification.
     const future = doneWorkoutAt(SINGLE.id, NOW + 10 * DAY, 5)
     const now = doneWorkoutAt(SINGLE.id, NOW, 5)
     const futureValue = fatigueOf([future], NOW)[SINGLE_SLUG]

@@ -1,9 +1,3 @@
-// Finishing the Active workout — one slice of the active-workout lifecycle.
-//
-// Heaviest-weight cache (`exWeights`), Record detection (a new Best or a new
-// best estimated 1RM), and the completed-Workout boundary. Session
-// construction lives in active-session.js, set surgery in active-sets.js,
-// the toggle decision in active-toggle.js.
 import { bestWeightForEntry, doneWorkSets, isPerformed } from './workout-model.js'
 import { is1RMRecord } from './onerm.js'
 import { EXIDX } from './exercises.js'
@@ -11,17 +5,6 @@ import { exerciseMuscleSnapshot } from './muscles.js'
 import { diffRoutineWithSession } from './routine-sync.js'
 import { normalizeWeight, round1 } from './units.js'
 
-/**
- * Highest load logged for an exercise across finished workouts.
- *
- * Shared read behind both the Best tag (`bestKnownWeight`) and Record detection
- * (`completeActiveSession`), so the two can never disagree on what history
- * says. Warm-up rows and unperformed sets never count (`bestWeightForEntry`).
- *
- * @param {Object} S - Application state atom containing `workouts`.
- * @param {string} exId - Exercise identifier from EXIDX.
- * @returns {number} Heaviest logged load, or 0 if unrecorded.
- */
 function bestLoggedWeight(S, exId) {
   let best = 0
   const targetUnit = S?.unit || 'kg'
@@ -36,16 +19,6 @@ function bestLoggedWeight(S, exId) {
   return best
 }
 
-/**
- * Highest training load recorded for an exercise across history and working-weight cache.
- *
- * Queries all completed workout entries (excluding warm-up rows and unperformed sets via `bestWeightForEntry`)
- * and compares against the working-weight cache (`S.exWeights[exId].w`), normalized to active unit.
- *
- * @param {Object} S - Application state atom containing `workouts` and `exWeights`.
- * @param {string} exId - Exercise identifier from EXIDX.
- * @returns {number} Heaviest load in active units (kg/lb), or 0 if unrecorded.
- */
 export function bestKnownWeight(S, exId) {
   if (!S || !exId) return 0
   const targetUnit = S?.unit || 'kg'
@@ -58,15 +31,6 @@ export function bestKnownWeight(S, exId) {
   return best
 }
 
-/**
- * Highest load among completed work sets in a single workout entry.
- *
- * Excludes warm-up rows, uncompleted sets, and the legacy confirmed working weight (`topW`).
- * The load a Set must beat to make a Record.
- *
- * @param {Object} entry - Active or historical workout entry containing `{ sets }`.
- * @returns {number} Maximum completed set load in active units, or 0 if none.
- */
 export function heaviestSetWeight(entry) {
   let mx = 0
   for (const s of doneWorkSets(entry)) {
@@ -76,16 +40,6 @@ export function heaviestSetWeight(entry) {
   return mx
 }
 
-/**
- * Peak load attributable to an entry, evaluating completed work sets and any legacy confirmation.
- *
- * Evaluates the maximum of `heaviestSetWeight(entry)` and the confirmed working load (`entry.topW`),
- * which only Entries saved before ADR 0020 carry.
- * Used when updating the all-time working-weight cache (`exWeights`).
- *
- * @param {Object} entry - Completed or active workout entry.
- * @returns {number} Highest recorded load in active units, or 0 if none.
- */
 export function heaviestForEntry(entry) {
   const base = heaviestSetWeight(entry)
   const top = Number(entry?.topW)
@@ -93,18 +47,6 @@ export function heaviestForEntry(entry) {
   return base
 }
 
-/**
- * Update the all-time working-weight cache (`exWeights`) under a monotonic maximum policy.
- *
- * Only a strictly greater load overwrites the stored record; ties and lower loads are rejected.
- * The stamped date reflects the source event (the workout date `d`). Never lowers stored weight. Mutates `S.exWeights` in-place.
- *
- * @param {Object} S - Application state atom containing `exWeights`.
- * @param {string} exId - Target exercise identifier.
- * @param {number} weight - Candidate load in active units.
- * @param {string} dateISO - ISO calendar date ('YYYY-MM-DD') associated with the load.
- * @returns {boolean} True if the stored weight was updated, false if rejected or unchanged.
- */
 export function mergeExWeight(S, exId, weight, dateISO) {
   const w = Number(weight)
   if (!Number.isFinite(w) || w <= 0) return false
@@ -122,16 +64,6 @@ export function mergeExWeight(S, exId, weight, dateISO) {
   return false
 }
 
-/**
- * Freeze the resolved Prescription onto a finished Entry.
- *
- * Only the decision fields are kept: `kind` says whether the session was a first baseline,
- * hold, up, or deload, and the value fields say what it asked for. The `why` tuple is
- * presentation, and a stall counter would be state the log can derive for itself.
- *
- * @param {Object|null|undefined} plan - Active Entry's resolved Prescription.
- * @returns {Object|null} Persistable `{ kind, weight?, reps?, sec?, sets? }`, or null.
- */
 function planRecord(plan) {
   if (!plan || typeof plan !== 'object') return null
   const out = { kind: plan.kind }
@@ -141,20 +73,6 @@ function planRecord(plan) {
   return out
 }
 
-/**
- * Map an active workout session into a persistable completed workout record.
- *
- * Pure function: filters out unperformed entries (zero completed sets), freezes routine metadata,
- * attaches the Record list (`prs`), and records muscle fatigue snapshots for custom exercises.
- * Completion options arrive as a destructured second argument.
- *
- * @param {Object} active - Active session object (`S.active`).
- * @param {number} [end=Date.now()] - Workout finish epoch timestamp in milliseconds.
- * @param {Array<string>} [prs=[]] - Exercise IDs whose heaviest Set beat their Best: a Record.
- * @param {string} [unit='kg'] - Active weight unit.
- * @param {(entry: Object) => Object|null} [snapshotFor] - Custom exercise muscle snapshot provider.
- * @returns {Object} Persistable workout entity for `S.workouts`.
- */
 export function buildCompletedWorkout(active, { end = Date.now(), prs = [], unit = 'kg', snapshotFor } = {}) {
   const entries = (active?.entries || []).map(entry => {
     const completed = {
@@ -162,14 +80,11 @@ export function buildCompletedWorkout(active, { end = Date.now(), prs = [], unit
       sets: entry.sets,
       target: entry.target || null,
     }
-    // New Entries carry no topW (ADR 0020); one resumed from an older session keeps its own.
     if (entry.topW) completed.topW = entry.topW
     const note = typeof entry.notes === 'string' ? entry.notes.trim() : undefined
     if (note) {
       completed.notes = note.slice(0, 500)
     }
-    // Persist the resolved Prescription so the next session can see the duration a deload
-    // actually prescribed and where a Run began. Older Entries simply have no `plan`.
     const plan = planRecord(entry.plan)
     if (plan) completed.plan = plan
     const snapshot = typeof snapshotFor === 'function' ? snapshotFor(entry) : null
@@ -193,20 +108,6 @@ export function buildCompletedWorkout(active, { end = Date.now(), prs = [], unit
   }
 }
 
-/**
- * Finalize the active workout session and commit it to historical log.
- *
- * Evaluates Records against history: a Set heavier than the exercise's Best (`prs`), else a new
- * best estimated 1RM (`e1prs`);
- * merges peak loads into `exWeights`, appends the
- * completed workout to `S.workouts` sorted chronologically, and clears `S.active`.
- * Mutates `S` in-place; must be executed within `useStore.update(...)`.
- *
- * @param {Object} S - Application state atom.
- * @param {Object} [opts] - Injectable clock options for testing (`now`).
- * @returns {{ workout: Object, prs: Array<string>, e1prs: Array<Object>, routineSync: Object|null }|null}
- *   Summary boundary data for UI recap, or null if no active workout was present.
- */
 export function completeActiveSession(S, opts = {}) {
   const _now = opts.now || Date.now
   const A = S.active

@@ -109,7 +109,7 @@ describe('weighInsPreview — the merge dry-run', () => {
     expect(S.bodyweight).toEqual([{ d: '2026-01-10', w: 80 }, { d: '2026-01-01', w: 81 }])
     const bare = {}
     expect(weighInsPreview(bare, [{ d: '2026-01-02', w: 79 }])).toEqual({ added: 1, skipped: 0 })
-    expect(bare).toEqual({}) // no bodyweight array conjured up
+    expect(bare).toEqual({})
   })
 })
 

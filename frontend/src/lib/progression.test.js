@@ -9,8 +9,6 @@ const LIFT = EXDB.find(e => e.bp !== 'cardio' && !['upper legs', 'lower legs', '
 const HEAVY = EXDB.find(e => e.bp === 'upper legs').id
 const CARDIO = EXDB.find(e => e.bp === 'cardio').id
 
-// Build a state whose history is a list of sessions given as [weight, ...repsPerSet].
-// A rep count of null means "the set was never checked off".
 const hist = (id, rows, target) => ({
   unit: 'kg',
   workouts: rows.map((row, i) => ({
@@ -40,7 +38,7 @@ describe('readSession', () => {
   it('counts an unchecked set as a miss — it was not performed', () => {
     const s = readSession({ id: LIFT, target: T, sets: [{ w: 60, r: 5, done: true }, { w: 60, r: 5, done: true }, { w: 60, r: 0, done: false }] })
     expect(s.ok).toBe(false)
-    expect(s.weight).toBe(60)       // the working weight is still known from the sets that counted
+    expect(s.weight).toBe(60)
   })
 
   it('counts fewer sets than prescribed as a miss', () => {
@@ -69,11 +67,9 @@ describe('readSession', () => {
     const s3 = readSession({ id: LIFT, target: T, sets: [{ w: 45.4, r: 5, done: true }] }, null, { unit: 'kg' }, 'lb')
     expect(s3.weight).toBe(100.1)
 
-    // Raw string workoutUnit parameter
     const s4 = readSession({ id: LIFT, target: T, sets: [{ w: 100, r: 5, done: true }] }, null, 'lb', 'kg')
     expect(s4.weight).toBe(45.4)
 
-    // Time mode with string workoutUnit
     const s5 = readSession({ id: LIFT, target: { sets: 2, sec: 45, mode: 'time' }, sets: [{ sec: 45, w: 100, done: true }] }, null, 'lb', 'kg')
     expect(s5.weight).toBe(45.4)
   })
@@ -132,7 +128,6 @@ describe('linear progression', () => {
     expect(p.why).toEqual(['Nothing logged yet — this session sets the baseline.'])
   })
 
-  // "Nothing logged yet" under "Last time 4 Nov · 85×8" reads as a contradiction.
   it('says a changed Target starts a new baseline when the exercise has history', () => {
     const p = nextPrescription(hist(LIFT, [[60, 8, 8, 8]], { sets: 3, reps: 8, weight: 60 }), cfg)
     expect(p.kind).toBe('first')
@@ -160,7 +155,7 @@ describe('linear progression', () => {
   it('deloads after three misses in a row, onto a loadable weight', () => {
     const p = nextPrescription(hist(LIFT, [[60, 5, 5, 3], [60, 5, 4, 4], [60, 5, 5, 4]]), cfg)
     expect(p.kind).toBe('deload')
-    expect(p.weight).toBe(55)             // 60 × 0.9 = 54 → nearest loadable 2.5 step
+    expect(p.weight).toBe(55)
     expect(DELOAD_AFTER.linear).toBe(3)
   })
 
@@ -176,8 +171,6 @@ describe('linear progression', () => {
   })
 
   it('always makes a deload actually lighter, even when rounding would not', () => {
-    // 20 × 0.9 = 18 → nearest 2.5 step is 17.5, fine. 5 × 0.9 = 4.5 → nearest step is 5,
-    // which is no deload at all, so it has to step down instead.
     const p = nextPrescription(hist(LIFT, [[5, 1, 1, 1], [5, 1, 1, 1], [5, 1, 1, 1]]), cfg)
     expect(p.weight).toBeLessThan(5)
   })
@@ -248,7 +241,6 @@ describe('bodyweight exercises', () => {
     expect(p.weight).toBe(20)
   })
 
-  /* A ceiling turns "+1 rep forever" into a plan — issue #33. */
   it('climbs to the ceiling one rep at a time', () => {
     const p = nextPrescription(bw([[0, 10, 10, 10]]), { ...cfg, repsMax: 15 })
     expect(p.kind).toBe('up')
@@ -266,7 +258,6 @@ describe('bodyweight exercises', () => {
   })
 
   it('stops adding sets at the cap and says what to do instead', () => {
-    // The cap is the plan's own set count: six planned sets at the ceiling cannot grow.
     const at15 = hist(LIFT, [[0, 15, 15, 15, 15, 15, 15]], { sets: MAX_BW_SETS, reps: 15 })
     const p = nextPrescription(at15, { ...cfg, sets: MAX_BW_SETS, reps: 10, repsMax: 15 })
     expect(p.kind).toBe('hold')
@@ -285,7 +276,6 @@ describe('bodyweight exercises', () => {
   it('steps a unilateral total by two, so it lands on 16, 18, 20 (issue #31)', () => {
     const at16 = hist(LIFT, [[0, 16, 16, 16]], { sets: 3, reps: 16 })
     expect(nextPrescription(at16, { ...cfg, reps: 16, side: true }).reps).toBe(18)
-    // and by one when it is not
     expect(nextPrescription(at16, { ...cfg, reps: 16 }).reps).toBe(17)
   })
 
@@ -338,7 +328,7 @@ describe('Greyskull LP', () => {
   it('keeps resetting from the reduced weight, not the original', () => {
     const p = nextPrescription(hist(LIFT, [[60, 5, 5, 3], [55, 5, 5, 2]]), cfg)
     expect(p.kind).toBe('deload')
-    expect(p.weight).toBe(50)            // 55 × 0.9 = 49.5 → nearest loadable 2.5 step
+    expect(p.weight).toBe(50)
   })
 })
 
@@ -356,7 +346,7 @@ describe('double progression', () => {
     const p = nextPrescription(hist(LIFT, [[40, 10, 9, 9]], { sets: 3, reps: 12 }), cfg)
     expect(p.kind).toBe('hold')
     expect(p.weight).toBe(40)
-    expect(p.reps).toBe(10)             // worst set was 9 → aim for 10
+    expect(p.reps).toBe(10)
   })
 
   it('never asks for more than the top of the range', () => {
@@ -365,13 +355,11 @@ describe('double progression', () => {
   })
 
   it('deloads after four no-progress sessions following the baseline and restarts at the bottom', () => {
-    // The first session at a working weight is the Run's baseline; four no-progress
-    // sessions after it are what earn the Deload.
     const rows = Array.from({ length: 5 }, () => [40, 9, 9, 9])
     const p = nextPrescription(hist(LIFT, rows, { sets: 3, reps: 12 }), cfg)
     expect(p.kind).toBe('deload')
     expect(p.reps).toBe(8)
-    expect(p.weight).toBe(35)           // 40 × 0.9 = 36 → nearest loadable 2.5 step
+    expect(p.weight).toBe(35)
   })
 })
 
@@ -396,19 +384,19 @@ describe('timed progression', () => {
   it('climbs gradually from the weakest hold instead of repeating the frozen target', () => {
     const p = nextPrescription(timeHist([[45, 38]]), cfg)
     expect(p.kind).toBe('hold')
-    expect(p.sec).toBe(43)              // weakest 38 + 5, still below the 45 s Target
+    expect(p.sec).toBe(43)
   })
 
   it('backs the target off from the achieved hold after a run of no-progress sessions', () => {
     const p = nextPrescription(timeHist([[45, 30], [45, 32], [45, 31], [45, 31]]), cfg)
     expect(p.kind).toBe('deload')
-    expect(p.sec).toBe(30)              // 31 × 0.9 = 27.9 → nearest 5 s step is 30
+    expect(p.sec).toBe(30)
   })
 
   it('ignores reps history when the exercise switched to time', () => {
     const S = hist(LIFT, [[60, 5, 5, 5]])
     const p = nextPrescription({ ...S, unit: 'kg' }, cfg)
-    expect(p.kind).toBe('first')        // no timed session yet, so no opinion
+    expect(p.kind).toBe('first')
   })
 })
 
@@ -484,19 +472,16 @@ describe('sessionsFor', () => {
     const cfg = { id: LIFT, sets: 3, reps: 5, weight: 45, prog: 'linear', inc: 2.5 }
     const prescription = nextPrescription(S, cfg)
     expect(prescription.kind).toBe('up')
-    expect(prescription.weight).toBe(47.9) // 45.4 kg + 2.5 kg = 47.9 kg
+    expect(prescription.weight).toBe(47.9)
   })
 })
 
-// Workouts only began storing their prescription in v1.2.2. Everything logged before that is
-// targetless, and reading it as "missed" would tell every long-standing user to deload on
-// their first session after updating — which is exactly what the demo history did.
 describe('history logged before targets were recorded', () => {
   const legacy = rows => ({
     unit: 'kg',
     workouts: rows.map((row, i) => ({
       d: '2026-03-' + String(i + 1).padStart(2, '0'),
-      entries: [{ id: LIFT, sets: row.slice(1).map(r => ({ w: row[0], r, done: true })) }]   // no target
+      entries: [{ id: LIFT, sets: row.slice(1).map(r => ({ w: row[0], r, done: true })) }]
     }))
   })
   const cfg = { id: LIFT, sets: 3, reps: 5, weight: 60, prog: 'linear' }
@@ -517,7 +502,6 @@ describe('history logged before targets were recorded', () => {
   })
 
   it('matches the weight hint the app showed before this engine existed', () => {
-    // Old rule: every set at or above the plan's reps, with a real weight → suggest a step up.
     expect(nextPrescription(legacy([[60, 5, 6, 5]]), cfg).weight).toBe(62.5)
     expect(nextPrescription(legacy([[60, 5, 4, 5]]), cfg).kind).toBe('hold')
   })
@@ -562,8 +546,6 @@ describe('applyPrescription', () => {
 
 describe('warm-up rows in session reads (round 3)', () => {
   it('readSession ignores warm-up rows for reps, count, low and ok', () => {
-    // An undone warm-up (r 0) must not poison `ok` forever; its lighter reps must not
-    // drag `low`/`count` - the warm-up is prep, the session is the work rows.
     const s = readSession({ id: LIFT, target: { sets: 2, reps: 5, mode: 'reps' }, sets: [
       { w: 20, r: 8, done: true, warmup: true },
       { w: 60, r: 5, done: true },
@@ -582,7 +564,7 @@ describe('warm-up rows in session reads (round 3)', () => {
       { sec: 30, done: true },
     ] })
     expect(s.held).toEqual([45, 30])
-    expect(s.ok).toBe(false) // the 30s work row is the miss, not the warm-up
+    expect(s.ok).toBe(false)
   })
 
   it('uses phase as authoritative and falls back to the legacy warm-up flag', () => {
@@ -617,8 +599,8 @@ describe('applyPrescription never touches warm-up rows (round 3)', () => {
       { w: 60, r: 5, done: false },
     ]
     const out = applyPrescription(sets, { kind: 'up', weight: 62.5, reps: 5, sets: 4 })
-    expect(out.filter(s => !s.warmup)).toHaveLength(4) // 2 existing + 2 grown
-    expect(out.filter(s => s.warmup)).toHaveLength(1)  // warm-up untouched
+    expect(out.filter(s => !s.warmup)).toHaveLength(4)
+    expect(out.filter(s => s.warmup)).toHaveLength(1)
     expect(out[0]).toEqual({ w: 20, r: 8, done: true, warmup: true })
   })
 
@@ -628,6 +610,6 @@ describe('applyPrescription never touches warm-up rows (round 3)', () => {
       { w: 25, r: 6, done: true, warmup: true },
     ]
     const out = applyPrescription(sets, { kind: 'up', weight: 62.5, reps: 5, sets: 4 })
-    expect(out).toEqual(sets) // no work row to seed growth from - nothing grows, no loop
+    expect(out).toEqual(sets)
   })
 })

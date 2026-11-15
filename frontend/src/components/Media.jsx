@@ -4,15 +4,9 @@ import { useStore } from '../store/useStore.js'
 import { t } from '../lib/i18n.js'
 import Icon from './Icon.jsx'
 
-// The URLs to try in turn: the bundled file, then the CDN copy. A build without bundled media
-// already points the first at the CDN, so the copy is dropped rather than tried twice.
 const sources = (ex, playing) =>
   [...new Set([mediaSrc(ex, { playing }), mediaSrc(ex, { playing, fallback: true })])].filter(Boolean)
 
-// The URL to show now, and the onError that moves on to the next one. Past the last URL the src is
-// undefined (every URL failed: no signal, or the file is gone) and the caller paints the dumbbell
-// tile. Failures are counted per format, so the clip and the still fail independently, and are
-// forgotten when the exercise changes.
 function useArtSource(ex, playing) {
   const [tries, setTries] = useState({ gif: 0, img: 0 })
   const [lastId, setLastId] = useState(ex?.id)
@@ -26,12 +20,6 @@ function useArtSource(ex, playing) {
   return [urls[tries[format]], onError]
 }
 
-// Big autoplaying animation; tap toggles to the still frame. `compact` shrinks it (superset cards).
-// Custom exercises have no media — the animation stays blank by design (issue #11). When both the
-// bundled file and the CDN copy fail, the dumbbell tile stands in, with no <img> and so no alt text painted.
-// `minimizable` (workout view) adds a persistent minimize/expand control so the animation stops
-// eating the screen; the chosen size is saved to settings and carries across exercises and
-// future workouts (issue #12).
 export default function Media({ ex, id, compact, minimizable }) {
   const [playing, setPlaying] = useState(true)
   const [lastId, setLastId] = useState(ex?.id)
@@ -74,12 +62,6 @@ export default function Media({ ex, id, compact, minimizable }) {
   )
 }
 
-/**
- * Small still exercise thumbnail for list rows. Shows the dumbbell tile when the exercise has no image, or when
- * both the bundled file and the CDN copy fail to load.
- * Decorative (empty alt text); the surrounding row already names the exercise.
- * @param {Object} ex - Exercise with optional image sources and id.
- */
 export function Thumb({ ex }) {
   const [currentSrc, handleError] = useArtSource(ex, false)
   if (!currentSrc) return <div className="thumb thumb-x"><Icon name="dumbbell" /></div>

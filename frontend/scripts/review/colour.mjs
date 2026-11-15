@@ -1,7 +1,6 @@
 // Parses a computed CSS colour into [r, g, b, a] (channels 0-255, alpha 0-1).
 // Handles rgb()/rgba() in comma and space syntax and color(srgb ...) (what browsers report for color-mix()).
 // Anything else throws: a colour the audit cannot read must never be measured as black.
-// Self-contained on purpose: audit.mjs injects its source into the page with Function.prototype.toString.
 export function parseColor(input) {
   const s = String(input).trim().toLowerCase()
   const bad = () => { throw new Error(`audit: unsupported colour syntax "${input}"`) }
@@ -22,7 +21,7 @@ export function parseColor(input) {
   let m = s.match(/^rgba?\((.*)\)$/)
   if (m) {
     const { parts, alpha } = split(m[1])
-    if (parts.length === 4) parts.push(parts.pop()) // legacy rgba(r, g, b, a)
+    if (parts.length === 4) parts.push(parts.pop())
     let a = alpha
     if (parts.length === 4) { a = num(parts[3], 1); parts.length = 3 }
     if (parts.length !== 3) bad()
@@ -43,7 +42,6 @@ export function parseColor(input) {
   return bad()
 }
 
-// fg composited over an opaque bg, channels 0-255.
 export function over(fg, bg) {
   return [0, 1, 2].map(i => fg[i] * fg[3] + bg[i] * (1 - fg[3]))
 }

@@ -4,45 +4,16 @@ import { normalizeWeight, resolveSetWeight } from './units.js'
 
 export { resolveSetWeight } from './units.js'
 
-// Estimated one-rep maximum (1RM) calculation and progression tracking.
-//
-// Deliberately knows nothing about the exercise database: an estimate needs a weight AND a
-// rep count, and only reps-mode sets carry both. Cardio sets ({min, speed}) and timed sets
-// ({sec, w}) therefore drop out of every scan here on their own — there is no exercise-type
-// check to keep in sync.
-//
-// Formulas are the usual submaximal-load estimators. Epley is the default because it is the
-// one most lifters have seen; all of them agree closely at low reps and diverge as reps rise,
-// which is exactly why REP_CAP exists.
 
-// Above this many reps an estimate says more about work capacity than about maximal strength,
-// and the formulas disagree by double digits. Refusing to guess beats printing a fantasy.
 export const REP_CAP = 12
 
 export const FORMULAS = {
-  // Epley 1985 — w · (1 + r/30)
   epley: (w, r) => w * (1 + r / 30),
-  // Brzycki 1993 — w · 36/(37 − r); undefined at r ≥ 37, but REP_CAP is far below that
   brzycki: (w, r) => w * 36 / (37 - r),
-  // Lombardi 1989 — w · r^0.10
   lombardi: (w, r) => w * Math.pow(r, 0.1)
 }
 export const DEFAULT_FORMULA = 'epley'
 
-/**
- * Estimate 1RM from a completed set weight and rep count.
- *
- * For single repetitions (`reps === 1`), the weight is the measured maximum and is returned
- * directly without formula application. For sets exceeding `REP_CAP` (12 reps), returns null
- * as submaximal formulas lose validity.
- *
- * @param {number} w - Lifted load in active units.
- * @param {number} r - Repetitions performed.
- * @param {string} [formula='epley'] - Submaximal formula identifier ('epley' | 'brzycki' | 'lombardi').
- * @param {string|null} [setUnit=null] - Unit of the lifted load ('kg' | 'lb').
- * @param {string|null} [targetUnit=null] - Target unit for estimation ('kg' | 'lb').
- * @returns {number|null} Estimated 1RM rounded to 1 decimal place, or null if invalid/uncapped.
- */
 export function estimate1RM(w, r, formula = DEFAULT_FORMULA, setUnit = null, targetUnit = null) {
   let weight = Number(w)
   const reps = Number(r)
@@ -58,18 +29,6 @@ export function estimate1RM(w, r, formula = DEFAULT_FORMULA, setUnit = null, tar
   return Math.round(est * 10) / 10
 }
 
-/**
- * Calculate the highest estimated 1RM among completed work sets in a single workout entry.
- *
- * Excludes warm-up rows, uncompleted sets, and post-exercise confirmed weight (`topW`).
- * Normalizes set loads to `targetUnit` before calling `estimate1RM` per ADR 0017.
- *
- * @param {Object} entry - Workout entry containing `sets` array.
- * @param {string} [formula='epley'] - Formula name.
- * @param {string} [targetUnit='kg'] - Active profile unit for read-time normalization ('kg' | 'lb').
- * @param {Object|null} [workout=null] - Containing workout for fallback unit context.
- * @returns {{ est: number, w: number, r: number }|null} Best estimate and source set details, or null if none.
- */
 export function bestSetOf(entry, formula = DEFAULT_FORMULA, targetUnit = 'kg', workout = null) {
   let best = null
   for (const s of doneWorkSets(entry)) {
@@ -86,17 +45,6 @@ export function bestSetOf(entry, formula = DEFAULT_FORMULA, targetUnit = 'kg', w
   return best
 }
 
-/**
- * Generate a chronological timeline of peak 1RM estimates for an exercise across past workouts.
- *
- * Produces one data point per workout where the exercise had valid completed work sets,
- * normalizing all historical estimates to the active profile unit `S.unit` per ADR 0017.
- *
- * @param {Object} S - Application state atom containing `workouts` and `unit`.
- * @param {string} exId - Target exercise identifier.
- * @param {string} [formula='epley'] - Formula name.
- * @returns {Array<{ t: number, d: string, y: number, w: number, r: number }>} Chronological points for trend charting.
- */
 export function e1rmSeries(S, exId, formula = DEFAULT_FORMULA) {
   const pts = []
   const targetUnit = S?.unit || 'kg'
@@ -109,36 +57,12 @@ export function e1rmSeries(S, exId, formula = DEFAULT_FORMULA) {
   return pts
 }
 
-/**
- * Retrieve the all-time peak estimated 1RM for an exercise across historical workouts.
- *
- * Retains source set load, reps, calendar date, and timestamp for provenance inspection,
- * normalized to the active profile unit `S.unit` per ADR 0017.
- *
- * @param {Object} S - Application state atom containing `workouts` and `unit`.
- * @param {string} exId - Target exercise identifier.
- * @param {string} [formula='epley'] - Formula name.
- * @returns {{ est: number, w: number, r: number, d: string, t: number }|null} Peak estimate record, or null if none.
- */
 export function best1RM(S, exId, formula = DEFAULT_FORMULA) {
   let best = null
   e1rmSeries(S, exId, formula).forEach(p => { if (!best || p.y > best.est) best = { est: p.y, w: p.w, r: p.r, d: p.d, t: p.t } })
   return best
 }
 
-/**
- * Evaluate whether an active workout entry established a new all-time 1RM record.
- *
- * Compares the best set of the entry against historical workouts in `S.workouts` (which does not yet
- * include the active workout), evaluating both in the same unit (`S?.unit || 'kg'`) per ADR 0017.
- *
- * @param {Object} S - Application state atom containing `workouts` and `unit`.
- * @param {string} exId - Target exercise identifier.
- * @param {Object} entry - Active workout entry containing `sets` array.
- * @param {string} [formula='epley'] - Formula name.
- * @param {Object|null} [workout=null] - Containing active workout context.
- * @returns {{ est: number, w: number, r: number, prev: number }|null} Record details if broken, or null otherwise.
- */
 export function is1RMRecord(S, exId, entry, formula = DEFAULT_FORMULA, workout = null) {
   if (!entry || !Array.isArray(entry.sets) || !exId) return null
   const targetUnit = S?.unit || 'kg'

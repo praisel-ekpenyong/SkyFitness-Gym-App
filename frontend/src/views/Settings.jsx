@@ -14,7 +14,6 @@ import Icon from '../components/Icon.jsx'
 import Mark from '../components/Mark.jsx'
 import { Section, Row, SelectRow, Switch, Segmented } from '../components/ui.jsx'
 
-/** Settings route; edits preferences, reminders, backup, and data. */
 export default function Settings() {
   const nav = useNavigate()
   const S = useStore(s => s.S)
@@ -25,14 +24,13 @@ export default function Settings() {
   const wakeOK = wakeLockSupported()
   const IS_ANDROID = /android/i.test(navigator.userAgent)
 
-  // The backup nag reads this stamp — set it only once an export actually went out.
   const stampExported = () => update(s => { s.lastExport = Date.now() })
   const doExport = async () => {
     const json = JSON.stringify(S, null, 2)
     const name = 'sky-backup-' + todayISO() + '.json'
     // WKWebView can't download blob URLs — the native build hands the file to the share sheet.
     if (MOBILE) {
-      try { await shareExport(json, name); toast(t('Backup exported')); stampExported() } catch (e) { /* share sheet dismissed */ }
+      try { await shareExport(json, name); toast(t('Backup exported')); stampExported() } catch (e) {}
       return
     }
     const blob = new Blob([json], { type: 'application/json' })
@@ -46,9 +44,6 @@ export default function Settings() {
     rd.onload = () => {
       try {
         const data = JSON.parse(rd.result)
-        // Same shape as any Sky backup — only the file name changed at the rebrand.
-        // Element-level guards live behind the Restore seam: one malformed Entry
-        // is stripped with a skipped count instead of killing the tab.
         validateBackup(data)
         confirmSheet({ title: t('Import backup?'), message: t('This replaces all current data with the backup file.'), confirmText: t('Import'), danger: true, onConfirm: () => { restoreFromBackup(data) } })
       } catch (e) { toast(t('Import failed: {0}', e.message)) }
@@ -62,12 +57,9 @@ export default function Settings() {
       <div className="grow"><h1>{t('Settings')}</h1></div>
     </div>
 
-    {/* ---------- your data ---------- */}
     <Section title={t('Your data')}>
       <Row icon="lock" title={t('All data stays on this device')}
         subtitle={t('No account, no cloud — back it up anytime with Export below.')} />
-      {/* Gentle nag: only when there is history worth saving and the last export has gone
-          stale. Tapping it exports straight away, which clears the row. */}
       {hasData(S) && backupDue(S.lastExport, Date.now()) && (
         <Row icon="shield" title={t('Time for a backup?')}
           subtitle={t("It's been a while since your last export — take one so a lost phone can't take your log with it.")}
@@ -79,8 +71,6 @@ export default function Settings() {
         subtitle={S.displayName ? t('Shown in the greeting on Home') : t('Not set — Home says “Hi there”')}
         value={S.displayName || ''} accessory="chevron" onClick={displayNameSheet} />
     </Section>
-    {/* ---------- general (language row removed with the non-English locales — English is
-         the only option, so there is nothing left to pick) ---------- */}
     <Section title={t('General')} footer={t('Note: switching units only changes the label — logged numbers are not converted.')}>
       <Row icon="scale" title={t('Weight unit')}>
         <Segmented className="seg-inline" label={t('Weight unit')}
@@ -89,7 +79,6 @@ export default function Settings() {
       </Row>
     </Section>
 
-    {/* ---------- during a workout ---------- */}
     <Section title={t('During a workout')}>
       <SelectRow icon="timer" title={t('Rest duration')}
         value={S.restSec} onChange={v => update(s => { s.restSec = v })}
@@ -104,8 +93,6 @@ export default function Settings() {
       <Row icon="bell" title={t('Sounds')}>
         <Switch checked={!!S.sound} label={t('Sounds')} onChange={v => update(s => { s.sound = v })} />
       </Row>
-      {/* Two names for the same judgement, so the column asks in the scale you already think in.
-          The (i) sits before the control — you read it on the way to the choice, not after it. */}
       <Row icon="target" title={t('Effort per set')}>
         <button className="helpbtn" aria-label={t('What are RIR and RPE?')} onClick={effortHelpSheet}><Icon name="info" /></button>
         <Segmented className="seg-inline" label={t('Effort per set')}
@@ -116,7 +103,6 @@ export default function Settings() {
 
     <NotificationsCard S={S} update={update} toast={toast} />
 
-    {/* ---------- appearance ---------- */}
     <Section title={t('Appearance')}>
       <Row icon="moon" title={t('Theme')}>
         <Segmented
@@ -126,7 +112,6 @@ export default function Settings() {
           onChange={v => update(s => { s.theme = v })}
         />
       </Row>
-      {/* Purely how the muscle map is drawn — nothing else in the app reads this. */}
       <Row icon="figureStrength" title={t('Body diagram')}>
         <Segmented
           className="seg-inline" label={t('Body diagram')}
@@ -151,7 +136,6 @@ export default function Settings() {
       </div>
     </Section>
 
-    {/* ---------- data: fill it, bring things over, back it up, wipe it ---------- */}
     <Section title={t('Data')}>
       <Row icon="calendar" title={t('Load starter plan')} subtitle={t('Push / Pull / Legs, three days a week')} accessory="chevron" onClick={loadStarterPlan} />
       <Row icon="shuffle" title={t('Import from another app')}
@@ -162,26 +146,19 @@ export default function Settings() {
       <Row icon="trash" title={t('Reset everything')} danger onClick={() => confirmSheet({ title: t('Reset everything?'), message: t('Deletes your plan, workouts and body weight on this device. This cannot be undone.'), confirmText: t('Delete everything'), danger: true, onConfirm: () => { resetProfile(); nav('/home'); toast(t('All data reset')) } })} />
     </Section>
     <input ref={fileRef} type="file" accept=".json,application/json" hidden onChange={doImport} />
-    {/* Reset after reading so picking the same file twice still fires onChange. */}
     <input ref={importRef} type="file" accept=".csv,.xml,text/csv,text/xml" hidden
       onChange={ev => { const f = ev.target.files[0]; if (f) importFromApp(f); ev.target.value = '' }} />
 
-    {/* "Add to Home screen" makes no sense inside the native app */}
     {!MOBILE && <Section title={t('Tip')}>
       <Row icon="lightbulb"
         title={IS_ANDROID ? t('In Chrome: ⋮ menu → Add to Home screen') : t('In Safari: Share → Add to Home Screen')}
         subtitle={t('to install Sky as a full-screen app.') + ' ' + t('Your data never leaves this device, so export a backup now and then.')} />
     </Section>}
 
-    {/* About — the one place that says what Sky is. License attribution lives here, so it
-        must survive every future rewrite of the copy. */}
     <div className="dim small settings-about"><Mark size={12} /> Sky · {t('free and open source (MIT)')}</div>
   </div>
 }
 
-// The whole point is that the two scales are one judgement counted from opposite ends, and a
-// paragraph is a bad way to say that — the conversion table shows it in one look. Reading down
-// a column is the answer to "what do I put here", so the numbers get their own aligned columns.
 const EFFORT_ROWS = [
   ['0', '10', 'Nothing left — went to failure'],
   ['1', '9', 'One more rep in the tank'],
@@ -189,11 +166,8 @@ const EFFORT_ROWS = [
   ['3', '7', 'Three more reps'],
   ['4+', '≤6', 'Easy — warm-up territory'],
 ]
-// RIR 2 / RPE 8: the row a working set usually lands on — the anchor the others are read
-// against. Not where the stepper starts; + walks up from the bottom of the scale.
 const EFFORT_TYPICAL = 2
 
-/** Opens the RIR/RPE effort-scale help sheet. */
 function effortHelpSheet() {
   useUI.getState().openSheet(close => <>
     <h3>{t('Effort per set')}</h3>
@@ -216,9 +190,6 @@ function effortHelpSheet() {
   </>)
 }
 
-// The reminder is a native local notification scheduled on planned weekdays — no push server
-// involved. The schedule itself is (re)synced by the store on every persist; this card only
-// owns the OS permission prompt when the switch turns on.
 function NotificationsCard({ S, update, toast }) {
   const setReminder = patch => update(s => { s.reminder = { ...(s.reminder || DEF.reminder), ...patch, tz: localTZ() } })
   const toggle = async () => {

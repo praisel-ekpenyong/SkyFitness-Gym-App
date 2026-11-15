@@ -15,22 +15,12 @@ import BodyMap from '../components/BodyMap.jsx'
 import SessionMuscleDistribution from '../components/SessionMuscleDistribution.jsx'
 import { loadOfWorkouts, MUSCLE_NAME } from '../lib/muscles.js'
 
-/** Reads the shared store state. */
 const S = () => useStore.getState().S
-/** Applies a draft mutation to the shared store state. */
 const update = (...a) => useStore.getState().update(...a)
-/** Reads the UI store state. */
 const ui = () => useUI.getState()
-/** Shows a transient toast message. */
 const toast = m => ui().toast(m)
-/** Reads the sound toggle. */
 const snd = () => S().sound
 
-/* ============================ injected hub seams ============================ */
-// The weigh-in sheet arrives as an injected seam wired by the hub, so no
-// session-to-body-weight dependency exists. Confirm stays the hub's interface
-// and is injected for the same reason: the hub re-exports this module, so
-// importing the hub back would be circular.
 let _bwSheet = null
 let _confirmSheet = null
 /**
@@ -44,11 +34,8 @@ export function configureSessionSheets({ bwSheet, confirmSheet }) {
   if (confirmSheet) _confirmSheet = confirmSheet
 }
 
-/* ============================ workout lifecycle ============================ */
 export function startFlow(routineId) {
   if (!_bwSheet) throw new Error('session sheets not wired: missing bwSheet')
-  // Once a day: a second workout on the same day reuses the morning's weigh-in instead of
-  // asking again.
   const weighed = latestWeighIn(useStore.getState().S)
   if (weighed && weighed.d === todayISO()) return beginWorkout(routineId, weighed.w)
   _bwSheet({ required: true, onDone: bw => beginWorkout(routineId, bw) })
@@ -60,8 +47,6 @@ export function startFlow(routineId) {
  * @param {number} bw Weighed-in body weight, if any.
  */
 export function beginWorkout(routineId, bw) {
-  // Thin caller over the deep lifecycle seam — prescription, target freezing
-  // and set construction live in lib/active-workout.js, not in the sheet.
   useStore.getState().beginSession(routineId, bw)
   useUI.getState().stopRest()
   nav('/workout')
@@ -110,10 +95,8 @@ export function ExerciseNoteSheet({ entryIdx, close }) {
     </> : null}
   </>
 }
-/** Opens the exercise note sheet for the given active entry. */
 export const exerciseNoteSheet = entryIdx => ui().openSheet(close => <ExerciseNoteSheet entryIdx={entryIdx} close={close} />)
 
-// Shown when the last exercise's last set is checked — finish, or keep going.
 function WorkoutComplete({ close }) {
   return <div className="confirm">
     <h3>{t("That's the whole workout!")}</h3>
@@ -123,21 +106,10 @@ function WorkoutComplete({ close }) {
     <Button onClick={() => { close(); useUI.getState().toast(t('Keep going — tap “+ Add exercise” below')) }}>{t('Continue workout')}</Button>
   </div>
 }
-/** Opens the workout-complete prompt to finish or continue. */
 export const workoutCompleteSheet = () => ui().openSheet(close => <WorkoutComplete close={close} />, { kind: 'center' })
-/** Re-exports pure session progression selector. */
 export const getProgressionItems = sessionProgressionItems
 
 
-/**
- * Keeps the Finish figures whole and on the poster step. The four tiles sit two by two while every
- * figure fits its tile on one line; when one does not ("31,920 kg" at 360px), Duration and Volume,
- * the two figures that grow, each take the full width, so no figure breaks or shrinks below the
- * title. Measured, because the fit depends on the locale's digits and the font, not on a character
- * count. Re-measured when the window width changes.
- *
- * @returns {{ref: Object, tight: boolean}} Ref for the tiles block, and whether it is laid out wide.
- */
 function useFigureFit() {
   const ref = useRef(null)
   const [tight, setTight] = useState(false)
@@ -185,7 +157,6 @@ export function FinishSummary({ w, prs, e1prs = [], routineSync = null, close })
     <h3 className="finish-title">{t('Workout logged')}</h3>
     <div className="finish-kicker">{[w.name, fmtDate(w.d, true)].filter(Boolean).join(' · ')}</div>
     <div ref={fig.ref} className={'tiles finish-kpis' + (fig.tight ? ' tight' : '')}>
-      {/* The figure with a small unit (.u); the label above already names it, so no "4 sets". */}
       <div className="tile"><div className="l">{t('Duration')}</div><div className="v">
         {fmtDurParts(w.end - w.start).map(([n, u], i) => <Fragment key={i}>{i > 0 && ' '}{n}<span className="u">{u}</span></Fragment>)}
       </div></div>
@@ -275,7 +246,6 @@ export function FinishSummary({ w, prs, e1prs = [], routineSync = null, close })
     <div className="finish-cta"><Button variant="primary" onClick={onDismiss}>{t('Done')}</Button></div>
   </div>
 }
-/** Finishes the workout, confirming first when work sets remain unchecked. */
 export function finishWorkout() {
   const A = S().active
   if (!A) return
@@ -288,7 +258,6 @@ export function finishWorkout() {
       : { title: t('Nothing logged yet'), message: t('You haven’t checked off any sets. Finish the workout anyway?'), confirmText: t('Finish anyway'), onConfirm: doFinishWorkout })
     return
   }
-  // The workout screen has one Finish key, so how far the session got is said here, where the choice is made.
   if (prog.remaining > 0) {
     const sets = t(prog.remaining === 1 ? '{0} set still unchecked' : '{0} sets still unchecked', fmtNum(prog.remaining))
     _confirmSheet({ title: t('Finish early?'), message: t('{0} of {1} exercises done, {2}. Finish the workout now?', fmtNum(prog.exDone), fmtNum(prog.exTotal), sets), confirmText: t('Finish workout'), onConfirm: doFinishWorkout })
@@ -296,7 +265,6 @@ export function finishWorkout() {
   }
   doFinishWorkout()
 }
-/** Completes the session and opens the locked finish summary. */
 function doFinishWorkout() {
   const result = useStore.getState().finishSession()
   if (!result) return

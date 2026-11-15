@@ -1,41 +1,17 @@
-// Android system back (the gesture and the hardware/nav button are the same event).
-//
-// Capacitor's BridgeActivity does not handle back at all — without a JS listener the
-// activity simply finishes, so a back swipe quit the app from anywhere, whatever the
-// WebView history said. That made the sheet history entries from #63 dead weight in the
-// packaged app: they only ever worked in a browser tab, where the browser walks history
-// itself.
-//
-// Once a `backButton` listener exists, the plugin stops falling through to finish() —
-// back can then ONLY leave the app through App.exitApp(), which is why the last step is
-// an explicit press-again-to-exit rather than a silent no-op.
+// Capacitor's BridgeActivity does not handle back at all — without a JS listener the activity simply finishes.
+// Once a `backButton` listener exists, the plugin stops falling through to finish() — back can then only leave the app through App.exitApp().
 import { MOBILE } from './mobile.js'
 import { useUI } from '../store/useUI.js'
 import { t } from './i18n.js'
 
-// How long a first back press stays armed as "press again to exit" (the toast shows 2.2s).
 export const EXIT_WINDOW = 2000
 
-// What a back press means, given what is on screen. Pure, so the table below is testable.
 export function decideBack({ top, canGoBack, exitArmed }) {
-  if (top) return top.locked ? 'ignore' : 'sheet'   // a locked sheet swallows back on purpose
-  if (canGoBack) return 'history'                   // a page/tab we pushed ourselves
+  if (top) return top.locked ? 'ignore' : 'sheet'
+  if (canGoBack) return 'history'
   return exitArmed ? 'exit' : 'arm-exit'
 }
 
-/**
- * Build the Android back-press handler shared by sheets, history, and exit.
- *
- * Arms the press-again-to-exit window at the root and disarms it whenever another press does real work.
- *
- * @param {Function} getSheets - Returns the current sheet stack, top last.
- * @param {Function} closeSheet - Closes the sheet with the given id.
- * @param {Function} toast - Shows a transient message such as the exit warning.
- * @param {Function} goBack - Walks app history back one step.
- * @param {Function} exit - Exits the app on a second press inside the window.
- * @param {Function} now - Clock returning ms; defaults to Date.now, injected in tests.
- * @returns {Function} Back handler returning the action taken: sheet, history, arm-exit, exit, or ignore.
- */
 export function makeBackHandler({ getSheets, closeSheet, toast, goBack, exit, now = Date.now }) {
   let armedAt = -Infinity
   return (ev = {}) => {
@@ -54,8 +30,6 @@ export function makeBackHandler({ getSheets, closeSheet, toast, goBack, exit, no
   }
 }
 
-// Registers the listener for the native shell. No-op in web builds, where the browser
-// (or the PWA shell) walks history on its own and there is no plugin to talk to.
 export async function initBackButton() {
   if (!MOBILE) return () => {}
   try {
@@ -70,6 +44,6 @@ export async function initBackButton() {
     const sub = await App.addListener('backButton', handler)
     return () => sub.remove()
   } catch (e) {
-    return () => {}   // no plugin (older install): leave back to the default behaviour
+    return () => {}
   }
 }

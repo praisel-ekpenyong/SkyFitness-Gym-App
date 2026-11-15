@@ -1,11 +1,9 @@
-/* Reset, type roles and small utilities. */
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent }
 html {
   font-size: var(--fs-field); background: var(--bg); overscroll-behavior: none; overflow-x: clip;
   -webkit-text-size-adjust: 100%; min-height: 100%; scroll-padding-bottom: var(--page-clearance);
 }
 html:has(body.resting) { scroll-padding-bottom: var(--timer-clearance) }
-/* in focus mode the sticky header sits on top and the tab bar is gone */
 html:has(body.focus-session) { scroll-padding-top: calc(var(--sat) + 96px); scroll-padding-bottom: calc(var(--sab) + 16px) }
 html:has(body.focus-session.resting) { scroll-padding-bottom: calc(var(--sab) + 112px) }
 body {
@@ -35,13 +33,10 @@ button, .chip, .tile, .item, .wday, .cal-d, .swatch, .hm-c, .lrow, .seg button, 
 }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0 }
 
-/* ------------------------------------------------------------- type roles -- */
-/* Display: condensed, heavy, uppercase. For what is read at arm's length. */
 .d {
   font-stretch: var(--narrow); font-weight: 800; text-transform: uppercase;
   line-height: .94; letter-spacing: .002em; overflow-wrap: anywhere;
 }
-/* Numerals: the same width with no case change, so units can stay lower-case. */
 .fig {
   font-stretch: var(--narrow); font-weight: 700; line-height: 1;
   font-variant-numeric: tabular-nums; letter-spacing: 0;
@@ -51,12 +46,11 @@ button, .chip, .tile, .item, .wday, .cal-d, .swatch, .hm-c, .lrow, .seg button, 
 .muted { color: var(--label-2) }
 .dim   { color: var(--label-3) }
 .small { font-size: var(--fs-meta); line-height: 1.38 }
-.record { color: var(--goal-text) }   /* a Record; never a Best, never the accent */
+.record { color: var(--goal-text) }
 .capitalize { text-transform: capitalize }
 .nocap, .tag.nocap, .chip.nocap { text-transform: none }
 .grow { flex: 1; min-width: 0 }
 
-/* ----------------------------------------------------------------- layout -- */
 .row { display: flex; align-items: center; gap: 12px }
 .row.between { justify-content: space-between }
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--gap) }
@@ -68,6 +62,6 @@ button, .chip, .tile, .item, .wday, .cal-d, .swatch, .hm-c, .lrow, .seg button, 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important }
   .sheet, .center, .fullsheet, #timer, #app.vfade { animation: fadein var(--fast) linear !important }
-  .chk.on, .home-badge-dot { animation: none !important }   /* the in-progress dot holds still: no motion runs on its own */
+  .chk.on, .home-badge-dot { animation: none !important }
   .sld-knob, .seg-sel, .sw .knob { transition: none !important }
 }

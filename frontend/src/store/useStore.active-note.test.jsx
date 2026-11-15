@@ -24,7 +24,6 @@ describe('useStore.updateActiveExerciseNote', () => {
   })
 
   it('updates entry.notes with trimmed note text without mutating entry.target.notes', () => {
-    // Set a frozen routine baseline note on target
     useStore.getState().S.active.entries[0].target.notes = 'Baseline routine cue'
     const res = useStore.getState().updateActiveExerciseNote(0, '  Seat height 5, pin 8  ')
     expect(res).toBe(true)

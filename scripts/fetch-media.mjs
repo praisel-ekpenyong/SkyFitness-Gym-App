@@ -1,12 +1,4 @@
 #!/usr/bin/env node
-// Cross-platform exercise media fetch script for Sky.
-// Downloads and extracts 1,324 exercise thumbnails (JPG) and animations (GIF)
-// from github.com/hasaneyldrm/exercises-dataset into frontend/public/media/.
-//
-// Usage:
-//   npm run media:fetch
-//   node scripts/fetch-media.mjs [path-or-url-or-archive]
-//
 // Source: hasaneyldrm/exercises-dataset
 // Metadata and instruction text: MIT.
 // Images and animations: © Gym visual — https://gymvisual.com/
@@ -44,10 +36,6 @@ const TAR_TYPE_OFFSET = 156
 const TAR_PREFIX_OFFSET = 345
 const TAR_PREFIX_LEN = 155
 
-/**
- * Parses a 512-byte POSIX tar / ustar header block.
- * Returns null if the block is all zeros (EOF indicator) or shorter than 512 bytes.
- */
 export function parseTarHeader(block) {
   if (!block || block.length < TAR_BLOCK_SIZE) return null
   let isZero = true
@@ -76,9 +64,6 @@ export function parseTarHeader(block) {
   return { name, prefix, fullName, size, typeflag }
 }
 
-/**
- * Extracts media files (images/*.jpg and videos/*.gif) from an uncompressed tar stream.
- */
 export async function extractMediaFromTarStream(readableStream, options = {}) {
   const {
     targetDir = getDefaultMediaDir(),
@@ -112,7 +97,6 @@ export async function extractMediaFromTarStream(readableStream, options = {}) {
           }
           const header = parseTarHeader(buffer.subarray(0, TAR_BLOCK_SIZE))
           if (!header) {
-            // Null block (EOF block or padding)
             buffer = buffer.subarray(TAR_BLOCK_SIZE)
             continue
           }
@@ -123,7 +107,6 @@ export async function extractMediaFromTarStream(readableStream, options = {}) {
         const paddedSize = Math.ceil(size / TAR_BLOCK_SIZE) * TAR_BLOCK_SIZE
 
         if (buffer.length < TAR_BLOCK_SIZE + paddedSize) {
-          // Wait for full file payload
           break
         }
 
@@ -131,7 +114,6 @@ export async function extractMediaFromTarStream(readableStream, options = {}) {
         buffer = buffer.subarray(TAR_BLOCK_SIZE + paddedSize)
         pendingEntry = null
 
-        // Only extract regular files
         if (typeflag === '0' || typeflag === '\0' || typeflag === '') {
           const imgMatch = fullName.match(/(?:^|\/)images\/([^/]+\.jpg)$/i)
           const vidMatch = fullName.match(/(?:^|\/)videos\/([^/]+\.gif)$/i)
@@ -187,9 +169,6 @@ export function getDefaultMediaDir() {
   return join(projectRoot, 'frontend', 'public', 'media')
 }
 
-/**
- * Downloads and extracts the media archive.
- */
 export async function downloadAndExtractMedia(options = {}) {
   const {
     url = DEFAULT_ARCHIVE_URL,
@@ -227,7 +206,6 @@ export async function downloadAndExtractMedia(options = {}) {
   })
 }
 
-// CLI entrypoint
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const args = process.argv.slice(2)
   if (args.includes('--help') || args.includes('-h')) {

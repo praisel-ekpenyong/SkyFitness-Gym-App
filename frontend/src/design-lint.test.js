@@ -1,7 +1,3 @@
-// Guard G2: one type scale and one meaning per colour. Every font-size in styles/*.css names a
-// role token from styles/tokens.css, weights stay on the four the system uses, no component
-// sets type inline, and the accent and yellow colour only what an allowlist says they may (see
-// "colour meaning" below). Each failure names the rule, the place, and where to read about it.
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { dirname, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -12,14 +8,12 @@ const SRC = dirname(fileURLToPath(import.meta.url))
 const tokens = readTokens()
 const sheets = styleSheets()
 
-// The scale: custom properties named --fs-<role> with a px value, declared only in tokens.css.
 const SIZE = Object.fromEntries(Object.entries(tokens.base)
   .filter(([k]) => k.startsWith('--fs-'))
   .map(([k, v]) => [k, parseFloat(v)]))
 const WEIGHTS = new Set(['400', '600', '700', '800'])
 const READ = 'Read DESIGN.md › Type and the scale at the top of styles/tokens.css.'
 
-/** Every declaration of one property outside tokens.css, with where it sits. */
 function declsOf(prop, { skipTokens = true } = {}) {
   const out = []
   for (const { name, css } of sheets) {
@@ -94,22 +88,12 @@ describe('G2 type scale (styles/*.css)', () => {
   })
 })
 
-// ------------------------------------------------------------------- colour meaning --
-// Guard G2 (colour part): one meaning per colour. The accent means work, orange means a workout
-// is running (spec D20) and yellow means a Record, the moment a Set beats the exercise's Best or its best estimated 1RM; the standing
-// Best figure stays ink (design-review-fixes/04, decision E12, narrows D3), so the tokens that
-// carry them may colour only what is listed below. Everything else is ink (--label, --label-2,
-// --label-3) on iron. Each entry names the use it is, by the iron-discipline decision that
-// allows it: D2 for the accent, D3 for yellow (DESIGN.md › The five rules › 3 and › Tokens ›
-// Status), D20 for orange. An entry that no longer matches anything fails too, so the list stays a true
-// account of where the colours are.
 
 const ACCENT_TOKENS = ['--acc', '--acc-2', '--acc-text', '--acc-soft', '--acc-line', '--data']
 const RECORD_TOKENS = ['--goal-text', '--yellow']
 const RUNNING_TOKENS = ['--orange', '--orange-text', '--orange-wash', '--orange-wash-2', '--on-orange']
 const COLOUR_READ = 'Read DESIGN.md › The five rules › 3 (Colour is work) and › Tokens › Status (yellow is a Record: a Set that beat the Best or the best estimated 1RM). The standing Best figure is neutral ink, never yellow: design-review-fixes/04 (E12) narrows D3. Orange is a running workout only (spec D20): a rescheduled day is an ink mark and warnings are neutral.'
 
-/** Selectors (one per entry, as written in styles/*.css) that may use an accent token. */
 const WORK = {
   '.btn.go': 'D2 the one .go key on a screen',
   '.btn.go:active': 'D2 the .go key, pressed',
@@ -140,14 +124,12 @@ const WORK = {
   '#timer.working .t': 'D2 the rest dock while a timed set is held: the clock is the work itself',
 }
 
-/** Selectors that may use a record token. The standing Best (the heaviest load) is a measurement in ink; beating it is a Record. */
 const RECORD = {
   '.record': 'D3 a Record (utility class)',
   '.pr': 'D3 a Record badge (Workout detail and Workout row)',
   '.set-pill.record': 'D3 the Set that made a Record (Stats history: the session’s heaviest Set)',
 }
 
-/** Lines in src/**\/*.{js,jsx} that may name an accent token, by file and a fragment of the line. */
 const WORK_JS = [
   { file: 'components/LineChart.jsx', has: "color = 'var(--data)'", why: 'D2 chart ink: the line’s default colour' },
   { file: 'sheets.jsx', has: "background: 'var(--data)'", why: 'D2 trained calendar days: the calendar legend' },
@@ -155,22 +137,18 @@ const WORK_JS = [
   { file: 'lib/bodyweight.js', has: "'var(--acc-text)' : 'var(--red-text)'", why: 'D2 the weight delta keeps its good/bad colouring' },
 ]
 
-/** Lines in src/**\/*.{js,jsx} that may name a record token. */
 const RECORD_JS = []
 
-/** Selectors that may use an orange token: each is a workout that is running right now. */
 const RUNNING = {
   '.btn.live': 'D20 the Resume key while a workout runs',
   '.home-badge.active': 'D20 Home’s “In progress” badge while a workout runs',
   '#tabbar button.start.rec': 'D20 the tab bar’s Start key while a workout runs (D7)',
 }
 
-/** Lines in src/**\/*.{js,jsx} that may name an orange token. */
 const RUNNING_JS = []
 
 const tokenUses = (value, family) => [...value.matchAll(/--[\w-]+/g)].map(m => m[0]).filter(n => family.includes(n))
 
-/** Every use of a family's tokens in styles/*.css (outside tokens.css), one per selector. */
 function cssUses(family) {
   const out = []
   for (const { name, css } of sheets) {
@@ -186,7 +164,6 @@ function cssUses(family) {
   return out
 }
 
-/** Every line of non-test JS/JSX under src/ that names one of a family's tokens. */
 function jsUses(family) {
   const out = []
   const walk = dir => {
@@ -234,8 +211,6 @@ describe('G2 colour meaning: lime is work, yellow is a record, orange is a runni
   }
 })
 
-// A destructive text key is a ghost key in red. `.btn.ghost` sets the ghost's grey, so a rule that
-// only names the key's own class loses to it and the key renders grey.
 describe('G2 red text keys outrank the ghost key', () => {
   for (const key of ['wk-discard', 'rt-delete']) {
     it(`.${key} is red through .btn.ghost.${key}`, () => {

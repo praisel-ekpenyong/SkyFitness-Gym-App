@@ -3,11 +3,8 @@ import { fmtVol, isoOf, todayISO, MONTHS } from '../lib/format.js'
 import { tonnageOf } from '../lib/workout-model.js'
 import { t } from '../lib/i18n.js'
 
-// GitHub-style activity heatmap, shaded by time trained per day.
 export default function Heatmap({ S, onDay }) {
   const wrapRef = useRef(null)
-  // Opens on the latest weeks. A month name the left edge would cut in half ("Jun" read as
-  // "in") is hidden instead, and comes back as the strip scrolls it fully into view.
   useEffect(() => {
     const el = wrapRef.current
     if (!el) return

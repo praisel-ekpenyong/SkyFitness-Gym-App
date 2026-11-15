@@ -59,7 +59,6 @@ describe('accessibility rendered-role seam', () => {
     expect(names).toEqual(['kg', 'lb'])
     expect(radios[0].getAttribute('aria-checked')).toBe('true')
     expect(radios[1].getAttribute('aria-checked')).toBe('false')
-    // activation still works through the radio role
     await act(async () => {
       radios[1].dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
@@ -69,18 +68,15 @@ describe('accessibility rendered-role seam', () => {
   it('body map gives each drawable muscle exactly one tab stop with activation; inert stays inert', async () => {
     const onMuscle = vi.fn()
     await render(<BodyMap load={{}} onMuscle={onMuscle} />)
-    // BodyMap geometry loads async — wait for interactive muscles to appear.
     const deadline = Date.now() + 3000
     let stops = []
     while (Date.now() < deadline) {
       await act(async () => { await new Promise(r => setTimeout(r, 25)) })
       stops = [...container.querySelectorAll('[tabindex="0"]')]
       if (stops.length > 0) {
-        // wait one more tick to let both front+back views settle
         await act(async () => { await new Promise(r => setTimeout(r, 50)) })
         stops = [...container.querySelectorAll('[tabindex="0"]')]
         if (stops.length >= MUSCLES.length) break
-        // if stable but wrong count, keep waiting until deadline
         const stable = [...container.querySelectorAll('[tabindex="0"]')].length
         if (stable === stops.length && Date.now() > deadline - 2000 && stable > 0) break
       }
@@ -94,11 +90,9 @@ describe('accessibility rendered-role seam', () => {
     const expected = MUSCLES.map(slug => MUSCLE_NAME[slug]).sort()
     expect(labels).toEqual(expected)
 
-    // Inert silhouette regions never take a tab stop and expose no interactive role.
     const inertInteractive = [...container.querySelectorAll('.bm-sil[tabindex], .bm-sil[role]')]
     expect(inertInteractive).toHaveLength(0)
 
-    // Keyboard activation on the single stop calls back with that muscle.
     const first = labelled[0]
     const before = onMuscle.mock.calls.length
     await act(async () => {

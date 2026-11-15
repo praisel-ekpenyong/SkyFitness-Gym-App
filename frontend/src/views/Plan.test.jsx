@@ -28,7 +28,6 @@ afterEach(async () => {
   container = null
 })
 
-// The week schedules routines, so a day row leads with what is trained; the day is its label.
 describe('Plan week schedule', () => {
   const today = new Date().getDay()
   const other = (today + 2) % 7
@@ -45,7 +44,7 @@ describe('Plan week schedule', () => {
     const row = rowFor(other)
     const name = row.querySelector('.wk-name'), day = row.querySelector('.wk-day')
     expect(name.textContent).toBe('Push Day')
-    expect(name.classList.contains('d')).toBe(true)   // a routine name is set in the display role
+    expect(name.classList.contains('d')).toBe(true)
     expect(day.textContent).toBe(DAYN[other])
     expect(name.compareDocumentPosition(day) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     expect(row.getAttribute('aria-current')).toBeNull()
@@ -62,7 +61,6 @@ describe('Plan week schedule', () => {
   })
 })
 
-// Seven "Rest" rows say nothing before there is a Routine to schedule.
 describe('Plan with no Routines', () => {
   const buttonNamed = name => [...container.querySelectorAll('button')].find(b => b.textContent === name)
 
@@ -93,9 +91,6 @@ describe('Plan with no Routines', () => {
   })
 })
 
-// A Routine card follows the Home hero's rule. Its name is at the 28px step in a 203px
-// column beside the map (360 wide); a word wider than that moves the map below the name.
-// `stacked` lists the layouts that stack: the tablet's 430px column holds more.
 describe('Plan Routine cards with long names', () => {
   const cardFor = async name => {
     useStore.getState().update(s => {
@@ -108,13 +103,11 @@ describe('Plan Routine cards with long names', () => {
   }
 
   it('keeps a name that fits beside the map', async () => {
-    // POSTERIOR-CHAIN is 6.83em: 191px at 28px
     expect(await cardFor('Posterior-chain Conditioning')).toMatchObject({ stacked: [], name: 'Posterior-chain Conditioning' })
     expect((await cardFor('Push Day')).stacked).toEqual([])
   })
 
   it('moves the map below a word too wide for the column, keeping the whole name', async () => {
-    // SUPERCOMPENSATION is 8.43em: 236px at 28px
     expect(await cardFor('Supercompensation Block')).toEqual({ stacked: ['phone', 'desktop'], name: 'Supercompensation Block', label: 'Supercompensation Block, 1 exercise' })
   })
 })

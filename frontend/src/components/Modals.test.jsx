@@ -105,8 +105,6 @@ describe('Modals sheet history accounting', () => {
     await setSheets([confirm])
     expect(historyMock.pushState).toHaveBeenCalledTimes(1)
 
-    // ConfirmDialog closes and FinishSummary opens in the same batch: length remains one,
-    // so the existing pushed entry now belongs to the locked summary.
     await setSheets([summary])
     await popstate()
     expect(mocks.state.sheets).toEqual([summary])
@@ -150,7 +148,6 @@ describe('Modals sheet history accounting', () => {
     await setSheets([])
     expect(historyMock.go).not.toHaveBeenCalled()
 
-    // This spends the deliberately leaked entry with top === undefined.
     await popstate()
 
     const locked = sheet('locked', { locked: true })
