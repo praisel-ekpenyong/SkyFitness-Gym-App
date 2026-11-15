@@ -61,3 +61,28 @@ describe('Plan week schedule', () => {
     expect([...container.querySelectorAll('.wk-row')].filter(r => r.textContent.includes('Today'))).toHaveLength(1)
   })
 })
+
+// R4 / E11: a Routine card follows the Home hero's rule. Its name is at the 28px step in a 203px
+// column beside the map (360 wide); a word wider than that moves the map below the name.
+describe('Plan Routine cards with long names (design-review-fixes 05)', () => {
+  const cardFor = async name => {
+    useStore.getState().update(s => {
+      s.routines = [{ id: 'r', name, emoji: 'barbell', ex: [{ id: '0025', sets: 3, reps: 8, weight: 60 }] }]
+      s.week = {}
+    })
+    await act(async () => { root.render(<Plan />) })
+    const card = container.querySelector('.rt-card')
+    return { stacked: card.classList.contains('stack'), name: card.querySelector('.rt-name').textContent, label: card.getAttribute('aria-label') }
+  }
+
+  it('keeps a name that fits beside the map', async () => {
+    // POSTERIOR-CHAIN is 6.69em: 187px at 28px
+    expect(await cardFor('Posterior-chain Conditioning')).toMatchObject({ stacked: false, name: 'Posterior-chain Conditioning' })
+    expect((await cardFor('Push Day')).stacked).toBe(false)
+  })
+
+  it('moves the map below a word too wide for the column, keeping the whole name', async () => {
+    // SUPERCOMPENSATION is about 8em: 224px at 28px
+    expect(await cardFor('Supercompensation Block')).toEqual({ stacked: true, name: 'Supercompensation Block', label: 'Supercompensation Block, 1 exercise' })
+  })
+})

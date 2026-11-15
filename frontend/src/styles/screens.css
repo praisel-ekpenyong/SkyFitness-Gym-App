@@ -31,6 +31,8 @@
   background: var(--surface); border-radius: var(--r-2); padding: 8px 12px 8px 14px; min-height: 76px; transition: background var(--fast);
 }
 .rt-card:active { background: var(--surface-2) }
+/* a word too wide for the column beside the map: the name takes the card's width, the map sits below (lib/name-fit.js) */
+.rt-card.stack { grid-template-columns: minmax(0, 1fr) }
 .rt-text { display: flex; flex-direction: column; gap: 5px; min-width: 0 }
 .rt-name { font-size: var(--fs-heading) }
 .rt-meta { font-size: var(--fs-meta); color: var(--label-2) }
