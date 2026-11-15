@@ -192,7 +192,7 @@
 .picker-chips { margin: 8px calc(var(--pad) * -1) 2px }
 .glyph-group { margin-bottom: 14px }
 .import-names { margin-bottom: 12px }
-.changed-day { color: var(--orange-text) }
+.changed-day { color: var(--label-2) }
 .cal-sum { text-align: center }
 .recap-empty { margin-bottom: 12px }
 .recap-v { display: flex; align-items: baseline; gap: 8px; flex: none }
