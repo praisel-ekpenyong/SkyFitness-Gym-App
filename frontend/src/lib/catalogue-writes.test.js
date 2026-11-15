@@ -1,10 +1,3 @@
-// Tests cross the same seam the sheets do after the carve: the full-statement
-// cascade that used to be assembled inside the catalogue sheet, pinned at the
-// new interface — including the Active-workout refusal that previously had no
-// test anywhere (GLOSSARY.md: Active workout — at most one exists).
-// upsertCustomEx is the store-write side of the Custom exercise form: the
-// record shape (GLOSSARY.md: Custom exercise) and the update-vs-create fork
-// used to live inline in the sheet; here they are pinned as one module seam.
 import { describe, it, expect } from 'vitest'
 import { toggleFavorite, deleteCustomEx, upsertCustomEx } from './catalogue-writes.js'
 
@@ -27,7 +20,6 @@ const baseState = () => ({
   customEx: [custom(), { id: 'ex-row', n: 'Row custom', bp: 'back', custom: true }],
   routines: [
     { id: 'r-push', ex: [{ id: '0025' }, { id: 'ex-fly' }] },
-    // the custom sits in a superset pair — deleting it must strand the partner's tag
     { id: 'r-pair', ex: [{ id: '0047', sg: 'ss-1' }, { id: 'ex-fly', sg: 'ss-1' }, { id: '0085' }] }
   ],
   exWeights: { 'ex-fly': { w: 22.5, d: '2026-01-10' }, '0025': { w: 100 } },
@@ -64,9 +56,7 @@ describe('deleteCustomEx — the delete cascade', () => {
     expect(res).toEqual({ ok: true, reason: null })
     const first = S.workouts[0].entries.find(e => e.id === 'ex-fly')
     expect(first.n).toBe('Homemade fly')
-    // chest's body-part weights became the stored snapshot
     expect(Object.keys(first.muscleSnapshot)).toEqual(expect.arrayContaining(['n', 'bp', 'muscleWeights']))
-    // the second entry's name is always re-stamped, but its stored snapshot untouched
     const second = S.workouts[1].entries[0]
     expect(second.n).toBe('Homemade fly')
     expect(second.muscleSnapshot).toEqual({ n: 'keep me' })
@@ -87,7 +77,6 @@ describe('deleteCustomEx — the delete cascade', () => {
     const r = S.routines[1]
     deleteCustomEx(S, custom())
 
-    // ss-1 held exactly the custom and 0047 side by side; 0047 must lose the tag
     expect(r.ex[0]).toEqual({ id: '0047' })
     expect(r.ex[1].id).toBe('0085')
     expect(r.ex.some(e => e.sg)).toBe(false)
@@ -115,8 +104,6 @@ describe('deleteCustomEx — the delete cascade', () => {
     expect(() => deleteCustomEx(S, custom())).not.toThrow()
     expect(S.customEx).toEqual([])
     expect(S.favorites).toEqual([])
-    // `exWeights` was absent entirely: the cascade deletes through it when it
-    // exists and never conjures the key out of nothing
     expect('exWeights' in S).toBe(false)
   })
 })
@@ -133,13 +120,11 @@ describe("upsertCustomEx — the form's store write", () => {
     const res = upsertCustomEx(S, { id: 'ex-c', n: 'New name', tg: 'abs', sm: ['obliques'], desc: 'cues' })
 
     expect(res).toBe('ex-c')
-    // the very entry object the store holds is the one mutated
     expect(S.customEx[0]).toBe(entry)
     expect(entry.n).toBe('New name')
     expect(entry.tg).toBe('abs')
     expect(entry.sm).toEqual(['obliques'])
     expect(entry.desc).toBe('cues')
-    // record-shape policy lives in the seam: bp re-derived from tg, eq/custom/id untouched
     expect(entry.bp).toBe('waist')
     expect(entry.eq).toBe('custom')
     expect(entry.custom).toBe(true)
@@ -153,7 +138,6 @@ describe("upsertCustomEx — the form's store write", () => {
     const res = upsertCustomEx(S, { id: 'ex-gone', n: 'Whatever', tg: 'chest', sm: [], desc: '' })
 
     expect(JSON.stringify(S)).toBe(before)
-    // the sheet's onDone(EXIDX[id]) still runs with the id it had
     expect(res).toBe('ex-gone')
   })
 
@@ -167,7 +151,6 @@ describe("upsertCustomEx — the form's store write", () => {
     expect(created.tg).toBe('hamstring')
     expect(created.sm).toEqual(['gluteal'])
     expect(created.desc).toBe('slow eccentric')
-    // record-shape policy lives here, stated once: fresh 'c'-prefixed id, derived body part, custom marks
     expect(created.id).toMatch(/^c./)
     expect(created.bp).toBe('upper legs')
     expect(created.eq).toBe('custom')

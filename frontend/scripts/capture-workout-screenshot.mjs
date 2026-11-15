@@ -112,7 +112,6 @@ async function run() {
   await page.screenshot({ path: outPath, fullPage: false })
   console.log(`Saved screenshot to ${outPath}`)
 
-  // Also take Light mode screenshot
   await page.evaluate(() => {
     document.documentElement.setAttribute('data-theme', 'light')
   })

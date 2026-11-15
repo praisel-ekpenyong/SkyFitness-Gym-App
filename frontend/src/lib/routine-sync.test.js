@@ -204,7 +204,6 @@ describe('diffRoutineWithSession', () => {
       const res = diffRoutineWithSession(routine, session)
       expect(res.hasDiff).toBe(true)
       expect(res.changes).toContain('⇄ Replaced Barbell Incline Bench Press → Cable Flyes')
-      // Should not also generate unlinked/linked superset change
       expect(res.changes.filter(c => c.toLowerCase().includes('superset'))).toHaveLength(0)
       expect(res.syncedEx[0].sg).toBe('sg-1')
       expect(res.syncedEx[1].sg).toBe('sg-1')
@@ -259,7 +258,6 @@ describe('diffRoutineWithSession', () => {
         entries: [makeEntry(ex1, 0)],
       }
       const res = diffRoutineWithSession(routine, session)
-      // When zero sets were performed and no other change happened, routine target sets remain 3 -> no diff
       expect(res.hasDiff).toBe(false)
       expect(res.changes).toEqual([])
       expect(res.syncedEx).toHaveLength(1)
@@ -316,7 +314,6 @@ describe('diffRoutineWithSession', () => {
       expect(res.syncedEx[0].sec).toBe(60)
       expect(res.syncedEx[0].prog).toBe('double')
       expect(res.syncedEx[0].inc).toBe(5)
-      // Must NOT overwrite baseline weight 10 with session load 25
       expect(res.syncedEx[0].weight).toBe(10)
     })
   })
@@ -413,7 +410,6 @@ describe('diffRoutineWithSession', () => {
       const res = diffRoutineWithSession(routine, session)
       expect(res.hasDiff).toBe(true)
       expect(res.changes).toContain('+ Barbell Incline Bench Press')
-      // Should NOT have a separate "note updated" change for the newly added exercise
       expect(res.changes.filter(c => c.includes('note'))).toHaveLength(0)
       expect(res.syncedEx).toHaveLength(2)
       expect(res.syncedEx[1].notes).toBe('Incline bench at 30°')
@@ -443,7 +439,6 @@ describe('diffRoutineWithSession', () => {
         ],
       }
 
-      // 1. Both instances unchanged: must NOT produce false diff
       const unchangedSession = {
         id: 's1',
         routineId: 'r1',
@@ -456,7 +451,6 @@ describe('diffRoutineWithSession', () => {
       expect(resUnchanged.hasDiff).toBe(false)
       expect(resUnchanged.changes).toEqual([])
 
-      // 2. Modifying only the 2nd instance produces exactly one note updated descriptor
       const modifiedSecondSession = {
         id: 's1',
         routineId: 'r1',
@@ -471,7 +465,6 @@ describe('diffRoutineWithSession', () => {
       expect(resModified.syncedEx[0].notes).toBe('Flat bench cue')
       expect(resModified.syncedEx[1].notes).toBe('Close-grip bench cue (elbows tucked)')
 
-      // 3. Removing note from 1st instance while keeping 2nd instance
       const clearedFirstSession = {
         id: 's1',
         routineId: 'r1',

@@ -35,7 +35,6 @@ function headerReplaceButton(index = 0) {
   return buttons[index]
 }
 
-// Exercise-level edits live in the Edit workout sheet; open it before looking for one.
 function inEditSheet(label, exact = false) {
   const find = () => [...document.querySelectorAll('button')].find(b => exact ? b.textContent.trim() === label : b.textContent.trim().includes(label))
   if (!find()) {
@@ -109,7 +108,6 @@ describe('Workout unperformed entry replacement', () => {
     expect(mocks.confirmSheet).not.toHaveBeenCalled()
     expect(mocks.exercisePicker).toHaveBeenCalledOnce()
 
-    // Exercise picker returns a new exercise
     const newEx = { id: '1002', n: 'Incline Bench Press' }
     act(() => {
       mocks.exercisePicker.mock.calls[0][0](newEx)
@@ -125,7 +123,6 @@ describe('Workout unperformed entry replacement', () => {
     expect(onReplaceArg).toBeNull()
     expect(actionLabelArg).toBe('Replace')
 
-    // Saving config commits the replacement via store
     act(() => {
       onSave({ sets: 3, reps: 8, weight: 50 })
     })
@@ -180,7 +177,7 @@ describe('Workout unperformed entry replacement', () => {
     expect(mocks.exConfigSheet).toHaveBeenCalledOnce()
     const [, , onSave, , routineArg, seedArg, , actionLabelArg] = mocks.exConfigSheet.mock.calls[0]
     expect(routineArg).toEqual(expect.objectContaining({ id: routineId }))
-    expect(seedArg).toEqual(expect.objectContaining({ sets: 2, reps: 12, weight: 100 })) // pre-seeded from routine history + 2 work sets
+    expect(seedArg).toEqual(expect.objectContaining({ sets: 2, reps: 12, weight: 100 }))
     expect(actionLabelArg).toBe('Replace')
 
     act(() => {
@@ -208,7 +205,6 @@ describe('Workout performed entry replacement', () => {
     expect(confirmOpts.confirmText).toBe('Replace')
     expect(confirmOpts.danger).toBe(true)
 
-    // Confirming proceeds to picker
     act(() => {
       confirmOpts.onConfirm()
     })
@@ -238,7 +234,6 @@ describe('Workout performed entry replacement', () => {
     expect(mocks.confirmSheet).toHaveBeenCalledOnce()
     expect(mocks.exercisePicker).not.toHaveBeenCalled()
 
-    // Without confirming, entry is unchanged
     expect(useStore.getState().S.active.entries[0].id).toBe('1001')
   })
 })
@@ -265,11 +260,9 @@ describe('Hold timer halted on replace', () => {
 
     replaceActiveExerciseFlow(0)
 
-    // Confirmation sheet shown, hold timer must still be running!
     expect(mocks.confirmSheet).toHaveBeenCalledOnce()
     expect(useUI.getState().work).not.toBeNull()
 
-    // Confirming replacement halts the timer
     const confirmOpts = mocks.confirmSheet.mock.calls[0][0]
     act(() => {
       confirmOpts.onConfirm()
@@ -300,13 +293,11 @@ describe('Superset replacement flow', () => {
       { ...entry('1002'), sg: 'g1' }
     ])
 
-    // There should be two header replace buttons
     const header0 = headerReplaceButton(0)
     const header1 = headerReplaceButton(1)
     expect(header0).toBeTruthy()
     expect(header1).toBeTruthy()
 
-    // Clicking header 1 directly replaces entry 1
     click(header1)
 
     expect(mocks.confirmSheet).not.toHaveBeenCalled()
@@ -335,17 +326,14 @@ describe('Superset replacement flow', () => {
 
     click(footerReplaceButton())
 
-    // A sheet should open asking which exercise in this superset to replace
     expect(useUI.getState().sheets.length).toBeGreaterThan(0)
     expect(view.container.textContent).toContain('Which exercise in this superset do you want to replace?')
 
-    // Select the second exercise in the prompt sheet
     const items = [...view.container.querySelectorAll('.list .item')]
     expect(items.length).toBe(2)
 
     click(items[1])
 
-    // Should proceed to exercise picker for entry 1
     expect(mocks.exercisePicker).toHaveBeenCalledOnce()
 
     const newEx = { id: '1003', n: 'Cable Row' }

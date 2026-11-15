@@ -25,10 +25,7 @@ export const STRENGTH_LEVELS = [
   { at: 1, level: 4 },
 ]
 
-/** Returns the current time, ticking once a minute. */
 function useNow() {
-  // A shared minute tick keeps every chart on the same snapshot and avoids
-  // rescanning history when only a display selection changes.
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => {
     const iv = setInterval(() => setNow(Date.now()), 60000)
@@ -37,7 +34,6 @@ function useNow() {
   return now
 }
 
-/** Legend for the fatigue body map. */
 function FatigueLegend() {
   return <div className="hm-legend hm-fatigue" aria-label={t('Fatigue')}>
     <span>{t('Fatigued')}</span><div className="hm-c l4" />
@@ -46,7 +42,6 @@ function FatigueLegend() {
   </div>
 }
 
-/** Legend for the strength body map. */
 function StrengthLegend() {
   return <div className="hm-legend hm-strength" aria-label={t('Strength')}>
     <span>1 <span className="dim">{t('full')}</span></span><div className="hm-c l4" /><div className="hm-c l3" /><div className="hm-c l2" />
@@ -54,16 +49,10 @@ function StrengthLegend() {
   </div>
 }
 
-/** Localized label for the selector's semantic Fatigue state. */
 function fatigueLabel(state) {
   return t(state === 'ready' ? 'Ready' : state === 'recovering' ? 'Recovering' : 'Fatigued')
 }
 
-/**
- * Muscle-balance card with balance, fatigue, and strength views.
- *
- * @param {Object} S Store state.
- */
 function MuscleBalance({ S, overview, win, setWin, setHard }) {
   const [view, setView] = useState('balance')
   const [sel, setSel] = useState(null)
@@ -88,7 +77,6 @@ function MuscleBalance({ S, overview, win, setWin, setHard }) {
       </div>
       <Segmented className="seg-range" label={t('Time window')} value={win} onChange={v => { setWin(v); setSel(null) }}
         options={[{ value: 7, label: t('Week') }, { value: 30, label: '30d' }, { value: 90, label: '90d' }, { value: 0, label: t('All') }]} />
-      {/* An empty window still draws the body: the map is the card, and blank is the honest reading. */}
       {!count && <div className="muted small balance-none">{t('No workouts in this period yet.')}</div>}
       {!count && <BodyMap load={load} body={S.body} />}
       {count ? <>
@@ -186,7 +174,6 @@ function MuscleBalance({ S, overview, win, setWin, setHard }) {
       </>}
       {!sel && <div className="muted small note">{t('Tap a muscle to see its exercises.')}</div>}
       {detrained.map(slug => {
-        // The figure reads the measure the bar draws: Retained strength.
         const retained = Math.round(strength[slug] * 100) + '%'
         return <div key={slug} className="mrow">
           <span className="nm">{t(MUSCLE_NAME[slug])}</span>
@@ -245,7 +232,6 @@ function EffortCard({ overview, win, setWin }) {
   </div>
 }
 
-// Stats = the analytics hub: all charts, progress and history live here.
 export default function Stats() {
   const nav = useNavigate()
   const S = useStore(s => s.S)
@@ -325,7 +311,6 @@ export default function Stats() {
     </div>
 
     <div className="stats-grid">
-      {/* The screen's one question comes first: is this lift going up? */}
       <section className="card ex-progress">
         <div className="card-head">
           <h2>{t('Exercise progress')}</h2>

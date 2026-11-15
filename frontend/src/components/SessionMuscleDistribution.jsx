@@ -4,17 +4,6 @@ import { fmtNum } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
 import { Button } from './ui.jsx'
 
-/**
- * Session muscle distribution component.
- *
- * Displays top 4 trained muscles with proportional load bars, direct vs assistance
- * set breakdowns, interactive tap-selection companion to BodyMap, and expandable disclosure.
- *
- * @param {Object} props
- * @param {Object} props.workout - Workout object with entries and sets.
- * @param {string|null} [props.selectedMuscle] - Currently selected muscle slug.
- * @param {Function} [props.onSelectMuscle] - Callback invoked when a muscle row is tapped.
- */
 export default function SessionMuscleDistribution({ workout, selectedMuscle, onSelectMuscle }) {
   const [expanded, setExpanded] = useState(false)
   const distribution = sessionMuscleDistribution(workout)

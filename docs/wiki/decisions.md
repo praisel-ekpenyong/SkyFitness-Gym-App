@@ -60,6 +60,7 @@ with a pointer to their successor.
 
 - **2026-10-28 — Code comments adhere to Ousterhout's 'stranger' standard with automated comment-only verification.**
   Audited core domain and view files (`Workout.jsx`, `workout-model.js`, `format.js`, `bodyweight.js`, `schedule.js`, `progression.js`). Resolved all stale `@param` references (`STALE_PARAM` count reduced to 0), added missing top-level module overview docstrings describing subsystem ownership and boundaries, and documented public interface contracts (`inStream`, `timeAim`, `timeHit`, `replaceActiveExerciseFlow`). All comment additions and cleanups are strictly verified via AST comparison (`comment_tools.py verify`) to ensure zero runtime alterations. Merged in `a56e916` (ticket 01 in `.scratch/code-comments/`).
+  - *Superseded 2026-11-15:* the `ousterhout-comments` skill was removed.
 
 - **2026-10-28 — In-session exercise reordering is strictly session-local, non-destructive, and adheres to positional supersets.**
   Added `moveActiveExercise(S, idx, dir)` behind the ADR 0006 lifecycle seam in `lib/active-session.js` and exposed on `useStore`. Reordering operates on individual entries, is enabled when 2 or more exercises exist and no timed hold is active, keeps performed sets intact, tracks `active.cur` to the moved exercise, and dissolves supersets via `cleanupSg` if an entry is moved past outside neighbors. UI provides a dedicated sheet with Move Up/Down chevrons, close button, and tap/keyboard jump navigation. Merged in `669a6bd` and `6adf5a6` (tickets 01 and 02 in `.scratch/exercise-reordering/`).
@@ -132,3 +133,42 @@ with a pointer to their successor.
   labelled it "Record" in yellow, and the glossary defined a Record as a new best estimated 1RM only. The owner chose to
   widen the glossary Record to cover both events, so stored Workouts and `w.prs` keep their meaning. The standing
   Best figure stays neutral ink. Fixes are in the review-fix pass on that branch (see [reviews](reviews.md)).
+
+- **2026-11-15 — `/no-comments` on the Iron tree is not closed.** Comment Sicko
+  (`7ca6f3aa-bf9f-4346-95ba-cdedc1e8d4f1`) reported the narration in the Iron
+  source. The same day the working tree on `main@a924ee4` (uncommitted) dropped
+  5,641 lines across 190 files under `frontend/`, `scripts/`, `.taste-skill`,
+  and `.scratchpad`, and `npm test` in `frontend/` passed 1,290 tests. Dead
+  `objectOf`, `NumField.jsx`, and `Stepper.jsx` were removed. `asked` and
+  `topW` were left as ADR 0020 requires. The accepted reshape set still needs
+  the one architect sketch the skill requires, and that sketch was not run.
+  See [reviews](reviews.md).
+  - *Superseded in part 2026-11-15:* the "uncommitted" claim. The strip landed as
+    `chore/strip-comments@4ee0b94`. The reshape sketch was still unrun at that commit.
+
+- **2026-11-15 — The Iron comment strip is `chore/strip-comments@4ee0b94`.**
+  Cut from `main@a924ee4` in the main checkout, because the strip was already
+  sitting there. Pre-commit ran the frontend suite: 88 files, 1,290 tests,
+  passed. Launch notes in `docs/wiki/` were left unstaged. The accepted
+  reshape set was still unsketched at this commit. See [reviews](reviews.md).
+  - *Superseded in part 2026-11-15:* the "unsketched" claim. Two sketches were
+    written that day and the base was picked without a cross-judge. See the
+    next entry.
+
+- **2026-11-15 — The reshape base is Sketch B (`admit`), picked with no cross-judge.**
+  Arena runners wrote `/tmp/arena-reshape/candidate-1/SKETCH.md` (`hydrateProfile`,
+  agent `08a11623-a7f8-45c3-a598-243f26e79f2b`) and
+  `/tmp/arena-reshape/candidate-2/SKETCH.md` (`admit`, agent
+  `ca1aac20-986a-4461-8cf2-a8b0150ed3d3`). Fable (`a45f32f5`), Opus (`814dbd0b`),
+  and Gemini Carbon (`38a3ae6e`) each returned a weekly-usage error and wrote
+  no `judge.md`. The arena rule for that case is to pick the base alone.
+  Base: Sketch B. Grafts kept from Sketch A: inject `openSheet` into `SelectRow`
+  (do not let it import the store), and keep unit conversion at read time
+  (ADR 0019). Rejected from Sketch A: an `isBw` fallback inside
+  `nextPrescription`, collapsing `w === 0` into body-mass, treating `bw-v0` as
+  equal to `bw-v1`, leftover dual readers, and record marks stored as
+  `setIdx`. `asked` and on-disk `topW` stay as ADR 0020 left them. The first
+  symbol taken from that base is `reduceLoad` in `frontend/src/lib/progression.js`,
+  which returns `{ tag: 'hold', at }` or `{ tag: 'deload', at }` and replaces
+  `asHoldOrDeload`. The other seventeen symbols, including `admit` itself, stay
+  open. See [reviews](reviews.md).

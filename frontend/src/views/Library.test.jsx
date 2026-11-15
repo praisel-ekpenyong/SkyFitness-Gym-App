@@ -32,26 +32,21 @@ describe('Library view smoke tests', () => {
       root.render(<Library />)
     })
 
-    // Header
     const hdr = container.querySelector('.hdr h1')
     expect(hdr?.textContent).toBe('Exercises')
 
-    // Initial items rendered (first 40 plus the custom exercise prompt)
     const items = container.querySelectorAll('.list .item')
     expect(items.length).toBe(41)
 
-    // First standard exercise thumbnail
     const firstThumb = container.querySelector('.list .item img.thumb')
     expect(firstThumb).toBeTruthy()
     expect(firstThumb.getAttribute('src')).toMatch(/^media\/images\/.+\.jpg$/)
 
-    // Simulate thumbnail error triggering CDN fallback
     await act(async () => {
       firstThumb.dispatchEvent(new Event('error'))
     })
     expect(firstThumb.getAttribute('src')).toMatch(/^https:\/\/cdn\.jsdelivr\.net\/.+\.jpg$/)
 
-    // Filter by chest body part
     const chestChip = Array.from(container.querySelectorAll('.chips button.chip'))
       .find(b => b.textContent.toLowerCase().includes('chest'))
     expect(chestChip).toBeTruthy()
@@ -72,7 +67,6 @@ describe('Library view smoke tests', () => {
     const searchInput = container.querySelector('input.input')
     expect(searchInput).toBeTruthy()
 
-    // Clear button should not exist when search query is empty
     expect(container.querySelector('.searchf button.clear')).toBeNull()
 
     await act(async () => {
@@ -85,11 +79,9 @@ describe('Library view smoke tests', () => {
     const items = container.querySelectorAll('.list .item')
     expect(items.length).toBeGreaterThan(1)
 
-    // Clear button should now be visible
     const clearBtn = container.querySelector('.searchf button.clear')
     expect(clearBtn).toBeTruthy()
 
-    // Clicking clear button resets search query and restores full list
     await act(async () => {
       clearBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
@@ -109,35 +101,29 @@ describe('Library view smoke tests', () => {
       root.render(<Library />)
     })
 
-    // Find the first exercise row (item at index 1, since index 0 is "Create your own exercise")
     const items = container.querySelectorAll('.list .item')
     const firstExRow = items[1]
     expect(firstExRow).toBeTruthy()
 
-    // Find the star button and plan button
     const starBtn = firstExRow.querySelector('button.iconbtn')
     const planBtn = Array.from(firstExRow.querySelectorAll('button')).find(b => b.textContent.includes('Plan'))
     expect(starBtn).toBeTruthy()
     expect(planBtn).toBeTruthy()
     expect(starBtn.compareDocumentPosition(planBtn) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
 
-    // Initially unstarred: accessibility label "Add to favorites" and outline star
     expect(starBtn.getAttribute('aria-label')).toBe('Add to favorites')
     expect(starBtn.classList.contains('on-ss')).toBe(false)
     expect(useStore.getState().S.favorites).toEqual([])
 
-    // Click star button
     await act(async () => {
       starBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
 
-    // Now starred in store
     const favs = useStore.getState().S.favorites
     expect(favs.length).toBe(1)
     expect(starBtn.getAttribute('aria-label')).toBe('Remove from favorites')
     expect(starBtn.classList.contains('on-ss')).toBe(true)
 
-    // Unstar by clicking again
     await act(async () => {
       starBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
@@ -147,7 +133,6 @@ describe('Library view smoke tests', () => {
   })
 
   it('dynamically shows Favorites chip when favorites exist and filters list', async () => {
-    // Start with 2 favorites
     const testFavs = ['0001', '0002']
     useStore.getState().update(s => { s.favorites = [...testFavs] })
 
@@ -155,25 +140,20 @@ describe('Library view smoke tests', () => {
       root.render(<Library />)
     })
 
-    // Favorites chip should appear first in the filter chips
     const chipButtons = Array.from(container.querySelectorAll('.chips button.chip'))
     const favChip = chipButtons.find(b => b.textContent.includes('Favorites'))
     expect(favChip).toBeTruthy()
     expect(favChip.textContent).toContain('Favorites (2)')
     expect(chipButtons[0]).toBe(favChip)
 
-    // Click the favorites chip
     await act(async () => {
       favChip.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
     expect(favChip.classList.contains('on')).toBe(true)
 
-    // The list should show only the 2 favorited exercises (+ create custom item)
     const items = container.querySelectorAll('.list .item')
-    // 1 prompt item + 2 favorited items
     expect(items.length).toBe(3)
 
-    // Refining within favorites: search query
     const searchInput = container.querySelector('input.input')
     await act(async () => {
       const nativeSetter = Object.getOwnPropertyDescriptor(globalThis.HTMLInputElement.prototype, 'value').set
@@ -182,9 +162,8 @@ describe('Library view smoke tests', () => {
     })
 
     const refinedItems = container.querySelectorAll('.list .item')
-    expect(refinedItems.length).toBe(2) // prompt + 1 matching exercise (3/4 sit-up)
+    expect(refinedItems.length).toBe(2)
 
-    // Clear favorites in store and verify chip hides
     await act(async () => {
       useStore.getState().update(s => { s.favorites = [] })
     })
@@ -194,14 +173,12 @@ describe('Library view smoke tests', () => {
   })
 
   it('gracefully falls back to All when the last favorite is unstarred while on the Favorites filter', async () => {
-    // Start with 1 favorite
     useStore.getState().update(s => { s.favorites = ['0001'] })
 
     await act(async () => {
       root.render(<Library />)
     })
 
-    // Click Favorites chip
     const favChip = Array.from(container.querySelectorAll('.chips button.chip'))
       .find(b => b.textContent.includes('Favorites'))
     expect(favChip).toBeTruthy()
@@ -210,10 +187,8 @@ describe('Library view smoke tests', () => {
       favChip.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
 
-    // On favorites filter: shows 1 favorite + prompt
     expect(container.querySelectorAll('.list .item').length).toBe(2)
 
-    // Unstar the single favorite exercise via in-row star button
     const favRow = container.querySelectorAll('.list .item')[1]
     const starBtn = favRow.querySelector('button.iconbtn')
     expect(starBtn).toBeTruthy()
@@ -222,10 +197,8 @@ describe('Library view smoke tests', () => {
       starBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
 
-    // Favorites is now empty
     expect(useStore.getState().S.favorites).toEqual([])
 
-    // Active filter automatically falls back to All, so All chip is highlighted and full exercise list is shown
     const allChip = Array.from(container.querySelectorAll('.chips button.chip'))
       .find(b => b.textContent.trim() === 'All')
     expect(allChip?.classList.contains('on')).toBe(true)
@@ -239,7 +212,6 @@ describe('Library view smoke tests', () => {
 
     const firstChipsRow = container.querySelectorAll('.chips')[0]
     const chips = Array.from(firstChipsRow.querySelectorAll('button.chip')).map(c => c.textContent.trim())
-    // Expected order: All, Traps, Shoulders, Chest, Upper back, Lats, Serratus, Biceps, Triceps, Forearms, Abs, Obliques, Lower back, Glutes, Quads, Hamstrings, Adductors, Hip flexors, Calves, Shins, Cardio
     const expected = [
       'All', 'Traps', 'Shoulders', 'Chest', 'Upper back', 'Lats', 'Serratus',
       'Biceps', 'Triceps', 'Forearms', 'Abs', 'Obliques', 'Lower back',
@@ -254,7 +226,6 @@ describe('Library view smoke tests', () => {
       root.render(<Library />)
     })
 
-    // Filter by Triceps
     const tricepsChip = Array.from(container.querySelectorAll('.chips button.chip'))
       .find(b => b.textContent.trim() === 'Triceps')
     expect(tricepsChip).toBeTruthy()
@@ -264,20 +235,16 @@ describe('Library view smoke tests', () => {
     })
 
     const items = Array.from(container.querySelectorAll('.list .item'))
-    // Find bench press (which has chest as primary and triceps as secondary)
     const benchItem = items.find(it => it.textContent.toLowerCase().includes('bench press'))
     expect(benchItem).toBeTruthy()
 
-    // Bench press should display the secondary badge: "Secondary: Triceps"
     const secondaryBadge = benchItem.querySelector('.ss .tag')
     expect(secondaryBadge).toBeTruthy()
     expect(secondaryBadge.textContent).toContain('Secondary: Triceps')
 
-    // An exercise with Triceps as primary (e.g. pushdown or dip) should NOT have the secondary badge
     const primaryTricepItem = items.find(it => it.textContent.toLowerCase().includes('pushdown') || it.textContent.toLowerCase().includes('triceps dip') || it.textContent.toLowerCase().includes('triceps'))
     if (primaryTricepItem && !primaryTricepItem.textContent.toLowerCase().includes('bench press')) {
       const isSec = primaryTricepItem.querySelector('.ss .tag')
-      // If its primary muscle is triceps, it should not have a secondary badge for Triceps
       if (primaryTricepItem.textContent.toLowerCase().includes('triceps ·')) {
         expect(isSec).toBeNull()
       }
@@ -290,7 +257,6 @@ describe('Library view smoke tests', () => {
     })
 
     const searchInput = container.querySelector('input.input')
-    // Search for "triceps"
     await act(async () => {
       const nativeSetter = Object.getOwnPropertyDescriptor(globalThis.HTMLInputElement.prototype, 'value').set
       nativeSetter.call(searchInput, 'triceps')
@@ -299,11 +265,9 @@ describe('Library view smoke tests', () => {
 
     const items = Array.from(container.querySelectorAll('.list .item'))
     expect(items.length).toBeGreaterThan(5)
-    // Matches primary tricep exercises and compound movements with secondary triceps
     const names = items.map(it => it.textContent.toLowerCase())
     expect(names.some(n => n.includes('pushdown') || n.includes('extension'))).toBe(true)
 
-    // Expand batch to surface compound movements ranked after direct title matches
     const showMore = Array.from(container.querySelectorAll('button')).find(b => b.textContent.includes('Show more'))
     if (showMore) {
       await act(async () => {
@@ -312,11 +276,9 @@ describe('Library view smoke tests', () => {
     }
 
     const allItems = Array.from(container.querySelectorAll('.list .item'))
-    // Bench press should have "Secondary: Triceps" badge because triceps is its secondary muscle
     const benchItem = allItems.find(it => it.textContent.toLowerCase().includes('bench press'))
     expect(benchItem).toBeTruthy()
     expect(benchItem.querySelector('.ss .tag')?.textContent).toContain('Secondary: Triceps')
-    // Primary muscle subtitle uses canonical display name "Chest", not raw "pectorals"
     expect(benchItem.querySelector('.ss')?.textContent.toLowerCase()).toContain('chest')
   })
 })

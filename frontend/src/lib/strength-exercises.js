@@ -1,35 +1,17 @@
-// Per-exercise rows for the Strength view: best estimated 1RM from the user's own logged
-// sets, the exercise's OWN retained-strength decay (same 14-day plateau / 28-day half-life
-// / 0.5 floor model as the muscle map, applied to the exercise's last done work set), and
-// the expected CURRENT 1RM (= estimate x decay). The body map keeps the per-muscle model;
-// the exercise list deliberately reads per-exercise, so an old exercise shows its own
-// decline even when its muscle is kept fresh by other work. Muscle mapping and the last
-// trained time read the shared entry readings (muscles.js `muscleWeightsOf`,
-// exercise-progress.js `lastWorkSetAt`), so a deleted custom is read here the same way the
-// fatigue and strength maps read it.
 import { best1RM } from './onerm.js'
 import { STRENGTH_FULL_MS, STRENGTH_HALF_LIFE_MS, STRENGTH_FLOOR, halfLifeDecay } from './recovery.js'
 import { muscleWeightsOf } from './muscles.js'
 import { lastWorkSetAt } from './exercise-progress.js'
 import { EXIDX } from './exercises.js'
 
-/**
- * Round a 1RM display value to one decimal place.
- *
- * @param {number} value - Continuous estimate in kg or lb.
- * @returns {number} Value rounded to the nearest tenth.
- */
 const round1 = value => Math.round(value * 10) / 10
 
-// Same retained-strength curve the muscle map uses, applied to one exercise's age.
 function strengthFromAge(ageMs) {
   if (!Number.isFinite(ageMs)) return STRENGTH_FLOOR
   if (ageMs <= STRENGTH_FULL_MS) return 1
   return Math.max(STRENGTH_FLOOR, halfLifeDecay(ageMs - STRENGTH_FULL_MS, STRENGTH_HALF_LIFE_MS))
 }
 
-// Highest-weight muscle of an exercise - used for the primary/secondary badge and the
-// per-muscle link, not for the decay (the exercise's own decay is what the row shows).
 export function primaryMuscleOf(entry) {
   const weights = muscleWeightsOf(entry)
   let best = null
@@ -39,28 +21,13 @@ export function primaryMuscleOf(entry) {
   return best
 }
 
-/**
- * Resolve the display name for a logged exercise entry.
- *
- * @param {Object} entry - Workout entry with id and optional name snapshots; non-objects yield null.
- * @returns {string|null} Catalogue name, else snapshot name, else entry name, else null.
- */
 function exerciseName(entry) {
-  // Imported history often has no name snapshot (entries are { id, sets, topW }) - the
-  // catalogue (or the registered custom) is the canonical name source.
   const ex = entry && typeof entry === 'object' ? EXIDX[entry.id] : null
   if (ex?.n) return ex.n
   if (entry?.muscleSnapshot?.n) return entry.muscleSnapshot.n
   return entry && typeof entry === 'object' && entry.n ? entry.n : null
 }
 
-/**
- * Find the first logged entry for one exercise across all workouts.
- *
- * @param {Object} S - App state holding the workouts array in stored order.
- * @param {string} id - Exercise id to match.
- * @returns {Object|null} First matching entry, or null when absent.
- */
 function firstEntryWithId(S, id) {
   for (const workout of S?.workouts || []) {
     const entry = (workout.entries || []).find(e => e.id === id)
@@ -69,13 +36,6 @@ function firstEntryWithId(S, id) {
   return null
 }
 
-/**
- * Strength rows for every exercise with an estimate: best estimated 1RM (work sets only,
- * warm-ups excluded), the estimate's date, the exercise's primary muscle, the exercise's
- * OWN decay (from its last done work set), and the expected current 1RM (estimate x decay).
- * Sorted by expected current 1RM, strongest first. Exercises without a usable estimate are
- * omitted - a made-up number is worse than no number.
- */
 export function strengthExerciseRows(S, now) {
   const workouts = S?.workouts || []
   const ids = [...new Set(workouts.flatMap(w => (w.entries || []).map(e => e.id)))]
@@ -99,11 +59,6 @@ export function strengthExerciseRows(S, now) {
   return rows.sort((a, b) => b.current - a.current || String(a.name).localeCompare(String(b.name)))
 }
 
-/**
- * Strength rows for the exercises whose logged snapshot includes `slug` (primary 1 /
- * secondary 0.4 badge), each with the exercise's OWN decay and expected current 1RM - the
- * tapped muscle filters the list, the row still speaks for the exercise.
- */
 export function strengthExerciseRowsForMuscle(S, now, slug) {
   const workouts = S?.workouts || []
   const seen = new Map()

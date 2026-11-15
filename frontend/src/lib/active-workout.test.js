@@ -12,9 +12,6 @@ import {
 
 const clone = o => JSON.parse(JSON.stringify(o))
 
-// Minimal Profile shape for tests that start from a blank slate. Deliberately not imported
-// from ../store/useStore.js — pulling in the store registers document listeners and would
-// force this DOM-free suite into a DOM environment.
 const blankProfile = () => ({
   unit: 'kg', sound: 'off', restSec: 90,
   routines: [], workouts: [], exWeights: {}, bodyweight: [], week: {}, dayPlan: {},
@@ -94,10 +91,8 @@ describe('active-workout lifecycle seam', () => {
     expect(entry).toBeDefined()
     expect(S.active.entries).toHaveLength(1)
     expect(S.active.cur).toBe(0)
-    // Routine progression should have stepped weight by 2.5
     expect(entry.sets[0].w).toBe(52.5)
 
-    // In freestyle mode, seeds from last history
     const S_free = blankProfile()
     S_free.workouts = [
       { d: '2026-08-10', entries: [{ id: '0025', sets: [{ w: 60, r: 10, done: true }] }] }
@@ -121,7 +116,6 @@ describe('active-workout lifecycle seam', () => {
     }
     expect(removeActiveExercise(S, 0)).toBe(true)
     expect(S.active.entries).toHaveLength(2)
-    // Superset partner ex2 should have its sg cleaned up since it's now singleton
     expect(S.active.entries[0].sg).toBeUndefined()
     expect(S.active.cur).toBe(1)
   })
@@ -140,11 +134,8 @@ describe('active-workout lifecycle seam', () => {
       }
     }
     expect(updateActiveSetField(S, 0, 1, 'w', 55)).toBe(true)
-    // Set 0 done is unchanged
     expect(S.active.entries[0].sets[0].w).toBe(50)
-    // Set 1 updated
     expect(S.active.entries[0].sets[1].w).toBe(55)
-    // Set 2 cascaded forward
     expect(S.active.entries[0].sets[2].w).toBe(55)
   })
 
@@ -172,7 +163,6 @@ describe('active-workout lifecycle seam', () => {
     expect(removeActiveSet(S, 0)).toBe(true)
     expect(S.active.entries[0].sets).toHaveLength(2)
 
-    // Cannot remove below 1 set
     expect(removeActiveSet(S, 0)).toBe(true)
     expect(removeActiveSet(S, 0)).toBe(false)
     expect(S.active.entries[0].sets).toHaveLength(1)
@@ -220,7 +210,6 @@ describe('active-workout lifecycle seam', () => {
     expect(r1.notice).toBe(null)
     expect(S.active.entries[0].hw).toBe(1)
 
-    // Toggle set 1 -> exercise and workout complete
     const r2 = toggleActiveSet(S, 0, 1)
     expect(r2.checked).toBe(true)
     expect(r2.next).toEqual({ kind: 'open-finish', targetIdx: null })
@@ -228,15 +217,12 @@ describe('active-workout lifecycle seam', () => {
     expect(r2.notice).toBe(null)
     expect(S.active.entries[0].hw).toBe(2)
 
-    // Unchecking does not re-trigger completion prompts
     const r3 = toggleActiveSet(S, 0, 1)
     expect(r3.checked).toBe(false)
     expect(r3.next).toEqual({ kind: 'stay', targetIdx: null })
     expect(r3.rest).toEqual({ start: false, stop: false })
     expect(r3.notice).toBe(null)
 
-    // Re-checking finished work is not new progress: no rest side effects either way,
-    // so fixing a mistaken untick can't cut a running rest timer short.
     const r4 = toggleActiveSet(S, 0, 1)
     expect(r4.checked).toBe(true)
     expect(S.active.entries[0].hw).toBe(2)
@@ -244,9 +230,6 @@ describe('active-workout lifecycle seam', () => {
   })
 
   it('treats an unticked warm-up as prep, so it cannot keep the exercise reading as unfinished', () => {
-    // A warm-up row is not work. Leaving it unticked must not swallow the
-    // working-weight prompt or the finish prompt, the way an unticked work row
-    // does — the rest timer and superset navigation already read work sets only.
     const S = {
       active: {
         cur: 0,
@@ -291,7 +274,6 @@ describe('active-workout lifecycle seam', () => {
   })
 
   it('never reports an all-warm-up entry as finished', () => {
-    // Reachable in two taps: insert a warm-up, then remove the only work row.
     const S = {
       active: {
         cur: 0,
@@ -305,8 +287,6 @@ describe('active-workout lifecycle seam', () => {
       },
     }
     const r = toggleActiveSet(S, 0, 0)
-    // Warm-up-only Entries never count as exercise progress, so no toast —
-    // but the pre-existing finish routing is preserved here (out of scope).
     expect(r.notice).toBe(null)
     expect(r.next).toEqual({ kind: 'open-finish', targetIdx: null })
   })
@@ -371,7 +351,6 @@ describe('active-workout lifecycle seam', () => {
     }
     expect(setActiveIndex(S, 2)).toBe(true)
     expect(S.active.cur).toBe(2)
-    // Bounds check
     expect(setActiveIndex(S, 10)).toBe(true)
     expect(S.active.cur).toBe(2)
     expect(setActiveIndex(S, -5)).toBe(true)
@@ -436,12 +415,10 @@ describe('active-workout lifecycle seam', () => {
         ]
       }
     }
-    // With sg
     const replaced0 = replaceActiveExercise(S, 0, '0025', { sets: 2 })
     expect(replaced0.sg).toBe('sg-pair-1')
     expect(S.active.entries[0].sg).toBe('sg-pair-1')
 
-    // Without sg
     const replaced1 = replaceActiveExercise(S, 1, '0026', { sets: 2 })
     expect(replaced1.sg).toBeUndefined()
     expect(S.active.entries[1].sg).toBeUndefined()
@@ -511,7 +488,6 @@ describe('active-workout lifecycle seam', () => {
     expect(replaced.plan.kind).toBe('up')
     expect(replaced.sets[0].w).toBe(52.5)
 
-    // The underlying routine in S.routines must be completely untouched
     expect(S.routines).toEqual(routineSnapshot)
   })
 
@@ -545,17 +521,13 @@ describe('active-workout lifecycle seam', () => {
         entries: [{ id: 'ex0', sets: [] }]
       }
     }
-    // Invalid index
     expect(replaceActiveExercise(S, -1, '0025')).toBeNull()
     expect(replaceActiveExercise(S, 5, '0025')).toBeNull()
-    // Missing exId
     expect(replaceActiveExercise(S, 0, '')).toBeNull()
     expect(replaceActiveExercise(S, 0, null)).toBeNull()
-    // No active session
     expect(replaceActiveExercise(null, 0, '0025')).toBeNull()
     expect(replaceActiveExercise({ active: null }, 0, '0025')).toBeNull()
     expect(replaceActiveExercise({ active: { entries: 'not-array' } }, 0, '0025')).toBeNull()
-    // Entry was not modified
     expect(S.active.entries[0].id).toBe('ex0')
   })
 
@@ -567,7 +539,7 @@ describe('active-workout lifecycle seam', () => {
     const entry = buildActiveEntry(S, '0025', { sets: 3, reps: 10, weight: 60 })
     expect(entry.id).toBe('0025')
     expect(entry.target).toEqual({ sets: 3, reps: 10, weight: 60 })
-    expect(entry.plan).toBeNull() // freestyle
+    expect(entry.plan).toBeNull()
     expect(entry.sets).toHaveLength(3)
     expect(entry.sets[0].w).toBe(60)
     expect(entry.sets[0].r).toBe(10)
@@ -585,19 +557,16 @@ describe('active-workout lifecycle seam', () => {
       }
     }
 
-    // Boundary guards
     expect(moveActiveExercise(S, 0, -1)).toBe(false)
     expect(moveActiveExercise(S, 2, 1)).toBe(false)
 
-    // Move index 1 up (-1) -> swaps ex1 and ex0
     expect(moveActiveExercise(S, 1, -1)).toBe(true)
     expect(S.active.entries.map(e => e.id)).toEqual(['ex1', 'ex0', 'ex2'])
-    expect(S.active.cur).toBe(0) // cur tracked ex1 from index 1 to index 0
+    expect(S.active.cur).toBe(0)
 
-    // Move index 0 down (+1) -> swaps ex1 and ex0 back
     expect(moveActiveExercise(S, 0, 1)).toBe(true)
     expect(S.active.entries.map(e => e.id)).toEqual(['ex0', 'ex1', 'ex2'])
-    expect(S.active.cur).toBe(1) // cur tracked ex1 from index 0 to index 1
+    expect(S.active.cur).toBe(1)
   })
 
   it('moveActiveExercise tracks active.cur to the moved entry', () => {
@@ -607,12 +576,10 @@ describe('active-workout lifecycle seam', () => {
         entries: [{ id: 'a' }, { id: 'b' }, { id: 'c' }]
       }
     }
-    // Moving entry 0 down to index 1 anchors cur to the moved entry (index 1)
     expect(moveActiveExercise(S, 0, 1)).toBe(true)
     expect(S.active.entries.map(e => e.id)).toEqual(['b', 'a', 'c'])
     expect(S.active.cur).toBe(1)
 
-    // Moving entry 2 up to index 1 anchors cur to index 1
     expect(moveActiveExercise(S, 2, -1)).toBe(true)
     expect(S.active.entries.map(e => e.id)).toEqual(['b', 'c', 'a'])
     expect(S.active.cur).toBe(1)
@@ -648,17 +615,12 @@ describe('active-workout lifecycle seam', () => {
       }
     }
 
-    // Swap bench and row: bench moves to index 1, row moves to index 0.
-    // They are still adjacent (0 and 1), so superset is preserved.
     expect(moveActiveExercise(S, 0, 1)).toBe(true)
     expect(S.active.entries[0].id).toBe('row')
     expect(S.active.entries[0].sg).toBe('sg-pair')
     expect(S.active.entries[1].id).toBe('bench')
     expect(S.active.entries[1].sg).toBe('sg-pair')
 
-    // Now move bench (at index 1) down past squat (at index 2).
-    // Bench is at index 2, squat is at index 1, row is at index 0.
-    // Row and bench are separated by squat; cleanupSg must dissolve the group!
     expect(moveActiveExercise(S, 1, 1)).toBe(true)
     expect(S.active.entries[0].id).toBe('row')
     expect(S.active.entries[0].sg).toBeUndefined()
@@ -685,7 +647,6 @@ describe('active-workout lifecycle seam', () => {
     expect(moveActiveExercise(S, 0, 1)).toBe(true)
     expect(S.active.entries.map(e => e.id)).toEqual(['0043', '0025'])
 
-    // S.routines must be unmodified
     expect(S.routines).toEqual(routineSnapshot)
   })
 
@@ -737,15 +698,12 @@ describe('active-workout lifecycle seam', () => {
         }
       ]
       const active = createActiveSession(S, 'r1', 80)
-      // Normal note
       expect(active.entries[0].notes).toBe('Seat height 5, pin 8')
       expect(active.entries[0].target.notes).toBe('Seat height 5, pin 8')
 
-      // Whitespace-only note should be cleaned to undefined (omitted)
       expect(active.entries[1].notes).toBeUndefined()
       expect(active.entries[1].target.notes).toBeUndefined()
 
-      // Missing note remains undefined
       expect(active.entries[2].notes).toBeUndefined()
       expect(active.entries[2].target.notes).toBeUndefined()
     })
@@ -769,17 +727,14 @@ describe('active-workout lifecycle seam', () => {
     it('buildActiveEntry accepts targetCfg.notes and cleans empty whitespace', () => {
       const S = { active: { routineId: null, entries: [] }, workouts: [] }
 
-      // Valid note
       const entry1 = buildActiveEntry(S, '0025', { sets: 3, notes: 'Pause 1s at bottom' })
       expect(entry1.notes).toBe('Pause 1s at bottom')
       expect(entry1.target.notes).toBe('Pause 1s at bottom')
 
-      // Whitespace note
       const entry2 = buildActiveEntry(S, '0025', { sets: 3, notes: '   ' })
       expect(entry2.notes).toBeUndefined()
       expect(entry2.target.notes).toBeUndefined()
 
-      // Empty targetCfg
       const entry3 = buildActiveEntry(S, '0025', { sets: 3 })
       expect(entry3.notes).toBeUndefined()
       expect(entry3.target.notes).toBeUndefined()
@@ -795,7 +750,6 @@ describe('active-workout lifecycle seam', () => {
       expect(adHoc1.notes).toBeUndefined()
       expect(adHoc1.target.notes).toBeUndefined()
 
-      // Even if targetCfg with notes is somehow passed, ad-hoc exercises must start clean
       const adHoc2 = addActiveExercise(S, '0026', { notes: 'old cue from somewhere' })
       expect(adHoc2.notes).toBeUndefined()
       expect(adHoc2.target.notes).toBeUndefined()
@@ -868,16 +822,13 @@ describe('active-workout lifecycle seam', () => {
       const res = updateActiveExerciseNote(S, 0, '  Adjusted seat to pin 6  ')
       expect(res).toBe(true)
       expect(S.active.entries[0].notes).toBe('Adjusted seat to pin 6')
-      // entry.target.notes must remain the frozen baseline from routine!
       expect(S.active.entries[0].target.notes).toBe('Baseline routine note')
 
-      // Clears note when passed empty/whitespace string
       expect(updateActiveExerciseNote(S, 0, '   ')).toBe(true)
       expect(S.active.entries[0].notes).toBeUndefined()
       expect('notes' in S.active.entries[0]).toBe(false)
       expect(S.active.entries[0].target.notes).toBe('Baseline routine note')
 
-      // Returns false for out-of-bounds or missing active session
       expect(updateActiveExerciseNote(S, 99, 'note')).toBe(false)
       expect(updateActiveExerciseNote(null, 0, 'note')).toBe(false)
       expect(updateActiveExerciseNote({ active: null }, 0, 'note')).toBe(false)

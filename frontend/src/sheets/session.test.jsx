@@ -57,7 +57,7 @@ describe('SessionMuscleDistribution Component', () => {
       end: 3000,
       entries: [
         {
-          id: '0025', // Barbell Bench Press (primary: chest, secondaries: triceps, deltoids)
+          id: '0025',
           sets: [
             { w: 100, r: 8, done: true },
             { w: 100, r: 8, done: true },
@@ -79,23 +79,20 @@ describe('SessionMuscleDistribution Component', () => {
     })
 
     const rows = container.querySelectorAll('.smd-row')
-    expect(rows.length).toBe(3) // Chest, Shoulders, Triceps
+    expect(rows.length).toBe(3)
 
-    // First row: Chest (3.0 effective sets = 100% bar)
     expect(rows[0].textContent).toContain('Chest')
     expect(rows[0].textContent).toContain('3 sets')
     expect(rows[0].textContent).toContain('3 direct sets')
     const chestBar = rows[0].querySelector('.bar i')
     expect(chestBar?.style.width).toBe('100%')
 
-    // Second row: Shoulders (1.2 effective sets = 40% bar)
     expect(rows[1].textContent).toContain('Shoulders')
     expect(rows[1].textContent).toContain('1.2 sets')
     expect(rows[1].textContent).toContain('1.2 assist (3 compound sets)')
     const shouldersBar = rows[1].querySelector('.bar i')
     expect(shouldersBar?.style.width).toBe('40%')
 
-    // Third row: Triceps (1.2 effective sets = 40% bar)
     expect(rows[2].textContent).toContain('Triceps')
     expect(rows[2].textContent).toContain('1.2 sets')
     expect(rows[2].textContent).toContain('1.2 assist (3 compound sets)')
@@ -111,7 +108,7 @@ describe('SessionMuscleDistribution Component', () => {
       end: 3000,
       entries: [
         {
-          id: '0025', // Bench: chest 1.0, triceps 0.4
+          id: '0025',
           sets: [
             { w: 80, r: 5, done: true },
             { w: 80, r: 5, done: true },
@@ -119,7 +116,7 @@ describe('SessionMuscleDistribution Component', () => {
           ],
         },
         {
-          id: '0018', // Triceps extension: triceps 1.0
+          id: '0018',
           sets: [
             { w: 20, r: 10, done: true },
             { w: 20, r: 10, done: true },
@@ -134,7 +131,6 @@ describe('SessionMuscleDistribution Component', () => {
 
     const tricepsRow = Array.from(container.querySelectorAll('.smd-row')).find(r => r.textContent.includes('Triceps'))
     expect(tricepsRow).toBeTruthy()
-    // 2 direct + 1.2 assist (3 compound sets)
     expect(tricepsRow?.textContent).toContain('2 direct + 1.2 assist (3 compound sets)')
     expect(tricepsRow?.textContent).toContain('3.2 sets')
   })
@@ -143,11 +139,11 @@ describe('SessionMuscleDistribution Component', () => {
     const workout = {
       entries: [
         {
-          id: '0025', // Bench: 1 set
+          id: '0025',
           sets: [{ w: 80, r: 5, done: true }],
         },
         {
-          id: '0018', // Triceps extension: 2 sets
+          id: '0018',
           sets: [{ w: 20, r: 10, done: true }, { w: 20, r: 10, done: true }],
         },
       ],
@@ -163,7 +159,7 @@ describe('SessionMuscleDistribution Component', () => {
     const workout = {
       entries: [
         {
-          id: '0025', // Bench: 1 set -> chest 1 direct set, triceps 0.4 assist (1 compound set)
+          id: '0025',
           sets: [{ w: 80, r: 5, done: true }],
         },
       ],
@@ -206,7 +202,6 @@ describe('SessionMuscleDistribution Component', () => {
     expect(rows[1].classList.contains('selected')).toBe(false)
     expect(rows[1].getAttribute('aria-pressed')).toBe('false')
 
-    // Click row to toggle
     await act(async () => {
       rows[0].dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
@@ -218,11 +213,11 @@ describe('SessionMuscleDistribution Component', () => {
       id: 'w-fullbody',
       entries: [
         {
-          id: '0025', // chest (1.0), deltoids (0.4), triceps (0.4)
+          id: '0025',
           sets: [{ w: 100, r: 5, done: true }, { w: 100, r: 5, done: true }],
         },
         {
-          id: '0043', // gluteal (1.0), quadriceps (0.4), hamstring (0.4)
+          id: '0043',
           sets: [{ w: 120, r: 5, done: true }, { w: 120, r: 5, done: true }],
         },
       ],
@@ -232,17 +227,14 @@ describe('SessionMuscleDistribution Component', () => {
       root.render(<SessionMuscleDistribution workout={workout} />)
     })
 
-    // Total 8 muscles: chest, deltoids, triceps, gluteal, quadriceps, hamstring, calves, abs
     const initialRows = container.querySelectorAll('.smd-row')
     expect(initialRows.length).toBe(4)
 
-    // Disclosure button should be present
     const toggleBtn = Array.from(container.querySelectorAll('button')).find(b => b.textContent.includes('Show all'))
     expect(toggleBtn).toBeTruthy()
     expect(toggleBtn?.textContent).toContain('Show all (8)')
     expect(toggleBtn?.getAttribute('aria-expanded')).toBe('false')
 
-    // Expand
     await act(async () => {
       toggleBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
@@ -254,7 +246,6 @@ describe('SessionMuscleDistribution Component', () => {
     expect(collapseBtn).toBeTruthy()
     expect(collapseBtn?.getAttribute('aria-expanded')).toBe('true')
 
-    // Collapse back
     await act(async () => {
       collapseBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
@@ -267,8 +258,8 @@ describe('SessionMuscleDistribution Component', () => {
         {
           id: '0025',
           sets: [
-            { w: 50, r: 10, done: true, warmup: true }, // warmup only
-            { w: 100, r: 8, done: false }, // undone
+            { w: 50, r: 10, done: true, warmup: true },
+            { w: 100, r: 8, done: false },
           ],
         },
       ],
@@ -292,7 +283,7 @@ describe('FinishSummary with SessionMuscleDistribution', () => {
       end: 4000,
       entries: [
         {
-          id: '0025', // Bench: chest, deltoids, triceps
+          id: '0025',
           sets: [
             { w: 80, r: 8, done: true },
             { w: 80, r: 8, done: true },
@@ -308,10 +299,8 @@ describe('FinishSummary with SessionMuscleDistribution', () => {
       await new Promise(r => setTimeout(r, 100))
     })
 
-    // Header "What you just trained" exists
     expect(container.textContent).toContain('What you just trained')
 
-    // Distribution component exists under BodyMap
     const dist = container.querySelector('.session-muscle-distribution')
     expect(dist).toBeTruthy()
 
@@ -319,19 +308,16 @@ describe('FinishSummary with SessionMuscleDistribution', () => {
     expect(rows?.length).toBe(3)
     expect(rows?.[0].textContent).toContain('Chest')
 
-    // Tap chest row -> selects chest
     await act(async () => {
       rows?.[0].dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
     expect(rows?.[0].classList.contains('selected')).toBe(true)
 
-    // Tap chest row again -> deselects
     await act(async () => {
       rows?.[0].dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
     expect(rows?.[0].classList.contains('selected')).toBe(false)
 
-    // BodyMap buttons receive quantified accessible labels via getA11yLabel
     const chestButton = container.querySelector('.bodymap [role="button"][aria-label*="Chest"]')
     expect(chestButton?.getAttribute('aria-label')).toBe('Chest, 2.0 effective sets')
     const calvesButton = container.querySelector('.bodymap [role="button"][aria-label*="Calves"]')
@@ -340,7 +326,6 @@ describe('FinishSummary with SessionMuscleDistribution', () => {
 })
 
 describe('FinishSummary records', () => {
-  // DESIGN.md: the record colour marks records; the accent marks logged work and nothing else.
   it('marks a new Record and a best estimated 1RM in the record colour, not the accent', async () => {
     const w = {
       id: 'w-records', d: '2026-03-01', start: 1000, end: 4000,
@@ -366,8 +351,6 @@ describe('FinishSummary records', () => {
 describe('FinishSummary figures', () => {
   const longSession = { id: 'w-long', d: '2026-03-01', start: 0, end: (2 * 60 + 25) * 60000,
     entries: [{ id: '0025', sets: Array.from({ length: 19 }, () => ({ w: 140, r: 12, done: true })) }] }
-  // A figure tile is wider than its content only in a real layout; this stands in for one in which
-  // `tooWide` figures overflow a half-width tile and every other figure fits.
   const layout = tooWide => {
     vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockImplementation(function () { return this.classList.contains('v') ? 130 : 0 })
     vi.spyOn(HTMLElement.prototype, 'scrollWidth', 'get').mockImplementation(function () {

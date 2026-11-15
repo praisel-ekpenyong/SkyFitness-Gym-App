@@ -4,18 +4,11 @@ import { fmtSec, fmtSigned } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
 import { Button } from './ui.jsx'
 
-// One dock, two meanings: the rest countdown between sets, and the Hold timer during a timed
-// set (issue #16). They are mutually exclusive by construction — startWork() stops any running
-// rest — so the dock can never have to show both, and the Hold gets a "Done" that logs the time
-// actually held. The clock is the largest thing on the phone while it runs, on purpose: it is
-// read from the bench, at arm's length, with a racing pulse.
 export default function RestTimer() {
   const timer = useUI(s => s.timer)
   const work = useUI(s => s.work)
   const { addRest, stopRest, finishWorkEarly, stopWork } = useUI()
   const on = work || timer
-  // The dock is fixed and floats over whatever is beneath it — during a rest that is the next
-  // set's row. Extra bottom padding lets the page scroll clear.
   useEffect(() => {
     document.body.classList.toggle('resting', !!on)
     return () => document.body.classList.remove('resting')
@@ -35,9 +28,6 @@ export default function RestTimer() {
       </div>
     </div>
   )
-  // −15 and +15 sit together in number-line order; Skip is pushed to the far edge, away from
-  // the button you tap to buy more time. The sign is written, not drawn, so it is the same
-  // minus as every other signed figure (fmtSigned).
   return (
     <div id="timer" className="rest" role="timer">
       {bar}

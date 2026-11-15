@@ -53,7 +53,7 @@ async function run() {
   })
   const todayISO = new Date().toISOString().slice(0, 10)
   const d = new Date()
-  const todayDay = (d.getDay() + 6) % 7 // 0=Mon, 1=Tue, etc.
+  const todayDay = (d.getDay() + 6) % 7
   const days = []
   for (let i = 20; i >= 0; i--) {
     const dt = new Date(d)
@@ -100,10 +100,8 @@ async function run() {
     customEx: [],
     favorites: []
   }
-  // Schedule a workout on today's day of week so hero shows scheduled state
   sampleState.week[todayDay] = 'r-push'
 
-  // Seed sample state into localStorage via init script before any page load
   await context.addInitScript((st) => {
     localStorage.setItem('gym_state_v1', JSON.stringify(st))
   }, sampleState)
@@ -117,7 +115,6 @@ async function run() {
   await page.screenshot({ path: outPath, fullPage: false })
   console.log(`Saved screenshot to ${outPath}`)
 
-  // Also take Light mode screenshot
   await page.evaluate(() => {
     document.documentElement.setAttribute('data-theme', 'light')
   })

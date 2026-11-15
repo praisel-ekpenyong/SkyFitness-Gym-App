@@ -1,18 +1,8 @@
-// Which muscles an exercise trains, and how hard — the data behind every muscle map.
-//
-// The exercise dataset names muscles in free text and is not consistent about it:
-// "shoulders", "deltoids" and "delts" are the same thing, so are "quads" and
-// "quadriceps", "lats" and "latissimus dorsi", "core" and "abdominals". Nineteen
-// primary and forty secondary spellings collapse onto the nineteen muscles the body
-// map can actually draw, via ALIAS below. Anything genuinely undrawable (hands,
-// ankles, "cardiovascular system") maps to null and is dropped rather than guessed at.
 
 import { doneWorkSets, hasWorkSet } from './workout-model.js'
 import { EXIDX, smOf, isCardio, exerciseFor } from './exercises.js'
 import { workoutTimestamp } from './format.js'
 
-// The muscles a map can shade, in head-to-toe order — also the order of any list
-// built from them, so "what am I neglecting" reads top-down like a body.
 export const MUSCLES = [
   'trapezius', 'deltoids', 'chest', 'upper-back', 'lats', 'serratus',
   'biceps', 'triceps', 'forearm',
@@ -21,10 +11,8 @@ export const MUSCLES = [
   'calves', 'tibialis',
 ]
 
-// Drawn as the silhouette, never shaded: they carry no training load.
 export const INERT = ['head', 'hair', 'neck', 'hands', 'feet', 'knees', 'ankles']
 
-// English display names; these strings are the i18n keys (see lib/i18n.js).
 export const MUSCLE_NAME = {
   trapezius: 'Traps', deltoids: 'Shoulders', chest: 'Chest', 'upper-back': 'Upper back',
   lats: 'Lats', serratus: 'Serratus', biceps: 'Biceps', triceps: 'Triceps', forearm: 'Forearms',
@@ -34,10 +22,8 @@ export const MUSCLE_NAME = {
   cardio: 'Cardio',
 }
 
-// Filter taxonomy: the 19 canonical anatomical muscle groups in head-to-toe order plus cardio.
 export const FILTER_MUSCLES = [...MUSCLES, 'cardio']
 
-// Mapping from canonical muscle slug (or cardio) to legacy body part string.
 const MUSCLE_TO_BODYPART = {
   trapezius: 'neck',
   deltoids: 'shoulders',
@@ -61,15 +47,12 @@ const MUSCLE_TO_BODYPART = {
   cardio: 'cardio',
 }
 
-// Every spelling that occurs in the dataset's `tg` and `sm` fields. null = not drawable.
 const ALIAS = {
-  // primaries
   abs: 'abs', pectorals: 'chest', biceps: 'biceps', glutes: 'gluteal', delts: 'deltoids',
   triceps: 'triceps', 'upper back': 'upper-back', lats: 'lats', calves: 'calves',
   quads: 'quadriceps', forearms: 'forearm', hamstrings: 'hamstring', spine: 'lower-back',
   traps: 'trapezius', adductors: 'adductors', 'serratus anterior': 'serratus',
   abductors: 'gluteal', 'levator scapulae': 'trapezius', 'cardiovascular system': null,
-  // secondaries
   shoulders: 'deltoids', deltoids: 'deltoids', 'rear deltoids': 'deltoids',
   'rotator cuff': 'deltoids', quadriceps: 'quadriceps', core: 'abs', abdominals: 'abs',
   'lower abs': 'abs', chest: 'chest', 'upper chest': 'chest', 'hip flexors': 'hip-flexors',
@@ -81,9 +64,6 @@ const ALIAS = {
   ankles: null, feet: null, hands: null, 'ankle stabilizers': null,
   sternocleidomastoid: null,
 }
-// Custom exercises carry only a body part, so they fall back to it. Weights inside a
-// group sum to 1 — "upper legs" spreads over three muscles rather than counting triple.
-// Back splits across three muscles with editorial weights lats 0.50 / upper-back 0.35 / lower-back 0.15.
 const BY_BODYPART = {
   chest: { chest: 1 },
   back: { lats: 0.50, 'upper-back': 0.35, 'lower-back': 0.15 },
@@ -96,24 +76,15 @@ const BY_BODYPART = {
   neck: { trapezius: 1 },
   cardio: {},
 }
-const SECONDARY = 0.4   // a supporting muscle counts this much against a primary
+const SECONDARY = 0.4
 
-/**
- * Wraps a muscle field onto the array form group matching reads.
- * @param {*} value - Array, single value, or missing input.
- * @returns {Array} The array itself, a one-item wrapper, or an empty array for nullish or empty-string input.
- */
 const arrayOf = value => Array.isArray(value) ? value : value == null || value === '' ? [] : [value]
 
-// Direct (or legacy single-field) muscle metadata stamped on the outer object itself.
 const hasDirectMuscleMeta = ex => !!ex && typeof ex === 'object' && (
   ['muscleGroups', 'muscles', 'targetMuscles'].some(key => Object.prototype.hasOwnProperty.call(ex, key))
   || [ex.tg, ex.mg, ...arrayOf(ex.sm)].some(value => value != null && value !== '')
 )
 
-// Completed history entries may retain a nested snapshot after their custom exercise is
-// deleted from the profile catalogue. Prefer that snapshot when the outer entry has no muscle
-// metadata of its own, while keeping direct/legacy entry fields authoritative when present.
 function metadataOf(ex) {
   if (!ex || typeof ex !== 'object') return ex
   return !hasDirectMuscleMeta(ex) && ex.muscleSnapshot && typeof ex.muscleSnapshot === 'object' && !Array.isArray(ex.muscleSnapshot)
@@ -121,35 +92,17 @@ function metadataOf(ex) {
     : ex
 }
 
-// Muscle metadata the entry owns itself — direct/legacy fields or logged weights — as opposed
-// to a nested `muscleSnapshot`, which is only the entry's last-resort copy of it.
 const hasOwnMuscleMeta = ex =>
   hasDirectMuscleMeta(ex) || (!!ex && typeof ex === 'object' && ex.muscleWeights
     && typeof ex.muscleWeights === 'object' && !Array.isArray(ex.muscleWeights)
     && Object.keys(ex.muscleWeights).length > 0)
 
-/**
- * Muscle weights one logged entry trains: the entry's own metadata when present, else the
- * live catalogue, else the entry itself with its nested `muscleSnapshot` unwrapped.
- *
- * The one precedence every muscle surface reads — body map, fatigue, strength, exercise
- * rows — so a deleted custom keeps counting through its snapshot and a live one reads its
- * current catalogue metadata.
- *
- * @param {Object|null|undefined} entry - Workout entry with id and/or embedded exercise or snapshot.
- * @returns {Record<string, number>} Muscle weights by slug, { slug: 0…1 }.
- */
 export function muscleWeightsOf(entry) {
   const source = entry && typeof entry === 'object' ? entry : null
   if (!source) return {}
   return hasOwnMuscleMeta(source) ? musclesOf(source) : musclesOf(exerciseFor(source))
 }
 
-/**
- * Reads the explicitly assigned muscle groups off an exercise, if it carries any.
- * @param {Object} ex - Exercise that may carry `muscleGroups`, `muscles`, or `targetMuscles`; non-objects yield null.
- * @returns {string[]|null} Group list in stored form, or null when the exercise names no explicit groups.
- */
 function explicitGroupsOf(ex) {
   if (!ex || typeof ex !== 'object') return null
   if (Object.prototype.hasOwnProperty.call(ex, 'muscleGroups')) {
@@ -167,7 +120,6 @@ function explicitGroupsOf(ex) {
   return null
 }
 
-/** True only when the catalogue explicitly supplied muscle groups, not a body-part fallback. */
 export function hasExplicitMuscleMetadata(ex) {
   const source = metadataOf(ex)
   if (!source || typeof source !== 'object') return false
@@ -188,23 +140,19 @@ export function canonicalMuscle(value) {
   return ALIAS[name] || null
 }
 
-/** Resolves any input (name, alias, slug) to a canonical slug with safe fallback string. */
 export function resolveMuscleSlug(value) {
   const slug = canonicalMuscle(value)
   if (slug) return slug
   return String(value || '').toLowerCase().trim() || null
 }
 
-/** Derive legacy coarse body part from a canonical muscle group or cardio. */
 export function bodypartForMuscle(muscle) {
   const slug = resolveMuscleSlug(muscle)
   return MUSCLE_TO_BODYPART[slug] || (BY_BODYPART[slug] ? slug : 'chest')
 }
 
-/** An exercise given by id or as a record, as the record (undefined for an unknown id). */
 const asExercise = exercise => typeof exercise === 'string' ? EXIDX[exercise] : exercise
 
-/** Primary muscle slug for an exercise (canonical anatomical muscle group or 'cardio'). */
 export function primaryMuscleOf(exercise) {
   const raw = asExercise(exercise)
   const ex = hasOwnMuscleMeta(raw) ? raw : (exerciseFor(raw) || raw)
@@ -224,10 +172,6 @@ export function primaryMuscleOf(exercise) {
   return bpMuscles[0] || null
 }
 
-/**
- * Display name of an exercise's Primary muscle: the Muscle map name ("Chest"), with the
- * dataset spelling only for an exercise that maps to no drawable muscle. Untranslated (an i18n key).
- */
 export function primaryMuscleName(exercise) {
   const primary = primaryMuscleOf(exercise)
   if (primary && MUSCLE_NAME[primary]) return MUSCLE_NAME[primary]
@@ -235,7 +179,6 @@ export function primaryMuscleName(exercise) {
   return (ex && (ex.tg || ex.bp)) || ''
 }
 
-/** Secondary supporting muscle slugs for an exercise (canonical anatomical muscle groups). */
 export function secondaryMusclesOf(exercise) {
   const raw = asExercise(exercise)
   const ex = hasOwnMuscleMeta(raw) ? raw : (exerciseFor(raw) || raw)
@@ -263,14 +206,12 @@ export function secondaryMusclesOf(exercise) {
     rawSm.forEach(add)
     return out
   }
-  // Fallback for legacy custom exercises that have only bp and no explicit tg/sm
   if (!source.tg && source.bp && BY_BODYPART[source.bp]) {
     Object.keys(BY_BODYPART[source.bp]).forEach(add)
   }
   return out
 }
 
-/** True when an exercise trains the requested muscle filter (as primary or secondary) or cardio. */
 export function matchesMuscleFilter(idOrEx, filter) {
   if (!filter) return true
   const target = resolveMuscleSlug(filter)
@@ -287,7 +228,6 @@ export function matchesMuscleFilter(idOrEx, filter) {
   return false
 }
 
-/** True when the active muscle filter matched as a secondary target rather than primary. */
 export function isSecondaryMuscleMatch(idOrEx, filter) {
   if (!filter || filter === 'cardio' || filter === 'favorites') return false
   const target = resolveMuscleSlug(filter)
@@ -297,14 +237,8 @@ export function isSecondaryMuscleMatch(idOrEx, filter) {
   return secondaryMusclesOf(idOrEx).includes(target)
 }
 
-/** Common stop words stripped from catalogue search queries. */
 export const SEARCH_STOP_WORDS = new Set(['with', 'on', 'in', 'for', 'the', 'to', 'at', 'and', 'or', 'a', 'an'])
 
-/**
- * Tokenizes and normalizes a search query string.
- * Strips non-alphanumeric punctuation/hyphens, lowercases, filters stop words and 1-char noise.
- * Falls back to raw non-empty tokens if all tokens were filtered out.
- */
 export function tokenizeSearchQuery(query) {
   const normalized = String(query || '')
     .replace(/[^\w\s]/g, ' ')
@@ -316,7 +250,6 @@ export function tokenizeSearchQuery(query) {
   return filtered.length > 0 ? filtered : rawTokens
 }
 
-/** Checks whether a string includes a token, respecting numeric boundaries for digit tokens. */
 export function stringIncludesToken(str, token) {
   if (!str || !token) return false
   const s = String(str).toLowerCase()
@@ -329,13 +262,6 @@ export function stringIncludesToken(str, token) {
 
 
 
-/**
- * Computes derived muscle and attribute facts for an exercise to avoid
- * re-resolving them repeatedly across search tokens.
- *
- * @param {Object} ex - Exercise object.
- * @returns {Object|null} Derived context containing primary, secondaries, primaryName, and rawSm.
- */
 export function exerciseContext(ex) {
   if (!ex || typeof ex !== 'object') return null
   const primary = primaryMuscleOf(ex)
@@ -379,7 +305,6 @@ export function tokenMatchesExercise(token, ex, ctx) {
   return false
 }
 
-/** Returns the secondary muscle that matched a search query when the query did not match the primary muscle or title. */
 export function secondaryMatchForQuery(idOrEx, query) {
   const tokens = tokenizeSearchQuery(query)
   if (tokens.length === 0) return null
@@ -424,7 +349,6 @@ export function secondaryMatchForQuery(idOrEx, query) {
   return null
 }
 
-/** True when an exercise matches a search query across names, muscles, aliases, and equipment. */
 export function matchesExerciseSearch(idOrEx, query) {
   const tokens = tokenizeSearchQuery(query)
   if (tokens.length === 0) return true
@@ -435,7 +359,6 @@ export function matchesExerciseSearch(idOrEx, query) {
 }
 
 
-/** Canonical unique muscle groups, accepting both new arrays and legacy single fields. */
 export function muscleGroupsOf(ex) {
   const sourceEx = metadataOf(ex)
   const explicit = explicitGroupsOf(sourceEx)
@@ -451,7 +374,6 @@ export function muscleGroupsOf(ex) {
 
 export const normalizeMuscleGroups = muscleGroupsOf
 
-/** True when any requested group matches; an empty request is an intentionally unfiltered query. */
 export function matchesMuscleGroups(ex, requested) {
   const wanted = arrayOf(requested).map(canonicalMuscle).filter(Boolean)
   if (!wanted.length) return true
@@ -459,12 +381,9 @@ export function matchesMuscleGroups(ex, requested) {
   return wanted.some(group => groups.has(group))
 }
 
-/** Muscles one exercise trains: { slug: 0…1 }. Duplicate metadata never adds load twice. */
 export function musclesOf(idOrEx) {
   const ex = typeof idOrEx === 'string' ? EXIDX[idOrEx] : idOrEx
   if (!ex) return {}
-  // Own weights (or direct/legacy fields) are authoritative even when a nested
-  // `muscleSnapshot` is present; only unwrap the snapshot when the entry has nothing of its own.
   const sourceEx = hasOwnMuscleMeta(ex) ? ex : metadataOf(ex)
   if (sourceEx !== ex) return musclesOf(sourceEx)
   if (ex.muscleWeights && typeof ex.muscleWeights === 'object' && !Array.isArray(ex.muscleWeights)) {
@@ -474,10 +393,6 @@ export function musclesOf(idOrEx) {
       if (Number.isFinite(weight) && weight > 0) snapshot[slug] = weight
     })
     if (Object.keys(snapshot).length) {
-      // Historic reinterpret: old 2-way back snapshots (upper-back 0.75 / lower-back 0.25)
-      // lack lats and were derived via BY_BODYPART fallback. Per spec 05, historic
-      // workouts reinterpret live under the new 3-way split (no stored migration),
-      // so stale snapshots must be ignored and re-derived via current BY_BODYPART.
       const isStaleBackSnapshot =
         !('lats' in snapshot) &&
         ex.bp === 'back' &&
@@ -498,12 +413,10 @@ export function musclesOf(idOrEx) {
     add(ex.mg, SECONDARY)
     arrayOf(smOf(ex)).forEach(m => add(m, SECONDARY))
   }
-  // Nothing recognised (custom exercises, or a target we don't draw) — use the body part.
   if (!Object.keys(out).length) Object.assign(out, BY_BODYPART[ex.bp] || {})
   return out
 }
 
-/** Snapshot display and weighted muscle metadata into a completed history entry. */
 export function exerciseMuscleSnapshot(ex) {
   if (!ex || typeof ex !== 'object') return {}
   const out = {}
@@ -515,13 +428,6 @@ export function exerciseMuscleSnapshot(ex) {
   return out
 }
 
-/**
- * Training load per muscle, in "effective sets".
- * `items` is [{ ex, sets }] — `ex` the entry or exercise whose weights are read via
- * {@link muscleWeightsOf}, `sets` a count, so a 4×8 bench press weighs four
- * times a single set. Volume in kg is deliberately not used: 100 kg of leg press
- * against 12 kg of lateral raise says nothing about which muscle worked harder.
- */
 export function loadOf(items) {
   const load = {}
   items.forEach(item => {
@@ -533,33 +439,16 @@ export function loadOf(items) {
   return load
 }
 
-/**
- * Load for finished workouts (only sets actually ticked off count). `pick` narrows that
- * further — the map can then answer "where did the *hard* sets go", which is a different
- * question from where the sets went: a muscle can lead on volume and still never be trained
- * near failure.
- */
 export const loadOfWorkouts = (workouts, pick) =>
   loadOf((workouts || []).flatMap(w =>
     (w.entries || []).map(e => ({ id: e.id, ex: e, sets: doneWorkSets(e).filter(s => !pick || pick(s)).length }))))
 
-/** Load a routine *would* produce, from its planned set counts. */
 export const loadOfRoutine = routine =>
   loadOf((routine?.ex || []).map(c => ({ id: c.id, ex: c, sets: c.sets || 1 })))
 
-/** Load for a workout still in progress — the sets ticked so far. */
 export const loadOfActive = active =>
   loadOf((active?.entries || []).map(e => ({ id: e.id, ex: e, sets: doneWorkSets(e).length })))
 
-/**
- * Latest performed-work-set timestamp per muscle across history.
- *
- * Reads the same weights and the same performed work-set rule as the maps, so an untrained
- * muscle is simply absent and a deleted custom still counts through its snapshot.
- *
- * @param {Array<Object>} workouts - Workout history with `start`/`d` and entry set arrays.
- * @returns {Record<string, number>} Latest timestamp in milliseconds by trained muscle slug.
- */
 export function lastTrainedByMuscle(workouts) {
   const latest = {}
   for (const workout of workouts || []) {
@@ -575,17 +464,6 @@ export function lastTrainedByMuscle(workouts) {
   return latest
 }
 
-/**
- * Shade buckets 0–4 per muscle.
- *
- * With no `thresholds`, levels remain relative to the hardest-worked muscle in the same
- * window. This is the original balance-map behavior. When `thresholds` is supplied, levels
- * use an absolute scale instead: it is an ordered array of `{ at, level, exclusive? }` rules,
- * and the last matching rule wins. An exclusive rule matches values strictly greater than
- * `at`; otherwise the boundary is inclusive. Values below the first matching rule are l0.
- * Absolute rules let recovery views keep fixed semantic bands instead of renormalizing to the
- * strongest muscle on screen.
- */
 export function levelsOf(load, thresholds) {
   if (thresholds) {
     const lv = {}
@@ -610,25 +488,12 @@ export function levelsOf(load, thresholds) {
   return lv
 }
 
-/** Muscles sorted hardest-worked first; untrained ones last, in body order. */
 export function rankOf(load) {
   const worked = MUSCLES.filter(m => (load[m] || 0) > 0).sort((a, b) => load[b] - load[a])
   const missed = MUSCLES.filter(m => !(load[m] > 0))
   return { worked, missed }
 }
 
-/**
- * Quantified session muscle distribution across completed work sets.
- *
- * For each muscle trained in the workout:
- * - Direct primary work contributes 1.0 effective sets per completed work set.
- * - Compound assistance contributes 0.4 effective sets per completed work set.
- * - Custom and bodypart exercises fall back to muscleWeightsOf(entry).
- *
- * @param {Object|null|undefined} workout - Workout object with entries.
- * @returns {Array<{ slug: string, name: string, effectiveSets: number, primarySets: number, secondarySets: number, assistSets: number, compoundSets: number, exercises: string[] }>}
- * Sorted by effectiveSets descending, then primarySets descending, then alphabetical.
- */
 export function sessionMuscleDistribution(workout) {
   if (!workout || !Array.isArray(workout.entries)) return []
 
@@ -684,7 +549,6 @@ export function sessionMuscleDistribution(workout) {
         }
       }
     } else {
-      // Fallback: use muscleWeightsOf(entry)
       const weights = muscleWeightsOf(entry)
       const weightEntries = Object.entries(weights).filter(([slug, w]) => w > 0 && slug !== 'cardio')
       if (weightEntries.length > 0) {
@@ -698,8 +562,6 @@ export function sessionMuscleDistribution(workout) {
             }
           }
         } else {
-          // When no muscle has weight >= 1 (e.g. 50/50 split custom movements),
-          // allocate the performed work proportionally as direct primary work.
           for (const [slug, weight] of weightEntries) {
             addMuscleSets(slug, count * weight)
           }

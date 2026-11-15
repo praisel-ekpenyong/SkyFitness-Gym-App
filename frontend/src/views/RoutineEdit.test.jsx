@@ -88,7 +88,6 @@ describe('RoutineEdit exercise replacement', () => {
     const items = container.querySelectorAll('.list .item')
     expect(items.length).toBe(3)
 
-    // Click on the first exercise
     await act(async () => {
       items[0].dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
@@ -107,57 +106,48 @@ describe('RoutineEdit exercise replacement', () => {
     })
 
     const items = container.querySelectorAll('.list .item')
-    // Click on the first exercise (which is in superset sg-0-1)
     await act(async () => {
       items[0].dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
 
     const [, e, , , , , onReplace] = mocks.exConfigSheet.mock.calls[0]
 
-    // Trigger onReplace callback
     await act(async () => {
       onReplace()
     })
 
-    // exercisePicker should be launched
     expect(mocks.exercisePicker).toHaveBeenCalledTimes(1)
     const pickerCallback = mocks.exercisePicker.mock.calls[0][0]
     expect(typeof pickerCallback).toBe('function')
 
-    // Simulate choosing replacement exercise 0004
     const newEx = { id: '0004', n: 'Replacement Lift', bp: 'chest', tg: 'chest', eq: 'barbell' }
     await act(async () => {
       pickerCallback(newEx)
     })
 
-    // exConfigSheet should be opened for newEx pre-seeded with e.sets and newEx defaults/history
     expect(mocks.exConfigSheet).toHaveBeenCalledTimes(2)
     const [replEx, replExisting, replOnSave, replOnDelete, replR, replInitial] = mocks.exConfigSheet.mock.calls[1]
     expect(replEx.id).toBe('0004')
     expect(replExisting).toBeNull()
     expect(replInitial).toMatchObject({
-      sets: 4, // pre-seeded from e.sets
-      weight: 65, // from history/exWeights
+      sets: 4,
+      weight: 65,
     })
 
-    // Save replacement config
     await act(async () => {
       replOnSave({ sets: 4, reps: 8, weight: 65, mode: 'reps' })
     })
 
-    // Verify routine in store
     const updatedRoutine = useStore.getState().S.routines.find(x => x.id === 'r-test-1')
     expect(updatedRoutine.ex.length).toBe(3)
-    // In-place replacement at index 0:
     expect(updatedRoutine.ex[0]).toEqual({
       id: '0004',
-      sg: 'sg-0-1', // superset group preserved
+      sg: 'sg-0-1',
       sets: 4,
       reps: 8,
       weight: 65,
       mode: 'reps',
     })
-    // Indices 1 and 2 unchanged:
     expect(updatedRoutine.ex[1].id).toBe('0002')
     expect(updatedRoutine.ex[1].sg).toBe('sg-0-1')
     expect(updatedRoutine.ex[2].id).toBe('0003')
@@ -170,7 +160,6 @@ describe('RoutineEdit exercise replacement', () => {
     })
 
     const items = container.querySelectorAll('.list .item')
-    // Click on third exercise (index 2, no superset)
     await act(async () => {
       items[2].dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
@@ -187,7 +176,7 @@ describe('RoutineEdit exercise replacement', () => {
     })
 
     const [, , replOnSave, , , replInitial] = mocks.exConfigSheet.mock.calls[1]
-    expect(replInitial.sets).toBe(3) // outgoing sets = 3
+    expect(replInitial.sets).toBe(3)
 
     await act(async () => {
       replOnSave({ sets: 3, reps: 10, weight: 40, mode: 'reps' })
@@ -239,17 +228,14 @@ describe('RoutineEdit exercise notes display and replacement', () => {
     const items = container.querySelectorAll('.list .item')
     expect(items.length).toBe(3)
 
-    // First item should have note preview
     const firstItem = items[0]
     const notePreview = firstItem.querySelector('.small.dim')
     expect(notePreview).toBeTruthy()
     expect(notePreview.textContent).toContain('Seat 5, incline pin 2')
 
-    // Clipboard icon should be present inside the note preview
     const clipIcon = notePreview.querySelector('svg.icn')
     expect(clipIcon).toBeTruthy()
 
-    // Second item (no notes) should NOT have note preview
     const secondItem = items[1]
     const secondPreview = secondItem.querySelector('.small.dim')
     expect(secondPreview).toBeNull()
@@ -266,7 +252,6 @@ describe('RoutineEdit exercise notes display and replacement', () => {
     })
 
     const items = container.querySelectorAll('.list .item')
-    // Click on first exercise (which has notes)
     await act(async () => {
       items[0].dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
@@ -284,10 +269,8 @@ describe('RoutineEdit exercise notes display and replacement', () => {
 
     const [, replExisting, replOnSave, , , replInitial] = mocks.exConfigSheet.mock.calls[1]
     expect(replExisting).toBeNull()
-    // initial must NOT have notes from outgoing exercise
     expect(replInitial?.notes).toBeFalsy()
 
-    // Save replacement config without notes
     await act(async () => {
       replOnSave({ sets: 4, reps: 10, weight: 60, mode: 'reps' })
     })
@@ -298,7 +281,6 @@ describe('RoutineEdit exercise notes display and replacement', () => {
   })
 })
 
-// A destructive key under the primary "Add exercise" is red text, not a red slab.
 describe('RoutineEdit delete key', () => {
   it('is a red text key, not a filled danger button, and still asks first', async () => {
     mocks.confirmSheet.mockReset()

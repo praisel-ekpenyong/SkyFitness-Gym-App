@@ -1,14 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 
-// The whole point of the module is surviving what the browser does on its own: it drops the
-// lock every time the document goes hidden. So the fake browser here has to do that too,
-// otherwise the tests pass against a one-shot implementation that dies on the first tab switch.
 let requests, released, live, listeners, reject
 
-// Node 21+ defines globalThis.navigator itself, as a getter with no setter — a plain
-// assignment throws under ESM's strict mode. defineProperty works on both that and the older
-// runtimes where the global simply doesn't exist. Production images are node:22-alpine, so
-// the tests have to run there too.
 const setNavigator = value =>
   Object.defineProperty(globalThis, 'navigator', { value, configurable: true, writable: true })
 
@@ -24,7 +17,7 @@ function fakeBrowser() {
     wakeLock: {
       request: async () => {
         requests++
-        if (reject) throw new Error('NotAllowedError')   // iOS Low Power Mode
+        if (reject) throw new Error('NotAllowedError')
         const subs = new Set()
         const s = { addEventListener: (_, fn) => subs.add(fn), release: async () => { if (live === s) live = null; released++; subs.forEach(fn => fn()) } }
         live = s
@@ -42,7 +35,7 @@ let requestWakeLock, releaseWakeLock, wakeLockSupported
 
 beforeEach(async () => {
   fakeBrowser()
-  vi.resetModules()   // the module holds process-wide state; each test gets a fresh one
+  vi.resetModules()
   ;({ requestWakeLock, releaseWakeLock, wakeLockSupported } = await import('./wakelock.js'))
 })
 afterEach(() => { delete globalThis.document; delete globalThis.navigator })
@@ -106,11 +99,11 @@ describe('releaseWakeLock', () => {
   })
 
   it('does not leak a lock when it lands while a request is in flight', async () => {
-    requestWakeLock()      // no await — the request is still pending
+    requestWakeLock()
     releaseWakeLock()
     await settle()
-    expect(live).toBeNull()          // the arriving sentinel was released immediately
+    expect(live).toBeNull()
     await foreground()
-    expect(requests).toBe(1)         // and we did not start wanting it again
+    expect(requests).toBe(1)
   })
 })

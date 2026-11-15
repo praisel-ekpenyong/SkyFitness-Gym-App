@@ -23,7 +23,6 @@ describe('useStore.syncRoutineFromSession', () => {
     const routine = useStore.getState().S.routines.find(r => r.id === 'r1')
     expect(routine.ex).toEqual(updatedEx)
 
-    // Other routines remain untouched
     const routine2 = useStore.getState().S.routines.find(r => r.id === 'r2')
     expect(routine2.ex).toEqual([{ id: '0027', sets: 3 }])
   })

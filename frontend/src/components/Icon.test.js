@@ -5,7 +5,6 @@ import { ICON_NAMES } from './Icon.jsx'
 
 const SRC = resolve(__dirname, '..')
 
-/** Every `<Icon name="…" />` and `icon="…"` literal in non-test source, with where it is. */
 function namedIcons() {
   const out = []
   const walk = dir => {

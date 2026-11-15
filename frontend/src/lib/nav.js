@@ -1,4 +1,3 @@
-// Lets non-component modules (sheet flows) navigate. App registers the router's navigate.
 let _nav = () => {}
 /**
  * Registers the router navigate function for non-component modules to call.

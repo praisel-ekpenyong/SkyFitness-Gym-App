@@ -1,6 +1,3 @@
-// Measured checks on the built app: overflow, tap targets (including ::after hit areas, measured), contrast,
-// clipped text, CSP violations, console errors; then font and offline proof on the real service worker.
-// usage: node audit.mjs [--base=url] [--seed=file.json] [--today=YYYY-MM-DD]   exits 1 when there are findings.
 import { readFileSync } from 'node:fs'
 import { parseColor, over } from './colour.mjs'
 import { buildSeed, config, freezeClock, launch, parseArgs, seedStorage } from './lib.mjs'
@@ -41,7 +38,6 @@ for(const theme of ['dark','light']) for(const [vp,[w,h]] of Object.entries(VPS)
   p.on('pageerror',e=>errs.push(e.message)); p.on('console',m=>{ if(m.type()==='error'&&!/Failed to load resource|ERR_/.test(m.text())) errs.push(m.text()) })
   const run=async(label)=>{ const r=await p.evaluate(audit); const csp=await p.evaluate(()=>window.__csp); const items=[...r.overflow.map(x=>'OVERFLOW '+x),...r.tap.map(x=>'TAP '+x),...r.contrast.map(x=>'CONTRAST '+x),...r.clipped.map(x=>'SPILL '+x),...csp.map(x=>'CSP '+x)]; if(items.length){bad+=items.length; console.log(`[${theme} ${vp} ${label}]\n  `+items.slice(0,14).join('\n  ')+(items.length>14?`\n  …+${items.length-14}`:''))} }
   for(const r of routes){ await p.goto(base+'#'+r); await p.waitForTimeout(650); await run(r) }
-  // the live workout
   await p.goto(base+'#/home'); await p.waitForTimeout(500)
   const start=p.locator('button').filter({hasText:/Pick a workout for today|Start workout/}).first()
   await p.evaluate(()=>{ const S=JSON.parse(localStorage.getItem('gym_state_v1')); S.week={0:'push',1:'push',2:'push',3:'push',4:'push',5:'push',6:'push'}; localStorage.setItem('gym_state_v1',JSON.stringify(S)) }); await p.reload(); await p.waitForTimeout(600)
@@ -53,7 +49,6 @@ for(const theme of ['dark','light']) for(const [vp,[w,h]] of Object.entries(VPS)
   await c.close()
 }
 console.log(bad?`\n${bad} findings`:'\nno findings')
-// font proof + offline proof, on the real service worker
 const c=await b.newContext({viewport:{width:390,height:844},timezoneId:'UTC'})
 await seedStorage(c,seed); await freezeClock(c,cfg.today)
 const p=await c.newPage(); await p.goto(base); await p.waitForTimeout(1500)

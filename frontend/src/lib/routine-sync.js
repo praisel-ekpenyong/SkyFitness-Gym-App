@@ -1,24 +1,9 @@
-// Pure Routine Sync domain seam: diffing and state projection.
-//
-// Compares an active workout session against its originating Routine template
-// to evaluate differences (structural additions, removals, replacements,
-// reorderings, superset modifications, and work set count adjustments),
-// formats human-scannable change descriptors, and projects the updated
-// exercise lineup preserving unperformed planned sets and progression weights.
-//
-// Governed by ADR 0014 and GLOSSARY.md (Routine sync).
 
 import { doneWorkSets, cleanNote } from './workout-model.js'
 import { cleanupSg, supersetUnits } from './supersetFlow.js'
 import { EXIDX, exOr } from './exercises.js'
 import { MINUS } from './format.js'
 
-/**
- * Convert string words to Title Case.
- *
- * @param {string} str - Raw input text.
- * @returns {string} Title-cased text.
- */
 function toTitleCase(str) {
   if (!str) return ''
   return String(str)
@@ -27,16 +12,6 @@ function toTitleCase(str) {
     .join(' ')
 }
 
-/**
- * Resolve the human-readable display name for an exercise.
- *
- * Queries embedded item names, custom exercise records in `EXIDX`, catalogue entries,
- * or catalogue fallback. Title-cases names for consistent scannability in diff tags.
- *
- * @param {string} id - Exercise identifier.
- * @param {Object} [item={}] - Optional exercise config or entry holding name hints.
- * @returns {string} Formatted exercise display name.
- */
 export function exerciseDisplayName(id, item = {}) {
   if (item?.name) return toTitleCase(item.name)
   if (item?.n) return toTitleCase(item.n)
@@ -52,20 +27,6 @@ export function exerciseDisplayName(id, item = {}) {
   return fallback?.n ? toTitleCase(fallback.n) : id
 }
 
-/**
- * Detect structural differences (replacements, additions, removals, reorderings)
- * between routine exercises and session entries.
- *
- * @param {Array<Object>} routineExercises - Original routine exercises.
- * @param {Array<Object>} sessionEntries - Active session entries.
- * @returns {{
- *   replacements: Array<{from: string, to: string}>,
- *   additions: Array<string>,
- *   removals: Array<string>,
- *   isReordered: boolean,
- *   changes: Array<string>
- * }}
- */
 export function detectStructuralChanges(routineExercises, sessionEntries) {
   const rIds = routineExercises.map(e => e.id)
   const sIds = sessionEntries.map(e => e.id)
@@ -84,12 +45,6 @@ export function detectStructuralChanges(routineExercises, sessionEntries) {
   const matchedRemoved = new Set()
   const matchedAdded = new Set()
 
-  /**
-   * Pair removed and added exercises within slice segments as replacements.
-   *
-   * @param {Array<string>} rSlice - Routine exercise ID slice.
-   * @param {Array<string>} sSlice - Session exercise ID slice.
-   */
   function pairSegments(rSlice, sSlice) {
     const rSeg = rSlice.filter(id => trulyRemoved.includes(id) && !matchedRemoved.has(id))
     const sSeg = sSlice.filter(id => trulyAdded.includes(id) && !matchedAdded.has(id))
@@ -131,26 +86,22 @@ export function detectStructuralChanges(routineExercises, sessionEntries) {
 
   const changes = []
 
-  // Exercise replacements
   for (const rep of replacements) {
     const oldName = exerciseDisplayName(rep.from, routineExercises.find(e => e.id === rep.from))
     const newName = exerciseDisplayName(rep.to, sessionEntries.find(e => e.id === rep.to))
     changes.push(`⇄ Replaced ${oldName} → ${newName}`)
   }
 
-  // Added exercises
   for (const id of additions) {
     const name = exerciseDisplayName(id, sessionEntries.find(e => e.id === id))
     changes.push(`+ ${name}`)
   }
 
-  // Removed exercises
   for (const id of removals) {
     const name = exerciseDisplayName(id, routineExercises.find(e => e.id === id))
     changes.push(`${MINUS} ${name}`)
   }
 
-  // Reordered exercises
   if (isReordered) {
     changes.push('⇅ Reordered')
   }
@@ -164,18 +115,6 @@ export function detectStructuralChanges(routineExercises, sessionEntries) {
   }
 }
 
-/**
- * Detect superset groupings created, dissolved, or modified between routine and session.
- *
- * Maps routine superset items through replacements so an in-place replaced exercise
- * inside an intact superset doesn't trigger false unlinked/linked superset warnings.
- *
- * @param {Array<Object>} routineExercises - Originating routine exercise lineup.
- * @param {Array<Object>} syncedExercises - Projected exercise lineup with updated superset groups.
- * @param {Array<Object>} sessionEntries - Active session entries holding exercise metadata.
- * @param {Array<{from: string, to: string}>} replacements - List of detected exercise replacements.
- * @returns {Array<string>} List of human-readable superset change descriptors.
- */
 export function detectSupersetChanges(
   routineExercises,
   syncedExercises,
@@ -198,7 +137,6 @@ export function detectSupersetChanges(
 
   const changes = []
 
-  // Newly paired or altered supersets in session
   for (let i = 0; i < sessionSupersets.length; i++) {
     const key = keyOf(sessionSupersets[i])
     if (!routineKeys.has(key)) {
@@ -207,7 +145,6 @@ export function detectSupersetChanges(
     }
   }
 
-  // Unpaired supersets
   for (let i = 0; i < routineSupersets.length; i++) {
     const key = keyOf(routineSupersets[i])
     if (!sessionKeys.has(key)) {
@@ -219,21 +156,6 @@ export function detectSupersetChanges(
   return changes
 }
 
-/**
- * Evaluate differences between an active workout session and its originating routine,
- * and project the synchronized routine exercise lineup.
- *
- * Pure function:
- * - Detects added, removed, replaced, and reordered exercises.
- * - Detects superset groupings created, dissolved, or modified.
- * - Detects work set count adjustments (ignoring warm-up sets).
- * - Preserves original planned target set counts for skipped/unperformed exercises.
- * - Preserves exercise configurations without overwriting baseline weights with session loads.
- *
- * @param {Object|null|undefined} routine - Originating routine object ({ id, name, ex }).
- * @param {Object|null|undefined} activeSession - Active workout session object ({ routineId, entries }).
- * @returns {{ hasDiff: boolean, changes: Array<string>, syncedEx: Array<Object> }}
- */
 export function diffRoutineWithSession(routine, activeSession) {
   if (
     !routine ||
@@ -249,7 +171,6 @@ export function diffRoutineWithSession(routine, activeSession) {
     }
   }
 
-  // Session must be attached to this routine
   if (routine.id && activeSession.routineId !== routine.id) {
     return {
       hasDiff: false,
@@ -258,12 +179,9 @@ export function diffRoutineWithSession(routine, activeSession) {
     }
   }
 
-  // 1. Project synced exercise lineup matching session entries
   const syncedEx = activeSession.entries.map(entry => {
     const target = entry.target || {}
     const doneCount = doneWorkSets(entry).length
-    // If completed work sets were performed (doneCount > 0), target sets = performed count.
-    // If zero work sets were performed (skipped or unticked), preserve planned target sets, never dropping or setting to 0.
     const sets = doneCount > 0 ? doneCount : (target.sets || 3)
 
     const projected = {
@@ -288,20 +206,17 @@ export function diffRoutineWithSession(routine, activeSession) {
     return projected
   })
 
-  // Ensure contiguous superset integrity
   cleanupSg(syncedEx)
 
   const routineExercises = routine.ex
   const sessionEntries = activeSession.entries
 
-  // 2. Detect structural differences
   const {
     replacements,
     additions,
     changes: structuralChanges,
   } = detectStructuralChanges(routineExercises, sessionEntries)
 
-  // 3. Detect superset modifications
   const supersetChanges = detectSupersetChanges(
     routineExercises,
     syncedEx,
@@ -309,7 +224,6 @@ export function diffRoutineWithSession(routine, activeSession) {
     replacements
   )
 
-  // 4. Detect work set count adjustments
   const setCountChanges = []
   const matchedRoutineIndicesForSets = new Set()
   for (let sIdx = 0; sIdx < sessionEntries.length; sIdx++) {
@@ -340,7 +254,6 @@ export function diffRoutineWithSession(routine, activeSession) {
     }
   }
 
-  // 5. Detect exercise note adjustments
   const noteChanges = []
   const matchedRoutineIndicesForNotes = new Set()
   for (let sIdx = 0; sIdx < sessionEntries.length; sIdx++) {
@@ -393,17 +306,6 @@ export function diffRoutineWithSession(routine, activeSession) {
   }
 }
 
-/**
- * Mutate application state atom S to synchronize a routine's exercise lineup.
- *
- * Finds routine in `S.routines` by `routineId` and updates its `ex` array to `syncedEx`.
- * Safely returns false and no-ops if routine is not found or `S.routines` is missing.
- *
- * @param {Object} S - Application state atom containing `routines`.
- * @param {string} routineId - Target routine identifier.
- * @param {Array<Object>} syncedEx - New exercise lineup array.
- * @returns {boolean} True if routine was found and updated; false otherwise.
- */
 export function syncRoutineFromSession(S, routineId, syncedEx) {
   if (!S || !Array.isArray(S.routines) || !routineId || !Array.isArray(syncedEx)) {
     return false

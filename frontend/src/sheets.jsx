@@ -25,16 +25,11 @@ import { MOBILE, shareExport } from './lib/mobile.js'
 import { configureSessionSheets } from './sheets/session.jsx'
 import { configureCatalogueSheets } from './sheets/catalogue.jsx'
 
-/** Reads the shared store state. */
 const S = () => useStore.getState().S
-/** Applies a draft mutation to the shared store state. */
 const update = (...a) => useStore.getState().update(...a)
-/** Reads the UI store state. */
 const ui = () => useUI.getState()
-/** Shows a transient toast message. */
 const toast = m => ui().toast(m)
 
-/* ============================ custom confirm dialog ============================ */
 function ConfirmDialog({ title, message, confirmText, cancelText, danger, onConfirm, close }) {
   return <div className="confirm">
     {title && <h3>{title}</h3>}
@@ -146,8 +141,6 @@ export function bwSheet(opts = {}) {
 // are all on screen before the confirm button.
 function ImportSummary({ parsed, close }) {
   const st = useStore(s => s.S)
-  // The dry-run totals — exactly what mergeImport returns, so the numbers on
-  // screen cannot drift from what the confirm button will actually do.
   const { added: fresh, skipped: have } = importPreview(st, parsed)
   const isBW = parsed.kind === 'bodyweight'
 
@@ -189,8 +182,6 @@ function ImportSummary({ parsed, close }) {
     {have > 0 && <div className="dim-note small dim">
       {t('{0} days already have data here and will be left alone.', fmtNum(have))}
     </div>}
-    {/* The file rated its sets. Say so: the column is off by default, so the ratings would
-        otherwise arrive invisibly and look like they had been dropped. */}
     {!isBW && (parsed.rirSets + parsed.rpeSets) > 0 && <div className="dim-note small dim">
       {t(effortOf(st) === 'none'
         ? '{0} sets bring an {1} with them — switch on Effort per set in Settings to see it.'
@@ -259,7 +250,6 @@ function GoalSheet({ close }) {
 /** Opens the target-weight sheet. */
 export const goalSheet = () => ui().openSheet(close => <GoalSheet close={close} />)
 
-/* ============================ profile display name ============================ */
 function DisplayNameSheet({ close }) {
   const st = S()
   const [v, setV] = useState(st.displayName || '')
@@ -296,12 +286,8 @@ function DisplayNameSheet({ close }) {
     {canClear && <><div className="gap8" /><Button variant="ghost" onClick={clear}>{t('Clear name')}</Button></>}
   </>
 }
-/** Opens the display-name sheet; saving stores the Home greeting name. */
 export const displayNameSheet = () => ui().openSheet(close => <DisplayNameSheet close={close} />)
 
-/* ============================ glyph picker ============================ */
-// Grouped by what the glyph means for a training day, so picking one is a scan
-// of four short rows rather than a hunt through twenty loose icons.
 export const glyphPicker = (current, onPick) => {
   const cur = glyphOf(current)
   return ui().openSheet(close => <>
@@ -323,14 +309,8 @@ export const glyphPicker = (current, onPick) => {
   </>)
 }
 
-/* ============================ share / print / import a plan ============================ */
 export const planToolsSheet = () => ui().openSheet(close => <PlanTools close={close} />)
 
-/**
- * Plan share sheet; exporting saves a plan file and importing opens the preview.
- *
- * @param {Function} close Closes the sheet.
- */
 function PlanTools({ close }) {
   const st = useStore(s => s.S)
   const fileRef = useRef(null)
@@ -340,7 +320,7 @@ function PlanTools({ close }) {
     const bundle = buildPlanBundle(st, '')
     const json = JSON.stringify(bundle, null, 2)
     const name = 'sky-plan-' + todayISO() + '.json'
-    if (MOBILE) { try { await shareExport(json, name) } catch (e) { /* dismissed */ } close(); return }
+    if (MOBILE) { try { await shareExport(json, name) } catch (e) {} close(); return }
     const blob = new Blob([json], { type: 'application/json' })
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); URL.revokeObjectURL(a.href)
     close(); toast(t('Plan file saved — send it to a friend'))
@@ -372,14 +352,7 @@ function PlanTools({ close }) {
   </>
 }
 
-/** Opens the plan-import preview for the given bundle. */
 export const planImportSheet = bundle => ui().openSheet(close => <PlanImport bundle={bundle} close={close} />)
-/**
- * Plan-import preview; saving adds the routines without changing existing ones.
- *
- * @param {Object} bundle Parsed plan bundle.
- * @param {Function} close Closes the sheet.
- */
 function PlanImport({ bundle, close }) {
   const [schedule, setSchedule] = useState(false)
   const apply = () => {
@@ -413,15 +386,6 @@ function PlanImport({ bundle, close }) {
   </>
 }
 
-/**
- * Day-override sheet body: pick what to train on one date.
- *
- * Lists every routine plus rest, marks the effective choice, and writes
- * `dayPlan[iso]` (or clears it for "back to weekly plan") before closing.
- *
- * @param {string} iso - Calendar date in 'YYYY-MM-DD' format.
- * @param {Function} close - Sheet closer.
- */
 function DayOverride({ iso, close }) {
   const st = useStore(s => s.S)
   const wd = new Date(iso + 'T12:00:00').getDay()
@@ -448,12 +412,6 @@ function DayOverride({ iso, close }) {
 }
 /** Opens the day-override sheet for the given date. */
 export const dayOverrideSheet = iso => ui().openSheet(close => <DayOverride iso={iso} close={close} />)
-/**
- * Weekday-assignment sheet; picking stores the routine for that weekday.
- *
- * @param {number} day Weekday index.
- * @param {Function} close Closes the sheet.
- */
 function DayAssign({ day, close }) {
   const st = useStore(s => s.S)
   const set = v => { update(s => assignWeekday(s, day, v)); close() }
@@ -468,7 +426,6 @@ function DayAssign({ day, close }) {
     </div>
   </>
 }
-/** Opens the weekday-assignment sheet for the given day. */
 export const dayAssignSheet = day => ui().openSheet(close => <DayAssign day={day} close={close} />)
 
 /**
@@ -519,18 +476,8 @@ export function WorkoutDetail({ w, close }) {
     <Button variant="danger" onClick={() => confirmSheet({ title: t('Delete workout?'), message: t('This removes it from your history for good.'), confirmText: t('Delete'), danger: true, onConfirm: () => { update(s => { deleteWorkout(s, w.id) }); close(); toast(t('Workout deleted')) } })}>{t('Delete workout')}</Button>
   </>
 }
-/** Opens the completed-workout detail for the given workout. */
 export const workoutDetailSheet = w => ui().openSheet(close => <WorkoutDetail w={w} close={close} />)
 
-/**
- * Monthly calendar sheet body for history navigation and day planning.
- *
- * Dots mark trained/planned/rescheduled days. Tapping a trained day opens its
- * detail; tapping any other day opens the day-override sheet.
- *
- * @param {string} [start] - Any date in the initial month ('YYYY-MM-DD'); defaults to today.
- * @param {Function} close - Sheet closer.
- */
 function Calendar({ start, close }) {
   const st = useStore(s => s.S)
   const [cur, setCur] = useState(() => { const d = start ? new Date(start) : new Date(); d.setDate(1); return d })
@@ -573,7 +520,6 @@ function Calendar({ start, close }) {
 /** Opens the monthly calendar sheet starting at the given date. */
 export const calendarSheet = start => ui().openSheet(close => <Calendar start={start} close={close} />)
 
-/* ============================ monthly recap ============================ */
 export function RecapSheet({ start, close }) {
   const st = useStore(s => s.S)
   const [cur, setCur] = useState(() => {
@@ -588,7 +534,6 @@ export function RecapSheet({ start, close }) {
   const viewedEmpty = rec.workouts === 0
 
   const deltaBadge = (key) => {
-    // A month still under way is not behind anything yet, so it shows no comparison.
     if (isCurrent) return null
     const v = rec.deltas?.[key]
     if (v == null) return null
@@ -675,7 +620,6 @@ export function RecapSheet({ start, close }) {
  */
 export const recapSheet = (start) => ui().openSheet(close => <RecapSheet start={start} close={close} />)
 
-/* shared small workout row (used in lists) */
 export function WorkoutRow({ w, onClick }) {
   const st = useStore(s => s.S)
   const glyph = glyphOf((st.routines.find(r => r.id === w.routineId) || {}).emoji)
@@ -691,18 +635,8 @@ export function WorkoutRow({ w, onClick }) {
   </div>
 }
 
-/* ============================ session sheets (extracted) ============================ */
-// Session domain lives in ./sheets/session.jsx. The hub re-exports every entry
-// point so existing callers keep working untouched, and performs the one-line
-// wiring for the injected weigh-in seam (plus hub-owned confirm
-// to avoid a circular hub↔session import during migration).
 export { startFlow, beginWorkout, workoutCompleteSheet, finishWorkout, exerciseNoteSheet } from './sheets/session.jsx'
 configureSessionSheets({ bwSheet, confirmSheet })
 
-/* ============================ catalogue sheets (extracted) ============================ */
-// Catalogue browsing lives in ./sheets/catalogue.jsx. The hub re-exports every
-// entry point so existing callers keep working untouched, and performs the
-// one-line wiring for the injected confirm seam to avoid a circular
-// hub↔catalogue import during migration.
 export { ExerciseDetail, exerciseDetailSheet, addToRoutineSheet, CustomExForm, customExSheet, deleteCustomEx, ExercisePicker, exercisePicker, ExConfig, exConfigSheet } from './sheets/catalogue.jsx'
 configureCatalogueSheets({ confirmSheet })

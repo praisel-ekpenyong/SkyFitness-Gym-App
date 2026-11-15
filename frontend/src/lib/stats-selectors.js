@@ -1,10 +1,3 @@
-// Stats selectors: the single seam between stored training history and every stats view.
-//
-// Views never scan workouts directly. They call selectStatsOverview for the muscle,
-// fatigue, strength and effort cards, and selectExerciseStats for one exercise's
-// progress curve. Both selectors are pure snapshots over (S, now): the same inputs
-// always produce the same display-ready output, and views stay free of imports from
-// the domain helpers composed here.
 import { EXDB } from './exercises.js'
 import { fatigueOf, strengthOf, fatigueStateOf } from './recovery.js'
 import { MUSCLES, loadOfWorkouts, rankOf, lastTrainedByMuscle } from './muscles.js'
@@ -23,13 +16,9 @@ import { strengthExerciseRowsForMuscle } from './strength-exercises.js'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
-// Catalogue seam. The default reads the shipped index; tests and future catalogue
-// sources inject { lookup }. A miss here means "unknown exercise" even when stale
-// history rows still carry the id — the curve has nothing to name or weigh.
 const builtInIndex = Object.fromEntries(EXDB.map(ex => [ex.id, ex]))
 export const defaultCatalogue = { lookup: id => builtInIndex[id] ?? null }
 
-/** Round a display load to one decimal place. */
 const round1 = value => Math.round(value * 10) / 10
 
 function requireNow(fn, now) {
@@ -53,10 +42,6 @@ function resolveCatalogue(S, catalogue) {
   return { lookup: id => custom.get(id) || defaultCatalogue.lookup(id) || historical.get(id) || null }
 }
 
-// Muscle attribution prefers what the lifter logged: a snapshot carrying muscleWeights was
-// captured when the set was performed, so it beats the catalogue record even when the
-// catalogue's mapping has since been re-derived, and the catalogue answers before a bare
-// historical entry. Identity lookups (names, modes) keep the plain catalogue order.
 function muscleCatalogueOf(S, catalogue) {
   const logged = new Map()
   for (const workout of S?.workouts || []) {
@@ -75,11 +60,6 @@ function muscleCatalogueOf(S, catalogue) {
   return { lookup: id => logged.get(id) || catalogue.lookup(id) || null }
 }
 
-// muscleWeightsOf reads the entry it is handed and does not take a catalogue.
-// Overlay the resolved exercise first so a Profile custom, or a logged snapshot
-// from an earlier entry of the same exercise, still attributes when this entry
-// carries no muscle metadata of its own. The entry's own fields win, including
-// a muscleWeights map logged on it.
 function projectWorkouts(workouts, catalogue) {
   return (workouts || []).map(workout => ({
     ...workout,
@@ -92,9 +72,6 @@ function projectWorkouts(workouts, catalogue) {
   }))
 }
 
-// A window in days back from the injected now. 0 (or another falsy value) keeps
-// all history — the same convention effort.js uses, but anchored to `now` instead
-// of the wall clock so snapshots stay deterministic.
 function inWindow(workouts, now, days) {
   if (!days) return [...(workouts || [])]
   const cutoff = now - days * DAY_MS
@@ -104,9 +81,6 @@ function inWindow(workouts, now, days) {
   })
 }
 
-// The lifter's body mass in kg: an explicit override wins, otherwise the latest
-// registered weigh-in (profile unit converted), otherwise null — which the
-// recovery model reads as its stable fallback.
 function resolveBodyweightKg(S, override) {
   if (override !== undefined && override !== null) {
     const n = Number(override)
@@ -121,7 +95,6 @@ function resolveBodyweightKg(S, override) {
   return null
 }
 
-// Completed work sets of one window: the only rows that ever count.
 function workSetsOf(workouts) {
   const out = []
   for (const w of workouts || []) {
@@ -135,18 +108,6 @@ function workSetsOf(workouts) {
   return out
 }
 
-/**
- * Snapshot counts, body-weight trends, exercise index and training readings.
- *
- * @param {Object} S - App state with workouts, bodyweight, unit, and effort setting.
- * @param {Object} opts - { now, catalogue?, muscleDays?, hardOnly?, effortDays?, bodyweightDays?, bodyweightKg? }.
- *   now is a required finite timestamp. Windows default to 30/90/90 days; 0 means all history.
- *   muscleDays=7 selects the current local calendar week.
- *   hardOnly asks for the hard-set map and falls back to all sets silently when the
- *   window holds no hard sets (see hardActive/rated).
- * @returns {Object} Display-ready overview with an exercisesFor(slug) closure over
- *   the same (S, now) snapshot.
- */
 export function selectStatsOverview(S, opts = {}) {
   const now = requireNow('selectStatsOverview', opts?.now)
   const catalogue = resolveCatalogue(S, opts?.catalogue)
@@ -277,9 +238,6 @@ function entriesFor(S, exId) {
   return out
 }
 
-// Within an entry, metricModeForEntry makes completed reps rows authoritative.
-// Across entries, the latest logged Mode chooses the progress chart; the catalogue
-// record is the last fallback through the shared modeOf cascade.
 function resolveMode(pairs, catalogueRecord) {
   for (let i = pairs.length - 1; i >= 0; i--) {
     const mode = metricModeForEntry(pairs[i].entry)
@@ -288,7 +246,6 @@ function resolveMode(pairs, catalogueRecord) {
   return modeOf(catalogueRecord)
 }
 
-// The number a set scores in its mode: km/h speed for cardio, seconds for timed work.
 const speedOrSecondsOf = (mode, set) => mode === 'cardio' ? (set?.speed || 0) : (set?.sec || 0)
 const unitFor = (mode, S) => mode === 'cardio' ? 'km/h' : mode === 'time' ? 's' : (S?.unit ?? 'kg')
 
@@ -299,10 +256,6 @@ function metricOf(entry, mode, workout = null, targetUnit = null) {
   return Number.isFinite(value) && value > 0 ? round1(value) : 0
 }
 
-// A Workout stores which exercises made a Record (`prs`), not which Set. `prs` names an exercise
-// when a Set beat its heaviest load logged (completeActiveSession), so the Set that earned it is
-// the first of the heaviest rows. Its index in the session's rows, or null when the Workout made
-// no Record for this exercise or the Mode is not reps.
 function recordIndexOf(workout, exId, rows, mode) {
   if (mode !== 'reps' || !workout?.prs?.includes?.(exId)) return null
   let at = null
@@ -314,16 +267,6 @@ function recordIndexOf(workout, exId, rows, mode) {
   return at
 }
 
-/**
- * Snapshot one exercise's progress curve.
- *
- * @param {Object} S - App state with workouts, unit, and effort setting.
- * @param {string} exId - Exercise id, resolved through the catalogue adapter.
- * @param {Object} opts - { now, catalogue? }. now is required.
- * @returns {Object|null} Display-ready exercise stats, or null for an unknown id.
- *   Estimated 1RM appears for reps mode only; effort averages use the profile
- *   display scale. Effort is null when no included session was rated.
- */
 export function selectExerciseStats(S, exId, opts = {}) {
   const now = requireNow('selectExerciseStats', opts?.now)
   const catalogue = resolveCatalogue(S, opts?.catalogue)

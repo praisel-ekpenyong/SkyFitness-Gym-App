@@ -26,7 +26,6 @@ describe('completeActiveSession routineSync integration', () => {
         unit: 'kg',
         cur: 0,
         entries: [
-          // Performed 4 sets instead of 3
           {
             id: '0025',
             sets: [
@@ -37,7 +36,6 @@ describe('completeActiveSession routineSync integration', () => {
             ],
             target: { sets: 3, reps: 5 },
           },
-          // Spontaneously added exercise
           {
             id: '0026',
             sets: [
@@ -177,17 +175,13 @@ describe('completeActiveSession routineSync integration', () => {
 describe('read-time unit normalization in active-finish (ADR 0019)', () => {
   it('stamps unit on mergeExWeight and respects monotonic max across units', () => {
     const S = { unit: 'kg', exWeights: {} }
-    // Record 100 kg
     expect(mergeExWeight(S, 'ex1', 100, '2026-11-08')).toBe(true)
     expect(S.exWeights.ex1).toEqual({ w: 100, d: '2026-11-08', unit: 'kg' })
 
-    // Switch profile to lb
     S.unit = 'lb'
-    // 210 lb is ~95.3 kg < 100 kg (220.5 lb) -> rejected
     expect(mergeExWeight(S, 'ex1', 210, '2026-11-09')).toBe(false)
     expect(S.exWeights.ex1.w).toBe(100)
 
-    // 230 lb is ~104.3 kg > 100 kg (220.5 lb) -> accepted
     expect(mergeExWeight(S, 'ex1', 230, '2026-11-09')).toBe(true)
     expect(S.exWeights.ex1).toEqual({ w: 230, d: '2026-11-09', unit: 'lb' })
   })
@@ -207,13 +201,9 @@ describe('read-time unit normalization in active-finish (ADR 0019)', () => {
       },
     }
 
-    // In kg:
-    // bench: 200 lb -> 90.7 kg
     expect(bestKnownWeight(S, 'bench')).toBe(90.7)
-    // squat: 300 lb -> 136.1 kg
     expect(bestKnownWeight(S, 'squat')).toBe(136.1)
 
-    // Switch to lb:
     S.unit = 'lb'
     expect(bestKnownWeight(S, 'bench')).toBe(200)
     expect(bestKnownWeight(S, 'squat')).toBe(300)

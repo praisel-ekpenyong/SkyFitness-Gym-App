@@ -12,7 +12,6 @@ import { exerciseDetailSheet, addToRoutineSheet, customExSheet } from '../sheets
 import Icon from '../components/Icon.jsx'
 import { Button, SearchField } from '../components/ui.jsx'
 
-/** Library route; searches the catalogue and opens detail or planning. */
 export default function Library() {
   const S = useStore(s => s.S)
   const update = useStore(s => s.update)
@@ -21,8 +20,6 @@ export default function Library() {
   const [eq, setEq] = useState('')
   const [shown, setShown] = useState(40)
   const favs = S.favorites || []
-  // If the user unstars their last favorite while on the Favorites filter,
-  // gracefully fall back to All ('') so they aren't trapped in an empty state.
   const activeFilter = (filter === 'favorites' && favs.length === 0) ? '' : filter
   const isFavFilter = activeFilter === 'favorites'
   const scope = useMemo(() => isFavFilter

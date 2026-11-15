@@ -1,6 +1,4 @@
 // @vitest-environment happy-dom
-// A build without bundled media (vite.config.js) points the primary URL at the CDN, so the
-// fallback is the same URL: one failure must be enough to show the dumbbell tile.
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'

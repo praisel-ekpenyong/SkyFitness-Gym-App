@@ -44,7 +44,6 @@ describe('ExerciseDetail sheet favorite starring', () => {
       root.render(<ExerciseDetail ex={sampleEx} close={vi.fn()} />)
     })
 
-    // Header title and star button
     const title = container.querySelector('h3')
     expect(title).toBeTruthy()
     expect(title.textContent).toBe('3/4 sit-up')
@@ -57,7 +56,6 @@ describe('ExerciseDetail sheet favorite starring', () => {
     expect(starBtn.querySelector('path').getAttribute('fill')).toBeNull()
     expect(useStore.getState().S.favorites).toEqual([])
 
-    // Click star button to add to favorites
     await act(async () => {
       starBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
@@ -67,7 +65,6 @@ describe('ExerciseDetail sheet favorite starring', () => {
     expect(starBtn.classList.contains('on-ss')).toBe(true)
     expect(starBtn.querySelector('svg.icn path').getAttribute('fill')).toBe('currentColor')
 
-    // Click star button again to remove from favorites
     await act(async () => {
       starBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
@@ -118,12 +115,10 @@ describe('deleteCustomEx cascading deletion', () => {
     const afterDelete = vi.fn()
     deleteCustomEx(customEx, afterDelete)
 
-    // A confirm dialog should have opened in useUI sheets
     const sheets = useUI.getState().sheets
     expect(sheets.length).toBe(1)
     expect(sheets[0].kind).toBe('center')
 
-    // Mount the confirm sheet dialog to trigger onConfirm
     const renderConfirm = sheets[0].render
     let confirmContainer = document.createElement('div')
     document.body.appendChild(confirmContainer)
@@ -141,7 +136,6 @@ describe('deleteCustomEx cascading deletion', () => {
       confirmBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
 
-    // Verify state after deletion
     const state = useStore.getState().S
     expect(state.customEx.find(e => e.id === 'c123')).toBeUndefined()
     expect(state.favorites).toEqual(['0001', '0002'])
@@ -172,15 +166,12 @@ describe('ExercisePicker favorites integration', () => {
     const chipButtons = Array.from(container.querySelectorAll('.chips button.chip'))
     expect(chipButtons.length).toBeGreaterThan(3)
 
-    // 1st: Favorites (2)
     expect(chipButtons[0].textContent).toContain('Favorites (2)')
     expect(chipButtons[0].querySelector('svg')).toBeTruthy()
 
-    // 2nd: Chosen (1)
     expect(chipButtons[1].textContent).toContain('Chosen (1)')
     expect(chipButtons[1].querySelector('svg')).toBeTruthy()
 
-    // 3rd: All
     expect(chipButtons[2].textContent).toBe('All')
   })
 
@@ -213,23 +204,19 @@ describe('ExercisePicker favorites integration', () => {
       root.render(<ExercisePicker onPick={onPick} close={vi.fn()} />)
     })
 
-    // Items in the list (skipping the "Create your own exercise" item at index 0)
     const exerciseItems = Array.from(container.querySelectorAll('.list .item')).slice(1)
     expect(exerciseItems.length).toBeGreaterThan(2)
 
-    // First exercise (0001 - 3/4 sit-up) should be starred
     const firstStarBtn = exerciseItems[0].querySelector('button.iconbtn')
     expect(firstStarBtn).toBeTruthy()
     expect(firstStarBtn.getAttribute('aria-label')).toBe('Remove from favorites')
     expect(firstStarBtn.classList.contains('on-ss')).toBe(true)
 
-    // Second exercise (0002 - 45° side bend) should NOT be starred
     const secondStarBtn = exerciseItems[1].querySelector('button.iconbtn')
     expect(secondStarBtn).toBeTruthy()
     expect(secondStarBtn.getAttribute('aria-label')).toBe('Add to favorites')
     expect(secondStarBtn.classList.contains('on-ss')).toBe(false)
 
-    // Click star button on second exercise to add it to favorites
     await act(async () => {
       secondStarBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
@@ -239,7 +226,6 @@ describe('ExercisePicker favorites integration', () => {
     expect(secondStarBtn.getAttribute('aria-label')).toBe('Remove from favorites')
     expect(secondStarBtn.classList.contains('on-ss')).toBe(true)
 
-    // Click star button on first exercise to remove it from favorites
     await act(async () => {
       firstStarBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
@@ -249,7 +235,6 @@ describe('ExercisePicker favorites integration', () => {
     expect(firstStarBtn.getAttribute('aria-label')).toBe('Add to favorites')
     expect(firstStarBtn.classList.contains('on-ss')).toBe(false)
 
-    // Clicking the item row outside the star button triggers onPick
     await act(async () => {
       exerciseItems[0].dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
@@ -274,7 +259,6 @@ describe('ExercisePicker favorites integration', () => {
       favChip.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
 
-    // Now unstar 0001 so favorites becomes empty while activeBp is favorites
     const starBtn = container.querySelector('.list .item button.iconbtn')
     expect(starBtn).toBeTruthy()
 
@@ -289,7 +273,6 @@ describe('ExercisePicker favorites integration', () => {
 
 })
 
-// The picker opens on what the lifter trains, as the Library does, not on "3/4 Sit-Up".
 describe('ExercisePicker own-first order', () => {
   it('sorts a favorite and a used exercise above "3/4 Sit-Up" when there is no search', async () => {
     useStore.getState().update(s => {
@@ -334,7 +317,6 @@ describe('ExercisePicker canonical muscle filtering and search', () => {
       root.render(<ExercisePicker onPick={vi.fn()} close={vi.fn()} />)
     })
 
-    // Filter by Triceps
     const tricepsChip = Array.from(container.querySelectorAll('.chips button.chip'))
       .find(b => b.textContent.trim() === 'Triceps')
     expect(tricepsChip).toBeTruthy()
@@ -344,11 +326,9 @@ describe('ExercisePicker canonical muscle filtering and search', () => {
     })
 
     const items = Array.from(container.querySelectorAll('.list .item'))
-    // Find bench press (which has chest as primary and triceps as secondary)
     const benchItem = items.find(it => it.textContent.toLowerCase().includes('bench press'))
     expect(benchItem).toBeTruthy()
 
-    // Bench press should display the secondary badge: "Secondary: Triceps"
     const secondaryBadge = benchItem.querySelector('.ss .tag')
     expect(secondaryBadge).toBeTruthy()
     expect(secondaryBadge.textContent).toContain('Secondary: Triceps')
@@ -369,7 +349,6 @@ describe('ExercisePicker canonical muscle filtering and search', () => {
     const items = Array.from(container.querySelectorAll('.list .item'))
     expect(items.length).toBeGreaterThan(5)
 
-    // Expand batch to surface compound movements ranked after direct title matches
     const showMore = Array.from(container.querySelectorAll('button')).find(b => b.textContent.includes('Show more'))
     if (showMore) {
       await act(async () => {
@@ -389,7 +368,6 @@ describe('ExercisePicker canonical muscle filtering and search', () => {
       root.render(<ExercisePicker onPick={vi.fn()} close={vi.fn()} />)
     })
 
-    // Filter by Cardio
     const cardioChip = Array.from(container.querySelectorAll('.chips button.chip'))
       .find(b => b.textContent.trim() === 'Cardio')
     expect(cardioChip).toBeTruthy()
@@ -402,7 +380,6 @@ describe('ExercisePicker canonical muscle filtering and search', () => {
     expect(items.length).toBeGreaterThan(0)
     expect(items.every(it => it.textContent.toLowerCase().includes('cardio'))).toBe(true)
 
-    // Filter by Chest
     const chestChip = Array.from(container.querySelectorAll('.chips button.chip'))
       .find(b => b.textContent.trim() === 'Chest')
     expect(chestChip).toBeTruthy()
@@ -411,7 +388,6 @@ describe('ExercisePicker canonical muscle filtering and search', () => {
       chestChip.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
 
-    // Filter by dumbbell equipment
     const eqChips = Array.from(container.querySelectorAll('.chips')[1].querySelectorAll('button.chip'))
     const dumbbellChip = eqChips.find(b => b.textContent.toLowerCase().includes('dumbbell'))
     expect(dumbbellChip).toBeTruthy()
@@ -429,7 +405,6 @@ describe('ExercisePicker canonical muscle filtering and search', () => {
 
 describe('ExerciseDetail primary and secondary muscle tags', () => {
   it('displays Primary and Secondary tags for compound movements', async () => {
-    // 0025: Barbell bench press (tg: 'pectorals', sm: ['shoulders', 'triceps'], eq: 'barbell')
     const benchEx = {
       id: '0025',
       n: 'barbell bench press',
@@ -446,7 +421,6 @@ describe('ExerciseDetail primary and secondary muscle tags', () => {
     const tags = Array.from(container.querySelectorAll('.row .tag'))
     const tagTexts = tags.map(t => t.textContent.trim())
 
-    // Primary tag should have class 'tag strong' with 'Primary: Chest'
     const primaryTag = tags.find(t => t.classList.contains('strong'))
     expect(primaryTag).toBeTruthy()
     expect(primaryTag.textContent).toContain('Primary: Chest')
@@ -587,7 +561,6 @@ describe('CustomExForm canonical muscle selection and editing', () => {
     const title = container.querySelector('h3')
     expect(title.textContent).toBe('Create your own exercise')
 
-    // Initially only 1 row of chips (primary), no secondary chips row
     expect(container.querySelectorAll('.chips').length).toBe(1)
 
     const primaryChipContainer = container.querySelectorAll('.chips')[0]
@@ -616,7 +589,6 @@ describe('CustomExForm canonical muscle selection and editing', () => {
       nameInput.dispatchEvent(new Event('input', { bubbles: true }))
     })
 
-    // Select Primary muscle: Biceps
     const primaryChips = Array.from(container.querySelectorAll('.chips')[0].querySelectorAll('button.chip'))
     const bicepsPrimary = primaryChips.find(c => c.textContent.trim() === 'Biceps')
     expect(bicepsPrimary).toBeTruthy()
@@ -626,14 +598,12 @@ describe('CustomExForm canonical muscle selection and editing', () => {
     })
     expect(bicepsPrimary.classList.contains('on')).toBe(true)
 
-    // Secondary chips row should now exist and NOT contain Biceps
     const chipRows = container.querySelectorAll('.chips')
     expect(chipRows.length).toBe(2)
     const secondaryChips = Array.from(chipRows[1].querySelectorAll('button.chip'))
     expect(secondaryChips.map(c => c.textContent.trim())).not.toContain('Biceps')
     expect(secondaryChips.length).toBe(18)
 
-    // Select Secondary muscles: Forearms and Upper back
     const forearmsSec = secondaryChips.find(c => c.textContent.trim() === 'Forearms')
     expect(forearmsSec).toBeTruthy()
     await act(async () => {
@@ -661,14 +631,13 @@ describe('CustomExForm canonical muscle selection and editing', () => {
       saveBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
 
-    // Assert custom exercise is created in store
     const state = useStore.getState().S
     expect(state.customEx.length).toBe(1)
     const created = state.customEx[0]
     expect(created.n).toBe('Incline Hammer Curl')
     expect(created.tg).toBe('biceps')
     expect(created.sm).toEqual(['forearm', 'upper-back'])
-    expect(created.bp).toBe('upper arms') // derived from biceps
+    expect(created.bp).toBe('upper arms')
     expect(created.desc).toBe('Strict form, palms facing each other')
     expect(created.eq).toBe('custom')
     expect(created.custom).toBe(true)
@@ -688,7 +657,6 @@ describe('CustomExForm canonical muscle selection and editing', () => {
       chestPrimary.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
 
-    // Select secondary: Shoulders and Triceps
     let secondaryChips = Array.from(container.querySelectorAll('.chips')[1].querySelectorAll('button.chip'))
     const shouldersSec = secondaryChips.find(c => c.textContent.trim() === 'Shoulders')
     await act(async () => {
@@ -701,13 +669,11 @@ describe('CustomExForm canonical muscle selection and editing', () => {
       tricepsSec.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
 
-    // Now change primary to Shoulders
     const shouldersPrimary = primaryChips().find(c => c.textContent.trim() === 'Shoulders')
     await act(async () => {
       shouldersPrimary.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
 
-    // Secondary row should now have Triceps selected, but not Shoulders
     secondaryChips = Array.from(container.querySelectorAll('.chips')[1].querySelectorAll('button.chip'))
     const tricepsSecAfter = secondaryChips.find(c => c.textContent.trim() === 'Triceps')
     expect(tricepsSecAfter?.classList.contains('on')).toBe(true)
@@ -733,18 +699,14 @@ describe('CustomExForm canonical muscle selection and editing', () => {
       tricepsSec.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
 
-    // Now select Cardio as primary
     const cardioPrimary = primaryChips().find(c => c.textContent.trim() === 'Cardio')
     await act(async () => {
       cardioPrimary.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
 
-    // Only 1 chips row should exist (primary), no secondary chips
     expect(container.querySelectorAll('.chips').length).toBe(1)
-    // Cardio helper text is visible
     expect(container.textContent).toContain('Cardio exercises log time and speed')
 
-    // Name and save
     const nameInput = container.querySelector('input.input')
     await act(async () => {
       const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set
@@ -789,24 +751,20 @@ describe('CustomExForm canonical muscle selection and editing', () => {
     expect(container.querySelector('input.input')?.value).toBe('My Custom Deadlift')
     expect(container.querySelector('textarea.input')?.value).toBe('Neutral grip handles')
 
-    // Primary 'Lower back' should be active
     const lowerBackPrimary = Array.from(container.querySelectorAll('.chips')[0].querySelectorAll('button.chip'))
       .find(c => c.textContent.trim() === 'Lower back')
     expect(lowerBackPrimary?.classList.contains('on')).toBe(true)
 
-    // Secondary 'Glutes' and 'Hamstrings' should be active
     const secChips = Array.from(container.querySelectorAll('.chips')[1].querySelectorAll('button.chip'))
     const glutesSec = secChips.find(c => c.textContent.trim() === 'Glutes')
     const hamstringsSec = secChips.find(c => c.textContent.trim() === 'Hamstrings')
     expect(glutesSec?.classList.contains('on')).toBe(true)
     expect(hamstringsSec?.classList.contains('on')).toBe(true)
 
-    // Toggle off Hamstrings
     await act(async () => {
       hamstringsSec.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
 
-    // Toggle on Quads
     const secChipsAfter = Array.from(container.querySelectorAll('.chips')[1].querySelectorAll('button.chip'))
     const quadsSec = secChipsAfter.find(c => c.textContent.trim() === 'Quads')
     await act(async () => {
@@ -843,12 +801,10 @@ describe('CustomExForm canonical muscle selection and editing', () => {
       root.render(<CustomExForm existing={legacyEx} onDone={vi.fn()} close={vi.fn()} />)
     })
 
-    // Chest primary chip should be selected via bodypart fallback
     const chestPrimary = Array.from(container.querySelectorAll('.chips')[0].querySelectorAll('button.chip'))
       .find(c => c.textContent.trim() === 'Chest')
     expect(chestPrimary?.classList.contains('on')).toBe(true)
 
-    // Secondary chips should all be unselected
     const secChips = Array.from(container.querySelectorAll('.chips')[1].querySelectorAll('button.chip'))
     expect(secChips.some(c => c.classList.contains('on'))).toBe(false)
   })
@@ -871,19 +827,16 @@ describe('CustomExForm canonical muscle selection and editing', () => {
       root.render(<CustomExForm existing={legacyLegEx} onDone={vi.fn()} close={vi.fn()} />)
     })
 
-    // Primary 'Quads' should be selected via bodypart fallback
     const quadsPrimary = Array.from(container.querySelectorAll('.chips')[0].querySelectorAll('button.chip'))
       .find(c => c.textContent.trim() === 'Quads')
     expect(quadsPrimary?.classList.contains('on')).toBe(true)
 
-    // Secondary 'Hamstrings' and 'Glutes' should be active via bodypart fallback
     const secChips = Array.from(container.querySelectorAll('.chips')[1].querySelectorAll('button.chip'))
     const hamstringsSec = secChips.find(c => c.textContent.trim() === 'Hamstrings')
     const glutesSec = secChips.find(c => c.textContent.trim() === 'Glutes')
     expect(hamstringsSec?.classList.contains('on')).toBe(true)
     expect(glutesSec?.classList.contains('on')).toBe(true)
 
-    // Modify secondaries: deselect Glutes, select Adductors
     await act(async () => {
       glutesSec.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
@@ -917,14 +870,12 @@ describe('CustomExForm canonical muscle selection and editing', () => {
     const nameInput = container.querySelector('input.input')
     const saveBtn = Array.from(container.querySelectorAll('button')).find(b => b.textContent.includes('Create exercise'))
 
-    // 1. Missing name
     await act(async () => {
       saveBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
     expect(useUI.getState().toastMsg).toBe('Give it a name')
     expect(useStore.getState().S.customEx.length).toBe(1)
 
-    // 2. Missing primary muscle
     await act(async () => {
       const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set
       nativeSetter.call(nameInput, 'New Move')
@@ -934,7 +885,6 @@ describe('CustomExForm canonical muscle selection and editing', () => {
     expect(useUI.getState().toastMsg).toBe('Pick a primary muscle')
     expect(useStore.getState().S.customEx.length).toBe(1)
 
-    // 3. Duplicate name
     const bicepsPrimary = Array.from(container.querySelectorAll('.chips')[0].querySelectorAll('button.chip'))
       .find(c => c.textContent.trim() === 'Biceps')
     await act(async () => {
@@ -980,7 +930,6 @@ describe('ExConfig and exConfigSheet onReplace support', () => {
     expect(replaceBtn).toBeTruthy()
     expect(replaceBtn.querySelector('svg.icn')).toBeTruthy()
 
-    // Clicking Replace exercise should close the sheet and call onReplace
     await act(async () => {
       replaceBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
@@ -1043,11 +992,9 @@ describe('ExConfig and exConfigSheet onReplace support', () => {
       )
     })
 
-    // The sets stepper input should be pre-seeded to 5
     const setsInput = container.querySelector('.cfgrow input')
     expect(setsInput.value).toBe('5')
 
-    // Click "Add to routine" or primary save button
     const saveBtn = container.querySelector('button.btn.primary')
     await act(async () => {
       saveBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
@@ -1055,7 +1002,7 @@ describe('ExConfig and exConfigSheet onReplace support', () => {
 
     expect(onSave).toHaveBeenCalledTimes(1)
     expect(savedConfig.sets).toBe(5)
-    expect(savedConfig.reps).toBe(10) // default reps for reps mode
+    expect(savedConfig.reps).toBe(10)
   })
 
   it('passes onReplace through exConfigSheet to ExConfig', async () => {
@@ -1065,7 +1012,6 @@ describe('ExConfig and exConfigSheet onReplace support', () => {
     const sheets = useUI.getState().sheets
     expect(sheets.length).toBe(1)
 
-    // Mount sheet render
     await act(async () => {
       root.render(sheets[0].render(() => useUI.getState().closeSheet(sheets[0].id)))
     })
@@ -1290,7 +1236,6 @@ describe('ExConfig notes and cues', () => {
       )
     })
 
-    // Switch to Time mode
     const segButtons = Array.from(container.querySelectorAll('[role="radio"]'))
     const timeBtn = segButtons.find(b => b.textContent.includes('Time'))
     await act(async () => {

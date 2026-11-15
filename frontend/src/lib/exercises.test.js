@@ -89,17 +89,17 @@ describe('exercise dataset integrity and helpers', () => {
     expect(sm).toContain('rear deltoids')
     expect(row.sm).toContain('rear deltoids')
     const raw = EXDB.find(e => e.id === '0027')
-    expect(raw.sm).not.toContain('rear deltoids') // pristine dataset untouched
+    expect(raw.sm).not.toContain('rear deltoids')
   })
 
   it('applies primary muscle and secondary additions through CATALOGUE_CURATIONS without mutating EXDB', () => {
     expect(CATALOGUE_CURATIONS).toBeDefined()
 
     const hingeCuratedIds = [
-      '0085', '1459', // Romanian Deadlifts
-      '0432', '0434', '1009', '1023', // Stiff / Straight Leg Deadlifts
-      '1756', '1757', '2805', // Single Leg Deadlifts
-      '0115', // Stiff Leg Good Morning
+      '0085', '1459',
+      '0432', '0434', '1009', '1023',
+      '1756', '1757', '2805',
+      '0115',
     ]
 
     for (const id of hingeCuratedIds) {
@@ -109,7 +109,7 @@ describe('exercise dataset integrity and helpers', () => {
       expect(indexed.sm).toContain('glutes')
 
       const raw = EXDB.find(e => e.id === id)
-      expect(raw.tg).toBe('glutes') // raw remains glutes
+      expect(raw.tg).toBe('glutes')
       expect(raw.sm).not.toContain('glutes')
 
       const secondaries = smOf(indexed)
@@ -117,11 +117,9 @@ describe('exercise dataset integrity and helpers', () => {
       expect(secondaries).toContain('lower back')
     }
 
-    // Barbell SLDL (0116) was already hamstrings in EXDB and harmonizes
     expect(EXIDX['0116'].tg).toBe('hamstrings')
     expect(smOf(EXIDX['0116'])).toContain('glutes')
 
-    // Rear delts for row variations
     for (const id of ['0027', '0293', '0499', '0861']) {
       expect(EXIDX[id].sm).toContain('rear deltoids')
       expect(smOf(EXIDX[id])).toContain('rear deltoids')
@@ -143,7 +141,6 @@ describe('exercise dataset integrity and helpers', () => {
     expect(all[0]).toEqual(custom[0])
     expect(all).toHaveLength(1325)
 
-    // Clear custom exercises
     registerCustom([])
     expect(EXIDX['custom-1']).toBeUndefined()
   })
@@ -153,7 +150,7 @@ describe('exercise dataset integrity and helpers', () => {
     expect(isBodyweightEq(situp)).toBe(true)
     expect(isBodyweightEq(situp.id)).toBe(true)
 
-    const cardioEx = EXIDX['3220'] // astride jumps (cardio)
+    const cardioEx = EXIDX['3220']
     expect(isCardio(cardioEx)).toBe(true)
     expect(isCardio(cardioEx.id)).toBe(true)
     expect(isCardio({ id: 'c-cardio', tg: 'cardio' })).toBe(true)

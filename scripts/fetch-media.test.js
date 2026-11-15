@@ -13,12 +13,12 @@ import {
 function buildTarHeader(name, size, typeflag = '0', prefix = '') {
   const buf = Buffer.alloc(512, 0)
   buf.write(name, 0, 100, 'utf8')
-  buf.write('0000644\0', 100, 8, 'utf8') // mode
-  buf.write('0001750\0', 108, 8, 'utf8') // uid
-  buf.write('0001750\0', 116, 8, 'utf8') // gid
-  buf.write(size.toString(8).padStart(11, '0') + '\0', 124, 12, 'utf8') // size
-  buf.write('14000000000\0', 136, 12, 'utf8') // mtime
-  buf.write('        ', 148, 8, 'utf8') // checksum placeholder
+  buf.write('0000644\0', 100, 8, 'utf8')
+  buf.write('0001750\0', 108, 8, 'utf8')
+  buf.write('0001750\0', 116, 8, 'utf8')
+  buf.write(size.toString(8).padStart(11, '0') + '\0', 124, 12, 'utf8')
+  buf.write('14000000000\0', 136, 12, 'utf8')
+  buf.write('        ', 148, 8, 'utf8')
   buf.write(typeflag, 156, 1, 'utf8')
   buf.write('ustar\0', 257, 6, 'utf8')
   buf.write('00', 263, 2, 'utf8')
@@ -26,7 +26,6 @@ function buildTarHeader(name, size, typeflag = '0', prefix = '') {
     buf.write(prefix, 345, 155, 'utf8')
   }
 
-  // Calculate simple tar checksum
   let sum = 0
   for (let i = 0; i < 512; i++) {
     sum += buf[i]
@@ -49,7 +48,6 @@ function buildTarArchive(entries) {
       }
     }
   }
-  // 2 blocks of 512 zero bytes for EOF
   chunks.push(Buffer.alloc(1024, 0))
   return Buffer.concat(chunks)
 }

@@ -1,6 +1,3 @@
-// Verifies the landing motion layer under an emulated no-preference setting.
-// Same counting method as inspect.mjs (animationstart/transitionrun/getAnimations),
-// but with prefers-reduced-motion forced to no-preference, i.e. what real users get.
 import { Browser, sleep } from 'file:///C:/Users/USER/.agents/skills/design-taste-frontend/scripts/lib/cdp.mjs';
 import { fileURLToPath } from 'node:url';
 

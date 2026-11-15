@@ -89,13 +89,9 @@ describe('units module', () => {
     })
 
     it('follows unit cascade: set > entry > workout > targetUnit', () => {
-      // Set unit wins over entry and workout
       expect(resolveSetWeight({ w: 100, unit: 'lb' }, { unit: 'kg' }, { unit: 'kg' }, 'kg')).toBe(45.4)
-      // Entry unit wins over workout and target
       expect(resolveSetWeight({ w: 100 }, { unit: 'lb' }, { unit: 'kg' }, 'kg')).toBe(45.4)
-      // Workout unit wins over target
       expect(resolveSetWeight({ w: 100 }, {}, { unit: 'lb' }, 'kg')).toBe(45.4)
-      // Fallback to targetUnit
       expect(resolveSetWeight({ w: 100 }, null, null, 'kg')).toBe(100)
     })
 

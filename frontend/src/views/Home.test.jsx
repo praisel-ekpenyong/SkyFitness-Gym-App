@@ -55,7 +55,6 @@ describe('Home hero routine exercise count binding (05)', () => {
     expect(src).toContain("t(\"Today's routine\")")
     expect(src).not.toContain('routine.exercises')
     expect(src).toContain("from '../lib/format.js'")
-    // exCount must be imported alongside fmtNum etc
     expect(src).toMatch(/import\s+\{[^}]*exCount[^}]*\}\s+from\s+['"]\.\.\/lib\/format\.js['"]/)
   })
 
@@ -97,7 +96,6 @@ describe('Home hero routine exercise count binding (05)', () => {
 
     const meta = container.querySelector('.home-hero-meta')
     expect(meta.textContent).toContain('1 exercise')
-    // ensure not pluralized incorrectly
     expect(meta.textContent).not.toMatch(/1 exercises/)
   })
 
@@ -218,7 +216,6 @@ describe('Home declarative weekly progress card (non-gamified PRODUCT.md voice)'
     expect(card.textContent).toContain('View calendar')
     expect(card.textContent.toLowerCase()).not.toContain('streak')
     expect(container.textContent.toLowerCase()).not.toContain('week streak')
-    // No flame icon path present
     expect(container.querySelector('svg.icn path[d*="M12 20.4c3.2 0 5.4-2.1"]')).toBeNull()
   })
 
@@ -257,8 +254,6 @@ describe('Home declarative weekly progress card (non-gamified PRODUCT.md voice)'
 })
 
 describe('Home header', () => {
-  // Sky has no accounts: the name is a greeting, edited in Settings. A chip beside it only
-  // repeated the name and implied a profile switcher.
   it('says the name once and keeps only the settings key', async () => {
     useStore.getState().update(s => { s.displayName = 'Sam'; s.routines = []; s.workouts = []; s.active = null })
 
@@ -282,10 +277,6 @@ describe('Home header', () => {
   })
 })
 
-// A name breaks at spaces only. Widths below were measured in the built app (Archivo,
-// display role, em per glyph) against the hero text column at 360 wide (148px beside the map, 296px
-// across the card): a word that cannot fit beside the map at the 28px step moves the map below.
-// `stacked` lists the layouts that stack (lib/name-fit.test.js covers tablet and desktop).
 describe('Home hero long Routine names', () => {
   async function heroFor(name) {
     const wd = weekdayFromISO(todayISO())
@@ -306,25 +297,20 @@ describe('Home hero long Routine names', () => {
   }
 
   it('keeps "Push Day" on the poster step beside the map', async () => {
-    // PUSH is 1.93em: 108px at 56px
     expect(await heroFor('Push Day')).toEqual({ step: 'poster', stacked: [], text: 'Push Day' })
   })
 
   it('steps a ten-letter word down to the 28px heading step before it would break', async () => {
-    // HAMSTRINGS is 4.95em: 168px at 34px (too wide), 138px at 28px
     const fit = await heroFor('Hamstrings')
     expect(fit.step).toBe('xxs')
     expect(fit.stacked).not.toContain('phone')
   })
 
   it('moves the map below a word no step can fit beside it', async () => {
-    // HYPERTROPHY is 5.49em: 154px even at 28px; across the card it fits at 44px (242px). A tablet's
-    // 312px column holds it beside the map.
     expect(await heroFor('Upper Body Hypertrophy')).toEqual({ step: 's', stacked: ['phone', 'desktop'], text: 'Upper Body Hypertrophy' })
   })
 
   it('treats a hyphenated word as one word', async () => {
-    // POSTERIOR-CHAIN is 6.83em: 300px at 44px is too wide for 296px; 232px at 34px
     expect(await heroFor('Posterior-chain Conditioning')).toMatchObject({ step: 'xs', stacked: ['phone', 'desktop'] })
   })
 })

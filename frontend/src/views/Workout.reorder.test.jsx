@@ -18,7 +18,6 @@ globalThis.IS_REACT_ACT_ENVIRONMENT = true
 
 let view
 
-// Exercise-level edits live in the Edit workout sheet; open it before looking for one.
 function inEditSheet(label, exact = false) {
   const find = () => [...document.querySelectorAll('button')].find(b => exact ? b.textContent.trim() === label : b.textContent.trim().includes(label))
   if (!find()) {
@@ -100,25 +99,21 @@ describe('Workout exercise reorder sheet interaction', () => {
     expect(items[0].textContent).toContain('1/1 sets')
     expect(items[1].textContent).toContain('0/1 sets')
 
-    // Boundary check on first item: move up is disabled, move down is enabled
     const item0Up = items[0].querySelector('button[aria-label*="up"]')
     const item0Down = items[0].querySelector('button[aria-label*="down"]')
     expect(item0Up.disabled).toBe(true)
     expect(item0Down.disabled).toBe(false)
 
-    // Boundary check on last item: move up is enabled, move down is disabled
     const item2Up = items[2].querySelector('button[aria-label*="up"]')
     const item2Down = items[2].querySelector('button[aria-label*="down"]')
     expect(item2Up.disabled).toBe(false)
     expect(item2Down.disabled).toBe(true)
 
-    // Move index 0 down -> swaps 0025 and 0043
     click(item0Down)
 
     const updatedEntries = useStore.getState().S.active.entries.map(e => e.id)
     expect(updatedEntries).toEqual(['0043', '0025', '0116'])
 
-    // React should re-render the list items in the sheet
     const updatedItems = [...document.querySelectorAll('.list .item')]
     const updatedItem0Up = updatedItems[0].querySelector('button[aria-label*="up"]')
     expect(updatedItem0Up.disabled).toBe(true)
@@ -136,13 +131,10 @@ describe('Workout exercise reorder sheet interaction', () => {
     click(reorderButton())
     const items = [...document.querySelectorAll('.list .item')]
 
-    // Click the row of the 3rd exercise (index 2)
     click(items[2])
 
-    // Cursor jumped to index 2
     expect(useStore.getState().S.active.cur).toBe(2)
 
-    // Sheet is closed
     expect(useUI.getState().sheets).toHaveLength(0)
   })
 

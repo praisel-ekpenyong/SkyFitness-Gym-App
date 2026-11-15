@@ -18,24 +18,19 @@ describe('foreign exercise names resolve to the catalogue', () => {
   for (const [name, id] of Object.entries(MAPS)) {
     it(`maps "${name}" to ${id}`, () => {
       expect(matchExercise(name)).toBe(id)
-      expect(EXIDX[id]).toBeTruthy()   // an alias pointing at a dropped id is worse than no alias
+      expect(EXIDX[id]).toBeTruthy()
     })
   }
 
-  // Equipment qualifiers must still beat the bare alias, or an import files years of
-  // dumbbell work under the barbell lift.
   it('keeps the qualified variants distinct', () => {
     expect(matchExercise('Kettlebell Goblet Squat')).toBe('0534')
     expect(matchExercise('Dumbbell Goblet Squat')).toBe('1760')
   })
 
-  // The word-bag is order-insensitive, which is what lets one alias cover the two ways
-  // exporters write the same movement.
   it('ignores word order and case', () => {
     expect(matchExercise('Squat (Barbell)')).toBe(matchExercise('Barbell Squat'))
   })
 
-  // Regression guard for the aliases added above: the common lifts must not have moved.
   it('leaves the established aliases alone', () => {
     expect(matchExercise('Bench Press')).toBe('0025')
     expect(matchExercise('Squat')).toBe('0043')

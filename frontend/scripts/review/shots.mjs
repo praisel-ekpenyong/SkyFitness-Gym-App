@@ -1,6 +1,3 @@
-// Screenshot scenes of the built app, on the demo profile, with the clock frozen.
-// usage: node shots.mjs [--vp=phone|small|tablet|desktop] [--scenes=home,plan,...] [--theme=] [--accent=] [--effort=]
-//        [--out=dir] [--seed=file.json] [--today=YYYY-MM-DD] [--base=url] [--settle=ms]
 import { mkdirSync, readFileSync } from 'node:fs'
 import { buildSeed, config, freezeClock, launch, parseArgs, seedStorage } from './lib.mjs'
 const { flags: args } = parseArgs()
@@ -17,7 +14,7 @@ const b = await launch(args)
 const errors=[]
 async function ctx(state,{noart=false}={}){
   const {width,height,...rest}=VP[vpName]; const c = await b.newContext({ viewport:{width,height}, ...rest, reducedMotion:'reduce', serviceWorkers:'block', timezoneId:'UTC' })
-  if (noart) await c.route(/\.(gif|png|jpe?g|webp)(\?|$)/i, r=>r.abort())   // no signal: every exercise image fails
+  if (noart) await c.route(/\.(gif|png|jpe?g|webp)(\?|$)/i, r=>r.abort())
   await seedStorage(c, state)
   await freezeClock(c, cfg.today)
   const p = await c.newPage()
@@ -77,7 +74,6 @@ const scenes = {
     await p.goto(base+'#/home'); await p.waitForTimeout(700); await snap(p,'home-active',false)
     await p.goto(base+'#/workout'); await p.waitForTimeout(600); await p.locator('button[aria-label="Finish"]').click(); await p.waitForTimeout(400); await snap(p,'finish-confirm',false)
     await p.locator('[role=alertdialog] button').filter({hasText:/Finish/}).first().click(); await p.waitForTimeout(900); await snap(p,'finish',false); await snap(p,'finish-full'); await p.locator('.finish-cta button').click(); await p.waitForTimeout(700); await snap(p,'home-done',false); await c.close() },
-  // The widest Finish figures a real session makes: over two hours and a five-figure volume, every set logged.
   async finishlong(){ const {c,p}=await ctx(seed); await go(p,'/home',800)
     await clickT(p,/Start workout/); await p.waitForTimeout(300); await clickT(p,/Save (&|and) start workout/); await p.waitForTimeout(800)
     await p.evaluate(()=>{ const s=JSON.parse(localStorage.getItem('gym_state_v1')); s.active.start-=(2*60+25)*60000

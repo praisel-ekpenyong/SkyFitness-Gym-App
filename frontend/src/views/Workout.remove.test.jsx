@@ -19,7 +19,6 @@ globalThis.IS_REACT_ACT_ENVIRONMENT = true
 
 let view
 
-// Exercise-level edits live in the Edit workout sheet; open it before looking for one.
 function inEditSheet(label, exact = false) {
   const find = () => [...document.querySelectorAll('button')].find(b => exact ? b.textContent.trim() === label : b.textContent.trim().includes(label))
   if (!find()) {
@@ -81,9 +80,6 @@ describe('active-session exercise removal', () => {
   })
 })
 
-// Sky ships English only (ticket 05-english-only): the locale packs are deleted, so the prompts
-// above render through t()'s English fallback. This replaces the old assertion that the five
-// strings existed in all eleven packs — it still pins them to the file that renders them.
 describe('remove-exercise prompt strings', () => {
   const required = [
     'Remove {0}?',
@@ -98,7 +94,6 @@ describe('remove-exercise prompt strings', () => {
     expect(Object.keys(strings)).toHaveLength(1)
     const src = Object.values(strings)[0]
     required.forEach(key => {
-      // Quote-style agnostic: matches 'key', "key" or `key`, so reformatting doesn't break it.
       const esc = key.replace(/[{}?]/g, '\\$&')
       expect(src).toMatch(new RegExp(`['"\`]${esc}['"\`]`))
     })
@@ -119,7 +114,6 @@ describe('remove-exercise edge cases', () => {
     act(() => { removeActiveExercise(1) })
     const A = useStore.getState().S.active
     expect(A.entries.map(e => e.id)).toEqual(['a', 'c'])
-    // A superset of one is not a superset.
     expect(A.entries[0].sg).toBeUndefined()
   })
 

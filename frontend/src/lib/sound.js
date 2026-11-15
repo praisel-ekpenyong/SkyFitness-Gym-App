@@ -1,10 +1,5 @@
-// WebAudio beeps + haptics (ported from the vanilla app). `enabled` gates sound.
 let audioCtx = null
 
-/**
- * Returns the shared WebAudio context for timer and set cues, resuming it when suspended.
- * @returns {AudioContext|null} Shared context, or null outside a browser or without WebAudio support.
- */
 function getAudioContext() {
   if (typeof window === 'undefined') return null
   const AudioContextClass = window.AudioContext || window.webkitAudioContext
@@ -43,7 +38,7 @@ export function beep(enabled, freq, dur, when) {
     g.gain.exponentialRampToValueAtTime(0.001, t0 + (dur || 0.18))
     o.start(t0)
     o.stop(t0 + (dur || 0.18) + 0.05)
-  } catch (e) { /* best-effort: a failed beep must never break a set tick */ }
+  } catch (e) {  }
 }
 
 /**
@@ -56,21 +51,18 @@ export function vibrate(p) {
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
       navigator.vibrate(p)
     }
-  } catch (e) { /* haptics are best-effort too */ }
+  } catch (e) {  }
 }
 
-/** Play short acoustic & haptic confirmation when checking off a set. */
 export function playSetComplete(enabled) {
   beep(enabled, 1040, 0.12)
   vibrate(30)
 }
 
-/** Play countdown warning tone (3s / 2s / 1s remaining). */
 export function playTimerWarning(enabled) {
   beep(enabled, 660, 0.1)
 }
 
-/** Play countdown finish fanfare (880Hz -> 880Hz -> 1320Hz) + triple vibration pulse. */
 export function playTimerComplete(enabled) {
   beep(enabled, 880, 0.15)
   beep(enabled, 880, 0.15, 0.25)
@@ -78,14 +70,12 @@ export function playTimerComplete(enabled) {
   vibrate([200, 100, 200])
 }
 
-/** Play celebratory chime upon completing the entire workout session. */
 export function playWorkoutComplete(enabled) {
   beep(enabled, 880, 0.15)
   beep(enabled, 1100, 0.15, 0.18)
   beep(enabled, 1320, 0.3, 0.36)
 }
 
-/** Internal helper for test resetting */
 export function _resetAudioContext() {
   audioCtx = null
 }
