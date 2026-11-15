@@ -122,9 +122,10 @@ preferences are respected.
 
 ## Evidence on hand
 
-- **Screenshots:** `assets/screenshots/` holds five mobile screens dated
-  2026-09-24. They predate the Iron rebuild (2026-11-09) and show the old
-  interface, so they cannot stand in for the current look until retaken.
+- **Screenshots:** `assets/screenshots/` holds five mobile screens of the
+  Iron interface (home, plan, workout, stats muscle map, exercise library),
+  retaken 2026-11-15 from the review harness: dark theme, demo profile, phone
+  viewport at 3x. The data is the seeded demo, not a real log.
 - **Photos:** gym photos in `assets/`, with creators and licences in
   `assets/credits.json`.
 - **Absent:** the repo holds no testimonials, user counts, reviews, press or
