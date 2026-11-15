@@ -180,7 +180,7 @@
 .sld.dragging .sld-knob { transform: translateX(-50%) scaleY(1.12) }
 
 /* ------------------------------------------------------------------ check -- */
-.chk, .ck {
+.chk {
   width: var(--tap-target); height: var(--tap-target); min-width: var(--tap-target); min-height: var(--tap-target);
   border-radius: var(--r-2); flex: none; display: flex; align-items: center; justify-content: center; gap: 8px;
   background: var(--surface-2); color: var(--label-3);
@@ -188,7 +188,5 @@
 }
 .chk .icn { font-size: var(--fs-lead); --icon-stroke: 2.4 }
 @keyframes checkpop { 0% { transform: scale(.9) } 60% { transform: scale(1.04) } 100% { transform: scale(1) } }
-.chk.on, .ck.on { background: var(--acc); color: var(--on-acc); animation: checkpop var(--med) var(--ease) }
-.chk:active, .ck:active { transform: scale(.94) }
-.ck svg { width: 18px; height: 18px; stroke: transparent; fill: none; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round }
-.ck.on svg { stroke: var(--on-acc) }
+.chk.on { background: var(--acc); color: var(--on-acc); animation: checkpop var(--med) var(--ease) }
+.chk:active { transform: scale(.94) }
