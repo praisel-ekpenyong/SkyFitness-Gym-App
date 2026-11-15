@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { parseWorkoutCSV } from './import-csv.js'
 import { setLabel } from './format.js'
 import { effortOf } from './effort.js'
+import { admit } from './log/admit.js'
 
 const HEVY = 'title,start_time,end_time,exercise_title,set_index,set_type,weight_kg,reps,rpe'
 const STRONG = 'Date,Workout Name,Exercise Name,Set Order,Weight,Reps,Seconds,RPE'
@@ -131,7 +132,7 @@ describe('effort in a backup', () => {
   })
 
   it('restores a backup written before the setting existed', () => {
-    expect(effortOf(roundTrip({ showRir: true, workouts: [], routines: [] }))).toBe('rir')
-    expect(effortOf(roundTrip({ workouts: [], routines: [] }))).toBe('none')
+    expect(effortOf(admit({ showRir: true, workouts: [], routines: [] }))).toBe('rir')
+    expect(effortOf(admit({ workouts: [], routines: [] }))).toBe('none')
   })
 })

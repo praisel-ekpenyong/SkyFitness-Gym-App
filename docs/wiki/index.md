@@ -26,6 +26,7 @@ commit they were true at; superseded claims are marked, not erased.
 ## Operations
 
 - [Deployments and hosting](deployment.md) — Netlify edge policies, release verification gates, and deployment history.
+- [Iron launch](iron-launch.md) — what of the launch queue was already merged by 2026-11-15, and what was still open.
 
 ## Reviews
 
