@@ -68,6 +68,6 @@ button, .chip, .tile, .item, .wday, .cal-d, .swatch, .hm-c, .lrow, .seg button, 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important }
   .sheet, .center, .fullsheet, #timer, #app.vfade { animation: fadein var(--fast) linear !important }
-  .chk.on, .lad-dot { animation: none !important }
+  .chk.on, .home-badge-dot { animation: none !important }   /* the in-progress dot holds still: no motion runs on its own */
   .sld-knob, .seg-sel, .sw .knob { transition: none !important }
 }

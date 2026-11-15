@@ -68,9 +68,9 @@ function Elapsed({ start }) {
 // The set ladder is the whole point of the app, so its layout follows how it is used: the set in
 // front of you is one large console (big figure over two big keys, the bar drawn, one key to log
 // it) and every other set is a single readable line, still typeable, one tap from opening up.
-// `aside` is a key the session hands the first block on the screen (the manual Rest key) to sit at
+// `restKey` is the manual Rest key, which the session hands the first block on the screen to sit at
 // the end of its tools row.
-function ExerciseBlock({ entryIdx, compact, isCurrent = true, arrived = false, aside = null, onToggle, onField, onAddSet, onRemoveSet, onAddWarmup, onRemoveSetAt, onStartTimed, onReplace }) {
+function ExerciseBlock({ entryIdx, compact, isCurrent = true, arrived = false, restKey = null, onToggle, onField, onAddSet, onRemoveSet, onAddWarmup, onRemoveSetAt, onStartTimed, onReplace }) {
   const S = useStore(s => s.S)
   const working = useUI(s => s.work)
   const holding = useUI(s => !!s.work)
@@ -185,7 +185,7 @@ function ExerciseBlock({ entryIdx, compact, isCurrent = true, arrived = false, a
         )}
         <Button size="xs" icon="shuffle" aria-label={t('Replace exercise')} disabled={holding} onClick={() => onReplace(entryIdx)}>{t('Replace')}</Button>
         <Button size="xs" icon="info" aria-label={t('Details')} onClick={() => exerciseDetailSheet(ex)}>{t('Details')}</Button>
-        {aside}
+        {restKey}
       </div>
     </div>
     {last && <div className="small dim ex-last">{t('Last time')} {fmtDate(last.d)} · {last.sets.map(s => setLabel(entry.id, s, last.target)).join(', ')}</div>}
@@ -527,8 +527,10 @@ function ActiveWorkout() {
   // did not happen. Disabled — never hidden — while either countdown runs, so the key keeps its
   // place and a tap can never restart or shadow the active timer. Where you are in the session is
   // the segments' job and the header's count, so the key sits with the first exercise's tools.
-  const restKey = <Button size="xs" icon="timer" className="ex-rest" disabled={resting || holding} onClick={() => startRest(S.restSec)}>
-    {t('Rest {0}', fmtSec(S.restSec))}
+  // The timer and the duration, named "Rest 1:30" for a screen reader: the word is left off the key so
+  // the tools row stays one line at 360px.
+  const restKey = <Button size="xs" icon="timer" className="ex-rest" aria-label={t('Rest {0}', fmtSec(S.restSec))} disabled={resting || holding} onClick={() => startRest(S.restSec)}>
+    {fmtSec(S.restSec)}
   </Button>
 
   const discard = () => confirmSheet({ title: t('Discard workout?'), message: t('The sets you logged in this session will be lost.'), confirmText: t('Discard'), danger: true, onConfirm: () => { useStore.getState().discardSession(); stopRest(); nav('/home') } })
@@ -537,8 +539,9 @@ function ActiveWorkout() {
     <header className="hdr wk-hdr">
       <button className="iconbtn bare wk-min" aria-label={t('Minimize workout')} onClick={() => nav('/home')}><Icon name="chevronDown" /></button>
       <div className="wk-title"><h1>{A.name}</h1><div className="sub"><Elapsed start={A.start} /> · {t('{0} sets', prog.done + '/' + prog.total)}</div></div>
-      {/* The one Finish key. Once every work set is in it is the action left to do, so it takes the colour. */}
-      <button className={'btn sm wk-finish ' + (prog.allDone ? 'go' : 'plain')} aria-label={t('Finish')} onClick={finishWorkout}>{t('Finish')}</button>
+      {/* The one Finish key. Once every work set is in it is the action left to do, so it takes the
+          accent (.done): a colour state on the header key, which keeps its size and words. */}
+      <button className={'btn sm wk-finish ' + (prog.allDone ? 'done' : 'plain')} aria-label={t('Finish')} onClick={finishWorkout}>{t('Finish')}</button>
       {/* One segment per exercise, filling as its work sets are logged: where you are in the
           session at a glance, and a one-thumb jump to anywhere in it. */}
       {units.length > 0 && <div className="lad" role="group" aria-label={t('Exercises in this workout')}>
@@ -563,13 +566,13 @@ function ActiveWorkout() {
           </div>
           {unit.map((idx, k) => <div key={idx} ref={el => { exRefs.current[idx] = el }} className="ss-ex" data-exidx={idx}>
             {k > 0 && <div className="ss-amp"><Icon name="plus" /></div>}
-            <ExerciseBlock entryIdx={idx} compact isCurrent={idx === cur} aside={k === 0 ? restKey : null}
+            <ExerciseBlock entryIdx={idx} compact isCurrent={idx === cur} restKey={k === 0 ? restKey : null}
               onToggle={i => toggle(idx, i)} onField={(i, f, v) => setField(idx, i, f, v)} onAddSet={() => addSet(idx)} onRemoveSet={() => removeSet(idx)} onAddWarmup={() => addWarmup(idx)} onRemoveSetAt={i => removeSetAt(idx, i)} onStartTimed={i => startTimed(idx, i)}
               onReplace={replaceActiveExerciseFlow} />
           </div>)}
         </div>
       ) : (
-        <ExerciseBlock entryIdx={cur} arrived={shown.moved} aside={restKey} onToggle={i => toggle(cur, i)} onField={(i, f, v) => setField(cur, i, f, v)} onAddSet={() => addSet(cur)} onRemoveSet={() => removeSet(cur)} onAddWarmup={() => addWarmup(cur)} onRemoveSetAt={i => removeSetAt(cur, i)} onStartTimed={i => startTimed(cur, i)}
+        <ExerciseBlock entryIdx={cur} arrived={shown.moved} restKey={restKey} onToggle={i => toggle(cur, i)} onField={(i, f, v) => setField(cur, i, f, v)} onAddSet={() => addSet(cur)} onRemoveSet={() => removeSet(cur)} onAddWarmup={() => addWarmup(cur)} onRemoveSetAt={i => removeSetAt(cur, i)} onStartTimed={i => startTimed(cur, i)}
           onReplace={replaceActiveExerciseFlow} />
       )}
       {nextIdx != null && <button className="btn primary wk-next" onClick={() => useStore.getState().setActiveIndex(nextIdx)}>

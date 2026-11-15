@@ -76,6 +76,16 @@ const scenes = {
     await p.goto(base+'#/home'); await p.waitForTimeout(700); await snap(p,'home-active',false)
     await p.goto(base+'#/workout'); await p.waitForTimeout(600); await p.locator('button[aria-label="Finish"]').click(); await p.waitForTimeout(400); await snap(p,'finish-confirm',false)
     await p.locator('[role=alertdialog] button').filter({hasText:/Finish/}).first().click(); await p.waitForTimeout(900); await snap(p,'finish',false); await snap(p,'finish-full'); await p.locator('.finish-cta button').click(); await p.waitForTimeout(700); await snap(p,'home-done',false); await c.close() },
+  // The widest Finish figures a real session makes: over two hours and a five-figure volume, every set logged.
+  async finishlong(){ const {c,p}=await ctx(seed); await go(p,'/home',800)
+    await clickT(p,/Start workout/); await p.waitForTimeout(300); await clickT(p,/Save (&|and) start workout/); await p.waitForTimeout(800)
+    await p.evaluate(()=>{ const s=JSON.parse(localStorage.getItem('gym_state_v1')); s.active.start-=(2*60+25)*60000
+      for (const e of s.active.entries) for (const x of e.sets) { x.w=140; x.r=12; x.done=true }
+      localStorage.setItem('gym_state_v1',JSON.stringify(s)) })
+    await p.reload(); await p.waitForTimeout(900); await snap(p,'finishlong-workout',false)
+    await p.locator('button[aria-label="Finish"]').click(); await p.waitForTimeout(400)
+    const confirm=p.locator('[role=alertdialog] button').filter({hasText:/Finish/}); if (await confirm.count()) await confirm.first().click()
+    await p.waitForTimeout(900); await p.evaluate(()=>document.querySelector('.finish-title')?.scrollIntoView({block:'start'})); await snap(p,'finishlong',false); await c.close() },
 }
 for (const [k,f] of Object.entries(scenes)) { if (only && !only.includes(k)) continue; console.log(k); try { await f() } catch(e){ console.log('  SCENE FAILED',k,String(e).slice(0,300)); errors.push(`${k}: ${String(e).slice(0,300)}`) } }
 await b.close()
