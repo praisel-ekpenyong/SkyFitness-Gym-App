@@ -289,6 +289,23 @@ describe('ExercisePicker favorites integration', () => {
 
 })
 
+// E18: the picker opens on what the lifter trains, as the Library does, not on "3/4 Sit-Up".
+describe('ExercisePicker own-first order', () => {
+  it('sorts a favorite and a used exercise above "3/4 Sit-Up" when there is no search', async () => {
+    useStore.getState().update(s => {
+      s.favorites = ['0025']
+      s.workouts = [{ id: 'w1', d: '2026-03-01', start: 1, end: 2, entries: [{ id: '0047', sets: [{ w: 0, r: 10, done: true }] }] }]
+    })
+    await act(async () => { root.render(<ExercisePicker onPick={vi.fn()} close={vi.fn()} />) })
+
+    const names = [...container.querySelectorAll('.list .item[aria-label]')].map(el => el.getAttribute('aria-label'))
+    const sitUp = names.findIndex(n => n.toLowerCase() === '3/4 sit-up')
+    expect(sitUp).toBeGreaterThan(-1)
+    expect(names.slice(0, 2)).toEqual(['barbell bench press', 'barbell incline bench press'])
+    expect(sitUp).toBe(2)
+  })
+})
+
 describe('ExercisePicker canonical muscle filtering and search', () => {
   it('renders all 19 canonical muscle filter chips plus Cardio in anatomical head-to-toe order', async () => {
     useStore.getState().update(s => {

@@ -320,6 +320,7 @@ export function ExercisePicker({ onPick }) {
     scope,
     search: q,
     equipment: eq,
+    ownFirst: true,   // open on what the lifter trains, as the Library does (E18)
   })
   const f = rows
   return <>
