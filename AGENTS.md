@@ -27,3 +27,9 @@ Single-context layout: root `GLOSSARY.md` + `docs/adr/`. See `docs/agents/domain
 - Implementer agents work inside their assigned worktree directory only — never the repo root or another ticket's worktree.
 - Step 0 before any git write: `cd` to the worktree, then `git rev-parse --show-toplevel` must print the worktree path. Abort otherwise.
 - Ticket branches are per-ticket; only the merger (or coordinator) touches the integration branch, one at a time.
+
+## GitHub and deploys
+
+- GitHub `iron` is the default branch and deploys production (skyfitness.pages.dev); merge by PR only, after the Tests check passes. Never push to it directly.
+- Every other branch on GitHub builds only a Cloudflare preview. Open a PR's preview before merging it.
+- Undo a bad deploy with a Cloudflare rollback, not a Git push. History: `docs/wiki/deployment.md`.

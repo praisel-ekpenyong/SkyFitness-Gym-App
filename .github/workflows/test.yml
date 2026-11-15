@@ -1,16 +1,11 @@
-# Runs on pull requests too, so contributed changes are always tested before merge.
+# Runs on every pull request, with no path filter: branch protection on `iron` requires this
+# check, so a docs-only PR must run it too or it would wait forever.
 name: Tests
 
 on:
   pull_request:
-    paths:
-      - 'frontend/**'
-      - '.github/workflows/test.yml'
   push:
-    branches: [main, master]
-    paths:
-      - 'frontend/**'
-      - '.github/workflows/test.yml'
+    branches: [iron]
   workflow_dispatch:
 
 permissions:
