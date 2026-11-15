@@ -4,6 +4,7 @@ import { ACCENTS, localTZ } from '../lib/format.js'
 import { registerCustom } from '../lib/exercises.js'
 import { MOBILE, syncReminder } from '../lib/mobile.js'
 import { flush, load, loadLocal, save, LOCAL_KEY, onStorageSync } from '../lib/storage.js'
+import { admit } from '../lib/log/admit.js'
 import { setsDone } from '../lib/workout-model.js'
 import {
   createActiveSession, completeActiveSession,
@@ -66,7 +67,7 @@ export function normalizeState(raw) {
   S.accent = typeof raw.accent === 'string' && Object.hasOwn(ACCENTS, raw.accent) ? raw.accent : base.accent
   const a = raw.active
   S.active = a && typeof a === 'object' && !Array.isArray(a) && Array.isArray(a.entries) ? a : null
-  return S
+  return admit(S)
 }
 
 function loadState() {

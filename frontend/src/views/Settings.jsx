@@ -97,7 +97,7 @@ export default function Settings() {
         <button className="helpbtn" aria-label={t('What are RIR and RPE?')} onClick={effortHelpSheet}><Icon name="info" /></button>
         <Segmented className="seg-inline" label={t('Effort per set')}
           options={[{ value: 'none', label: t('Off') }, { value: 'rir', label: t('RIR') }, { value: 'rpe', label: t('RPE') }]}
-          value={effortOf(S)} onChange={v => update(s => { s.effort = v; delete s.showRir })} />
+          value={effortOf(S)} onChange={v => update(s => { s.effort = v })} />
       </Row>
     </Section>
 

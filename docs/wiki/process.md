@@ -96,3 +96,13 @@ discipline in `AGENTS.md`.
   All four release stages passed at `bd1669e`. The integration branch and its worktree were retired. Nothing was
   pushed. Next: iron-discipline/03 merges `main` into its branch (it overlaps 9 files), then design-review-fixes
   05 and 06 branch from `main`.
+  - *Superseded 2026-11-15:* the "Next" sentence. Both landed on `main` before `a924ee4` (iron-discipline merge
+    `47db66a`; design-review-fixes merge `b29adca`). See [Iron launch](iron-launch.md).
+
+- **2026-11-15 — launch tickets 01–04 were merged and the tracker was not updated.** At `main@a924ee4` the files
+  in `.scratch/iron-launch/issues/` still said `ready-for-agent` for 01 (`679b62e`), 02 (`48149b3`), 03 (`9b2f669`)
+  and 04 (`052c3af`). The status pass that day set them to `resolved`. Ticket 11 was `resolved` on
+  `integration/iron-launch@3c6ce04` and not yet in `main`. Worktrees `.worktrees/il-05-gates`,
+  `il-08-compact-short-screens` and `il-cleanup` sat on `b29adca` with no commits of their own.
+
+- **2026-11-15, evening — launch integration caught up with `main` before the remaining agent tickets.** `integration/iron-launch` moved from `3c6ce04` to `93f84d4` by merging `main` (`a924ee4`, docs only). Ticket 08's branch had no commits of its own; it was reset onto `93f84d4` and its uncommitted draft (short-screen header CSS and an audit fold check) was kept. Ticket 10 got a new worktree, `.worktrees/il-10-polish`. The main checkout stayed dirty and was not the base. See [Iron launch](iron-launch.md).

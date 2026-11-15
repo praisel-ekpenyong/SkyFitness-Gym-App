@@ -20,7 +20,7 @@ export const capEffort = (kind, v) =>
 
 export const effortOf = S => {
   const e = S && S.effort
-  return e === 'none' || EFFORT[e] ? e : (S && S.showRir ? 'rir' : 'none')
+  return e === 'none' || EFFORT[e] ? e : 'none'
 }
 
 export const HARD_RIR = 3

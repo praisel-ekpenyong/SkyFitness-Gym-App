@@ -97,25 +97,7 @@ describe('effortOf', () => {
     expect(effortOf({ effort: 'rir' })).toBe('rir')
     expect(effortOf({ effort: 'none' })).toBe('none')
     expect(effortOf({})).toBe('none')
-  })
-
-  it('keeps the column for a profile still carrying the old showRir flag', () => {
-    expect(effortOf({ showRir: true })).toBe('rir')
-    expect(effortOf({ effort: null, showRir: true })).toBe('rir')
     expect(effortOf({ effort: null })).toBe('none')
-    expect(effortOf({ showRir: false })).toBe('none')
-    expect(effortOf({ showRir: true, effort: 'rpe' })).toBe('rpe')
-    expect(effortOf({ showRir: true, effort: 'none' })).toBe('none')
-  })
-
-  const overlay = stored => ({ unit: 'kg', effort: null, ...stored })
-
-  it('survives the overlay every load path performs', () => {
-    expect(effortOf(overlay({ showRir: true }))).toBe('rir')
-    expect(effortOf(overlay({ showRir: false }))).toBe('none')
-    expect(effortOf(overlay({}))).toBe('none')
-    expect(effortOf(overlay({ effort: 'rpe' }))).toBe('rpe')
-    expect(effortOf(overlay({ showRir: true, effort: undefined }))).toBe('rir')
   })
 
   it('is not fooled by a junk value', () => {
@@ -124,7 +106,7 @@ describe('effortOf', () => {
     expect(effortOf({ effort: 'f' })).toBe('none')
     expect(effortOf(null)).toBe('none')
     expect(effortOf(undefined)).toBe('none')
-    expect(effortOf({ effort: 'nope', showRir: true })).toBe('rir')
+    expect(effortOf({ effort: 'nope' })).toBe('none')
   })
 })
 
