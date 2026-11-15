@@ -262,7 +262,12 @@ export function finishWorkout() {
       : { title: t('Nothing logged yet'), message: t('You haven’t checked off any sets. Finish the workout anyway?'), confirmText: t('Finish anyway'), onConfirm: doFinishWorkout })
     return
   }
-  if (prog.remaining > 0) { _confirmSheet({ title: t('Finish early?'), message: t(prog.remaining === 1 ? '{0} set still unchecked. Finish the workout now?' : '{0} sets still unchecked. Finish the workout now?', prog.remaining), confirmText: t('Finish workout'), onConfirm: doFinishWorkout }); return }
+  // The workout screen has one Finish key, so how far the session got is said here, where the choice is made.
+  if (prog.remaining > 0) {
+    const sets = t(prog.remaining === 1 ? '{0} set still unchecked' : '{0} sets still unchecked', fmtNum(prog.remaining))
+    _confirmSheet({ title: t('Finish early?'), message: t('{0} of {1} exercises done, {2}. Finish the workout now?', fmtNum(prog.exDone), fmtNum(prog.exTotal), sets), confirmText: t('Finish workout'), onConfirm: doFinishWorkout })
+    return
+  }
   doFinishWorkout()
 }
 /** Completes the session and opens the locked finish summary. */

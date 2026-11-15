@@ -31,13 +31,17 @@ export default function Plan() {
       <section>
         <h2 className="sec sec-first">{t('Week schedule')}</h2>
         <div className="wk-list">
+          {/* A row leads with what is trained; the day labels it, and today says so in words. */}
           {[1, 2, 3, 4, 5, 6, 0].map(d => {
             const r = S.routines.find(x => x.id === S.week[d])
-            return <button key={d} className={'wk-row' + (r ? '' : ' off') + (d === todayWd ? ' today' : '')}
-              aria-label={`${t(DAYN[d])}: ${r ? r.name : t('Rest')}`}
+            const today = d === todayWd
+            return <button key={d} className={'wk-row' + (r ? '' : ' off') + (today ? ' today' : '')}
+              aria-label={`${t(DAYN[d])}: ${r ? r.name : t('Rest')}`} aria-current={today ? 'date' : undefined}
               onClick={() => dayAssignSheet(d)}>
-              <span className="wk-day">{t(DAYN[d])}</span>
-              <span className="wk-name">{r ? r.name : t('Rest')}</span>
+              <span className="wk-text">
+                <span className="wk-name">{r ? r.name : t('Rest')}</span>
+                <span className="wk-day">{today ? `${t(DAYN[d])} · ${t('Today')}` : t(DAYN[d])}</span>
+              </span>
               {r && <span className="wk-meta-c">{exCount(r.ex.length)}</span>}
               <Icon name="chevronRight" className="chev" />
             </button>
