@@ -148,7 +148,7 @@ function ExerciseBlock({ entryIdx, compact, isCurrent = true, arrived = false, r
       </div>
     </div>
     {last && <div className="small dim ex-last">{t('Last time')} {fmtDate(last.d)} · {last.sets.map(s => setLabel(entry.id, s, last.target)).join(', ')}</div>}
-    {plan && plan.why && plan.kind !== 'off' && <div className={'progline' + (plan.kind === 'deload' ? ' warn' : '')}>
+    {plan && plan.why && plan.kind !== 'off' && <div className={'progline' + (plan.kind === 'deload' ? ' warn' : plan.kind === 'up' ? ' up' : '')}>
       <Icon name={plan.kind === 'up' ? 'arrowUp' : plan.kind === 'deload' ? 'arrowDown' : 'lightbulb'} />
       <span>{t(...plan.why)}</span>
     </div>}

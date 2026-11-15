@@ -121,6 +121,8 @@ const WORK = {
   '.wday .dot.done': 'D2 trained calendar days: Home’s week strip',
   '.home-badge.done': 'D2 trained calendar days: today’s session is logged',
   '#timer .bar i': 'D2 the rest-dock bar',
+  '.progline.up .icn': 'D2 a prescription to add load: its arrow only, the words stay neutral',
+  '.pi-body.up .icn': 'D2 Finish progression that adds load: its arrow only',
   '#timer.working .t': 'D2 the rest dock while a timed set is held: the clock is the work itself',
 }
 
