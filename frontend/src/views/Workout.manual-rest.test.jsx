@@ -20,7 +20,7 @@ let view
 
 function restControl() {
   return [...view.container.querySelectorAll('button')]
-    .find(button => /^Rest \d+:\d{2}$/.test(button.textContent.trim()))
+    .find(button => /^Rest \d+:\d{2}$/.test(button.getAttribute('aria-label') || ''))
 }
 
 function buttonNamed(name) {
@@ -49,13 +49,17 @@ afterEach(() => {
 })
 
 describe('manual rest control', () => {
-  it('shows the Rest duration on the exercise-position line', () => {
+  it('shows the Rest duration as a key beside the exercise tools', () => {
     view = renderWorkoutApp([entry('1001')])
 
-    expect(view.container.textContent).toContain('Exercise 1 / 1')
+    expect(view.container.textContent).not.toMatch(/Exercise \d+ \/ \d+/)
     expect(restControl()).toBeTruthy()
+    expect(restControl().closest('.extools')).toBeTruthy()
     expect(restControl().disabled).toBe(false)
-    expect(restControl().getAttribute('aria-label') || restControl().textContent.trim()).toBe('Rest 1:30')
+    expect(restControl().getAttribute('aria-label')).toBe('Rest 1:30')
+    // The key shows the timer and the duration only, so the tools row fits one line at 360px.
+    expect(restControl().textContent.trim()).toBe('1:30')
+    expect(restControl().querySelector('svg.icn')).toBeTruthy()
   })
 
   it('updates the label and the countdown length when the Rest duration changes', () => {
@@ -63,7 +67,8 @@ describe('manual rest control', () => {
 
     act(() => { useStore.getState().update(S => { S.restSec = 120 }) })
 
-    expect(restControl().textContent.trim()).toBe('Rest 2:00')
+    expect(restControl().getAttribute('aria-label')).toBe('Rest 2:00')
+    expect(restControl().textContent.trim()).toBe('2:00')
     click(restControl())
     expect(timerBarText()).toMatch(/^2:00/)
     act(() => vi.advanceTimersByTime(5000))
@@ -80,15 +85,18 @@ describe('manual rest control', () => {
     expect(timerBarText()).toMatch(/^1:27/)
   })
 
-  it('sits on the superset-position line too', () => {
+  it('sits once, with the first exercise’s tools, in a superset too', () => {
     view = renderWorkoutApp([
       { ...entry('1001'), sg: 'g1' },
       { ...entry('1002'), sg: 'g1' },
     ])
 
-    expect(view.container.textContent).toContain('Superset 1 / 1')
+    expect(view.container.textContent).not.toMatch(/Superset \d+ \/ \d+/)
     expect(restControl()).toBeTruthy()
-    expect(restControl().textContent.trim()).toBe('Rest 1:30')
+    expect(restControl().getAttribute('aria-label')).toBe('Rest 1:30')
+    const rests = [...view.container.querySelectorAll('button')].filter(b => /^Rest \d+:\d{2}$/.test(b.getAttribute('aria-label') || ''))
+    expect(rests.length).toBe(1)
+    expect(rests[0].closest('.ss-ex[data-exidx="0"] .extools')).toBeTruthy()
   })
 
   it('does not offer a rest in an empty freestyle workout', () => {

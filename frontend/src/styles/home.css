@@ -1,8 +1,6 @@
 /* Home: today's work first, then the week, then the body. */
 .home-hdr { align-items: center; margin-bottom: 14px }
-.home-hdr h1 { font-size: var(--fs-title) }
 .home-date { font-size: var(--fs-meta); color: var(--label-2); margin-bottom: 3px }
-.home-hdr-tools { gap: 6px; flex: none }
 
 /* ------------------------------------------------------------------- hero -- */
 .home-hero { background: var(--surface); border-radius: var(--r-2); padding: 14px var(--pad) var(--pad); margin-bottom: var(--gap) }
@@ -17,8 +15,8 @@
 .home-edit:active { color: var(--label) }
 
 .home-hero-body { display: grid; grid-template-columns: minmax(0, 1fr) 47%; gap: 8px; align-items: center; margin-bottom: 14px; min-height: 172px }
-.home-hero-title { font-size: var(--fs-hero); line-height: .88 }
-.home-hero-title.m { font-size: var(--fs-poster); line-height: .9 }
+/* Home is not read from the bench, so its poster stops at the 56px step on a phone; desktop has room for 68. */
+.home-hero-title { font-size: var(--fs-poster); line-height: .9 }
 .home-hero-title.s { font-size: var(--fs-display); line-height: .94 }
 .home-hero-title.xs { font-size: var(--fs-title); line-height: .96 }
 .home-hero-meta { font-size: var(--fs-body); font-weight: 600; margin-top: 12px }
@@ -47,12 +45,13 @@
 .wday .num { font-size: var(--fs-figure); font-stretch: var(--narrow); font-weight: 700; line-height: 1.1; margin: 1px 0 4px }
 .wday .dot { width: 14px; height: 3px; margin: 0 auto; background: transparent; border-radius: 1px }
 .wday .dot.plan { background: var(--label-4) }
-.wday .dot.ovr { background: var(--orange) }
+.wday .dot.ovr { background: var(--label-2) }
 .wday .dot.done { background: var(--data) }
 .wday.today { background: var(--ink); color: var(--on-ink) }
 .wday.today .lbl { color: var(--on-ink); opacity: .72 }
 .wday.today .dot.plan { background: var(--on-ink); opacity: .45 }
 .wday.today .dot.done { background: var(--on-ink) }
+.wday.today .dot.ovr { background: var(--on-ink) }
 .wday.today:active { background: var(--label-2) }
 
 /* --------------------------------------------------------- week's progress -- */
@@ -77,10 +76,8 @@
   .home-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: var(--gap); align-items: start }
   .home-hero { padding: 18px 24px 24px }
   .home-hero-body { grid-template-columns: minmax(0, 1fr) 46%; min-height: 280px; margin-bottom: 18px }
-  .home-hero-title { font-size: var(--fs-hero) }
-  .home-hero-title.m { font-size: var(--fs-hero) }
+  .home-hero-title { font-size: var(--fs-hero); line-height: .88 }
   .home-hero-title.s { font-size: var(--fs-poster) }
   .home-hero-title.xs { font-size: var(--fs-display) }
   .home-hero-map .bm-v { max-height: 300px }
-  .home-hdr h1 { font-size: var(--fs-display) }
 }

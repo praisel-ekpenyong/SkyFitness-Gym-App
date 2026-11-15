@@ -255,3 +255,29 @@ describe('Home declarative weekly progress card (non-gamified PRODUCT.md voice)'
     expect(container.querySelector('.bw-card .delta-pill').textContent).toBe('\u22120.2 kg')
   })
 })
+
+describe('Home header', () => {
+  // Sky has no accounts: the name is a greeting, edited in Settings. A chip beside it only
+  // repeated the name and implied a profile switcher.
+  it('says the name once and keeps only the settings key', async () => {
+    useStore.getState().update(s => { s.displayName = 'Sam'; s.routines = []; s.workouts = []; s.active = null })
+
+    await act(async () => { root.render(<Home />) })
+
+    const hdr = container.querySelector('.home-hdr')
+    expect(hdr.querySelector('h1').textContent).toBe('Hi Sam')
+    expect(hdr.textContent.match(/Sam/g)).toHaveLength(1)
+    expect(container.querySelector('.profile-pill')).toBeNull()
+    expect(container.querySelector('button[aria-label="Edit name"]')).toBeNull()
+    expect([...hdr.querySelectorAll('button')].map(b => b.getAttribute('aria-label'))).toEqual(['Settings'])
+  })
+
+  it('offers no name chip before a name is set either', async () => {
+    useStore.getState().update(s => { s.displayName = ''; s.routines = []; s.workouts = []; s.active = null })
+
+    await act(async () => { root.render(<Home />) })
+
+    expect(container.querySelector('.home-hdr h1').textContent).toBe('Hi there')
+    expect(container.querySelector('button[aria-label="Set name"]')).toBeNull()
+  })
+})

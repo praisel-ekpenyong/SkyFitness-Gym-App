@@ -362,3 +362,29 @@ describe('FinishSummary records', () => {
     expect(container.textContent).not.toMatch(/\bPRs?\b/)
   })
 })
+
+describe('FinishSummary figures', () => {
+  const longSession = { id: 'w-long', d: '2026-03-01', start: 0, end: (2 * 60 + 25) * 60000,
+    entries: [{ id: '0025', sets: Array.from({ length: 19 }, () => ({ w: 140, r: 12, done: true })) }] }
+  // A figure tile is wider than its content only in a real layout; this stands in for one in which
+  // `tooWide` figures overflow a half-width tile and every other figure fits.
+  const layout = tooWide => {
+    vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockImplementation(function () { return this.classList.contains('v') ? 130 : 0 })
+    vi.spyOn(HTMLElement.prototype, 'scrollWidth', 'get').mockImplementation(function () {
+      return this.classList.contains('v') && tooWide(this) && !this.closest('.finish-kpis.tight') ? 180 : 100
+    })
+  }
+  const render = async () => { await act(async () => { root.render(<FinishSummary w={longSession} prs={[]} close={vi.fn()} />) }) }
+
+  it('keeps the tiles two by two while every figure fits', async () => {
+    layout(() => false)
+    await render()
+    expect(container.querySelector('.finish-kpis').classList.contains('tight')).toBe(false)
+  })
+
+  it('gives Duration and Volume the full width when a figure would not fit its half, so no figure breaks', async () => {
+    layout(v => v.textContent.startsWith('31,920'))
+    await render()
+    expect(container.querySelector('.finish-kpis').classList.contains('tight')).toBe(true)
+  })
+})

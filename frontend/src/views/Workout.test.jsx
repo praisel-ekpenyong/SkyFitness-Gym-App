@@ -275,16 +275,55 @@ describe('header and finish button share one progress reading', () => {
     // Header counts work sets only: 2 of 2, no phantom unchecked set.
     expect(container.querySelector('.hdr .sub')?.textContent).toContain('2/2 sets')
 
-    // The finish button offers a plain finish, not an early one.
-    const finish = Array.from(container.querySelectorAll('button'))
-      .find(b => b.textContent.includes('Finish workout'))
+    // The one Finish key, in the header, takes the accent once every work set is in: a colour
+    // state on the header key (.done), not a second .go key with its own look.
+    const finish = container.querySelector('.wk-hdr button[aria-label="Finish"]')
     expect(finish).toBeTruthy()
-    expect(finish.textContent).not.toContain('early')
-    expect(finish.className).toContain('primary')
+    expect(finish.classList.contains('done')).toBe(true)
+    expect(finish.classList.contains('go')).toBe(false)
 
     await act(async () => { finish.dispatchEvent(new dom.Event('click', { bubbles: true })) })
     const { finishWorkout } = await import('../sheets.jsx')
     expect(finishWorkout).toHaveBeenCalledOnce()
+  })
+})
+
+describe('workout screen hierarchy', () => {
+  it('carries progress in the segments and the header count, with no "Exercise N / M" line', async () => {
+    await mount([exercise('0025', [false, false]), exercise('0047', [false])])
+
+    expect(container.textContent).not.toMatch(/Exercise \d+ \/ \d+/)
+    const segs = [...container.querySelectorAll('.lad-s')]
+    expect(segs.length).toBe(2)
+    // The segments keep their accessible names and mark where you are.
+    expect(segs[0].getAttribute('aria-label')).toMatch(/^Go to /)
+    expect(segs[0].getAttribute('aria-current')).toBe('step')
+    expect(container.querySelector('.hdr .sub')?.textContent).toContain('0/3 sets')
+  })
+
+  it('draws Note, Replace and Details as small keys with an icon and a word', async () => {
+    await mount([exercise('0025', [false])])
+
+    for (const [name, word] of [['Add note', 'Note'], ['Replace exercise', 'Replace'], ['Details', 'Details']]) {
+      const key = container.querySelector(`button[aria-label="${name}"]`)
+      expect(key, name).toBeTruthy()
+      expect(key.classList.contains('btn'), name).toBe(true)
+      expect(key.classList.contains('xs'), name).toBe(true)
+      expect(key.querySelector('svg.icn'), name).toBeTruthy()
+      expect(key.textContent.trim(), name).toBe(word)
+    }
+  })
+
+  it('offers Finish once, in the header, neutral while sets remain; the footer keeps Discard only', async () => {
+    await mount([exercise('0025', [true, false]), exercise('0047', [false])])
+
+    const finishes = [...container.querySelectorAll('button')].filter(b => /finish/i.test(b.getAttribute('aria-label') || b.textContent))
+    expect(finishes.length).toBe(1)
+    expect(finishes[0].closest('.wk-hdr')).toBeTruthy()
+    expect(finishes[0].classList.contains('done')).toBe(false)
+    expect(finishes[0].classList.contains('go')).toBe(false)
+    expect(container.textContent).not.toContain('Finish workout early')
+    expect(container.querySelector('button.wk-discard')?.textContent).toBe('Discard workout')
   })
 })
 

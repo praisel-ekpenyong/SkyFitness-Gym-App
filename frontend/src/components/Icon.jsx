@@ -8,8 +8,8 @@
 //
 // Conventions, so a new icon never looks foreign next to an old one:
 //   · 24×24 viewBox, live area 3…21 — 3px of optical padding all round
-//   · strokes only (no fills) except where a shape reads better solid (star.fill)
-//   · round caps + round joins, stroke width from --icon-stroke (1.7 default)
+//   · strokes only (no fills) except where a shape reads better solid (starFill, dot, info's point)
+//   · round caps + round joins, stroke width from --icon-stroke (1.6 default)
 //   · geometry snapped to .5 so it lands on pixel edges at 24px
 
 const P = {
@@ -111,6 +111,9 @@ const P = {
   history: <><path d="M4.5 12.2a7.6 7.6 0 1 0 2.5-5.6" /><path d="M4.1 4.4v4.3h4.3" /><path d="M12 8.3v4.2l3.1 1.9" /></>,
   signOut: <><path d="M14.2 4.6H7a1.9 1.9 0 0 0-1.9 1.9v11a1.9 1.9 0 0 0 1.9 1.9h7.2" /><path d="m16.8 8.4 3.6 3.6-3.6 3.6M20.4 12H10.2" /></>,
   shuffle: <><path d="M3.6 7.2h2.9c1.6 0 2.8.9 3.8 2.4l3 4.8c1 1.5 2.2 2.4 3.8 2.4h2.9M3.6 16.8h2.9c1.6 0 2.8-.9 3.8-2.4l.7-1.1M15.6 9.9l.7-1.1c1-1.5 2.2-2.4 3.8-2.4h1.9" /><path d="m17.9 4.3 2.8 2.1-2.8 2.1M17.9 14.7l2.8 2.1-2.8 2.1" /></>,
+  // A warning: a stroked triangle with an exclamation, its dot a round cap (as in `list`), so it
+  // stays stroke-only and takes the text's colour on a neutral banner.
+  alert: <path d="M10.6 4.6a1.6 1.6 0 0 1 2.8 0l7.3 12.9a1.6 1.6 0 0 1-1.4 2.4H4.7a1.6 1.6 0 0 1-1.4-2.4ZM12 9.4v4.4M12 16.9h.01" />,
   info: <><circle cx="12" cy="12" r="8.2" /><path d="M12 11v5.4" /><circle cx="12" cy="7.9" r=".9" fill="currentColor" stroke="none" /></>,
 }
 
