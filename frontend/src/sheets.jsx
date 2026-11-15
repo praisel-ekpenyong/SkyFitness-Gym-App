@@ -484,6 +484,16 @@ export function WorkoutDetail({ w, close }) {
   return <>
     <h3>{w.name}</h3>
     <div className="sheet-sub">{[fmtDate(w.d, true), ...durPart(w.end - w.start), fmtVol(tonnageOf(w), st.unit), ...(w.bw ? [fmtNum(w.bw) + ' ' + st.unit] : [])].join(' · ')}</div>
+    {w.entries.map((e, i) => {
+      const ex = EXIDX[e.id]
+      return <div key={i} className="row ex-entry">
+        {ex && <Thumb ex={ex} />}
+        <div className="grow"><div className="tt capitalize">{ex ? ex.n : (e.n || e.id)} {w.prs && w.prs.includes(e.id) && <span className="pr"><Icon name="trophy" />{t('Record')}</span>}</div>
+          <div className="ss">{e.sets.filter(s => s.done).map(s => setLabel(e.id, s, e.target)).join('  ·  ') || t('no sets')}</div>
+          {e.notes && <div className="exnote">{e.notes}</div>}
+        </div>
+      </div>
+    })}
     <div className="workout-detail-distribution detail-map">
       <BodyMap
         className="tappable compact"
@@ -506,16 +516,6 @@ export function WorkoutDetail({ w, close }) {
         onSelectMuscle={m => setSelectedMuscle(s => s === m ? null : m)}
       />
     </div>
-    {w.entries.map((e, i) => {
-      const ex = EXIDX[e.id]
-      return <div key={i} className="row ex-entry">
-        {ex && <Thumb ex={ex} />}
-        <div className="grow"><div className="tt capitalize">{ex ? ex.n : (e.n || e.id)} {w.prs && w.prs.includes(e.id) && <span className="pr"><Icon name="trophy" />{t('Record')}</span>}</div>
-          <div className="ss">{e.sets.filter(s => s.done).map(s => setLabel(e.id, s, e.target)).join('  ·  ') || t('no sets')}</div>
-          {e.notes && <div className="exnote">{e.notes}</div>}
-        </div>
-      </div>
-    })}
     <Button variant="danger" onClick={() => confirmSheet({ title: t('Delete workout?'), message: t('This removes it from your history for good.'), confirmText: t('Delete'), danger: true, onConfirm: () => { update(s => { deleteWorkout(s, w.id) }); close(); toast(t('Workout deleted')) } })}>{t('Delete workout')}</Button>
   </>
 }
