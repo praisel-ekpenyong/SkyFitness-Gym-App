@@ -31,8 +31,6 @@ afterEach(async () => {
 const render = async () => { await act(async () => { root.render(<TabBar onStart={vi.fn()} />) }) }
 const startTab = () => container.querySelector('#tabbar button.start')
 
-// Nav stays neutral (DESIGN.md rule 3): Start is a tab like the others, an icon over a word on
-// the same line, and only a running workout colours it.
 describe('tab bar Start', () => {
   it('is drawn like every other tab: an icon and a label, no block behind it', async () => {
     await render()

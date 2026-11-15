@@ -16,7 +16,6 @@ describe('supersetFlowStep', () => {
   })
 
   it('skips a spent short member and uses the last member with work as the round boundary', () => {
-    // A has just completed set two of three; B's only set was completed last round.
     const entries = [entry([true, true, false]), entry([true])]
     expect(supersetFlowStep(entries, [0, 1], 0)).toEqual({
       unitDone: false,

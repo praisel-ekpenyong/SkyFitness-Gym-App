@@ -24,7 +24,6 @@ describe('CSV warm-up provenance', () => {
   })
 })
 
-/* Defensive ingestion: mergeImport must not throw on nullish shapes. */
 
 describe('mergeImport defensive guards', () => {
   it('handles missing workouts and entries without throwing', () => {
@@ -49,9 +48,6 @@ describe('mergeImport defensive guards', () => {
   })
 })
 
-/* Custom-exercise body-part fallback (import-csv.js): an unmatched name becomes a
-   custom exercise whose body part is mapped from the file's Category column, with
-   cardio signals winning over the 'upper legs' default for strength rows. */
 
 describe('import custom-exercise body-part fallback', () => {
   const byName = parsed => Object.fromEntries(parsed.customEx.map(c => [c.n, c]))
@@ -77,7 +73,6 @@ describe('import custom-exercise body-part fallback', () => {
     const customs = byName(parseWorkoutCSV(csv, { unit: 'kg' }))
     const rec = customs['zzx qqq mystery lift']
     expect(rec.bp).toBe('upper legs')
-    // the import shape: lower-cased name, empty-string target, no secondary list
     expect(rec.n).toBe('zzx qqq mystery lift')
     expect(rec.tg).toBe('')
     expect(rec.sm).toBeUndefined()
@@ -102,9 +97,6 @@ describe('import custom-exercise body-part fallback', () => {
   })
 })
 
-/* Import's existing-days-win rule for the Body-weight log: importing twice
-   never rewrites a logged reading. Guards the mergeImport -> mergeWeighIns
-   delegation against flipping to overwrite. */
 
 describe('mergeImport bodyweight skip rule', () => {
   it('leaves existing days alone and reports added/skipped', () => {
@@ -128,9 +120,6 @@ describe('mergeImport bodyweight skip rule', () => {
   })
 })
 
-/* The ImportSummary's totals read the dry-run (importPreview), so whatever the
-   sheet displays must equal what the confirm button will return — by
-   construction, since both run the same "existing days win" statement. */
 
 describe('importPreview — the totalling dry-run', () => {
   const workoutParsed = () => parseWorkoutCSV(CSV, { unit: 'kg' })
@@ -138,7 +127,7 @@ describe('importPreview — the totalling dry-run', () => {
   it('reports exactly what mergeImport will return, without writing (workouts)', () => {
     const S0 = { workouts: [], customEx: [] }
     const preview = importPreview(S0, workoutParsed())
-    expect(S0.workouts).toEqual([]) // dry-run: nothing written
+    expect(S0.workouts).toEqual([])
 
     const S1 = { workouts: [], customEx: [] }
     const merged = mergeImport(S1, workoutParsed())
@@ -154,7 +143,7 @@ describe('importPreview — the totalling dry-run', () => {
     const S0 = { bodyweight: [{ d: '2026-01-01', w: 80 }] }
     const parsed = { kind: 'bodyweight', bodyweight: [{ d: '2026-01-01', w: 81 }, { d: '2026-01-02', w: 79 }] }
     expect(importPreview(S0, parsed)).toEqual({ added: 1, skipped: 1 })
-    expect(S0.bodyweight).toHaveLength(1) // dry-run didn't touch the log
+    expect(S0.bodyweight).toHaveLength(1)
 
     const S1 = { bodyweight: [{ d: '2026-01-01', w: 80 }] }
     expect(mergeImport(S1, parsed)).toEqual({ added: 1, skipped: 1 })
@@ -177,13 +166,10 @@ describe('exercise notes CSV import mapping', () => {
     const entries = res.workouts[0].entries
     expect(entries).toHaveLength(3)
 
-    // Bench Press should retain note even though set 2 had empty string
     expect(entries[0].notes).toBe('Seat 5, pin 3')
 
-    // Squat note capped at 500 chars
     expect(entries[1].notes).toBe('B'.repeat(500))
 
-    // Deadlift whitespace-only note omitted
     expect(entries[2].notes).toBeUndefined()
   })
 

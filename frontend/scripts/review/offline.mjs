@@ -1,6 +1,3 @@
-// Proves the service worker: controller, cache contents, and every route offline, on the real built app.
-// usage: node offline.mjs [--base=url] [--seed=file.json] [--today=YYYY-MM-DD]
-// Needs serve.mjs (or any server of dist/) running; the dev server has no service worker.
 import { readFileSync } from 'node:fs'
 import { buildSeed, config, freezeClock, launch, parseArgs, seedStorage } from './lib.mjs'
 const { flags } = parseArgs()

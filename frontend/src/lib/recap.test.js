@@ -33,11 +33,10 @@ describe('monthRecap', () => {
     const feb = monthRecap(workouts, 'kg', '2026-02')
     expect(feb.workouts).toBe(2)
     expect(feb.sets).toBe(3)
-    expect(feb.vol).toBe(100 * 5 + 100 * 5 + 120 * 3) // 1360
+    expect(feb.vol).toBe(100 * 5 + 100 * 5 + 120 * 3)
     expect(feb.durationMs).toBe((460000 - 1000) + 30 * 60000)
     expect(feb.prs).toEqual(['bench'])
     expect(feb.prev.workouts).toBe(0)
-    // prev empty => absolute delta equals current
     expect(feb.deltas.workouts).toBe(2)
     expect(feb.deltas.vol).toBe(feb.vol)
   })
@@ -48,13 +47,11 @@ describe('monthRecap', () => {
       mkWorkout({ d: '2026-01-20', start: 2000, end: 62000, entries: [mkEntry('bench', [s(100, 5)])] }),
       mkWorkout({ d: '2026-02-10', start: 3000, end: 63000, entries: [mkEntry('bench', [s(100, 10)])] }),
     ]
-    // Jan: 2 workouts, vol 1000, sets 2
-    // Feb: 1 workout, vol 1000, sets 1
     const feb = monthRecap(workouts, 'kg', '2026-02')
     expect(feb.workouts).toBe(1)
     expect(feb.prev.workouts).toBe(2)
-    expect(feb.deltas.workouts).toBeCloseTo(-50) // (1-2)/2*100
-    expect(feb.deltas.vol).toBeCloseTo(0) // same vol but different sets? Jan vol 1000, Feb vol 1000 => 0%
+    expect(feb.deltas.workouts).toBeCloseTo(-50)
+    expect(feb.deltas.vol).toBeCloseTo(0)
   })
 
   it('empty-viewed-month suppression', () => {
@@ -82,7 +79,6 @@ describe('monthRecap', () => {
     const mar = monthRecap(workouts, 'kg', '2026-03')
     expect(mar.workouts).toBe(1)
     expect(mar.prev.workouts).toBe(0)
-    // absolute delta == current value
     expect(mar.deltas.workouts).toBe(1)
     expect(mar.deltas.vol).toBe(400)
     expect(mar.deltas.sets).toBe(1)
@@ -99,13 +95,11 @@ describe('monthRecap', () => {
       }),
     ]
     const feb = monthRecap(workouts, 'kg', '2026-02')
-    expect(feb.vol).toBe(500) // only 100*5, not 50*10
+    expect(feb.vol).toBe(500)
     expect(feb.sets).toBe(1)
   })
 
   it('e1RM attribution respects workout order across months', () => {
-    // Jan 15: 80x5 => 93.3 ; Feb 02: 90x5 =>105 record in Feb; Jan recap should not contain Feb record
-    // Also test that Feb 10 with 85x5 not a record, Mar record 95x5 =>110.8
     const workouts = [
       mkWorkout({ d: '2026-01-15', start: 1000, entries: [mkEntry('bench', [s(80, 5)])] }),
       mkWorkout({ d: '2026-02-02', start: 2000, entries: [mkEntry('bench', [s(90, 5)])] }),
@@ -116,36 +110,27 @@ describe('monthRecap', () => {
     const feb = monthRecap(workouts, 'kg', '2026-02')
     const mar = monthRecap(workouts, 'kg', '2026-03')
 
-    // Jan first ever estimate is record
     expect(jan.e1prs.length).toBe(1)
     expect(jan.e1prs[0].id).toBe('bench')
     expect(jan.e1prs[0].est).toBeCloseTo(93.3, 1)
 
-    // Feb should have exactly the 90x5 improvement
     expect(feb.e1prs.length).toBe(1)
     expect(feb.e1prs[0].w).toBe(90)
     expect(feb.e1prs[0].r).toBe(5)
 
-    // Mar should have the 95x5
     expect(mar.e1prs.length).toBe(1)
     expect(mar.e1prs[0].w).toBe(95)
 
-    // Ensure Jan does NOT contain Feb record
     expect(jan.e1prs.some(p => p.w === 90)).toBe(false)
     expect(feb.e1prs.some(p => p.w === 80)).toBe(false)
   })
 
   it('respects local date d not start timestamp', () => {
-    // Two workouts: one with d 2026-02-28 but start in March timestamp, another with d 2026-03-01 but earlier timestamp
-    // Chronological order should follow d, so Feb record then Mar record correctly attributed.
-    // Create w1: d Feb 28, start 5000 ; w2: d Mar 01, start 1000 (earlier start but later date)
-    // If sorted by start, w2 would be before w1 and attribution wrong
     const w1 = mkWorkout({ d: '2026-02-28', start: 5000, entries: [mkEntry('bench', [s(80, 5)])] })
     const w2 = mkWorkout({ d: '2026-03-01', start: 1000, entries: [mkEntry('bench', [s(85, 5)])] })
-    const workouts = [w2, w1] // intentionally out of order in array
+    const workouts = [w2, w1]
     const feb = monthRecap(workouts, 'kg', '2026-02')
     const mar = monthRecap(workouts, 'kg', '2026-03')
-    // With d-sorted, Feb gets first record 80x5, Mar gets 85x5
     expect(feb.e1prs.length).toBe(1)
     expect(feb.e1prs[0].w).toBe(80)
     expect(mar.e1prs.length).toBe(1)
@@ -154,8 +139,8 @@ describe('monthRecap', () => {
 
   it('caps e1RM at REP_CAP 12', () => {
     const workouts = [
-      mkWorkout({ d: '2026-02-10', start: 1000, entries: [mkEntry('bench', [s(50, 13)])] }), // 13 reps => no estimate
-      mkWorkout({ d: '2026-02-11', start: 2000, entries: [mkEntry('bench', [s(50, 12)])] }), // 12 reps => valid
+      mkWorkout({ d: '2026-02-10', start: 1000, entries: [mkEntry('bench', [s(50, 13)])] }),
+      mkWorkout({ d: '2026-02-11', start: 2000, entries: [mkEntry('bench', [s(50, 12)])] }),
     ]
     const feb = monthRecap(workouts, 'kg', '2026-02')
     expect(feb.e1prs.length).toBe(1)
@@ -170,7 +155,7 @@ describe('monthRecap', () => {
     const feb = monthRecap(workouts, 'kg', '2026-02')
     expect(feb.workouts).toBe(2)
     expect(feb.vol).toBe(1000)
-    expect(feb.durationMs).toBe(60000) // only second workout
+    expect(feb.durationMs).toBe(60000)
   })
 
   it('deduplicates PRs across multiple workouts in the same month', () => {

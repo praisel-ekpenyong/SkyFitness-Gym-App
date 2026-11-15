@@ -9,28 +9,19 @@ import * as catalogueWrites from '../lib/catalogue-writes.js'
 import { t, instrFor } from '../lib/i18n.js'
 import { nav } from '../lib/nav.js'
 import Media, { Thumb } from '../components/Media.jsx'
-import Stepper from '../components/Stepper.jsx'
 import Icon from '../components/Icon.jsx'
-import { Button, Switch, Segmented, SelectRow, Row, SearchField, TextArea } from '../components/ui.jsx'
+import { Button, Switch, Segmented, SelectRow, Row, SearchField, TextArea, Stepper } from '../components/ui.jsx'
 import { glyphOf, DEFAULT_GLYPH } from '../lib/glyphs.js'
 import { FILTER_MUSCLES, MUSCLES, MUSCLE_NAME, primaryMuscleOf, primaryMuscleName, secondaryMusclesOf } from '../lib/muscles.js'
 import { queryCatalogue } from '../lib/catalogue-query.js'
 import { estimate1RM, best1RM, REP_CAP } from '../lib/onerm.js'
 import { policyFor, defaultIncrement, POLICIES_FOR, POLICY_NAME, POLICY_DESC, MAX_BW_SETS } from '../lib/progression.js'
 
-/** Reads the shared store state. */
 const S = () => useStore.getState().S
-/** Applies a draft mutation to the shared store state. */
 const update = (...a) => useStore.getState().update(...a)
-/** Reads the UI store state. */
 const ui = () => useUI.getState()
-/** Shows a transient toast message. */
 const toast = m => ui().toast(m)
 
-/* ============================ injected hub seams ============================ */
-// The confirm dialog remains the hub's interface for the duration of the
-// migration; all domains keep calling it rather than owning their own. The hub
-// re-exports this module, so importing the hub back would be circular.
 let _confirmSheet = null
 /**
  * Wires the confirm-sheet seam for catalogue sheets.
@@ -41,17 +32,12 @@ export function configureCatalogueSheets({ confirmSheet }) {
   if (confirmSheet) _confirmSheet = confirmSheet
 }
 
-/* ============================ exercise detail ============================ */
-// Estimated 1RM for one exercise (issue #18): what the log already implies, plus a calculator
-// for a set you have not done — so the number is reachable before there is any history.
 function OneRM({ ex }) {
   const st = useStore(s => s.S)
   const best = best1RM(st, ex.id)
   const [w, setW] = useState(best ? best.w : (st.exWeights[ex.id] || {}).w || 20)
   const [r, setR] = useState(best ? best.r : 5)
   const est = estimate1RM(w, r)
-  // A body-weight movement has no load to type in until one is logged (a belt on a dip), so a
-  // calculator seeded with a barbell's 20 kg would only invent a number.
   if (isBodyweightEq(ex) && !best) return null
   return <>
     <h4 className="sec">{t('Estimated 1RM')}</h4>
@@ -124,18 +110,8 @@ export function ExerciseDetail({ ex, close }) {
     {instrFor(ex).length > 0 && <><h4 className="sec">{t('How to')}</h4><ol className="steps-list">{instrFor(ex).map((s, i) => <li key={i}>{s}</li>)}</ol></>}
   </>
 }
-/** Opens the exercise-detail sheet for the given exercise. */
 export const exerciseDetailSheet = ex => ui().openSheet(close => <ExerciseDetail ex={ex} close={close} />)
 
-/**
- * Add-to-routine sheet body: pick which routine receives an exercise.
- *
- * Choosing a routine (or a new one) opens the exercise config sheet; saving
- * appends the configured exercise and toasts. A new routine navigates to `/plan/r/:id`.
- *
- * @param {Object} ex - Dataset exercise to add.
- * @param {Function} close - Sheet closer.
- */
 function AddToRoutine({ ex, close }) {
   const st = useStore(s => s.S)
   const pick = rid => {
@@ -169,9 +145,6 @@ function AddToRoutine({ ex, close }) {
 /** Opens the add-to-routine picker for the given exercise. */
 export const addToRoutineSheet = ex => ui().openSheet(close => <AddToRoutine ex={ex} close={close} />)
 
-/* ============================ custom exercises (issue #11) ============================ */
-// Name + primary muscle is all it takes — the exercise then behaves like any built-in one
-// (planning, logging, Records, stats), just without an animation.
 export function CustomExForm({ existing, prefill, onDone, close }) {
   const [name, setName] = useState(existing ? existing.n : (prefill || ''))
   const [primary, setPrimary] = useState(() => existing ? (primaryMuscleOf(existing) || '') : '')
@@ -200,9 +173,6 @@ export function CustomExForm({ existing, prefill, onDone, close }) {
     if (dup) { toast(t('“{0}” already exists', dup.n)); return }
     const trimmedDesc = desc.trim().slice(0, 1000)
     const finalSm = primary === 'cardio' ? [] : secondaries
-    // the store write is the seam: what a stored Custom record looks like and
-    // update-vs-create is lib/catalogue-writes.js's call; the form passes only
-    // user-entered fields and reads back the stored id for onDone
     let id
     update(s => {
       id = catalogueWrites.upsertCustomEx(s, { id: existing ? existing.id : null, n: trimmedName, tg: primary, sm: finalSm, desc: trimmedDesc })
@@ -216,7 +186,7 @@ export function CustomExForm({ existing, prefill, onDone, close }) {
     <h3>{existing ? t('Edit custom exercise') : t('Create your own exercise')}</h3>
     <div className="sheet-sub">{t('Name it and pick its primary and secondary muscles — it behaves like any other exercise, just without an animation.')}</div>
     <input className="input" placeholder={t('Exercise name')} aria-label={t('Exercise name')} value={name} onChange={e => setName(e.target.value)} />
-    
+
     <div className="field-l">{t('Primary muscle')}</div>
     <div className="chips">
       {FILTER_MUSCLES.map(m => (
@@ -285,8 +255,6 @@ export function deleteCustomEx(ex, afterDelete) {
     message: t('It will be removed from your routines. Already-logged workouts keep their sets.'),
     confirmText: t('Delete'), danger: true,
     onConfirm: () => {
-      // The seam re-refuses if a workout started while this dialog was open (e.g. a
-      // second tab): refuse the success toast rather than deleting mid-session.
       update(s => { res = catalogueWrites.deleteCustomEx(s, ex) })
       if (!res.ok) { toast(t('Finish your current workout first')); return }
       toast(t('Exercise deleted'))
@@ -295,19 +263,11 @@ export function deleteCustomEx(ex, afterDelete) {
   })
 }
 
-/**
- * Exercise picker sheet body: search, filter, and choose one exercise.
- *
- * Searches the catalogue by name with muscle/equipment filters and favorites.
- * Choosing a row calls `onPick` with the dataset exercise; favoriting updates the store.
- *
- * @param {Function} onPick - Called with the chosen dataset exercise.
- */
 export function ExercisePicker({ onPick }) {
   const st = useStore(s => s.S)
   const [q, setQ] = useState('')
-  const [filter, setFilter] = useState('')          // '' = all, 'favorites' = favorites, '★' = chosen, else a canonical muscle slug or cardio
-  const [eq, setEq] = useState('')              // '' = any equipment
+  const [filter, setFilter] = useState('')
+  const [eq, setEq] = useState('')
   const [shown, setShown] = useState(50)
   const isFavFilter = filter === 'favorites'
   const isChosenFilter = filter === '★'
@@ -320,7 +280,7 @@ export function ExercisePicker({ onPick }) {
     scope,
     search: q,
     equipment: eq,
-    ownFirst: true,   // open on what the lifter trains, as the Library does
+    ownFirst: true,
   })
   const f = rows
   return <>
@@ -383,13 +343,8 @@ export function ExercisePicker({ onPick }) {
     {f.length > shown && <><div className="gap8" /><Button onClick={() => setShown(s => s + 50)}>{t('Show more')}</Button></>}
   </>
 }
-/** Opens the exercise picker calling back with the chosen exercise. */
 export const exercisePicker = onPick => ui().openSheet(close => <ExercisePicker onPick={onPick} close={close} />)
 
-/* ============================ exercise config ============================ */
-// Progression settings for one exercise (issue #17). Shown inside the config sheet because
-// "how does this lift go up" belongs next to sets and reps, not in a separate screen. Left
-// on "follow the routine" it inherits, so most people never touch it.
 function ProgressionFields({ ex, mode, c, setC, routine, unit }) {
   const options = POLICIES_FOR[mode] || ['off']
   if (options.length < 2) return null
@@ -413,19 +368,6 @@ function ProgressionFields({ ex, mode, c, setC, routine, unit }) {
   </>
 }
 
-/**
- * Exercise-config sheet; saving returns the sets/reps/weight config.
- *
- * @param {Object} ex Dataset exercise.
- * @param {Object} existing Current routine config, if editing.
- * @param {Function} onSave Called with the chosen config.
- * @param {Function} onDelete Removes the exercise from the routine.
- * @param {Function} close Closes the sheet.
- * @param {Object} routine Parent routine for inherited progression.
- * @param {Object} initial Starting config override.
- * @param {Function} onReplace Opens replacement picker for this exercise.
- * @param {string} [actionLabel] Custom label for the primary action button.
- */
 export function ExConfig({ ex, existing, onSave, onDelete, close, routine, initial, onReplace, actionLabel }) {
   const st = useStore(s => s.S)
   const cardio = isCardio(ex.id)
@@ -436,27 +378,16 @@ export function ExConfig({ ex, existing, onSave, onDelete, close, routine, initi
       notes: existing?.notes || initial?.notes || '',
     }
   })
-  // Cardio keeps its own duration+speed form; the reps/time choice (issue #16) is offered for
-  // everything else, which is where the gap was — planks, hangs, wall sits, loaded carries.
   const mode = cardio ? 'cardio' : modeOf({ ...c, id: ex.id })
-  // Bodyweight falls back to the dataset default unless the config overrides it (see isBw); per-side comes from the config alone.
   const bw = !cardio && isBw({ ...c, id: ex.id })
   const perSide = isPerSide(c)
-  // Keep whatever the other mode already had (sets, weight) and fill only what is missing.
   const setMode = m => setC(x => ({ ...defaultConfig(ex.id, m), ...x, mode: m }))
   const save = () => {
     close()
     const sets = Math.max(1, Math.round(c.sets) || (cardio ? 1 : 3))
-    // Only carry progression settings that differ from the inherited default, so a plan file
-    // stays readable and "follow the routine" keeps meaning exactly that.
     const prog = {}
     if (c.prog) prog.prog = c.prog
     if (c.inc > 0) prog.inc = c.inc
-    // Written only when it differs from what the dataset already says, so a barbell config
-    // stays exactly the shape it was before these flags existed.
-    // `bodyweight` is true of a hold as much as of a set of reps; `side` is not — it counts
-    // reps, and a timed hold has none. Switching an exercise to Time therefore drops it
-    // rather than carrying a flag nothing downstream can read.
     const flags = {}
     if (bw !== isBodyweightEq(ex.id)) flags.bodyweight = bw
     const trimmedNotes = typeof c.notes === 'string' ? c.notes.trim().slice(0, 500) : ''
@@ -464,13 +395,10 @@ export function ExConfig({ ex, existing, onSave, onDelete, close, routine, initi
     if (cardio) onSave({ sets, min: Math.max(1, Math.round(c.min) || 20), speed: Math.max(0, c.speed || 8), ...noteProp })
     else if (mode === 'time') onSave({ sets, mode: 'time', sec: Math.max(1, Math.round(c.sec) || 45), weight: Math.max(0, c.weight || 0), ...flags, ...prog, ...noteProp })
     else {
-      // A unilateral target is stored even: the split has to divide, and a typed 15 would
-      // otherwise plan seven reps on one side and eight on the other, every session.
       const typed = Math.max(1, Math.round(c.reps) || 10)
       const reps = perSide ? Math.ceil(typed / 2) * 2 : typed
       const out = { sets, mode: 'reps', reps, weight: Math.max(0, c.weight || 0), ...flags, ...(perSide ? { side: true } : {}), ...prog, ...noteProp }
       if (policyFor({ ...c, id: ex.id }, routine, 'reps') === 'double') out.repsMin = Math.min(reps, Math.max(1, Math.round(c.repsMin) || Math.max(1, reps - 2)))
-      // A ceiling below the working reps would tell you to add a set on day one.
       if (bw && !(out.weight > 0) && c.repsMax > 0) out.repsMax = Math.max(reps, Math.round(c.repsMax))
       onSave(out)
     }
@@ -499,15 +427,12 @@ export function ExConfig({ ex, existing, onSave, onDelete, close, routine, initi
       </> : <>
         <Stepper label={t('Sets')} value={c.sets} step={1} decimal={false} onChange={v => setC(x => ({ ...x, sets: v }))} />
         <Stepper label={t('Reps')} value={c.reps} step={perSide ? 2 : 1} decimal={false} onChange={v => setC(x => ({ ...x, reps: v }))} />
-        {/* On bodyweight work the weight stepper is the click #32 is about, so it is not here
-            until there is a belt to describe — see the added-weight row below. */}
         {!bw && <Stepper label={t('Weight ({0})', st.unit)} value={c.weight} step={2.5} onChange={v => setC(x => ({ ...x, weight: v }))} />}
       </>}
     </div>
     {mode === 'time' && !bw && <div className="small dim cfg-note">
       {t('A timer runs while you hold the set. Leave the weight at 0 for bodyweight holds.')}
     </div>}
-    {/* ---------- bodyweight + per side (issues #31/#32/#33) ---------- */}
     {!cardio && <div className="sect-b cfg-note-sm">
       <Row icon="figureStrength" title={t('Bodyweight')}
         subtitle={bw ? t('No weight to enter — just log the reps.') : t('Ask for a weight on every set.')}>
@@ -515,14 +440,9 @@ export function ExConfig({ ex, existing, onSave, onDelete, close, routine, initi
       </Row>
       {mode === 'reps' && <Row icon="shuffle" title={t('Reps per side')}
         subtitle={perSide ? t('You still log the total: {0} is {1} per side.', c.reps || 0, fmtNum(sideReps(c.reps))) : t('For lunges, single-arm rows and the like.')}>
-        {/* Turning it on rounds the target up to an even number, since half of an odd
-            total is a rep one side does not get. */}
         <Switch checked={perSide} label={t('Reps per side')} onChange={v => setC(x => ({ ...x, side: v || undefined, reps: v ? Math.ceil((x.reps || 0) / 2) * 2 : x.reps }))} />
       </Row>}
     </div>}
-    {/* A stepper is too wide to sit in a list row next to a label — it squeezes the text to
-        one word per line — so added weight gets the same full-width treatment as sets and
-        reps, with its explanation underneath. */}
     {bw && <>
       <div className="row cfgrow cfg-note-sm">
         <Stepper label={t('Added ({0})', st.unit)} value={c.weight || 0} step={2.5}
@@ -532,7 +452,6 @@ export function ExConfig({ ex, existing, onSave, onDelete, close, routine, initi
         {t('For dips or pull-ups with a belt. Progression then follows the weight.')}
       </div>
     </>}
-    {/* The rep ceiling only means something when there is no load to add instead. */}
     {mode === 'reps' && bw && !(c.weight > 0) && <div className="row cfgrow cfg-note-sm">
       <Stepper label={t('Top of the range')} value={c.repsMax || 0} step={1} decimal={false}
         onChange={v => setC(x => ({ ...x, repsMax: v }))} />
@@ -557,17 +476,5 @@ export function ExConfig({ ex, existing, onSave, onDelete, close, routine, initi
     {onDelete && <><div className="gap8" /><Button variant="danger" onClick={() => { close(); onDelete() }}>{t('Remove from routine')}</Button></>}
   </>
 }
-/**
- * Opens the exercise-config sheet; saving returns the chosen config.
- *
- * @param {Object} ex Dataset exercise.
- * @param {Object} existing Current routine config, if editing.
- * @param {Function} onSave Called with the chosen config.
- * @param {Function} onDelete Removes the exercise from the routine.
- * @param {Object} routine Parent routine for inherited progression.
- * @param {Object} initial Starting config override.
- * @param {Function} onReplace Opens replacement picker for this exercise.
- * @param {string} [actionLabel] Custom label for the primary action button.
- */
 export const exConfigSheet = (ex, existing, onSave, onDelete, routine, initial, onReplace, actionLabel) => ui().openSheet(close => <ExConfig ex={ex} existing={existing} initial={initial} onSave={onSave} onDelete={onDelete} routine={routine} onReplace={onReplace} actionLabel={actionLabel} close={close} />)
 

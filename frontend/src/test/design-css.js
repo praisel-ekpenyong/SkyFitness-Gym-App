@@ -1,24 +1,18 @@
-// Reads `styles/*.css` for the design guards (design-tokens.test.js, design-lint.test.js):
-// comments blanked with line numbers kept, rules flattened out of @media, and the colour
-// tokens resolved per theme and accent the way the browser resolves them on :root.
 import { readFileSync, readdirSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 export const STYLES_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'styles')
 
-/** Every style sheet in `styles/`, as `{ name, css }`, in a stable order. */
 export function styleSheets() {
   return readdirSync(STYLES_DIR).filter(f => f.endsWith('.css')).sort()
     .map(name => ({ name, css: readFileSync(resolve(STYLES_DIR, name), 'utf8') }))
 }
 
-/** Blanks comments but keeps their newlines, so offsets still map to line numbers. */
 export const stripComments = css => css.replace(/\/\*[\s\S]*?\*\//g, m => m.replace(/[^\n]/g, ' '))
 
 const lineAt = (src, i) => src.slice(0, i).split('\n').length
 
-/** Splits on `sep` outside parentheses. */
 function splitTop(s, sep) {
   const parts = []
   let depth = 0, from = 0
@@ -31,14 +25,8 @@ function splitTop(s, sep) {
   return parts
 }
 
-/** The selectors of a comma-separated selector list (`.a, .b:not(.c, .d)` → two). */
 export const selectorList = selector => splitTop(selector, ',').map(([s]) => s.trim()).filter(Boolean)
 
-/**
- * Flattens a sheet into style rules: `{ selector, media, line, decls: [{ prop, value, line }] }`.
- * At-rule blocks (@media, @keyframes) only contribute their prelude as `media`. The sheets
- * use no CSS nesting, so a rule body never holds a brace.
- */
 export function cssRules(css) {
   const src = stripComments(css)
   const out = [], stack = []
@@ -71,7 +59,6 @@ export function cssRules(css) {
   return out
 }
 
-/** Custom properties declared on one selector of tokens.css, outside any at-rule. */
 function propsOf(rules, selector) {
   const props = {}
   for (const r of rules) {
@@ -83,12 +70,6 @@ function propsOf(rules, selector) {
 
 const SCOPE_PART = /^(?:\[data-theme="light"\]|:not\(\[data-theme="light"\]\)|\[data-accent="([\w-]+)"\])/
 
-/**
- * Reads a token selector: `:root` plus any of `[data-theme="light"]`, `:not([data-theme="light"])`
- * and `[data-accent="x"]`. Returns which theme and accent it applies to and its specificity.
- * Throws on anything else, so a token rule the guard cannot place fails loudly instead of
- * being skipped.
- */
 function rootScope(selector) {
   if (!selector.startsWith(':root')) throw new Error(`tokens.css: the design guard cannot read the selector "${selector}"`)
   const scope = { theme: null, accent: null, spec: 1 }
@@ -104,11 +85,6 @@ function rootScope(selector) {
   return scope
 }
 
-/**
- * The token sheet as the browser sees it on :root. `vars(theme, accent)` applies every rule
- * whose scope matches, by specificity and then source order: the dark base, the light
- * overrides, one `--acc` per `data-accent`, and any theme-and-accent override.
- */
 export function readTokens() {
   const css = readFileSync(resolve(STYLES_DIR, 'tokens.css'), 'utf8')
   const rules = cssRules(css)
@@ -124,7 +100,6 @@ export function readTokens() {
   return { css, rules, base, light, accents, vars }
 }
 
-// ------------------------------------------------------------------- colour --
 
 const NAMED = { black: [0, 0, 0, 1], white: [1, 1, 1, 1], transparent: [0, 0, 0, 0] }
 
@@ -135,10 +110,6 @@ function hexColour(h) {
   return [n(0), n(2), n(4), s.length === 8 ? n(6) : 1]
 }
 
-/**
- * Resolves a token expression to `[r, g, b, a]` in 0–1 sRGB: hex, black/white/transparent,
- * `var()` and `color-mix(in srgb, …)` (premultiplied, as CSS Color 5 mixes).
- */
 export function colourOf(expr, vars, depth = 0) {
   if (depth > 20) throw new Error('token cycle at ' + expr)
   const e = expr.trim()
@@ -173,16 +144,13 @@ export function colourOf(expr, vars, depth = 0) {
 
 const toLinear = c => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4)
 
-/** WCAG relative luminance of an opaque colour. */
 export const luminance = ([r, g, b]) => 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b)
 
-/** WCAG contrast ratio between two opaque colours. */
 export function contrast(a, b) {
   const x = luminance(a), y = luminance(b)
   return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05)
 }
 
-/** OKLCH hue angle in degrees (Björn Ottosson's OKLab). */
 export function okHue([r, g, b]) {
   const [R, G, B] = [r, g, b].map(toLinear)
   const l = Math.cbrt(0.4122214708 * R + 0.5363325363 * G + 0.0514459929 * B)
@@ -193,8 +161,6 @@ export function okHue([r, g, b]) {
   return (Math.atan2(Bb, A) * 180 / Math.PI + 360) % 360
 }
 
-/** Shortest distance between two hue angles. */
 export const hueGap = (h1, h2) => { const d = Math.abs(h1 - h2) % 360; return Math.min(d, 360 - d) }
 
-/** `#rrggbb` for a resolved colour, for failure messages. */
 export const hexOf = c => '#' + c.slice(0, 3).map(v => Math.round(v * 255).toString(16).padStart(2, '0')).join('')

@@ -1,19 +1,6 @@
-// Mobile build (VITE_MOBILE=1) — the standalone app-store version (Capacitor native shell).
-//
-// There is no backend: nothing to sign in to, everything lives on the phone. Unlike guest
-// mode in a browser, this is the user's only copy of their training log, so it can't depend
-// on WebView localStorage alone (iOS evicts that under storage pressure). Every persist()
-// therefore also lands in a JSON file in the app's private data directory, and boot()
-// restores from it. The workout reminder uses native local notifications scheduled per
-// planned weekday — no server involved, unlike Web Push in the self-hosted version.
-//
-// Like the demo build, MOBILE is replaced at build time, so all of this folds away in
-// web bundles; the Capacitor plugins are only ever imported behind it.
 import { t } from './i18n-core.js'
 import { MOBILE as ENV_MOBILE } from './env.js'
 
-// Re-exported from the environment seam so existing callers keep working
-// untouched; the flag is validated once in lib/env.js.
 export const MOBILE = ENV_MOBILE
 
 const FILE = 'sky-state.json'
@@ -27,7 +14,7 @@ export async function nativeLoad() {
     const { Filesystem, Directory, Encoding } = await import('@capacitor/filesystem')
     const r = await Filesystem.readFile({ path: FILE, directory: Directory.Data, encoding: Encoding.UTF8 })
     return JSON.parse(r.data)
-  } catch (e) { return null }   // first launch, or unreadable — localStorage copy takes over
+  } catch (e) { return null }
 }
 
 /**
@@ -39,22 +26,14 @@ export async function nativeSave(state) {
   try {
     const { Filesystem, Directory, Encoding } = await import('@capacitor/filesystem')
     await Filesystem.writeFile({ path: FILE, directory: Directory.Data, data: JSON.stringify(state), encoding: Encoding.UTF8 })
-  } catch (e) { /* keep the localStorage copy */ }
+  } catch (e) {  }
 }
 
-// The persistence adapter handed to lib/storage.js on mobile builds (registered in main.jsx):
-// every debounced drain lands the snapshot in the private data directory and keeps the
-// reminder schedule in step with the plan. Boot-time read and seed stay on
-// nativeLoad/nativeSave, which storage.js's load() calls directly.
 export const nativeSink = {
   id: 'native',
   write(state) { nativeSave(state); syncReminder(state) },
 }
 
-// (Re)schedule the workout-day reminder: one repeating notification per weekday that has a
-// routine in the weekly plan. Cheap enough to run after any state change — the plan or the
-// reminder time may just have been edited. `interactive` gates the OS permission prompt to
-// the Settings toggle; a background resync never pops a dialog.
 export async function syncReminder(S, interactive = false) {
   try {
     const { LocalNotifications } = await import('@capacitor/local-notifications')

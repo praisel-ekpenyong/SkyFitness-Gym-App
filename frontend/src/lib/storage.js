@@ -1,16 +1,7 @@
-// Durable storage — the app's one persistence module. Every save writes localStorage AND a
-// mirrored copy (IndexedDB; plus the native file mirror on mobile builds) through this file,
-// and boot loads whichever snapshot is newest. iOS Safari evicts website data under storage
-// pressure, so the log's only home can't be localStorage alone. Same shape as the Capacitor
-// mirror: debounced save, newest-timestamp restore — minus the native shell.
-//
-// The decisions that matter are pure and tested in storage.test.js with plain data; the IO
-// around them is exercised there too, through injectable sinks and happy-dom's localStorage.
+// iOS Safari evicts website data under storage pressure, so the log's only home can't be localStorage alone.
 
 import { MOBILE, nativeLoad, nativeSave } from './mobile.js'
 
-// Same key the store has always used for localStorage; exported so there is exactly one
-// definition of it.
 export const LOCAL_KEY = 'gym_state_v1'
 
 /**
@@ -30,10 +21,6 @@ const KEY = 'state'
 
 let dbp = null
 
-/**
- * Returns the shared IndexedDB mirror handle, opening it on first use.
- * @returns {Promise|null} Pending open promise, or null where IndexedDB is unavailable; a failed open resets so the next call retries.
- */
 function openDB() {
   if (!('indexedDB' in globalThis)) return null   // tests / very old browsers: mirror is off
   if (!dbp) {
@@ -78,54 +65,35 @@ export async function idbSave(snapshot) {
       tx.oncomplete = resolve
       tx.onerror = () => reject(tx.error)
     })
-  } catch (e) { /* localStorage copy still stands */ }
+  } catch (e) {  }
 }
 
-// --- sinks -----------------------------------------------------------------
-// A sink is one mirrored home for the snapshot: { id, read, write }. The IndexedDB
-// mirror is always present; the native file mirror registers itself on mobile builds
-// (main.jsx). `write` runs on the shared debounce and on flush; boot-time reads go
-// through `read` (web) or stay on nativeLoad (mobile, which races the file directly).
 export const idbSink = { id: 'idb', read: idbLoad, write: idbSave }
 
 let sinks = [idbSink]
 
-/** Register a mirrored home for snapshots (the native file mirror opts in at startup). */
 export function registerSink(sink) {
   sinks.push(sink)
 }
 
-/** Test seam: replace the sink list outright. Restores the default when omitted. */
 export function __setSinksForTests(list) {
   sinks = list || [idbSink]
 }
 
-// --- the write protocol ----------------------------------------------------
-// One trailing debounce drives every mirror: each save resets the timer, a drain hands
-// the newest snapshot to all sinks, and flush() drains immediately (the store calls it
-// on visibilitychange → hidden — backgrounding is often the last event before the OS
-// kills the app). Idempotent: flushing with nothing pending does nothing.
 const DRAIN_MS = 800
 
 let tm = null
 let pending = null
 
-/**
- * Hands the newest pending snapshot to every registered mirror and clears the queue.
- * @returns {void} Nothing; a failing mirror is skipped so the others still receive the snapshot.
- */
 function drain() {
   tm = null
   const snapshot = pending
   pending = null
   if (snapshot) for (const sink of sinks) {
-    // One failing mirror must never kill the others or the app: a denied
-    // IndexedDB/file write degrades silently here (localStorage already
-    // decided the blocked flag); async rejections are dropped the same way.
     try {
       const r = sink.write(snapshot)
       if (r && typeof r.catch === 'function') r.catch(() => {})
-    } catch (e) { /* degraded mirror — the in-memory state already stands */ }
+    } catch (e) {  }
   }
 }
 
@@ -139,18 +107,11 @@ export function flush() {
   drain()
 }
 
-/**
- * Decides whether a storage failure means the device denied the write.
- * @param {Error} e - Thrown storage error; falsy reads as not denied.
- * @returns {boolean} True for quota or security denials by name, code, or message; false otherwise.
- */
 function isStorageDenied(e) {
   if (!e) return false
   const name = e.name || ''
   const code = e.code
   if (name === 'QuotaExceededError' || name === 'NS_ERROR_DOM_QUOTA_REACHED' || code === 22 || code === 1014) return true
-  // Blocked device storage (private mode, disabled cookies/site data): the write
-  // is denied, not full. Training must keep working from memory with a notice.
   if (name === 'SecurityError' || name === 'NotAllowedError' || code === 18 || code === 1000) return true
   // Last resort: message sniffing, DOMExceptions only — a programmer TypeError
   // that happens to mention e.g. "permission" must stay loud, not degrade.
@@ -159,42 +120,25 @@ function isStorageDenied(e) {
   return DENIED_MSGS.some(m => msg.includes(m))
 }
 
-// Substrings identifying a denied write inside a DOMException message.
 const DENIED_MSGS = ['quota', 'exceeded', 'security', 'denied', 'blocked', 'not allowed', 'access is denied', 'permission']
 
-// True once a localStorage write has been denied until a later write succeeds.
-// The store mirrors this into a visible notice; the in-memory Profile is always
-// authoritative, so a blocked device degrades to one unsaved session, never a freeze.
 let blockedWrites = false
 
-/** Whether the last localStorage write was denied (quota or security). */
 export function isStorageBlocked() {
   return blockedWrites
 }
 
-/** Test seam: reset the blocked flag without touching stored data. */
 export function __resetStorageBlockedForTests() {
   blockedWrites = false
 }
 
-// The synchronous local write, injectable so tests can simulate denied device
-// storage deterministically (per-instance stubbing of the frozen happy-dom
-// Storage never lands — verified by probe — so denial goes through here,
-// alongside the existing __setSinksForTests precedent for the mirrors).
+// Per-instance stubbing of the frozen happy-dom Storage never lands — verified by probe — so denial goes through here.
 let localWriteImpl = (key, value) => localStorage.setItem(key, value)
 
-/** Test seam: replace the synchronous local write (e.g. with one that throws). */
 export function __setLocalWriteForTests(fn) {
   localWriteImpl = fn || ((key, value) => localStorage.setItem(key, value))
 }
 
-/**
- * Stamp the snapshot, land it in localStorage synchronously, schedule the mirrors.
- * Returns true when the local copy landed, false when storage denied the write
- * (quota or security) — the snapshot is still queued for the mirrors and the
- * caller keeps working from memory. Truly unexpected failures (e.g. a circular
- * payload failing JSON.stringify) still throw so programmer errors stay loud.
- */
 export function save(snapshot) {
   snapshot._ts = Date.now()
   try {
@@ -202,20 +146,15 @@ export function save(snapshot) {
     blockedWrites = false
   } catch (e) {
     if (!isStorageDenied(e)) throw e
-    // Denied — keep pending snapshot for async sinks, flag for the visible notice.
     blockedWrites = true
   }
   clearTimeout(tm)
-  // A shallow copy, not the caller's live object: a mutation between save and the
-  // 800 ms drain must not corrupt what the mirrors receive.
   pending = { ...snapshot }
   tm = setTimeout(drain, DRAIN_MS)
   return !blockedWrites
 }
 
-// Is the backup reminder due? True only when the last successful JSON export is missing or
-// older than the nag threshold. `now` is injected so callers (and tests) own the clock.
-export const BACKUP_NAG_MS = 14 * 24 * 60 * 60 * 1000   // two weeks between backups
+export const BACKUP_NAG_MS = 14 * 24 * 60 * 60 * 1000
 
 /**
  * Tells callers whether the backup reminder should show now.
@@ -227,24 +166,12 @@ export function backupDue(lastExportTs, now) {
   return !lastExportTs || now - lastExportTs > BACKUP_NAG_MS
 }
 
-// Which stored copy wins at boot? Newest timestamp; empty defaults when neither exists.
-// Each side arrives as { ts, state } or null. A tie keeps what localStorage already loaded
-// (the app is already running it — swapping for an equal copy buys nothing), and a missing
-// timestamp counts as "no copy": pre-timestamp saves must not beat stamped mirrors.
 export function pickNewest(local, mirror) {
   const mts = mirror ? mirror.ts || 0 : 0
   if (mts && (!local || (local.ts || 0) < mts)) return mirror.state
   return local ? local.state : null
 }
 
-// --- the boot protocol -----------------------------------------------------
-// Restore whichever stored copy is newest, seeding mirrors that came up empty so every
-// home converges. The caller injects the app-side facts — the running state, whether a
-// profile "has data", and the DEF overlay — so this file never learns Profile shapes.
-//
-// Tie rules are platform-frozen: on mobile the file copy wins a tie (`>=`, it is the copy
-// built to survive eviction); on the web a tie keeps the already-running state (`>`).
-// Seeding preserves the snapshot's own timestamp — only a swap may restamp.
 export async function load({ running, hasData, overlay }) {
   if (MOBILE) {
     const saved = await nativeLoad()
@@ -253,9 +180,7 @@ export async function load({ running, hasData, overlay }) {
     }
     if (!saved && hasData(running)) {
       const native = sinks.find(s => s.id === 'native')
-      // Seed the mirror with the running state itself (reference-identical, so callers
-      // can rely on identity); only stamp a copy when it carries no timestamp yet.
-      if (native) native.write(running?._ts ? running : { ...running, _ts: Date.now() })   // first run after upgrading from a file-less version
+      if (native) native.write(running?._ts ? running : { ...running, _ts: Date.now() })
     }
     return null
   }
@@ -267,20 +192,15 @@ export async function load({ running, hasData, overlay }) {
   const mirror = stored ? { ts: stored._ts, state: stored } : null
   const winner = pickNewest(local, mirror)
 
-  // No winner means no history anywhere — the empty defaults already loaded stand.
   if (winner && (!hasData(running) || (winner._ts || 0) > (running._ts || 0))) {
     return overlay(winner)
   }
   if (!mirror && hasData(running) && mirrorSink) {
-    // First boot with the mirror, or its storage was cleared: seed it. Same
-    // reference when already stamped (see above); a timestamped copy otherwise,
-    // so an unstamped seed never loses the newest-timestamp race by default.
     mirrorSink.write(running?._ts ? running : { ...running, _ts: Date.now() })
   }
   return null
 }
 
-// Backup validation and sanitization
 export function validateBackup(data) {
   if (!data || typeof data !== 'object' || Array.isArray(data) || !Array.isArray(data.workouts) || !Array.isArray(data.routines)) {
     throw new Error('not a Sky backup')
@@ -288,50 +208,18 @@ export function validateBackup(data) {
   return true
 }
 
-/**
- * Tests whether a restored value is a plain JSON object rather than an array or primitive.
- * @param {*} v - Candidate value of any type.
- * @returns {boolean} True for non-null non-array objects; false otherwise.
- */
 const isPlainRecord = v => v && typeof v === 'object' && !Array.isArray(v)
-// A Workout Entry is usable when it names an exercise and carries a sets
-// array — anything else (null, missing id, missing sets) is a hand-edit scar
-// that must never sink a Restore. Sets themselves stay as logged; only the
-// Entry shell is guarded here so one bad record cannot kill the tab.
 const isGoodWorkoutEntry = e => isPlainRecord(e) && typeof e.id === 'string' && e.id.length > 0 && Array.isArray(e.sets)
-/**
- * Tests whether a restored workout keeps the entry shell restore requires.
- * @param {*} w - Candidate workout of any type.
- * @returns {boolean} True for plain records carrying an `entries` array; false otherwise. Individual sets are checked separately.
- */
 const isGoodWorkout = w => isPlainRecord(w) && Array.isArray(w.entries)
-/**
- * Tests whether a restored routine exercise keeps the id restore requires.
- * @param {*} e - Candidate routine exercise of any type.
- * @returns {boolean} True for plain records with a non-empty string `id`; false otherwise.
- */
 const isGoodRoutineEx = e => isPlainRecord(e) && typeof e.id === 'string' && e.id.length > 0
-/**
- * Tests whether a restored routine keeps the id and exercise list restore requires.
- * @param {*} r - Candidate routine of any type.
- * @returns {boolean} True for plain records with a non-empty string `id` and an `ex` array; false otherwise.
- */
 const isGoodRoutine = r => isPlainRecord(r) && typeof r.id === 'string' && r.id.length > 0 && Array.isArray(r.ex)
 
-// Top-level Profile keys a Restore may carry (mirrors DEF in store/useStore.js —
-// keep the two in sync). Anything else — a hand-edit scar, a key from a newer
-// version — is dropped instead of spread wholesale into state, so one unknown
-// field can never ride a backup into the live Profile.
 const RESTORE_TOP_KEYS = [
   'unit', 'restSec', 'sound', 'keepAwake', 'theme', 'accent', 'body', 'targetW',
   'bodyweight', 'routines', 'week', 'dayPlan', 'exWeights', 'workouts', 'customEx',
   'gifSize', 'favorites', 'reminder', 'effort', 'lastExport', 'displayName'
 ]
 
-// Strip malformed Workout and Routine elements (and malformed Entries inside
-// otherwise good ones), returning the cleaned Profile plus how many elements
-// were skipped for the visible notice. Stale Day overrides (pointing at a
-// deleted Routine) are pruned silently — the week schedule is the fallback.
 export function sanitizeRestorePayload(data) {
   if (!data || typeof data !== 'object' || Array.isArray(data)) return { clean: data, skipped: 0 }
   let skipped = 0
@@ -391,7 +279,6 @@ export function sanitizeBackup(data) {
   return sanitizeRestorePayload(data).clean
 }
 
-// Cross-tab synchronization event listener
 export function onStorageSync(callback) {
   if (typeof window === 'undefined' || !window.addEventListener) return () => {}
   const listener = ev => {

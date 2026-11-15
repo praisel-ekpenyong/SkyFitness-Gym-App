@@ -2,9 +2,6 @@
 import { describe, expect, it } from 'vitest'
 import { decideBack, makeBackHandler, EXIT_WINDOW } from './back.js'
 
-// Back on Android has to serve three layers with one event: the sheet stack on top, the
-// page history under it, and — because a registered listener stops the plugin from ever
-// finishing the activity itself — a deliberate way out of the app at the bottom.
 describe('decideBack', () => {
   it('dismisses the top sheet before touching history', () => {
     expect(decideBack({ top: { id: 's1' }, canGoBack: true, exitArmed: false })).toBe('sheet')
@@ -65,7 +62,6 @@ describe('makeBackHandler', () => {
     expect(h.calls.exit).toBe(0)
   })
 
-  // The whole point of the fix: one press at the root must never be the end of the app.
   it('warns once, then exits on a second press inside the window', () => {
     const h = harness()
     expect(h.handler({ canGoBack: false })).toBe('arm-exit')
@@ -85,8 +81,6 @@ describe('makeBackHandler', () => {
     expect(h.calls.toasts).toHaveLength(2)
   })
 
-  // A sheet opened (or a page pushed) after the warning means the user is still using the
-  // app — the next back belongs to that sheet, and the one after must warn again.
   it('disarms the exit as soon as another press does real work', () => {
     const h = harness()
     h.handler({ canGoBack: false })

@@ -1,8 +1,3 @@
-// Active workout view: orchestrates live workout execution and logging.
-// Owns the active workout screen, set row rendering, rest and hold timer
-// coordination, and interactive bottom sheets for exercise reordering,
-// replacement, and removal. Delegates domain calculations and set row
-// transformations to lib/workout-model.js and active state to store/useStore.js.
 
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -28,7 +23,6 @@ import { isWarmupRow, isPerformed, seedForReplacement } from '../lib/workout-mod
 import { evaluateSetMilestone } from '../lib/progression.js'
 import { primaryMuscleName } from '../lib/muscles.js'
 
-/* ---------- start chooser (no active workout) ---------- */
 function StartChooser() {
   const nav = useNavigate()
   const S = useStore(s => s.S)
@@ -55,7 +49,6 @@ function StartChooser() {
   </div>
 }
 
-/* ---------- elapsed clock (isolated so the workout tree doesn't re-render every second) ---------- */
 function Elapsed({ start }) {
   const [t, setT] = useState('0:00')
   useEffect(() => {
@@ -65,12 +58,6 @@ function Elapsed({ start }) {
   return <span>{t}</span>
 }
 
-/* ---------- one exercise block (reps: weight×reps · time: a held duration · cardio: duration+speed) ---------- */
-// The set ladder is the whole point of the app, so its layout follows how it is used: the set in
-// front of you is one large console (big figure over two big keys, the bar drawn, one key to log
-// it) and every other set is a single readable line, still typeable, one tap from opening up.
-// `restKey` is the manual Rest key, which the session hands the first block on the screen to sit at
-// the end of its tools row.
 function ExerciseBlock({ entryIdx, compact, isCurrent = true, arrived = false, restKey = null, onToggle, onField, onAddSet, onRemoveSet, onAddWarmup, onRemoveSetAt, onStartTimed, onReplace }) {
   const S = useStore(s => s.S)
   const working = useUI(s => s.work)
@@ -81,21 +68,12 @@ function ExerciseBlock({ entryIdx, compact, isCurrent = true, arrived = false, r
   const cardio = mode === 'cardio'
   const timed = mode === 'time'
   const last = lastEntryFor(S, entry.id)
-  // The same number the "confirm your working weight" sheet calls your best, so the two
-  // never disagree inside one session: heaviest logged set, or the working weight you kept.
   const best = cardio ? 0 : bestKnownWeight(S, entry.id)
-  // What the progression policy decided for this session, and why (issue #17). Computed when
-  // the session was built so the reason matches the numbers already in the rows.
   const plan = entry.plan
-  // A bodyweight set has no weight to type, so the column is not there (issue #32) — one
-  // stepper instead of two, which is the whole point of the flag. Adding a belt weight in the
-  // config brings it back, now labelled as the addition it is.
   const cfg = { ...(entry.target || {}), id: entry.id }
   const bw = !cardio && isBw(cfg)
   const added = bw && entry.sets.some(s => s.w > 0)
   const loadCol = { f: 'w', step: 2.5, dec: true, hd: bw ? t('Added ({0})', S.unit) : t('Weight ({0})', S.unit), unit: S.unit }
-  // The reps column is the total in every mode, unilateral included — the stepper walks in
-  // twos there so the number you land on is one you can actually split evenly.
   const repCol = { f: 'r', step: repStep(cfg), dec: false, hd: t('Reps'), unit: t('reps') }
   const col1 = cardio ? { f: 'min', step: 1, dec: false, hd: t('Duration (min)'), unit: t('min') }
     : timed ? { f: 'sec', step: 5, dec: false, hd: t('Seconds'), unit: t('sec') }
@@ -103,30 +81,18 @@ function ExerciseBlock({ entryIdx, compact, isCurrent = true, arrived = false, r
   const col2 = cardio ? { f: 'speed', step: 0.5, dec: true, hd: t('Speed (km/h)'), unit: t('km/h') }
     : timed ? ((bw && !added) ? null : loadCol)
       : (bw && !added) ? null : repCol
-  // Effort (RIR or RPE, whichever the profile logs) only makes sense for weighted rep sets,
-  // not cardio/timed holds, and is opt-in since it adds a third stepper to every row. `opt`
-  // because an unlogged effort is not the same as 0 — RIR 0 says the set went to failure.
   const kind = effortOf(S)
   const eff = EFFORT[kind]
   const col3 = mode === 'reps' && eff ? { ...eff, eff: kind, dec: true, opt: true, hd: t(eff.hd), unit: t(eff.hd) } : null
 
-  // The open set: wherever the lifter tapped, else the first one not yet logged — on the
-  // exercise being worked, so a superset partner stays folded until its turn comes round.
   const firstOpen = entry.sets.findIndex(s => !s.done)
   const place = entry.id + ':' + firstOpen
   const [picked, setPicked] = useState(null)
   const [pickedAt, setPickedAt] = useState(place)
   if (place !== pickedAt) { setPickedAt(place); setPicked(null) }
   const openRow = picked ?? (isCurrent ? firstOpen : -1)
-  // Each logged set folds to one line and pushes the next console down the page, so by the last
-  // set the Log key would sit under the fold or the rest dock. Follow it; a new exercise starts
-  // from the top of its page first. Deferred a frame: a log may have just opened the rest dock,
-  // whose scroll padding this measures against, and closing a sheet restores the old position.
   const openRef = useRef(null)
   const anchor = entry.id + ':' + openRow
-  // Seeded with the open set, so opening the workout screen leaves the page where it is. A block
-  // that mounts because the lifter moved to it (a single exercise after a superset: the two
-  // layouts are separate components) starts unseeded, so that move goes to the top as well.
   const anchorAt = useRef(arrived && !compact ? null : anchor)
   useEffect(() => {
     if (anchorAt.current === anchor || typeof requestAnimationFrame !== 'function') return
@@ -141,21 +107,16 @@ function ExerciseBlock({ entryIdx, compact, isCurrent = true, arrived = false, r
   }, [anchor, entry.id, compact])
   const workTotal = entry.sets.filter(s => !isWarmupRow(s)).length
 
-  // The effort column walks its own scale — see stepEffort. Weight and reps step up from 0
-  // with no ceiling, as they always did.
   const bump = (s, i, col, dir) => {
     if (col.eff) return onField(i, col.f, stepEffort(col.eff, s[col.f], dir))
     onField(i, col.f, Math.max(0, Math.round(((s[col.f] || 0) + dir * col.step) * 100) / 100))
   }
-  // Uses the shared stepper markup so a set row picks up the same control styling
-  // as every other +/- field in the app.
   const cell = (s, i, col, cls, phaseNum, warm) => {
     const phasePrefix = warm ? t('Warm-up set {0}', phaseNum) : t('Set {0}', phaseNum)
     const fieldLabel = `${phasePrefix} ${col.hd}`
     return (
       <div className={'stp ' + cls}>
         <button className="stp-dec" aria-label={`${t('Decrease')} ${fieldLabel}`} onClick={() => bump(s, i, col, -1)}><Icon name="minus" /></button>
-        {/* a typed effort is capped — there is no RPE 12, and 12 reps in reserve is a warm-up */}
         <span className="val"><NumberField decimal={col.dec} nullable={col.opt} value={s[col.f] ?? ''}
           aria-label={fieldLabel} placeholder={col.opt ? '—' : undefined}
           onChange={v => onField(i, col.f, col.eff ? capEffort(col.eff, v) : v)} /><i>{col.unit}</i></span>
@@ -163,17 +124,13 @@ function ExerciseBlock({ entryIdx, compact, isCurrent = true, arrived = false, r
       </div>
     )
   }
-  // The Muscle map name ("Chest"), as the Library prints it; a cardio Entry already says "Cardio".
   const muscleName = cardio ? '' : primaryMuscleName(ex)
   return <section className={'exblock' + (compact ? ' compact' : '')}>
     <div className="exhead">
       <div className="exhead-t">
         <h2 className={'d' + (ex.n.length > 26 ? ' long' : '')}>{ex.n}</h2>
-        {/* One text line, not a flex row: the parts are joined by " · " like every meta line. */}
         <div className="extags small muted">{dotted([
           cardio && <span className="tag">{t('Cardio')}</span>,
-          // You log the total; this is the split, so the set in front of you is unambiguous
-          // without the rep count having to mean two different things (issue #31).
           !cardio && !timed && isPerSide(cfg) && <span className="tag nocap">{t('{0} per side', fmtNum(sideReps(entry.sets.find(s => !s.done)?.r ?? entry.sets[0]?.r)))}</span>,
           muscleName && <span className="tag nocap">{sentenceCase(t(muscleName))}</span>,
           ex.eq && <span className="tag nocap">{sentenceCase(t(ex.eq))}</span>,
@@ -181,7 +138,6 @@ function ExerciseBlock({ entryIdx, compact, isCurrent = true, arrived = false, r
         ])}</div>
       </div>
       <Media ex={ex} key={entry.id} compact={compact} minimizable />
-      {/* Keys, not words in the meta line: each one an icon and a word, under the name and the art. */}
       <div className="extools">
         {!entry.notes && (
           <Button size="xs" icon="clipboard" aria-label={t('Add note')} onClick={() => exerciseNoteSheet(entryIdx)}>{t('Note')}</Button>
@@ -208,7 +164,6 @@ function ExerciseBlock({ entryIdx, compact, isCurrent = true, arrived = false, r
         const warm = isWarmupRow(s)
         const warmBefore = i > 0 && isWarmupRow(entry.sets[i - 1])
         const isFirstWarmup = warm && !warmBefore
-        // Numbering restarts per phase: with two warm-ups the first work set reads 1, not 3.
         const phaseNum = entry.sets.slice(0, i + 1).filter(x => isWarmupRow(x) === warm).length
         const milestone = evaluateSetMilestone(entry, i, { state: S })
         const open = i === openRow
@@ -225,8 +180,6 @@ function ExerciseBlock({ entryIdx, compact, isCurrent = true, arrived = false, r
             {col2 && cell(s, i, col2, 'r', phaseNum, warm)}
             {col3 && cell(s, i, col3, 'eff', phaseNum, warm)}
             {open && !cardio && loadsOnBar(ex.eq) && s.w > 0 && <Barbell weight={s.w} unit={S.unit} />}
-            {/* A timed set is started, not typed: the timer counts the hold down and checks the
-                set off itself. The checkbox stays for anyone who timed it on their own watch. */}
             {timed && <button className="setgo" aria-label={t('Start set')} disabled={s.done || !!working}
               onClick={() => onStartTimed(i)}><Icon name="play" /><span className="setgo-l">{t('Start set')}</span></button>}
             {warm && <button className="iconbtn bare set-x" aria-label={t('Remove set')}
@@ -253,8 +206,6 @@ function ExerciseBlock({ entryIdx, compact, isCurrent = true, arrived = false, r
 
 /* ---------- active workout ---------- */
 export function removeActiveExercise(idx) {
-  // Clear the work callback before indexes can shift. This also protects a confirmation sheet
-  // that was opened first and confirmed after a timed hold started.
   useUI.getState().stopWork()
   useStore.getState().removeActiveExercise(idx)
 }
@@ -356,9 +307,7 @@ function ReorderExercisesSheet({ close }) {
   </div>
 }
 
-/** One sheet for the exercise-level edits, so the workout screen keeps only what a set needs. */
 function EditWorkoutSheet({ close, name, count, onReorder, onReplace, onPairPrev, onPairNext, onRemove }) {
-  // Read live: a timed hold can start or end while the sheet is open.
   const holding = useUI(s => !!s.work)
   const run = fn => () => { close(); fn() }
   return <div>
@@ -387,9 +336,6 @@ function EditWorkoutSheet({ close, name, count, onReorder, onReplace, onPairPrev
   </div>
 }
 
-/** Active-workout route body; logs sets for the running session. */
-// "Next: <exercise>", with the dataset name lifted by .capitalize and the label kept out of it.
-// One span, so the key's flex gap does not open between the label and the name.
 function NextLabel({ name }) {
   const [before, after = ''] = t('Next: {0}').split('{0}')
   return <span>{before}<span className="capitalize">{name}</span>{after}</span>
@@ -408,13 +354,9 @@ function ActiveWorkout() {
   const unit = A.entries.length ? unitOf(units, cur) : []
   const unitIdx = units.findIndex(u => u === unit)
   const isSuperset = unit.length > 1
-  // Whether the lifter has moved off the exercise this screen opened on. ExerciseBlock follows
-  // moves itself, except when it is mounted by one; this tells it that it arrived.
   const unitKey = unit.map(i => i + ':' + A.entries[i].id).join('+')
   const [shown, setShown] = useState({ key: unitKey, moved: false })
   if (shown.key !== unitKey) setShown({ key: unitKey, moved: true })
-  // Superset flow: keep the active exercise in view - completing a set scrolls to the
-  // next exercise in the group, then back up to the first exercise of the next round.
   const exRefs = useRef({})
   useEffect(() => {
     if (!isSuperset) return
@@ -423,7 +365,6 @@ function ActiveWorkout() {
   }, [cur, isSuperset, A.entries.length])
 
   const prog = sessionProgress(A)
-  // The Next key: the domain says when the open unit's work is done and where it leads.
   const nextIdx = A.entries.length ? nextUnitTarget(S, cur) : null
 
   const setField = (idx, i, field, v) => useStore.getState().updateActiveSetField(idx, i, field, v)
@@ -436,8 +377,6 @@ function ActiveWorkout() {
   const onPairPrev = !isSuperset && cur > 0 ? () => pairAt(cur - 1, cur) : null
   const onPairNext = !isSuperset && cur < A.entries.length - 1 ? () => pairAt(cur, cur + 1) : null
 
-  // Remove a whole exercise from the session. The confirmation always asks first; in a
-  // superset it asks WHICH exercise of the group to remove.
   const removeExercise = removeActiveExercise
   const confirmRemoveExercise = idx => {
     const e = A.entries[idx]
@@ -496,10 +435,6 @@ function ActiveWorkout() {
       onRemove={removeExerciseSheet} />)
   }
 
-  // A timed set is held, not typed. The Hold timer records what was actually held — an early
-  // finish logs 0:38 of a 0:45 target rather than crediting the full prescription — and then
-  // checks the set off through the normal path, so rest, supersets and the finish prompt all
-  // behave exactly as they do for a reps set.
   const startTimed = (idx, i) => {
     const e = A.entries[idx]
     useUI.getState().startWork(e.sets[i].sec || 45, exOr(e.id).n, elapsed => {
@@ -520,18 +455,10 @@ function ActiveWorkout() {
     else if (res.notice === 'cardio') useUI.getState().toast(t('Cardio logged'))
     else if (res.notice === 'timed') useUI.getState().toast(t('Hold logged'))
 
-    // Rest start/stop is gated on genuinely new progress inside the domain (see
-    // toggleActiveSet) — don't add caller-side gating here.
     if (res.rest.stop) stopRest()
     if (res.rest.start) startRest(S.restSec)
   }
 
-  // A rest can also be started by hand, between sets or exercises, without logging a set that
-  // did not happen. Disabled — never hidden — while either countdown runs, so the key keeps its
-  // place and a tap can never restart or shadow the active timer. Where you are in the session is
-  // the segments' job and the header's count, so the key sits with the first exercise's tools.
-  // The timer and the duration, named "Rest 1:30" for a screen reader: the word is left off the key so
-  // the tools row stays one line at 360px.
   const restKey = <Button size="xs" icon="timer" className="ex-rest" aria-label={t('Rest {0}', fmtSec(S.restSec))} disabled={resting || holding} onClick={() => startRest(S.restSec)}>
     {fmtSec(S.restSec)}
   </Button>
@@ -542,11 +469,7 @@ function ActiveWorkout() {
     <header className="hdr wk-hdr">
       <button className="iconbtn bare wk-min" aria-label={t('Minimize workout')} onClick={() => nav('/home')}><Icon name="chevronDown" /></button>
       <div className="wk-title"><h1>{A.name}</h1><div className="sub"><Elapsed start={A.start} /> · {t('{0} sets', prog.done + '/' + prog.total)}</div></div>
-      {/* The one Finish key. Once every work set is in it is the action left to do, so it takes the
-          accent (.done): a colour state on the header key, which keeps its size and words. */}
       <button className={'btn sm wk-finish ' + (prog.allDone ? 'done' : 'plain')} aria-label={t('Finish')} onClick={finishWorkout}>{t('Finish')}</button>
-      {/* One segment per exercise, filling as its work sets are logged: where you are in the
-          session at a glance, and a one-thumb jump to anywhere in it. */}
       {units.length > 0 && <div className="lad" role="group" aria-label={t('Exercises in this workout')}>
         {units.map((u, k) => {
           const total = u.reduce((n, i) => n + workSets(A.entries[i]).length, 0)
@@ -602,7 +525,6 @@ function ActiveWorkout() {
   </div>
 }
 
-/** Workout route; shows the active session or the start chooser. */
 export default function Workout() {
   const active = useStore(s => s.S.active)
   return active ? <ActiveWorkout /> : <StartChooser />

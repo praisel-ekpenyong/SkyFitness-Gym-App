@@ -1,14 +1,7 @@
 #!/usr/bin/env bash
-#
-# Cloudflare Pages Deploy Wizard for Sky
-# Walks a human through deploying frontend/dist to skyfitness.pages.dev
-#
 
 set -euo pipefail
 
-# ──────────────────────────────────────────────────────────────────────────
-# Wizard library — delightful, consistent UX. Identical across every wizard.
-# ──────────────────────────────────────────────────────────────────────────
 
 if [[ -t 1 ]] && command -v tput >/dev/null 2>&1 && [[ "$(tput colors 2>/dev/null || echo 0)" -ge 8 ]]; then
   BOLD=$(tput bold); DIM=$(tput dim); RESET=$(tput sgr0)
@@ -156,15 +149,11 @@ finish() {
   printf '\n'
 }
 
-# ──────────────────────────────────────────────────────────────────────────
-# STAGES — Sky Cloudflare Pages Deploy
-# ──────────────────────────────────────────────────────────────────────────
 
 TOTAL_STAGES=6
 
 banner "Sky → Cloudflare Pages Deploy (skyfitness.pages.dev)"
 
-# ── Stage 1: Verify build artifact ──────────────────────────────────────
 stage "Verify build artifact"
 say "Sky builds to frontend/dist with Vite (base:'./'). Cloudflare needs _headers + _redirects."
 if [[ -f "frontend/dist/index.html" && -f "frontend/dist/_headers" && -f "frontend/dist/_redirects" ]]; then
@@ -189,7 +178,6 @@ say "Expected dist contents: index.html, sw.js, manifest.json, _headers, _redire
 note "Current dist: $(du -sh frontend/dist 2>/dev/null | cut -f1)"
 pause "Build verified — press Enter to continue to Cloudflare auth"
 
-# ── Stage 2: Authenticate wrangler ──────────────────────────────────────
 stage "Authenticate with Cloudflare (wrangler login)"
 say "Deploy uses wrangler pages deploy. You need a Cloudflare account (free)."
 open_url "https://dash.cloudflare.com/login"
@@ -211,7 +199,6 @@ if command -v npx >/dev/null 2>&1; then
 else
   warn "npx not found — install Node.js 20+ first."
 fi
-# Alternative token path
 say "Alternative: API token (if login doesn't work in this shell)"
 open_url "https://dash.cloudflare.com/profile/api-tokens"
 step "Create Token → Edit Cloudflare Workers (or Pages) → copy token."
@@ -223,7 +210,6 @@ if [[ -n "${CLOUDFLARE_API_TOKEN:-}" ]]; then
 fi
 pause "Auth step done — press Enter to deploy"
 
-# ── Stage 3: Direct deploy via wrangler ─────────────────────────────────
 stage "Deploy static assets to Cloudflare Pages"
 say "Project name skyfitness → https://skyfitness.pages.dev (per spec)."
 say "This does a direct upload of frontend/dist (no Git needed yet)."
@@ -250,7 +236,6 @@ else
 fi
 pause "Deploy step done — press Enter to set up Git auto-deploy"
 
-# ── Stage 4: Configure Cloudflare Pages — _headers / _redirects / caching ─
 stage "Verify platform config (caching & SPA fallback)"
 say "Sky ships _headers and _redirects in frontend/public/ — already in dist."
 say "Current _headers content:"
@@ -269,7 +254,6 @@ if confirm "Open the live site to verify headers?"; then
 fi
 pause "Caching verified — press Enter for Git integration"
 
-# ── Stage 5: Git-native auto-deploy (main branch) ───────────────────────
 stage "Connect GitHub repo for auto-deploy on push to main"
 say "Spec Implementation Decision 3-4: Git-native integration (recommended for zero manual uploads)."
 open_url "https://dash.cloudflare.com/?to=/:account/pages"
@@ -289,7 +273,6 @@ if [[ -n "${GITHUB_REPO:-}" ]]; then
 fi
 pause "Once dashboard shows 'Success' with a pages.dev URL, press Enter"
 
-# ── Stage 6: Verify PWA, routing, data locality ─────────────────────────
 stage "Verify deployment — PWA, routing, privacy"
 open_url "https://$PAGES_PROJECT.pages.dev"
 step "Test deep link: open https://$PAGES_PROJECT.pages.dev/#/stats then refresh — should NOT 404 (SPA fallback via _redirects)"

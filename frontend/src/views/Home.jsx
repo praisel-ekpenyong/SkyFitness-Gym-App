@@ -20,12 +20,10 @@ import { Button } from '../components/ui.jsx'
 import StarterCard from '../components/StarterCard.jsx'
 import { fitName, stackClasses, NAME_LAYOUTS } from '../lib/name-fit.js'
 
-/** The muscles a map is shaded for, named, so the picture is never the only way to read it. */
 function muscleNames(load, n = 3) {
   return rankOf(load).worked.slice(0, n).map(m => t(MUSCLE_NAME[m])).join(' · ')
 }
 
-/** On a day with nothing to train, the hero shows what is still recovering instead. */
 function RecoveryMap({ S }) {
   const overview = useMemo(() => selectStatsOverview(S, { now: Date.now() }), [S])
   const tired = Object.keys(overview.fatigue.states).filter(m => overview.fatigue.states[m] !== 'ready')
@@ -37,7 +35,6 @@ function RecoveryMap({ S }) {
   </>
 }
 
-// Home = what to do now + a quick glance. Deep charts & history live in Stats.
 export default function Home() {
   const nav = useNavigate()
   const S = useStore(s => s.S)
@@ -76,19 +73,16 @@ export default function Home() {
   const plannedPerWeek = Object.keys(S.week).filter(k => S.week[k]).length
   const bwPoints = S.bodyweight.slice(-30).map(b => ({ t: workoutTimestamp(b), y: b.w, d: b.d }))
 
-  // The name is a greeting, set in Settings: Sky has no accounts, so Home shows no profile chip.
   const displayName = (S.displayName || '').trim()
   const hasName = !!displayName
 
   const firstRun = !S.routines.length && !S.active && !S.workouts.length
   const heroStatus = S.active ? 'active' : (routine ? (doneToday ? 'done' : 'scheduled') : 'rest')
   const heroName = S.active ? S.active.name : (routine ? routine.name : t('Rest day'))
-  // The poster type steps down so a long name breaks at spaces only; the map moves below a word no step fits.
   const heroFit = fitName(heroName, NAME_LAYOUTS.hero)
   const heroLoad = S.active ? loadOfActive(S.active) : routine ? loadOfRoutine(routine) : null
   const heroMuscles = heroLoad ? muscleNames(heroLoad) : ''
 
-  // What the day's work came to, read straight off the log, so "done" carries its evidence.
   const todays = doneToday ? S.workouts.filter(w => w.d === todayISO()) : []
   const todaySets = todays.reduce((n, w) => n + setsDone(w), 0)
   const todayVol = todays.reduce((n, w) => n + tonnageOf(w), 0)
@@ -106,10 +100,8 @@ export default function Home() {
 
     <div className="home-grid">
       <div className="home-main">
-        {/* First run: the first action goes where the day's plan will appear. */}
         {firstRun && <StarterCard onBuild={() => nav('/plan')} />}
 
-        {/* The day's one answer: what am I training, and what does it hit? */}
         {!firstRun && <section className={`home-hero hero-${heroStatus}`}>
           <div className="home-hero-head">
             {S.active ? (
@@ -216,7 +208,6 @@ export default function Home() {
             </div>
             <Icon name="chevronRight" className="chev" />
           </div>
-          {/* One block per planned session: the true count, not a smoothed bar. */}
           {plannedPerWeek > 0 && <div className="wp-blocks" aria-hidden="true">
             {Array.from({ length: Math.max(plannedPerWeek, wThisWeek) }, (_, i) => <i key={i} className={i < wThisWeek ? 'on' : ''} />)}
           </div>}

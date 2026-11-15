@@ -15,7 +15,6 @@ describe('body-paths SVG geometry', () => {
         const entry = bodyPaths[model][view]
         expect(entry).toBeDefined()
         expect(typeof entry.vb).toBe('string')
-        // viewBox must contain 4 coordinates: min-x min-y width height
         const vbParts = entry.vb.trim().split(/\s+/)
         expect(vbParts.length).toBe(4)
         vbParts.forEach(num => expect(Number.isFinite(Number(num))).toBe(true))
@@ -34,7 +33,6 @@ describe('body-paths SVG geometry', () => {
           paths.forEach(d => {
             expect(typeof d).toBe('string')
             expect(d.trim().length).toBeGreaterThan(0)
-            // Valid SVG path data begins with a moveTo command (M or m)
             expect(d.trim()).toMatch(/^[Mm]/)
           })
         })
@@ -54,9 +52,6 @@ describe('body-paths SVG geometry', () => {
   })
 
   it('keeps generated module size within ~90KB invariant (no accidental bloat)', () => {
-    // body-paths.js is 94285 bytes (dist/assets/body-paths-*.js 93.27 kB).
-    // Vite build enforces the chunk size, but a lightweight in-memory check
-    // catches accidental bloat/shrink without node:fs (speculative-generality fix).
     const totalChars = JSON.stringify(bodyPaths).length
     expect(totalChars).toBeGreaterThan(80000)
     expect(totalChars).toBeLessThan(110000)

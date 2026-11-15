@@ -10,8 +10,8 @@ vi.mock('../sheets.jsx', () => ({
   finishWorkout: vi.fn(), workoutCompleteSheet: vi.fn(), confirmSheet: vi.fn(), exerciseNoteSheet: vi.fn(),
 }))
 
-const BENCH = '0025'   // barbell bench press
-const CURL = '0294'    // dumbbell work: its load does not go on a straight bar
+const BENCH = '0025'
+const CURL = '0294'
 const sets = (n, w = 60) => Array.from({ length: n }, () => ({ w, r: 8, done: false }))
 
 let view
@@ -72,9 +72,7 @@ describe('the open set', () => {
 })
 
 describe('moving to the next exercise', () => {
-  const SQUAT = '0043'   // barbell full squat
-  // The page moves one frame after the switch, so the sheet that triggered it has restored its
-  // own scroll first. A frame queued after the switch runs after the page's.
+  const SQUAT = '0043'
   const nextFrame = () => act(() => new Promise(resolve => requestAnimationFrame(() => resolve())))
 
   it('starts a single exercise at the top of the page when it follows a superset', async () => {

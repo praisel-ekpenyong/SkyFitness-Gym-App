@@ -149,7 +149,6 @@ describe('Workout set completion flow', () => {
     mocks.startRest.mockClear()
     mocks.stopRest.mockClear()
 
-    // Final set of the only exercise in session (isLastUnit: true)
     await toggleSet(2)
     expect(mocks.workoutCompleteSheet).toHaveBeenCalledOnce()
     expect(mocks.stopRest).toHaveBeenCalledOnce()
@@ -225,20 +224,13 @@ describe('Workout set completion flow', () => {
 })
 
 describe('superset flow survives an exercise being removed mid-session', () => {
-  // removeActiveExercise splices A.entries, shifting every index above the removal down.
-  // The high-water marks are index-keyed, so without re-baselining the shifted exercise
-  // inherits its predecessor's mark and its next completed set reads as an uncheck/re-check
-  // — no advance, and no rest at the end of the round.
   it('still advances and rests for sets completed after a removal', async () => {
-    // warm(2 sets, both done) ahead of a bench/row superset with nothing done yet.
     await mount([
       exercise('warm', [true, true]),
       exercise('bench', [false, false], { sg: 'g1' }),
       exercise('row', [false, false], { sg: 'g1' }),
     ], 1)
 
-    // Drop the first exercise: bench moves 1 -> 0, row moves 2 -> 1.
-    // Stale marks would be [2, 0, 0] against entries that are now [bench, row].
     await act(async () => {
       mocks.S.active.entries.splice(0, 1)
       mocks.S.active.cur = 0
@@ -246,21 +238,16 @@ describe('superset flow survives an exercise being removed mid-session', () => {
     })
     mocks.startRest.mockClear()
 
-    // First member of the group: real progress, so the flow advances to the partner.
     await toggleSet(0)
     await act(async () => { root.render(React.createElement(Workout)) })
     expect(mocks.S.active.cur).toBe(1)
 
-    // Partner closes the round (each still has a second set), which is what starts the rest.
     await toggleSet(2)
     expect(mocks.startRest).toHaveBeenCalledWith(90)
   })
 })
 
 describe('header and finish button share one progress reading', () => {
-  // The committed probe (__probe2.test.js, deleted with this fix) proved the header and
-  // the finish button disagreed on exactly this fixture: an unticked warm-up row with
-  // every work set ticked. Both now read sessionProgress, so they cannot split again.
   it('an unticked warm-up neither stalls the button nor fakes an unchecked set', async () => {
     await mount([{
       id: '0025',
@@ -272,11 +259,8 @@ describe('header and finish button share one progress reading', () => {
       ],
     }])
 
-    // Header counts work sets only: 2 of 2, no phantom unchecked set.
     expect(container.querySelector('.hdr .sub')?.textContent).toContain('2/2 sets')
 
-    // The one Finish key, in the header, takes the accent once every work set is in: a colour
-    // state on the header key (.done), not a second .go key with its own look.
     const finish = container.querySelector('.wk-hdr button[aria-label="Finish"]')
     expect(finish).toBeTruthy()
     expect(finish.classList.contains('done')).toBe(true)
@@ -295,7 +279,6 @@ describe('workout screen hierarchy', () => {
     expect(container.textContent).not.toMatch(/Exercise \d+ \/ \d+/)
     const segs = [...container.querySelectorAll('.lad-s')]
     expect(segs.length).toBe(2)
-    // The segments keep their accessible names and mark where you are.
     expect(segs[0].getAttribute('aria-label')).toMatch(/^Go to /)
     expect(segs[0].getAttribute('aria-current')).toBe('step')
     expect(container.querySelector('.hdr .sub')?.textContent).toContain('0/3 sets')
@@ -337,7 +320,6 @@ describe('Workout exercise notes and note sheet', () => {
     expect(callout.getAttribute('role')).toBe('button')
     expect(callout.getAttribute('aria-label')).toBe('Edit note')
 
-    // Header row button is hidden when entry.notes is present
     const headerBtn = container.querySelector('button[aria-label="Add note"]')
     expect(headerBtn).toBeNull()
   })
@@ -363,7 +345,6 @@ describe('Workout exercise notes and note sheet', () => {
 
     mocks.exerciseNoteSheet.mockClear()
 
-    // Keydown Enter on callout
     const enterEv = new dom.Event('keydown', { bubbles: true })
     enterEv.key = 'Enter'
     await act(async () => {
@@ -373,7 +354,6 @@ describe('Workout exercise notes and note sheet', () => {
 
     mocks.exerciseNoteSheet.mockClear()
 
-    // Keydown Space on callout
     const spaceEv = new dom.Event('keydown', { bubbles: true })
     spaceEv.key = ' '
     await act(async () => {
@@ -400,7 +380,6 @@ describe('Workout exercise notes and note sheet', () => {
       root.render(React.createElement(ExerciseNoteSheet, { entryIdx: 0, close }))
     })
 
-    // Header displays "Note · {exercise name}"
     expect(container.querySelector('h3')?.textContent).toContain('Note ·')
 
     const textarea = container.querySelector('textarea')
@@ -410,7 +389,6 @@ describe('Workout exercise notes and note sheet', () => {
     expect(textarea.getAttribute('placeholder')).toBe('Notes, cues, or machine setup…')
     expect(textarea.getAttribute('maxLength') || textarea.getAttribute('maxlength')).toBe('500')
 
-    // Edit textarea value
     await act(async () => {
       const reactPropsKey = Object.keys(textarea).find(k => k.startsWith('__reactProps$'))
       if (reactPropsKey && textarea[reactPropsKey]?.onChange) {
@@ -422,10 +400,8 @@ describe('Workout exercise notes and note sheet', () => {
       }
     })
 
-    // Counter updates
     expect(container.textContent).toContain('20/500')
 
-    // Save note
     const saveBtn = Array.from(container.querySelectorAll('button')).find(b => b.textContent.includes('Save note'))
     expect(saveBtn).not.toBeNull()
     await act(async () => {

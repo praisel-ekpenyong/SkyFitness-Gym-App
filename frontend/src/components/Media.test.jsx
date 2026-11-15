@@ -39,7 +39,6 @@ describe('Thumb component', () => {
     expect(img).toBeTruthy()
     expect(img.getAttribute('src')).toBe('media/images/0001-2gPfomN.jpg')
 
-    // Trigger error event to simulate missing local asset
     await act(async () => {
       img.dispatchEvent(new Event('error'))
     })
@@ -74,7 +73,6 @@ describe('Thumb component', () => {
     })
     expect(img.getAttribute('src')).toBe(cdnImgSrc(ex1))
 
-    // Re-render with ex2
     await act(async () => {
       root.render(<Thumb ex={ex2} />)
     })
@@ -99,7 +97,6 @@ describe('Media component', () => {
     expect(img).toBeTruthy()
     expect(img.getAttribute('src')).toBe('media/videos/0001-2gPfomN.gif')
 
-    // Trigger error event to simulate missing local asset
     await act(async () => {
       img.dispatchEvent(new Event('error'))
     })
@@ -146,19 +143,16 @@ describe('Media component', () => {
     const mediaDiv = container.querySelector('.exmedia')
     const img = container.querySelector('.exmedia img')
 
-    // GIF fails and switches to CDN GIF
     await act(async () => {
       img.dispatchEvent(new Event('error'))
     })
     expect(img.getAttribute('src')).toBe(cdnGifSrc(ex))
 
-    // Tap to pause: should attempt local image first (independent from GIF failure)
     await act(async () => {
       mediaDiv.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
     expect(img.getAttribute('src')).toBe('media/images/0001-2gPfomN.jpg')
 
-    // Still image fails too: switches to CDN image
     await act(async () => {
       img.dispatchEvent(new Event('error'))
     })
@@ -178,7 +172,6 @@ describe('Media component', () => {
     })
     expect(img.getAttribute('src')).toBe(cdnGifSrc(ex1))
 
-    // Switch to ex2
     await act(async () => {
       root.render(<Media ex={ex2} />)
     })
@@ -195,13 +188,11 @@ describe('Media component', () => {
     const mediaDiv = container.querySelector('.exmedia')
     const img = container.querySelector('.exmedia img')
 
-    // Tap to pause (switches to still image)
     await act(async () => {
       mediaDiv.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
     expect(img.getAttribute('src')).toBe('media/images/0001-2gPfomN.jpg')
 
-    // Switching exercise should reset back to playing GIF
     await act(async () => {
       root.render(<Media ex={ex2} />)
     })

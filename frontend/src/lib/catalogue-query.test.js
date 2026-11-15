@@ -150,8 +150,6 @@ describe('Catalogue query', () => {
       equipment: '',
     })
 
-    // The search also matches built-in catalogue exercises with biceps as a secondary;
-    // this test only asserts on the custom fixture's row.
     const row = result.rows.find(r => r.exercise.id === 'secondary-search')
     expect(row?.secondaryMatch).toBe('biceps')
   })
@@ -232,26 +230,20 @@ describe('Catalogue query', () => {
   it('scores exercises with matched tokens, exact phrase bonus, and title matches', () => {
     const ex = exercise('specimen', 'Dumbbell Bench Press', 'chest', 'dumbbell', ['triceps'])
 
-    // Exact contiguous phrase in title: 2 tokens (200) + exact bonus (50) + 2 title matches (20) = 270
     expect(scoreExerciseMatch(ex, ['dumbbell', 'bench'], 'dumbbell bench')).toBe(270)
 
-    // Out-of-order words: 2 tokens (200) + no exact bonus (0) + 2 title matches (20) = 220
     expect(scoreExerciseMatch(ex, ['bench', 'dumbbell'], 'bench dumbbell')).toBe(220)
 
-    // Single word in title: 1 token (100) + exact phrase bonus (50) + 1 title match (10) = 160
     expect(scoreExerciseMatch(ex, ['bench'], 'bench')).toBe(160)
 
-    // Cross-attribute match: 1 in title, 1 in primary muscle: 2 tokens (200) + 0 exact phrase bonus (0) + 1 title match (10) = 210
     expect(scoreExerciseMatch(ex, ['dumbbell', 'chest'], 'dumbbell chest')).toBe(210)
 
-    // Disjunctive partial match (1 hit, 1 miss): 1 token (100) + 0 exact + 1 title match (10) = 110
     expect(scoreExerciseMatch(ex, ['bench', 'squat'], 'bench squat')).toBe(110)
 
 
 
-    // Hyphen-normalized exact phrase match: "push up" matching "Push-Up"
     const pushup = exercise('pu', 'Dumbbell Push-Up', 'chest', 'dumbbell')
-    expect(scoreExerciseMatch(pushup, ['dumbbell', 'push', 'up'], 'dumbbell push up')).toBe(380) // 300 + 50 + 30
+    expect(scoreExerciseMatch(pushup, ['dumbbell', 'push', 'up'], 'dumbbell push up')).toBe(380)
   })
 
   it('ranks exercises by relevance score in all scope across disjunctive, out-of-order, and cross-attribute queries', () => {
@@ -267,11 +259,6 @@ describe('Catalogue query', () => {
       workouts: [],
     }
 
-    // Disjunctive OR query: 3 terms matching differently across exercises
-    // ex-3 matches 4 tokens: 'incline', 'dumbbell', 'bench', 'press' -> highest
-    // ex-2 matches 3 tokens: 'dumbbell', 'bench', 'press'
-    // ex-1 matches 2 tokens: 'bench', 'press'
-    // ex-4 matches 0 tokens -> omitted
     const disjunctiveResult = queryCatalogue({
       profile,
       scope: { kind: 'all' },
@@ -281,10 +268,6 @@ describe('Catalogue query', () => {
     const disjunctiveIds = disjunctiveResult.rows.map(r => r.exercise.id).filter(id => id.startsWith('ex-'))
     expect(disjunctiveIds).toEqual(['ex-3', 'ex-2', 'ex-1'])
 
-    // Out-of-order query: "bench dumbbell"
-    // ex-2 and ex-3 match both 'bench' and 'dumbbell' (score 220)
-    // ex-1 matches only 'bench' (score 110)
-    // ex-4 matches neither -> omitted
     const outOfOrderResult = queryCatalogue({
       profile,
       scope: { kind: 'all' },
@@ -294,8 +277,6 @@ describe('Catalogue query', () => {
     const outOfOrderIds = outOfOrderResult.rows.map(r => r.exercise.id).filter(id => id.startsWith('ex-'))
     expect(outOfOrderIds).toEqual(['ex-2', 'ex-3', 'ex-1'])
 
-    // ex-1 matches 'barbell' (title/eq) and 'chest' (primary muscle) -> 2 tokens (210)
-    // ex-4 matches 'barbell' in title (110); ex-2, ex-3 match 'chest' in primary muscle (100)
     const crossAttributeResult = queryCatalogue({
       profile,
       scope: { kind: 'all' },
@@ -317,7 +298,6 @@ describe('Catalogue query', () => {
         exercise('ex-rare-high-rel-2', 'Incline Dumbbell Bench Press', 'chest', 'dumbbell'),
       ],
       favorites: [],
-      // Usage counts: ex-popular-low-rel = 10, ex-rare-high-rel-1 = 1, ex-rare-high-rel-2 = 5
       routines: [
         {
           ex: [
@@ -330,26 +310,17 @@ describe('Catalogue query', () => {
       workouts: [],
     }
 
-    // 1. With search "dumbbell bench":
-    // ex-rare-high-rel-1 and ex-rare-high-rel-2 match 2 tokens (score 220)
-    // ex-popular-low-rel matches 0 tokens -> excluded
     const searchedResult = queryCatalogue({
       profile,
       scope: { kind: 'chosen' },
       search: 'dumbbell bench',
       equipment: '',
     })
-    // Between high-rel-1 (usage 1) and high-rel-2 (usage 5), high-rel-2 wins tie-breaker!
     expect(searchedResult.rows.map(r => ({ id: r.exercise.id, usage: r.usageCount }))).toEqual([
       { id: 'ex-rare-high-rel-2', usage: 5 },
       { id: 'ex-rare-high-rel-1', usage: 1 },
     ])
 
-    // 2. With broader search "barbell bench" where popular lift has 1 match (110) and high-rel lifts have 1 match (110):
-    // ex-popular-low-rel matches 'barbell' (score 110, usage 10)
-    // ex-rare-high-rel-1 matches 'bench' (score 110, usage 1)
-    // ex-rare-high-rel-2 matches 'bench' (score 110, usage 5)
-    // Tied on score: usage count decides: 10 > 5 > 1!
     const tiedResult = queryCatalogue({
       profile,
       scope: { kind: 'chosen' },
@@ -362,7 +333,6 @@ describe('Catalogue query', () => {
       'ex-rare-high-rel-1',
     ])
 
-    // 3. When search is empty, pure usage count descending order is strictly preserved
     const emptySearchResult = queryCatalogue({
       profile,
       scope: { kind: 'chosen' },
@@ -386,7 +356,6 @@ describe('Catalogue query', () => {
       workouts: [],
     }
 
-    // Tokenized query matching title + secondary muscle
     const result = queryCatalogue({
       profile,
       scope: { kind: 'all' },
@@ -396,7 +365,6 @@ describe('Catalogue query', () => {
     const row = result.rows.find(r => r.exercise.id === 'compound-bench')
     expect(row?.secondaryMatch).toBe('triceps')
 
-    // Query matching only title does not attribute secondary badge
     const titleOnlyResult = queryCatalogue({
       profile,
       scope: { kind: 'all' },
@@ -406,7 +374,6 @@ describe('Catalogue query', () => {
     const titleRow = titleOnlyResult.rows.find(r => r.exercise.id === 'compound-bench')
     expect(titleRow?.secondaryMatch).toBeNull()
 
-    // searchAttribution: false suppresses the badge even with tokenized search
     const suppressedResult = queryCatalogue({
       profile,
       scope: { kind: 'all' },

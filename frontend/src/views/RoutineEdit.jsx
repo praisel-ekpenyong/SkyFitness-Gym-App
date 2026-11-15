@@ -16,7 +16,6 @@ import BodyMap from '../components/BodyMap.jsx'
 import { loadOfRoutine, rankOf, MUSCLE_NAME } from '../lib/muscles.js'
 import { seedForReplacement } from '../lib/workout-model.js'
 
-/** Routine editor route; renames, configures, and orders one routine's exercises. */
 export default function RoutineEdit() {
   const nav = useNavigate()
   const { id } = useParams()
@@ -29,7 +28,6 @@ export default function RoutineEdit() {
   const edit = fn => update(s => {
     const r = s.routines.find(x => x.id === id)
     const next = fn(r.ex)
-    // Seam fns return the next list (immutable); in-place tweaks return nothing.
     if (Array.isArray(next)) r.ex = next
   })
   const move = (i, dir) => edit(ex => {
@@ -52,7 +50,6 @@ export default function RoutineEdit() {
   const inSS = new Set(units.filter(u => u.length > 1).flat())
 
   return <div className="narrow routine-edit">
-    {/* The name is edited in place, so its input stands where the title would: say so to a screen reader. */}
     <h1 className="sr-only">{r.name}</h1>
     <div className="hdr hdr-back">
       <button className="iconbtn" onClick={() => nav('/plan')} aria-label={t('Plan')}><Icon name="chevronLeft" /></button>
@@ -63,8 +60,6 @@ export default function RoutineEdit() {
       <button className="btn sm plain hdr-act" aria-label={t('Pick an icon')} onClick={() => glyphPicker(r.emoji, g => update(s => { s.routines.find(x => x.id === id).emoji = g }))}><Icon name={glyphOf(r.emoji)} />{t('Icon')}</button>
     </div>
 
-    {/* Coverage of the routine as planned, so a gap shows up while you're building it
-        rather than after a month of training around it. */}
     {r.ex.length > 0 && (() => {
       const load = loadOfRoutine(r)
       const { worked } = rankOf(load)
@@ -89,8 +84,6 @@ export default function RoutineEdit() {
     </div>
 
     {r.ex.length ? <div className="list">{r.ex.map((e, i) => {
-      // An unresolvable id is shown rather than skipped — hiding it left an entry you
-      // could neither see nor delete, but that still turned up in the workout.
       const ex = exOr(e.id)
       const linkedPrev = i > 0 && e.sg && r.ex[i - 1].sg === e.sg
       return <div key={i}>
@@ -137,7 +130,6 @@ export default function RoutineEdit() {
     })}</div> : <div className="empty"><div className="ico"><Icon name="dumbbell" /></div>{t('No exercises yet — add your first one.')}</div>}
 
     <Button variant="primary" onClick={() => exercisePicker(ex => exConfigSheet(ex, null, cfg => edit(x => { x.push({ id: ex.id, ...cfg }) }), null, r))} icon="plus">{t('Add exercise')}</Button>
-    {/* Destructive and rare: red words with room above, like "Discard workout", not a slab under "Add exercise". */}
     <Button variant="ghost" className="rt-delete" onClick={() => confirmSheet({
       title: t('Delete routine?'), message: t('“{0}” and its exercises will be removed.', r.name), confirmText: t('Delete'), danger: true,
       onConfirm: () => {

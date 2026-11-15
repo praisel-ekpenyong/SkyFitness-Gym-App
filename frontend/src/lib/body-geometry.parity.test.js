@@ -2,12 +2,6 @@ import { describe, it, expect } from 'vitest'
 import bodyPaths from './body-paths.js'
 import { MUSCLES, MUSCLE_NAME, levelsOf, INERT } from './muscles.js'
 
-/**
- * Visual parity check for lats vs upper-back.
- *
- * Synthetic loads isolating lats vs upper-back must yield distinct
- * selectable back regions with independent heat levels on both models.
- */
 describe('lats vs upper-back visual parity', () => {
   const assertIsolatedLevels = () => {
     const latLoad = levelsOf({ lats: 10, 'upper-back': 0 })
@@ -22,7 +16,6 @@ describe('lats vs upper-back visual parity', () => {
     assertIsolatedLevels()
     const bothLoad = levelsOf({ lats: 5, 'upper-back': 5 })
 
-    // when both present and equal, both should be hot
     expect(bothLoad.lats).toBe(4)
     expect(bothLoad['upper-back']).toBe(4)
     expect(MUSCLE_NAME.lats).toBe('Lats')
@@ -42,18 +35,15 @@ describe('lats vs upper-back visual parity', () => {
       expect(latsPaths.length).toBeGreaterThan(0)
       expect(upperPaths.length).toBeGreaterThan(0)
 
-      // mutually exclusive: no double-shading seam overlap (no identical path strings)
       const latsSet = new Set(latsPaths.map(s => s.trim()))
       for (const d of upperPaths) {
         expect(latsSet.has(d.trim())).toBe(false)
       }
 
-      // viewBox invariant (maleBack 718 95 727 1280, femaleBack 823 0 650 1450 per BodyPathData.swift)
       const vb = back.vb.trim().split(/\s+/)
       expect(vb.length).toBe(4)
       vb.forEach(n => expect(Number.isFinite(Number(n))).toBe(true))
 
-      // selectable affordance: MUSCLES iteration contains both
       const selectable = new Set(MUSCLES)
       expect(selectable.has('lats')).toBe(true)
       expect(selectable.has('upper-back')).toBe(true)

@@ -42,7 +42,6 @@ describe('plan-share engine', () => {
       expect(bundle.routines[0].ex[1].sec).toBe(45)
       expect(bundle.routines[0].ex[2].side).toBe(true)
 
-      // Only referenced custom exercises should be included with muscle metadata preserved
       expect(bundle.customEx.length).toBe(1)
       expect(bundle.customEx[0].id).toBe('custom-1')
       expect(bundle.customEx[0].n).toBe('Special Plank')
@@ -79,8 +78,6 @@ describe('plan-share engine', () => {
     })
 
     it('coerces string secondary muscles to array so single-sm customs survive export', () => {
-      // Legacy customs may store sm as a single string rather than an array;
-      // buildPlanBundle must normalize it so the friend sees the secondary tag.
       const S = {
         routines: [{ id: 'r1', name: 'Back Day', ex: [{ id: 'custom-str', sets: 3, reps: 10 }] }],
         customEx: [
@@ -90,7 +87,6 @@ describe('plan-share engine', () => {
         ],
         week: { 1: 'r1' },
       }
-      // Only custom-str is referenced; the coercion is verified via a second full bundle
       const S2 = {
         routines: [{ id: 'r1', name: 'All Customs', ex: [{ id: 'custom-str', sets: 3 }, { id: 'custom-arr', sets: 3 }, { id: 'custom-empty', sets: 3 }] }],
         customEx: S.customEx,
@@ -188,8 +184,8 @@ describe('plan-share engine', () => {
           },
         ],
         customEx: [
-          { id: 'foreign-c1', n: 'plate pinch', bp: 'forearms' }, // duplicate (case-insensitive + same bp)
-          { id: 'foreign-c2', n: 'Towel Pull Up', bp: 'back', tg: 'upper-back', sm: ['forearm', 'biceps'] },   // new custom
+          { id: 'foreign-c1', n: 'plate pinch', bp: 'forearms' },
+          { id: 'foreign-c2', n: 'Towel Pull Up', bp: 'back', tg: 'upper-back', sm: ['forearm', 'biceps'] },
         ],
         week: { 2: 'foreign-r1' },
       }
@@ -200,19 +196,15 @@ describe('plan-share engine', () => {
       expect(state.routines[1].id).not.toBe('foreign-r1')
       expect(state.routines[1].name).toBe('Grip Strength')
 
-      // Custom exercise deduplication:
-      // existing-c1 reused, foreign-c2 added
       expect(state.customEx.length).toBe(2)
       const addedCustom = state.customEx.find(c => c.n === 'Towel Pull Up')
       expect(addedCustom).toBeDefined()
       expect(addedCustom.tg).toBe('upper-back')
       expect(addedCustom.sm).toEqual(['forearm', 'biceps'])
 
-      // Merged routine rewired to use existing-c1 and newly generated custom ID
       expect(state.routines[1].ex[0].id).toBe('existing-c1')
       expect(state.routines[1].ex[1].id).toBe(addedCustom.id)
 
-      // Schedule preserved when schedule is false
       expect(state.week).toEqual({ 1: 'existing-r1' })
     })
 
@@ -265,7 +257,6 @@ describe('plan-share engine', () => {
       mergePlan(state, bundle, { schedule: false })
       expect(state.customEx).toHaveLength(1)
       expect(state.customEx[0].sm).toEqual(['upper-back'])
-      // idempotent on array input as well
       const state2 = { routines: [], customEx: [], week: {} }
       const bundle2 = {
         name: 'Array Sm Import',

@@ -6,19 +6,11 @@ import { t } from '../lib/i18n.js'
 import Icon from './Icon.jsx'
 import Mark from './Mark.jsx'
 
-/**
- * The app's primary navigation: a bottom bar on a phone, stood up as a labelled sidebar on desktop by CSS alone.
- * The active tab is marked with aria-current="page". The center tab starts the scheduled routine or
- * resumes the running workout; it is drawn like the other tabs and only `.rec` (a workout is running) colours it.
- * @param {Function} onStart - Called with the scheduled routine id to start a workout.
- */
 export default function TabBar({ onStart }) {
   const nav = useNavigate()
   const loc = useLocation()
   const S = useStore(s => s.S)
   const cur = loc.pathname.split('/')[1] || 'home'
-  // Settings is reached from Home on a phone, so Home stays lit there; `via` lets the desktop
-  // sidebar, which lists Settings itself, drop that second highlight.
   const via = k => (cur === 'history' && k === 'stats') || (cur === 'settings' && k === 'home')
   const on = k => cur === k || via(k)
 

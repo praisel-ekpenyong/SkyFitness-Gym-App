@@ -1,8 +1,3 @@
-/**
- * The Sky mark: a stepped, loaded bar, the same shape as the app icon. Decorative wherever it
- * appears, since the product name always sits beside it in text.
- * @param {number} [size] - Rendered height in pixels; the width follows the mark's proportions.
- */
 export default function Mark({ size = 20, className = '' }) {
   return (
     <svg className={'mark ' + className} viewBox="80 168 352 176" height={size} width={size * 2} aria-hidden="true" focusable="false">

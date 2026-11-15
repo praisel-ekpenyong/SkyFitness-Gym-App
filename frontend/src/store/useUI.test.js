@@ -1,11 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from 'vitest'
 
-// Regression (surfaced by ticket 08's built-app smoke pass): the sky surgery removed the
-// server-era imports from useUI.js but left two `useStore.getState()` calls in the rest and
-// work timer ticks. The old shared import masked them; without it, the first tick
-// of any rest timer throws ReferenceError in the production bundle — the beep sequence, the
-// "rest over" toast and the notification never fire.
 vi.mock('../lib/sound.js', () => ({
   beep: vi.fn(),
   vibrate: vi.fn(),
@@ -41,7 +36,6 @@ describe('useUI rest timer', () => {
     expect(useUI.getState().work).toEqual(expect.objectContaining({ left: 45, total: 45, label: 'Plank' }))
 
     vi.advanceTimersByTime(10000)
-    // Advance timers so left becomes 35
     expect(useUI.getState().work?.left).toBe(35)
 
     ui.finishWorkEarly()

@@ -6,8 +6,6 @@ import {
   isStorageBlocked, validateBackup, sanitizeBackup, onStorageSync
 } from './storage.js'
 
-// In-memory stand-ins for the two storages: each side arrives at boot as
-// { ts, state } (a parsed snapshot plus its save timestamp) or null.
 const copy = (ts, workouts = ['w1']) => ({ ts, state: { _ts: ts, workouts } })
 
 describe('pickNewest', () => {
@@ -38,7 +36,6 @@ describe('pickNewest', () => {
     const unstamped = { ts: undefined, state: { workouts: ['w1'] } }
     const mirror = copy(1, ['w2'])
     expect(pickNewest(unstamped, mirror)).toBe(mirror.state)
-    // same rule when the mirror is the unstamped one: nothing anywhere wins over nothing
     expect(pickNewest(null, { ts: undefined, state: { workouts: ['w2'] } })).toBeNull()
   })
 
@@ -49,10 +46,6 @@ describe('pickNewest', () => {
   })
 })
 
-// The nag threshold: two weeks without a backup. Long enough not to pester a daily user,
-// short enough that a lost phone never takes more than that window of history with it.
-// Restated literally (not imported) so these tests stay an independent check — but pinned
-// to the export so the two cannot silently drift apart.
 const WEEKS = 14 * 24 * 60 * 60 * 1000
 expect(BACKUP_NAG_MS).toBe(WEEKS)
 
@@ -68,25 +61,21 @@ describe('backupDue', () => {
 
   it('is quiet while the last export is still within the threshold', () => {
     expect(backupDue(1_000_000 - WEEKS + 1, 1_000_000)).toBe(false)
-    expect(backupDue(1_000_000, 1_000_000)).toBe(false)      // exported this very second
+    expect(backupDue(1_000_000, 1_000_000)).toBe(false)
   })
 
   it('disappears after a fresh export — the timestamp moves up, the nag goes away', () => {
     const before = 1_000_000 - WEEKS - 1
     expect(backupDue(before, 1_000_000)).toBe(true)
-    const after = 1_000_000                                  // doExport stamps now
+    const after = 1_000_000
     expect(backupDue(after, 1_000_000)).toBe(false)
   })
 
   it('survives a lastExport stamp from the future without throwing or flipping out', () => {
-    // clock skew / restored profile: not overdue by any honest reading
     expect(backupDue(2_000_000, 1_000_000)).toBe(false)
   })
 })
 
-// --- the write protocol ----------------------------------------------------
-// Runs against happy-dom's real localStorage; mirrors are injectable fakes, so every
-// branch of the protocol is observable without a browser.
 
 let writes
 let sink
@@ -135,7 +124,7 @@ describe('save / flush', () => {
   })
 
   it('registerSink adds a mirror alongside the default IndexedDB sink', () => {
-    __setSinksForTests()          // back to the real default (IndexedDB write no-ops here)
+    __setSinksForTests()
     const extra = { id: 'extra', read: async () => null, write: x => writes.push(x) }
     registerSink(extra)
     save({ n: 4 })
@@ -148,11 +137,9 @@ describe('save / flush', () => {
     // per-instance stubbing of the frozen happy-dom Storage never lands.
     __setLocalWriteForTests(() => { throw new DOMException('Quota exceeded', 'QuotaExceededError') })
     expect(() => save({ n: 5 })).not.toThrow()
-    // pending snapshot must still be scheduled for async sinks despite localStorage failure
     expect(writes).toEqual([])
     vi.advanceTimersByTime(800)
     expect(writes).toEqual([{ n: 5, _ts: expect.any(Number) }])
-    // restore and verify next save lands in localStorage normally
     __setLocalWriteForTests()
     save({ n: 6 })
     expect(JSON.parse(localStorage.getItem(LOCAL_KEY)).n).toBe(6)
@@ -180,9 +167,6 @@ describe('save / flush', () => {
 })
 
 describe('load (web boot protocol)', () => {
-  // The mobile branch compiles away under vitest (MOBILE folds to false), so these walk
-  // the web protocol: race localStorage vs the first non-native sink, swap on a strictly
-  // fresher winner, seed an absent mirror otherwise.
   const bootArgs = (running, hasDataFlag) => ({
     running,
     hasData: () => hasDataFlag,
@@ -271,15 +255,12 @@ describe('onStorageSync', () => {
     const callback = vi.fn()
     const unsubscribe = onStorageSync(callback)
 
-    // Unrelated storage key -> ignored
     window.dispatchEvent(new StorageEvent('storage', { key: 'other_key', newValue: JSON.stringify({ a: 1 }) }))
     expect(callback).not.toHaveBeenCalled()
 
-    // Valid update on LOCAL_KEY
     window.dispatchEvent(new StorageEvent('storage', { key: LOCAL_KEY, newValue: JSON.stringify({ _ts: 200, workouts: [] }) }))
     expect(callback).toHaveBeenCalledWith({ _ts: 200, workouts: [] })
 
-    // Unsubscribe removes listener
     unsubscribe()
     window.dispatchEvent(new StorageEvent('storage', { key: LOCAL_KEY, newValue: JSON.stringify({ _ts: 300 }) }))
     expect(callback).toHaveBeenCalledTimes(1)

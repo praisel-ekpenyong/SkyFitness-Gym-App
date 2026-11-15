@@ -1,6 +1,3 @@
-// Guard G1: the colour tokens keep their promises. Reads styles/tokens.css and resolves every
-// token per theme and accent the way the browser does on :root, so a new value that breaks a
-// pair fails here with the pair, the ratio and the rule it breaks.
 import { describe, expect, it } from 'vitest'
 import { ACCENTS } from './lib/format.js'
 import { colourOf, contrast, hexOf, hueGap, okHue, readTokens } from './test/design-css.js'
@@ -16,7 +13,6 @@ const TEXT = 4.5
 const colour = (theme, name, accent = 'lime') => colourOf(`var(${name})`, tokens.vars(theme, accent))
 const ratio = (fg, bg) => contrast(fg, bg)
 
-/** One line per failing pair: what, where, how far off, and which rule. */
 function pairFailures(theme, fgs, bgs, min, rule, accent) {
   const out = []
   for (const fg of fgs) for (const bg of bgs) {
@@ -56,9 +52,6 @@ describe('G1 colour tokens (styles/tokens.css)', () => {
     })
   }
 
-  // Every token that colours words, on every surface a word can sit on, in both themes and
-  // under every accent (the status colours do not move with the accent, but a guard that
-  // walks all of them cannot miss one that someday does).
   const WORD_TOKENS = {
     '--acc-text': 'DESIGN.md › Tokens › Accent: --acc-text is the accent as words.',
     '--goal-text': 'DESIGN.md › Tokens › Status: --goal-text is the record colour as words.',
@@ -72,7 +65,6 @@ describe('G1 colour tokens (styles/tokens.css)', () => {
     })
   }
 
-  // Chart ink is a line, not words: WCAG 1.4.11 asks 3:1 against what it is drawn on.
   for (const theme of THEMES) {
     it(`${theme}: --data holds 3:1 on the grounds a chart sits on, for every accent`, () => {
       const f = ACCENT_KEYS.flatMap(a => pairFailures(theme, ['--data'], ['--bg', '--surface', '--surface-2'], 3, 'DESIGN.md › Tokens › Accent: --data is the accent as chart ink (WCAG 1.4.11, 3:1).', a))

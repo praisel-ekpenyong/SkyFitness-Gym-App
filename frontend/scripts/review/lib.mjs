@@ -1,12 +1,3 @@
-// Shared helpers for the visual review tools in this folder. Tools only: nothing here ships in the app.
-//
-// Environment (every value has a default; flags on each script override the same names):
-//   SKY_REVIEW_PORT     port the review server listens on          (default 5198)
-//   SKY_REVIEW_BASE     base URL the scripts open                  (default http://127.0.0.1:<port>/)
-//   SKY_REVIEW_TODAY    the frozen "today", YYYY-MM-DD, UTC        (default 2026-11-09)
-//   SKY_REVIEW_OUT      where screenshots and JSON land            (default frontend/.tmp/review)
-//   SKY_REVIEW_PROFILE  throwaway browser profile dir for open.mjs (default <out>/profile)
-//   SKY_BROWSER         path to a Chromium/Chrome binary          (default: first of chromium, chromium-browser, google-chrome, google-chrome-stable on PATH)
 import { createRequire } from 'node:module'
 import { accessSync, constants } from 'node:fs'
 import { delimiter, dirname, join, resolve } from 'node:path'
@@ -50,23 +41,18 @@ export function findBrowser(flags = {}) {
 
 export const launch = (flags = {}, opts = {}) => chromium.launch({ executablePath: findBrowser(flags), ...opts })
 
-// "Today" at 10:12 UTC, as epoch ms. Runs use timezoneId UTC so local and UTC dates agree.
 export const todayMs = today => { const [y, m, d] = today.split('-').map(Number); return Date.UTC(y, m - 1, d, 10, 12, 0) }
 
-// Shift Date so "now" starts at the chosen moment but keeps ticking, so timers and the rest dock still run.
 export const freezeClock = (ctx, today) => ctx.addInitScript(t => {
   const R = Date, off = t - R.now()
   class D extends R { constructor(...a) { if (a.length) super(...a); else super(R.now() + off) } static now() { return R.now() + off } }
   window.Date = D
 }, todayMs(today))
 
-// Put `state` in localStorage before the app's first script runs. The app saves an empty profile if it
-// boots with nothing there, so this must be an init script, never a post-load evaluate.
 export const seedStorage = (ctx, state) => ctx.addInitScript(s => {
   if (!localStorage.getItem('gym_state_v1')) localStorage.setItem('gym_state_v1', JSON.stringify(s))
 }, state)
 
-// Demo profile: 14 weeks of Mon/Wed/Fri history ending the day before `today`, with a gap three weeks back.
 const SPEC = {
   push: { name: 'Push Day', emoji: 'barbell', ex: [['0025', 4, 8, 80], ['0047', 3, 10, 24], ['0426', 3, 10, 40], ['0334', 3, 12, 10], ['0241', 3, 12, 25], ['0251', 3, 10, 0]] },
   pull: { name: 'Pull Day', emoji: 'pullup', ex: [['2330', 4, 10, 50], ['0027', 4, 8, 70], ['1323', 3, 10, 45], ['0031', 3, 10, 30], ['0313', 3, 12, 12]] },

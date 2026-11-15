@@ -213,7 +213,6 @@ describe('Sky Service Worker (sw.js)', () => {
       loadServiceWorker()
       const res = new Response('app()', { status: 200 })
       globalThis.fetch = vi.fn(async () => res)
-      // Opening a real cache takes a while: the page has the response well before the cache does.
       const openNow = fakeCaches.open
       fakeCaches.open = vi.fn(name => new Promise(resolve => setTimeout(() => resolve(openNow(name)), 5)))
       let responded
@@ -221,8 +220,6 @@ describe('Sky Service Worker (sw.js)', () => {
         request: { url: 'https://sky.app/assets/index-abc.js', method: 'GET', mode: 'cors', destination: 'script' },
         respondWith: p => { responded = p },
       })
-      // The browser starts reading the response as soon as respondWith resolves. A clone taken
-      // after that throws, so nothing is cached and an offline reload opens a blank page.
       await (await responded).text()
       await new Promise(resolve => setTimeout(resolve, 20))
       expect(await cacheStore['https://sky.app/assets/index-abc.js']?.text()).toBe('app()')

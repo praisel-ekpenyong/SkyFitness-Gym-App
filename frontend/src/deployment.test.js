@@ -36,19 +36,16 @@ describe('Cloudflare Pages deployment configuration', () => {
 
     const parsed = parseHeadersFile(readFileSync(headersPath, 'utf-8'))
 
-    // Global security headers
     expect(parsed['/*']).toBeDefined()
     expect(parsed['/*']['X-Content-Type-Options']).toBe('nosniff')
     expect(parsed['/*']['X-Frame-Options']).toBe('DENY')
     expect(parsed['/*']['Referrer-Policy']).toBe('strict-origin-when-cross-origin')
 
-    // Application shell, service worker, and manifest must always fresh-check
     const noCacheHeader = 'no-cache, no-store, must-revalidate'
     expect(parsed['/index.html']?.['Cache-Control']).toBe(noCacheHeader)
     expect(parsed['/sw.js']?.['Cache-Control']).toBe(noCacheHeader)
     expect(parsed['/manifest.json']?.['Cache-Control']).toBe(noCacheHeader)
 
-    // Immutable assets must be cached long term
     expect(parsed['/assets/*']?.['Cache-Control']).toBe('public, max-age=31536000, immutable')
   })
 
@@ -56,13 +53,9 @@ describe('Cloudflare Pages deployment configuration', () => {
     const content = readFileSync(resolve(publicDir, '_headers'), 'utf-8')
     const parsed = parseHeadersFile(content)
 
-    // Minimal static policy: everything same-origin; images and media may also
-    // come from the pinned exercise-dataset CDN (see PINNED_DATASET_COMMIT in
-    // src/lib/exercises.js). Opt-in analytics hosts are appended here, never inline.
     expect(parsed['/*']?.['Content-Security-Policy']).toBe(
       "default-src 'self'; img-src 'self' https://cdn.jsdelivr.net; media-src 'self' https://cdn.jsdelivr.net; connect-src 'self' https://cdn.jsdelivr.net"
     )
-    // Canonical twin lives in netlify.toml — edits land in both places.
     expect(content).toContain('netlify.toml')
   })
 
@@ -111,7 +104,6 @@ describe('PWA install metadata', () => {
     const html = readFileSync(resolve(publicDir, '..', 'index.html'), 'utf-8')
     const match = html.match(/<link rel="manifest" href="([^"]+)"/)
     expect(match).toBeTruthy()
-    // No leading slash: stays correct on subpath deploys, consistent with base './'.
     expect(match[1]).toBe('manifest.json')
     expect(readFileSync(resolve(publicDir, '..', 'vite.config.js'), 'utf-8')).toContain("base: './'")
   })
@@ -134,7 +126,6 @@ describe('Netlify deployment configuration', () => {
     expect(content).toContain(
       `Content-Security-Policy = "default-src 'self'; img-src 'self' https://cdn.jsdelivr.net; media-src 'self' https://cdn.jsdelivr.net; connect-src 'self' https://cdn.jsdelivr.net"`
     )
-    // Canonical twin lives in frontend/public/_headers — edits land in both places.
     expect(content).toContain('frontend/public/_headers')
   })
 })

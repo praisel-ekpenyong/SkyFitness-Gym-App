@@ -1,46 +1,36 @@
-/* Tokens. Every colour, radius and type role downstream references these. */
 :root {
   color-scheme: dark;
 
-  /* ground and elevation: a warm near-black (gym rubber), never navy or slate.
-     Each step is ~1.2:1 over the one below, so a block reads as a block. */
   --bg:        #0a0a09;
-  --bg-el:     #151514;   /* sheets */
-  --surface:   #1f1f1d;   /* blocks */
-  --surface-2: #2e2e2b;   /* keys and nested panels */
-  --surface-3: #3b3b37;   /* pressed keys, controls on a nested panel */
+  --bg-el:     #151514;
+  --surface:   #1f1f1d;
+  --surface-2: #2e2e2b;
+  --surface-3: #3b3b37;
 
-  /* ink: chalk white, then two greys far enough apart to read as two (~1.45:1 apart);
-     all three hold 4.5:1 on every surface, --surface-3 included */
   --label:   #f6f5f0;
   --label-2: #cac8bf;
   --label-3: #a8a69e;
-  --label-4: #5a5953;     /* marks only, never words */
+  --label-4: #5a5953;
 
-  /* primary is inversion */
   --ink:    #f6f5f0;
   --on-ink: #0a0a09;
 
-  /* lines, only where a list needs them */
-  --sep:    #2e2e2b;   /* = --surface-2 */
-  --sep-op: #3b3b37;   /* = --surface-3 */
+  --sep:    #2e2e2b;
+  --sep-op: #3b3b37;
   --hair:   1px;
 
-  /* status */
-  --red:    #ff5b4f;   --red-text: #ff847b;   /* --red 75% toward white: the fill is too dark to be words on --surface-2/3 */
+  --red:    #ff5b4f;   --red-text: #ff847b;
   --orange: #ff9d3d;   --orange-text: var(--orange);   --on-orange: #0a0a09;
   --yellow: #f2c94c;   --goal-text: var(--yellow);
 
-  /* accent: the colour of work. Per profile via data-accent. */
   --acc:      #a3e635;
   --on-acc:   #0a0a09;
-  --acc-2:    color-mix(in srgb, var(--acc) 82%, black);   /* pressed */
-  --acc-text: var(--acc);                                  /* accent as words */
-  --data:     var(--acc);                                  /* accent as chart ink */
+  --acc-2:    color-mix(in srgb, var(--acc) 82%, black);
+  --acc-text: var(--acc);
+  --data:     var(--acc);
   --acc-soft: color-mix(in srgb, var(--acc) 14%, transparent);
   --acc-line: color-mix(in srgb, var(--acc) 40%, transparent);
 
-  /* competition plates: the object's own colours, used on plates and nowhere else */
   --plate-red:    #d8352b;
   --plate-blue:   #2a6fe0;
   --plate-yellow: #f0c02e;
@@ -49,49 +39,38 @@
   --plate-steel:  #8f8f88;
   --plate-bar:    #6f6f69;
 
-  /* exercise art is white-ground line work: inverted it reads as an X-ray on black,
-     and the hue-rotate puts the red of the target muscle back where it was */
   --art-filter: invert(1) hue-rotate(180deg) brightness(1.14) contrast(1.04);
   --art-ground: #000000;
-  /* the art's own paper, painted under the filter: the filter turns it into --art-ground in either theme,
-     so an image that has not painted yet is the ground the lifter sees, never a white square */
   --art-paper: #ffffff;
 
-  /* type */
   --font: 'Archivo Variable', 'Archivo', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif;
   --narrow: 62%;
   --semi:   80%;
 
-  /* The type scale: every font-size in styles/ is one of these (design-lint.test.js holds it).
-     Named by role; an icon takes the step of the text it sits with. Weights are 400 body and
-     meta, 600 headings and keys, 700 figures, 800 display. */
-  --fs-micro:   11px;   /* the floor: chart ticks, heatmap and tab labels */
-  --fs-meta:    13px;   /* labels, sublines, units, captions */
-  --fs-small:   14px;   /* secondary text, small keys, chips */
-  --fs-body:    15px;   /* body, headings, keys */
+  --fs-micro:   11px;
+  --fs-meta:    13px;
+  --fs-small:   14px;
+  --fs-body:    15px;
   --fs-field:   16px;   /* form fields (iOS zooms the page below 16px) and the root */
-  --fs-lead:    18px;   /* icons on keys and rows, small figures */
-  --fs-figure:  22px;   /* figures in a row, the coloured key's label */
-  --fs-heading: 28px;   /* display: sheet titles, names in tight places */
-  --fs-title:   34px;   /* display: screen titles, KPI figures */
-  --fs-display: 44px;   /* display: desktop titles, exercise names, Finish */
-  --fs-poster:  56px;   /* display: the Home hero on a phone, desktop page titles */
-  --fs-hero:    68px;   /* the open set, the rest clock, the weigh-in: the largest thing on screen */
+  --fs-lead:    18px;
+  --fs-figure:  22px;
+  --fs-heading: 28px;
+  --fs-title:   34px;
+  --fs-display: 44px;
+  --fs-poster:  56px;
+  --fs-hero:    68px;
 
-  /* geometry */
   --r-1: 4px;
   --r-2: 8px;
-  --r-3: 16px;           /* sheets only */
+  --r-3: 16px;
   --gap: 12px;
   --pad: 16px;
   --icon-stroke: 1.6;
 
-  /* motion */
   --ease: cubic-bezier(.2, .8, .2, 1);
   --fast: 120ms;
   --med:  200ms;
 
-  /* phone geometry */
   --tap-target: 44px;
   --sab: env(safe-area-inset-bottom, 0px);
   --sat: env(safe-area-inset-top, 0px);
@@ -105,7 +84,6 @@
 :root[data-theme="light"] {
   color-scheme: light;
 
-  /* chalk: the same flat steps, inverted, with no cream in them */
   --bg:        #f3f3f0;
   --bg-el:     #fbfbf9;
   --surface:   #ffffff;
@@ -127,22 +105,17 @@
   --orange: #ef8a1d;   --orange-text: #8f4c06;
   --yellow: #e0ae12;   --goal-text: #7a5c00;
 
-  /* a bright accent still fills a key, but as ink it has to darken to be read on white */
   --acc-text: color-mix(in srgb, var(--acc) 45%, black);
-  --data:     color-mix(in srgb, var(--acc) 62%, black);   /* 3:1 on the grounds a chart sits on, for every accent */
+  --data:     color-mix(in srgb, var(--acc) 62%, black);
   --acc-soft: color-mix(in srgb, var(--acc) 26%, transparent);
 
   --art-filter: none;
   --art-ground: #ffffff;
 }
 
-/* Accents. All are bright enough to carry a black label on a filled key in either theme, and
-   each stays clear of the status hues: no gold, red or orange, which would read as a record,
-   a warning or a running workout. Keep in step with ACCENTS in lib/format.js. */
 :root[data-accent="lime"]   { --acc: #a3e635 }
 :root[data-accent="sky"]    { --acc: #5cb8ff }
 :root[data-accent="violet"] { --acc: #b79cff }
 :root[data-accent="pink"]   { --acc: #ff6fa3 }
 :root[data-accent="teal"]   { --acc: #3dd6c4 }
-/* Pink is the one accent too dark to be words on --surface-3 in dark theme: as text it lifts toward white. */
-:root:not([data-theme="light"])[data-accent="pink"] { --acc-text: #ff7dac }   /* pink 90% toward white */
+:root:not([data-theme="light"])[data-accent="pink"] { --acc-text: #ff7dac }

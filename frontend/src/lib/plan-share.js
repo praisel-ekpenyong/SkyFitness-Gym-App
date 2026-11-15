@@ -1,12 +1,3 @@
-// Share a weekly plan.
-//
-// Two jobs:
-//  1. A small, self-contained file a friend can import into THEIR Sky — just the
-//     routines + the week schedule + the custom exercises those routines use. It never
-//     carries workouts, weigh-ins or settings, and importing MERGES (adds routines with
-//     fresh ids) so nothing the friend already has is touched.
-//  2. A clean, printable page (Save as PDF) where a single exercise never splits across
-//     a page break — each exercise, and each routine that fits, stays in one place.
 
 import { EXIDX, isBodyweightEq } from './exercises.js'
 import { modeOf, isBw, isPerSide, sideReps, cleanNote } from './workout-model.js'
@@ -14,19 +5,13 @@ import { uid, todayISO, DAYN, fmtNum, fmtSigned, exCount, fmtSec } from './forma
 import { t } from './i18n-core.js'
 
 const PLAN_FMT = 1
-const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0]   // Mon-first, matching the Plan screen
+const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0]
 
-/**
- * Normalizes a custom exercise's secondary-muscle field onto the array form the bundle uses.
- * @param {string|string[]} sm - Secondary muscles as one string, an array, or missing; empty string reads as missing.
- * @returns {string[]|null} Array form, or null when missing or empty.
- */
 function normalizeSm(sm) {
   if (sm == null || sm === '') return null
   return Array.isArray(sm) ? sm : [sm]
 }
 
-// Keep only the meaningful config fields, so the file stays small and readable.
 function cleanEx(e) {
   const o = { id: e.id, sets: e.sets }
   const mode = modeOf(e)
@@ -34,8 +19,6 @@ function cleanEx(e) {
     if (e.min != null) o.min = e.min
     if (e.speed != null) o.speed = e.speed
   } else if (mode === 'time') {
-    // Written out even though 'reps' is the fallback for a non-cardio id: a plan file that
-    // dropped the mode would turn a 45-second plank into a 45-rep one at the other end.
     o.mode = 'time'
     if (e.sec != null) o.sec = e.sec
     if (e.weight) o.weight = e.weight
@@ -43,13 +26,8 @@ function cleanEx(e) {
     if (e.reps != null) o.reps = e.reps
     if (e.weight) o.weight = e.weight
   }
-  // How the exercise is logged travels too (issues #31/#32) — the bodyweight flag only when
-  // it disagrees with the catalogue, since agreeing is what the other end already assumes.
   if (e.bodyweight != null && e.bodyweight !== isBodyweightEq(e.id)) o.bodyweight = e.bodyweight
-  // Only on reps work — `side` counts reps, and a timed hold has none to split.
   if (e.side && mode !== 'time' && mode !== 'cardio') o.side = true
-  // Progression settings travel with the plan — a shared Greyskull routine that arrives
-  // without its rule is just a list of weights.
   if (e.prog) o.prog = e.prog
   if (e.inc > 0) o.inc = e.inc
   if (e.repsMin != null) o.repsMin = e.repsMin
@@ -60,7 +38,6 @@ function cleanEx(e) {
   return o
 }
 
-/** Build the shareable bundle: every routine, the week schedule, referenced customs. */
 export function buildPlanBundle(S, name) {
   const routines = (S.routines || []).map(r => ({
     id: r.id, name: r.name, emoji: r.emoji, ...(r.prog ? { prog: r.prog } : {}), ex: (r.ex || []).map(cleanEx)
@@ -86,15 +63,6 @@ export function buildPlanBundle(S, name) {
   return { sky_plan: PLAN_FMT, exported: todayISO(), name: name || '', week, routines, customEx }
 }
 
-/**
- * Validate + normalise an imported file. Throws with a friendly message if it isn't one.
- *
- * Every exercise id has to resolve — either to the built-in library or to a custom
- * exercise carried in the same file. An id that resolves to neither (a hand-edited file,
- * an export from a build with a different exercise dataset) is dropped here: kept, it
- * would sit invisibly in the routine and only surface as a blank screen when the routine
- * is trained.
- */
 export function parsePlan(raw) {
   const data = typeof raw === 'string' ? JSON.parse(raw) : raw
   if (!data || !data.sky_plan || !Array.isArray(data.routines)) {
@@ -123,13 +91,6 @@ export function parsePlan(raw) {
   }
 }
 
-/**
- * Merge a parsed bundle into a draft state `s` (call inside store.update).
- *  - customs: reuse one you already have with the same name + body part, else add it fresh
- *  - routines: always added as NEW routines (fresh ids) — never overwrites yours
- *  - schedule: optional; when on, the shared week REPLACES yours (days the shared plan
- *    leaves empty become rest days — a half-overwritten week would silently mix two plans)
- */
 export function mergePlan(s, bundle, { schedule } = {}) {
   s.customEx = s.customEx || []
   const exIdMap = {}
@@ -171,17 +132,10 @@ export function mergePlan(s, bundle, { schedule } = {}) {
   return { routines: bundle.routines.length }
 }
 
-/* ------------------------------- printable PDF ------------------------------- */
 
-/**
- * Escapes a value for safe inline HTML in the printable plan.
- * @param {*} str - Value of any type; nullish renders as empty.
- * @returns {string} Text with `&`, `<`, `>`, and `"` entity-encoded.
- */
 const esc = str => String(str == null ? '' : str)
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 
-// One exercise's scheme, e.g. "3 × 10 · 60 kg", "3 × 0:45" or "2 × 20 min @ 8 km/h".
 function scheme(e, unit) {
   const sets = e.sets || 1
   const mode = modeOf(e)
@@ -191,12 +145,10 @@ function scheme(e, unit) {
   }
   let s = mode === 'time' ? `${sets} × ${fmtSec(e.sec || 45)}` : `${sets} × ${e.reps ?? 10}`
   if (e.weight) s += ` · ${isBw(e) ? fmtSigned(e.weight) : fmtNum(e.weight)} ${unit}`
-  // A printed plan is read at the rack, so the split earns its four characters.
   if (mode !== 'time' && isPerSide(e)) s += ` · ${t('{0}/side', fmtNum(sideReps(e.reps ?? 10)))}`
   return s
 }
 
-// Group consecutive exercises sharing a superset id into rendered units.
 function units(ex) {
   const out = []
   ex.forEach((e, i) => {
@@ -207,12 +159,6 @@ function units(ex) {
   return out
 }
 
-/**
- * Renders one routine as the HTML section the printable plan paginates.
- * @param {Object} r - Routine with `name` and an `ex` array; unknown ids render under a placeholder name.
- * @param {string} unit - Weight unit printed after loads, such as `kg`.
- * @returns {string} HTML section with superset groups kept together; empty routines show a placeholder row.
- */
 function routineHTML(r, unit) {
   const rows = units(r.ex).map(u => {
     const items = u.map(e => {
@@ -232,11 +178,6 @@ function routineHTML(r, unit) {
   </section>`
 }
 
-/**
- * Renders the Monday-first week schedule as the HTML table heading the printable plan.
- * @param {Object} S - Profile state with `routines` and a `week` day-to-routine map; unassigned days read as Rest.
- * @returns {string} HTML week grid covering all seven days.
- */
 function weekHTML(S) {
   const rows = WEEK_ORDER.map(d => {
     const r = S.routines.find(x => x.id === S.week?.[d])
@@ -329,18 +270,17 @@ export function printPlan(S, owner) {
   ifr.setAttribute('aria-hidden', 'true')
   ifr.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;opacity:0;'
   document.body.appendChild(ifr)
-  const cleanup = () => { try { ifr.remove() } catch (e) { /* teardown is best-effort */ } }
+  const cleanup = () => { try { ifr.remove() } catch (e) {  } }
   const run = () => {
     const w = ifr.contentWindow
     if (!w) { cleanup(); return }
     w.onafterprint = cleanup
-    setTimeout(cleanup, 60000)   // safety net if afterprint never fires
+    setTimeout(cleanup, 60000)
     w.focus()
     try { w.print() } catch (e) { cleanup() }
   }
   const doc = ifr.contentWindow.document
   doc.open(); doc.write(planPrintHTML(S, owner)); doc.close()
-  // Give the iframe a tick to lay out before printing.
   if (doc.readyState === 'complete') setTimeout(run, 120)
   else ifr.onload = () => setTimeout(run, 120)
 }

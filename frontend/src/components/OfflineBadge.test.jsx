@@ -1,6 +1,4 @@
 // @vitest-environment happy-dom
-// Offline badge (ticket 07): a tiny local-serving indicator — hidden while online,
-// a status badge while the shell is served locally.
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'

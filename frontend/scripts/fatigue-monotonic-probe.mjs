@@ -14,7 +14,6 @@ const workout = (start, weight, count = 8) => ({
   }],
 })
 
-// Deterministic LCG: failures reproduce exactly without an external property-testing dependency.
 let seed = 0x5eed1234
 const random = () => {
   seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0
@@ -64,7 +63,6 @@ for (let historyIndex = 0; historyIndex < 100; historyIndex += 1) {
 
 if (comparisons !== 108000) throw new Error(`expected 108000 comparisons, got ${comparisons}`)
 
-// Pin the two history-edit invariants alongside the randomized property probes.
 const today = workout(BASE, 100, 5)
 const baseline = fatigueOf([today], BASE).chest
 for (const oldImport of [workout(BASE - 90 * DAY, 140, 10), workout(BASE - 90 * DAY, 100, 20)]) {

@@ -28,7 +28,6 @@ afterEach(async () => {
   container = null
 })
 
-// The hint belongs to its switch, not to the foot of the section three rows down.
 describe('Settings screen-awake hint', () => {
   it('is the subtitle of the "Keep screen awake" row, not the section footer', async () => {
     await act(async () => { root.render(<Settings />) })

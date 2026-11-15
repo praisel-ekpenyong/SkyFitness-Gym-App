@@ -1,8 +1,6 @@
-/* Home: today's work first, then the week, then the body. */
 .home-hdr { align-items: center; margin-bottom: 14px }
 .home-date { font-size: var(--fs-meta); color: var(--label-2); margin-bottom: 3px }
 
-/* ------------------------------------------------------------------- hero -- */
 .home-hero { background: var(--surface); border-radius: var(--r-2); padding: 14px var(--pad) var(--pad); margin-bottom: var(--gap) }
 .home-hero-head { display: flex; align-items: center; justify-content: space-between; min-height: 28px; margin-bottom: 8px }
 .home-badge { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-meta); font-weight: 600; color: var(--label-2) }
@@ -15,13 +13,10 @@
 .home-edit:active { color: var(--label) }
 
 .home-hero-body { display: grid; grid-template-columns: minmax(0, 1fr) 47%; gap: 8px; align-items: center; margin-bottom: 14px; min-height: 172px }
-/* Home is not read from the bench, so its poster stops at the 56px step on a phone; desktop has room for 68. */
 .home-hero-title { font-size: var(--fs-poster); line-height: .9 }
 .home-hero-title.s { font-size: var(--fs-display); line-height: .94 }
 .home-hero-title.xs { font-size: var(--fs-title); line-height: .96 }
 .home-hero-title.xxs { font-size: var(--fs-heading); line-height: .96 }
-/* a word no step fits beside the map: the name takes the card's width and the map sits below it.
-   lib/name-fit.js decides per layout; each rule holds only inside its layout's range (NAME_MEDIA). */
 @media (max-width: 699px) { .home-hero-body.name-stacked-phone { grid-template-columns: minmax(0, 1fr) } }
 @media (min-width: 700px) and (max-width: 999px) { .home-hero-body.name-stacked-tablet { grid-template-columns: minmax(0, 1fr) } }
 .home-hero-meta { font-size: var(--fs-body); font-weight: 600; margin-top: 12px }
@@ -36,7 +31,6 @@
 .welcome-b { margin-bottom: 14px }
 .home-more { color: var(--label-2); margin: 4px 0 0 auto; display: flex; padding-inline: 2px }
 
-/* ------------------------------------------------------------------- week -- */
 .week-card { padding: 6px 8px 10px }
 .week-nav { display: flex; align-items: center; justify-content: space-between }
 .week-title { gap: 8px }
@@ -44,7 +38,7 @@
 .week-reset-btn { min-height: var(--tap-target); font-size: var(--fs-meta); color: var(--label); padding: 0 8px; font-weight: 600 }
 .week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px }
 .wday { text-align: center; padding: 7px 0 8px; border-radius: 6px; background: var(--surface-2); transition: background var(--fast); min-width: 0; position: relative }
-.wday::after { content: ''; position: absolute; inset: 0 -1.5px }   /* half of each 3px gap: 44px wide from a 353px screen */
+.wday::after { content: ''; position: absolute; inset: 0 -1.5px }
 .wday:active { background: var(--surface-3) }
 .wday .lbl { font-size: var(--fs-micro); color: var(--label-3); font-weight: 600 }
 .wday .num { font-size: var(--fs-figure); font-stretch: var(--narrow); font-weight: 700; line-height: 1.1; margin: 1px 0 4px }
@@ -59,14 +53,12 @@
 .wday.today .dot.ovr { background: var(--on-ink) }
 .wday.today:active { background: var(--label-2) }
 
-/* --------------------------------------------------------- week's progress -- */
 .week-progress .chev { align-self: center }
 .wp-t { font-size: var(--fs-body); font-weight: 600; margin-bottom: 2px }
 .wp-blocks { display: flex; gap: 3px; margin-top: 12px }
 .wp-blocks i { flex: 1 1 0; height: 8px; background: var(--surface-3); border-radius: 1px }
 .wp-blocks i.on { background: var(--data) }
 
-/* ------------------------------------------------------------ body weight -- */
 .bw-card .card-head { margin-bottom: 6px }
 .bw-tools { gap: 4px; margin: -4px -6px -4px 0 }
 .bw-tools .btn { background: none; color: var(--label-2); font-weight: 600; padding-inline: 8px }

@@ -1,7 +1,4 @@
 // @vitest-environment happy-dom
-// D1: the gold, red and orange accents are gone because they read as status colours. A Profile
-// that still carries one — in localStorage, in the mirror, or in a backup — reads as lime
-// wherever it enters (load, restore), and the stored copy it came from is never rewritten.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useStore, DEF, normalizeState } from './useStore.js'
 import { useUI } from './useUI.js'
