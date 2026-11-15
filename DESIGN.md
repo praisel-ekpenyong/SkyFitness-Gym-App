@@ -38,7 +38,10 @@ here and the list or scale in the test together, never one without the other.
    workout header's name, a logged Workout in a list). On the screens read from the bench (the
    workout, the rest dock, the weigh-in) the figure is the largest thing. On Finish the workout's
    figures (56px) outsize its title (44px); a figure too wide for its half takes the full width
-   rather than break or shrink.
+   rather than break or shrink. A routine's name beside a muscle map (the Home hero, Plan's Routine
+   cards) breaks at spaces only and steps 56/44/34/28px on a phone by the measured width of its
+   longest word (`lib/name-fit.js`); if no step fits, the name takes the full width and the map
+   sits below it (`.stack`).
 2. **Elevation is lightness.** A warm near-black ground and three flat steps above it. No borders or
    shadows on anything at rest. Only what truly floats (a dialog, a toast) may cast a shadow. No
    gradients, no glass, no glow.
@@ -196,6 +199,7 @@ clock is the largest size there is. Labels are sentence case and untracked.
 | Grouped list | `.sect-b` / `.lrow` | Settings and pickers; plain grey icons, never in a tinted square |
 | Buttons | `.btn` + `.primary` `.go` `.live` `.plain` `.ghost` `.danger` `.sm` `.xs` | `.go` is the one coloured key; `.live` is the running workout |
 | Delete routine | `.btn.ghost.rt-delete` | A red text key (`--red-text`, no fill) on the Routine screen, with 24px clear above it. The confirm dialog stays |
+| Long routine name | `.home-hero-body.stack` / `.rt-card.stack` | The name over the full width, the map below it; set by `fitName` (`lib/name-fit.js`) when no size step fits the longest word beside the map |
 | Starter card | `.home-hero.welcome` | Home's first-run hero ("Load starter plan" / "Build my own plan"); Plan reuses it, and nothing else, when there are no Routines |
 | Finish | `.wk-finish` | On the workout screen Finish is the header key only: `.plain` until every set is done, then `.done`, the accent fill on the same small key (never `.go`, so `.go` keeps one look). The footer holds Discard. The confirm states an early finish ("3 of 6 exercises done") |
 | Stepper | `.stp` | One line in sheets; stacked figure-over-keys in the console |
