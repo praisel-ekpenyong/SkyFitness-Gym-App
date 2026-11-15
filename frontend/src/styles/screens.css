@@ -60,6 +60,8 @@
 }
 .rt-link .icn { font-size: var(--fs-lead) }
 .rt-link:active { background: var(--surface-2) }
+/* "Delete routine": a red text key with clear space above, in the manner of .wk-discard */
+.btn.ghost.rt-delete { color: var(--red-text); margin-top: calc(var(--gap) * 2); font-size: var(--fs-small) }
 .rt-link.on-ss { color: var(--label) }
 .rt-hint { margin: 12px 2px; gap: 7px; align-items: flex-start; line-height: 1.38 }
 .rt-hint .icn { margin-top: 2px; flex: none }

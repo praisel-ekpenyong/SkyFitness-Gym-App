@@ -61,3 +61,34 @@ describe('Plan week schedule', () => {
     expect([...container.querySelectorAll('.wk-row')].filter(r => r.textContent.includes('Today'))).toHaveLength(1)
   })
 })
+
+// E16: seven "Rest" rows say nothing before there is a Routine to schedule.
+describe('Plan with no Routines', () => {
+  const buttonNamed = name => [...container.querySelectorAll('button')].find(b => b.textContent === name)
+
+  it('shows the starter card in place of the Week schedule', async () => {
+    useStore.getState().update(s => { s.routines = []; s.week = {} })
+    await act(async () => { root.render(<Plan />) })
+
+    expect(container.querySelectorAll('.wk-row')).toHaveLength(0)
+    expect(container.textContent).not.toContain('Week schedule')
+    expect(buttonNamed('Load starter plan')).toBeTruthy()
+    expect(buttonNamed('Build my own plan')).toBeTruthy()
+  })
+
+  it('"Build my own plan" starts a new Routine', async () => {
+    useStore.getState().update(s => { s.routines = []; s.week = {} })
+    await act(async () => { root.render(<Plan />) })
+    await act(async () => { buttonNamed('Build my own plan').click() })
+
+    expect(useStore.getState().S.routines).toHaveLength(1)
+  })
+
+  it('keeps the Week schedule once a Routine exists', async () => {
+    useStore.getState().update(s => { s.routines = [{ id: 'push', name: 'Push Day', emoji: 'barbell', ex: [] }] })
+    await act(async () => { root.render(<Plan />) })
+
+    expect(container.querySelectorAll('.wk-row')).toHaveLength(7)
+    expect(buttonNamed('Build my own plan')).toBeUndefined()
+  })
+})

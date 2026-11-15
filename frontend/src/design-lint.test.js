@@ -118,6 +118,7 @@ const WORK = {
   '.btn.wk-finish.done:active': 'D2 the header Finish once every set is in, pressed',
   '.btn.wk-finish.done:hover': 'D2 the header Finish once every set is in, hovered (desktop)',
   '.setrow.cur .chk': 'D2 the Log key: the open set’s .go key',
+  '.setrow.cur.timed .setgo': 'D2 the Start key: a timed set’s .go key (E19); its Log key is neutral',
   '.chk.on': 'D2 logged-set mark: the check key of a logged set',
   '.setrow.cur .chk.on': 'D2 logged-set mark: the Log key once its set is logged',
   '.setrow.done .n': 'D2 logged-set mark: the set number of a logged set',
