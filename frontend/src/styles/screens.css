@@ -17,10 +17,11 @@
 .wk-row:active { background: var(--surface-2) }
 /* the routine is the heading; the day is its label, and today is marked by weight and the word */
 .wk-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px }
-.wk-name { font-size: var(--fs-body); font-weight: 600; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.wk-name { font-size: var(--fs-body); line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.wk-name.d { font-size: var(--fs-heading); line-height: 1; padding-top: 2px }   /* a routine name: display, a name in a tight place */
 .wk-day { font-size: var(--fs-meta); color: var(--label-2); line-height: 1.3 }
 .wk-meta-c { font-size: var(--fs-meta); color: var(--label-3); flex: none }
-.wk-row.off .wk-day, .wk-row.off .wk-name { color: var(--label-3); font-weight: 400 }
+.wk-row.off .wk-day, .wk-row.off .wk-name { color: var(--label-3) }
 .wk-row.today .wk-day { font-weight: 600 }
 
 .rt-list { display: flex; flex-direction: column; gap: 3px }
@@ -51,7 +52,14 @@
 .rt-note { margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 4px }
 .rt-note span { overflow: hidden; text-overflow: ellipsis }
 .rt-tools { flex: 1 0 100%; display: flex; justify-content: flex-end; align-items: center; gap: 0; color: var(--label-3); margin-right: -6px }
-.rt-link { margin-right: auto; margin-left: -10px }
+/* the routine editor's superset link: a bare icon-and-word key under the exercise */
+.rt-link {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: var(--tap-target);
+  min-width: var(--tap-target); padding: 0 8px; margin-right: auto; margin-left: -10px; border-radius: 6px;
+  color: var(--label-2); font-size: var(--fs-small); font-weight: 600;
+}
+.rt-link .icn { font-size: var(--fs-lead) }
+.rt-link:active { background: var(--surface-2) }
 .rt-link.on-ss { color: var(--label) }
 .rt-hint { margin: 12px 2px; gap: 7px; align-items: flex-start; line-height: 1.38 }
 .rt-hint .icn { margin-top: 2px; flex: none }
@@ -149,7 +157,9 @@
 .finish-kicker { font-size: var(--fs-small); color: var(--label-2); margin-bottom: 18px }
 .fullsheet h3.finish-title { font-size: var(--fs-display); line-height: .94 }
 .finish-kpis .tile { background: var(--surface) }
-.finish-kpis .tile .v { font-size: var(--fs-poster) }
+.finish-kpis .tile .v { font-size: var(--fs-poster); white-space: nowrap; overflow-wrap: normal }
+/* a figure did not fit its half: Duration and Volume take the full width, on the same step, and never break */
+.finish-kpis.tight .tile:nth-child(-n+2) { grid-column: 1 / -1 }
 .finish-cta { position: sticky; bottom: 0; background: var(--bg); padding: 10px 0 calc(var(--sab) + 4px); margin-top: 6px }
 .finish-records { margin-bottom: 12px; display: flex; flex-direction: column; gap: 5px }
 .finish-records .row { gap: 6px; font-size: var(--fs-small); align-items: flex-start; line-height: 1.32 }

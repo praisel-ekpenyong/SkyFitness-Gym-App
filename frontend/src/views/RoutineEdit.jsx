@@ -128,7 +128,7 @@ export default function RoutineEdit() {
             {e.notes && <div className="small dim rt-note"><Icon name="clipboard" size={13} /><span>{e.notes}</span></div>}
           </div>
           <div className="rt-tools">
-            {i > 0 && <button className={'extool rt-link' + (linkedPrev ? ' on-ss' : '')} aria-label={t('Superset with exercise above')} aria-pressed={!!linkedPrev} onClick={ev => { ev.stopPropagation(); toggleLink(i) }}><Icon name="link" /><span>{t('Superset with above')}</span></button>}
+            {i > 0 && <button className={'rt-link' + (linkedPrev ? ' on-ss' : '')} aria-label={t('Superset with exercise above')} aria-pressed={!!linkedPrev} onClick={ev => { ev.stopPropagation(); toggleLink(i) }}><Icon name="link" /><span>{t('Superset with above')}</span></button>}
             <button className="iconbtn bare" aria-label="Move up" onClick={ev => { ev.stopPropagation(); move(i, -1) }}><Icon name="chevronUp" /></button>
             <button className="iconbtn bare" aria-label="Move down" onClick={ev => { ev.stopPropagation(); move(i, 1) }}><Icon name="chevronDown" /></button>
           </div>
