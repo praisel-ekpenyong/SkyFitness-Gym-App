@@ -17,16 +17,7 @@ import BodyMap from '../components/BodyMap.jsx'
 import Icon from '../components/Icon.jsx'
 import { Thumb } from '../components/Media.jsx'
 import { Button } from '../components/ui.jsx'
-
-// The poster type steps down with the name so a long routine still fits beside the map. The
-// longest word decides as well as the total: a word has to fit the column or it breaks in two.
-function titleSize(name) {
-  const text = name || ''
-  const word = Math.max(0, ...text.split(/\s+/).map(w => w.length))
-  if (word > 9) return ' xs'
-  if (word > 7 || text.length > 20) return ' s'
-  return ''
-}
+import { fitName, NAME_LAYOUTS } from '../lib/name-fit.js'
 
 /** The muscles a map is shaded for, named, so the picture is never the only way to read it. */
 function muscleNames(load, n = 3) {
@@ -91,6 +82,8 @@ export default function Home() {
   const firstRun = !S.routines.length && !S.active && !S.workouts.length
   const heroStatus = S.active ? 'active' : (routine ? (doneToday ? 'done' : 'scheduled') : 'rest')
   const heroName = S.active ? S.active.name : (routine ? routine.name : t('Rest day'))
+  // The poster type steps down so a long name breaks at spaces only; the map moves below a word no step fits.
+  const heroFit = fitName(heroName, NAME_LAYOUTS.hero)
   const heroLoad = S.active ? loadOfActive(S.active) : routine ? loadOfRoutine(routine) : null
   const heroMuscles = heroLoad ? muscleNames(heroLoad) : ''
 
@@ -137,9 +130,9 @@ export default function Home() {
             <button className="home-edit" onClick={() => dayOverrideSheet(todayISO())}>{t('Edit schedule')}</button>
           </div>
 
-          <div className="home-hero-body">
+          <div className={'home-hero-body' + (heroFit.stacked ? ' stack' : '')}>
             <div className="home-hero-text">
-              <h2 className={'home-hero-title d' + titleSize(heroName)}>{heroName}</h2>
+              <h2 className={'home-hero-title d' + (heroFit.step === 'poster' ? '' : ' ' + heroFit.step)}>{heroName}</h2>
               <div className="home-hero-meta">
                 {S.active
                   ? t('{0} sets logged', fmtNum(sessionProgress(S.active).done))
