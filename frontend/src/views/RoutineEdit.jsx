@@ -137,8 +137,8 @@ export default function RoutineEdit() {
     })}</div> : <div className="empty"><div className="ico"><Icon name="dumbbell" /></div>{t('No exercises yet — add your first one.')}</div>}
 
     <Button variant="primary" onClick={() => exercisePicker(ex => exConfigSheet(ex, null, cfg => edit(x => { x.push({ id: ex.id, ...cfg }) }), null, r))} icon="plus">{t('Add exercise')}</Button>
-    <div className="gap8" />
-    <Button variant="danger" onClick={() => confirmSheet({
+    {/* Destructive and rare: red words with room above, like "Discard workout", not a slab under "Add exercise". */}
+    <Button variant="ghost" className="rt-delete" onClick={() => confirmSheet({
       title: t('Delete routine?'), message: t('“{0}” and its exercises will be removed.', r.name), confirmText: t('Delete'), danger: true,
       onConfirm: () => {
         update(s => {
