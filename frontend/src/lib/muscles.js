@@ -221,6 +221,17 @@ export function primaryMuscleOf(exercise) {
   return bpMuscles[0] || null
 }
 
+/**
+ * Display name of an exercise's Primary muscle: the Muscle map name ("Chest"), with the
+ * dataset spelling only for an exercise that maps to no drawable muscle. Untranslated (an i18n key).
+ */
+export function primaryMuscleName(exercise) {
+  const primary = primaryMuscleOf(exercise)
+  if (primary && MUSCLE_NAME[primary]) return MUSCLE_NAME[primary]
+  const ex = typeof exercise === 'string' ? EXIDX[exercise] : exercise
+  return (ex && (ex.tg || ex.bp)) || ''
+}
+
 /** Secondary supporting muscle slugs for an exercise (canonical anatomical muscle groups). */
 export function secondaryMusclesOf(exercise) {
   const raw = typeof exercise === 'string' ? EXIDX[exercise] : exercise
