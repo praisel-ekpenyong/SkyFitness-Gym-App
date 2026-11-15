@@ -4,20 +4,42 @@ import { useStore } from '../store/useStore.js'
 import { t } from '../lib/i18n.js'
 import Icon from './Icon.jsx'
 
+// The URLs to try in turn: the bundled file, then the CDN copy. A build without bundled media
+// already points the first at the CDN, so the copy is dropped rather than tried twice.
+const sources = (ex, playing) =>
+  [...new Set([mediaSrc(ex, { playing }), mediaSrc(ex, { playing, fallback: true })])].filter(Boolean)
+
+// The URL to show now, and the onError that moves on to the next one. Past the last URL the src is
+// undefined (every URL failed: no signal, or the file is gone) and the caller paints the dumbbell
+// tile. Failures are counted per format, so the clip and the still fail independently, and are
+// forgotten when the exercise changes.
+function useArtSource(ex, playing) {
+  const [tries, setTries] = useState({ gif: 0, img: 0 })
+  const [lastId, setLastId] = useState(ex?.id)
+  if (ex?.id !== lastId) {
+    setLastId(ex?.id)
+    setTries({ gif: 0, img: 0 })
+  }
+  const format = playing ? 'gif' : 'img'
+  const urls = sources(ex, playing)
+  const onError = () => setTries(n => ({ ...n, [format]: Math.min(n[format] + 1, urls.length) }))
+  return [urls[tries[format]], onError]
+}
+
 // Big autoplaying animation; tap toggles to the still frame. `compact` shrinks it (superset cards).
-// Custom exercises have no media — the animation stays blank by design (issue #11).
+// Custom exercises have no media — the animation stays blank by design (issue #11). When both the
+// bundled file and the CDN copy fail, the dumbbell tile stands in, with no <img> and so no alt text painted.
 // `minimizable` (workout view) adds a persistent minimize/expand control so the animation stops
 // eating the screen; the chosen size is saved to settings and carries across exercises and
 // future workouts (issue #12).
 export default function Media({ ex, id, compact, minimizable }) {
   const [playing, setPlaying] = useState(true)
-  const [failed, setFailed] = useState({ gif: false, img: false })
   const [lastId, setLastId] = useState(ex?.id)
   if (ex?.id !== lastId) {
     setLastId(ex?.id)
     setPlaying(true)
-    setFailed({ gif: false, img: false })
   }
+  const [currentSrc, handleError] = useArtSource(ex, playing)
 
   const gifSize = useStore(s => s.S.gifSize)
   const update = useStore(s => s.update)
@@ -25,15 +47,6 @@ export default function Media({ ex, id, compact, minimizable }) {
   const mini = minimizable && gifSize === 'mini'
   const toggleSize = e => { e.stopPropagation(); update(s => { s.gifSize = mini ? 'full' : 'mini' }) }
 
-  const format = playing ? 'gif' : 'img'
-  const currentSrc = mediaSrc(ex, { playing, fallback: failed[format] })
-  const fallbackSrc = mediaSrc(ex, { playing, fallback: true })
-
-  const handleError = () => {
-    if (!failed[format] && fallbackSrc) {
-      setFailed(f => ({ ...f, [format]: true }))
-    }
-  }
 
   const size = mini ? 84 : compact ? 120 : 320
   return (
@@ -46,7 +59,9 @@ export default function Media({ ex, id, compact, minimizable }) {
       onClick={() => setPlaying(p => !p)}
       onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setPlaying(p => !p) } }}
     >
-      <img loading="lazy" decoding="async" crossOrigin="anonymous" width={size} height={size} src={currentSrc} onError={handleError} alt={ex.n} />
+      {!currentSrc
+        ? <div className="thumb-x ex-art"><Icon name="dumbbell" /></div>
+        : <img className="ex-art" loading="lazy" decoding="async" crossOrigin="anonymous" width={size} height={size} src={currentSrc} onError={handleError} alt={ex.n} />}
       {minimizable && (
         <button className="giftoggle" onClick={toggleSize} aria-label={mini ? t('Expand') : t('Minimize')}>
           <Icon name={mini ? 'expand' : 'minimize'} />
@@ -60,20 +75,14 @@ export default function Media({ ex, id, compact, minimizable }) {
 }
 
 /**
- * Small still exercise thumbnail for list rows; falls back to a dumbbell placeholder when the exercise has no image.
+ * Small still exercise thumbnail for list rows. Shows the dumbbell tile when the exercise has no image, or when
+ * both the bundled file and the CDN copy fail to load.
  * Decorative (empty alt text); the surrounding row already names the exercise.
  * @param {Object} ex - Exercise with optional image sources and id.
  */
 export function Thumb({ ex }) {
-  const [failed, setFailed] = useState(false)
-  const [lastId, setLastId] = useState(ex?.id)
-  if (ex?.id !== lastId) {
-    setLastId(ex?.id)
-    setFailed(false)
-  }
-
-  if (!ex?.img) return <div className="thumb thumb-x"><Icon name="dumbbell" /></div>
-  const currentSrc = mediaSrc(ex, { fallback: failed })
+  const [currentSrc, handleError] = useArtSource(ex, false)
+  if (!currentSrc) return <div className="thumb thumb-x"><Icon name="dumbbell" /></div>
 
   return (
     <img
@@ -84,7 +93,7 @@ export function Thumb({ ex }) {
       width={50}
       height={50}
       src={currentSrc}
-      onError={() => { if (!failed) setFailed(true) }}
+      onError={handleError}
       alt=""
     />
   )

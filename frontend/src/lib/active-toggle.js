@@ -2,21 +2,19 @@
 //
 // Flipping a set Row's done flag plus every navigation consequence: the
 // `next` action sheets render (no re-derivation across the seam), rest-timer
-// intent, and the weight-commit follow-up. Session construction lives in
+// intent, and the Next key's target once a unit's work is done. Session construction lives in
 // active-session.js, set surgery in active-sets.js, finishing in
 // active-finish.js.
-import { modeOf, isBw, isWorkSet, doneWorkSets, hasWork, isExerciseDone } from './workout-model.js'
+import { modeOf, isWorkSet, doneWorkSets, hasWork, isExerciseDone } from './workout-model.js'
 import {
   supersetUnits, unitOf,
   setProgressHighWater, supersetFlowStep
 } from './supersetFlow.js'
-import { applyWorkingWeight } from './active-finish.js'
 
 /**
  * Describe the superset unit holding `entryIdx`.
  *
- * Single home for the group geometry both toggle and the weight-commit
- * follow-up read, so sheets never re-derive it across the seam.
+ * Single home for the group geometry both toggle and the Next key read, so sheets never re-derive it across the seam.
  *
  * @param {Array<Object>} entries - Active workout entries array.
  * @param {number} entryIdx - Index of the entry of interest.
@@ -31,55 +29,37 @@ export function describeUnit(entries, entryIdx) {
 }
 
 /**
- * Preview the follow-up to recording a working weight, without mutating.
+ * Whether the unit's work is done: no member has an undone Work set. Warm-up rows are prep, not
+ * work, so an unticked Warm-up set never keeps a finished unit reading as unfinished. The one rule
+ * the toggle (rest, finish) and the Next key read, and the same `hasWork` rule the superset step uses.
  *
- * Pure read of the current entries: when the unit is done the follow-up is
- * an advance (or the finish prompt on the last unit), otherwise the sheet
- * just closes. Labels and the commit path share this one function.
- *
- * Valid only after the toggle opened the weight prompt (`next.kind ===
- * 'open-topweight'`, i.e. a loaded reps Entry just finished): geometry alone
- * cannot tell a cardio finale (no weight step) from a loaded one, so callers
- * must not peek units the toggle didn't flag. Returns null when the entry
- * is gone (the finish-under-sheet teardown race).
- *
- * @param {Object} S - Application state atom.
- * @param {number} entryIdx - Index of entry in active session.
- * @returns {{ kind: string, targetIdx: number|null, unitDone: boolean, isLastUnit: boolean, unitSize: number }|null}
- *   `kind` is 'topweight-then-advance' | 'topweight-then-finish' | 'stay';
- *   `unitSize` is the member count of the holding superset unit (1 when solo),
- *   so sheets can phrase partner hints without re-deriving geometry.
+ * @param {Array<Object>} entries - Active workout entries array.
+ * @param {Array<number>} unit - Entry indices of the unit (`describeUnit`).
+ * @returns {boolean}
  */
-export function peekWeightCommit(S, entryIdx) {
-  const entry = S?.active?.entries?.[entryIdx]
-  if (!entry) return null
-  const entries = S.active.entries
-  const { units, unit, unitIdx, isLastUnit } = describeUnit(entries, entryIdx)
-  const unitDone = !!unit.length && !unit.some(i => hasWork(entries, i))
-  const unitSize = unit.length
-  if (!unitDone) return { kind: 'stay', targetIdx: null, unitDone, isLastUnit, unitSize }
-  if (isLastUnit) return { kind: 'topweight-then-finish', targetIdx: null, unitDone, isLastUnit, unitSize }
-  const targetIdx = units[unitIdx + 1]?.[0] ?? null
-  return { kind: 'topweight-then-advance', targetIdx, unitDone, isLastUnit, unitSize }
-}
+const unitWorkDone = (entries, unit) => !unit.some(i => hasWork(entries, i))
 
 /**
- * Record the confirmed working weight and return the follow-up in one call.
+ * The Entry the Next key moves to, once the open unit's work is done.
  *
- * Recording and deciding share the call so the Active workout can never
- * change between them (the sheet's teardown race). Returns null when the
- * weight is invalid or the entry is gone.
+ * Returns the first Entry of the following Entry or superset when every Work
+ * set of the unit holding `entryIdx` is performed (unticked Warm-up sets do
+ * not count). Returns null while work is left, on the last unit (the finish
+ * prompt opens there instead), for a unit with no Work sets, or when the
+ * Entry is gone. Every Mode reads the same; the view renders, never judges.
  *
  * @param {Object} S - Application state atom.
- * @param {number} entryIdx - Index of entry in active session.
- * @param {number} weight - Working load in active units.
- * @param {Object} [opts] - Injectable clock options for testing (`todayISO`).
- * @returns {{ kind: string, targetIdx: number|null, unitDone: boolean, isLastUnit: boolean, unitSize: number }|null}
+ * @param {number} entryIdx - Index of an Entry in the open unit.
+ * @returns {number|null} Index of the next unit's first Entry, or null.
  */
-export function commitWorkingWeight(S, entryIdx, weight, opts = {}) {
-  const ok = applyWorkingWeight(S, entryIdx, weight, opts)
-  if (!ok) return null
-  return peekWeightCommit(S, entryIdx)
+export function nextUnitTarget(S, entryIdx) {
+  const entries = S?.active?.entries
+  if (!entries?.[entryIdx]) return null
+  const { units, unit, unitIdx, isLastUnit } = describeUnit(entries, entryIdx)
+  if (isLastUnit) return null
+  const hasWorkRows = unit.some(i => (entries[i].sets || []).some(isWorkSet))
+  if (!hasWorkRows || !unitWorkDone(entries, unit)) return null
+  return units[unitIdx + 1]?.[0] ?? null
 }
 
 /**
@@ -88,8 +68,9 @@ export function commitWorkingWeight(S, entryIdx, weight, opts = {}) {
  * Owns the complete state transition for a set toggle: flips `set.done`,
  * tracks the per-Entry high-water mark of completed Work sets (ignoring
  * Warm-up sets) on `entry.hw`, detects exercise, superset unit, and whole
- * Workout completion, executes superset wrap-around navigation (`A.cur`),
- * and flags the working-weight confirmation sheet (`topW`).
+ * Workout completion, and executes superset wrap-around navigation (`A.cur`).
+ * The heaviest performed Work set is read from the log at finish; nothing
+ * asks the lifter to confirm a weight (ADR 0020).
  *
  * Callers read `checked` (set-complete sound) and the three effect channels:
  * sheets render `next`, the rest timer reads `rest`, toasts read `notice`.
@@ -101,7 +82,7 @@ export function commitWorkingWeight(S, entryIdx, weight, opts = {}) {
  *   - `checked`: new `done` state of the set.
  *   - `mode`: 'reps' | 'time' | 'cardio'.
  *   - `cur`: active exercise index after any navigation.
- *   - `next`: which sheet opens next — 'open-topweight' | 'open-finish' | 'advance-to' | 'stay',
+ *   - `next`: which sheet opens next — 'open-finish' | 'advance-to' | 'stay',
  *     with `targetIdx` for 'advance-to'. Sheets render it; they never re-derive geometry.
  *   - `rest`: `{ start, stop }` rest-timer intent (start rest, stop running rest).
  *   - `notice`: null | 'cardio' | 'timed' — transient toast hint when an Entry
@@ -130,12 +111,8 @@ export function toggleActiveSet(S, entryIdx, setIdx) {
   // (index/sg-based) is unaffected by the done-flag flip above and stays
   // valid for every completion check below.
   const { unit, isLastUnit } = describeUnit(A.entries, entryIdx)
-  // Warm-up rows are prep, not work. The unit is done when no member has an
-  // undone work row — the same `hasWork` rule the superset step below reads, so
-  // an unticked warm-up can no longer keep a finished unit reading as unfinished.
-  const unitDone = !unit.some(ui => hasWork(A.entries, ui))
+  const unitDone = unitWorkDone(A.entries, unit)
 
-  let askTop = false
   let exJustDone = false
   let workoutDone = false
 
@@ -143,20 +120,11 @@ export function toggleActiveSet(S, entryIdx, setIdx) {
     if (unitDone && isLastUnit) {
       workoutDone = true
     }
-    const loaded = mode === 'reps' && !(isBw({ ...(entry.target || {}), id: entry.id }) && !entry.sets.some(x => x.w > 0))
-    // The completion consequences — top-weight prompt, "logged" notices — are for
-    // work finishing, never for ticking prep: an entry left with no work rows has
-    // no top set to crown and nothing completed to announce (GLOSSARY.md: Warm-up set).
+    // The "logged" notices are for work finishing, never for ticking prep: an
+    // entry left with no work rows has nothing completed to announce
+    // (GLOSSARY.md: Warm-up set).
     const hasWorkRows = entry.sets.some(isWorkSet)
-    if (isExerciseDone(entry) && hasWorkRows) {
-      exJustDone = true
-      // Prompt at most once per Entry: an uncheck/re-check of the final set must
-      // not reopen the sheet.
-      if (loaded && !entry.asked) {
-        entry.asked = true
-        askTop = true
-      }
-    }
+    if (isExerciseDone(entry) && hasWorkRows) exJustDone = true
   }
 
   let newHighWater = seededHw
@@ -201,12 +169,9 @@ export function toggleActiveSet(S, entryIdx, setIdx) {
     entry.hw = seededHw
   }
 
-  // One decision, computed where the geometry already lives. `askTop` keeps
-  // priority over `workoutDone`: the weight prompt opens first and its own
-  // follow-up (topweight-then-finish) carries the finish prompt.
+  // One decision, computed where the geometry already lives.
   let next
-  if (askTop) next = { kind: 'open-topweight', targetIdx: null }
-  else if (workoutDone) next = { kind: 'open-finish', targetIdx: null }
+  if (workoutDone) next = { kind: 'open-finish', targetIdx: null }
   else if (navigated) next = { kind: 'advance-to', targetIdx: A.cur }
   else next = { kind: 'stay', targetIdx: null }
 

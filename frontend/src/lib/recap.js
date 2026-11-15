@@ -40,7 +40,7 @@ function sortedWorkouts(workouts) {
 }
 
 /**
- * Summarize volume, sets, duration, and PRs across a workout list.
+ * Summarize volume, sets, duration, and Records across a workout list.
  *
  * @param {Array<Object>|null|undefined} workouts - Workouts to summarize; nullish counts as empty.
  * @returns {Object} Totals with vol, sets, workouts count, durationMs, and deduplicated prs ids.

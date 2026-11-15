@@ -142,3 +142,47 @@ what ran, against what, and where the findings went.
   recorded in ticket 05's `## Comments`.
 - **Residual:** the add-time Stall contradiction (comment/glossary wording) was
   fixed in ticket 01; the code-side aim behavior was confirmed intended.
+
+## 2026-11-11 — Second design critique of Iron (chief of staff)
+
+- **Target:** `main@c566fff`, the built app on the demo profile, phone 390x844 in dark and light, desktop 1440.
+  `review:audit` reported no findings at that commit.
+- **Method:** single-context critique of the screenshots against `DESIGN.md`, plus measured token contrast and a
+  tally of every `font-size` and `font-weight` in `frontend/src/styles/`.
+- **Outcome:** 23 findings (F1–F23), mostly where the build had drifted from `DESIGN.md`. Colour drift: three accent
+  options collided with status colours, lime had six meanings and yellow had three. Type: there was no scale
+  (38 sizes). Hierarchy: words outsized numbers on Finish and Plan. The findings and decisions are in
+  `.scratch/iron-discipline/spec.md`.
+- **Before screenshots:** `frontend/.tmp/review/before-c566fff/` in the main checkout (gitignored).
+- **Disposition:** the owner said "fix everything" and asked for a before and after. Tickets 01–05 in
+  `.scratch/iron-discipline/issues/` were filed on 2026-11-11 (see [decisions](decisions.md)).
+
+## 2026-11-13 — Product design review of Iron (Claude Code session, at the owner's request)
+
+- **Target:** `main@cbac56e`, the built app on the demo profile, clock frozen at 2026-11-09. Phone 390x844 in dark
+  and light, small phone 360x640, desktop 1440. `review:audit` reported no findings and no scene logged a page error.
+- **Method:** single-context review of 87 harness screenshots, plus probes with image requests blocked and of the
+  Start tab, Workout detail and the Fatigue and Strength views. Suspected problems were checked against the code
+  before they were reported. No real phone, native build, import, pounds or screen reader was tested.
+- **Outcome:** 14 findings (R1–R14). Four were rated important: a confirm-weight sheet that opens after every loaded
+  Entry and whose promise is false on a Routine; white tiles with a broken-image icon when exercise art fails or
+  loads; the month recap comparing a part month with a full one; a long Routine name breaking inside a word on Home.
+  Two further problems already had tickets (`iron-discipline/08`, `iron-launch/08`) and were not re-filed.
+- **Screenshots:** `frontend/.tmp/review/pd/` in the main checkout (gitignored).
+- **Disposition:** on 2026-11-14 the owner answered 23 questions and confirmed the summary. Spec and tickets 01–06
+  were filed that day in `.scratch/design-review-fixes/`; no code was changed. Ticket 04 (Record and Best) is
+  `needs-triage`: the owner's answer reverses part of iron-discipline D3 ("every best is yellow"), and that fact was
+  not in the question put to them. Tickets 05 and 06 are blocked by `iron-discipline/03`.
+
+## 2026-11-14 — Two-axis code review of design-review-fixes 01–04 (chief of staff)
+
+- **Target:** `integration/design-review-fixes@c2cd2a2` against `main@cbac56e`. Standards and Spec ran as parallel
+  sub-agents (mattpocock-skills `code-review`).
+- **Standards:** no hard breaches of the colour or vocabulary rules. Probable bug: the Next key does not capitalise
+  the dataset name. The rest were stale header comments and judgement-call smells (duplicated retry logic in
+  `Media.jsx`, re-derived unit-done in `nextUnitTarget`, the six-parameter `recordIndexOf`, the stale `.set-pill.top`
+  name).
+- **Spec:** tickets 01–03 matched their specs. In ticket 04, `w.prs` marks a new heaviest load but was labelled a
+  yellow Record. The fault was in the ticket text, not the implementer. The owner settled it the same day
+  (see [decisions](decisions.md)).
+- **Disposition:** one fix agent on `ticket/drf-review-fixes`.

@@ -507,7 +507,7 @@ export function WorkoutDetail({ w, close }) {
       const ex = EXIDX[e.id]
       return <div key={i} className="row ex-entry">
         {ex && <Thumb ex={ex} />}
-        <div className="grow"><div className="tt capitalize">{ex ? ex.n : (e.n || e.id)} {w.prs && w.prs.includes(e.id) && <span className="pr"><Icon name="trophy" />PR</span>}</div>
+        <div className="grow"><div className="tt capitalize">{ex ? ex.n : (e.n || e.id)} {w.prs && w.prs.includes(e.id) && <span className="pr"><Icon name="trophy" />{t('Record')}</span>}</div>
           <div className="ss">{e.sets.filter(s => s.done).map(s => setLabel(e.id, s, e.target)).join('  ·  ') || t('no sets')}</div>
           {e.notes && <div className="exnote">{e.notes}</div>}
         </div>
@@ -585,6 +585,8 @@ export function RecapSheet({ start, close }) {
   const viewedEmpty = rec.workouts === 0
 
   const deltaBadge = (key) => {
+    // A month still under way is not behind anything yet, so it shows no comparison.
+    if (isCurrent) return null
     const v = rec.deltas?.[key]
     if (v == null) return null
     const prevVal = rec.prev?.[key]
@@ -597,8 +599,7 @@ export function RecapSheet({ start, close }) {
     } else {
       label = fmtSigned(Math.round(v), n => fmtNum(n) + '%')
     }
-    // A month still under way is not behind anything yet, so its shortfall reads neutral.
-    const color = v > 0 ? 'var(--acc-text)' : v < 0 && !isCurrent ? 'var(--red-text)' : 'var(--label-2)'
+    const color = v > 0 ? 'var(--acc-text)' : v < 0 ? 'var(--red-text)' : 'var(--label-2)'
     return <span className="delta-pill" style={{ color }}>{label}</span>
   }
 
@@ -631,7 +632,7 @@ export function RecapSheet({ start, close }) {
       <div>
         {rec.prs.length > 0 && (
           <>
-            <h4 className="sec"><Icon name="trophy" />{t('Personal records')}</h4>
+            <h4 className="sec"><Icon name="trophy" />{t('Records')}</h4>
             <div className="sect-b">
               {rec.prs.map(id => {
                 const name = EXIDX[id]?.n || id
@@ -682,7 +683,7 @@ export function WorkoutRow({ w, onClick }) {
     <span className="lrow-i"><Icon name={glyph} /></span>
     <div className="grow"><div className="tt">{w.name}</div>
       <div className="ss">{[fmtDate(w.d, true), ...durPart(w.end - w.start), t('{0} sets', fmtNum(setsDone(w))), fmtVol(tonnageOf(w), st.unit)].join(' · ')}</div></div>
-    {w.prs && w.prs.length > 0 && <span className="pr"><Icon name="trophy" />{t('{0} PR', fmtNum(w.prs.length))}</span>}
+    {w.prs && w.prs.length > 0 && <span className="pr"><Icon name="trophy" />{t(w.prs.length === 1 ? '{0} record' : '{0} records', fmtNum(w.prs.length))}</span>}
     <Icon name="chevronRight" className="chev" />
   </div>
 }
@@ -690,10 +691,10 @@ export function WorkoutRow({ w, onClick }) {
 /* ============================ session sheets (extracted) ============================ */
 // Session domain lives in ./sheets/session.jsx. The hub re-exports every entry
 // point so existing callers keep working untouched, and performs the one-line
-// wiring for the injected weigh-in seam (plus hub-owned confirm + weight input
+// wiring for the injected weigh-in seam (plus hub-owned confirm
 // to avoid a circular hub↔session import during migration).
-export { startFlow, beginWorkout, topWeightSheet, workoutCompleteSheet, finishWorkout, exerciseNoteSheet } from './sheets/session.jsx'
-configureSessionSheets({ bwSheet, confirmSheet, WeightInput })
+export { startFlow, beginWorkout, workoutCompleteSheet, finishWorkout, exerciseNoteSheet } from './sheets/session.jsx'
+configureSessionSheets({ bwSheet, confirmSheet })
 
 /* ============================ catalogue sheets (extracted) ============================ */
 // Catalogue browsing lives in ./sheets/catalogue.jsx. The hub re-exports every

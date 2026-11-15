@@ -15,8 +15,9 @@ if (args.accent) seed.accent = args.accent
 if (args.effort) seed.effort = args.effort
 const b = await launch(args)
 const errors=[]
-async function ctx(state){
+async function ctx(state,{noart=false}={}){
   const {width,height,...rest}=VP[vpName]; const c = await b.newContext({ viewport:{width,height}, ...rest, reducedMotion:'reduce', serviceWorkers:'block', timezoneId:'UTC' })
+  if (noart) await c.route(/\.(gif|png|jpe?g|webp)(\?|$)/i, r=>r.abort())   // no signal: every exercise image fails
   await seedStorage(c, state)
   await freezeClock(c, cfg.today)
   const p = await c.newPage()
@@ -59,14 +60,19 @@ const scenes = {
     await p.goto(base+'#/plan/r/push'); await p.waitForTimeout(500); await p.locator('button[aria-label="Pick an icon"]').click(); await p.waitForTimeout(350); await snap(p,'sheet-glyph',false); await p.keyboard.press('Escape'); await p.waitForTimeout(300)
     await p.goto(base+'#/library'); await p.waitForTimeout(800); await p.locator('.ex-create').click(); await p.waitForTimeout(350); await snap(p,'sheet-custom',false)
     await c.close() },
+  async noart(){ const {c,p}=await ctx(seed,{noart:true}); await go(p,'/home',900); await snap(p,'noart-home',false)
+    await go(p,'/library',1400); await snap(p,'noart-library',false)
+    await go(p,'/history',800); await p.locator('.list .item[role=button]').first().click(); await p.waitForTimeout(700); await p.locator('.ex-entry').first().scrollIntoViewIfNeeded(); await p.waitForTimeout(300); await snap(p,'noart-workout-detail',false); await p.keyboard.press('Escape'); await p.waitForTimeout(300)
+    await go(p,'/home',700); await clickT(p,/Start workout/); await p.waitForTimeout(300); await clickT(p,/Save (&|and) start workout/); await p.waitForTimeout(1000); await snap(p,'noart-workout',false); await snap(p,'noart-workout-full')
+    await c.close() },
   async workout(){ const {c,p}=await ctx(seed); await go(p,'/home',800)
     await clickT(p,/Start workout/); await p.waitForTimeout(400); await snap(p,'weighin',false)
     await clickT(p,/Save (&|and) start workout/); await p.waitForTimeout(1000); await snap(p,'workout',false); await snap(p,'workout-full')
     const chk = p.locator('[role=checkbox]'); await chk.nth(0).click(); await p.waitForTimeout(400); await snap(p,'workout-rest',false); await snap(p,'workout-rest-full')
     await p.evaluate(()=>{ const u=[...document.querySelectorAll('#timer button')].pop(); u&&u.click() })
     for (let i=1;i<4;i++){ await chk.nth(i).click(); await p.waitForTimeout(200) ; await p.evaluate(()=>{ const u=[...document.querySelectorAll('#timer button')].pop(); u&&u.click() }) }
-    await p.waitForTimeout(400); await snap(p,'workout-topweight',false)
-    await clickT(p,/Save (&|and) next exercise|Save weight|Save/); await p.waitForTimeout(700); await snap(p,'workout-next',false)
+    await p.waitForTimeout(400); await snap(p,'workout-unit-done',false)
+    await p.locator('.wk-next').click(); await p.waitForTimeout(700); await snap(p,'workout-next',false)
     await p.goto(base+'#/home'); await p.waitForTimeout(700); await snap(p,'home-active',false)
     await p.goto(base+'#/workout'); await p.waitForTimeout(600); await p.locator('button[aria-label="Finish"]').click(); await p.waitForTimeout(400); await snap(p,'finish-confirm',false)
     await p.locator('[role=alertdialog] button').filter({hasText:/Finish/}).first().click(); await p.waitForTimeout(900); await snap(p,'finish',false); await snap(p,'finish-full'); await p.locator('.finish-cta button').click(); await p.waitForTimeout(700); await snap(p,'home-done',false); await c.close() },

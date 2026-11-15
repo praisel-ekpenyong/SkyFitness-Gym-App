@@ -2,7 +2,7 @@
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest'
-import { RecapSheet, recapSheet, finishWorkout, workoutDetailSheet, bwSheet } from './sheets.jsx'
+import { RecapSheet, recapSheet, finishWorkout, workoutDetailSheet, WorkoutRow, bwSheet } from './sheets.jsx'
 import { useStore, DEF } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
 
@@ -76,8 +76,9 @@ describe('RecapSheet', () => {
     expect(rows[3].textContent).toContain('Sets')
     expect(rows[3].textContent).toContain('1')
 
-    // Records section should list the PR and Estimated 1RM record
-    expect(container.textContent).toContain('Personal records')
+    // Records section lists the Record and the Estimated 1RM record; lifter-facing copy never says PR
+    expect([...container.querySelectorAll('h4.sec')].map(h => h.textContent)).toContain('Records')
+    expect(container.textContent).not.toMatch(/\bPRs?\b|personal record/i)
     expect(container.textContent).toContain('Estimated 1RM records')
 
     // Month navigation: click previous month
@@ -96,6 +97,45 @@ describe('RecapSheet', () => {
     })
     expect(close).toHaveBeenCalledTimes(1)
     expect(useUI.getState().sheets.length).toBe(1)
+  })
+
+  describe('delta badges', () => {
+    // October 2026 is a full month of work; November is nine days in on 9 November.
+    const twoMonths = () => useStore.getState().update(s => {
+      const w = (id, d, kg) => ({
+        id, d, start: 1000, end: 1000 + 45 * 60000,
+        entries: [{ id: '0025', sets: [{ w: kg, r: 5, done: true }, { w: kg, r: 5, done: true }] }],
+      })
+      s.workouts = [
+        w('o1', '2026-10-02', 100), w('o2', '2026-10-09', 100), w('o3', '2026-10-16', 100),
+        w('n1', '2026-11-03', 100),
+      ]
+    })
+
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(new Date('2026-11-09T12:00:00'))
+    })
+    afterEach(() => { vi.useRealTimers() })
+
+    it('shows no comparison for the month under way', async () => {
+      twoMonths()
+      await act(async () => { root.render(<RecapSheet start="2026-11-09" close={vi.fn()} />) })
+
+      expect(container.querySelector('h3')?.textContent).toContain('November 2026 so far')
+      const rows = container.querySelectorAll('.sect-b')[0].querySelectorAll('.lrow')
+      expect(rows.length).toBe(4)
+      expect(container.querySelectorAll('.delta-pill').length).toBe(0)
+      expect(container.textContent).not.toContain('%')
+    })
+
+    it('keeps the comparison on a finished month', async () => {
+      twoMonths()
+      await act(async () => { root.render(<RecapSheet start="2026-10-01" close={vi.fn()} />) })
+
+      expect(container.querySelector('h3')?.textContent).toBe('October 2026')
+      expect(container.querySelectorAll('.delta-pill').length).toBe(4)
+    })
   })
 
   it('renders empty month message when no workouts exist', async () => {
@@ -214,6 +254,27 @@ describe('weigh-in', () => {
 
     expect(onDone).toHaveBeenCalledWith(81.4)
     expect(useStore.getState().S.bodyweight.at(-1).w).toBe(81.4)
+  })
+})
+
+describe('Record badges', () => {
+  const recordWorkout = prs => ({
+    id: 'w-rec', name: 'Push Day', d: '2026-03-01', start: 1000, end: 4000, prs,
+    entries: [{ id: '0025', sets: [{ w: 100, r: 5, done: true }] }, { id: '0047', sets: [{ w: 60, r: 8, done: true }] }],
+  })
+
+  it('names a Record on the Workout detail sheet, never PR', async () => {
+    await act(async () => { workoutDetailSheet(recordWorkout(['0025'])) })
+    const sheet = useUI.getState().sheets.at(-1)
+    await act(async () => { root.render(sheet.render(vi.fn())) })
+    expect([...container.querySelectorAll('.pr')].map(b => b.textContent)).toEqual(['Record'])
+  })
+
+  it('counts Records on a Workout row: 1 record, 2 records', async () => {
+    await act(async () => { root.render(<WorkoutRow w={recordWorkout(['0025'])} onClick={vi.fn()} />) })
+    expect(container.querySelector('.pr')?.textContent).toBe('1 record')
+    await act(async () => { root.render(<WorkoutRow w={recordWorkout(['0025', '0047'])} onClick={vi.fn()} />) })
+    expect(container.querySelector('.pr')?.textContent).toBe('2 records')
   })
 })
 
