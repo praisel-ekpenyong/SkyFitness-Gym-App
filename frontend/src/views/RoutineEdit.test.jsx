@@ -297,3 +297,20 @@ describe('RoutineEdit exercise notes display and replacement', () => {
     expect(updatedRoutine.ex[0].notes).toBeUndefined()
   })
 })
+
+// A destructive key under the primary "Add exercise" is red text, not a red slab.
+describe('RoutineEdit delete key', () => {
+  it('is a red text key, not a filled danger button, and still asks first', async () => {
+    mocks.confirmSheet.mockReset()
+    await act(async () => { root.render(<RoutineEdit />) })
+
+    const del = [...container.querySelectorAll('button')].find(b => b.textContent === 'Delete routine')
+    expect(del.classList.contains('rt-delete')).toBe(true)
+    expect(del.classList.contains('ghost')).toBe(true)
+    expect(del.classList.contains('danger')).toBe(false)
+
+    await act(async () => { del.click() })
+    expect(mocks.confirmSheet).toHaveBeenCalledTimes(1)
+    expect(mocks.confirmSheet.mock.calls[0][0].danger).toBe(true)
+  })
+})

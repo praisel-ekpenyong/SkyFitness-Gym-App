@@ -61,3 +61,60 @@ describe('Plan week schedule', () => {
     expect([...container.querySelectorAll('.wk-row')].filter(r => r.textContent.includes('Today'))).toHaveLength(1)
   })
 })
+
+// Seven "Rest" rows say nothing before there is a Routine to schedule.
+describe('Plan with no Routines', () => {
+  const buttonNamed = name => [...container.querySelectorAll('button')].find(b => b.textContent === name)
+
+  it('shows the starter card in place of the Week schedule', async () => {
+    useStore.getState().update(s => { s.routines = []; s.week = {} })
+    await act(async () => { root.render(<Plan />) })
+
+    expect(container.querySelectorAll('.wk-row')).toHaveLength(0)
+    expect(container.textContent).not.toContain('Week schedule')
+    expect(buttonNamed('Load starter plan')).toBeTruthy()
+    expect(buttonNamed('Build my own plan')).toBeTruthy()
+  })
+
+  it('"Build my own plan" starts a new Routine', async () => {
+    useStore.getState().update(s => { s.routines = []; s.week = {} })
+    await act(async () => { root.render(<Plan />) })
+    await act(async () => { buttonNamed('Build my own plan').click() })
+
+    expect(useStore.getState().S.routines).toHaveLength(1)
+  })
+
+  it('keeps the Week schedule once a Routine exists', async () => {
+    useStore.getState().update(s => { s.routines = [{ id: 'push', name: 'Push Day', emoji: 'barbell', ex: [] }] })
+    await act(async () => { root.render(<Plan />) })
+
+    expect(container.querySelectorAll('.wk-row')).toHaveLength(7)
+    expect(buttonNamed('Build my own plan')).toBeUndefined()
+  })
+})
+
+// A Routine card follows the Home hero's rule. Its name is at the 28px step in a 203px
+// column beside the map (360 wide); a word wider than that moves the map below the name.
+// `stacked` lists the layouts that stack: the tablet's 430px column holds more.
+describe('Plan Routine cards with long names', () => {
+  const cardFor = async name => {
+    useStore.getState().update(s => {
+      s.routines = [{ id: 'r', name, emoji: 'barbell', ex: [{ id: '0025', sets: 3, reps: 8, weight: 60 }] }]
+      s.week = {}
+    })
+    await act(async () => { root.render(<Plan />) })
+    const card = container.querySelector('.rt-card')
+    return { stacked: [...card.classList].filter(c => c.startsWith('name-stacked-')).map(c => c.slice('name-stacked-'.length)), name: card.querySelector('.rt-name').textContent, label: card.getAttribute('aria-label') }
+  }
+
+  it('keeps a name that fits beside the map', async () => {
+    // POSTERIOR-CHAIN is 6.83em: 191px at 28px
+    expect(await cardFor('Posterior-chain Conditioning')).toMatchObject({ stacked: [], name: 'Posterior-chain Conditioning' })
+    expect((await cardFor('Push Day')).stacked).toEqual([])
+  })
+
+  it('moves the map below a word too wide for the column, keeping the whole name', async () => {
+    // SUPERCOMPENSATION is 8.43em: 236px at 28px
+    expect(await cardFor('Supercompensation Block')).toEqual({ stacked: ['phone', 'desktop'], name: 'Supercompensation Block', label: 'Supercompensation Block, 1 exercise' })
+  })
+})

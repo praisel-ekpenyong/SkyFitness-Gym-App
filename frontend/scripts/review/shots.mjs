@@ -45,6 +45,7 @@ const scenes = {
   async variants(){ const v=JSON.parse(JSON.stringify(seed)); v.effort='rir';
     v.routines.push({id:'mix',name:'Upper Body Hypertrophy',emoji:'arm',ex:[{id:'0025',sets:3,reps:8,weight:60,sg:'a'},{id:'0027',sets:3,reps:8,weight:50,sg:'a'},{id:'0662',sets:3,reps:12,weight:0},{id:'3544',sets:3,mode:'time',sec:45,weight:0,bodyweight:true},{id:'3672',sets:1,min:20,speed:9}]}); v.week[1]='mix'
     const {c,p}=await ctx(v); await go(p,'/home',800); await snap(p,'long-name',false)
+    await go(p,'/plan',800); await p.locator('.rt-list').scrollIntoViewIfNeeded(); await snap(p,'long-name-plan',false); await go(p,'/home',800)
     await clickT(p,/Start workout/); await p.waitForTimeout(300); await clickT(p,/Save (&|and) start workout/); await p.waitForTimeout(900); await snap(p,'superset')
     for (const [i,n] of [[2,'bw'],[3,'timed'],[4,'cardio']]) { await p.evaluate(k=>[...document.querySelectorAll('.lad-s')][k-1]?.click(), i); await p.waitForTimeout(500); await snap(p,'set-'+n,false) }
     await c.close() },

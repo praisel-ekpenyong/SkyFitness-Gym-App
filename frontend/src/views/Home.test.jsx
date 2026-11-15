@@ -281,3 +281,50 @@ describe('Home header', () => {
     expect(container.querySelector('button[aria-label="Set name"]')).toBeNull()
   })
 })
+
+// A name breaks at spaces only. Widths below were measured in the built app (Archivo,
+// display role, em per glyph) against the hero text column at 360 wide (148px beside the map, 296px
+// across the card): a word that cannot fit beside the map at the 28px step moves the map below.
+// `stacked` lists the layouts that stack (lib/name-fit.test.js covers tablet and desktop).
+describe('Home hero long Routine names', () => {
+  async function heroFor(name) {
+    const wd = weekdayFromISO(todayISO())
+    const routine = { ...routineWithEx(3), name }
+    useStore.getState().update(s => {
+      s.routines = [routine]
+      s.week = { [wd]: routine.id }
+      s.dayPlan = {}
+      s.workouts = []
+      s.active = null
+      s.bodyweight = []
+    })
+    await act(async () => { root.render(<Home />) })
+    const title = container.querySelector('.home-hero-title')
+    const step = ['xxs', 'xs', 's'].find(c => title.classList.contains(c)) || 'poster'
+    const stacked = [...container.querySelector('.home-hero-body').classList].filter(c => c.startsWith('name-stacked-')).map(c => c.slice('name-stacked-'.length))
+    return { step, stacked, text: title.textContent }
+  }
+
+  it('keeps "Push Day" on the poster step beside the map', async () => {
+    // PUSH is 1.93em: 108px at 56px
+    expect(await heroFor('Push Day')).toEqual({ step: 'poster', stacked: [], text: 'Push Day' })
+  })
+
+  it('steps a ten-letter word down to the 28px heading step before it would break', async () => {
+    // HAMSTRINGS is 4.95em: 168px at 34px (too wide), 138px at 28px
+    const fit = await heroFor('Hamstrings')
+    expect(fit.step).toBe('xxs')
+    expect(fit.stacked).not.toContain('phone')
+  })
+
+  it('moves the map below a word no step can fit beside it', async () => {
+    // HYPERTROPHY is 5.49em: 154px even at 28px; across the card it fits at 44px (242px). A tablet's
+    // 312px column holds it beside the map.
+    expect(await heroFor('Upper Body Hypertrophy')).toEqual({ step: 's', stacked: ['phone', 'desktop'], text: 'Upper Body Hypertrophy' })
+  })
+
+  it('treats a hyphenated word as one word', async () => {
+    // POSTERIOR-CHAIN is 6.83em: 300px at 44px is too wide for 296px; 232px at 34px
+    expect(await heroFor('Posterior-chain Conditioning')).toMatchObject({ step: 'xs', stacked: ['phone', 'desktop'] })
+  })
+})
