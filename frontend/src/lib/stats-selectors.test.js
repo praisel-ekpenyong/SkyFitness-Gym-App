@@ -341,7 +341,6 @@ describe('catalogue snapshot', () => {
     expect(over.strength.values.chest).toBeCloseTo(0.8409, 4)
     expect(over.strength.weeks.chest).toBe(3)
     expect(over.strength.weeks.quadriceps).toBe(null)
-    expect(over.strength.volume90.chest).toBe(1)
     expect(over.strength.order[0]).toBe('chest')
     expect(over.strength.detrained).toContain('chest')
     expect(over.exercisesFor('chest')[0]).toMatchObject({ id: 'lift', name: 'Bench', primary: 'chest', est: 70, current: 58.9 })

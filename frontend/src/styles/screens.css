@@ -31,8 +31,10 @@
   background: var(--surface); border-radius: var(--r-2); padding: 8px 12px 8px 14px; min-height: 76px; transition: background var(--fast);
 }
 .rt-card:active { background: var(--surface-2) }
-/* a word too wide for the column beside the map: the name takes the card's width, the map sits below (lib/name-fit.js) */
-.rt-card.stack { grid-template-columns: minmax(0, 1fr) }
+/* a word too wide for the column beside the map: the name takes the card's width, the map sits below.
+   lib/name-fit.js decides per layout; each rule holds only inside its layout's range (NAME_MEDIA). */
+@media (max-width: 699px) { .rt-card.name-stacked-phone { grid-template-columns: minmax(0, 1fr) } }
+@media (min-width: 700px) and (max-width: 999px) { .rt-card.name-stacked-tablet { grid-template-columns: minmax(0, 1fr) } }
 .rt-text { display: flex; flex-direction: column; gap: 5px; min-width: 0 }
 .rt-name { font-size: var(--fs-heading) }
 .rt-meta { font-size: var(--fs-meta); color: var(--label-2) }
@@ -188,6 +190,7 @@
   .hdr:not(.wk-hdr) h1 { font-size: var(--fs-display) }
   .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start }
   .cols > * { min-width: 0 }
+  .rt-card.name-stacked-desktop { grid-template-columns: minmax(0, 1fr) }
   .cols > section + section .sec-first { margin-top: 4px }
   .tiles.stats-kpis { grid-template-columns: repeat(4, 1fr) }
   .stats-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--gap); align-items: start }
