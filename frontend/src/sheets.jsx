@@ -13,7 +13,7 @@ import { nav } from './lib/nav.js'
 import { applyStarterPlan } from './lib/starter.js'
 import { Thumb } from './components/Media.jsx'
 import Icon from './components/Icon.jsx'
-import { Button, Switch } from './components/ui.jsx'
+import { Button, NumberField, Switch } from './components/ui.jsx'
 import BodyMap from './components/BodyMap.jsx'
 import { SessionMuscleDistribution } from './components/SessionMuscleDistribution.jsx'
 import { loadOfWorkouts, MUSCLE_NAME } from './lib/muscles.js'
@@ -58,41 +58,38 @@ export function loadStarterPlan() {
   toast(t('Starter plan loaded — Mon Push · Wed Pull · Fri Legs'))
 }
 
-/* ============================ weight picker (shared: body weight + goal) ============================ */
-// Fixed range, not a moving window — a window that resizes itself mid-drag (the previous
-// attempt) makes the thumb's position unpredictable: every time it grows, everything already
-// placed on it shifts toward one side. A static range never has that problem, at the cost of
-// coarser precision per pixel — the +/- buttons cover exact values.
-// The ceiling follows the profile's unit: 300 covers a body weight or a working weight in
-// kg, but as pounds it cut off at 136 kg — below plenty of people's body weight, and well
-// below an everyday squat.
+/* ============================ weight input (shared: body weight, target weight) ============================ */
+// One number, read from arm's length: the figure is typed for a big change, and the two keys
+// beside it walk it by the step written on them, so neither key ever has to explain itself.
+// Typed or stepped, the figure stays inside a range that follows the profile's unit: 300 covers
+// a body weight in kg, and 660 lb is the same ceiling in pounds.
 const W_LO = 1
-/** Weight-slider ceiling for the given unit. */
+const W_STEP = 0.1
+/** Ceiling of a weigh-in or target weight, for the given unit. */
 const wHi = unit => (unit === 'lb' ? 660 : 300)
+/** A weight to the tenth it is stored at. */
+const tenth = x => Math.round((x || 0) * 10) / 10
+/** A weight to the tenth, held inside the range for the unit. */
+const clampW = (x, unit) => Math.max(W_LO, Math.min(wHi(unit), tenth(x)))
 /**
- * Weight picker with slider and step buttons.
+ * A typeable weight with a step key either side. A typed figure is held to the range when the
+ * field is left; the sheets clamp again on save, so a press of Save without leaving it is held too.
  *
  * @param {number} value Current weight.
  * @param {Function} setValue Updates the weight.
  * @param {string} unit Display unit.
+ * @param {string} label Accessible name of the figure, without the unit.
  */
-function WeightInput({ value, setValue, unit }) {
-  const W_HI = wHi(unit)
-  const clamp = x => Math.max(W_LO, Math.min(W_HI, Math.round((x || 0) * 10) / 10))
-  const onSlide = v => setValue(clamp(v))
-  return <>
-    <div className="bwstep">
-      <button className="bw-pm" onClick={() => onSlide(value - 0.1)} aria-label={t('Decrease by 0.1 {0}', unit)}><Icon name="minus" /></button>
-      <div className="bw-read">{fmtNum(value)}<span className="u"> {unit}</span></div>
-      <button className="bw-pm" onClick={() => onSlide(value + 0.1)} aria-label={t('Increase by 0.1 {0}', unit)}><Icon name="plus" /></button>
-    </div>
-    <div className="chips bwpad">
-      <button className="chip" onClick={() => onSlide(value - 1)} aria-label={t('Decrease by 1 {0}', unit)}>{fmtSigned(-1)}</button>
-      <button className="chip" onClick={() => onSlide(value - 0.5)} aria-label={t('Decrease by 0.5 {0}', unit)}>{fmtSigned(-0.5)}</button>
-      <button className="chip" onClick={() => onSlide(value + 0.5)} aria-label={t('Increase by 0.5 {0}', unit)}>{fmtSigned(0.5)}</button>
-      <button className="chip" onClick={() => onSlide(value + 1)} aria-label={t('Increase by 1 {0}', unit)}>{fmtSigned(1)}</button>
-    </div>
-  </>
+function WeightInput({ value, setValue, unit, label }) {
+  const by = dir => setValue(clampW((Number(value) || 0) + dir * W_STEP, unit))
+  return <div className="bwstep">
+    <button className="bw-pm" onClick={() => by(-1)} aria-label={t('Decrease by {0} {1}', fmtNum(W_STEP), unit)}>{fmtSigned(-W_STEP)}</button>
+    <label className="bw-read">
+      <NumberField className="bw-num" value={value} onChange={setValue} onBlur={() => setValue(clampW(value, unit))} aria-label={`${label} (${unit})`} />
+      <span className="u">{unit}</span>
+    </label>
+    <button className="bw-pm" onClick={() => by(1)} aria-label={t('Increase by {0} {1}', fmtNum(W_STEP), unit)}>{fmtSigned(W_STEP)}</button>
+  </div>
 }
 
 /* ============================ body weight ============================ */
@@ -102,8 +99,8 @@ function BwSheet({ required, onDone, close }) {
   const bw = latestWeighIn(st)
   const [v, setV] = useState(bw ? bw.w : 70)
   const save = () => {
-    const n = Math.round((v || 0) * 10) / 10
-    if (!n || n <= 0) { toast(t('Enter a valid weight')); return }
+    if (!tenth(v)) { toast(t('Enter a valid weight')); return }
+    const n = clampW(v, unit)
     update(s => { recordWeighIn(s, { d: todayISO(), w: n, t: Date.now() }) })
     close()
     if (onDone) onDone(n); else toast(t('Weight saved'))
@@ -113,7 +110,7 @@ function BwSheet({ required, onDone, close }) {
   return <>
     <h3>{required ? t('Quick check-in') : t('Log body weight')}</h3>
     <div className="sheet-sub">{required ? t('Asked once a day, before your first workout, so the curve has a point for every training day.') : t('Today') + ', ' + fmtDate(todayISO(), true)}</div>
-    <WeightInput value={v} setValue={setV} unit={unit} />
+    <WeightInput value={v} setValue={setV} unit={unit} label={t('Body weight')} />
     <div className="gap16" />
     <Button variant="primary" className={required ? 'go' : undefined} onClick={save}>{required ? t('Save and start workout') : t('Save')}</Button>
     {required && <>
@@ -248,11 +245,11 @@ function GoalSheet({ close }) {
   return <>
     <h3>{t('Target weight')}</h3>
     <div className="sheet-sub">{t('Your goal is drawn as a line through the weight charts, and gains/losses are colored by whether they move toward it.')}</div>
-    <WeightInput value={v} setValue={setV} unit={st.unit} />
+    <WeightInput value={v} setValue={setV} unit={st.unit} label={t('Target weight')} />
     <div className="gap16" />
     <Button variant="primary" onClick={() => {
-      const n = Math.round((v || 0) * 10) / 10
-      if (!n || n <= 0) { toast(t('Enter a valid weight')); return }
+      if (!tenth(v)) { toast(t('Enter a valid weight')); return }
+      const n = clampW(v, st.unit)
       update(s => { s.targetW = n }); close()
       const b = latestWeighIn(S()); toast(t('Goal set: {0}', fmtNum(n) + ' ' + st.unit) + (b ? ' (' + t('{0} to go', fmtNum(Math.abs(n - b.w))) + ')' : ''))
     }}>{t('Save goal')}</Button>
@@ -568,7 +565,7 @@ function Calendar({ start, close }) {
     <div className="cal-legend">
       <span><i style={{ background: 'var(--data)' }} />{t('Trained')}</span>
       <span><i style={{ background: 'var(--label-3)' }} />{t('Planned')}</span>
-      <span><i style={{ background: 'var(--orange)' }} />{t('Rescheduled')}</span>
+      <span><i style={{ background: 'var(--label-2)' }} />{t('Rescheduled')}</span>
     </div>
     <div className="small dim cal-sum note">{t('Tap a trained day for details · tap any other day to plan a session')}</div>
   </>

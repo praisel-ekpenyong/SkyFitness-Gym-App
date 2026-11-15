@@ -140,7 +140,10 @@ preferences are respected.
   dual-write storage protocol, and Capacitor shells are all in the code.
 - Voice: **HIGH** — demonstrated by architecture-doc prose and existing copy
   conventions; spot-checked, not exhaustively audited.
-- Accessibility: **STATED** — in README.md and DESIGN.md; contrast was not
-  measured during this update.
+- Accessibility: **MEASURED** (2026-11-15) — text contrast of every colour
+  token (4.5:1 for words, 3:1 for chart ink) is checked on every surface in
+  both themes and under every accent by `frontend/src/design-tokens.test.js`
+  (G1, since 2026-11-11), which runs in `npm test`; `npm run review:audit`
+  measures rendered text contrast and 44px targets in the built app.
 - Which surface needs design attention first: **not yet recorded** — chosen
   per run, not durable truth.

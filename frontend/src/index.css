@@ -1,21 +1,6 @@
-/* ============================================================================
-   Sky — "Iron" design system
-   ----------------------------------------------------------------------------
-   Written from scratch for a phone held in one chalky hand, between sets.
-
-   1. THE NUMBER IS THE HERO. One family (Archivo), two widths: condensed and heavy
-      for what you read at arm's length (loads, reps, the rest clock, the routine),
-      normal width for everything you read up close.
-   2. ELEVATION IS LIGHTNESS. Rubber-floor black, then three flat steps. No borders
-      or shadows on anything at rest; only what truly floats may cast a shadow.
-   3. COLOUR IS WORK. The accent marks work done and the one control that does it
-      (Start, Log set). Everything else is ink on iron. Primary means inverted.
-   4. TIGHT, MACHINED SHAPES. 8px on blocks and keys, 4–6px on small marks. Circles
-      are for nothing: this is a rack of plates, not a bubble bath.
-   5. MOTION ACKNOWLEDGES. Presses and sheets respond; nothing performs an entrance.
-
-   Plates keep their own competition colours: those belong to the object, not the UI.
-   ========================================================================== */
+/* Sky — "Iron" design system. The rules, the type scale and what each colour means are in
+   DESIGN.md at the repo root; design-tokens.test.js and design-lint.test.js enforce them.
+   Tokens live in styles/tokens.css, never here. */
 @import './styles/tokens.css';
 @import './styles/base.css';
 @import './styles/controls.css';

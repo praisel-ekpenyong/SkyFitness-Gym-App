@@ -95,27 +95,30 @@ describe('G2 type scale (styles/*.css)', () => {
 })
 
 // ------------------------------------------------------------------- colour meaning --
-// Guard G2 (colour part): one meaning per colour. The accent means work and yellow means a
-// Record, the moment a Set beats the exercise's Best or its best estimated 1RM; the standing
+// Guard G2 (colour part): one meaning per colour. The accent means work, orange means a workout
+// is running (spec D20) and yellow means a Record, the moment a Set beats the exercise's Best or its best estimated 1RM; the standing
 // Best figure stays ink (design-review-fixes/04, decision E12, narrows D3), so the tokens that
 // carry them may colour only what is listed below. Everything else is ink (--label, --label-2,
 // --label-3) on iron. Each entry names the use it is, by the iron-discipline decision that
 // allows it: D2 for the accent, D3 for yellow (DESIGN.md › The five rules › 3 and › Tokens ›
-// Status). An entry that no longer matches anything fails too, so the list stays a true
+// Status), D20 for orange. An entry that no longer matches anything fails too, so the list stays a true
 // account of where the colours are.
 
 const ACCENT_TOKENS = ['--acc', '--acc-2', '--acc-text', '--acc-soft', '--acc-line', '--data']
 const RECORD_TOKENS = ['--goal-text', '--yellow']
-const COLOUR_READ = 'Read DESIGN.md › The five rules › 3 (Colour is work) and › Tokens › Status (yellow is a Record: a Set that beat the Best or the best estimated 1RM). The standing Best figure is neutral ink, never yellow: design-review-fixes/04 (E12) narrows D3.'
+const RUNNING_TOKENS = ['--orange', '--orange-text', '--orange-wash', '--orange-wash-2', '--on-orange']
+const COLOUR_READ = 'Read DESIGN.md › The five rules › 3 (Colour is work) and › Tokens › Status (yellow is a Record: a Set that beat the Best or the best estimated 1RM). The standing Best figure is neutral ink, never yellow: design-review-fixes/04 (E12) narrows D3. Orange is a running workout only (spec D20): a rescheduled day is an ink mark and warnings are neutral.'
 
 /** Selectors (one per entry, as written in styles/*.css) that may use an accent token. */
 const WORK = {
   '.btn.go': 'D2 the one .go key on a screen',
   '.btn.go:active': 'D2 the .go key, pressed',
   '.btn.go:hover': 'D2 the .go key, hovered (desktop)',
+  '.btn.wk-finish.done': 'D2 the workout’s action once every set is in: the header Finish, coloured only (not a second .go look)',
+  '.btn.wk-finish.done:active': 'D2 the header Finish once every set is in, pressed',
+  '.btn.wk-finish.done:hover': 'D2 the header Finish once every set is in, hovered (desktop)',
   '.setrow.cur .chk': 'D2 the Log key: the open set’s .go key',
   '.chk.on': 'D2 logged-set mark: the check key of a logged set',
-  '.ck.on': 'D2 logged-set mark: the check key (older alias of .chk)',
   '.setrow.cur .chk.on': 'D2 logged-set mark: the Log key once its set is logged',
   '.setrow.done .n': 'D2 logged-set mark: the set number of a logged set',
   '.lad-b i': 'D2 logged-set mark: session segments fill with logged work sets',
@@ -154,6 +157,16 @@ const WORK_JS = [
 /** Lines in src/**\/*.{js,jsx} that may name a record token. */
 const RECORD_JS = []
 
+/** Selectors that may use an orange token: each is a workout that is running right now. */
+const RUNNING = {
+  '.btn.live': 'D20 the Resume key while a workout runs',
+  '.home-badge.active': 'D20 Home’s “In progress” badge while a workout runs',
+  '#tabbar button.start.rec': 'D20 the tab bar’s Start key while a workout runs (D7)',
+}
+
+/** Lines in src/**\/*.{js,jsx} that may name an orange token. */
+const RUNNING_JS = []
+
 const tokenUses = (value, family) => [...value.matchAll(/--[\w-]+/g)].map(m => m[0]).filter(n => family.includes(n))
 
 /** Every use of a family's tokens in styles/*.css (outside tokens.css), one per selector. */
@@ -190,21 +203,22 @@ function jsUses(family) {
   return out
 }
 
-describe('G2 colour meaning: lime is work, yellow is a record', () => {
+describe('G2 colour meaning: lime is work, yellow is a record, orange is a running workout', () => {
   const families = [
     { name: 'accent', tokens: ACCENT_TOKENS, css: WORK, js: WORK_JS, list: 'WORK', means: 'the accent means work (spec D2)' },
     { name: 'record', tokens: RECORD_TOKENS, css: RECORD, js: RECORD_JS, list: 'RECORD', means: 'yellow means a Record (a Set that beat the Best or the best estimated 1RM), never the standing Best figure (spec D3 as narrowed by design-review-fixes E12)' },
+    { name: 'running', tokens: RUNNING_TOKENS, css: RUNNING, js: RUNNING_JS, list: 'RUNNING', means: 'orange means a workout is running (spec D20); a rescheduled day is an ink mark, a warning is neutral' },
   ]
 
   for (const f of families) {
     it(`${f.name} tokens (${f.tokens.join(', ')}) colour only allowlisted selectors in styles/*.css`, () => {
       const bad = cssUses(f.tokens).filter(u => !Object.hasOwn(f.css, u.sel)).map(u => u.where)
-      expect(bad, `These colour something that is not on the ${f.list} list: ${f.means}; anything else is ink (--label, --label-2, --label-3). If it truly is that use, add the selector to ${f.list} in src/design-lint.test.js with the D2/D3 use it is. ${COLOUR_READ}\n${bad.join('\n')}`).toEqual([])
+      expect(bad, `These colour something that is not on the ${f.list} list: ${f.means}; anything else is ink (--label, --label-2, --label-3). If it truly is that use, add the selector to ${f.list} in src/design-lint.test.js with the D2/D3/D20 use it is. ${COLOUR_READ}\n${bad.join('\n')}`).toEqual([])
     })
 
     it(`${f.name} tokens appear in JS/JSX only on allowlisted lines`, () => {
       const bad = jsUses(f.tokens).filter(u => !f.js.some(a => a.file === u.file && u.line.includes(a.has))).map(u => u.where)
-      expect(bad, `Inline colour with ${f.tokens.join('/')} outside the ${f.list}_JS list: ${f.means}. Prefer a class in styles/*.css; if the line truly is that use, add it to ${f.list}_JS with the D2/D3 use it is. ${COLOUR_READ}\n${bad.join('\n')}`).toEqual([])
+      expect(bad, `Inline colour with ${f.tokens.join('/')} outside the ${f.list}_JS list: ${f.means}. Prefer a class in styles/*.css; if the line truly is that use, add it to ${f.list}_JS with the D2/D3/D20 use it is. ${COLOUR_READ}\n${bad.join('\n')}`).toEqual([])
     })
 
     it(`every ${f.list} entry still matches a use (no stale allowlist)`, () => {
