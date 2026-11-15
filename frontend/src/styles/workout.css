@@ -150,6 +150,9 @@
 .setrow.cur .setgo { height: 60px; background: var(--ink); color: var(--on-ink) }
 .setrow.cur .setgo-l { display: inline; font-weight: 600 }
 .setrow.cur.timed .chk { grid-column: auto; }
+/* A timed set is started, so Start is the console's one .go key and Log is neutral (E19). */
+.setrow.cur.timed .setgo { background: var(--acc); color: var(--on-acc) }
+.setrow.cur.timed .chk:not(.on) { background: var(--surface-3); color: var(--label) }
 .setrow.cur .set-x { position: absolute; top: 2px; right: 2px }
 .setrow.cur .milestone-badge { grid-column: 1 / -1; margin: 0; justify-self: center }
 
