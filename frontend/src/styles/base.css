@@ -35,7 +35,7 @@ button, .chip, .tile, .item, .wday, .cal-d, .swatch, .hm-c, .lrow, .seg button, 
 
 .d {
   font-stretch: var(--narrow); font-weight: 800; text-transform: uppercase;
-  line-height: .94; letter-spacing: .002em; overflow-wrap: anywhere;
+  line-height: .94; letter-spacing: .002em; overflow-wrap: anywhere; text-wrap: balance;
 }
 .fig {
   font-stretch: var(--narrow); font-weight: 700; line-height: 1;
