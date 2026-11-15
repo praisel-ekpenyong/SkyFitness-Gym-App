@@ -8,6 +8,7 @@ import BodyMap from '../components/BodyMap.jsx'
 import Icon from '../components/Icon.jsx'
 import { Button } from '../components/ui.jsx'
 import { DEFAULT_GLYPH } from '../lib/glyphs.js'
+import { fitName, NAME_LAYOUTS } from '../lib/name-fit.js'
 
 /** Plan route; assigns weekdays and manages routines. */
 export default function Plan() {
@@ -60,7 +61,7 @@ export default function Plan() {
           <Button size="sm" icon="plus" onClick={addRoutine}>{t('New')}</Button>
         </div>
         <div className="rt-list">{S.routines.map(r => (
-          <button key={r.id} className="rt-card" aria-label={`${r.name}, ${exCount(r.ex.length)}`} onClick={() => nav('/plan/r/' + r.id)}>
+          <button key={r.id} className={'rt-card' + (fitName(r.name, NAME_LAYOUTS.card).stacked ? ' stack' : '')} aria-label={`${r.name}, ${exCount(r.ex.length)}`} onClick={() => nav('/plan/r/' + r.id)}>
             <span className="rt-text">
               <span className="rt-name d">{r.name}</span>
               <span className="rt-meta">{exCount(r.ex.length)}</span>
