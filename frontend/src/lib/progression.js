@@ -644,7 +644,7 @@ function greyskullPrescription({ policy, inc, unit, cfg, sessions, last, deloadA
  * Returned prescription fields:
  * - `policy`: active progression policy name ('off', 'linear', 'greyskull', 'double', 'time').
  * - `kind`: outcome classification:
- *   - 'first': No previous history; this workout establishes the baseline.
+ *   - 'first': No history in this Progression stream; this workout establishes the baseline.
  *   - 'up': Target advanced (increased weight, reps, duration, or sets).
  *   - 'hold': Maintain current target (missed goal, or clamped at boundaries).
  *   - 'deload': Load or duration backed off after reaching stall threshold (`DELOAD_AFTER`).
@@ -692,9 +692,14 @@ export function nextPrescription(S, cfg, routine) {
   // One Target shape is one Progression stream. A different Routine or a previous target
   // must not contribute a Hit to this climb; changing the policy or the bottom of the range
   // leaves the shape alone and keeps the history.
-  const sessions = sessionsFor(S, cfg.id, cfg).filter(s => inStream(s, cfg, mode))
+  const logged = sessionsFor(S, cfg.id, cfg)
+  const sessions = logged.filter(s => inStream(s, cfg, mode))
   const last = sessions[sessions.length - 1]
-  if (!last) return { policy, kind: 'first', why: ['Nothing logged yet — this session sets the baseline.'] }
+  if (!last) {
+    // History under another Target shape still shows as "Last time…", so do not deny it.
+    const why = logged.length ? 'New target. This session sets the baseline.' : 'Nothing logged yet — this session sets the baseline.'
+    return { policy, kind: 'first', why: [why] }
+  }
 
   const deloadAt = DELOAD_AFTER[policy] || 3
   if (mode === 'time') return timePrescription({ policy, inc, cfg, sessions, last, deloadAt })
