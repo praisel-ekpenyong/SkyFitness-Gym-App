@@ -51,7 +51,7 @@ button, .chip, .tile, .item, .wday, .cal-d, .swatch, .hm-c, .lrow, .seg button, 
 .muted { color: var(--label-2) }
 .dim   { color: var(--label-3) }
 .small { font-size: var(--fs-meta); line-height: 1.38 }
-.record { color: var(--goal-text) }   /* records and bests; never the accent */
+.record { color: var(--goal-text) }   /* a Record; never a Best, never the accent */
 .capitalize { text-transform: capitalize }
 .nocap, .tag.nocap, .chip.nocap { text-transform: none }
 .grow { flex: 1; min-width: 0 }

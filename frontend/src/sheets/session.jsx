@@ -14,7 +14,6 @@ import { Button, Switch, TextArea } from '../components/ui.jsx'
 import BodyMap from '../components/BodyMap.jsx'
 import SessionMuscleDistribution from '../components/SessionMuscleDistribution.jsx'
 import { loadOfWorkouts, MUSCLE_NAME } from '../lib/muscles.js'
-import { bestKnownWeight, heaviestSetWeight, peekWeightCommit } from '../lib/active-workout.js'
 
 /** Reads the shared store state. */
 const S = () => useStore.getState().S
@@ -30,23 +29,19 @@ const snd = () => S().sound
 /* ============================ injected hub seams ============================ */
 // The weigh-in sheet arrives as an injected seam wired by the hub, so no
 // session-to-body-weight dependency exists. Confirm stays the hub's interface
-// and the shared weight input currently lives in the hub (moving with the
-// body-weight sheets in a later step) — both are injected for the same reason:
-// the hub re-exports this module, so importing the hub back would be circular.
+// and is injected for the same reason: the hub re-exports this module, so
+// importing the hub back would be circular.
 let _bwSheet = null
 let _confirmSheet = null
-let _WeightInput = null
 /**
- * Wires the weigh-in, confirm, and weight-input seams for session sheets.
+ * Wires the weigh-in and confirm seams for session sheets.
  *
  * @param {Function} bwSheet Weigh-in sheet opener.
  * @param {Function} confirmSheet Hub confirm dialog.
- * @param {Function} WeightInput Shared weight picker component.
  */
-export function configureSessionSheets({ bwSheet, confirmSheet, WeightInput }) {
+export function configureSessionSheets({ bwSheet, confirmSheet }) {
   if (bwSheet) _bwSheet = bwSheet
   if (confirmSheet) _confirmSheet = confirmSheet
-  if (WeightInput) _WeightInput = WeightInput
 }
 
 /* ============================ workout lifecycle ============================ */
@@ -71,70 +66,6 @@ export function beginWorkout(routineId, bw) {
   useUI.getState().stopRest()
   nav('/workout')
 }
-/**
- * Top-weight confirmation; saving records the working weight for next time.
- *
- * @param {number} entryIdx Active entry index.
- * @param {Function} close Closes the sheet.
- */
-function TopWeight({ entryIdx, close }) {
-  const st = useStore(s => s.S)
-  const A = st.active
-  // The workout can end underneath this sheet: finishing from the last exercise clears
-  // `active`, and this re-renders before the sheet is torn down. Everything below is
-  // read defensively and the sheet dismisses itself — reading A.entries straight took
-  // the whole app down with it. Hooks still run unconditionally, so the bail-out has
-  // to sit after every one of them.
-  const entry = A ? A.entries[entryIdx] : null
-  const ex = entry && EXIDX[entry.id]
-  const maxSet = entry ? heaviestSetWeight(entry) : 0
-  const prevBest = entry ? bestKnownWeight(st, entry.id) : 0
-  const [v, setV] = useState(entry ? (Math.max(maxSet, prevBest) || entry.target.weight || 0) : 0)
-  useEffect(() => { if (!entry) close() }, [!entry])
-
-  // Advance/finish navigation is decided behind the toggle seam: the same
-  // geometry the toggle already computed, previewed here for button labels.
-  // The work-sets-only rule (unticked warm-ups never block) lives there too.
-  const peek = entry ? peekWeightCommit(st, entryIdx) : null
-  const unitDone = peek ? peek.unitDone : false
-  const isLastUnit = peek ? peek.isLastUnit : false
-  const unitSize = peek ? peek.unitSize : 0
-  if (!entry || !ex) return null
-  const WeightInput = _WeightInput
-  if (!WeightInput) return null
-
-  const commit = advance => {
-    const n = Math.round((v || 0) * 10) / 10
-    if (!isFinite(n) || n < 0) { toast(t('Enter a valid weight')); return }
-    // Recording and deciding share one domain call, so the Active workout
-    // can never change between them (the finish-under-sheet teardown race).
-    const next = useStore.getState().commitWorkingWeight(entryIdx, n)
-    close()
-    if (advance && next) {
-      if (next.kind === 'topweight-then-finish') { workoutCompleteSheet(); return }
-      if (next.kind === 'topweight-then-advance' && next.targetIdx != null) {
-        useStore.getState().setActiveIndex(next.targetIdx)
-        return
-      }
-    }
-    toast(t('Tracked — next time starts at {0}', fmtNum((S().exWeights[entry.id] || {}).w ?? n) + ' ' + st.unit))
-  }
-  return <>
-    <h3>{t('{0} done', ex.n)}</h3>
-    <div className="sheet-sub">{t('Confirm the weight you worked with — your highest becomes the default next time.')}{!unitDone && unitSize > 1 ? ' ' + t('Then finish the superset partner.') : ''}</div>
-    {/* the console's weight step, so the keys here walk the bar the way the set's keys do */}
-    <WeightInput value={v} setValue={setV} unit={st.unit} step={2.5} label={t('Working weight')} />
-    <div className="gap8" />
-    {prevBest > 0 ? <div className="small dim cal-sum tw-best">{t('Previous best')} {fmtNum(prevBest)} {st.unit}{maxSet > prevBest && <span className="tw-new"> · {t('new record!')}</span>}</div> : <div className="gap8" />}
-    {unitDone ? <>
-      <Button variant="primary" trailingIcon={isLastUnit ? null : 'chevronRight'} onClick={() => commit(true)}>{isLastUnit ? t('Save') : t('Save and next exercise')}</Button>
-      <div className="gap8" /><Button variant="ghost" className="dim" onClick={() => commit(false)}>{t('Just close')}</Button>
-    </> : <Button variant="primary" onClick={() => commit(false)}>{t('Save weight')}</Button>}
-  </>
-}
-/** Opens the top-weight confirmation for the given entry. */
-export const topWeightSheet = entryIdx => ui().openSheet(close => <TopWeight entryIdx={entryIdx} close={close} />)
-
 /**
  * In-session exercise note sheet: allows reading, editing, or clearing an exercise's setup/cues.
  *
@@ -199,10 +130,10 @@ export const getProgressionItems = sessionProgressionItems
 
 
 /**
- * Finish summary; shows duration, volume, PRs, and trained muscles.
+ * Finish summary; shows duration, volume, Records, and trained muscles.
  *
  * @param {Object} w Finished workout.
- * @param {Array} prs New weight PR exercise ids.
+ * @param {Array} prs Exercise ids that made a Record.
  * @param {Array} e1prs New estimated-1RM records.
  * @param {Object|null} routineSync Routine sync descriptor if originating from a routine with changes.
  * @param {Function} close Closes the sheet.
@@ -235,10 +166,10 @@ export function FinishSummary({ w, prs, e1prs = [], routineSync = null, close })
       <div className="tile"><div className="l">{t('Volume')}</div><div className="v">{fmtNum(tonnageOf(w))}<span className="u"> {st.unit}</span></div></div>
       <div className="tile"><div className="l">{t('Sets')}</div><div className="v">{fmtNum(workSetsDone(w))}</div>
         {warmUps > 0 && <div className="s">{t(warmUps === 1 ? '{0} warm-up' : '{0} warm-ups', fmtNum(warmUps))}</div>}</div>
-      <div className="tile"><div className="l">{t('PRs')}</div><div className="v">{fmtNum(prs.length)}</div></div>
+      <div className="tile"><div className="l">{t('Records')}</div><div className="v">{fmtNum(prs.length)}</div></div>
     </div>
     {(prs.length > 0 || e1prs.length > 0) && <div className="finish-records">
-      {prs.map(id => <div key={id} className="record capitalize row"><Icon name="trophy" />{t('New PR:')} {(EXIDX[id] || {}).n || id}</div>)}
+      {prs.map(id => <div key={id} className="record capitalize row"><Icon name="trophy" />{t('New record:')} {(EXIDX[id] || {}).n || id}</div>)}
       {e1prs.map(p => <div key={p.id} className="record capitalize row"><Icon name="chartLine" />{t('Best estimated 1RM:')} {(EXIDX[p.id] || {}).n || p.id} · {fmtNum(p.est)} {st.unit}</div>)}
     </div>}
     {progressionItems.length > 0 && <>

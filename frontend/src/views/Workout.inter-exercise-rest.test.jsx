@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { act } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { exOr } from '../lib/exercises.js'
 import { entry, resetViewTestState, renderWorkoutApp, cleanupViewTest } from '../test/view-harness.jsx'
 
 vi.mock('../lib/sound.js', () => ({
@@ -28,6 +29,10 @@ function position() {
   return `${segs.findIndex(s => s.getAttribute('aria-current') === 'step') + 1} / ${segs.length}`
 }
 
+function nextKey() {
+  return view.container.querySelector('.wk-next')
+}
+
 function timerBarText() {
   const bar = view.container.querySelector('#timer')
   return bar ? bar.textContent.trim() : null
@@ -46,7 +51,7 @@ function setupAndCompleteFirstExercise() {
   // Check off the final work set of the first exercise
   click(view.container.querySelectorAll('[role="checkbox"]')[1])
 
-  // Rest timer starts immediately and counts down in background behind top-weight sheet
+  // Rest timer starts immediately and counts down; no sheet opens
   expect(timerBarText()).toMatch(/^1:30/)
   act(() => vi.advanceTimersByTime(3000))
   expect(timerBarText()).toMatch(/^1:27/)
@@ -64,13 +69,21 @@ afterEach(() => {
 })
 
 describe('inter-exercise auto-rest for solo exercises', () => {
-  it('counts down in background behind the top-weight sheet and preserves countdown when tapping Save and next exercise', () => {
+  it('opens no sheet, shows the Next key, and preserves countdown when tapping it', () => {
     setupAndCompleteFirstExercise()
 
-    const saveAndNext = buttonNamed('Save and next exercise')
-    expect(saveAndNext).toBeTruthy()
+    expect(buttonNamed('Save and next exercise')).toBeFalsy()
+    expect(view.container.querySelector('.sheet')).toBe(null)
+    const next = nextKey()
+    expect(next).toBeTruthy()
+    expect(next.textContent).toMatch(/^Next: /)
+    // The dataset name arrives lowercase; .capitalize lifts it (DESIGN.md › Conventions).
+    const name = next.querySelector('.capitalize')
+    expect(name?.textContent).toBe(exOr('1002').n)
+    expect(next.textContent).toBe(`Next: ${exOr('1002').n}`)
+    expect(position()).toBe('1 / 2')
 
-    click(saveAndNext)
+    click(next)
 
     // View advances to the next exercise
     expect(position()).toBe('2 / 2')
@@ -81,21 +94,17 @@ describe('inter-exercise auto-rest for solo exercises', () => {
     expect(timerBarText()).toMatch(/^1:25/)
   })
 
-  it('preserves countdown on current view when tapping Just close on the top-weight sheet', () => {
+  it('the Next key goes away when a Set is unchecked, and is absent on the last exercise', () => {
     setupAndCompleteFirstExercise()
+    expect(nextKey()).toBeTruthy()
 
-    const justClose = buttonNamed('Just close')
-    expect(justClose).toBeTruthy()
+    click(view.container.querySelectorAll('[role="checkbox"]')[1])
+    expect(nextKey()).toBe(null)
+    click(view.container.querySelectorAll('[role="checkbox"]')[1])
+    click(nextKey())
 
-    click(justClose)
-
-    // View remains on the completed exercise
-    expect(position()).toBe('1 / 2')
-
-    // Rest timer continues uninterrupted
-    expect(timerBarText()).toMatch(/^1:27/)
-    act(() => vi.advanceTimersByTime(2000))
-    expect(timerBarText()).toMatch(/^1:25/)
+    expect(position()).toBe('2 / 2')
+    expect(nextKey()).toBe(null)
   })
 
   it('unprompted exercise starts rest automatically, stays on completed card, and Next preserves countdown', () => {
@@ -120,8 +129,8 @@ describe('inter-exercise auto-rest for solo exercises', () => {
     // No top-weight sheet opened
     expect(buttonNamed('Save and next exercise')).toBeFalsy()
 
-    // Lifter taps "Next"
-    const nextBtn = buttonNamed('Next')
+    // The same Next key as a loaded Entry
+    const nextBtn = nextKey()
     expect(nextBtn).toBeTruthy()
     click(nextBtn)
 
@@ -148,7 +157,7 @@ describe('inter-exercise auto-rest for solo exercises', () => {
     expect(timerBarText()).toMatch(/^1:30/)
 
     // Advance to last exercise
-    click(buttonNamed('Save and next exercise'))
+    click(nextKey())
     expect(position()).toBe('2 / 2')
     expect(timerBarText()).toMatch(/^1:30/)
 
@@ -176,13 +185,14 @@ describe('inter-exercise auto-rest for solo exercises', () => {
     // Perform the final set of the superset unit
     click(view.container.querySelectorAll('[role="checkbox"]')[1])
 
-    // Rest timer starts immediately behind top-weight sheet
+    // Rest timer starts immediately
     expect(timerBarText()).toMatch(/^1:30/)
     act(() => vi.advanceTimersByTime(4000))
     expect(timerBarText()).toMatch(/^1:26/)
 
-    // Tapping Save and next exercise advances to the solo exercise
-    click(buttonNamed('Save and next exercise'))
+    // One Next key for the whole superset advances to the solo exercise
+    expect(view.container.querySelectorAll('.wk-next')).toHaveLength(1)
+    click(nextKey())
     expect(position()).toBe('2 / 2')
 
     // Rest timer continues uninterrupted
@@ -193,8 +203,8 @@ describe('inter-exercise auto-rest for solo exercises', () => {
 
   it('unprompted superset unit completion starts rest, stays on unit, and Next advances with rest running', () => {
     view = renderWorkoutApp([
-      { ...entry('1001', [{ w: 0, r: 10, done: true }]), sg: 'ss1', asked: true },
-      { ...entry('1002', [{ w: 0, r: 10, done: false }]), sg: 'ss1', asked: true },
+      { ...entry('1001', [{ w: 0, r: 10, done: true }]), sg: 'ss1' },
+      { ...entry('1002', [{ w: 0, r: 10, done: false }]), sg: 'ss1' },
       entry('1003', [{ w: 50, r: 5, done: false }]),
     ], { cur: 1 })
 
@@ -209,8 +219,8 @@ describe('inter-exercise auto-rest for solo exercises', () => {
     // View remains on the superset card
     expect(position()).toBe('1 / 2')
 
-    // Tapping Next navigates to the solo exercise while rest continues
-    click(buttonNamed('Next'))
+    // Tapping the Next key navigates to the solo exercise while rest continues
+    click(nextKey())
     expect(position()).toBe('2 / 2')
     expect(timerBarText()).toMatch(/^1:27/)
   })

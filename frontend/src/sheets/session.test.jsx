@@ -33,7 +33,6 @@ beforeEach(() => {
   configureSessionSheets({
     bwSheet: vi.fn(),
     confirmSheet: vi.fn(),
-    WeightInput: () => null,
   })
 
   container = document.createElement('div')
@@ -342,7 +341,7 @@ describe('FinishSummary with SessionMuscleDistribution', () => {
 
 describe('FinishSummary records', () => {
   // DESIGN.md: the record colour marks records; the accent marks logged work and nothing else.
-  it('marks a new PR and a best estimated 1RM in the record colour, not the accent', async () => {
+  it('marks a new Record and a best estimated 1RM in the record colour, not the accent', async () => {
     const w = {
       id: 'w-records', d: '2026-03-01', start: 1000, end: 4000,
       entries: [{ id: '0025', sets: [{ w: 100, r: 5, done: true }] }],
@@ -352,12 +351,14 @@ describe('FinishSummary records', () => {
     })
     const lines = [...container.querySelectorAll('.finish-records > *')]
     expect(lines.map(l => l.textContent)).toEqual([
-      expect.stringContaining('New PR:'),
+      expect.stringContaining('New record:'),
       expect.stringContaining('Best estimated 1RM:'),
     ])
     for (const line of lines) {
       expect(line.classList.contains('record')).toBe(true)
       expect(line.classList.contains('accent')).toBe(false)
     }
+    expect([...container.querySelectorAll('.tile .l')].map(l => l.textContent)).toContain('Records')
+    expect(container.textContent).not.toMatch(/\bPRs?\b/)
   })
 })

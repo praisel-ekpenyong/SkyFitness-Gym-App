@@ -54,19 +54,29 @@ untracked. Inputs stay at 16px or larger, the line below which iOS zooms the pag
 - **Accent:** `--acc` (fill, per profile via `data-accent`, default lime `#a3e635`, the app icon's
   own colour), `--acc-text` (accent as words), `--data` (accent as chart ink). In light theme the
   last two darken so they can be read on white; never use `--acc` itself for text or lines.
-- **Status:** `--orange` a workout is running, `--yellow` records and strength, `--red` destructive
-  and fatigued. Each has a `-text` partner where it differs.
+- **Status:** `--orange` a workout is running, `--yellow` a Record, `--red` destructive and
+  fatigued. Each has a `-text` partner where it differs. Yellow marks a Record and nothing else: the
+  moment a Set beats the exercise's Best or its best estimated 1RM. That is the `.record` utility, the
+  `.pr` Record badge, and the Set in Stats history that made a Record (`.set-pill.record`, the
+  heaviest Set of that session). The standing Best figure (the heaviest load) is neutral ink,
+  `--label`, wherever it shows, never yellow. This narrows iron-discipline D3, per design-review-fixes
+  E12 (path a) and the Record decision of 2026-11-14.
 - **Plates:** `--plate-*`, the competition colour code. They belong to the object: used on plates and
   nowhere else, and the only polychrome in the app.
 - **Art:** `--art-filter` turns the white-ground exercise art into an X-ray on `--art-ground` black
   (`invert` + `hue-rotate` puts the red target muscle back); light theme shows it untouched.
+  `--art-paper` is the art's white paper, painted under `--art-filter`, so an image still loading
+  shows `--art-ground` in either theme. When every URL for an image fails, the thumbnail, the
+  Library tile and the animation show the dumbbell tile (`.thumb-x`) at their own size, with no
+  `<img>` and no alt text. Inside `.exmedia`, `.ex-art` sits on whichever stands there, the art
+  `<img>` or the dumbbell tile, so size rules target `.ex-art` and never the `<img>`.
 
 ## Signature pieces
 
 | Piece | Where | Notes |
 |---|---|---|
 | **The barbell** | `components/Barbell.jsx`, `lib/plates.js` | The open set of a straight-bar lift, drawn with real plates, heaviest inside. Always names its bar and states in words what the colours show ("20 kg bar + 25 + 15 per side"); a load no plates can make is reported, never rounded. EZ, trap and Smith bars are not drawn: their weight is unknown. |
-| **The set ladder** | `views/Workout.jsx` | The set in front of you is one large console (figure over two keys, the bar, one Log key). Every other set is one line, still typeable, one tap from opening. The console stays on screen as it moves down the page. |
+| **The set ladder** | `views/Workout.jsx` | The set in front of you is one large console (figure over two keys, the bar, one Log key). Every other set is one line, still typeable, one tap from opening. The console stays on screen as it moves down the page. Once every work set of the open entry or superset is done and another follows, the ladder ends in one inverted, full-width key, "Next: <exercise>" (`.wk-next`), in every mode; the last one opens the complete sheet instead, and an uncheck takes the key away. |
 | **Focus mode** | `App.jsx`, `body.focus-session` | While a workout is on screen the phone's tab bar steps aside. The header's chevron minimizes to the rest of the app. |
 | **The rest dock** | `components/RestTimer.jsx` | The clock is the largest thing on the phone while it runs. |
 | **Session segments** | `.lad` | One segment per exercise, filling with its work sets: position at a glance and a one-thumb jump. |
@@ -104,7 +114,7 @@ take two columns from the same source order.
   capitalise a string with a unit in it: "60 kg", never "60 Kg".
 - **Missing is a dash, zero is a zero.** An empty chart draws its frame; an empty map draws the body.
 - **Colour says good or bad, not up or down.** A month still under way is not behind anything yet, so
-  its shortfall reads neutral. No streak flames, no guilt.
+  its shortfall shows no comparison. No streak flames, no guilt.
 - **New words go through `t()`** and follow the glossary.
 
 ## Banned here

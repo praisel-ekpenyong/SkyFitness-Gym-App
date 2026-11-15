@@ -65,13 +65,13 @@
 .ex-headline { display: flex; flex-direction: column; gap: 3px; margin-bottom: 12px }
 .cap1::first-letter { text-transform: uppercase }
 .balance-none { margin-bottom: 10px }
-.ex-headline-v { font-size: var(--fs-hero); color: var(--goal-text) }   /* a best is a record */
+.ex-headline-v { font-size: var(--fs-hero); color: var(--label) }   /* a Best is a measurement in ink; yellow is a Record */
 .ex-sessions { margin-top: 12px }
 .exercise-session-item { display: flex; align-items: flex-start; justify-content: space-between; padding: 9px 0; gap: 10px; box-shadow: inset 0 1px 0 var(--sep) }
 .exercise-session-date { font-size: var(--fs-meta); color: var(--label-2); min-width: 82px; flex: none; padding-top: 1px }
 .exercise-session-sets { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 3px 10px }
 .set-pill { font-size: var(--fs-body); font-stretch: var(--semi); font-weight: 400; color: var(--label) }
-.set-pill.top { color: var(--goal-text); font-weight: 700 }   /* a set at the exercise's best is a record */
+.set-pill.record { color: var(--goal-text); font-weight: 700 }   /* the Set that made a Record */
 .mrow .bar i.quiet { background: var(--label-4) }
 
 .effort-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--sep); border-radius: var(--r-2); overflow: hidden; margin: 12px 0 8px }
@@ -106,7 +106,7 @@
 .ex-tile .ss .tag { display: table; margin-top: 4px; font-size: var(--fs-micro); padding: 2px 5px; white-space: normal }
 .ex-foot { display: flex; align-items: center; justify-content: space-between; padding: 0 2px 0 10px; min-height: var(--tap-target) }
 .ex-foot .btn { color: var(--label); padding-inline: 8px; font-size: var(--fs-meta) }
-.ex-best-v { font-size: var(--fs-lead); font-stretch: var(--narrow); font-weight: 700; color: var(--goal-text) }   /* a best is a record, never the accent */
+.ex-best-v { font-size: var(--fs-lead); font-stretch: var(--narrow); font-weight: 700; color: var(--label) }   /* a Best is ink, never yellow or the accent */
 .ex-best-v .u { font-size: var(--fs-micro) }
 .ex-star { position: absolute; top: 0; right: 0; font-size: var(--fs-lead); background: none; color: var(--label-3) }
 .ex-star.on-ss { color: var(--label) }
@@ -136,7 +136,8 @@
 .ex-entry .exnote { margin: 6px 0 0; padding: 7px 10px; font-size: var(--fs-meta) }
 .detail-tags { gap: 5px; flex-wrap: wrap; margin: 10px 0 }
 .best-line { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; margin-bottom: 6px }
-.best-line .icn { font-size: var(--fs-small); color: var(--goal-text) }
+.best-line .icn { font-size: var(--fs-small); color: var(--label-2) }
+.best-line b { color: var(--label) }   /* a Best is ink, never yellow */
 .onerm-now { font-size: var(--fs-meta); margin-bottom: 8px }
 .onerm-est { font-size: var(--fs-heading); font-stretch: var(--narrow); font-weight: 700; color: var(--label) }
 .stack-gap { display: flex; flex-direction: column; gap: 8px; margin-top: 8px }
@@ -196,8 +197,6 @@
 .recap-empty { margin-bottom: 12px }
 .recap-v { display: flex; align-items: baseline; gap: 8px; flex: none }
 .recap-n { font-size: var(--fs-figure); font-stretch: var(--narrow); font-weight: 700 }
-.tw-best { margin-bottom: 12px }
-.tw-new { color: var(--goal-text) }
 .sheet-title-row { margin-bottom: 12px; align-items: flex-start }
 .onerm-in { margin-bottom: 10px }
 .onerm-out { margin-bottom: 4px; align-items: baseline }

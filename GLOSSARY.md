@@ -120,7 +120,7 @@ _Avoid_: plan (for a single exercise)
 The one session currently in progress. At most one exists; it survives closing the app.
 
 **Workout**:
-A finished, dated training session in history: entries, a weigh-in, personal records.
+A finished, dated training session in history: entries, a weigh-in, Records.
 _Avoid_: session (fine in prose, never as the noun for the record)
 
 **Entry**:
@@ -271,7 +271,11 @@ A one-rep-max estimated from a submaximal set (Epley by default). Refused above 
 _Avoid_: e1RM in user-facing prose
 
 **Record**:
-A set whose estimated 1RM beats every estimate before it, kept on the workout where it happened.
+The moment a performed Work set beats the exercise's Best (the heaviest load logged) or its best Estimated 1RM, kept on the workout where it happened (`prs` names a new Best). The Set that made it is yellow; the standing Best figure is not.
+_Avoid_: PR, personal record (in lifter-facing copy)
+
+**Best**:
+The heaviest load of a performed Work set for one exercise; a standing measurement, where a Record is the moment a Set beat it (or beat the best estimate). Shown in neutral ink, never in the Record's yellow.
 
 **Effective sets**:
 Training load per muscle counted in sets, weighted primary 1 / secondary 0.4 — deliberately not in kilograms, because tonnage across exercises compares nothing.

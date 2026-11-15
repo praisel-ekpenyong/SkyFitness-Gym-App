@@ -40,3 +40,13 @@ As verified on Netlify Edge on 2026-10-28:
 
 - [Decision log](decisions.md)
 - [Process notes](process.md)
+
+## Cloudflare Pages (observed 2026-11-14)
+
+- On 2026-11-14 a release-check agent found that skyfitness.pages.dev is built by Cloudflare's own Git integration
+  from GitHub (remote `github`), with no `wrangler.toml`. As of `main@1cc54a3`, `.github/workflows/test.yml` only
+  runs tests. Source: `.scratch/iron-launch/issues/05-deploy-pages.md` (comments of 2026-11-10).
+- Iron ships on remote branch `iron`. As of 2026-11-14 the Cloudflare production branch was still `master` (that
+  ticket is `ready-for-human`), so `git push github main:iron` updates only the iron.skyfitness.pages.dev preview.
+- Nothing deploys without a push from this checkout. The Netlify CLI section above covers the frozen old app's
+  host only.

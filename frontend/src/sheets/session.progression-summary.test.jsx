@@ -39,7 +39,6 @@ beforeEach(() => {
   configureSessionSheets({
     bwSheet: vi.fn(),
     confirmSheet: vi.fn(),
-    WeightInput: () => null,
   })
 
   container = document.createElement('div')
@@ -56,7 +55,7 @@ afterEach(async () => {
 })
 
 describe('FinishSummary Progression Summary', () => {
-  it('renders dedicated Progression section between PRs and BodyMap when trained exercises exist', async () => {
+  it('renders dedicated Progression section between Records and BodyMap when trained exercises exist', async () => {
     const w = {
       id: 'w-1',
       d: '2026-10-30',
@@ -87,7 +86,7 @@ describe('FinishSummary Progression Summary', () => {
     // Verify section header "Progression"
     expect(container.textContent).toContain('Progression')
 
-    // Document order check: PRs precede Progression section, and Progression section precedes BodyMap
+    // Document order check: Records precede Progression section, and Progression section precedes BodyMap
     const prSection = container.querySelector('.finish-records .row')
     const bodyMap = container.querySelector('svg.bodymap, [aria-label*="muscle"], .bodymap')
     expect(prSection).not.toBeNull()
@@ -462,7 +461,7 @@ describe('FinishSummary tiles', () => {
       }],
     }
     await act(async () => { root.render(<FinishSummary w={w} prs={[]} close={vi.fn()} />) })
-    const { Duration, Volume, Sets, PRs } = tiles()
+    const { Duration, Volume, Sets, Records } = tiles()
 
     expect(Duration.querySelector('.v').textContent).toBe('1h 6m')
     expect([...Duration.querySelectorAll('.v .u')].map(u => u.textContent)).toEqual(['h', 'm'])
@@ -471,6 +470,6 @@ describe('FinishSummary tiles', () => {
     expect(Sets.querySelector('.v').textContent).toBe('3')
     expect(Sets.querySelector('.s').textContent).toBe('1 warm-up')
     // Zero is a zero, not a dash: no records is a count, not missing data.
-    expect(PRs.querySelector('.v').textContent).toBe('0')
+    expect(Records.querySelector('.v').textContent).toBe('0')
   })
 })
