@@ -17,7 +17,7 @@ export function holdRef(active, entryIdx, setIdx) {
   if (!row) return null
   const warm = isWarmupRow(row)
   const nth = entry.sets.slice(0, setIdx).filter(s => isWarmupRow(s) === warm).length
-  return { workout: active.id, entryIdx, entryId: entry.id, warm, nth }
+  return { workout: active.id, layout: active.layout || 0, entryIdx, entryId: entry.id, warm, nth }
 }
 
 /**
@@ -25,7 +25,7 @@ export function holdRef(active, entryIdx, setIdx) {
  * @returns {number[]|null} [entryIdx, setIdx], or null when its workout, exercise or row is gone.
  */
 export function findHoldRow(active, ref) {
-  if (!ref || !active || active.id !== ref.workout) return null
+  if (!ref || !active || active.id !== ref.workout || (active.layout || 0) !== ref.layout) return null
   const entry = active.entries?.[ref.entryIdx]
   if (!entry || entry.id !== ref.entryId) return null
   let n = -1
