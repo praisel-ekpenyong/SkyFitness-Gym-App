@@ -231,8 +231,8 @@ npm run test:fatigue-probe   # property check: fatigue never rises across a rest
 npm run test:preview         # Playwright smoke test of the built app (run npm run build first)
 ```
 
-CI runs the Vitest suite, the build and the fatigue probe on pull requests, and on pushes to
-`main` and `master`, that touch `frontend/`.
+CI runs the Vitest suite, the build and the fatigue probe on every pull request and on pushes
+to `main`.
 
 ## Project layout
 
