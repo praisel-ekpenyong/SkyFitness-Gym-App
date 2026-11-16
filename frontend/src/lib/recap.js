@@ -1,5 +1,5 @@
 import { workSetsDone } from './workout-model.js'
-import { tonnage, records } from './training-log.js'
+import { tonnage, loadRecords, e1rmRecords } from './training-log.js'
 import { monthKey } from './format.js'
 
 /**
@@ -35,10 +35,8 @@ function metricsFor(S, workouts) {
       const dur = end - start
       if (Number.isFinite(dur) && dur > 0) durationMs += dur
     }
-    for (const r of records(S, w)) {
-      if (r.kind === 'load') { if (!prs.includes(r.id)) prs.push(r.id) }
-      else e1prs.push({ id: r.id, est: r.est, w: r.w, r: r.r, d: w.d, t: w.start, prev: r.prev })
-    }
+    for (const r of loadRecords(S, w)) if (!prs.includes(r.id)) prs.push(r.id)
+    for (const r of e1rmRecords(S, w)) e1prs.push({ ...r, d: w.d, t: w.start })
   }
 
   return {

@@ -286,3 +286,48 @@ describe('Training log: last Workout of a Routine', () => {
     expect(lastWorkoutInRoutine(S, 'legs')).toBe(null)
   })
 })
+
+describe('Training log: an exercise in two Entries of one Workout', () => {
+  const S = { unit: 'kg', workouts: [day('2026-11-01', [lift([work(60)]), lift([work(70, 3)])], 'kg')] }
+
+  it('lastSession and latestWorkSetAt agree, collecting performed Work sets across every Entry', () => {
+    S.workouts[0].start = 5000
+    expect(lastSession(S, 'bench').sets.map(s => s.w)).toEqual([60, 70])
+    expect(latestWorkSetAt(S, 'bench')).toBe(5000)
+  })
+
+  it('answers from the second Entry when the first holds no performed Work set', () => {
+    const T = { unit: 'kg', workouts: [day('2026-11-01', [lift([{ w: 60, r: 5, done: false }]), lift([work(70)])])] }
+    expect(lastSession(T, 'bench').sets.map(s => s.w)).toEqual([70])
+    expect(latestWorkSetAt(T, 'bench')).not.toBeNull()
+  })
+})
+
+describe('Training log: Records of a cloned in-log Workout', () => {
+  it('keeps the Records of a structurally equal clone of a Workout in the log', () => {
+    const workouts = [
+      { id: 'a', d: '2026-11-01', entries: [lift([work(100)])] },
+      { id: 'b', d: '2026-11-01', entries: [lift([work(120)])] },
+      { id: 'c', d: '2026-11-08', entries: [lift([work(90)])] },
+    ]
+    const S = { unit: 'kg', workouts }
+    const expected = records(S, workouts[1])
+    expect(expected.map(r => r.id)).toEqual(['bench'])
+    expect(records(S, JSON.parse(JSON.stringify(workouts[1])))).toEqual(JSON.parse(JSON.stringify(expected)))
+  })
+})
+
+describe('Training log: Records over a large history', () => {
+  it('reads Records for every Workout of a 2000-Workout history quickly', () => {
+    const workouts = Array.from({ length: 2000 }, (_, i) => ({
+      id: `w${i}`, d: new Date(Date.UTC(2020, 0, 1 + i)).toISOString().slice(0, 10), start: 1,
+      entries: ['bench', 'squat', 'row'].map(id => ({ id, sets: [work(50 + (i % 7) * 5 + Math.floor(i / 100))] })),
+    }))
+    const S = { unit: 'kg', workouts }
+    const t0 = performance.now()
+    const total = workouts.reduce((n, w) => n + records(S, w).length, 0)
+    expect(performance.now() - t0).toBeLessThan(1000)
+    expect(total).toBeGreaterThan(0)
+    expect(records(S, workouts[0])).toEqual([])
+  })
+})

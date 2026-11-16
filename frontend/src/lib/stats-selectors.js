@@ -3,7 +3,7 @@ import { fatigueOf, strengthOf, fatigueStateOf } from './recovery.js'
 import { MUSCLES, loadOfWorkouts, rankOf, lastTrainedByMuscle } from './muscles.js'
 import { LB_TO_KG } from './bodyweight.js'
 import { e1rmSeries, best1RM } from './onerm.js'
-import { records } from './training-log.js'
+import { loadRecords } from './training-log.js'
 import {
   displayScale, scaleName, toScale, avgRir,
   effortSummary, effortWeeks, effortHistogram, isHardSet, rirOf, hasEffort, effortOf, HARD_RIR,
@@ -259,7 +259,7 @@ function metricOf(entry, mode, workout = null, targetUnit = null) {
 
 function recordIndexOf(S, workout, exId, rows, mode) {
   if (mode !== 'reps') return null
-  const rec = records(S, workout).find(r => r.id === exId && r.kind === 'load')
+  const rec = loadRecords(S, workout).find(r => r.id === exId)
   const at = rec?.set ? rows.indexOf(rec.set) : -1
   return at < 0 ? null : at
 }

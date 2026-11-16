@@ -5,7 +5,7 @@ import { EXIDX } from './lib/exercises.js'
 import { fmtDate, fmtNum, fmtSigned, fmtVol, fmtDur, durPart, todayISO, exCount, DAYN, MONTHS_LONG, monthKey, setLabel } from './lib/format.js'
 import { effectiveRoutineId, hasEffectiveOverride, deleteWorkout } from './lib/history.js'
 import { setsDone } from './lib/workout-model.js'
-import { tonnage } from './lib/training-log.js'
+import { tonnage, loadRecords } from './lib/training-log.js'
 import { effortOf } from './lib/effort.js'
 import { setDayOverride, assignWeekday, dayStatus } from './lib/schedule.js'
 import { recordWeighIn, deleteWeighIn, latestWeighIn } from './lib/bodyweight.js'
@@ -22,7 +22,6 @@ import { glyphOf, GLYPH_GROUPS } from './lib/glyphs.js'
 import { parseImport, mergeImport, importPreview } from './lib/import-csv.js'
 import { buildPlanBundle, parsePlan, mergePlan, printPlan } from './lib/plan-share.js'
 import { monthRecap } from './lib/recap.js'
-import { records } from './lib/training-log.js'
 import { MOBILE, shareExport } from './lib/mobile.js'
 import { configureSessionSheets } from './sheets/session.jsx'
 import { configureCatalogueSheets } from './sheets/catalogue.jsx'
@@ -440,7 +439,7 @@ export function WorkoutDetail({ w, close }) {
   const st = useStore(s => s.S)
   const [selectedMuscle, setSelectedMuscle] = useState(null)
   const workoutLoad = loadOfWorkouts([w])
-  const recordIds = records(st, w).filter(r => r.kind === 'load').map(r => r.id)
+  const recordIds = loadRecords(st, w).map(r => r.id)
   return <>
     <h3>{w.name}</h3>
     <div className="sheet-sub">{[fmtDate(w.d, true), ...durPart(w.end - w.start), fmtVol(tonnage(st, w), st.unit), ...(w.bw ? [fmtNum(w.bw) + ' ' + st.unit] : [])].join(' · ')}</div>
@@ -626,7 +625,7 @@ export const recapSheet = (start) => ui().openSheet(close => <RecapSheet start={
 export function WorkoutRow({ w, onClick }) {
   const st = useStore(s => s.S)
   const glyph = glyphOf((st.routines.find(r => r.id === w.routineId) || {}).emoji)
-  const recordCount = records(st, w).filter(r => r.kind === 'load').length
+  const recordCount = loadRecords(st, w).length
   return <div className="item" role="button" tabIndex={0}
     aria-label={`${w.name}, ${fmtDate(w.d, true)}, ${t('{0} sets', fmtNum(setsDone(w)))}`}
     onClick={onClick}
