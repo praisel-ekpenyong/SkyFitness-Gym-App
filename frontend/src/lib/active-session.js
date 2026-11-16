@@ -11,10 +11,7 @@ function seedSets(S, cfg, routineId, plan) {
   })
 }
 
-export function createActiveSession(S, routineId, bw, opts = {}) {
-  const _today = opts.todayISO || todayISO
-  const _uid = opts.uid || uid
-  const _now = opts.now || Date.now
+export function createActiveSession(S, routineId, bw) {
   const routine = routineId ? (S.routines || []).find(r => r.id === routineId) : null
   const entries = (routine ? routine.ex : []).map(cfg => {
     const plan = nextPrescription(S, cfg, routine)
@@ -32,9 +29,9 @@ export function createActiveSession(S, routineId, bw, opts = {}) {
     return entry
   })
   return {
-    id: _uid(),
-    d: _today(),
-    start: _now(),
+    id: uid(),
+    d: todayISO(),
+    start: Date.now(),
     routineId: routine ? routine.id : null,
     name: routine ? routine.name : t('Freestyle'),
     bw: bw || null,

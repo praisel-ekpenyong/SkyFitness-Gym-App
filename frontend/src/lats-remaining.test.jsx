@@ -9,7 +9,10 @@ import { useStore, DEF } from './store/useStore.js'
 import { EXIDX } from './lib/exercises.js'
 import { MUSCLES, FILTER_MUSCLES, MUSCLE_NAME, primaryMuscleOf, secondaryMusclesOf, matchesMuscleFilter, isSecondaryMuscleMatch, loadOf, loadOfWorkouts, levelsOf, rankOf } from './lib/muscles.js'
 import { buildPlanBundle, parsePlan, mergePlan } from './lib/plan-share.js'
-import { buildCompletedWorkout } from './lib/active-workout.js'
+import { act as actOn } from './lib/active-workout.js'
+
+/** Logs an Active workout into the Training log the way the app does, and returns the Workout. */
+const logged = active => actOn({ unit: 'kg', routines: [], workouts: [], active }, { type: 'finish' }).result.workout
 
 vi.mock('./lib/sound.js', () => ({
   beep: vi.fn(),
@@ -293,14 +296,14 @@ describe('Ticket 04 — Custom exercise lifecycle with lats', () => {
 
 describe('Ticket 05 — Stats Muscle Balance integration', () => {
   it('derives separate effective-sets buckets for lats and upper-back via loadOf and shades via levelsOf', async () => {
-    const latW = buildCompletedWorkout({
+    const latW = logged({
       id: 'w-lat', d: '2026-08-20', start: Date.now() - 86400000, routineId: null, name: 'Lat Day', bw: 80,
       entries: [{ id: '0007', sets: [{ done: true, w: 50, r: 10 }, { done: true, w: 50, r: 10 }] }]
-    }, { end: Date.now(), prs: [] })
-    const rowW = buildCompletedWorkout({
+    })
+    const rowW = logged({
       id: 'w-row', d: '2026-08-21', start: Date.now() - 3600000, routineId: null, name: 'Row Day', bw: 80,
       entries: [{ id: '0027', sets: [{ done: true, w: 60, r: 10 }, { done: true, w: 60, r: 10 }] }]
-    }, { end: Date.now(), prs: [] })
+    })
     const latLoad = loadOfWorkouts([latW], null)
     expect(latLoad.lats).toBeCloseTo(2, 5)
     expect(latLoad['upper-back']).toBeCloseTo(0.8, 5)

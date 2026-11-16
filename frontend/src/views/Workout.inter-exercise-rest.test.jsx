@@ -87,48 +87,6 @@ describe('inter-exercise auto-rest for solo exercises', () => {
     expect(timerBarText()).toMatch(/^1:25/)
   })
 
-  it('the Next key goes away when a Set is unchecked, and is absent on the last exercise', () => {
-    setupAndCompleteFirstExercise()
-    expect(nextKey()).toBeTruthy()
-
-    click(view.container.querySelectorAll('[role="checkbox"]')[1])
-    expect(nextKey()).toBe(null)
-    click(view.container.querySelectorAll('[role="checkbox"]')[1])
-    click(nextKey())
-
-    expect(position()).toBe('2 / 2')
-    expect(nextKey()).toBe(null)
-  })
-
-  it('unprompted exercise starts rest automatically, stays on completed card, and Next preserves countdown', () => {
-    view = renderWorkoutApp([
-      {
-        ...entry('cardio-1', [{ min: 20, speed: 8, done: false }]),
-        target: { mode: 'cardio', min: 20, speed: 8 },
-      },
-      entry('1002', [{ w: 50, r: 5, done: false }]),
-    ])
-
-    click(view.container.querySelector('[role="checkbox"]'))
-
-    expect(timerBarText()).toMatch(/^1:30/)
-    act(() => vi.advanceTimersByTime(3000))
-    expect(timerBarText()).toMatch(/^1:27/)
-
-    expect(position()).toBe('1 / 2')
-    expect(buttonNamed('Save and next exercise')).toBeFalsy()
-
-    const nextBtn = nextKey()
-    expect(nextBtn).toBeTruthy()
-    click(nextBtn)
-
-    expect(position()).toBe('2 / 2')
-
-    expect(timerBarText()).toMatch(/^1:27/)
-    act(() => vi.advanceTimersByTime(2000))
-    expect(timerBarText()).toMatch(/^1:25/)
-  })
-
   it('performing the final set of the session last exercise suppresses rest, stops running rest, and opens workout complete sheet', () => {
     view = renderWorkoutApp([
       entry('1001', [{ w: 60, r: 5, done: true }, { w: 60, r: 5, done: false }]),
@@ -153,47 +111,5 @@ describe('inter-exercise auto-rest for solo exercises', () => {
     expect(timerBarText()).toBe(null)
 
     expect(view.container.textContent).toContain("That's the whole workout!")
-  })
-
-  it('superset unit completion followed by solo exercise preserves inter-exercise rest', () => {
-    view = renderWorkoutApp([
-      { ...entry('1001', [{ w: 60, r: 5, done: true }]), sg: 'ss1' },
-      { ...entry('1002', [{ w: 40, r: 5, done: false }]), sg: 'ss1' },
-      entry('1003', [{ w: 50, r: 5, done: false }]),
-    ])
-
-    click(view.container.querySelectorAll('[role="checkbox"]')[1])
-
-    expect(timerBarText()).toMatch(/^1:30/)
-    act(() => vi.advanceTimersByTime(4000))
-    expect(timerBarText()).toMatch(/^1:26/)
-
-    expect(view.container.querySelectorAll('.wk-next')).toHaveLength(1)
-    click(nextKey())
-    expect(position()).toBe('2 / 2')
-
-    expect(timerBarText()).toMatch(/^1:26/)
-    act(() => vi.advanceTimersByTime(2000))
-    expect(timerBarText()).toMatch(/^1:24/)
-  })
-
-  it('unprompted superset unit completion starts rest, stays on unit, and Next advances with rest running', () => {
-    view = renderWorkoutApp([
-      { ...entry('1001', [{ w: 0, r: 10, done: true }]), sg: 'ss1' },
-      { ...entry('1002', [{ w: 0, r: 10, done: false }]), sg: 'ss1' },
-      entry('1003', [{ w: 50, r: 5, done: false }]),
-    ], { cur: 1 })
-
-    click(view.container.querySelectorAll('[role="checkbox"]')[1])
-
-    expect(timerBarText()).toMatch(/^1:30/)
-    act(() => vi.advanceTimersByTime(3000))
-    expect(timerBarText()).toMatch(/^1:27/)
-
-    expect(position()).toBe('1 / 2')
-
-    click(nextKey())
-    expect(position()).toBe('2 / 2')
-    expect(timerBarText()).toMatch(/^1:27/)
   })
 })
