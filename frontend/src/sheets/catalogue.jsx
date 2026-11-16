@@ -3,7 +3,7 @@ import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { EXIDX, isCardio, isBodyweightEq, allExercises } from '../lib/exercises.js'
 import { fmtDate, fmtNum, exCount, uid, setLabel, sentenceCase } from '../lib/format.js'
-import { best as bestOf, lastSession } from '../lib/training-log.js'
+import { best as bestOf, best1RM, lastSession } from '../lib/training-log.js'
 import { defaultConfig, modeOf, isBw, isPerSide, sideReps } from '../lib/workout-model.js'
 import * as catalogueWrites from '../lib/catalogue-writes.js'
 import { t, instrFor } from '../lib/i18n.js'
@@ -14,7 +14,7 @@ import { Button, Switch, Segmented, SelectRow, Row, SearchField, TextArea, Stepp
 import { glyphOf, DEFAULT_GLYPH } from '../lib/glyphs.js'
 import { FILTER_MUSCLES, MUSCLES, MUSCLE_NAME, primaryMuscleOf, primaryMuscleName, secondaryMusclesOf } from '../lib/muscles.js'
 import { queryCatalogue } from '../lib/catalogue-query.js'
-import { estimate1RM, best1RM, REP_CAP } from '../lib/onerm.js'
+import { estimate1RM, REP_CAP } from '../lib/onerm.js'
 import { policyFor, defaultIncrement, POLICIES_FOR, POLICY_NAME, POLICY_DESC, MAX_BW_SETS } from '../lib/progression.js'
 
 const S = () => useStore.getState().S

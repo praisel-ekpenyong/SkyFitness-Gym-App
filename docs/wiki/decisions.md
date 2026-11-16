@@ -4,6 +4,8 @@ One entry per decision, newest first. A decision here is a settled call; the
 ticket/ADR it points to carries the reasoning. Superseded entries stay listed
 with a pointer to their successor.
 
+- **2026-11-16 — The chart metric and the Estimated 1RM series are read from the Training log.** Best stays the heaviest performed Work set of any Mode. The chart scores an Entry in its own Mode, so a mixed-mode Entry may still be 90 on Best and 40 on the chart. The series uses the same per-Workout estimate as Records, across every Entry of the exercise. The catalogue formula and Fatigue's stimulus stay put. Glossary entry for Training log sharpened. ADR 0022, spec `.scratch/training-log-readings/spec.md`.
+
 - **2026-11-09 — Iron becomes its own repository; the old interface is frozen as a fallback.** The owner
   chose to keep `master` "as a separate project": Iron was cloned with history into
   `/home/sky/Desktop/SkyFitness/SkyFitness-Iron/` (its `main` is the former `ui/iron`, no remote), and
