@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { best, records, tonnage, lastSession, lastSessionInRoutine, latestWorkSetAt, lastWorkoutInRoutine } from './training-log.js'
+import { best, best1RM, e1rmRecords, e1rmSeries, metric, records, tonnage, lastSession, lastSessionInRoutine, latestWorkSetAt, lastWorkoutInRoutine } from './training-log.js'
 
 const lift = (sets, extra = {}) => ({ id: 'bench', sets, ...extra })
 const day = (d, entries, unit) => ({ d, entries, ...(unit ? { unit } : {}) })
@@ -64,6 +64,224 @@ describe('Training log: Best', () => {
     expect(best(S, 'bench')).toBe(100)
     S.workouts = [...S.workouts, day('2026-11-08', [lift([work(110)])])]
     expect(best(S, 'bench')).toBe(110)
+  })
+})
+
+describe('Training log: chart metric', () => {
+  const score = (entry, unit = 'kg', workoutUnit) => {
+    const workout = day('2026-11-01', [entry], workoutUnit)
+    return metric({ unit }, workout, entry)
+  }
+
+  it('scores a reps Entry as the heaviest performed reps Work set, in the Profile unit', () => {
+    const entry = lift([work(80), work(100.06), { w: 120, r: 3, done: false }])
+    expect(score(entry)).toBe(100.1)
+    expect(score(lift([{ ...work(200), unit: 'lb' }]))).toBe(90.7)
+    expect(score(lift([{ ...work(200), unit: 'lb' }]), 'lb')).toBe(200)
+  })
+
+  it('leaves the stored Set unchanged when the Profile unit changes', () => {
+    const set = { ...work(200), unit: 'lb' }
+    const entry = lift([set])
+    expect(score(entry, 'kg')).toBe(90.7)
+    expect(score(entry, 'lb')).toBe(200)
+    expect(set).toEqual({ w: 200, r: 5, done: true, unit: 'lb' })
+  })
+
+  it('leaves warm-ups and unchecked Sets out of a reps score', () => {
+    const entry = lift([
+      { phase: 'warmup', w: 140, r: 5, done: true },
+      { warmup: true, w: 130, r: 5, done: true },
+      { w: 120, r: 5, done: false },
+      work(80),
+      work(100),
+    ])
+    expect(score(entry)).toBe(100)
+  })
+
+  it('scores a hold as seconds and ignores a heavier bar and a legacy top weight', () => {
+    const entry = {
+      id: 'hold', target: { mode: 'time' }, topW: 200, sets: [
+        { phase: 'warmup', sec: 30, w: 30, done: true },
+        { phase: 'work', sec: 60, w: 20, done: true },
+        { phase: 'work', sec: 75, w: 25, done: true },
+        { phase: 'work', sec: 90, w: 40, done: false },
+      ],
+    }
+    expect(score(entry)).toBe(75)
+  })
+
+  it('scores cardio as the greatest performed speed', () => {
+    const entry = {
+      id: 'run', target: { mode: 'cardio' }, sets: [
+        { phase: 'warmup', min: 5, speed: 20, done: true },
+        { min: 10, speed: 8, done: true },
+        { min: 20, speed: 12.04, done: true },
+        { min: 5, speed: 15, done: false },
+      ],
+    }
+    expect(score(entry)).toBe(12)
+  })
+
+  it('lets a legacy top weight raise a plain reps Entry when it is heavier', () => {
+    const entry = lift([work(80)], { topW: 220, unit: 'lb', target: { mode: 'reps' } })
+    const set = { ...work(80), unit: 'kg' }
+    const mixed = lift([set], { topW: 220, unit: 'lb', target: { mode: 'reps' } })
+    expect(score(entry, 'kg', 'lb')).toBe(99.8)
+    expect(score(mixed)).toBe(99.8)
+    expect(score(lift([work(80)], { topW: 70, target: { mode: 'reps' } }))).toBe(80)
+  })
+
+  it('keeps a legacy top weight off a reps Entry that has a warm-up or a non-reps Work set', () => {
+    const warmed = lift([
+      { phase: 'warmup', w: 40, r: 5, done: true },
+      work(80),
+    ], { topW: 200, target: { mode: 'reps' } })
+    const mixed = lift([
+      work(40, 8),
+      { sec: 30, w: 90, done: true },
+    ], { topW: 200 })
+    const held = lift([work(40, 8), { sec: 30, w: 90, done: true }])
+    expect(score(warmed)).toBe(80)
+    expect(score(mixed)).toBe(40)
+    expect(score(held)).toBe(40)
+    expect(best({ unit: 'kg', workouts: [day('2026-11-01', [held])] }, 'bench')).toBe(90)
+  })
+
+  it('is 0 when the Entry performed nothing in its Mode, including a top weight with no Set', () => {
+    expect(score(lift([{ w: 100, r: 5, done: false }], { topW: 120, target: { mode: 'reps' } }))).toBe(0)
+    expect(score(lift([{ phase: 'warmup', w: 100, r: 5, done: true }], { topW: 120 }))).toBe(0)
+    expect(score(lift([], { topW: 120, target: { mode: 'reps' } }))).toBe(0)
+    expect(score({ id: 'hold', target: { mode: 'time' }, sets: [{ sec: 90, done: false }] })).toBe(0)
+    expect(metric({ unit: 'kg' }, day('2026-11-01', []), null)).toBe(0)
+  })
+})
+
+const seriesLog = {
+  unit: 'kg',
+  workouts: [
+    { d: '2026-01-01', start: 1, entries: [{ id: 'bench', sets: [{ w: 80, r: 5, done: true }] }] },
+    { d: '2026-01-08', start: 2, entries: [{ id: 'squat', sets: [{ w: 100, r: 5, done: true }] }] },
+    { d: '2026-01-15', start: 3, entries: [{ id: 'bench', sets: [{ w: 90, r: 5, done: true }, { w: 90, r: 3, done: false }] }] },
+    { d: '2026-01-22', start: 4, entries: [{ id: 'bench', sets: [{ w: 85, r: 5, done: true }] }] },
+    { d: '2026-01-29', start: 5, entries: [{ id: 'run', sets: [{ min: 30, speed: 10, done: true }] }] },
+  ],
+}
+
+describe('Training log: Estimated 1RM series', () => {
+  it('yields one point per Workout that produced an estimate, in Workout order', () => {
+    const pts = e1rmSeries(seriesLog, 'bench')
+    expect(pts).toEqual([
+      { t: 1, d: '2026-01-01', y: 93.3, w: 80, r: 5 },
+      { t: 3, d: '2026-01-15', y: 105, w: 90, r: 5 },
+      { t: 4, d: '2026-01-22', y: 99.2, w: 85, r: 5 },
+    ])
+    const later = { d: '2026-01-08', start: 2, entries: [lift([work(90)])] }
+    const earlier = { d: '2026-01-01', start: 1, entries: [lift([work(80)])] }
+    expect(e1rmSeries({ unit: 'kg', workouts: [later, earlier] }, 'bench').map(p => p.d))
+      .toEqual(['2026-01-08', '2026-01-01'])
+  })
+
+  it('reports the standing best as the greatest estimate, and a tie keeps the earlier point', () => {
+    expect(best1RM(seriesLog, 'bench')).toEqual({ est: 105, w: 90, r: 5, d: '2026-01-15', t: 3 })
+    const tied = {
+      unit: 'kg',
+      workouts: [
+        { d: '2026-01-01', start: 1, entries: [lift([work(100)])] },
+        { d: '2026-01-08', start: 2, entries: [lift([work(100)])] },
+      ],
+    }
+    expect(best1RM(tied, 'bench')).toEqual({ est: 116.7, w: 100, r: 5, d: '2026-01-01', t: 1 })
+  })
+
+  it('picks the Set with the highest estimate, not the heaviest Set', () => {
+    const workout = {
+      d: '2026-01-01', start: 1,
+      entries: [lift([work(100, 5), work(110, 3), work(120, 1)])],
+    }
+    expect(e1rmSeries({ unit: 'kg', workouts: [workout] }, 'bench')).toEqual([
+      { t: 1, d: '2026-01-01', y: 121, w: 110, r: 3 },
+    ])
+  })
+
+  it('ignores an unchecked Set, a warm-up, and a legacy top weight', () => {
+    const workout = {
+      d: '2026-01-01', start: 1,
+      entries: [{
+        id: 'bench', topW: 200, sets: [
+          { w: 20, r: 8, done: true, warmup: true },
+          { w: 100, r: 5, done: true },
+          { w: 200, r: 5, done: false },
+        ],
+      }],
+    }
+    expect(e1rmSeries({ unit: 'kg', workouts: [workout] }, 'bench')).toEqual([
+      { t: 1, d: '2026-01-01', y: 116.7, w: 100, r: 5 },
+    ])
+  })
+
+  it('has nothing to say about a hold, cardio, or an exercise that was never estimated', () => {
+    expect(e1rmSeries(seriesLog, 'run')).toEqual([])
+    expect(best1RM(seriesLog, 'run')).toBeNull()
+    const hold = { d: '2026-01-01', start: 1, entries: [{ id: 'plank', sets: [{ sec: 60, w: 20, done: true }] }] }
+    expect(e1rmSeries({ unit: 'kg', workouts: [hold] }, 'plank')).toEqual([])
+    expect(best1RM(seriesLog, 'nope')).toBeNull()
+    expect(best1RM({ workouts: [] }, 'bench')).toBeNull()
+    expect(best1RM({}, 'bench')).toBeNull()
+  })
+
+  it('reads a kg/lb history in the Profile unit, and again after the Profile switches', () => {
+    const workouts = [
+      { d: '2025-10-01', start: 1, unit: 'lb', entries: [{ id: 'bench', sets: [{ w: 150, r: 5, done: true }] }] },
+      { d: '2026-01-15', start: 2, unit: 'kg', entries: [{ id: 'bench', sets: [{ w: 100, r: 5, done: true }] }] },
+    ]
+    const kg = e1rmSeries({ unit: 'kg', workouts }, 'bench')
+    expect(kg.map(p => p.y)).toEqual([79.3, 116.7])
+    expect(best1RM({ unit: 'kg', workouts }, 'bench')).toEqual({ est: 116.7, w: 100, r: 5, d: '2026-01-15', t: 2 })
+    const lb = e1rmSeries({ unit: 'lb', workouts }, 'bench')
+    expect(lb.map(p => p.y)).toEqual([175, 257.3])
+    expect(best1RM({ unit: 'lb', workouts }, 'bench')).toEqual({ est: 257.3, w: 220.5, r: 5, d: '2026-01-15', t: 2 })
+    expect(workouts[0].entries[0].sets[0].w).toBe(150)
+  })
+
+  it('picks the heavier physical Set when one is stored in pounds and one in kilograms', () => {
+    const workout = {
+      d: '2026-01-01', start: 1,
+      entries: [lift([
+        { w: 200, r: 5, done: true, unit: 'lb' },
+        { w: 100, r: 5, done: true, unit: 'kg' },
+      ])],
+    }
+    expect(best1RM({ unit: 'kg', workouts: [workout] }, 'bench')).toMatchObject({ est: 116.7, w: 100, r: 5 })
+    expect(best1RM({ unit: 'lb', workouts: [workout] }, 'bench')).toMatchObject({ est: 257.3, w: 220.5, r: 5 })
+  })
+
+  it('keeps one point when a Workout logs the exercise twice, matching that Workout\'s Estimated 1RM Record', () => {
+    const first = day('2026-11-01', [lift([work(100, 3)])])
+    first.start = 1
+    const second = day('2026-11-08', [lift([work(90, 5)]), lift([work(95, 8)])])
+    second.start = 2
+    const profile = { unit: 'kg', workouts: [first, second] }
+    const pts = e1rmSeries(profile, 'bench')
+    expect(pts).toHaveLength(2)
+    expect(pts[1]).toEqual({ t: 2, d: '2026-11-08', y: 120.3, w: 95, r: 8 })
+    expect(e1rmRecords(profile, second)).toEqual([{ id: 'bench', est: 120.3, w: 95, r: 8, prev: 110 }])
+  })
+
+  it('shows an estimate for a first performed session, which is not a Record', () => {
+    const first = seriesLog.workouts[0]
+    expect(e1rmSeries({ unit: 'kg', workouts: [first] }, 'bench')).toHaveLength(1)
+    expect(records({ unit: 'kg', workouts: [first] }, first)).toEqual([])
+  })
+
+  it('drops a deleted Workout from the series and from the standing best', () => {
+    const keep = seriesLog.workouts[0]
+    const drop = seriesLog.workouts[2]
+    expect(best1RM({ unit: 'kg', workouts: [keep, drop] }, 'bench').est).toBe(105)
+    expect(e1rmSeries({ unit: 'kg', workouts: [keep] }, 'bench')).toEqual([
+      { t: 1, d: '2026-01-01', y: 93.3, w: 80, r: 5 },
+    ])
+    expect(best1RM({ unit: 'kg', workouts: [keep] }, 'bench').est).toBe(93.3)
   })
 })
 

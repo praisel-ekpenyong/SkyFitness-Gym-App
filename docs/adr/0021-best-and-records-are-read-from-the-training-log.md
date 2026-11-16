@@ -25,3 +25,5 @@ Decision: one module, `lib/training-log.js`, reads all of these from the finishe
 - Deleting a Workout changes which later Sets read as Records.
 
 Amends ADR 0006, 0011 and 0020.
+
+2026-11-16 amendment: the chart metric and the Estimated 1RM series are read here too. Best and the chart metric stay two readings. See ADR 0022.

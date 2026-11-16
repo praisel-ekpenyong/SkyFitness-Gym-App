@@ -2,14 +2,13 @@ import { EXDB } from './exercises.js'
 import { fatigueOf, strengthOf, fatigueStateOf } from './recovery.js'
 import { MUSCLES, loadOfWorkouts, rankOf, lastTrainedByMuscle } from './muscles.js'
 import { LB_TO_KG } from './bodyweight.js'
-import { e1rmSeries, best1RM } from './onerm.js'
-import { loadRecords } from './training-log.js'
+import { best1RM, e1rmSeries, loadRecords, metric } from './training-log.js'
 import {
   displayScale, scaleName, toScale, avgRir,
   effortSummary, effortWeeks, effortHistogram, isHardSet, rirOf, hasEffort, effortOf, HARD_RIR,
 } from './effort.js'
 import {
-  isPerformed, isWorkSet, metricRowsForEntry, metricModeForEntry, bestWeightForEntry, modeOf,
+  isPerformed, isWorkSet, metricRowsForEntry, metricModeForEntry, modeOf,
 } from './workout-model.js'
 import { workoutTimestamp, isoOf, weekKey, monthKey } from './format.js'
 import { streakWeeks, trainedWeeks } from './history.js'
@@ -176,7 +175,7 @@ export function selectStatsOverview(S, opts = {}) {
       const record = catalogue.lookup(entry.id)
       if (!record) continue
       const mode = metricModeForEntry(entry) || resolveMode([], record)
-      const current = metricOf(entry, mode, workout, S?.unit || 'kg')
+      const current = metric(S, workout, entry)
       if (current > 0 || !index.has(entry.id)) {
         index.set(entry.id, { id: entry.id, name: record.n || entry.id, current, mode, unit: unitFor(mode, S) })
       }
@@ -247,15 +246,7 @@ function resolveMode(pairs, catalogueRecord) {
   return modeOf(catalogueRecord)
 }
 
-const speedOrSecondsOf = (mode, set) => mode === 'cardio' ? (set?.speed || 0) : (set?.sec || 0)
 const unitFor = (mode, S) => mode === 'cardio' ? 'km/h' : mode === 'time' ? 's' : (S?.unit ?? 'kg')
-
-function metricOf(entry, mode, workout = null, targetUnit = null) {
-  const value = mode === 'reps'
-    ? bestWeightForEntry(entry, workout, targetUnit)
-    : metricRowsForEntry(entry, mode).reduce((best, set) => Math.max(best, Number(speedOrSecondsOf(mode, set)) || 0), 0)
-  return Number.isFinite(value) && value > 0 ? round1(value) : 0
-}
 
 function recordIndexOf(S, workout, exId, rows, mode) {
   if (mode !== 'reps') return null
@@ -279,7 +270,7 @@ export function selectExerciseStats(S, exId, opts = {}) {
   for (const { workout, entry } of pairs) {
     if (metricModeForEntry(entry) !== mode) continue
     const rows = metricRowsForEntry(entry, mode)
-    const mx = metricOf(entry, mode, workout, S?.unit || 'kg')
+    const mx = metric(S, workout, entry)
     if (!(mx > 0)) continue
     points.push({
       t: workoutTimestamp(workout),
