@@ -1,6 +1,7 @@
 
 import { Fragment, useRef, useState, useEffect, useCallback, forwardRef } from 'react'
 import Icon from './Icon.jsx'
+import { t } from '../lib/i18n.js'
 
 
 export const dotted = items => items.filter(Boolean).map((x, i) => <Fragment key={i}>{i > 0 && ' · '}{x}</Fragment>)
@@ -118,8 +119,8 @@ export function Segmented({ options, value, onChange, className = '', label, 'ar
 
 export function Stepper({ value, step = 1, onChange, decimal = true, className = '', label, unit, 'aria-label': ariaLabel }) {
   const set = v => onChange(Math.max(0, Math.round((v || 0) * 100) / 100))
-  const decLabel = ariaLabel ? `Decrease ${ariaLabel}` : 'Decrease'
-  const incLabel = ariaLabel ? `Increase ${ariaLabel}` : 'Increase'
+  const decLabel = ariaLabel ? t('Decrease {0}', ariaLabel) : t('Decrease')
+  const incLabel = ariaLabel ? t('Increase {0}', ariaLabel) : t('Increase')
   const inner = (
     <div className={'stp ' + className}>
       <button type="button" onClick={() => set((+value || 0) - step)} aria-label={decLabel}><Icon name="minus" /></button>

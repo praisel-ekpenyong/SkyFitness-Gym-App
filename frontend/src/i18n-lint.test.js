@@ -33,6 +33,22 @@ const isProse = s => /\s|[·–—…]/.test(s) || (/^[A-Za-z]+$/.test(s) && !CS
  * An entry that no longer matches anything fails too, so the list stays true.
  */
 const ALLOW = [
+  { file: 'views/Home.jsx', text: "' ' + dotCls", reason: 'CSS class list in a plain variable (dot), not text' },
+  { file: 'views/Settings.jsx', text: "v + 's'", reason: 'number plus unit suffix for a duration option, not prose' },
+  { file: 'views/Stats.jsx', text: "'≤ ' + fmtNum(b.value)", reason: 'numeric histogram bin label' },
+  { file: 'views/Stats.jsx', text: "fmtNum(b.n) + ' · ' + b.percent", reason: 'numeric count and percent joined with a separator' },
+  { file: 'views/Stats.jsx', text: '`${fmtNum(bw.latest.w)} ${S.unit}`', reason: 'number plus unit, no words' },
+  { file: 'views/Stats.jsx', text: "' · ' + fmtNum(ex.current)", reason: 'separator, number and unit, no words' },
+  { file: 'views/Workout.jsx', text: "' · ' + t('rescheduled')", reason: 'separator before a whole t() string' },
+  { file: 'sheets/catalogue.jsx', text: "` · ${t('last {0}", reason: 'separator before a whole t() string' },
+  { file: 'sheets/catalogue.jsx', text: "fmtNum(est) + ' ' + st.unit", reason: 'number plus unit, no words' },
+  { file: 'components/Heatmap.jsx', text: '` · ${t(a.n === 1', reason: 'separator join of whole t() strings, numbers and units' },
+  { file: 'components/LineChart.jsx', text: "' ' + unit", reason: 'number plus unit in the chart tooltip' },
+  { file: 'components/LineChart.jsx', text: "' · ' + hover.note", reason: 'separator before the point note' },
+  { file: 'sheets.jsx', text: "' · ' + exCount(bundle.exerciseCount)", reason: 'separator before a whole t() string' },
+  { file: 'sheets.jsx', text: "' · ' + t(bundle.scheduledDays", reason: 'separator before a whole t() string' },
+  { file: 'sheets.jsx', text: "fmtNum(w.bw) + ' ' + st.unit", reason: 'number plus unit, no words' },
+  { file: 'sheets.jsx', text: '${fmtDur(monthMs)}', reason: 'separator join of whole t() strings, durations and volumes' },
 ]
 
 function sourceFiles() {
