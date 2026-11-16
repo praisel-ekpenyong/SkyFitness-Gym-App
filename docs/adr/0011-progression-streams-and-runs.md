@@ -67,3 +67,5 @@ other; an add-time deload survives the next session; a bodyweight rep climb and 
 sets survive the next session instead of resetting to the Target. Legacy Entries without
 `plan` keep their old Target-derived reading, so imported and pre-1.2.2 history does not
 mass-deload on upgrade.
+
+2026-11 amendment: the all-time `exWeights` hint is replaced by Best read from the Training log. See ADR 0021.
