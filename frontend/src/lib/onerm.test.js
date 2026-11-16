@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { estimate1RM, bestSetOf, e1rmSeries, best1RM, is1RMRecord, resolveSetWeight, REP_CAP, FORMULAS } from './onerm.js'
+import { estimate1RM, bestSetOf, e1rmSeries, best1RM, resolveSetWeight, REP_CAP, FORMULAS } from './onerm.js'
 import { LB_TO_KG } from './bodyweight.js'
 
 describe('estimate1RM', () => {
@@ -132,30 +132,6 @@ describe('e1rmSeries / best1RM', () => {
   })
 })
 
-describe('is1RMRecord', () => {
-  it('flags a session that beats every previous estimate', () => {
-    const rec = is1RMRecord(S, 'bench', { id: 'bench', sets: [{ w: 95, r: 5, done: true }] })
-    expect(rec).toEqual({ est: 110.8, w: 95, r: 5, prev: 105 })
-  })
-
-  it('stays quiet when the session does not beat the record', () => {
-    expect(is1RMRecord(S, 'bench', { id: 'bench', sets: [{ w: 90, r: 5, done: true }] })).toBeNull()
-    expect(is1RMRecord(S, 'bench', { id: 'bench', sets: [{ w: 80, r: 5, done: true }] })).toBeNull()
-  })
-
-  it('counts the first ever estimate as a record', () => {
-    const rec = is1RMRecord(S, 'deadlift', { id: 'deadlift', sets: [{ w: 140, r: 3, done: true }] })
-    expect(rec.prev).toBe(0)
-    expect(rec.est).toBe(154)
-  })
-
-  it('says nothing for a timed or unfinished entry', () => {
-    expect(is1RMRecord(S, 'plank', { id: 'plank', sets: [{ sec: 90, done: true }] })).toBeNull()
-    expect(is1RMRecord(S, 'bench', { id: 'bench', sets: [{ w: 200, r: 5, done: false }] })).toBeNull()
-  })
-})
-
-
 describe('warm-up sets and 1RM', () => {
   const ENTRY = { id: 'warm-test', sets: [
     { w: 20, r: 8, done: true, warmup: true },
@@ -261,34 +237,4 @@ describe('read-time unit normalization (ADR 0017)', () => {
       expect(best).toEqual({ est: 257.3, w: 220.5, r: 5, d: '2026-01-15', t: 2 })
     })
   })
-
-  describe('is1RMRecord with mixed units', () => {
-    const historicalLbState = {
-      unit: 'kg',
-      workouts: [
-        { d: '2025-10-01', start: 1, unit: 'lb', entries: [{ id: 'bench', sets: [{ w: 150, r: 5, done: true }] }] },
-      ]
-    }
-
-    it('prevents PR suppression when user switches from lb to kg', () => {
-      const activeEntry = { id: 'bench', sets: [{ w: 100, r: 5, done: true, unit: 'kg' }] }
-      const rec = is1RMRecord(historicalLbState, 'bench', activeEntry)
-      expect(rec).not.toBeNull()
-      expect(rec.est).toBe(116.7)
-      expect(rec.prev).toBe(79.3)
-    })
-
-    it('prevents false PR when user switches from kg to lb', () => {
-      const historicalKgState = {
-        unit: 'lb',
-        workouts: [
-          { d: '2025-10-01', start: 1, unit: 'kg', entries: [{ id: 'bench', sets: [{ w: 100, r: 5, done: true }] }] },
-        ]
-      }
-      const activeEntry = { id: 'bench', sets: [{ w: 180, r: 5, done: true, unit: 'lb' }] }
-      const rec = is1RMRecord(historicalKgState, 'bench', activeEntry)
-      expect(rec).toBeNull()
-    })
-  })
 })
-

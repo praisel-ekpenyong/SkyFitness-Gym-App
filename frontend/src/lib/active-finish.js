@@ -1,6 +1,5 @@
 import { doneWorkSets, isPerformed } from './workout-model.js'
-import { best } from './training-log.js'
-import { is1RMRecord } from './onerm.js'
+import { records } from './training-log.js'
 import { EXIDX } from './exercises.js'
 import { exerciseMuscleSnapshot } from './muscles.js'
 import { diffRoutineWithSession } from './routine-sync.js'
@@ -87,19 +86,6 @@ export function completeActiveSession(S, opts = {}) {
   const _now = opts.now || Date.now
   const A = S.active
   if (!A) return null
-  const prs = []
-  const e1prs = []
-
-  for (const e of A.entries) {
-    const mxSets = heaviestSetWeight(e)
-    if (mxSets > 0) {
-      const bestHistory = best(S, e.id)
-      if (mxSets > bestHistory) prs.push(e.id)
-    }
-    const rec = is1RMRecord(S, e.id, e)
-    if (rec && !prs.includes(e.id)) e1prs.push({ id: e.id, ...rec })
-  }
-
   let routineSync = null
   if (A.routineId && Array.isArray(S.routines)) {
     const routine = S.routines.find(r => r.id === A.routineId)
@@ -117,10 +103,14 @@ export function completeActiveSession(S, opts = {}) {
 
   const w = buildCompletedWorkout(A, {
     end: _now(),
-    prs,
     unit: A.unit || S?.unit || 'kg',
     snapshotFor: en => (EXIDX[en.id]?.custom ? exerciseMuscleSnapshot(EXIDX[en.id]) : null),
   })
+
+  const made = records(S, w)
+  const prs = made.filter(r => r.kind === 'load').map(r => r.id)
+  const e1prs = made.filter(r => r.kind === 'e1rm').map(r => ({ id: r.id, est: r.est, w: r.w, r: r.r, prev: r.prev }))
+  w.prs = prs
 
   for (const e of w.entries) {
     const mx = heaviestForEntry(e)
