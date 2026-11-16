@@ -214,15 +214,6 @@ export const doneWorkSets = entry => workSets(entry).filter(isPerformed)
 
 export const hasWorkSet = entry => doneWorkSets(entry).length > 0
 
-export function tonnageOf(workout, targetUnit = null) {
-  let total = 0
-  ;(workout?.entries || []).forEach(entry => doneWorkSets(entry).forEach(set => {
-    const load = targetUnit ? resolveSetWeight(set, entry, workout, targetUnit) : (set.w || 0)
-    total += load * (set.r || 0)
-  }))
-  return targetUnit ? round1(total) : total
-}
-
 /**
  * Count every completed set in a finished workout.
  *

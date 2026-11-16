@@ -1,5 +1,5 @@
-import { workSetsDone, tonnageOf } from './workout-model.js'
-import { records } from './training-log.js'
+import { workSetsDone } from './workout-model.js'
+import { tonnage, records } from './training-log.js'
 import { monthKey } from './format.js'
 
 /**
@@ -27,7 +27,7 @@ function metricsFor(S, workouts) {
   const e1prs = []
 
   for (const w of workouts || []) {
-    vol += tonnageOf(w)
+    vol += tonnage(S, w)
     sets += workSetsDone(w)
     const start = Number(w.start)
     const end = Number(w.end)
@@ -53,19 +53,18 @@ function metricsFor(S, workouts) {
 
 /**
  * Pure monthly recap.
- * @param {Array} workouts - S.workouts array
- * @param {string} unit - profile unit ('kg' | 'lb'), the unit Records are judged in
+ * @param {Object} S - Profile; its `workouts` are read and `unit` is the unit of the volume and of the Records
  * @param {string} yearMonth - 'YYYY-MM'
  * @returns {{ vol:number, sets:number, workouts:number, durationMs:number, prs:string[], e1prs:Array, prev:Object, deltas:Object }}
  */
-export function monthRecap(workouts = [], unit = 'kg', yearMonth) {
+export function monthRecap(S, yearMonth) {
+  const workouts = S?.workouts || []
   const ym = monthKey(yearMonth)
   const prevYm = prevMonthKey(ym)
 
   const curWs = (workouts || []).filter(w => monthKey(w) === ym)
   const prevWs = prevYm ? (workouts || []).filter(w => monthKey(w) === prevYm) : []
 
-  const S = { unit, workouts }
   const cur = metricsFor(S, curWs)
   const prev = metricsFor(S, prevWs)
   const e1prs = cur.e1prs

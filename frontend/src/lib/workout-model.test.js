@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { modeOf, isTimed, defaultConfig, buildSets, freestyleConfig, tonnageOf, bestWeightForEntry, isBw, isPerSide, sideReps, repStep, cascadeWeight, insertWarmupRow, removeRowAt, workSetsDone, isWorkSet, isPerformed, workSets, doneWorkSets, hasWork, isExerciseDone, sessionProgress, seedForReplacement, cleanNote } from './workout-model.js'
+import { modeOf, isTimed, defaultConfig, buildSets, freestyleConfig, bestWeightForEntry, isBw, isPerSide, sideReps, repStep, cascadeWeight, insertWarmupRow, removeRowAt, workSetsDone, isWorkSet, isPerformed, workSets, doneWorkSets, hasWork, isExerciseDone, sessionProgress, seedForReplacement, cleanNote } from './workout-model.js'
 import { fmtSec, setLabel, exLine } from './format.js'
 import { effortOf, stepEffort, capEffort } from './effort.js'
 import { pairAdjacent, unpairSuperset, supersetUnits } from './supersetFlow.js'
@@ -457,64 +457,6 @@ describe('buildSets', () => {
     }
     expect(buildSets(S, { id: LIFT, mode: 'time', sets: 1, sec: 60, weight: 20 }, { routineId: 'r1', seedWeightOnly: true }))
       .toEqual([{ sec: 60, w: 20, done: false }])
-  })
-})
-
-describe('tonnageOf', () => {
-  it('counts reps work and leaves timed/cardio sets out — there is no weight × reps for a hold', () => {
-    const w = { entries: [
-      { id: LIFT, sets: [{ w: 60, r: 10, done: true }, { w: 60, r: 10, done: false }] },
-      { id: LIFT, target: { mode: 'time' }, sets: [{ sec: 60, w: 20, done: true }] },
-      { id: CARDIO, sets: [{ min: 20, speed: 9, done: true }] }
-    ] }
-    expect(tonnageOf(w)).toBe(600)
-  })
-
-  it('needs no per-side case — the logged reps are already both sides (issue #31)', () => {
-    const w = { entries: [{ id: LIFT, target: { side: true }, sets: [{ w: 20, r: 16, done: true }] }] }
-    expect(tonnageOf(w)).toBe(320)
-  })
-
-  it('leaves an unloaded bodyweight set at zero volume rather than inventing a number', () => {
-    const w = { entries: [{ id: BW, target: { bodyweight: true }, sets: [{ w: 0, r: 20, done: true }] }] }
-    expect(tonnageOf(w)).toBe(0)
-  })
-
-  it('excludes both Warm-up shapes, including a performed Warm-up set', () => {
-    const w = {
-      entries: [{
-        id: LIFT,
-        sets: [
-          { warmup: true, w: 20, r: 5, done: true },
-          { phase: 'warmup', w: 30, r: 5, done: true },
-          { phase: 'work', w: 60, r: 5, done: true },
-        ],
-      }],
-    }
-    expect(tonnageOf(w)).toBe(300)
-    expect(tonnageOf(null)).toBe(0)
-  })
-
-  it('normalizes tonnage across workout and set units when targetUnit is provided', () => {
-    const wLb = {
-      unit: 'lb',
-      entries: [{
-        id: LIFT,
-        sets: [{ w: 100, r: 5, done: true }],
-      }],
-    }
-    expect(tonnageOf(wLb)).toBe(500)
-    expect(tonnageOf(wLb, 'kg')).toBe(227)
-    expect(tonnageOf(wLb, 'lb')).toBe(500)
-
-    const wKg = {
-      unit: 'kg',
-      entries: [{
-        id: LIFT,
-        sets: [{ w: 50, r: 10, done: true }],
-      }],
-    }
-    expect(tonnageOf(wKg, 'lb')).toBe(1102)
   })
 })
 
