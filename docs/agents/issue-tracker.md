@@ -2,7 +2,7 @@
 
 Issues and specs for this repo live as markdown files in `.scratch/`.
 
-Paths in this file are relative to the git repository root (`SkyFitness-Gym-App-master/` when the workspace root is the parent folder).
+Paths in this file are relative to the git repository root (`SkyFitness-Iron/` when the workspace root is the parent folder).
 
 ## Conventions
 

@@ -99,7 +99,7 @@ export function ExerciseDetail({ ex, close }) {
       {!isCardioEx && secondaries.map((s, i) => <span key={i} className="tag nocap">{t('Secondary: {0}', sentenceCase(MUSCLE_NAME[s] || s))}</span>)}
     </div>
     {ex.desc && <div className="exnote">{ex.desc}</div>}
-    {best > 0 && <div className="small row best-line"><Icon name="trophy" /><span>{t('Best')} <b>{fmtNum(best)} {st.unit}</b>{last ? ` · ${t('last')} ${fmtDate(last.d)} · ${last.sets.map(s => setLabel(ex.id, s, last.target)).join(', ')}` : ''}</span></div>}
+    {best > 0 && <div className="small row best-line"><Icon name="trophy" /><span>{t('Best')} <b>{fmtNum(best)} {st.unit}</b>{last ? ` · ${t('last {0} · {1}', fmtDate(last.d), last.sets.map(s => setLabel(ex.id, s, last.target)).join(', '))}` : ''}</span></div>}
     <div className="gap8" />
     <Button variant="primary" icon="plus" onClick={() => addToRoutineSheet(ex)}>{t('Add to my plan')}</Button>
     {ex.custom && <div className="split">
