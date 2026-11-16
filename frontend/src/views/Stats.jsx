@@ -84,9 +84,9 @@ function MuscleBalance({ S, overview, win, setWin, setHard }) {
           onMuscle={m => setSel(s => (s === m ? null : m))}
           getA11yLabel={slug => {
             const val = load[slug]
-            if (!val) return `${t(MUSCLE_NAME[slug])}, ${on ? t('no hard sets') : t('not trained')}`
-            const setsText = Number.isInteger(val) ? `${val}.0 effective sets` : `${fmtNum(val)} effective sets`
-            return `${t(MUSCLE_NAME[slug])}, ${setsText}`
+            if (!val) return t('{0}, {1}', t(MUSCLE_NAME[slug]), on ? t('no hard sets') : t('not trained'))
+            const setsText = t('{0} effective sets', Number.isInteger(val) ? `${val}.0` : fmtNum(val))
+            return t('{0}, {1}', t(MUSCLE_NAME[slug]), setsText)
           }} />
         <BodyMapLegend />
         {sel && <div className="muscle-inspector" role="status" aria-live="polite">
@@ -135,7 +135,7 @@ function MuscleBalance({ S, overview, win, setWin, setHard }) {
       </> : null}
     </> : view === 'fatigue' ? <>
       <BodyMap className="tappable hm-fatigue" load={fatigue} thresholds={FATIGUE_LEVELS} body={S.body} selected={sel} onMuscle={toggleSel}
-        getA11yLabel={slug => `${t(MUSCLE_NAME[slug])}, ${fatigueLabel(overview.fatigue.states[slug])}`} />
+        getA11yLabel={slug => t('{0}, {1}', t(MUSCLE_NAME[slug]), fatigueLabel(overview.fatigue.states[slug]))} />
       <FatigueLegend />
       <div className="muted small note">{t('Fatigue shows how recently each muscle was trained. High means rest.')}</div>
       {sel && <div className="muscle-inspector fatigue" role="status" aria-live="polite">
@@ -147,7 +147,7 @@ function MuscleBalance({ S, overview, win, setWin, setHard }) {
       </div>}
     </> : <>
       <BodyMap className="tappable hm-strength" load={strength} thresholds={STRENGTH_LEVELS} body={S.body} selected={sel} onMuscle={toggleSel}
-        getA11yLabel={slug => `${t(MUSCLE_NAME[slug])}, ${Math.round((strength[slug] ?? 1) * 100)}%`} />
+        getA11yLabel={slug => t('{0}, {1}', t(MUSCLE_NAME[slug]), `${Math.round((strength[slug] ?? 1) * 100)}%`)} />
       <StrengthLegend />
       <div className="muted small note">{t('Strength shows retained muscle strength. Train again to reset it.')}</div>
       {sel && <>
@@ -163,7 +163,7 @@ function MuscleBalance({ S, overview, win, setWin, setHard }) {
                 <span className="str-n capitalize">{row.name}</span>
                 <span className="tag">{row.primary === sel ? t('primary') : t('secondary')}</span>
               </div>
-              <div className="small dim">{[t('Est. 1RM') + ' ' + fmtNum(row.est) + ' ' + S.unit, fmtDate(row.estDate, true)].join(' · ')}</div>
+              <div className="small dim">{[t('Est. 1RM {0} {1}', fmtNum(row.est), S.unit), fmtDate(row.estDate, true)].join(' · ')}</div>
             </div>
             <div className="str-v">
               <span className="str-kg">{fmtNum(row.current)} <span className="u">{S.unit}</span></span>
@@ -265,7 +265,7 @@ export default function Stats() {
   const onE1 = showE1 && exMetric === 'e1rm'
   const onEff = showEff && exMetric === 'effort'
   const topPts = (exercise?.points || []).map(point => ({
-    ...point, note: point.effort == null ? undefined : hd + ' ' + fmtNum(point.effort),
+    ...point, note: point.effort == null ? undefined : t('{0} {1}', hd, fmtNum(point.effort)),
   }))
   const exOpts = [{ value: 'top', label: t('Top set') }]
   if (showE1) exOpts.push({ value: 'e1rm', label: t('Est. 1RM') })

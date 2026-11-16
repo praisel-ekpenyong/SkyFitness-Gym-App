@@ -114,14 +114,14 @@ function ExerciseBlock({ entryIdx, compact, isCurrent = true, arrived = false, r
   }
   const cell = (s, i, col, cls, phaseNum, warm) => {
     const phasePrefix = warm ? t('Warm-up set {0}', phaseNum) : t('Set {0}', phaseNum)
-    const fieldLabel = `${phasePrefix} ${col.hd}`
+    const fieldLabel = t('{0} {1}', phasePrefix, col.hd)
     return (
       <div className={'stp ' + cls}>
-        <button className="stp-dec" aria-label={`${t('Decrease')} ${fieldLabel}`} onClick={() => bump(s, i, col, -1)}><Icon name="minus" /></button>
+        <button className="stp-dec" aria-label={t('Decrease {0}', fieldLabel)} onClick={() => bump(s, i, col, -1)}><Icon name="minus" /></button>
         <span className="val"><NumberField decimal={col.dec} nullable={col.opt} value={s[col.f] ?? ''}
           aria-label={fieldLabel} placeholder={col.opt ? '—' : undefined}
           onChange={v => onField(i, col.f, col.eff ? capEffort(col.eff, v) : v)} /><i>{col.unit}</i></span>
-        <button className="stp-inc" aria-label={`${t('Increase')} ${fieldLabel}`} onClick={() => bump(s, i, col, 1)}><Icon name="plus" /></button>
+        <button className="stp-inc" aria-label={t('Increase {0}', fieldLabel)} onClick={() => bump(s, i, col, 1)}><Icon name="plus" /></button>
       </div>
     )
   }
@@ -185,7 +185,7 @@ function ExerciseBlock({ entryIdx, compact, isCurrent = true, arrived = false, r
               onClick={() => onStartTimed(i)}><Icon name="play" /><span className="setgo-l">{t('Start set')}</span></button>}
             {warm && <button className="iconbtn bare set-x" aria-label={t('Remove set')}
               disabled={entry.sets.length <= 1} onClick={() => onRemoveSetAt(i)}><Icon name="xmark" /></button>}
-            <Check checked={s.done} aria-label={`${t('Complete')} ${warm ? t('warm-up set {0}', phaseNum) : t('set {0}', phaseNum)}`} onChange={() => onToggle(i)}>
+            <Check checked={s.done} aria-label={t('Complete {0}', warm ? t('warm-up set {0}', phaseNum) : t('set {0}', phaseNum))} onChange={() => onToggle(i)}>
               {open && <span className="chk-l">{s.done ? t('Logged') : t('Log set')}</span>}
             </Check>
             {milestone && (
