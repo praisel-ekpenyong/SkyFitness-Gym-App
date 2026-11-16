@@ -9,7 +9,7 @@ import { freestyleConfig, defaultConfig, sessionProgress, modeOf, isBw, isPerSid
 import { supersetUnits, unitOf } from '../lib/supersetFlow.js'
 import { setLabel } from '../lib/format.js'
 import { EFFORT, effortOf, stepEffort, capEffort } from '../lib/effort.js'
-import { nextUnitTarget } from '../lib/active-workout.js'
+import { nextUnitTarget, holdRef, findHoldRow } from '../lib/active-workout.js'
 import { best as bestOf, lastSession } from '../lib/training-log.js'
 import { fmtNum, fmtDate, fmtSec, fmtElapsed, todayISO, exCount, DAYN, sentenceCase } from '../lib/format.js'
 import { playSetComplete } from '../lib/sound.js'
@@ -184,7 +184,7 @@ function ExerciseBlock({ entryIdx, compact, isCurrent = true, arrived = false, r
             {timed && <button className="setgo" aria-label={t('Start set')} disabled={s.done || !!working}
               onClick={() => onStartTimed(i)}><Icon name="play" /><span className="setgo-l">{t('Start set')}</span></button>}
             {warm && <button className="iconbtn bare set-x" aria-label={t('Remove set')}
-              disabled={entry.sets.length <= 1} onClick={() => onRemoveSetAt(i)}><Icon name="xmark" /></button>}
+              disabled={entry.sets.length <= 1 || !!working} onClick={() => onRemoveSetAt(i)}><Icon name="xmark" /></button>}
             <Check checked={s.done} aria-label={t('Complete {0}', warm ? t('warm-up set {0}', phaseNum) : t('set {0}', phaseNum))} onChange={() => onToggle(i)}>
               {open && <span className="chk-l">{s.done ? t('Logged') : t('Log set')}</span>}
             </Check>
@@ -438,9 +438,13 @@ function ActiveWorkout() {
 
   const startTimed = (idx, i) => {
     const e = A.entries[idx]
+    const ref = holdRef(A, idx, i)
     useUI.getState().startWork(e.sets[i].sec || 45, exOr(e.id).n, elapsed => {
-      useStore.getState().updateActiveSetField(idx, i, 'sec', elapsed)
-      if (!useStore.getState().S.active?.entries?.[idx]?.sets?.[i]?.done) toggle(idx, i)
+      const at = findHoldRow(useStore.getState().S.active, ref)
+      if (!at) return
+      const [entryIdx, setIdx] = at
+      useStore.getState().updateActiveSetField(entryIdx, setIdx, 'sec', elapsed)
+      if (!useStore.getState().S.active.entries[entryIdx].sets[setIdx].done) toggle(entryIdx, setIdx)
     })
   }
 
@@ -464,7 +468,7 @@ function ActiveWorkout() {
     {fmtSec(S.restSec)}
   </Button>
 
-  const discard = () => confirmSheet({ title: t('Discard workout?'), message: t('The sets you logged in this session will be lost.'), confirmText: t('Discard'), danger: true, onConfirm: () => { useStore.getState().discardSession(); stopRest(); nav('/home') } })
+  const discard = () => confirmSheet({ title: t('Discard workout?'), message: t('The sets you logged in this session will be lost.'), confirmText: t('Discard'), danger: true, onConfirm: () => { useStore.getState().discardSession(); stopRest(); useUI.getState().stopWork(); nav('/home') } })
 
   return <div className="workout">
     <header className="hdr wk-hdr">
