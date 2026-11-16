@@ -1,6 +1,8 @@
 import { supersetUnits } from './supersetFlow.js'
 import { workSets, doneWorkSets, sessionProgress, isPerformed, isWarmupRow } from './workout-model.js'
 
+const setsOf = e => (Array.isArray(e?.sets) ? e.sets : [])
+
 /**
  * The one read model of an Active workout: its Steps, the cursor and Session progress.
  * @param {Object|null} active - The Active workout.
@@ -21,13 +23,13 @@ export function sessionView(active) {
   const progress = sessionProgress({ entries })
   const canPrev = stepIdx > 0
   const canNext = stepIdx >= 0 && stepIdx < steps.length - 1
-  const hasPerformed = entries.map(e => (Array.isArray(e?.sets) ? e.sets : []).some(isPerformed))
+  const hasPerformed = entries.map(e => setsOf(e).some(isPerformed))
   return { steps, cur, stepIdx, step, nextStep, canPrev, canNext, progress, entryProgress, hasPerformed, finishGate: finishGate(entries, progress) }
 }
 
 function finishGate(entries, progress) {
   if (!progress.done) {
-    const warmupLogged = entries.some(e => (Array.isArray(e?.sets) ? e.sets : []).some(s => isPerformed(s) && isWarmupRow(s)))
+    const warmupLogged = entries.some(e => setsOf(e).some(s => isPerformed(s) && isWarmupRow(s)))
     return warmupLogged ? 'warmups-only' : 'empty'
   }
   return progress.remaining > 0 ? 'early' : 'complete'

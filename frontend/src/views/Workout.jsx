@@ -452,10 +452,10 @@ function ActiveWorkout() {
       <div className="wk-title"><h1>{A.name}</h1><div className="sub"><Elapsed start={A.start} /> · {t('{0} sets', prog.done + '/' + prog.total)}</div></div>
       <button className={'btn sm wk-finish ' + (prog.allDone ? 'done' : 'plain')} aria-label={t('Finish')} onClick={finishWorkout}>{t('Finish')}</button>
       {steps.length > 0 && <div className="lad" role="group" aria-label={t('Exercises in this workout')}>
-        {steps.map(({ entries: u, done, total }, k) => {
-          return <button key={u[0]} className={'lad-s' + (k === stepIdx ? ' on' : '')} aria-current={k === stepIdx ? 'step' : undefined}
-            aria-label={t('Go to {0}', u.map(i => exOr(A.entries[i].id).n).join(' + '))}
-            onClick={() => goTo(u[0])}>
+        {steps.map(({ entries: stepEntries, done, total }, k) => {
+          return <button key={stepEntries[0]} className={'lad-s' + (k === stepIdx ? ' on' : '')} aria-current={k === stepIdx ? 'step' : undefined}
+            aria-label={t('Go to {0}', stepEntries.map(i => exOr(A.entries[i].id).n).join(' + '))}
+            onClick={() => goTo(stepEntries[0])}>
             <span className="lad-b"><i style={{ transform: `scaleX(${total ? done / total : 0})` }} /></span>
           </button>
         })}
