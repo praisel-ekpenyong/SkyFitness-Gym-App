@@ -1,7 +1,6 @@
-import { best1RM } from './onerm.js'
+import { best1RM, latestWorkSetAt } from './training-log.js'
 import { STRENGTH_FULL_MS, STRENGTH_HALF_LIFE_MS, STRENGTH_FLOOR, halfLifeDecay } from './recovery.js'
 import { muscleWeightsOf } from './muscles.js'
-import { latestWorkSetAt } from './training-log.js'
 import { EXIDX } from './exercises.js'
 
 const round1 = value => Math.round(value * 10) / 10
