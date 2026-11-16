@@ -8,7 +8,7 @@ import { effectiveRoutine, hasEffectiveOverride } from '../lib/history.js'
 import { freestyleConfig, defaultConfig, modeOf, isBw, isPerSide, sideReps, repStep } from '../lib/workout-model.js'
 import { setLabel } from '../lib/format.js'
 import { EFFORT, effortOf, stepEffort, capEffort } from '../lib/effort.js'
-import { sessionView, holdRef, findHoldRow } from '../lib/active-workout.js'
+import { sessionView } from '../lib/active-workout.js'
 import { best as bestOf, lastSession } from '../lib/training-log.js'
 import { fmtNum, fmtDate, fmtSec, fmtElapsed, todayISO, exCount, DAYN, sentenceCase } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
@@ -204,7 +204,12 @@ function ExerciseBlock({ entryIdx, compact, isCurrent = true, arrived = false, r
 }
 
 /* ---------- active workout ---------- */
-const send = command => useStore.getState().act(command)
+// Opens the finish sheet on open-finish, including when a hold this sent completes the last set.
+const send = command => {
+  const res = useStore.getState().act(command, send)
+  if (res.effects.some(e => e.type === 'open-finish')) workoutCompleteSheet()
+  return res
+}
 
 export function removeActiveExercise(idx) {
   send({ type: 'removeExercise', entry: idx })
@@ -431,22 +436,9 @@ function ActiveWorkout() {
       onRemove={removeExerciseSheet} />)
   }
 
-  const startTimed = (idx, i) => {
-    const e = A.entries[idx]
-    const ref = holdRef(A, idx, i)
-    useUI.getState().startWork(e.sets[i].sec || 45, exOr(e.id).n, elapsed => {
-      const at = findHoldRow(useStore.getState().S.active, ref)
-      if (!at) return
-      const [entryIdx, setIdx] = at
-      send({ type: 'editSet', entry: entryIdx, set: setIdx, field: 'sec', value: elapsed })
-      if (!useStore.getState().S.active.entries[entryIdx].sets[setIdx].done) toggle(entryIdx, setIdx)
-    })
-  }
+  const startTimed = (idx, i) => send({ type: 'startHold', entry: idx, set: i })
 
-  const toggle = (idx, i) => {
-    const res = send({ type: 'toggle', entry: idx, set: i })
-    if (res.effects.some(e => e.type === 'open-finish')) workoutCompleteSheet()
-  }
+  const toggle = (idx, i) => send({ type: 'toggle', entry: idx, set: i })
 
   const restKey = <Button size="xs" icon="timer" className="ex-rest" aria-label={t('Rest {0}', fmtSec(S.restSec))} disabled={resting || holding} onClick={() => startRest(S.restSec)}>
     {fmtSec(S.restSec)}

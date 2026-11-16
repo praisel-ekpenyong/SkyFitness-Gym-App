@@ -74,4 +74,14 @@ describe('timed hold lands on the set it started from', () => {
     expect(active()).toBeNull()
     expect(useUI.getState().work).toBeNull()
   })
+  it('a hold that completes the last set opens the finish sheet', () => {
+    view = renderWorkoutApp([held()])
+    click(startButtons()[0])
+    act(() => { vi.advanceTimersByTime(31_000) })
+    click(startButtons()[1])
+    act(() => { vi.advanceTimersByTime(31_000) })
+
+    expect(active().entries[0].sets.every(s => s.done)).toBe(true)
+    expect(document.body.textContent).toContain("That's the whole workout!")
+  })
 })
