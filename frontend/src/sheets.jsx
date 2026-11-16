@@ -21,6 +21,7 @@ import { glyphOf, GLYPH_GROUPS } from './lib/glyphs.js'
 import { parseImport, mergeImport, importPreview } from './lib/import-csv.js'
 import { buildPlanBundle, parsePlan, mergePlan, printPlan } from './lib/plan-share.js'
 import { monthRecap } from './lib/recap.js'
+import { records } from './lib/training-log.js'
 import { MOBILE, shareExport } from './lib/mobile.js'
 import { configureSessionSheets } from './sheets/session.jsx'
 import { configureCatalogueSheets } from './sheets/catalogue.jsx'
@@ -438,6 +439,7 @@ export function WorkoutDetail({ w, close }) {
   const st = useStore(s => s.S)
   const [selectedMuscle, setSelectedMuscle] = useState(null)
   const workoutLoad = loadOfWorkouts([w])
+  const recordIds = records(st, w).filter(r => r.kind === 'load').map(r => r.id)
   return <>
     <h3>{w.name}</h3>
     <div className="sheet-sub">{[fmtDate(w.d, true), ...durPart(w.end - w.start), fmtVol(tonnageOf(w), st.unit), ...(w.bw ? [fmtNum(w.bw) + ' ' + st.unit] : [])].join(' · ')}</div>
@@ -445,7 +447,7 @@ export function WorkoutDetail({ w, close }) {
       const ex = EXIDX[e.id]
       return <div key={i} className="row ex-entry">
         {ex && <Thumb ex={ex} />}
-        <div className="grow"><div className="tt capitalize">{ex ? ex.n : (e.n || e.id)} {w.prs && w.prs.includes(e.id) && <span className="pr"><Icon name="trophy" />{t('Record')}</span>}</div>
+        <div className="grow"><div className="tt capitalize">{ex ? ex.n : (e.n || e.id)} {recordIds.includes(e.id) && <span className="pr"><Icon name="trophy" />{t('Record')}</span>}</div>
           <div className="ss">{e.sets.filter(s => s.done).map(s => setLabel(e.id, s, e.target)).join('  ·  ') || t('no sets')}</div>
           {e.notes && <div className="exnote">{e.notes}</div>}
         </div>
@@ -623,6 +625,7 @@ export const recapSheet = (start) => ui().openSheet(close => <RecapSheet start={
 export function WorkoutRow({ w, onClick }) {
   const st = useStore(s => s.S)
   const glyph = glyphOf((st.routines.find(r => r.id === w.routineId) || {}).emoji)
+  const recordCount = records(st, w).filter(r => r.kind === 'load').length
   return <div className="item" role="button" tabIndex={0}
     aria-label={`${w.name}, ${fmtDate(w.d, true)}, ${t('{0} sets', fmtNum(setsDone(w)))}`}
     onClick={onClick}
@@ -630,7 +633,7 @@ export function WorkoutRow({ w, onClick }) {
     <span className="lrow-i"><Icon name={glyph} /></span>
     <div className="grow"><div className="tt">{w.name}</div>
       <div className="ss">{[fmtDate(w.d, true), ...durPart(w.end - w.start), t('{0} sets', fmtNum(setsDone(w))), fmtVol(tonnageOf(w), st.unit)].join(' · ')}</div></div>
-    {w.prs && w.prs.length > 0 && <span className="pr"><Icon name="trophy" />{t(w.prs.length === 1 ? '{0} record' : '{0} records', fmtNum(w.prs.length))}</span>}
+    {recordCount > 0 && <span className="pr"><Icon name="trophy" />{t(recordCount === 1 ? '{0} record' : '{0} records', fmtNum(recordCount))}</span>}
     <Icon name="chevronRight" className="chev" />
   </div>
 }

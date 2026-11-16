@@ -337,7 +337,7 @@ describe('active-workout lifecycle seam', () => {
     expect(S.active).toBeNull()
   })
 
-  it('completeActiveSession builds workout, detects PRs, merges exWeights and clears active', () => {
+  it('completeActiveSession builds workout, detects Records (a first session is none), merges exWeights and clears active', () => {
     const S = {
       unit: 'kg',
       workouts: [{ d: '2026-08-10', start: 1, entries: [{ id: 'ex1', sets: [{ w: 80, r: 5, done: true }] }] }],
@@ -351,7 +351,7 @@ describe('active-workout lifecycle seam', () => {
       }
     }
     const result = completeActiveSession(S, { now: () => 2000 })
-    expect(result.prs).toContain('ex1')
+    expect(result.prs).toEqual(['ex1'])
     expect(S.workouts).toHaveLength(2)
     expect(S.active).toBeNull()
     expect(result.workout.unit).toBe('kg')

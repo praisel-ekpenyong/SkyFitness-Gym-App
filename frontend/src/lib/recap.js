@@ -1,5 +1,5 @@
 import { workSetsDone, tonnageOf } from './workout-model.js'
-import { bestSetOf } from './onerm.js'
+import { records } from './training-log.js'
 import { monthKey } from './format.js'
 
 /**
@@ -19,25 +19,12 @@ export function prevMonthKey(yearMonth) {
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`
 }
 
-function sortedWorkouts(workouts) {
-  return [...(workouts || [])].sort((a, b) => {
-    const da = String(a?.d || '')
-    const db = String(b?.d || '')
-    if (da < db) return -1
-    if (da > db) return 1
-    const sa = Number(a?.start)
-    const sb = Number(b?.start)
-    const fa = Number.isFinite(sa) ? sa : 0
-    const fb = Number.isFinite(sb) ? sb : 0
-    return fa - fb
-  })
-}
-
-function metricsFor(workouts) {
+function metricsFor(S, workouts) {
   let vol = 0
   let sets = 0
   let durationMs = 0
   const prs = []
+  const e1prs = []
 
   for (const w of workouts || []) {
     vol += tonnageOf(w)
@@ -48,10 +35,9 @@ function metricsFor(workouts) {
       const dur = end - start
       if (Number.isFinite(dur) && dur > 0) durationMs += dur
     }
-    if (Array.isArray(w.prs)) {
-      for (const id of w.prs) {
-        if (id && !prs.includes(id)) prs.push(id)
-      }
+    for (const r of records(S, w)) {
+      if (r.kind === 'load') { if (!prs.includes(r.id)) prs.push(r.id) }
+      else e1prs.push({ id: r.id, est: r.est, w: r.w, r: r.r, d: w.d, t: w.start, prev: r.prev })
     }
   }
 
@@ -61,43 +47,14 @@ function metricsFor(workouts) {
     workouts: (workouts || []).length,
     durationMs,
     prs,
+    e1prs,
   }
-}
-
-function e1RecordsByMonth(allWorkouts) {
-  const sorted = sortedWorkouts(allWorkouts)
-  const bestByEx = new Map()
-  const byMonth = new Map()
-  for (const w of sorted) {
-    const wMonth = monthKey(w)
-    for (const e of (w.entries || [])) {
-      const exId = e?.id
-      if (!exId) continue
-      const best = bestSetOf(e)
-      if (!best) continue
-      const prevBest = bestByEx.get(exId)
-      if (prevBest == null || best.est > prevBest) {
-        bestByEx.set(exId, best.est)
-        if (!byMonth.has(wMonth)) byMonth.set(wMonth, [])
-        byMonth.get(wMonth).push({
-          id: exId,
-          est: best.est,
-          w: best.w,
-          r: best.r,
-          d: w.d,
-          t: w.start,
-          prev: prevBest ?? 0,
-        })
-      }
-    }
-  }
-  return byMonth
 }
 
 /**
  * Pure monthly recap.
  * @param {Array} workouts - S.workouts array
- * @param {string} unit - profile unit ('kg' | 'lb'), kept for API parity (formatting resolved by caller)
+ * @param {string} unit - profile unit ('kg' | 'lb'), the unit Records are judged in
  * @param {string} yearMonth - 'YYYY-MM'
  * @returns {{ vol:number, sets:number, workouts:number, durationMs:number, prs:string[], e1prs:Array, prev:Object, deltas:Object }}
  */
@@ -108,10 +65,10 @@ export function monthRecap(workouts = [], unit = 'kg', yearMonth) {
   const curWs = (workouts || []).filter(w => monthKey(w) === ym)
   const prevWs = prevYm ? (workouts || []).filter(w => monthKey(w) === prevYm) : []
 
-  const cur = metricsFor(curWs)
-  const prev = metricsFor(prevWs)
-  const allE1Records = e1RecordsByMonth(workouts)
-  const e1prs = allE1Records.get(ym) || []
+  const S = { unit, workouts }
+  const cur = metricsFor(S, curWs)
+  const prev = metricsFor(S, prevWs)
+  const e1prs = cur.e1prs
 
   const prevOut = {
     vol: prev.vol,
@@ -119,7 +76,7 @@ export function monthRecap(workouts = [], unit = 'kg', yearMonth) {
     workouts: prev.workouts,
     durationMs: prev.durationMs,
     prs: prev.prs,
-    e1prs: allE1Records.get(prevYm) || [],
+    e1prs: prev.e1prs,
   }
 
   const viewedEmpty = cur.workouts === 0
