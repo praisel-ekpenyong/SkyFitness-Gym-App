@@ -4,7 +4,6 @@ import { createRoot } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App.jsx'
 import { useStore, DEF } from './store/useStore.js'
-import { buildCompletedWorkout } from './lib/active-workout.js'
 import { fatigueOf, strengthOf } from './lib/recovery.js'
 import { EXIDX } from './lib/exercises.js'
 import {
@@ -193,7 +192,7 @@ describe('Ticket 05 — End-to-End Integration & Stats Diagram Parity', () => {
       })
     })
 
-    const completedWorkout = buildCompletedWorkout({
+    const performed = {
       id: 'w-1',
       d: '2026-08-24',
       start: Date.now() - 3600000,
@@ -220,12 +219,11 @@ describe('Ticket 05 — End-to-End Integration & Stats Diagram Parity', () => {
           target: { sets: 2, reps: 12 },
         },
       ],
-    }, { end: Date.now(), prs: [] })
+    }
 
     act(() => {
-      useStore.getState().update(s => {
-        s.workouts.push(completedWorkout)
-      })
+      useStore.getState().update(s => { s.active = performed })
+      useStore.getState().act({ type: 'finish' })
     })
 
     expect(useStore.getState().S.workouts).toHaveLength(1)
