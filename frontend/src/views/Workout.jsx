@@ -211,7 +211,7 @@ const send = command => {
   return res
 }
 
-export function removeActiveExercise(idx) {
+function removeActiveExercise(idx) {
   send({ type: 'removeExercise', entry: idx })
 }
 

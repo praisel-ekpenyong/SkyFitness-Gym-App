@@ -4,7 +4,7 @@ import {
   setProgressHighWater, supersetFlowStep
 } from './supersetFlow.js'
 
-export function describeUnit(entries, entryIdx) {
+function describeUnit(entries, entryIdx) {
   const units = supersetUnits(entries)
   const unit = unitOf(units, entryIdx)
   const unitIdx = units.findIndex(u => u === unit)
@@ -13,16 +13,6 @@ export function describeUnit(entries, entryIdx) {
 }
 
 const unitWorkDone = (entries, unit) => !unit.some(i => hasWork(entries, i))
-
-export function nextUnitTarget(S, entryIdx) {
-  const entries = S?.active?.entries
-  if (!entries?.[entryIdx]) return null
-  const { units, unit, unitIdx, isLastUnit } = describeUnit(entries, entryIdx)
-  if (isLastUnit) return null
-  const hasWorkRows = unit.some(i => (entries[i].sets || []).some(isWorkSet))
-  if (!hasWorkRows || !unitWorkDone(entries, unit)) return null
-  return units[unitIdx + 1]?.[0] ?? null
-}
 
 export function toggleActiveSet(S, entryIdx, setIdx) {
   const A = S?.active
