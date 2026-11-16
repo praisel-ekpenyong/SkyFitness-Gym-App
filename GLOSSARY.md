@@ -124,7 +124,7 @@ A finished, dated training session in the Training log: entries and a weigh-in.
 _Avoid_: session (fine in prose, never as the noun for the record)
 
 **Training log**:
-Every finished Workout in the Profile, in date order. The only source of Best, Records, last session and Tonnage, always read in the Profile's unit; nothing about them is remembered outside it.
+Every finished Workout in the Profile, in date order, and the only source of Best, Records, last session, Tonnage, an Entry's result in its Mode, and the Estimated 1RM series. Loads are read in the Profile's unit, and nothing about these readings is remembered outside the log.
 _Avoid_: history cache, remembered weights
 
 **Entry**:

@@ -1,7 +1,8 @@
 import { isWarmupRow } from './warmup.js'
 import { resolveSetWeight, normalizeWeight, round1 } from './units.js'
 import { estimate1RM } from './onerm.js'
-import { doneWorkSets } from './workout-model.js'
+import { workoutTimestamp } from './format.js'
+import { doneWorkSets, metricModeForEntry, metricRowsForEntry, modeForSet, workSets } from './workout-model.js'
 
 const indexes = new WeakMap()
 
@@ -44,6 +45,55 @@ export function best(S, exId) {
   const workouts = logOf(S)
   if (!workouts || !exId) return 0
   return round1(indexFor(workouts, S.unit || 'kg').get(exId) || 0)
+}
+
+const roundedOrZero = value => (Number.isFinite(value) && value > 0 ? round1(value) : 0)
+
+const peakOf = (entry, mode, field) => {
+  let top = 0
+  for (const set of metricRowsForEntry(entry, mode)) {
+    const n = Number(set?.[field]) || 0
+    if (n > top) top = n
+  }
+  return roundedOrZero(top)
+}
+
+// Chart rule, separate from Best: a remembered top weight counts only on a plain reps Entry.
+const isPlainRepsEntry = entry => {
+  const target = entry?.target || entry
+  if (modeForSet({}, target) !== 'reps') return false
+  if (Array.isArray(entry?.sets) && entry.sets.some(isWarmupRow)) return false
+  return !workSets(entry).some(set => modeForSet(set, target) !== 'reps')
+}
+
+const legacyTop = (entry, workout, unit) => {
+  const raw = Number(entry?.topW)
+  if (!Number.isFinite(raw)) return null
+  return normalizeWeight(raw, entry?.unit ?? workout?.unit ?? unit, unit)
+}
+
+/**
+ * Chart metric: one Entry's result in its own Mode. A reps Entry is its heaviest performed reps
+ * Work set, in the Profile's unit rounded to 0.1. A legacy top weight raises that score only when
+ * the Entry is plain reps — no warm-up, no non-reps Work set — and the top weight is heavier.
+ * A hold is the longest performed Work-set duration, in seconds. Cardio is the greatest performed
+ * Work-set speed, in km/h. Nothing performed in that Mode is 0, so Best may still be heavier.
+ */
+export function metric(S, workout, entry) {
+  const mode = metricModeForEntry(entry)
+  if (mode === 'time') return peakOf(entry, 'time', 'sec')
+  if (mode === 'cardio') return peakOf(entry, 'cardio', 'speed')
+  if (mode !== 'reps') return 0
+  const unit = S?.unit || 'kg'
+  const rows = metricRowsForEntry(entry, 'reps')
+  let top = 0
+  for (const set of rows) {
+    const w = resolveSetWeight(set, entry, workout, unit)
+    if (w > top) top = w
+  }
+  const remembered = legacyTop(entry, workout, unit)
+  if (rows.length && remembered != null && remembered > top && isPlainRepsEntry(entry)) top = remembered
+  return roundedOrZero(top)
 }
 
 const sessionIndexes = new WeakMap()
@@ -136,6 +186,18 @@ export function lastWorkoutInRoutine(S, routineId) {
 }
 
 const timelines = new WeakMap()
+const summaries = new WeakMap()
+
+function summariesFor(workouts, unit) {
+  let byUnit = summaries.get(workouts)
+  if (!byUnit) summaries.set(workouts, byUnit = new Map())
+  let list = byUnit.get(unit)
+  if (!list) {
+    list = workouts.map(workout => summarize(workout, unit))
+    byUnit.set(unit, list)
+  }
+  return list
+}
 
 function summarize(workout, unit) {
   const byEx = new Map()
@@ -165,11 +227,12 @@ function timelineFor(workouts, unit) {
   if (!byUnit) timelines.set(workouts, byUnit = new Map())
   let line = byUnit.get(unit)
   if (!line) {
+    const sums = summariesFor(workouts, unit)
     const points = new Map()
     const ids = new Map()
     workouts.forEach((workout, pos) => {
       if (workout?.id != null && !ids.has(workout.id)) ids.set(workout.id, pos)
-      for (const [id, top] of summarize(workout, unit)) {
+      for (const [id, top] of sums[pos]) {
         if (!points.has(id)) points.set(id, [])
         points.get(id).push({ pos, d: String(workout?.d || ''), start: startOf(workout), load: top.load, est: top.est })
       }
@@ -234,6 +297,47 @@ export function records(S, workout) {
     }
   }
   return out
+}
+
+/**
+ * Estimated 1RM series: one point per Workout with an estimable performed Work set of the exercise,
+ * in Profile Workout order. `y` is the estimate Records already use for that Workout, across every
+ * Entry. `w` and `r` are the Set behind it, `t` and `d` the Workout's. Loads are in the Profile's unit.
+ * A hold or a cardio Entry with no reps adds no point.
+ *
+ * @returns {Array<{t:number, d:string, y:number, w:number, r:number}>}
+ */
+export function e1rmSeries(S, exId) {
+  const workouts = logOf(S)
+  if (!workouts || !exId) return []
+  const sums = summariesFor(workouts, S.unit || 'kg')
+  const points = []
+  workouts.forEach((workout, i) => {
+    const top = sums[i].get(exId)
+    if (!top?.est || !top.estSet) return
+    points.push({
+      t: workoutTimestamp(workout),
+      d: workout.d,
+      y: top.est,
+      w: round1(top.estSet.w),
+      r: Math.round(Number(top.estSet.set.r)),
+    })
+  })
+  return points
+}
+
+/**
+ * Standing Estimated 1RM: the series point with the greatest `y`, or null when none exists.
+ * A tie keeps the earlier point. `{ est, w, r, d, t }` uses the Profile's unit.
+ */
+export function best1RM(S, exId) {
+  let standing = null
+  for (const point of e1rmSeries(S, exId)) {
+    if (!standing || point.y > standing.est) {
+      standing = { est: point.y, w: point.w, r: point.r, d: point.d, t: point.t }
+    }
+  }
+  return standing
 }
 
 /** The load Records of a Workout (see records). */
