@@ -9,7 +9,7 @@ import { t } from '../lib/i18n.js'
 import { MOBILE, shareExport, syncReminder } from '../lib/mobile.js'
 import { backupDue, validateBackup } from '../lib/storage.js'
 import { restoreFromBackup, resetProfile } from '../lib/restore.js'
-import { loadStarterPlan, confirmSheet, importFromApp, displayNameSheet } from '../sheets.jsx'
+import { loadStarterPlan, loadHypertrophyPlan, confirmSheet, importFromApp, displayNameSheet } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
 import Mark from '../components/Mark.jsx'
 import { Section, Row, SelectRow, Switch, Segmented } from '../components/ui.jsx'
@@ -138,6 +138,7 @@ export default function Settings() {
 
     <Section title={t('Data')}>
       <Row icon="calendar" title={t('Load starter plan')} subtitle={t('Push / Pull / Legs, three days a week')} accessory="chevron" onClick={loadStarterPlan} />
+      <Row icon="calendar" title={t('Load 5-day hypertrophy plan')} subtitle={t('Upper / Lower / Push / Pull / Legs, five days a week')} accessory="chevron" onClick={loadHypertrophyPlan} />
       <Row icon="shuffle" title={t('Import from another app')}
         subtitle={t('FitNotes, Strong, Hevy — or body weight from Apple Health')}
         accessory="chevron" onClick={() => importRef.current.click()} />
