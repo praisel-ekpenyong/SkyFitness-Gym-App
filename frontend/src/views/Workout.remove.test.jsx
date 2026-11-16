@@ -1,10 +1,9 @@
 // @vitest-environment happy-dom
 import { act } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { removeActiveExercise } from './Workout.jsx'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
-import { entry, resetViewTestState, seedActiveWorkout, renderWorkout, renderWorkoutApp, cleanupViewTest } from '../test/view-harness.jsx'
+import { entry, resetViewTestState, renderWorkout, renderWorkoutApp, cleanupViewTest } from '../test/view-harness.jsx'
 
 vi.mock('../lib/sound.js', () => ({
   beep: vi.fn(),
@@ -43,7 +42,7 @@ afterEach(() => {
   view = null
 })
 
-describe('active-session exercise removal', () => {
+describe('removing an exercise from the screen', () => {
   it('disables removal for the whole duration of a timed hold', () => {
     view = renderWorkoutApp([entry('1001')])
     expect(removeButton()).toBeTruthy()
@@ -54,24 +53,24 @@ describe('active-session exercise removal', () => {
     expect(removeButton().disabled).toBe(true)
   })
 
-  it('cancels a pending timed callback before indexes shift and cleans a one-member group', () => {
-    seedActiveWorkout([{ ...entry('1001'), sg: 'sg-1' }, { ...entry('1002'), sg: 'sg-1' }, entry('1003')], { cur: 1 })
-    expect(useStore.getState().S.active.cur).toBe(1)
-    const wrongWrite = vi.fn(elapsed => {
-      useStore.getState().update(s => { s.active.entries[0].sets[0].sec = elapsed })
-    })
-    useUI.getState().startWork(5, 'Hold', wrongWrite)
+  it('asks before removing, saying logged sets will be lost when there are some, then removes the exercise', () => {
+    view = renderWorkoutApp([entry('1001', [{ w: 0, r: 1, done: true }]), entry('1002')])
+    const remove = removeButton()
+    act(() => { remove.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
 
-    removeActiveExercise(0)
-    vi.advanceTimersByTime(10_000)
+    const dialog = document.querySelector('[role="alertdialog"]')
+    expect(dialog.textContent).toContain('The sets you logged for this exercise in this session will be lost.')
+    expect(useStore.getState().S.active.entries).toHaveLength(2)
 
-    const active = useStore.getState().S.active
-    expect(useUI.getState().work).toBeNull()
-    expect(wrongWrite).not.toHaveBeenCalled()
-    expect(active.entries.map(e => e.id)).toEqual(['1002', '1003'])
-    expect(active.cur).toBe(0)
-    expect(active.entries[0].sg).toBeUndefined()
-    expect(active.entries[0].sets[0].sec).toBeUndefined()
+    act(() => { [...dialog.querySelectorAll('button')].find(b => b.textContent.trim() === 'Remove').dispatchEvent(new MouseEvent('click', { bubbles: true })) })
+    expect(useStore.getState().S.active.entries.map(e => e.id)).toEqual(['1002'])
+  })
+
+  it('asks with the plain message when nothing is logged yet', () => {
+    view = renderWorkoutApp([entry('1001'), entry('1002')])
+    const remove = removeButton()
+    act(() => { remove.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
+    expect(document.querySelector('[role="alertdialog"]').textContent).toContain('This removes the exercise from your current session.')
   })
 
   it('hides the remove control for an empty freestyle session', () => {
@@ -97,31 +96,5 @@ describe('remove-exercise prompt strings', () => {
       const esc = key.replace(/[{}?]/g, '\\$&')
       expect(src).toMatch(new RegExp(`['"\`]${esc}['"\`]`))
     })
-  })
-})
-
-describe('remove-exercise edge cases', () => {
-  it('removing the last remaining exercise leaves an empty, coherent session', () => {
-    seedActiveWorkout([entry('a')], { cur: 0 })
-    act(() => { removeActiveExercise(0) })
-    const A = useStore.getState().S.active
-    expect(A.entries).toHaveLength(0)
-    expect(A.cur).toBe(0)
-  })
-
-  it('removing one half of a two-member superset dissolves the group', () => {
-    seedActiveWorkout([{ ...entry('a'), sg: 'g1' }, { ...entry('b'), sg: 'g1' }, entry('c')], { cur: 0 })
-    act(() => { removeActiveExercise(1) })
-    const A = useStore.getState().S.active
-    expect(A.entries.map(e => e.id)).toEqual(['a', 'c'])
-    expect(A.entries[0].sg).toBeUndefined()
-  })
-
-  it('removing an entry below the active one keeps cur on the same exercise', () => {
-    seedActiveWorkout([entry('a'), entry('b'), entry('c')], { cur: 2 })
-    act(() => { removeActiveExercise(0) })
-    const A = useStore.getState().S.active
-    expect(A.entries.map(e => e.id)).toEqual(['b', 'c'])
-    expect(A.entries[A.cur].id).toBe('c')
   })
 })
