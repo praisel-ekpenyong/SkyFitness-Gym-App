@@ -3,8 +3,8 @@ import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { EXIDX, isCardio, isBodyweightEq, allExercises } from '../lib/exercises.js'
 import { fmtDate, fmtNum, exCount, uid, setLabel, sentenceCase } from '../lib/format.js'
-import { best as bestOf } from '../lib/training-log.js'
-import { lastEntryFor, defaultConfig, modeOf, isBw, isPerSide, sideReps } from '../lib/workout-model.js'
+import { best as bestOf, lastSession } from '../lib/training-log.js'
+import { defaultConfig, modeOf, isBw, isPerSide, sideReps } from '../lib/workout-model.js'
 import * as catalogueWrites from '../lib/catalogue-writes.js'
 import { t, instrFor } from '../lib/i18n.js'
 import { nav } from '../lib/nav.js'
@@ -67,7 +67,7 @@ function OneRM({ ex }) {
  */
 export function ExerciseDetail({ ex, close }) {
   const st = useStore(s => s.S)
-  const last = lastEntryFor(st, ex.id)
+  const last = lastSession(st, ex.id)
   const best = bestOf(st, ex.id)
   const favs = st.favorites || []
   const isFav = favs.includes(ex.id)

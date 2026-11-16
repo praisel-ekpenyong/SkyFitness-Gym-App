@@ -46,3 +46,112 @@ export function best(S, exId) {
   if (!S || !exId || !Array.isArray(S.workouts)) return 0
   return round1(indexFor(S.workouts, S.unit || 'kg').get(exId) || 0)
 }
+
+const sessionIndexes = new WeakMap()
+
+const isPerformedWork = set => !!set?.done && !isWarmupRow(set)
+
+const startOf = workout => {
+  const n = Number(workout?.start ?? workout?.t)
+  return Number.isFinite(n) ? n : 0
+}
+
+const isLater = (a, b) => {
+  if (!b) return true
+  const da = String(a.d ?? '')
+  const db = String(b.d ?? '')
+  if (da !== db) return da > db
+  return startOf(a) >= startOf(b)
+}
+
+function sessionIndexFor(workouts) {
+  let index = sessionIndexes.get(workouts)
+  if (!index) {
+    index = new Map()
+    sessionIndexes.set(workouts, index)
+    const keep = (slot, session) => (isLater(session.workout, slot?.workout) ? session : slot)
+    for (const workout of workouts) {
+      const entries = workout?.entries || []
+      for (const exId of new Set(entries.map(e => e?.id))) {
+        const performed = entries.some(e => e?.id === exId && Array.isArray(e.sets) && e.sets.some(isPerformedWork))
+        if (!performed) continue
+        let slots = index.get(exId)
+        if (!slots) index.set(exId, slots = { any: null, byRoutine: new Map(), latest: null })
+        if (isLater(workout, slots.latest)) slots.latest = workout
+        const entry = entries.find(e => e?.id === exId)
+        const sets = Array.isArray(entry?.sets) ? entry.sets.filter(isPerformedWork) : []
+        if (!sets.length) continue
+        const session = { workout, sets, target: entry.target || null }
+        slots.any = keep(slots.any, session)
+        if (workout.routineId != null) slots.byRoutine.set(workout.routineId, keep(slots.byRoutine.get(workout.routineId), session))
+      }
+    }
+  }
+  return index
+}
+
+const publicSession = session => (session ? { d: session.workout.d, sets: session.sets, target: session.target } : null)
+
+/**
+ * Last session: the latest Workout holding a performed Work set of the exercise, any Routine.
+ * Date order, then start time; later array position breaks an exact tie.
+ *
+ * @param {Object} S - Profile; its `workouts` array is the Training log.
+ * @param {string} exId - Exercise id.
+ * @returns {{d: string, sets: Object[], target: Object|null}|null} Date, performed Work sets and target, or null.
+ */
+export function lastSession(S, exId) {
+  if (!S || !exId || !Array.isArray(S.workouts)) return null
+  return publicSession(sessionIndexFor(S.workouts).get(exId)?.any)
+}
+
+/**
+ * Last session within one Routine. Strict: null when that Routine never held the exercise.
+ * Without a routineId it answers like lastSession.
+ *
+ * @param {Object} S - Profile.
+ * @param {string} exId - Exercise id.
+ * @param {string|null} routineId - Routine id.
+ * @returns {{d: string, sets: Object[], target: Object|null}|null}
+ */
+export function lastSessionInRoutine(S, exId, routineId) {
+  if (!routineId) return lastSession(S, exId)
+  if (!S || !exId || !Array.isArray(S.workouts)) return null
+  return publicSession(sessionIndexFor(S.workouts).get(exId)?.byRoutine.get(routineId))
+}
+
+/**
+ * Latest Work set time: when the exercise's latest performed Work set happened.
+ * Warm-up and unperformed Sets do not count.
+ *
+ * @param {Object} S - Profile.
+ * @param {string} exId - Exercise id.
+ * @returns {number|null} Workout start timestamp in ms (date midnight when unstamped), or null.
+ */
+export function latestWorkSetAt(S, exId) {
+  if (!S || !exId || !Array.isArray(S.workouts)) return null
+  const workout = sessionIndexFor(S.workouts).get(exId)?.latest
+  if (!workout) return null
+  const stamped = Number(workout.start ?? workout.t)
+  const ts = workout.start != null || workout.t != null ? stamped : NaN
+  if (Number.isFinite(ts)) return ts
+  const dated = new Date(workout.d).getTime()
+  return Number.isFinite(dated) ? dated : null
+}
+
+/**
+ * Last Workout of a Routine: the latest finished Workout run from it, whatever it held.
+ * Date order, then start time. Home's "Last time" line reads it.
+ *
+ * @param {Object} S - Profile.
+ * @param {string} routineId - Routine id.
+ * @returns {Object|null} The Workout, or null when the Routine was never run.
+ */
+export function lastWorkoutInRoutine(S, routineId) {
+  if (!S || !routineId || !Array.isArray(S.workouts)) return null
+  let latest = null
+  for (const workout of S.workouts) {
+    if (workout?.routineId === routineId && isLater(workout, latest)) latest = workout
+  }
+  return latest
+}

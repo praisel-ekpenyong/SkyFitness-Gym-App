@@ -9,6 +9,7 @@ import { fmtNum, fmtSigned, fmtDate, fmtVol, durPart, todayISO, isoOf, weekKey, 
 import { t, dateLocale } from '../lib/i18n.js'
 import { exOr } from '../lib/exercises.js'
 import { loadOfRoutine, loadOfActive, rankOf, MUSCLE_NAME } from '../lib/muscles.js'
+import { lastWorkoutInRoutine } from '../lib/training-log.js'
 import { selectStatsOverview } from '../lib/stats-selectors.js'
 import { FATIGUE_LEVELS } from '../lib/recovery-view.js'
 import { bwSheet, goalSheet, dayOverrideSheet, calendarSheet, startFlow, exerciseDetailSheet } from '../sheets.jsx'
@@ -86,7 +87,7 @@ export default function Home() {
   const todays = doneToday ? S.workouts.filter(w => w.d === todayISO()) : []
   const todaySets = todays.reduce((n, w) => n + setsDone(w), 0)
   const todayVol = todays.reduce((n, w) => n + tonnageOf(w), 0)
-  const lastSame = routine && !doneToday ? [...S.workouts].reverse().find(w => w.routineId === routine.id) : null
+  const lastSame = routine && !doneToday ? lastWorkoutInRoutine(S, routine.id) : null
   const planEx = !S.active && routine && !doneToday ? routine.ex : []
 
   return <div className="page home">
