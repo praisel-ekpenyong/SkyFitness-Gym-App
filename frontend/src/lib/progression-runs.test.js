@@ -2,9 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   readSession, sessionsFor, stallCount, nextPrescription, reduceLoad, DELOAD_AFTER, MIN_TIME_SEC
 } from './progression.js'
-import {
-  createActiveSession, buildCompletedWorkout, addActiveExercise
-} from './active-workout.js'
+import { act } from './active-workout.js'
 import { EXDB } from './exercises.js'
 
 
@@ -25,6 +23,13 @@ const session = ({ d = '2026-01-01', target = REP_TARGET, rows, plan, routineId 
 const state = (workouts, extra = {}) => ({ unit: 'kg', workouts, ...extra })
 const repeat = (n, make) => Array.from({ length: n }, (_, i) => make(i))
 const day = i => `2026-01-${String(i + 1).padStart(2, '0')}`
+/** Begins a workout of the Routine on day `d`, through the Active workout interface. */
+const begin = (S, routineId, d) => {
+  act(S, { type: 'begin', routineId })
+  S.active.d = d
+  return S.active
+}
+const finish = S => act(S, { type: 'finish' }).result.workout
 
 describe('progression streams', () => {
   it('does not let a different Target top feed a double-progression stream', () => {
@@ -49,9 +54,7 @@ describe('progression streams', () => {
       exWeights: { [LIFT]: { w: 100, d: '2026-01-01' } },
     })
 
-    const A = createActiveSession(S, 'light', null, {
-      todayISO: () => '2026-01-02', uid: () => 'a1', now: () => 0,
-    })
+    const A = begin(S, 'light', '2026-01-02')
     expect(A.entries[0].plan.kind).toBe('first')
     expect(A.entries[0].sets.map(s => s.w)).toEqual([40, 40, 40])
     expect(A.entries[0].sets.map(s => s.r)).toEqual([12, 12, 12])
@@ -67,9 +70,7 @@ describe('progression streams', () => {
       }] },
     ], { routines: [routine] })
 
-    const A = createActiveSession(S, 'r1', null, {
-      todayISO: () => '2026-01-02', uid: () => 'a1', now: () => 0,
-    })
+    const A = begin(S, 'r1', '2026-01-02')
     expect(A.entries[0].plan.kind).toBe('first')
     expect(A.entries[0].sets.map(s => s.w)).toEqual([45, 45, 45])
     expect(A.entries[0].sets.map(s => s.r)).toEqual([12, 12, 12])
@@ -290,29 +291,25 @@ describe('bodyweight progression runs', () => {
   const routine = { id: 'bw', name: 'Bodyweight', ex: [BW] }
 
   it('climbs reps from the prescribed goal, not the frozen Target', () => {
-    let S = state([], { routines: [routine] })
+    const S = state([], { routines: [routine] })
     const plans = []
     for (let i = 0; i < 6; i++) {
-      const A = createActiveSession(S, 'bw', null, {
-        todayISO: () => day(i), uid: () => `bw${i}`, now: () => i,
-      })
+      const A = begin(S, 'bw', day(i))
       const e = A.entries[0]
       plans.push(e.plan.reps)
       e.sets.forEach(s => { s.done = true })
-      S = { ...S, workouts: [...S.workouts, buildCompletedWorkout(A, { end: 1, unit: 'kg' })] }
+      finish(S)
     }
     expect(plans).toEqual([undefined, 11, 12, 13, 14, 15])
   })
 
   it('adds a set at the ceiling and keeps that set on the next climb', () => {
-    let S = state([], { routines: [routine] })
+    const S = state([], { routines: [routine] })
     const run = i => {
-      const A = createActiveSession(S, 'bw', null, {
-        todayISO: () => day(i), uid: () => `bw${i}`, now: () => i,
-      })
+      const A = begin(S, 'bw', day(i))
       const e = A.entries[0]
       e.sets.forEach(s => { s.done = true })
-      S = { ...S, workouts: [...S.workouts, buildCompletedWorkout(A, { end: 1, unit: 'kg' })] }
+      finish(S)
       return e
     }
     for (let i = 0; i < 6; i++) run(i)
@@ -440,13 +437,11 @@ describe('Prescription records and the finish boundary', () => {
       }] },
     ], { routines: [routine] })
 
-    const A = createActiveSession(S, 'r1', null, {
-      todayISO: () => '2026-01-02', uid: () => 'a1', now: () => 0,
-    })
+    const A = begin(S, 'r1', '2026-01-02')
     expect(A.entries[0].plan.kind).toBe('hold')
     A.entries[0].sets.forEach(s => { s.done = true })
 
-    const completed = buildCompletedWorkout(A, { end: 1, unit: 'kg' })
+    const completed = finish(S)
     expect(completed.entries[0].plan).toEqual({
       kind: 'hold', weight: 40, reps: 10,
     })
@@ -454,25 +449,20 @@ describe('Prescription records and the finish boundary', () => {
 
   it('the deload run survives the finish boundary', () => {
     const routine = { id: 'r1', name: 'Push', ex: [{ ...DOUBLE }] }
-    let S = state(repeat(5, i => ({
+    const S = state(repeat(5, i => ({
       d: day(i),
       routineId: 'r1',
       entries: [{ id: LIFT, target: REP_TARGET, sets: rowsOf(40, 9) }],
     })), { routines: [routine] })
 
-    const first = createActiveSession(S, 'r1', null, {
-      todayISO: () => '2026-01-10', uid: () => 'a1', now: () => 0,
-    })
+    const first = begin(S, 'r1', '2026-01-10')
     const deload = first.entries[0].plan
     expect(deload).toMatchObject({ kind: 'deload', weight: 35, reps: 10 })
     first.entries[0].sets.forEach(s => { s.done = true })
 
-    const done = buildCompletedWorkout(first, { end: 1, unit: 'kg' })
-    S = { ...S, workouts: [...S.workouts, done] }
+    const done = finish(S)
 
-    const second = createActiveSession(S, 'r1', null, {
-      todayISO: () => '2026-01-11', uid: () => 'a2', now: () => 0,
-    })
+    const second = begin(S, 'r1', '2026-01-11')
     expect(second.entries[0].plan.kind).toBe('hold')
     expect(second.entries[0].plan.weight).toBe(35)
     expect(second.entries[0].plan.reps).toBe(11)
@@ -486,26 +476,21 @@ describe('Prescription records and the finish boundary', () => {
       ex: [{ id: LIFT, mode: 'time', sets: 2, sec: 45, prog: 'time' }],
     }
     const timeTarget = { sets: 2, sec: 45, mode: 'time' }
-    let S = state(repeat(4, i => ({
+    const S = state(repeat(4, i => ({
       d: day(i),
       routineId: 'r1',
       entries: [{ id: LIFT, target: timeTarget, sets: [held(30), held(30)] }],
     })), { routines: [routine] })
 
-    const first = createActiveSession(S, 'r1', null, {
-      todayISO: () => '2026-01-10', uid: () => 'a1', now: () => 0,
-    })
+    const first = begin(S, 'r1', '2026-01-10')
     expect(first.entries[0].plan).toMatchObject({ kind: 'deload', sec: 25 })
     expect(first.entries[0].sets.map(s => s.sec)).toEqual([25, 25])
     first.entries[0].sets.forEach(s => { s.done = true })
 
-    const done = buildCompletedWorkout(first, { end: 1, unit: 'kg' })
+    const done = finish(S)
     expect(done.entries[0].plan).toMatchObject({ kind: 'deload', sec: 25 })
-    S = { ...S, workouts: [...S.workouts, done] }
 
-    const second = createActiveSession(S, 'r1', null, {
-      todayISO: () => '2026-01-11', uid: () => 'a2', now: () => 0,
-    })
+    const second = begin(S, 'r1', '2026-01-11')
     expect(second.entries[0].plan).toMatchObject({ kind: 'up', sec: 30 })
     expect(second.entries[0].sets.map(s => s.sec)).toEqual([30, 30])
   })
@@ -521,7 +506,7 @@ describe('Prescription records and the finish boundary', () => {
     ], { routines: [routine], exWeights: { [LIFT]: { w: 100, d: '2026-01-01' } } })
     S.active = { id: 'a1', routineId: 'r1', entries: [], cur: 0 }
 
-    const entry = addActiveExercise(S, LIFT, { ...DOUBLE, weight: 40 })
+    const { result: entry } = act(S, { type: 'addExercise', exId: LIFT, target: { ...DOUBLE, weight: 40 } })
     expect(entry.plan.kind).toBe('first')
     expect(entry.sets.map(s => s.w)).toEqual([45, 45, 45])
     expect(entry.sets.map(s => s.r)).toEqual([12, 12, 12])
