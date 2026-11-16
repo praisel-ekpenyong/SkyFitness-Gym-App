@@ -1,11 +1,11 @@
-# Runs on every pull request, with no path filter: branch protection on `iron` requires this
+# Runs on every pull request, with no path filter: branch protection on `main` requires this
 # check, so a docs-only PR must run it too or it would wait forever.
 name: Tests
 
 on:
   pull_request:
   push:
-    branches: [iron]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
