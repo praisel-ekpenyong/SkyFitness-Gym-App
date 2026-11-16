@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { completeActiveSession, bestKnownWeight, mergeExWeight } from './active-finish.js'
+import { completeActiveSession } from './active-finish.js'
 
 describe('completeActiveSession routineSync integration', () => {
   it('returns routineSync with diff details when session differs from originating routine', () => {
@@ -169,43 +169,5 @@ describe('completeActiveSession routineSync integration', () => {
     const result = completeActiveSession(S, { now: () => 2000 })
     expect(result).not.toBeNull()
     expect(result.routineSync).toBeNull()
-  })
-})
-
-describe('read-time unit normalization in active-finish (ADR 0019)', () => {
-  it('stamps unit on mergeExWeight and respects monotonic max across units', () => {
-    const S = { unit: 'kg', exWeights: {} }
-    expect(mergeExWeight(S, 'ex1', 100, '2026-11-08')).toBe(true)
-    expect(S.exWeights.ex1).toEqual({ w: 100, d: '2026-11-08', unit: 'kg' })
-
-    S.unit = 'lb'
-    expect(mergeExWeight(S, 'ex1', 210, '2026-11-09')).toBe(false)
-    expect(S.exWeights.ex1.w).toBe(100)
-
-    expect(mergeExWeight(S, 'ex1', 230, '2026-11-09')).toBe(true)
-    expect(S.exWeights.ex1).toEqual({ w: 230, d: '2026-11-09', unit: 'lb' })
-  })
-
-  it('normalizes bestKnownWeight from both history and cached exWeights to active unit', () => {
-    const S = {
-      unit: 'kg',
-      workouts: [
-        {
-          d: '2026-11-01',
-          unit: 'lb',
-          entries: [{ id: 'bench', sets: [{ w: 200, r: 5, done: true }] }],
-        },
-      ],
-      exWeights: {
-        squat: { w: 300, d: '2026-11-01', unit: 'lb' },
-      },
-    }
-
-    expect(bestKnownWeight(S, 'bench')).toBe(90.7)
-    expect(bestKnownWeight(S, 'squat')).toBe(136.1)
-
-    S.unit = 'lb'
-    expect(bestKnownWeight(S, 'bench')).toBe(200)
-    expect(bestKnownWeight(S, 'squat')).toBe(300)
   })
 })

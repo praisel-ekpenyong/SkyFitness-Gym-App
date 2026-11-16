@@ -119,6 +119,33 @@ describe('Restore skips bad Entries', () => {
   })
 })
 
+describe('Restore of an old backup carrying exWeights and stamped prs', () => {
+  it('loads, shows the same Best and Records as a backup without them, and keeps both fields unchanged in storage', async () => {
+    const { restoreFromBackup } = await import('../lib/restore.js')
+    const { best, records } = await import('../lib/training-log.js')
+    const wk = (id, d, w, extra = {}) => ({ id, d, start: 1, end: 2, name: 'Push', entries: [{ id: '0025', sets: [{ w, r: 5, done: true }] }], ...extra })
+    const legacyCache = { '0025': { w: 999, d: '2026-01-01', unit: 'kg' }, gone: { w: 5 } }
+    const clean = { ...cloneDef(), unit: 'kg', workouts: [wk('w1', '2026-01-01', 100), wk('w2', '2026-01-08', 110)] }
+    const old = { ...clean, exWeights: legacyCache, workouts: [wk('w1', '2026-01-01', 100, { prs: ['0025'] }), wk('w2', '2026-01-08', 110, { prs: ['zzz'] })] }
+
+    restoreFromBackup(clean)
+    const S0 = useStore.getState().S
+    const expected = { best: best(S0, '0025'), records: records(S0, S0.workouts[1]) }
+
+    restoreFromBackup(JSON.parse(JSON.stringify(old)))
+    const S = useStore.getState().S
+    expect(best(S, '0025')).toBe(expected.best)
+    expect(best(S, '0025')).toBe(110)
+    expect(records(S, S.workouts[1])).toEqual(expected.records)
+    expect(S.exWeights).toEqual(legacyCache)
+    expect(S.workouts.map(w => w.prs)).toEqual([['0025'], ['zzz']])
+    flush()
+    const persisted = JSON.parse(localStorage.getItem(LOCAL_KEY))
+    expect(persisted.exWeights).toEqual(legacyCache)
+    expect(persisted.workouts.map(w => w.prs)).toEqual([['0025'], ['zzz']])
+  })
+})
+
 describe('stale Day override falls back without badge', () => {
   let root
   let container
@@ -169,5 +196,16 @@ describe('Reset replaces the Profile through the Restore path', () => {
     const defBefore = JSON.stringify(DEF)
     useStore.getState().update(s => { s.unit = 'lb' })
     expect(JSON.stringify(DEF)).toBe(defBefore)
+  })
+})
+
+describe('Normal load of a Profile carrying exWeights and stamped prs', () => {
+  it('keeps both unchanged through normalizeState', async () => {
+    const { normalizeState } = await import('./useStore.js')
+    const legacyCache = { '0025': { w: 999, d: '2026-01-01', unit: 'kg' } }
+    const w = { id: 'w1', d: '2026-01-01', start: 1, end: 2, name: 'Push', prs: ['0025'], entries: [{ id: '0025', sets: [{ w: 100, r: 5, done: true }] }] }
+    const S = normalizeState({ ...cloneDef(), exWeights: legacyCache, workouts: [w] })
+    expect(S.exWeights).toEqual(legacyCache)
+    expect(S.workouts[0].prs).toEqual(['0025'])
   })
 })

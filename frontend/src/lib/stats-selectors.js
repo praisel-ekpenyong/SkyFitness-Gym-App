@@ -3,6 +3,7 @@ import { fatigueOf, strengthOf, fatigueStateOf } from './recovery.js'
 import { MUSCLES, loadOfWorkouts, rankOf, lastTrainedByMuscle } from './muscles.js'
 import { LB_TO_KG } from './bodyweight.js'
 import { e1rmSeries, best1RM } from './onerm.js'
+import { loadRecords } from './training-log.js'
 import {
   displayScale, scaleName, toScale, avgRir,
   effortSummary, effortWeeks, effortHistogram, isHardSet, rirOf, hasEffort, effortOf, HARD_RIR,
@@ -256,15 +257,11 @@ function metricOf(entry, mode, workout = null, targetUnit = null) {
   return Number.isFinite(value) && value > 0 ? round1(value) : 0
 }
 
-function recordIndexOf(workout, exId, rows, mode) {
-  if (mode !== 'reps' || !workout?.prs?.includes?.(exId)) return null
-  let at = null
-  let heaviest = 0
-  rows.forEach((s, i) => {
-    const w = Number(s?.w)
-    if (Number.isFinite(w) && w > heaviest) { heaviest = w; at = i }
-  })
-  return at
+function recordIndexOf(S, workout, exId, rows, mode) {
+  if (mode !== 'reps') return null
+  const rec = loadRecords(S, workout).find(r => r.id === exId)
+  const at = rec?.set ? rows.indexOf(rec.set) : -1
+  return at < 0 ? null : at
 }
 
 export function selectExerciseStats(S, exId, opts = {}) {
@@ -290,7 +287,7 @@ export function selectExerciseStats(S, exId, opts = {}) {
       y: round1(mx),
       sets: rows,
       target: entry?.target || null,
-      record: recordIndexOf(workout, exId, rows, mode),
+      record: recordIndexOf(S, workout, exId, rows, mode),
     })
   }
   const best = points.reduce((m, p) => Math.max(m, p.y), 0)

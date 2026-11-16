@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { fmtVol, isoOf, todayISO, MONTHS } from '../lib/format.js'
-import { tonnageOf } from '../lib/workout-model.js'
+import { tonnage } from '../lib/training-log.js'
 import { t } from '../lib/i18n.js'
 
 export default function Heatmap({ S, onDay }) {
@@ -22,7 +22,7 @@ export default function Heatmap({ S, onDay }) {
   const agg = {}
   for (const w of S.workouts || []) {
     const a = agg[w.d] = agg[w.d] || { n: 0, vol: 0, min: 0 }
-    a.n++; a.vol += tonnageOf(w)
+    a.n++; a.vol += tonnage(S, w)
     const s = Number(w.start)
     const e = Number(w.end ?? w.start)
     const dur = Number.isFinite(s) && Number.isFinite(e) ? Math.max(0, Math.round((e - s) / 60000)) : 0

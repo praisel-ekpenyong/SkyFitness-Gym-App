@@ -5,11 +5,12 @@ import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { exOr } from '../lib/exercises.js'
 import { effectiveRoutine, hasEffectiveOverride } from '../lib/history.js'
-import { lastEntryFor, freestyleConfig, defaultConfig, sessionProgress, modeOf, isBw, isPerSide, sideReps, repStep, workSets, doneWorkSets } from '../lib/workout-model.js'
+import { freestyleConfig, defaultConfig, sessionProgress, modeOf, isBw, isPerSide, sideReps, repStep, workSets, doneWorkSets } from '../lib/workout-model.js'
 import { supersetUnits, unitOf } from '../lib/supersetFlow.js'
 import { setLabel } from '../lib/format.js'
 import { EFFORT, effortOf, stepEffort, capEffort } from '../lib/effort.js'
-import { bestKnownWeight, nextUnitTarget } from '../lib/active-workout.js'
+import { nextUnitTarget } from '../lib/active-workout.js'
+import { best as bestOf, lastSession } from '../lib/training-log.js'
 import { fmtNum, fmtDate, fmtSec, fmtElapsed, todayISO, exCount, DAYN, sentenceCase } from '../lib/format.js'
 import { playSetComplete } from '../lib/sound.js'
 import { t } from '../lib/i18n.js'
@@ -67,8 +68,8 @@ function ExerciseBlock({ entryIdx, compact, isCurrent = true, arrived = false, r
   const mode = modeOf({ ...(entry.target || {}), id: entry.id })
   const cardio = mode === 'cardio'
   const timed = mode === 'time'
-  const last = lastEntryFor(S, entry.id)
-  const best = cardio ? 0 : bestKnownWeight(S, entry.id)
+  const last = lastSession(S, entry.id)
+  const best = cardio ? 0 : bestOf(S, entry.id)
   const plan = entry.plan
   const cfg = { ...(entry.target || {}), id: entry.id }
   const bw = !cardio && isBw(cfg)

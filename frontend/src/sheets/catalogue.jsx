@@ -3,8 +3,8 @@ import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { EXIDX, isCardio, isBodyweightEq, allExercises } from '../lib/exercises.js'
 import { fmtDate, fmtNum, exCount, uid, setLabel, sentenceCase } from '../lib/format.js'
-import { bestKnownWeight } from '../lib/active-workout.js'
-import { lastEntryFor, defaultConfig, modeOf, isBw, isPerSide, sideReps } from '../lib/workout-model.js'
+import { best as bestOf, lastSession } from '../lib/training-log.js'
+import { defaultConfig, modeOf, isBw, isPerSide, sideReps } from '../lib/workout-model.js'
 import * as catalogueWrites from '../lib/catalogue-writes.js'
 import { t, instrFor } from '../lib/i18n.js'
 import { nav } from '../lib/nav.js'
@@ -35,7 +35,7 @@ export function configureCatalogueSheets({ confirmSheet }) {
 function OneRM({ ex }) {
   const st = useStore(s => s.S)
   const best = best1RM(st, ex.id)
-  const [w, setW] = useState(best ? best.w : (st.exWeights[ex.id] || {}).w || 20)
+  const [w, setW] = useState(best ? best.w : bestOf(st, ex.id) || 20)
   const [r, setR] = useState(best ? best.r : 5)
   const est = estimate1RM(w, r)
   if (isBodyweightEq(ex) && !best) return null
@@ -67,8 +67,8 @@ function OneRM({ ex }) {
  */
 export function ExerciseDetail({ ex, close }) {
   const st = useStore(s => s.S)
-  const last = lastEntryFor(st, ex.id)
-  const best = bestKnownWeight(st, ex.id)
+  const last = lastSession(st, ex.id)
+  const best = bestOf(st, ex.id)
   const favs = st.favorites || []
   const isFav = favs.includes(ex.id)
   const isCardioEx = isCardio(ex)

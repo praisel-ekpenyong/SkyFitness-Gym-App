@@ -28,7 +28,6 @@ export const DEF = {
   routines: [],
   week: {},
   dayPlan: {},
-  exWeights: {},
   workouts: [],
   active: null,
   customEx: [],
@@ -62,7 +61,6 @@ export function normalizeState(raw) {
   S.favorites = Array.isArray(raw.favorites) ? raw.favorites : []
   S.week = raw.week && typeof raw.week === 'object' && !Array.isArray(raw.week) ? { ...raw.week } : {}
   S.dayPlan = raw.dayPlan && typeof raw.dayPlan === 'object' && !Array.isArray(raw.dayPlan) ? { ...raw.dayPlan } : {}
-  S.exWeights = raw.exWeights && typeof raw.exWeights === 'object' && !Array.isArray(raw.exWeights) ? { ...raw.exWeights } : {}
   S.reminder = { ...base.reminder, ...(raw.reminder && typeof raw.reminder === 'object' && !Array.isArray(raw.reminder) ? raw.reminder : {}) }
   S.accent = typeof raw.accent === 'string' && Object.hasOwn(ACCENTS, raw.accent) ? raw.accent : base.accent
   const a = raw.active

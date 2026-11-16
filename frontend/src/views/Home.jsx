@@ -2,7 +2,8 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { effectiveRoutine, effectiveRoutineId, hasEffectiveOverride } from '../lib/history.js'
-import { sessionProgress, tonnageOf, setsDone } from '../lib/workout-model.js'
+import { sessionProgress, setsDone } from '../lib/workout-model.js'
+import { tonnage, lastWorkoutInRoutine } from '../lib/training-log.js'
 import { dayStatus } from '../lib/schedule.js'
 import { latestWeighIn, prevWeighIn, deltaTowardGoal } from '../lib/bodyweight.js'
 import { fmtNum, fmtSigned, fmtDate, fmtVol, durPart, todayISO, isoOf, weekKey, DAYS, exCount, exLine, workoutTimestamp } from '../lib/format.js'
@@ -85,8 +86,8 @@ export default function Home() {
 
   const todays = doneToday ? S.workouts.filter(w => w.d === todayISO()) : []
   const todaySets = todays.reduce((n, w) => n + setsDone(w), 0)
-  const todayVol = todays.reduce((n, w) => n + tonnageOf(w), 0)
-  const lastSame = routine && !doneToday ? [...S.workouts].reverse().find(w => w.routineId === routine.id) : null
+  const todayVol = todays.reduce((n, w) => n + tonnage(S, w), 0)
+  const lastSame = routine && !doneToday ? lastWorkoutInRoutine(S, routine.id) : null
   const planEx = !S.active && routine && !doneToday ? routine.ex : []
 
   return <div className="page home">
@@ -132,7 +133,7 @@ export default function Home() {
               {doneToday && !S.active && <div className="home-hero-note">
                 {[...durPart(todays.reduce((n, w) => n + Math.max(0, (w.end || w.start) - w.start), 0)), t('{0} sets', fmtNum(todaySets)), fmtVol(todayVol, S.unit)].join(' · ')}
               </div>}
-              {lastSame && <div className="home-hero-note dim">{t('Last time')} {fmtDate(lastSame.d)} · {fmtVol(tonnageOf(lastSame), S.unit)}</div>}
+              {lastSame && <div className="home-hero-note dim">{t('Last time')} {fmtDate(lastSame.d)} · {fmtVol(tonnage(S, lastSame), S.unit)}</div>}
             </div>
             {heroLoad
               ? <div className="home-hero-map"><BodyMap load={heroLoad} body={S.body} /></div>
