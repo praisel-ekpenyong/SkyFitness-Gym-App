@@ -36,11 +36,11 @@ export default function Plan() {
             const r = S.routines.find(x => x.id === S.week[d])
             const today = d === todayWd
             return <button key={d} className={'wk-row' + (r ? '' : ' off') + (today ? ' today' : '')}
-              aria-label={`${t(DAYN[d])}: ${r ? r.name : t('Rest')}`} aria-current={today ? 'date' : undefined}
+              aria-label={t('{0}: {1}', t(DAYN[d]), r ? r.name : t('Rest'))} aria-current={today ? 'date' : undefined}
               onClick={() => dayAssignSheet(d)}>
               <span className="wk-text">
                 <span className={'wk-name' + (r ? ' d' : '')}>{r ? r.name : t('Rest')}</span>
-                <span className="wk-day">{today ? `${t(DAYN[d])} · ${t('Today')}` : t(DAYN[d])}</span>
+                <span className="wk-day">{today ? t('{0} · {1}', t(DAYN[d]), t('Today')) : t(DAYN[d])}</span>
               </span>
               {r && <span className="wk-meta-c">{exCount(r.ex.length)}</span>}
               <Icon name="chevronRight" className="chev" />
@@ -54,7 +54,7 @@ export default function Plan() {
           <Button size="sm" icon="plus" onClick={addRoutine}>{t('New')}</Button>
         </div>
         <div className="rt-list">{S.routines.map(r => (
-          <button key={r.id} className={'rt-card' + stackClasses(fitName(r.name, NAME_LAYOUTS.card))} aria-label={`${r.name}, ${exCount(r.ex.length)}`} onClick={() => nav('/plan/r/' + r.id)}>
+          <button key={r.id} className={'rt-card' + stackClasses(fitName(r.name, NAME_LAYOUTS.card))} aria-label={t('{0}, {1}', r.name, exCount(r.ex.length))} onClick={() => nav('/plan/r/' + r.id)}>
             <span className="rt-text">
               <span className="rt-name d">{r.name}</span>
               <span className="rt-meta">{exCount(r.ex.length)}</span>

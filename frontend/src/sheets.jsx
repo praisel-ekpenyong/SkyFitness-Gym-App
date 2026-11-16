@@ -94,7 +94,7 @@ function WeightInput({ value, setValue, unit, label }) {
   return <div className="bwstep">
     <button className="bw-pm" onClick={() => by(-1)} aria-label={t('Decrease by {0} {1}', fmtNum(W_STEP), unit)}>{fmtSigned(-W_STEP)}</button>
     <label className="bw-read">
-      <NumberField className="bw-num" value={value} onChange={setValue} onBlur={() => setValue(clampW(value, unit))} aria-label={`${label} (${unit})`} />
+      <NumberField className="bw-num" value={value} onChange={setValue} onBlur={() => setValue(clampW(value, unit))} aria-label={t('{0} ({1})', label, unit)} />
       <span className="u">{unit}</span>
     </label>
     <button className="bw-pm" onClick={() => by(1)} aria-label={t('Increase by {0} {1}', fmtNum(W_STEP), unit)}>{fmtSigned(W_STEP)}</button>
@@ -118,7 +118,7 @@ function BwSheet({ required, onDone, close }) {
   const delEntry = d => update(s => { deleteWeighIn(s, d) })
   return <>
     <h3>{required ? t('Quick check-in') : t('Log body weight')}</h3>
-    <div className="sheet-sub">{required ? t('Asked once a day, before your first workout, so the curve has a point for every training day.') : t('Today') + ', ' + fmtDate(todayISO(), true)}</div>
+    <div className="sheet-sub">{required ? t('Asked once a day, before your first workout, so the curve has a point for every training day.') : t('{0}, {1}', t('Today'), fmtDate(todayISO(), true))}</div>
     <WeightInput value={v} setValue={setV} unit={unit} label={t('Body weight')} />
     <div className="gap16" />
     <Button variant="primary" className={required ? 'go' : undefined} onClick={save}>{required ? t('Save and start workout') : t('Save')}</Button>
@@ -170,7 +170,7 @@ function ImportSummary({ parsed, close }) {
   return <>
     <h3>{parsed.source ? t('Import from {0}', parsed.source) : t('Import history')}</h3>
     <div className="sheet-sub">
-      {parsed.from === parsed.to ? fmtDate(parsed.from, true) : fmtDate(parsed.from, true) + ' – ' + fmtDate(parsed.to, true)}
+      {parsed.from === parsed.to ? fmtDate(parsed.from, true) : t('{0} – {1}', fmtDate(parsed.from, true), fmtDate(parsed.to, true))}
     </div>
 
     <div className="tiles">
@@ -256,7 +256,7 @@ function GoalSheet({ close }) {
       if (!tenth(v)) { toast(t('Enter a valid weight')); return }
       const n = clampW(v, st.unit)
       update(s => { s.targetW = n }); close()
-      const b = latestWeighIn(S()); toast(t('Goal set: {0}', fmtNum(n) + ' ' + st.unit) + (b ? ' (' + t('{0} to go', fmtNum(Math.abs(n - b.w))) + ')' : ''))
+      const b = latestWeighIn(S()); toast(b ? t('Goal set: {0} ({1})', fmtNum(n) + ' ' + st.unit, t('{0} to go', fmtNum(Math.abs(n - b.w)))) : t('Goal set: {0}', fmtNum(n) + ' ' + st.unit))
     }}>{t('Save goal')}</Button>
     {st.targetW && <><div className="gap8" /><Button variant="danger" onClick={() => { update(s => { s.targetW = null }); close(); toast(t('Goal removed')) }}>{t('Remove goal')}</Button></>}
   </>
@@ -476,9 +476,9 @@ export function WorkoutDetail({ w, close }) {
         getA11yLabel={slug => {
           const val = workoutLoad[slug]
           const name = t(MUSCLE_NAME[slug] || slug)
-          if (!val) return `${name}, ${t('not trained')}`
-          const setsText = Number.isInteger(val) ? `${val}.0 effective sets` : `${fmtNum(val)} effective sets`
-          return `${name}, ${setsText}`
+          if (!val) return t('{0}, {1}', name, t('not trained'))
+          const setsText = t('{0} effective sets', Number.isInteger(val) ? `${val}.0` : fmtNum(val))
+          return t('{0}, {1}', name, setsText)
         }}
       />
       <div className="gap12" />
@@ -579,7 +579,7 @@ export function RecapSheet({ start, close }) {
   return <>
     <div className="row between sheet-head">
       <button className="iconbtn" onClick={() => setCur(new Date(y, mo - 1, 1))} aria-label={t('Previous month')}><Icon name="chevronLeft" /></button>
-      <h3>{t(MONTHS_LONG[mo])} {y}{isCurrent ? ' ' + t('so far') : ''}</h3>
+      <h3>{isCurrent ? t('{0} {1} so far', t(MONTHS_LONG[mo]), y) : t('{0} {1}', t(MONTHS_LONG[mo]), y)}</h3>
       <button className="iconbtn" onClick={() => setCur(new Date(y, mo + 1, 1))} aria-label={t('Next month')}><Icon name="chevronRight" /></button>
     </div>
     {viewedEmpty && (
@@ -640,7 +640,7 @@ export function WorkoutRow({ w, onClick }) {
   const glyph = glyphOf((st.routines.find(r => r.id === w.routineId) || {}).emoji)
   const recordCount = loadRecords(st, w).length
   return <div className="item" role="button" tabIndex={0}
-    aria-label={`${w.name}, ${fmtDate(w.d, true)}, ${t('{0} sets', fmtNum(setsDone(w)))}`}
+    aria-label={t('{0}, {1}, {2}', w.name, fmtDate(w.d, true), t('{0} sets', fmtNum(setsDone(w))))}
     onClick={onClick}
     onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick && onClick() } }}>
     <span className="lrow-i"><Icon name={glyph} /></span>
