@@ -237,9 +237,9 @@ export function importFromApp(file, onDone) {
   rd.readAsText(file)
 }
 
-/* ============================ target weight ============================ */
+/* ============================ goal weight ============================ */
 /**
- * Target-weight sheet; saving stores the goal drawn on weight charts.
+ * Goal-weight sheet; saving stores the goal drawn on weight charts.
  *
  * @param {Function} close Closes the sheet.
  */
@@ -248,9 +248,9 @@ function GoalSheet({ close }) {
   const bw = latestWeighIn(st)
   const [v, setV] = useState(st.targetW || (bw ? bw.w : 70))
   return <>
-    <h3>{t('Target weight')}</h3>
+    <h3>{t('Goal weight')}</h3>
     <div className="sheet-sub">{t('Your goal is drawn as a line through the weight charts, and gains/losses are colored by whether they move toward it.')}</div>
-    <WeightInput value={v} setValue={setV} unit={st.unit} label={t('Target weight')} />
+    <WeightInput value={v} setValue={setV} unit={st.unit} label={t('Goal weight')} />
     <div className="gap16" />
     <Button variant="primary" onClick={() => {
       if (!tenth(v)) { toast(t('Enter a valid weight')); return }

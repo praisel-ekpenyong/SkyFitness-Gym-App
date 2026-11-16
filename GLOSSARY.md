@@ -46,8 +46,16 @@ _Avoid_: data migration, unit conversion migration, history rewriting
 A named, ordered list of exercises with targets — the reusable thing you train ("Push Day").
 _Avoid_: plan, template, program, split
 
+**Plan**:
+Your Routines together with the Week schedule — what you intend to train and when. The starter plan and the hypertrophy plan are built-in Plans you can load.
+_Avoid_: program, split; "plan" for a single Routine or a single exercise's Target
+
 **Week schedule**:
 Which routine belongs to each weekday.
+
+**Rest day**:
+A day with no Routine: a weekday left empty in the Week schedule, or a date a Day override declares as rest.
+_Avoid_: off day; plain "rest" (that is the interval between sets)
 
 **Day override (Rescheduled)**:
 A one-off replacement (or declared rest) for what the week schedule says on one specific date. In lifter-facing UI copy and badges, this is presented as "Rescheduled".
@@ -58,8 +66,8 @@ Updating an originating Routine from the final state of an Active workout on the
 _Avoid_: save workout as routine, auto-update plan
 
 **Plan file**:
-The shareable bundle: routines, the week schedule, and the custom exercises those routines use. Never carries workouts, weigh-ins or settings; importing it adds fresh routines, never overwrites yours.
-_Avoid_: calling it "the plan"
+A Plan saved as one shareable file: routines, the week schedule, and the custom exercises those routines use. Never carries workouts, weigh-ins or settings; importing it adds fresh routines, never overwrites yours.
+_Avoid_: calling the file itself "the Plan"
 
 ### Exercises
 
@@ -120,12 +128,16 @@ _Avoid_: plan (for a single exercise)
 The one session currently in progress. At most one exists; it survives closing the app.
 
 **Workout**:
-A finished, dated training session in the Training log: entries and a weigh-in.
+A finished, dated training session in the Training log: entries and a Session body weight.
 _Avoid_: session (fine in prose, never as the noun for the record)
 
 **Training log**:
 Every finished Workout in the Profile, in date order, and the only source of Best, Records, last session, Tonnage, an Entry's result in its Mode, and the Estimated 1RM series. Loads are read in the Profile's unit, and nothing about these readings is remembered outside the log.
 _Avoid_: history cache, remembered weights
+
+**Weekly streak**:
+Consecutive calendar weeks, counting back from this one, that each hold at least one Workout. The current week does not break it until it ends empty.
+_Avoid_: streak alone (a Run is not a streak)
 
 **Entry**:
 One exercise within a routine or a workout; holds its sets.
@@ -172,12 +184,20 @@ A rest the lifter starts by hand, not one that follows a performed set.
 _Avoid_: quick timer, custom timer, on-demand rest
 
 **Weigh-in**:
-The body weight recorded for one specific workout, giving bodyweight-exercise loads their context.
-_Distinct from_: the body-weight log below, and from "bodyweight" meaning a no-load exercise.
+One dated body-weight entry in the Body-weight log; at most one per day.
+_Distinct from_: Session body weight, and from "bodyweight" meaning a no-load exercise.
 
 **Body-weight log**:
-The ongoing series of daily weigh-ins on Home, with a goal weight. One entry per day.
-_Avoid_: bw (on a workout that spelling means the weigh-in)
+The ongoing series of Weigh-ins on Home, read against a Goal weight.
+_Avoid_: bw (on a workout that spelling means the Session body weight)
+
+**Session body weight**:
+The body weight stamped on one Workout, giving bodyweight-exercise loads their context.
+_Avoid_: weigh-in (that is a Body-weight log entry)
+
+**Goal weight**:
+The body weight the lifter is aiming for, drawn as a line on weight charts; changes are coloured by whether they move toward it.
+_Avoid_: target weight (Target means an exercise's prescription)
 
 ### How an exercise is measured
 
@@ -191,7 +211,7 @@ _Avoid_: work timer, set timer
 
 **Bodyweight exercise**:
 An exercise that carries no load of its own, so any entered weight means *added* weight (a belted dip reads "+10 × 12"). A default from the catalogue's equipment, overridable per exercise.
-_Never confuse with_: the weigh-in.
+_Never confuse with_: Session body weight.
 
 **Per-side (unilateral)**:
 Reps are logged as the total across both sides; the split is derived for display, never entered. Targets therefore step by two.
