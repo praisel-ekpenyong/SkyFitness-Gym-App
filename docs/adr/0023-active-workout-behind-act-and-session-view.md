@@ -28,7 +28,7 @@ The Active workout is one module, `lib/active-workout.js`. Its interface has two
 
 The module stays pure over the Profile. Timers and sound are effects: `rest:start`, `rest:stop`, `hold:start`, `hold:stop`, `open-finish`, a notice, `sound:set` and `sound:finish`. One runner in `store/` applies them to `useUI` and sound, and reads `S.restSec` and `S.sound` itself. The runner is the only store code that imports `useUI`. The exception is `open-finish`: the store cannot import the sheets without an import cycle, so `store.act` returns it and the Workout view opens the sheet. The store exposes one `act(command)` in place of its 17 methods.
 
-A hold is started with `startHold`, which returns an opaque ref inside the `hold:start` effect. The timer's callback only sends `completeHold(ref, elapsed)`. A ref whose set is gone is a no-op. `holdRef` and `findHoldRow` become internals.
+A hold is started with `startHold`, which returns an opaque ref inside the `hold:start` effect. The timer's callback only sends `completeHold(ref, elapsed)`. A ref is a no-op once its set is gone or the Entries have shifted: `moveExercise`, `removeExercise` and `replaceExercise` bump a `layout` counter on the Active workout and emit `hold:stop`, and the ref carries the `layout` it started under. A hold is cancelled, not carried to its Entry's new place, because an Entry has no identity of its own and the Workout view blocks those commands during a hold anyway (amended 2026-11-16). `holdRef` and `findHoldRow` become internals.
 
 The views only render and send commands. A sheet decides whether to ask "your logged sets will be lost" from `hasPerformed`, and chooses the finish wording from `finishGate`.
 
