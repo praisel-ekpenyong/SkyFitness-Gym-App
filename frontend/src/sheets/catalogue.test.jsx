@@ -93,7 +93,7 @@ describe('ExerciseDetail sheet favorite starring', () => {
 })
 
 describe('deleteCustomEx cascading deletion', () => {
-  it('removes custom exercise ID from favorites, customEx, routines, and exWeights', async () => {
+  it('removes custom exercise ID from favorites, customEx, and routines, leaving legacy exWeights alone', async () => {
     const customEx = {
       id: 'c123',
       n: 'My Custom Curl',
@@ -139,7 +139,7 @@ describe('deleteCustomEx cascading deletion', () => {
     const state = useStore.getState().S
     expect(state.customEx.find(e => e.id === 'c123')).toBeUndefined()
     expect(state.favorites).toEqual(['0001', '0002'])
-    expect(state.exWeights['c123']).toBeUndefined()
+    expect(state.exWeights).toEqual({ c123: 25, '0001': 50 })
     expect(state.routines[0].ex).toEqual([{ id: '0001', sets: 3, reps: 10 }])
     expect(afterDelete).toHaveBeenCalledTimes(1)
 

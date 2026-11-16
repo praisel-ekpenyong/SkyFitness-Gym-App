@@ -49,6 +49,22 @@ describe('mergeImport defensive guards', () => {
 })
 
 
+describe('mergeImport writes no heaviest-weight cache or Records list', () => {
+  it('adds Workouts without stamping prs or touching exWeights', () => {
+    const cache = { '0025': { w: 20, d: '2026-01-01', unit: 'kg' } }
+    const S = { workouts: [], customEx: [], exWeights: cache }
+    const parsed = { kind: 'workouts', workouts: [{ id: 'iw1', d: '2026-08-11', entries: [{ id: '0025', sets: [{ w: 50, r: 5, done: true }] }] }], customEx: [] }
+    expect(mergeImport(S, parsed)).toEqual({ added: 1, skipped: 0 })
+    expect(S.exWeights).toEqual({ '0025': { w: 20, d: '2026-01-01', unit: 'kg' } })
+    const fresh = {}
+    mergeImport(fresh, parsed)
+    expect('exWeights' in fresh).toBe(false)
+    const csv = parseWorkoutCSV('Date,Exercise,Weight,Reps\n2026-08-08,Bench Press,80,5', { unit: 'kg' })
+    expect('prs' in csv.workouts[0]).toBe(false)
+  })
+})
+
+
 describe('import custom-exercise body-part fallback', () => {
   const byName = parsed => Object.fromEntries(parsed.customEx.map(c => [c.n, c]))
 
