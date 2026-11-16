@@ -4,7 +4,8 @@ import { useUI } from '../store/useUI.js'
 import { EXIDX } from '../lib/exercises.js'
 import { fmtNum, fmtDurParts, fmtDate, todayISO } from '../lib/format.js'
 import { latestWeighIn } from '../lib/bodyweight.js'
-import { setsDone, workSetsDone, sessionProgress, isPerformed, isWarmupRow } from '../lib/workout-model.js'
+import { setsDone, workSetsDone } from '../lib/workout-model.js'
+import { sessionView } from '../lib/active-workout.js'
 import { tonnage } from '../lib/training-log.js'
 import { sessionProgressionItems } from '../lib/progression.js'
 import { playWorkoutComplete } from '../lib/sound.js'
@@ -251,16 +252,15 @@ export function FinishSummary({ w, prs, e1prs = [], routineSync = null, close })
 export function finishWorkout() {
   const A = S().active
   if (!A) return
-  const prog = sessionProgress(A)
+  const { finishGate, progress: prog } = sessionView(A)
   if (!_confirmSheet) throw new Error('session sheets not wired: missing confirmSheet')
-  if (!prog.done) {
-    const warmOnly = (A.entries || []).some(e => (e.sets || []).some(s => isPerformed(s) && isWarmupRow(s)))
-    _confirmSheet(warmOnly
+  if (finishGate === 'empty' || finishGate === 'warmups-only') {
+    _confirmSheet(finishGate === 'warmups-only'
       ? { title: t('Only warm-ups logged so far'), message: t('Only warm-up sets are ticked — finish the workout anyway?'), confirmText: t('Finish anyway'), onConfirm: doFinishWorkout }
       : { title: t('Nothing logged yet'), message: t('You haven’t checked off any sets. Finish the workout anyway?'), confirmText: t('Finish anyway'), onConfirm: doFinishWorkout })
     return
   }
-  if (prog.remaining > 0) {
+  if (finishGate === 'early') {
     const sets = t(prog.remaining === 1 ? '{0} set still unchecked' : '{0} sets still unchecked', fmtNum(prog.remaining))
     _confirmSheet({ title: t('Finish early?'), message: t('{0} of {1} exercises done, {2}. Finish the workout now?', fmtNum(prog.exDone), fmtNum(prog.exTotal), sets), confirmText: t('Finish workout'), onConfirm: doFinishWorkout })
     return
