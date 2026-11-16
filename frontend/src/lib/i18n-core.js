@@ -15,10 +15,15 @@ export const dateLocale = () => 'en-GB'
  */
 export const getVersion = () => version
 
+/**
+ * Translates a source string and fills `{0}`, `{1}`… in one pass, so an argument that holds
+ * lifter text (a Routine's name) lands as typed instead of being substituted again.
+ * @param {string} s English source string.
+ * @param {...*} args Placeholder values.
+ * @returns {string} The filled string.
+ */
 export function t(s, ...args) {
-  let v = dict[s] || s
-  for (let i = 0; i < args.length; i++) v = v.replaceAll('{' + i + '}', args[i])
-  return v
+  return (dict[s] || s).replace(/\{(\d+)\}/g, (m, i) => (i < args.length ? String(args[i]) : m))
 }
 
 export const instrFor = ex => (instr && instr[ex.id]) || ex.st || []
