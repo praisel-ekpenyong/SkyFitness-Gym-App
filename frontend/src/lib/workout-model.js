@@ -2,7 +2,6 @@
 import { isCardio, isBodyweightEq } from './exercises.js'
 import { isWarmupRow, ensurePlainObject } from './warmup.js'
 import { best, lastSession, lastSessionInRoutine } from './training-log.js'
-import { resolveSetWeight, normalizeWeight, round1 } from './units.js'
 
 export { phaseForSet, isWarmupRow, ensurePlainObject } from './warmup.js'
 
@@ -307,40 +306,6 @@ export function metricModeForEntry(entry, fallback = null) {
     if (completedRowsForMode(entry, mode).length) return mode
   }
   return modeForEntry(entry, fallback)
-}
-
-export function bestWeightForEntry(entry = {}, workout = null, targetUnit = null) {
-  const target = entry.target || entry
-  const workRows = workSets(entry)
-  const repsRows = metricRowsForEntry(entry, 'reps')
-  if (!repsRows.length) {
-    return workRows.reduce((best, set) => {
-      if (!isPerformed(set)) return best
-      const weight = targetUnit
-        ? resolveSetWeight(set, entry, workout, targetUnit)
-        : Number(set.w)
-      return Number.isFinite(weight) && weight > best ? weight : best
-    }, 0)
-  }
-
-  let best = 0
-  repsRows.forEach(set => {
-    const weight = targetUnit
-      ? resolveSetWeight(set, entry, workout, targetUnit)
-      : Number(set?.w)
-    if (Number.isFinite(weight) && weight > best) best = weight
-  })
-
-  const parentMode = modeForSet({}, target)
-  const hasNonRepsWorkRow = workRows.some(set => modeForSet(set, target) !== 'reps')
-  const hasWarmupRow = Array.isArray(entry.sets) && entry.sets.some(isWarmupRow)
-  const rawTopWeight = Number(entry.topW)
-  const topWeight = targetUnit && Number.isFinite(rawTopWeight)
-    ? normalizeWeight(rawTopWeight, entry?.unit ?? workout?.unit ?? targetUnit, targetUnit)
-    : rawTopWeight
-  if (parentMode === 'reps' && !hasNonRepsWorkRow && !hasWarmupRow
-    && Number.isFinite(topWeight) && topWeight > best) best = topWeight
-  return targetUnit ? round1(best) : best
 }
 
 export function seedForReplacement(S, exId, routineId, setsCount) {

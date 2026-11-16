@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { modeOf, isTimed, defaultConfig, buildSets, freestyleConfig, bestWeightForEntry, isBw, isPerSide, sideReps, repStep, cascadeWeight, insertWarmupRow, removeRowAt, workSetsDone, isWorkSet, isPerformed, workSets, doneWorkSets, hasWork, isExerciseDone, sessionProgress, seedForReplacement, cleanNote } from './workout-model.js'
+import { modeOf, isTimed, defaultConfig, buildSets, freestyleConfig, isBw, isPerSide, sideReps, repStep, cascadeWeight, insertWarmupRow, removeRowAt, workSetsDone, isWorkSet, isPerformed, workSets, doneWorkSets, hasWork, isExerciseDone, sessionProgress, seedForReplacement, cleanNote } from './workout-model.js'
 import { fmtSec, setLabel, exLine } from './format.js'
 import { effortOf, stepEffort, capEffort } from './effort.js'
 import { pairAdjacent, unpairSuperset, supersetUnits } from './supersetFlow.js'
@@ -460,7 +460,7 @@ describe('buildSets', () => {
   })
 })
 
-describe('workSetsDone and bestWeightForEntry', () => {
+describe('workSetsDone', () => {
   it('recognizes both warm-up schemas in work-set counts', () => {
     const w = {
       unit: 'kg',
@@ -475,15 +475,6 @@ describe('workSetsDone and bestWeightForEntry', () => {
       }],
     }
     expect(workSetsDone(w)).toBe(1)
-  })
-
-  it('uses completed non-warm-up load for timed entries', () => {
-    expect(bestWeightForEntry({ target: { mode: 'time' }, topW: 200, sets: [
-      { phase: 'warmup', sec: 30, w: 30, done: true },
-      { phase: 'work', sec: 60, w: 20, done: true },
-      { phase: 'work', sec: 75, w: 25, done: true },
-      { phase: 'work', sec: 90, w: 40, done: false },
-    ] })).toBe(25)
   })
 })
 
