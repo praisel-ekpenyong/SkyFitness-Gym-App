@@ -4,7 +4,8 @@ import { useUI } from '../store/useUI.js'
 import { EXIDX } from '../lib/exercises.js'
 import { fmtNum, fmtDurParts, fmtDate, todayISO } from '../lib/format.js'
 import { latestWeighIn } from '../lib/bodyweight.js'
-import { setsDone, workSetsDone, sessionProgress, isPerformed, isWarmupRow, tonnageOf } from '../lib/workout-model.js'
+import { setsDone, workSetsDone, sessionProgress, isPerformed, isWarmupRow } from '../lib/workout-model.js'
+import { tonnage } from '../lib/training-log.js'
 import { sessionProgressionItems } from '../lib/progression.js'
 import { playWorkoutComplete } from '../lib/sound.js'
 import { t } from '../lib/i18n.js'
@@ -160,7 +161,7 @@ export function FinishSummary({ w, prs, e1prs = [], routineSync = null, close })
       <div className="tile"><div className="l">{t('Duration')}</div><div className="v">
         {fmtDurParts(w.end - w.start).map(([n, u], i) => <Fragment key={i}>{i > 0 && ' '}{n}<span className="u">{u}</span></Fragment>)}
       </div></div>
-      <div className="tile"><div className="l">{t('Volume')}</div><div className="v">{fmtNum(tonnageOf(w))}<span className="u"> {st.unit}</span></div></div>
+      <div className="tile"><div className="l">{t('Volume')}</div><div className="v">{fmtNum(tonnage(st, w))}<span className="u"> {st.unit}</span></div></div>
       <div className="tile"><div className="l">{t('Sets')}</div><div className="v">{fmtNum(workSetsDone(w))}</div>
         {warmUps > 0 && <div className="s">{t(warmUps === 1 ? '{0} warm-up' : '{0} warm-ups', fmtNum(warmUps))}</div>}</div>
       <div className="tile"><div className="l">{t('Records')}</div><div className="v">{fmtNum(prs.length)}</div></div>
