@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { tonnageOf } from './workout-model.js'
+import { tonnage } from './training-log.js'
 import {
-  bestKnownWeight, heaviestSetWeight, heaviestForEntry, mergeExWeight,
   createActiveSession, completeActiveSession,
   buildCompletedWorkout, addActiveExercise, removeActiveExercise,
   replaceActiveExercise, moveActiveExercise, buildActiveEntry,
@@ -18,53 +17,6 @@ const blankProfile = () => ({
 })
 
 describe('active-workout lifecycle seam', () => {
-  it('bestKnownWeight merges history best and exWeights mirror', () => {
-    const S = {
-      workouts: [
-        { entries: [{ id: 'lift', sets: [{ w: 80, r: 5, done: true }] }] },
-        { entries: [{ id: 'lift', sets: [{ w: 90, r: 5, done: true }] }] },
-      ],
-      exWeights: { lift: { w: 95, d: '2026-08-10' } }
-    }
-    expect(bestKnownWeight(S, 'lift')).toBe(95)
-    expect(bestKnownWeight({ workouts: S.workouts, exWeights: {} }, 'lift')).toBe(90)
-  })
-
-  it('bestKnownWeight never promotes a warm-up or an unperformed set (GLOSSARY.md: work sets only)', () => {
-    expect(bestKnownWeight({ workouts: [{ entries: [{ id: 'lift', topW: 120, sets: [
-      { phase: 'warmup', done: true, w: 120 },
-      { phase: 'work', done: true, w: 80 },
-      { phase: 'work', done: false, w: 100 },
-    ] }] }] }, 'lift')).toBe(80)
-    expect(bestKnownWeight({ workouts: [{ entries: [{ id: 'lift', sets: [
-      { phase: 'warmup', done: true, w: 120 },
-    ] }] }] }, 'lift')).toBe(0)
-  })
-
-  it('heaviestSetWeight excludes warm-ups and unticked', () => {
-    const entry = {
-      sets: [
-        { w: 100, r: 5, done: true, phase: 'warmup' },
-        { w: 60, r: 5, done: false },
-        { w: 80, r: 5, done: true },
-      ]
-    }
-    expect(heaviestSetWeight(entry)).toBe(80)
-    expect(heaviestForEntry({ ...entry, topW: 85 })).toBe(85)
-    expect(heaviestForEntry({ ...entry, topW: 75 })).toBe(80)
-  })
-
-  it('mergeExWeight monotonic max only, date is weight date', () => {
-    const S = { exWeights: { ex1: { w: 80, d: '2026-08-01' } } }
-    expect(mergeExWeight(S, 'ex1', 75, '2026-08-10')).toBe(false)
-    expect(S.exWeights.ex1.w).toBe(80)
-    expect(mergeExWeight(S, 'ex1', 85, '2026-08-10')).toBe(true)
-    expect(S.exWeights.ex1).toEqual({ w: 85, d: '2026-08-10', unit: 'kg' })
-    const S2 = { exWeights: { ex1: { w: 100, d: '2026-08-10' } } }
-    expect(mergeExWeight(S2, 'ex1', 90, '2026-08-12')).toBe(false)
-    expect(S2.exWeights.ex1.w).toBe(100)
-  })
-
   it('createActiveSession freezes target and builds prescription sets', () => {
     const S = blankProfile()
     S.routines = [{ id: 'r1', name: 'Push', ex: [{ id: '0025', sets: 3, reps: 8, weight: 50 }] }]
@@ -312,12 +264,11 @@ describe('active-workout lifecycle seam', () => {
         { id: 'empty', sets: [{ done: false, w: 0, r: 0 }] }
       ],
     }
-    const completed = buildCompletedWorkout(active, { end: 2000, prs: ['0025'] })
+    const completed = buildCompletedWorkout(active, { end: 2000 })
     expect(completed).toEqual({
       id: 'active-1', d: '2026-08-08', start: 1000, end: 2000, routineId: 'routine-1', name: 'Push', bw: 80,
       unit: 'kg',
       entries: [{ id: '0025', sets: [{ done: true, w: 60, r: 8 }], topW: 60, target: { sets: 1, reps: 8 } }],
-      prs: ['0025']
     })
   })
 
@@ -360,11 +311,11 @@ describe('active-workout lifecycle seam', () => {
     expect(S.active).toBeNull()
   })
 
-  it('completeActiveSession builds workout, detects PRs, merges exWeights and clears active', () => {
+  it('completeActiveSession builds workout, detects Records (a first session is none), writes no Records list or heaviest-weight cache and clears active', () => {
     const S = {
       unit: 'kg',
       workouts: [{ d: '2026-08-10', start: 1, entries: [{ id: 'ex1', sets: [{ w: 80, r: 5, done: true }] }] }],
-      exWeights: {},
+      exWeights: { old: { w: 5, d: '2026-01-01' } },
       active: {
         id: 'active-1', d: '2026-08-24', start: 1000, routineId: null, name: 'Freestyle', bw: null, unit: 'kg', cur: 0,
         entries: [
@@ -374,14 +325,14 @@ describe('active-workout lifecycle seam', () => {
       }
     }
     const result = completeActiveSession(S, { now: () => 2000 })
-    expect(result.prs).toContain('ex1')
+    expect(result.prs).toEqual(['ex1'])
     expect(S.workouts).toHaveLength(2)
     expect(S.active).toBeNull()
     expect(result.workout.unit).toBe('kg')
-    expect(S.exWeights.ex1).toEqual({ w: 90, d: '2026-08-24', unit: 'kg' })
-    expect(S.exWeights.ex2).toEqual({ w: 40, d: '2026-08-24', unit: 'kg' })
+    expect(S.exWeights).toEqual({ old: { w: 5, d: '2026-01-01' } })
+    expect('prs' in result.workout).toBe(false)
     expect(result.workout.vol).toBeUndefined()
-    expect(tonnageOf(result.workout)).toBe(90 * 5 + 40 * 10)
+    expect(tonnage({ unit: 'kg' }, result.workout)).toBe(90 * 5 + 40 * 10)
   })
 
   it('replaceActiveExercise replaces entry in-place, clamps cur, preserves surrounding entries, and returns new entry', () => {

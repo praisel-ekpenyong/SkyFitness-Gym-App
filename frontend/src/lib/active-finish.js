@@ -1,68 +1,8 @@
-import { bestWeightForEntry, doneWorkSets, isPerformed } from './workout-model.js'
-import { is1RMRecord } from './onerm.js'
+import { isPerformed } from './workout-model.js'
+import { loadRecords, e1rmRecords } from './training-log.js'
 import { EXIDX } from './exercises.js'
 import { exerciseMuscleSnapshot } from './muscles.js'
 import { diffRoutineWithSession } from './routine-sync.js'
-import { normalizeWeight, round1 } from './units.js'
-
-function bestLoggedWeight(S, exId) {
-  let best = 0
-  const targetUnit = S?.unit || 'kg'
-  for (const w of S?.workouts || []) {
-    for (const e of w?.entries || []) {
-      if (e?.id === exId) {
-        const cur = bestWeightForEntry(e, w, targetUnit)
-        if (cur > best) best = cur
-      }
-    }
-  }
-  return best
-}
-
-export function bestKnownWeight(S, exId) {
-  if (!S || !exId) return 0
-  const targetUnit = S?.unit || 'kg'
-  const best = bestLoggedWeight(S, exId)
-  const cached = S.exWeights?.[exId]
-  if (cached && typeof cached.w === 'number') {
-    const cur = normalizeWeight(cached.w, cached.unit || targetUnit, targetUnit)
-    if (cur > best) return cur
-  }
-  return best
-}
-
-export function heaviestSetWeight(entry) {
-  let mx = 0
-  for (const s of doneWorkSets(entry)) {
-    const w = Number(s.w)
-    if (Number.isFinite(w) && w > mx) mx = w
-  }
-  return mx
-}
-
-export function heaviestForEntry(entry) {
-  const base = heaviestSetWeight(entry)
-  const top = Number(entry?.topW)
-  if (Number.isFinite(top) && top > base) return top
-  return base
-}
-
-export function mergeExWeight(S, exId, weight, dateISO) {
-  const w = Number(weight)
-  if (!Number.isFinite(w) || w <= 0) return false
-  if (!exId) return false
-  if (!S.exWeights) S.exWeights = {}
-  const targetUnit = S?.unit || 'kg'
-  const cur = S.exWeights[exId]
-  const curNormalized = cur && typeof cur.w === 'number'
-    ? normalizeWeight(cur.w, cur.unit || targetUnit, targetUnit)
-    : 0
-  if (!cur || w > curNormalized) {
-    S.exWeights[exId] = { w: round1(w), d: dateISO, unit: targetUnit }
-    return true
-  }
-  return false
-}
 
 function planRecord(plan) {
   if (!plan || typeof plan !== 'object') return null
@@ -73,7 +13,7 @@ function planRecord(plan) {
   return out
 }
 
-export function buildCompletedWorkout(active, { end = Date.now(), prs = [], unit = 'kg', snapshotFor } = {}) {
+export function buildCompletedWorkout(active, { end = Date.now(), unit = 'kg', snapshotFor } = {}) {
   const entries = (active?.entries || []).map(entry => {
     const completed = {
       id: entry.id,
@@ -104,7 +44,6 @@ export function buildCompletedWorkout(active, { end = Date.now(), prs = [], unit
     bw: active.bw,
     unit: active.unit || unit,
     entries,
-    prs,
   }
 }
 
@@ -112,19 +51,6 @@ export function completeActiveSession(S, opts = {}) {
   const _now = opts.now || Date.now
   const A = S.active
   if (!A) return null
-  const prs = []
-  const e1prs = []
-
-  for (const e of A.entries) {
-    const mxSets = heaviestSetWeight(e)
-    if (mxSets > 0) {
-      const bestHistory = bestLoggedWeight(S, e.id)
-      if (mxSets > bestHistory) prs.push(e.id)
-    }
-    const rec = is1RMRecord(S, e.id, e)
-    if (rec && !prs.includes(e.id)) e1prs.push({ id: e.id, ...rec })
-  }
-
   let routineSync = null
   if (A.routineId && Array.isArray(S.routines)) {
     const routine = S.routines.find(r => r.id === A.routineId)
@@ -142,15 +68,12 @@ export function completeActiveSession(S, opts = {}) {
 
   const w = buildCompletedWorkout(A, {
     end: _now(),
-    prs,
     unit: A.unit || S?.unit || 'kg',
     snapshotFor: en => (EXIDX[en.id]?.custom ? exerciseMuscleSnapshot(EXIDX[en.id]) : null),
   })
 
-  for (const e of w.entries) {
-    const mx = heaviestForEntry(e)
-    if (mx > 0) mergeExWeight(S, e.id, mx, w.d)
-  }
+  const prs = loadRecords(S, w).map(r => r.id)
+  const e1prs = e1rmRecords(S, w)
 
   S.workouts = [...(S.workouts || []), w]
   S.workouts.sort((a, b) => (a.d < b.d ? -1 : a.d > b.d ? 1 : a.start - b.start))

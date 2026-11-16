@@ -62,13 +62,13 @@ describe('deleteCustomEx — the delete cascade', () => {
     expect(second.muscleSnapshot).toEqual({ n: 'keep me' })
   })
 
-  it('sweeps the exercise out of customEx, each routine, exWeights and favorites', () => {
+  it('sweeps the exercise out of customEx, each routine and favorites, and leaves the legacy exWeights alone', () => {
     const S = baseState()
     deleteCustomEx(S, custom())
 
     expect(S.customEx.map(x => x.id)).toEqual(['ex-row'])
     expect(S.routines[0].ex.map(e => e.id)).toEqual(['0025'])
-    expect(Object.keys(S.exWeights)).toEqual(['0025'])
+    expect(Object.keys(S.exWeights)).toEqual(['ex-fly', '0025'])
     expect(S.favorites).toEqual(['0025'])
   })
 

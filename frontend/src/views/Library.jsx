@@ -3,7 +3,7 @@ import { useStore } from '../store/useStore.js'
 import { EXDB } from '../lib/exercises.js'
 import { FILTER_MUSCLES, MUSCLE_NAME } from '../lib/muscles.js'
 import { queryCatalogue } from '../lib/catalogue-query.js'
-import { bestWeightForEntry } from '../lib/workout-model.js'
+import { best as bestOf } from '../lib/training-log.js'
 import { fmtNum, sentenceCase } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
 import { toggleFavorite } from '../lib/catalogue-writes.js'
@@ -33,18 +33,6 @@ export default function Library() {
     searchAttribution: !isFavFilter,
     ownFirst: true,
   }), [S.customEx, S.favorites, S.routines, S.workouts, scope, q, eq])
-  const bestMap = useMemo(() => {
-    const m = new Map()
-    for (const w of S.workouts || []) {
-      for (const e of w.entries || []) {
-        const cur = m.get(e.id) || 0
-        const best = bestWeightForEntry(e)
-        if (best > cur) m.set(e.id, best)
-      }
-    }
-    return m
-  }, [S.workouts])
-
   return <div className="page">
     <div className="hdr"><div><h1>{t('Exercises')}</h1><div className="sub">{t('{0} exercises with animations', fmtNum(EXDB.length))}</div></div></div>
     <SearchField
@@ -72,7 +60,7 @@ export default function Library() {
       </div>
       {rows.slice(0, shown).map(row => {
         const e = row.exercise
-        const best = bestMap.get(e.id) || 0
+        const best = bestOf(S, e.id)
         const primary = row.primaryMuscle
         const primaryLabel = (primary && MUSCLE_NAME[primary]) || e.tg || e.bp
         const secondaryMuscle = row.secondaryMatch

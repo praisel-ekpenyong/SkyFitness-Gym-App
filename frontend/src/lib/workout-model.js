@@ -1,7 +1,7 @@
 
 import { isCardio, isBodyweightEq } from './exercises.js'
 import { isWarmupRow, ensurePlainObject } from './warmup.js'
-import { bestKnownWeight } from './active-finish.js'
+import { best, lastSession, lastSessionInRoutine } from './training-log.js'
 import { resolveSetWeight, normalizeWeight, round1 } from './units.js'
 
 export { phaseForSet, isWarmupRow, ensurePlainObject } from './warmup.js'
@@ -155,7 +155,7 @@ export function defaultConfig(id, mode) {
  * @returns {Object} Copy of cfg overlaid with the last target, keeping cfg.id and at least one set.
  */
 export function freestyleConfig(S, cfg) {
-  const last = lastEntryFor(S, cfg.id)
+  const last = lastSession(S, cfg.id)
   if (!last) return { ...cfg }
   return {
     ...cfg,
@@ -167,7 +167,7 @@ export function freestyleConfig(S, cfg) {
 
 export function buildSets(S, cfg, options = {}) {
   const routineId = options.routineId || null
-  const last = routineId ? lastEntryForRoutine(S, cfg.id, routineId) : lastEntryFor(S, cfg.id)
+  const last = lastSessionInRoutine(S, cfg.id, routineId)
   const n = Math.max(1, cfg.sets || 1)
   const mode = modeOf(cfg)
   const preferLast = !!options.preferLast
@@ -192,11 +192,11 @@ export function buildSets(S, cfg, options = {}) {
     }
     return sets
   }
-  const conf = useExWeights ? S?.exWeights?.[cfg.id] : null
+  const bestWeight = useExWeights ? best(S, cfg.id) : 0
   for (let i = 0; i < n; i++) {
     const prev = prevAt(i)
     const usable = prev && prev.r > 0 ? prev : null
-    const w = preferLast && usable ? usable.w : (conf && conf.w > 0 ? conf.w : (usable ? usable.w : cfg.weight))
+    const w = preferLast && usable ? usable.w : (bestWeight > 0 ? bestWeight : (usable ? usable.w : cfg.weight))
     const r = seedWeightOnly ? cfg.reps : (usable ? usable.r : cfg.reps)
     const row = makeRow('reps', { ...cfg, reps: r, weight: w }, { prev: null })
     sets.push(row)
@@ -213,15 +213,6 @@ export const workSets = entry => (Array.isArray(entry?.sets) ? entry.sets : []).
 export const doneWorkSets = entry => workSets(entry).filter(isPerformed)
 
 export const hasWorkSet = entry => doneWorkSets(entry).length > 0
-
-export function tonnageOf(workout, targetUnit = null) {
-  let total = 0
-  ;(workout?.entries || []).forEach(entry => doneWorkSets(entry).forEach(set => {
-    const load = targetUnit ? resolveSetWeight(set, entry, workout, targetUnit) : (set.w || 0)
-    total += load * (set.r || 0)
-  }))
-  return targetUnit ? round1(total) : total
-}
 
 /**
  * Count every completed set in a finished workout.
@@ -318,28 +309,6 @@ export function metricModeForEntry(entry, fallback = null) {
   return modeForEntry(entry, fallback)
 }
 
-const lastEntryWalk = (S, exId, match) => {
-  const workouts = S?.workouts || []
-  for (let i = workouts.length - 1; i >= 0; i--) {
-    const w = workouts[i]
-    if (!match(w)) continue
-    const en = (w.entries || []).find(e => e.id === exId)
-    if (!en?.sets) continue
-    const workDone = doneWorkSets(en)
-    if (workDone.length) return { d: w.d, sets: workDone, target: en.target || null }
-  }
-  return null
-}
-
-export function lastEntryFor(S, exId) {
-  return lastEntryWalk(S, exId, () => true)
-}
-
-export function lastEntryForRoutine(S, exId, routineId) {
-  if (!routineId) return lastEntryFor(S, exId)
-  return lastEntryWalk(S, exId, w => w?.routineId === routineId)
-}
-
 export function bestWeightForEntry(entry = {}, workout = null, targetUnit = null) {
   const target = entry.target || entry
   const workRows = workSets(entry)
@@ -376,8 +345,8 @@ export function bestWeightForEntry(entry = {}, workout = null, targetUnit = null
 
 export function seedForReplacement(S, exId, routineId, setsCount) {
   const base = defaultConfig(exId)
-  const last = lastEntryForRoutine(S, exId, routineId) || lastEntryFor(S, exId)
-  const bestWeight = bestKnownWeight(S, exId)
+  const last = lastSessionInRoutine(S, exId, routineId) || lastSession(S, exId)
+  const bestWeight = best(S, exId)
   return {
     ...base,
     ...(last?.target || {}),

@@ -41,7 +41,6 @@ describe('RecapSheet', () => {
           start: 1000,
           end: 1000 + 40 * 60000,
           entries: [{ id: '0025', sets: [{ w: 100, r: 5, done: true }] }],
-          prs: ['0025'],
         },
         {
           id: 'w-feb',
@@ -49,7 +48,6 @@ describe('RecapSheet', () => {
           start: 2000,
           end: 2000 + 50 * 60000,
           entries: [{ id: '0025', sets: [{ w: 110, r: 5, done: true }] }],
-          prs: ['0025'],
         },
       ]
     })
@@ -76,7 +74,7 @@ describe('RecapSheet', () => {
 
     expect([...container.querySelectorAll('h4.sec')].map(h => h.textContent)).toContain('Records')
     expect(container.textContent).not.toMatch(/\bPRs?\b|personal record/i)
-    expect(container.textContent).toContain('Estimated 1RM records')
+    expect(container.textContent).not.toContain('Estimated 1RM records')
 
     const prevBtn = container.querySelector('button[aria-label="Previous month"]')
     expect(prevBtn).toBeTruthy()
@@ -278,22 +276,40 @@ describe('weigh-in', () => {
 })
 
 describe('Record badges', () => {
-  const recordWorkout = prs => ({
-    id: 'w-rec', name: 'Push Day', d: '2026-03-01', start: 1000, end: 4000, prs,
-    entries: [{ id: '0025', sets: [{ w: 100, r: 5, done: true }] }, { id: '0047', sets: [{ w: 60, r: 8, done: true }] }],
+  const recordWorkout = (w47 = 60) => ({
+    id: 'w-rec', name: 'Push Day', d: '2026-03-01', start: 1000, end: 4000,
+    entries: [{ id: '0025', sets: [{ w: 100, r: 5, done: true }] }, { id: '0047', sets: [{ w: w47, r: 8, done: true }] }],
   })
+  const earlier = {
+    id: 'w-old', name: 'Push Day', d: '2026-02-01', start: 500, end: 900,
+    entries: [{ id: '0025', sets: [{ w: 90, r: 5, done: true }] }, { id: '0047', sets: [{ w: 60, r: 8, done: true }] }],
+  }
+  const logged = w => useStore.getState().update(s => { s.workouts = [earlier, w] })
 
   it('names a Record on the Workout detail sheet, never PR', async () => {
-    await act(async () => { workoutDetailSheet(recordWorkout(['0025'])) })
+    const w = recordWorkout()
+    logged(w)
+    await act(async () => { workoutDetailSheet(w) })
     const sheet = useUI.getState().sheets.at(-1)
     await act(async () => { root.render(sheet.render(vi.fn())) })
     expect([...container.querySelectorAll('.pr')].map(b => b.textContent)).toEqual(['Record'])
   })
 
+  it('shows no Record on the first session of an exercise', async () => {
+    const w = recordWorkout()
+    useStore.getState().update(s => { s.workouts = [w] })
+    await act(async () => { root.render(<WorkoutRow w={w} onClick={vi.fn()} />) })
+    expect(container.querySelector('.pr')).toBeNull()
+  })
+
   it('counts Records on a Workout row: 1 record, 2 records', async () => {
-    await act(async () => { root.render(<WorkoutRow w={recordWorkout(['0025'])} onClick={vi.fn()} />) })
+    const one = recordWorkout()
+    logged(one)
+    await act(async () => { root.render(<WorkoutRow w={one} onClick={vi.fn()} />) })
     expect(container.querySelector('.pr')?.textContent).toBe('1 record')
-    await act(async () => { root.render(<WorkoutRow w={recordWorkout(['0025', '0047'])} onClick={vi.fn()} />) })
+    const two = recordWorkout(65)
+    logged(two)
+    await act(async () => { root.render(<WorkoutRow w={two} onClick={vi.fn()} />) })
     expect(container.querySelector('.pr')?.textContent).toBe('2 records')
   })
 })

@@ -29,3 +29,5 @@ the only automatic move to the next exercise, and only loaded Entries had it (de
 - One fewer modal per Entry; bodyweight, timed, cardio and loaded Entries end the same way.
 - `topW` is legacy and read-only. Workouts saved before this ADR keep it, and `heaviestForEntry` and
   `bestWeightForEntry` still read it, so their bests read as before. History stays immutable.
+
+2026-11 amendment: the finish merge (`heaviestForEntry` → `mergeExWeight`) is removed, and `exWeights` is no longer written. See ADR 0021.

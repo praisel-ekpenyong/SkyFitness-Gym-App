@@ -1,7 +1,7 @@
 import { best1RM } from './onerm.js'
 import { STRENGTH_FULL_MS, STRENGTH_HALF_LIFE_MS, STRENGTH_FLOOR, halfLifeDecay } from './recovery.js'
 import { muscleWeightsOf } from './muscles.js'
-import { lastWorkSetAt } from './exercise-progress.js'
+import { latestWorkSetAt } from './training-log.js'
 import { EXIDX } from './exercises.js'
 
 const round1 = value => Math.round(value * 10) / 10
@@ -28,37 +28,6 @@ function exerciseName(entry) {
   return entry && typeof entry === 'object' && entry.n ? entry.n : null
 }
 
-function firstEntryWithId(S, id) {
-  for (const workout of S?.workouts || []) {
-    const entry = (workout.entries || []).find(e => e.id === id)
-    if (entry) return entry
-  }
-  return null
-}
-
-export function strengthExerciseRows(S, now) {
-  const workouts = S?.workouts || []
-  const ids = [...new Set(workouts.flatMap(w => (w.entries || []).map(e => e.id)))]
-  const rows = []
-  for (const id of ids) {
-    const best = best1RM(S, id)
-    if (!best) continue
-    const entry = firstEntryWithId(S, id)
-    const lastAt = lastWorkSetAt(S?.workouts, id)
-    const decay = lastAt == null ? STRENGTH_FLOOR : strengthFromAge(Number(now) - lastAt)
-    rows.push({
-      id,
-      name: exerciseName(entry) || id,
-      est: best.est,
-      estDate: best.d,
-      primary: primaryMuscleOf(entry) ? primaryMuscleOf(entry).slug : null,
-      decay,
-      current: round1(best.est * decay),
-    })
-  }
-  return rows.sort((a, b) => b.current - a.current || String(a.name).localeCompare(String(b.name)))
-}
-
 export function strengthExerciseRowsForMuscle(S, now, slug) {
   const workouts = S?.workouts || []
   const seen = new Map()
@@ -70,7 +39,7 @@ export function strengthExerciseRowsForMuscle(S, now, slug) {
       if (!weight) continue
       const best = best1RM(S, entry.id)
       if (!best) continue
-      const lastAt = lastWorkSetAt(S?.workouts, entry.id)
+      const lastAt = latestWorkSetAt(S, entry.id)
       const decay = lastAt == null ? STRENGTH_FLOOR : strengthFromAge(Number(now) - lastAt)
       const primary = primaryMuscleOf(entry)
       seen.set(entry.id, {

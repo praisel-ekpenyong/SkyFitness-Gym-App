@@ -30,12 +30,13 @@ describe('monthRecap', () => {
         prs: ['bench'],
       }),
     ]
-    const feb = monthRecap(workouts, 'kg', '2026-02')
+    const feb = monthRecap({ unit: 'kg', workouts }, '2026-02')
     expect(feb.workouts).toBe(2)
     expect(feb.sets).toBe(3)
     expect(feb.vol).toBe(100 * 5 + 100 * 5 + 120 * 3)
     expect(feb.durationMs).toBe((460000 - 1000) + 30 * 60000)
-    expect(feb.prs).toEqual(['bench'])
+    expect(feb.prs).toEqual([])
+    expect(monthRecap({ unit: 'kg', workouts }, '2026-03').prs).toEqual(['bench'])
     expect(feb.prev.workouts).toBe(0)
     expect(feb.deltas.workouts).toBe(2)
     expect(feb.deltas.vol).toBe(feb.vol)
@@ -47,7 +48,7 @@ describe('monthRecap', () => {
       mkWorkout({ d: '2026-01-20', start: 2000, end: 62000, entries: [mkEntry('bench', [s(100, 5)])] }),
       mkWorkout({ d: '2026-02-10', start: 3000, end: 63000, entries: [mkEntry('bench', [s(100, 10)])] }),
     ]
-    const feb = monthRecap(workouts, 'kg', '2026-02')
+    const feb = monthRecap({ unit: 'kg', workouts }, '2026-02')
     expect(feb.workouts).toBe(1)
     expect(feb.prev.workouts).toBe(2)
     expect(feb.deltas.workouts).toBeCloseTo(-50)
@@ -58,7 +59,7 @@ describe('monthRecap', () => {
     const workouts = [
       mkWorkout({ d: '2026-02-10', start: 1000, end: 61000, entries: [mkEntry('bench', [s(100, 5)])] }),
     ]
-    const mar = monthRecap(workouts, 'kg', '2026-03')
+    const mar = monthRecap({ unit: 'kg', workouts }, '2026-03')
     expect(mar.workouts).toBe(0)
     expect(mar.vol).toBe(0)
     expect(mar.sets).toBe(0)
@@ -76,7 +77,7 @@ describe('monthRecap', () => {
     const workouts = [
       mkWorkout({ d: '2026-03-10', start: 1000, end: 1000 + 10 * 60000, entries: [mkEntry('bench', [s(80, 5)])] }),
     ]
-    const mar = monthRecap(workouts, 'kg', '2026-03')
+    const mar = monthRecap({ unit: 'kg', workouts }, '2026-03')
     expect(mar.workouts).toBe(1)
     expect(mar.prev.workouts).toBe(0)
     expect(mar.deltas.workouts).toBe(1)
@@ -94,57 +95,9 @@ describe('monthRecap', () => {
         ])],
       }),
     ]
-    const feb = monthRecap(workouts, 'kg', '2026-02')
+    const feb = monthRecap({ unit: 'kg', workouts }, '2026-02')
     expect(feb.vol).toBe(500)
     expect(feb.sets).toBe(1)
-  })
-
-  it('e1RM attribution respects workout order across months', () => {
-    const workouts = [
-      mkWorkout({ d: '2026-01-15', start: 1000, entries: [mkEntry('bench', [s(80, 5)])] }),
-      mkWorkout({ d: '2026-02-02', start: 2000, entries: [mkEntry('bench', [s(90, 5)])] }),
-      mkWorkout({ d: '2026-02-10', start: 3000, entries: [mkEntry('bench', [s(85, 5)])] }),
-      mkWorkout({ d: '2026-03-01', start: 4000, entries: [mkEntry('bench', [s(95, 5)])] }),
-    ]
-    const jan = monthRecap(workouts, 'kg', '2026-01')
-    const feb = monthRecap(workouts, 'kg', '2026-02')
-    const mar = monthRecap(workouts, 'kg', '2026-03')
-
-    expect(jan.e1prs.length).toBe(1)
-    expect(jan.e1prs[0].id).toBe('bench')
-    expect(jan.e1prs[0].est).toBeCloseTo(93.3, 1)
-
-    expect(feb.e1prs.length).toBe(1)
-    expect(feb.e1prs[0].w).toBe(90)
-    expect(feb.e1prs[0].r).toBe(5)
-
-    expect(mar.e1prs.length).toBe(1)
-    expect(mar.e1prs[0].w).toBe(95)
-
-    expect(jan.e1prs.some(p => p.w === 90)).toBe(false)
-    expect(feb.e1prs.some(p => p.w === 80)).toBe(false)
-  })
-
-  it('respects local date d not start timestamp', () => {
-    const w1 = mkWorkout({ d: '2026-02-28', start: 5000, entries: [mkEntry('bench', [s(80, 5)])] })
-    const w2 = mkWorkout({ d: '2026-03-01', start: 1000, entries: [mkEntry('bench', [s(85, 5)])] })
-    const workouts = [w2, w1]
-    const feb = monthRecap(workouts, 'kg', '2026-02')
-    const mar = monthRecap(workouts, 'kg', '2026-03')
-    expect(feb.e1prs.length).toBe(1)
-    expect(feb.e1prs[0].w).toBe(80)
-    expect(mar.e1prs.length).toBe(1)
-    expect(mar.e1prs[0].w).toBe(85)
-  })
-
-  it('caps e1RM at REP_CAP 12', () => {
-    const workouts = [
-      mkWorkout({ d: '2026-02-10', start: 1000, entries: [mkEntry('bench', [s(50, 13)])] }),
-      mkWorkout({ d: '2026-02-11', start: 2000, entries: [mkEntry('bench', [s(50, 12)])] }),
-    ]
-    const feb = monthRecap(workouts, 'kg', '2026-02')
-    expect(feb.e1prs.length).toBe(1)
-    expect(feb.e1prs[0].r).toBe(12)
   })
 
   it('ignores imported workouts lacking start/end for duration', () => {
@@ -152,19 +105,31 @@ describe('monthRecap', () => {
       mkWorkout({ d: '2026-02-10', start: null, end: null, entries: [mkEntry('bench', [s(100, 5)])] }),
       mkWorkout({ d: '2026-02-11', start: 1000, end: 61000, entries: [mkEntry('bench', [s(100, 5)])] }),
     ]
-    const feb = monthRecap(workouts, 'kg', '2026-02')
+    const feb = monthRecap({ unit: 'kg', workouts }, '2026-02')
     expect(feb.workouts).toBe(2)
     expect(feb.vol).toBe(1000)
     expect(feb.durationMs).toBe(60000)
   })
 
+  it('reads Records and Estimated 1RM Records from the log, not from the stamped list', () => {
+    const workouts = [
+      mkWorkout({ d: '2026-01-10', start: 1000, entries: [mkEntry('bench', [s(100, 3)])] }),
+      mkWorkout({ d: '2026-02-10', start: 2000, entries: [mkEntry('bench', [s(90, 10)])], prs: ['squat'] }),
+    ]
+    const feb = monthRecap({ unit: 'kg', workouts }, '2026-02')
+    expect(feb.prs).toEqual([])
+    expect(feb.e1prs).toEqual([{ id: 'bench', est: 120, w: 90, r: 10, d: '2026-02-10', t: 2000, prev: 110 }])
+    expect(monthRecap({ unit: 'kg', workouts }, '2026-01').prev.e1prs).toEqual([])
+  })
+
   it('deduplicates PRs across multiple workouts in the same month', () => {
     const workouts = [
-      mkWorkout({ d: '2026-02-05', start: 1000, entries: [mkEntry('bench', [s(100, 5)])], prs: ['bench'] }),
-      mkWorkout({ d: '2026-02-15', start: 2000, entries: [mkEntry('bench', [s(105, 5)])], prs: ['bench'] }),
-      mkWorkout({ d: '2026-02-20', start: 3000, entries: [mkEntry('squat', [s(120, 5)])], prs: ['squat'] }),
+      mkWorkout({ d: '2026-01-05', start: 500, entries: [mkEntry('bench', [s(90, 5)]), mkEntry('squat', [s(100, 5)])] }),
+      mkWorkout({ d: '2026-02-05', start: 1000, entries: [mkEntry('bench', [s(100, 5)])] }),
+      mkWorkout({ d: '2026-02-15', start: 2000, entries: [mkEntry('bench', [s(105, 5)])] }),
+      mkWorkout({ d: '2026-02-20', start: 3000, entries: [mkEntry('squat', [s(120, 5)])] }),
     ]
-    const feb = monthRecap(workouts, 'kg', '2026-02')
+    const feb = monthRecap({ unit: 'kg', workouts }, '2026-02')
     expect(feb.prs).toEqual(['bench', 'squat'])
   })
 })

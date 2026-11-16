@@ -62,13 +62,3 @@ export function best1RM(S, exId, formula = DEFAULT_FORMULA) {
   e1rmSeries(S, exId, formula).forEach(p => { if (!best || p.y > best.est) best = { est: p.y, w: p.w, r: p.r, d: p.d, t: p.t } })
   return best
 }
-
-export function is1RMRecord(S, exId, entry, formula = DEFAULT_FORMULA, workout = null) {
-  if (!entry || !Array.isArray(entry.sets) || !exId) return null
-  const targetUnit = S?.unit || 'kg'
-  const targetWorkout = workout || S?.active || null
-  const now = bestSetOf(entry, formula, targetUnit, targetWorkout)
-  if (!now) return null
-  const prev = best1RM(S, exId, formula)
-  return !prev || now.est > prev.est ? { ...now, prev: prev ? prev.est : 0 } : null
-}
