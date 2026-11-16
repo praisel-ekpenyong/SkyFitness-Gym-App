@@ -63,4 +63,28 @@ describe('store.act runs the effects', () => {
     expect(useStore.getState().S.active.id).toBe('a1')
     expect(useUI.getState().timer).not.toBe(null)
   })
+  describe('a timed hold', () => {
+    const hold = () => ({ id: '0001', target: { mode: 'time', sec: 30, sets: 2 }, sets: [{ sec: 30, done: false }, { sec: 30, done: false }] })
+    beforeEach(() => { vi.useFakeTimers() })
+    afterEach(() => { vi.useRealTimers() })
+
+    it('runs for the set\'s seconds and logs it when the time is up', () => {
+      withActive([hold()])
+      useStore.getState().act({ type: 'startHold', entry: 0, set: 0 })
+      expect(useUI.getState().work).toMatchObject({ total: 30, label: '3/4 sit-up' })
+      vi.advanceTimersByTime(31_000)
+      expect(useUI.getState().work).toBe(null)
+      expect(useStore.getState().S.active.entries[0].sets.map(s => [s.sec, !!s.done])).toEqual([[30, true], [30, false]])
+    })
+
+    it('sends its finish through the sender it was started with, so the view sees open-finish', () => {
+      withActive([hold()])
+      useStore.getState().act({ type: 'toggle', entry: 0, set: 0 })
+      const seen = []
+      const send = command => { const res = useStore.getState().act(command, send); seen.push(...res.effects.map(e => e.type)); return res }
+      send({ type: 'startHold', entry: 0, set: 1 })
+      vi.advanceTimersByTime(31_000)
+      expect(seen).toContain('open-finish')
+    })
+  })
 })
