@@ -3,6 +3,8 @@ import { create } from 'zustand'
 import { ACCENTS, localTZ } from '../lib/format.js'
 import { registerCustom } from '../lib/exercises.js'
 import { MOBILE, syncReminder } from '../lib/mobile.js'
+import { SEED_PLAN } from '../lib/env.js'
+import { seedPlanInto } from '../lib/plans/seed.js'
 import { flush, load, loadLocal, save, LOCAL_KEY, onStorageSync } from '../lib/storage.js'
 import { admit } from '../lib/log/admit.js'
 import { setsDone } from '../lib/workout-model.js'
@@ -218,6 +220,7 @@ export const useStore = create((set, get) => {
         overlay: x => normalizeState(x),
       })
       if (winner) S = winner
+      S = seedPlanInto(S, SEED_PLAN)
       if (MOBILE) syncReminder(S)
 
       const tz = localTZ()

@@ -12,6 +12,7 @@ import { recordWeighIn, deleteWeighIn, latestWeighIn } from './lib/bodyweight.js
 import { t } from './lib/i18n.js'
 import { nav } from './lib/nav.js'
 import { applyStarterPlan } from './lib/starter.js'
+import { applyHypertrophyPlan } from './lib/plans/hypertrophy-5day.js'
 import { Thumb } from './components/Media.jsx'
 import Icon from './components/Icon.jsx'
 import { Button, NumberField, Switch } from './components/ui.jsx'
@@ -52,6 +53,18 @@ export function confirmSheet(opts) {
 export function loadStarterPlan() {
   update(st => { applyStarterPlan(st) })
   toast(t('Starter plan loaded — Mon Push · Wed Pull · Fri Legs'))
+}
+
+/**
+ * Adds the 5-day hypertrophy plan's routines and custom exercises, assigns Mon/Tue/Thu/Fri/Sat,
+ * and says whether the rest timer moved to 3 minutes.
+ */
+export function loadHypertrophyPlan() {
+  let restChanged = false
+  update(st => { restChanged = applyHypertrophyPlan(st).restChanged })
+  toast(restChanged
+    ? t('5-day plan loaded — Mon Upper · Tue Lower · Thu Push · Fri Pull · Sat Legs. Rest timer set to 3 min.')
+    : t('5-day plan loaded — Mon Upper · Tue Lower · Thu Push · Fri Pull · Sat Legs'))
 }
 
 /* ============================ weight input (shared: body weight, target weight) ============================ */
