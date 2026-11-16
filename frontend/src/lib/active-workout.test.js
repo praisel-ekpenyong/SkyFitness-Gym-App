@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { tonnageOf } from './workout-model.js'
+import { tonnage } from './training-log.js'
 import {
   heaviestSetWeight, heaviestForEntry, mergeExWeight,
   createActiveSession, completeActiveSession,
@@ -358,7 +358,7 @@ describe('active-workout lifecycle seam', () => {
     expect(S.exWeights.ex1).toEqual({ w: 90, d: '2026-08-24', unit: 'kg' })
     expect(S.exWeights.ex2).toEqual({ w: 40, d: '2026-08-24', unit: 'kg' })
     expect(result.workout.vol).toBeUndefined()
-    expect(tonnageOf(result.workout)).toBe(90 * 5 + 40 * 10)
+    expect(tonnage({ unit: 'kg' }, result.workout)).toBe(90 * 5 + 40 * 10)
   })
 
   it('replaceActiveExercise replaces entry in-place, clamps cur, preserves surrounding entries, and returns new entry', () => {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { parseWorkoutCSV, mergeImport, importPreview } from './import-csv.js'
-import { tonnageOf } from './workout-model.js'
+import { tonnage } from './training-log.js'
 
 const CSV = [
   'Date,Exercise,Weight,Reps,Set Type',
@@ -20,7 +20,7 @@ describe('CSV warm-up provenance', () => {
     ])
     expect(entry.topW).toBe(80)
     expect(parsed.workouts[0].vol).toBeUndefined()
-    expect(tonnageOf(parsed.workouts[0])).toBe(400)
+    expect(tonnage({ unit: 'kg' }, parsed.workouts[0])).toBe(400)
   })
 })
 

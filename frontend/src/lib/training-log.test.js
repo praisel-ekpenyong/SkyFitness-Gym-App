@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { best, lastSession, lastSessionInRoutine, latestWorkSetAt, lastWorkoutInRoutine } from './training-log.js'
+import { best, tonnage, lastSession, lastSessionInRoutine, latestWorkSetAt, lastWorkoutInRoutine } from './training-log.js'
 
 const lift = (sets, extra = {}) => ({ id: 'bench', sets, ...extra })
 const day = (d, entries, unit) => ({ d, entries, ...(unit ? { unit } : {}) })
@@ -64,6 +64,40 @@ describe('Training log: Best', () => {
     expect(best(S, 'bench')).toBe(100)
     S.workouts = [...S.workouts, day('2026-11-08', [lift([work(110)])])]
     expect(best(S, 'bench')).toBe(110)
+  })
+})
+
+describe('Training log: Tonnage', () => {
+  it('is load x reps of performed Work sets', () => {
+    const w = day('2026-11-01', [lift([work(60, 10), { w: 60, r: 10, done: false }])])
+    expect(tonnage({ unit: 'kg', workouts: [w] }, w)).toBe(600)
+  })
+
+  it('leaves a performed warm-up Set out, in both warm-up shapes', () => {
+    const w = day('2026-11-01', [lift([
+      { warmup: true, w: 20, r: 5, done: true },
+      { phase: 'warmup', w: 30, r: 5, done: true },
+      { phase: 'work', w: 60, r: 5, done: true },
+    ])])
+    expect(tonnage({ unit: 'kg' }, w)).toBe(300)
+  })
+
+  it('answers a lb Workout in a kg Profile and the reverse', () => {
+    const lb = day('2026-11-01', [lift([work(100, 5)])], 'lb')
+    const kg = day('2026-11-02', [lift([work(50, 10)])], 'kg')
+    expect(tonnage({ unit: 'kg' }, lb)).toBe(227)
+    expect(tonnage({ unit: 'lb' }, kg)).toBe(1102)
+    expect(tonnage({ unit: 'lb' }, lb)).toBe(500)
+  })
+
+  it('honours a unit stamped on the Set', () => {
+    const w = day('2026-11-01', [lift([{ ...work(100, 5), unit: 'lb' }])], 'kg')
+    expect(tonnage({ unit: 'kg' }, w)).toBe(227)
+  })
+
+  it('is 0 for nothing performed or no Workout', () => {
+    expect(tonnage({ unit: 'kg' }, null)).toBe(0)
+    expect(tonnage({ unit: 'kg' }, day('2026-11-01', []))).toBe(0)
   })
 })
 
