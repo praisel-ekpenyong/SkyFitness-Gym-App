@@ -3,6 +3,37 @@ import {
   insertWarmupRow, removeRowAt, cascadeWeight
 } from './workout-model.js'
 import { pairAdjacent, unpairSuperset } from './supersetFlow.js'
+import { isWarmupRow } from './warmup.js'
+
+/**
+ * Pins the set a timed hold was started on, by meaning rather than position.
+ * Rows shift while a hold runs (a warm-up is added in front, a set is removed), and
+ * a whole new workout can replace this one, so a bare (entry, set) index is not enough.
+ * @returns {Object|null} Reference for findHoldRow, or null when the row does not exist.
+ */
+export function holdRef(active, entryIdx, setIdx) {
+  const entry = active?.entries?.[entryIdx]
+  const row = entry?.sets?.[setIdx]
+  if (!row) return null
+  const warm = isWarmupRow(row)
+  const nth = entry.sets.slice(0, setIdx).filter(s => isWarmupRow(s) === warm).length
+  return { workout: active.id, entryIdx, entryId: entry.id, warm, nth }
+}
+
+/**
+ * Finds where a held set sits now.
+ * @returns {number[]|null} [entryIdx, setIdx], or null when its workout, exercise or row is gone.
+ */
+export function findHoldRow(active, ref) {
+  if (!ref || !active || active.id !== ref.workout) return null
+  const entry = active.entries?.[ref.entryIdx]
+  if (!entry || entry.id !== ref.entryId) return null
+  let n = -1
+  for (let i = 0; i < entry.sets.length; i++) {
+    if (isWarmupRow(entry.sets[i]) === ref.warm && ++n === ref.nth) return [ref.entryIdx, i]
+  }
+  return null
+}
 
 export function updateActiveSetField(S, entryIdx, setIdx, field, value) {
   const entry = S?.active?.entries?.[entryIdx]
