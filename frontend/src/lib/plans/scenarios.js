@@ -1,6 +1,5 @@
 import { applyHypertrophyPlan } from './hypertrophy-5day.js'
-import { createActiveSession } from '../active-session.js'
-import { completeActiveSession } from '../active-finish.js'
+import { act } from '../active-workout.js'
 import { recordWeighIn } from '../bodyweight.js'
 import { isWorkSet, isPerSide } from '../workout-model.js'
 import { registerCustom } from '../exercises.js'
@@ -52,6 +51,12 @@ const capacity = (e1rm, w) => (w <= 0 ? 30 : Math.max(0, Math.floor(30 * (e1rm /
  * @param {Object} [opts.lifter] - Overrides for the made-up lifter, keyed like `ceiling`.
  * @returns {Object} Profile state with routines, week, customEx, workouts and bodyweight.
  */
+function mustAct(S, command, d) {
+  const res = act(S, command)
+  if (!res.ok) throw new Error(`generateHistory: ${command.type} was refused on ${d}`)
+  return res
+}
+
 export function generateHistory({ start = '2026-09-07', weeks = 8, day = () => ({}), lifter = {} } = {}) {
   const S = { unit: 'kg', restSec: 90, routines: [], week: {}, dayPlan: {}, customEx: [], workouts: [], bodyweight: [] }
   applyHypertrophyPlan(S)
@@ -73,7 +78,9 @@ export function generateHistory({ start = '2026-09-07', weeks = 8, day = () => (
     if (opts === null) continue
     const { setsFactor = 1, dropSets = 0, strength = 1, only, ceiling = {}, gain = {} } = opts || {}
 
-    const A = createActiveSession(S, routineId, null, { todayISO: () => d, uid: () => `w${++n}`, now: () => ms + 18 * 3600000 })
+    mustAct(S, { type: 'begin', routineId }, d)
+    const A = S.active
+    Object.assign(A, { id: `w${++n}`, d, start: ms + 18 * 3600000 })
     if (only != null) A.entries = A.entries.slice(0, only)
     A.entries.forEach(entry => {
       const p = profile(entry.id)
@@ -97,8 +104,7 @@ export function generateHistory({ start = '2026-09-07', weeks = 8, day = () => (
         return { ...s, w, r: perSide * side, done: true, rir: Math.max(0, fresh - perSide) }
       })
     })
-    S.active = A
-    completeActiveSession(S, { now: () => ms + 19 * 3600000 })
+    mustAct(S, { type: 'finish' }, d).result.workout.end = ms + 19 * 3600000
   }
   return S
 }

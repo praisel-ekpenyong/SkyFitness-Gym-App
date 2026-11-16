@@ -4,10 +4,10 @@ import { useUI } from '../store/useUI.js'
 import { EXIDX } from '../lib/exercises.js'
 import { fmtNum, fmtDurParts, fmtDate, todayISO } from '../lib/format.js'
 import { latestWeighIn } from '../lib/bodyweight.js'
-import { setsDone, workSetsDone, sessionProgress, isPerformed, isWarmupRow } from '../lib/workout-model.js'
+import { setsDone, workSetsDone } from '../lib/workout-model.js'
+import { sessionView } from '../lib/active-workout.js'
 import { tonnage } from '../lib/training-log.js'
 import { sessionProgressionItems } from '../lib/progression.js'
-import { playWorkoutComplete } from '../lib/sound.js'
 import { t } from '../lib/i18n.js'
 import { nav } from '../lib/nav.js'
 import Icon from '../components/Icon.jsx'
@@ -20,7 +20,6 @@ const S = () => useStore.getState().S
 const update = (...a) => useStore.getState().update(...a)
 const ui = () => useUI.getState()
 const toast = m => ui().toast(m)
-const snd = () => S().sound
 
 let _bwSheet = null
 let _confirmSheet = null
@@ -48,9 +47,7 @@ export function startFlow(routineId) {
  * @param {number} bw Weighed-in body weight, if any.
  */
 export function beginWorkout(routineId, bw) {
-  useStore.getState().beginSession(routineId, bw)
-  useUI.getState().stopRest()
-  useUI.getState().stopWork()
+  useStore.getState().act({ type: 'begin', routineId, bw })
   nav('/workout')
 }
 /**
@@ -70,12 +67,12 @@ export function ExerciseNoteSheet({ entryIdx, close }) {
   if (!entry || !ex) return null
 
   const save = () => {
-    useStore.getState().updateActiveExerciseNote(entryIdx, val)
+    useStore.getState().act({ type: 'note', entry: entryIdx, text: val })
     close()
   }
 
   const clear = () => {
-    useStore.getState().updateActiveExerciseNote(entryIdx, '')
+    useStore.getState().act({ type: 'note', entry: entryIdx, text: '' })
     close()
   }
 
@@ -251,16 +248,15 @@ export function FinishSummary({ w, prs, e1prs = [], routineSync = null, close })
 export function finishWorkout() {
   const A = S().active
   if (!A) return
-  const prog = sessionProgress(A)
+  const { finishGate, progress: prog } = sessionView(A)
   if (!_confirmSheet) throw new Error('session sheets not wired: missing confirmSheet')
-  if (!prog.done) {
-    const warmOnly = (A.entries || []).some(e => (e.sets || []).some(s => isPerformed(s) && isWarmupRow(s)))
-    _confirmSheet(warmOnly
+  if (finishGate === 'empty' || finishGate === 'warmups-only') {
+    _confirmSheet(finishGate === 'warmups-only'
       ? { title: t('Only warm-ups logged so far'), message: t('Only warm-up sets are ticked — finish the workout anyway?'), confirmText: t('Finish anyway'), onConfirm: doFinishWorkout }
       : { title: t('Nothing logged yet'), message: t('You haven’t checked off any sets. Finish the workout anyway?'), confirmText: t('Finish anyway'), onConfirm: doFinishWorkout })
     return
   }
-  if (prog.remaining > 0) {
+  if (finishGate === 'early') {
     const sets = t(prog.remaining === 1 ? '{0} set still unchecked' : '{0} sets still unchecked', fmtNum(prog.remaining))
     _confirmSheet({ title: t('Finish early?'), message: t('{0} of {1} exercises done, {2}. Finish the workout now?', fmtNum(prog.exDone), fmtNum(prog.exTotal), sets), confirmText: t('Finish workout'), onConfirm: doFinishWorkout })
     return
@@ -268,11 +264,8 @@ export function finishWorkout() {
   doFinishWorkout()
 }
 function doFinishWorkout() {
-  const result = useStore.getState().finishSession()
-  if (!result) return
+  const { ok, result } = useStore.getState().act({ type: 'finish' })
+  if (!ok) return
   const { workout: w, prs, e1prs, routineSync } = result
-  useUI.getState().stopRest()
-  useUI.getState().stopWork()
-  playWorkoutComplete(snd())
   ui().openSheet(close => <FinishSummary w={w} prs={prs} e1prs={e1prs} routineSync={routineSync} close={close} />, { kind: 'full', locked: true })
 }

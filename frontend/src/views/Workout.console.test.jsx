@@ -82,7 +82,7 @@ describe('moving to the next exercise', () => {
       entry(SQUAT, sets(2)),
     ])
     const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
-    act(() => { useStore.getState().setActiveIndex(2) })
+    act(() => { useStore.getState().act({ type: 'goTo', entry: 2 }) })
     await nextFrame()
     expect(scrollTo).toHaveBeenCalledWith(0, 0)
     scrollTo.mockRestore()
