@@ -1,5 +1,5 @@
 import { isPerformed } from './workout-model.js'
-import { records } from './training-log.js'
+import { loadRecords, e1rmRecords } from './training-log.js'
 import { EXIDX } from './exercises.js'
 import { exerciseMuscleSnapshot } from './muscles.js'
 import { diffRoutineWithSession } from './routine-sync.js'
@@ -72,9 +72,8 @@ export function completeActiveSession(S, opts = {}) {
     snapshotFor: en => (EXIDX[en.id]?.custom ? exerciseMuscleSnapshot(EXIDX[en.id]) : null),
   })
 
-  const made = records(S, w)
-  const prs = made.filter(r => r.kind === 'load').map(r => r.id)
-  const e1prs = made.filter(r => r.kind === 'e1rm').map(r => ({ id: r.id, est: r.est, w: r.w, r: r.r, prev: r.prev }))
+  const prs = loadRecords(S, w).map(r => r.id)
+  const e1prs = e1rmRecords(S, w)
 
   S.workouts = [...(S.workouts || []), w]
   S.workouts.sort((a, b) => (a.d < b.d ? -1 : a.d > b.d ? 1 : a.start - b.start))

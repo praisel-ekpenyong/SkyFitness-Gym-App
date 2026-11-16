@@ -381,6 +381,14 @@ describe('exercise index and sessions', () => {
     expect(selectExerciseStats(S, LIFT.id, { now: NOW, catalogue }).recent[0].record).toBe(1)
   })
 
+  it('survives a legacy top-weight Workout, which has no Set to mark', () => {
+    const legacy = workoutAt(LIFT.id, 1, [])
+    legacy.entries[0].topW = 120
+    const S = { unit: 'kg', workouts: [workoutAt(LIFT.id, 5, [doneSet(80, 5)]), legacy] }
+    const st = selectExerciseStats(S, LIFT.id, { now: NOW, catalogue })
+    expect(st.recent.map(p => p.record)).toEqual([null])
+  })
+
   it('marks no Set on a timed exercise, which has no estimate', () => {
     const S = { workouts: [workoutAt(KNOWN.id, 1, [{ done: true, sec: 60 }], { prs: [KNOWN.id] })] }
     expect(selectExerciseStats(S, KNOWN.id, { now: NOW, catalogue }).recent[0].record).toBe(null)

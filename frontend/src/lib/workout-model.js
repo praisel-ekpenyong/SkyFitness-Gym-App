@@ -167,7 +167,7 @@ export function freestyleConfig(S, cfg) {
 
 export function buildSets(S, cfg, options = {}) {
   const routineId = options.routineId || null
-  const last = routineId ? lastSessionInRoutine(S, cfg.id, routineId) : lastSession(S, cfg.id)
+  const last = lastSessionInRoutine(S, cfg.id, routineId)
   const n = Math.max(1, cfg.sets || 1)
   const mode = modeOf(cfg)
   const preferLast = !!options.preferLast
