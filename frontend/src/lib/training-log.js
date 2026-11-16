@@ -155,3 +155,23 @@ export function lastWorkoutInRoutine(S, routineId) {
   }
   return latest
 }
+
+/**
+ * Tonnage: load x reps of the performed Work sets of one Workout, in the Profile's unit.
+ * A warm-up Set is excluded even when performed.
+ *
+ * @param {Object} S - Profile; `unit` is the answer's unit.
+ * @param {Object} workout - A Workout, in whatever unit it was logged in.
+ * @returns {number} Tonnage rounded to 0.1, or 0 when nothing was performed.
+ */
+export function tonnage(S, workout) {
+  const unit = S?.unit || 'kg'
+  let total = 0
+  for (const entry of workout?.entries || []) {
+    for (const set of Array.isArray(entry?.sets) ? entry.sets : []) {
+      if (!set?.done || isWarmupRow(set)) continue
+      total += resolveSetWeight(set, entry, workout, unit) * (set.r || 0)
+    }
+  }
+  return round1(total)
+}
