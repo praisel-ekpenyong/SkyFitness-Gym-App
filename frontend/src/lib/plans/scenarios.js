@@ -51,6 +51,12 @@ const capacity = (e1rm, w) => (w <= 0 ? 30 : Math.max(0, Math.floor(30 * (e1rm /
  * @param {Object} [opts.lifter] - Overrides for the made-up lifter, keyed like `ceiling`.
  * @returns {Object} Profile state with routines, week, customEx, workouts and bodyweight.
  */
+function mustAct(S, command, d) {
+  const res = act(S, command)
+  if (!res.ok) throw new Error(`generateHistory: ${command.type} was refused on ${d}`)
+  return res
+}
+
 export function generateHistory({ start = '2026-09-07', weeks = 8, day = () => ({}), lifter = {} } = {}) {
   const S = { unit: 'kg', restSec: 90, routines: [], week: {}, dayPlan: {}, customEx: [], workouts: [], bodyweight: [] }
   applyHypertrophyPlan(S)
@@ -72,7 +78,7 @@ export function generateHistory({ start = '2026-09-07', weeks = 8, day = () => (
     if (opts === null) continue
     const { setsFactor = 1, dropSets = 0, strength = 1, only, ceiling = {}, gain = {} } = opts || {}
 
-    act(S, { type: 'begin', routineId })
+    mustAct(S, { type: 'begin', routineId }, d)
     const A = S.active
     Object.assign(A, { id: `w${++n}`, d, start: ms + 18 * 3600000 })
     if (only != null) A.entries = A.entries.slice(0, only)
@@ -98,7 +104,7 @@ export function generateHistory({ start = '2026-09-07', weeks = 8, day = () => (
         return { ...s, w, r: perSide * side, done: true, rir: Math.max(0, fresh - perSide) }
       })
     })
-    act(S, { type: 'finish' }).result.workout.end = ms + 19 * 3600000
+    mustAct(S, { type: 'finish' }, d).result.workout.end = ms + 19 * 3600000
   }
   return S
 }

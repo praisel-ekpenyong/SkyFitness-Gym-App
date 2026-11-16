@@ -4,15 +4,15 @@ import {
   setProgressHighWater, supersetFlowStep
 } from './supersetFlow.js'
 
-function describeUnit(entries, entryIdx) {
-  const units = supersetUnits(entries)
-  const unit = unitOf(units, entryIdx)
-  const unitIdx = units.findIndex(u => u === unit)
-  const isLastUnit = unitIdx >= units.length - 1
-  return { units, unit, unitIdx, isLastUnit }
+function describeStep(entries, entryIdx) {
+  const steps = supersetUnits(entries)
+  const step = unitOf(steps, entryIdx)
+  const stepIdx = steps.findIndex(s => s === step)
+  const isLastStep = stepIdx >= steps.length - 1
+  return { step, isLastStep }
 }
 
-const unitWorkDone = (entries, unit) => !unit.some(i => hasWork(entries, i))
+const stepWorkDone = (entries, step) => !step.some(i => hasWork(entries, i))
 
 export function toggleActiveSet(S, entryIdx, setIdx) {
   const A = S?.active
@@ -29,14 +29,14 @@ export function toggleActiveSet(S, entryIdx, setIdx) {
   const cardioEntry = mode === 'cardio'
   const timedEntry = mode === 'time'
 
-  const { unit, isLastUnit } = describeUnit(A.entries, entryIdx)
-  const unitDone = unitWorkDone(A.entries, unit)
+  const { step: stepEntries, isLastStep } = describeStep(A.entries, entryIdx)
+  const stepDone = stepWorkDone(A.entries, stepEntries)
 
   let exJustDone = false
   let workoutDone = false
 
   if (checked) {
-    if (unitDone && isLastUnit) {
+    if (stepDone && isLastStep) {
       workoutDone = true
     }
     const hasWorkRows = entry.sets.some(isWorkSet)
@@ -53,24 +53,24 @@ export function toggleActiveSet(S, entryIdx, setIdx) {
     newHighWater = progress.highWater
     entry.hw = newHighWater
     if (progress.isNew) {
-      if (unitDone) shouldStopRest = true
-      if (!unit || unit.length <= 1) {
-        if (!unitDone || !isLastUnit) {
+      if (stepDone) shouldStopRest = true
+      if (!stepEntries || stepEntries.length <= 1) {
+        if (!stepDone || !isLastStep) {
           shouldRest = true
         }
       } else {
-        const step = supersetFlowStep(A.entries, unit, entryIdx)
-        if (step) {
-          if (step.unitDone) {
-            if (!isLastUnit) {
+        const flow = supersetFlowStep(A.entries, stepEntries, entryIdx)
+        if (flow) {
+          if (flow.unitDone) {
+            if (!isLastStep) {
               shouldRest = true
             }
           } else {
-            if (step.nextIdx != null) {
-              A.cur = step.nextIdx
+            if (flow.nextIdx != null) {
+              A.cur = flow.nextIdx
               navigated = true
             }
-            if (step.roundDone) {
+            if (flow.roundDone) {
               shouldRest = true
             }
           }

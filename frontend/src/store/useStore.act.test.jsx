@@ -68,9 +68,16 @@ describe('store.act runs the effects', () => {
     beforeEach(() => { vi.useFakeTimers() })
     afterEach(() => { vi.useRealTimers() })
 
+    it('refuses to start without a sender, so its finish cannot be lost', () => {
+      withActive([hold()])
+      expect(() => useStore.getState().act({ type: 'startHold', entry: 0, set: 0 })).toThrow(/sender/)
+      expect(useUI.getState().work).toBe(null)
+    })
+
     it('runs for the set\'s seconds and logs it when the time is up', () => {
       withActive([hold()])
-      useStore.getState().act({ type: 'startHold', entry: 0, set: 0 })
+      const send = command => useStore.getState().act(command, send)
+      send({ type: 'startHold', entry: 0, set: 0 })
       expect(useUI.getState().work).toMatchObject({ total: 30, label: '3/4 sit-up' })
       vi.advanceTimersByTime(31_000)
       expect(useUI.getState().work).toBe(null)

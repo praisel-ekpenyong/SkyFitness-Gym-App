@@ -46,6 +46,10 @@ As evaluated on 2026-10-28 across the codebase at commit `14332f7`:
   - `lib/active-sets.js`: Thin wrappers (`addActiveSet`, `pairActiveSuperset`) that forward directly to `workout-model.js` and `supersetFlow.js`.
   - `sheets.jsx`: Overloaded 686-line hub maintaining residual dialogs and employing procedural late-binding injection (`configureSessionSheets`, `configureCatalogueSheets`, `bindUI`) to break circular dependencies.
 
+2026-11-16: ADR 0023 replaced the 17 proxy actions in `store/useStore.js` with one `act(command)`, and the
+ADR 0006 named actions above (`beginSession`, `finishSession`) with it. The Active workout is now read through
+`sessionView`; timers and sound run as effects in `store/effects.js`.
+
 ## Known Invariant Hazards & Architectural Debt
 
 Documented on 2026-10-28 at commit `14332f7`:
