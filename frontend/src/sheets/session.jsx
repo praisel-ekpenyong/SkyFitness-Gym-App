@@ -50,6 +50,7 @@ export function startFlow(routineId) {
 export function beginWorkout(routineId, bw) {
   useStore.getState().beginSession(routineId, bw)
   useUI.getState().stopRest()
+  useUI.getState().stopWork()
   nav('/workout')
 }
 /**
@@ -271,6 +272,7 @@ function doFinishWorkout() {
   if (!result) return
   const { workout: w, prs, e1prs, routineSync } = result
   useUI.getState().stopRest()
+  useUI.getState().stopWork()
   playWorkoutComplete(snd())
   ui().openSheet(close => <FinishSummary w={w} prs={prs} e1prs={e1prs} routineSync={routineSync} close={close} />, { kind: 'full', locked: true })
 }
