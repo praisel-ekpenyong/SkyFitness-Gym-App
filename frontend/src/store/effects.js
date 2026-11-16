@@ -10,9 +10,10 @@ const NOTICE = { cardio: () => t('Cardio logged'), timed: () => t('Hold logged')
  * because opening a sheet from here would be an import cycle.
  * @param {Array<{type: string}>} effects - From act().
  * @param {Object} S - The Profile, for `restSec` and `sound`.
- * @param {(command: Object) => *} send - Where a hold sends `completeHold` when its time is up.
+ * @param {(command: Object) => *} [send] - Where a hold sends `completeHold` when its time is up; required for `hold:start`.
  */
 export function runEffects(effects, S, send) {
+  if (!send && effects.some(e => e.type === 'hold:start')) throw new Error('A hold needs a sender for its completeHold')
   const ui = useUI.getState()
   for (const e of effects) {
     if (e.type === 'rest:start') ui.startRest(S.restSec)

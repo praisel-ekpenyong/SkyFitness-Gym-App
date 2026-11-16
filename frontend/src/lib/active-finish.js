@@ -47,8 +47,7 @@ export function buildCompletedWorkout(active, { end = Date.now(), unit = 'kg', s
   }
 }
 
-export function completeActiveSession(S, opts = {}) {
-  const _now = opts.now || Date.now
+export function completeActiveSession(S) {
   const A = S.active
   if (!A) return null
   let routineSync = null
@@ -67,7 +66,7 @@ export function completeActiveSession(S, opts = {}) {
   }
 
   const w = buildCompletedWorkout(A, {
-    end: _now(),
+    end: Date.now(),
     unit: A.unit || S?.unit || 'kg',
     snapshotFor: en => (EXIDX[en.id]?.custom ? exerciseMuscleSnapshot(EXIDX[en.id]) : null),
   })
