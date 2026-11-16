@@ -363,11 +363,11 @@ describe('exercise index and sessions', () => {
     expect(st.points[1]).toMatchObject({ effort: 2, m: 0.5 })
   })
 
-  it('marks only the Set that made a Record: the heaviest Set of an Entry on a Workout whose prs names it', () => {
+  it('marks only the Set that made a Record, read from the Training log: the heaviest Set of a Workout that beat every earlier one', () => {
     const S = { unit: 'kg', workouts: [
-      workoutAt(LIFT.id, 20, [doneSet(100, 3)]),
-      workoutAt(LIFT.id, 10, [doneSet(90, 10), doneSet(100, 3), doneSet(95, 6)], { prs: [LIFT.id] }),
-      workoutAt(LIFT.id, 1, [doneSet(80, 5)], { prs: ['other'] }),
+      workoutAt(LIFT.id, 20, [doneSet(90, 3)]),
+      workoutAt(LIFT.id, 10, [doneSet(90, 10), doneSet(100, 3), doneSet(95, 6)]),
+      workoutAt(LIFT.id, 1, [doneSet(80, 5)], { prs: [LIFT.id] }),
     ] }
     const st = selectExerciseStats(S, LIFT.id, { now: NOW, catalogue })
     expect(st.recent.map(p => p.record)).toEqual([null, 1, null])
@@ -375,7 +375,8 @@ describe('exercise index and sessions', () => {
 
   it('marks the first Set at the heaviest load when several Sets share it', () => {
     const S = { unit: 'kg', workouts: [
-      workoutAt(LIFT.id, 1, [doneSet(90, 8), doneSet(100, 5), doneSet(100, 6)], { prs: [LIFT.id] }),
+      workoutAt(LIFT.id, 5, [doneSet(80, 5)]),
+      workoutAt(LIFT.id, 1, [doneSet(90, 8), doneSet(100, 5), doneSet(100, 6)]),
     ] }
     expect(selectExerciseStats(S, LIFT.id, { now: NOW, catalogue }).recent[0].record).toBe(1)
   })
