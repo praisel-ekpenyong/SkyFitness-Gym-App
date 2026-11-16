@@ -2,7 +2,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { useStore, DEF } from './useStore.js'
 
-describe('useStore.updateActiveExerciseNote', () => {
+describe('useStore.act note', () => {
   beforeEach(() => {
     useStore.setState({
       S: {
@@ -25,8 +25,8 @@ describe('useStore.updateActiveExerciseNote', () => {
 
   it('updates entry.notes with trimmed note text without mutating entry.target.notes', () => {
     useStore.getState().S.active.entries[0].target.notes = 'Baseline routine cue'
-    const res = useStore.getState().updateActiveExerciseNote(0, '  Seat height 5, pin 8  ')
-    expect(res).toBe(true)
+    const res = useStore.getState().act({ type: 'note', entry: 0, text: '  Seat height 5, pin 8  ' })
+    expect(res.ok).toBe(true)
     const S = useStore.getState().S
     expect(S.active.entries[0].notes).toBe('Seat height 5, pin 8')
     expect(S.active.entries[0].target.notes).toBe('Baseline routine cue')
@@ -34,7 +34,7 @@ describe('useStore.updateActiveExerciseNote', () => {
 
   it('clamps note text to 500 characters', () => {
     const longNote = 'a'.repeat(600)
-    useStore.getState().updateActiveExerciseNote(0, longNote)
+    useStore.getState().act({ type: 'note', entry: 0, text: longNote })
     const S = useStore.getState().S
     expect(S.active.entries[0].notes.length).toBe(500)
     expect(S.active.entries[0].notes).toBe('a'.repeat(500))
@@ -42,11 +42,11 @@ describe('useStore.updateActiveExerciseNote', () => {
 
   it('removes notes when passed an empty string or whitespace only without mutating target', () => {
     useStore.getState().S.active.entries[0].target.notes = 'Baseline routine cue'
-    useStore.getState().updateActiveExerciseNote(0, 'Existing note')
+    useStore.getState().act({ type: 'note', entry: 0, text: 'Existing note' })
     expect(useStore.getState().S.active.entries[0].notes).toBe('Existing note')
 
-    const res = useStore.getState().updateActiveExerciseNote(0, '   ')
-    expect(res).toBe(true)
+    const res = useStore.getState().act({ type: 'note', entry: 0, text: '   ' })
+    expect(res.ok).toBe(true)
     const S = useStore.getState().S
     expect(S.active.entries[0].notes).toBeUndefined()
     expect(S.active.entries[0].target.notes).toBe('Baseline routine cue')
@@ -54,8 +54,8 @@ describe('useStore.updateActiveExerciseNote', () => {
   })
 
   it('safely ignores non-existent entry index or missing active session', () => {
-    expect(useStore.getState().updateActiveExerciseNote(99, 'note')).toBe(false)
+    expect(useStore.getState().act({ type: 'note', entry: 99, text: 'note' }).ok).toBe(false)
     useStore.setState({ S: { ...DEF, active: null } })
-    expect(useStore.getState().updateActiveExerciseNote(0, 'note')).toBe(false)
+    expect(useStore.getState().act({ type: 'note', entry: 0, text: 'note' }).ok).toBe(false)
   })
 })
