@@ -44,11 +44,11 @@ describe('timed hold lands on the set it started from', () => {
   it('a hold left running from a discarded workout never writes into the next workout', () => {
     view = renderWorkoutApp([held()])
     click(startButtons()[0])
-    act(() => { useStore.getState().discardSession() })   // what the Discard confirm does
+    act(() => { useStore.getState().act({ type: 'discard' }) })   // what the Discard confirm does
 
     act(() => {                                            // a fresh routine workout starts
       useStore.getState().update(s => { s.routines = [{ id: 'core', name: 'Core', ex: [{ id: '0001', mode: 'time', sec: 60, sets: 2, prog: 'off' }] }] })
-      useStore.getState().beginSession('core')
+      useStore.getState().act({ type: 'begin', routineId: 'core' })
     })
     act(() => { vi.advanceTimersByTime(31_000) })
 

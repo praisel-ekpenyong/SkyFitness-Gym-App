@@ -64,11 +64,10 @@ describe('blocked storage stays usable in memory', () => {
 
   it('a real log action (begin/discard Active workout) works in memory while blocked', () => {
     blockWrites('SecurityError')
-    const active = useStore.getState().beginSession(null, null)
-    expect(active).toBeTruthy()
-    expect(useStore.getState().S.active?.id).toBe(active.id)
+    expect(useStore.getState().act({ type: 'begin', routineId: null, bw: null }).ok).toBe(true)
+    expect(useStore.getState().S.active?.id).toBeTruthy()
     expect(useStore.getState().storageBlocked).toBe(true)
-    expect(useStore.getState().discardSession()).toBe(true)
+    expect(useStore.getState().act({ type: 'discard' }).ok).toBe(true)
     expect(useStore.getState().S.active).toBeNull()
     expect(useStore.getState().storageBlocked).toBe(true)
   })

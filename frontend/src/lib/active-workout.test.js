@@ -7,7 +7,7 @@ import {
   updateActiveSetField, addActiveSet, removeActiveSet, addActiveWarmup,
   pairActiveSuperset, unpairActiveSuperset, toggleActiveSet,
   setActiveIndex, discardActiveSession, updateActiveExerciseNote,
-  sessionView
+  sessionView, act
 } from './active-workout.js'
 
 const clone = o => JSON.parse(JSON.stringify(o))
@@ -896,5 +896,182 @@ describe('sessionView', () => {
   it('counts done/total Work sets per Entry for the reorder list', () => {
     const view = sessionView({ cur: 0, entries: [entry('a', [warm(true), work(true), work()]), entry('b', [])] })
     expect(view.entryProgress).toEqual([{ done: 1, total: 2 }, { done: 0, total: 0 }])
+  })
+})
+
+describe('act', () => {
+  const work = (done = false) => ({ w: 50, r: 8, done })
+  const entry = (id, sets, extra = {}) => ({ id, target: { reps: 8, weight: 50 }, sets, ...extra })
+  const profile = (entries, cur = 0) => ({ unit: 'kg', routines: [], workouts: [], active: { id: 'a1', d: '2026-11-16', start: 1, name: 'Push', cur, entries } })
+  const types = res => res.effects.map(e => e.type)
+
+  it('rests after a lone set while Work sets are left, and plays the set sound', () => {
+    const S = profile([entry('a', [work(), work()])])
+    const res = act(S, { type: 'toggle', entry: 0, set: 0 })
+    expect(res.ok).toBe(true)
+    expect(types(res)).toEqual(['sound:set', 'rest:start'])
+    expect(S.active.entries[0].sets[0].done).toBe(true)
+  })
+
+  it('rests after a Superset round, moving to the first Entry again', () => {
+    const S = profile([entry('a', [work(), work()], { sg: 's1' }), entry('b', [work(), work()], { sg: 's1' }), entry('c', [work()])])
+    expect(types(act(S, { type: 'toggle', entry: 0, set: 0 }))).toEqual(['sound:set'])
+    expect(S.active.cur).toBe(1)
+    expect(types(act(S, { type: 'toggle', entry: 1, set: 0 }))).toEqual(['sound:set', 'rest:start'])
+  })
+
+  it('does not rest after the last set, and asks to open the finish sheet', () => {
+    const S = profile([entry('a', [work(true), work()])])
+    expect(types(act(S, { type: 'toggle', entry: 0, set: 1 }))).toEqual(['sound:set', 'open-finish', 'rest:stop'])
+  })
+
+  it('unchecking a set plays nothing and starts no rest', () => {
+    const S = profile([entry('a', [work(true), work()])])
+    expect(act(S, { type: 'toggle', entry: 0, set: 0 }).effects).toEqual([])
+  })
+
+  it('notices a logged cardio or timed exercise when another follows', () => {
+    const cardio = profile([{ id: 'x', target: { mode: 'cardio', min: 20 }, sets: [{ min: 20, done: false }] }, entry('a', [work()])])
+    expect(act(cardio, { type: 'toggle', entry: 0, set: 0 }).effects).toContainEqual({ type: 'notice', notice: 'cardio' })
+    const timed = profile([{ id: 'y', target: { mode: 'time', sec: 45 }, sets: [{ sec: 45, done: false }] }, entry('a', [work()])])
+    expect(act(timed, { type: 'toggle', entry: 0, set: 0 }).effects).toContainEqual({ type: 'notice', notice: 'timed' })
+  })
+
+  it('begins a workout and stops any rest or hold left running', () => {
+    const S = { unit: 'kg', routines: [{ id: 'r1', name: 'Push', ex: [{ id: '0025', sets: 2, reps: 8, weight: 50 }] }], workouts: [], active: null }
+    const res = act(S, { type: 'begin', routineId: 'r1', bw: 80 })
+    expect(res.ok).toBe(true)
+    expect(types(res)).toEqual(['rest:stop', 'hold:stop'])
+    expect(S.active.name).toBe('Push')
+    expect(S.active.bw).toBe(80)
+    expect(S.active.entries).toHaveLength(1)
+  })
+
+  it('refuses to begin over an Active workout with performed sets, and leaves it alone', () => {
+    const S = profile([entry('a', [work(true)])])
+    const before = JSON.parse(JSON.stringify(S.active))
+    const res = act(S, { type: 'begin', routineId: null })
+    expect(res).toEqual({ ok: false, effects: [] })
+    expect(S.active).toEqual(before)
+  })
+
+  it('begins over an Active workout with nothing performed', () => {
+    const S = profile([entry('a', [work()])])
+    expect(act(S, { type: 'begin', routineId: null }).ok).toBe(true)
+    expect(S.active.entries).toEqual([])
+  })
+
+  it('discards the Active workout and stops the timers', () => {
+    const S = profile([entry('a', [work(true)])])
+    const res = act(S, { type: 'discard' })
+    expect(res.ok).toBe(true)
+    expect(types(res)).toEqual(['rest:stop', 'hold:stop'])
+    expect(S.active).toBe(null)
+  })
+
+  it('finishes into a logged Workout, stops the timers and plays the finish sound', () => {
+    const S = profile([entry('a', [work(true), work()]), entry('b', [work()])])
+    const res = act(S, { type: 'finish' })
+    expect(res.ok).toBe(true)
+    expect(types(res)).toEqual(['rest:stop', 'hold:stop', 'sound:finish'])
+    expect(S.active).toBe(null)
+    expect(S.workouts).toHaveLength(1)
+    expect(res.result.workout.entries.map(e => e.id)).toEqual(['a'])
+    expect(res.result.prs).toEqual([])
+    expect(res.result.routineSync).toBe(null)
+  })
+
+  it('carries the Routine sync diff when the session changed its Routine', () => {
+    const S = profile([entry('0025', [work(true), work(true), work(true)], { target: { id: '0025', sets: 2, reps: 8, weight: 50 } })])
+    S.routines = [{ id: 'r1', name: 'Push', ex: [{ id: '0025', sets: 2, reps: 8, weight: 50 }] }]
+    S.active.routineId = 'r1'
+    const { result } = act(S, { type: 'finish' })
+    expect(result.routineSync).toMatchObject({ routineId: 'r1', routineName: 'Push', hasDiff: true })
+  })
+
+  it('cannot finish or discard without an Active workout', () => {
+    const S = { routines: [], workouts: [], active: null }
+    expect(act(S, { type: 'finish' })).toEqual({ ok: false, effects: [] })
+    expect(act(S, { type: 'discard' })).toEqual({ ok: false, effects: [] })
+  })
+
+  it('moves Prev and Next by Step, landing on the first Entry of a Superset', () => {
+    const S = profile([entry('a', [work()]), entry('b', [work()], { sg: 's1' }), entry('c', [work()], { sg: 's1' }), entry('d', [work()])])
+    expect(act(S, { type: 'next' }).ok).toBe(true)
+    expect(S.active.cur).toBe(1)
+    act(S, { type: 'next' })
+    expect(S.active.cur).toBe(3)
+    expect(act(S, { type: 'next' }).ok).toBe(false)
+    expect(S.active.cur).toBe(3)
+    act(S, { type: 'goTo', entry: 2 })
+    act(S, { type: 'prev' })
+    expect(S.active.cur).toBe(0)
+    expect(act(S, { type: 'prev' }).ok).toBe(false)
+  })
+
+  it('goes to an Entry, kept within the workout, with no effects', () => {
+    const S = profile([entry('a', [work()]), entry('b', [work()])])
+    expect(act(S, { type: 'goTo', entry: 1 })).toEqual({ ok: true, effects: [] })
+    expect(S.active.cur).toBe(1)
+    act(S, { type: 'goTo', entry: 9 })
+    expect(S.active.cur).toBe(1)
+  })
+
+  it('edits sets: a field, adding and removing a set, adding a warm-up', () => {
+    const S = profile([entry('a', [work(), work()])])
+    expect(act(S, { type: 'editSet', entry: 0, set: 0, field: 'r', value: 6 })).toEqual({ ok: true, effects: [] })
+    expect(S.active.entries[0].sets[0].r).toBe(6)
+    expect(act(S, { type: 'addSet', entry: 0 }).ok).toBe(true)
+    expect(S.active.entries[0].sets).toHaveLength(3)
+    expect(act(S, { type: 'removeSet', entry: 0, set: 0 }).ok).toBe(true)
+    expect(S.active.entries[0].sets).toHaveLength(2)
+    expect(act(S, { type: 'removeSet', entry: 0 }).ok).toBe(true)
+    expect(act(S, { type: 'removeSet', entry: 0 }).ok).toBe(false)
+    expect(act(S, { type: 'addWarmup', entry: 0 }).ok).toBe(true)
+    expect(S.active.entries[0].sets[0].phase).toBe('warmup')
+    expect(act(S, { type: 'editSet', entry: 5, set: 0, field: 'r', value: 1 }).ok).toBe(false)
+  })
+
+  it('adds an Exercise, returns its Entry and goes to it', () => {
+    const S = profile([entry('a', [work()])])
+    S.active.routineId = null
+    const res = act(S, { type: 'addExercise', exId: '0025', target: { sets: 2 } })
+    expect(res.ok).toBe(true)
+    expect(res.result).toBe(S.active.entries[1])
+    expect(res.result.id).toBe('0025')
+    expect(S.active.cur).toBe(1)
+  })
+
+  it('removes an Exercise without asking, and stops a running hold', () => {
+    const S = profile([entry('a', [work(true)]), entry('b', [work()])], 1)
+    const res = act(S, { type: 'removeExercise', entry: 0 })
+    expect(res).toEqual({ ok: true, effects: [{ type: 'hold:stop' }] })
+    expect(S.active.entries.map(e => e.id)).toEqual(['b'])
+    expect(S.active.cur).toBe(0)
+  })
+
+  it('replaces and moves an Exercise without asking', () => {
+    const S = profile([entry('a', [work(true)]), entry('b', [work()])])
+    expect(act(S, { type: 'replaceExercise', entry: 0, exId: '0025', target: { sets: 1 } }).ok).toBe(true)
+    expect(S.active.entries[0].id).toBe('0025')
+    expect(act(S, { type: 'moveExercise', entry: 0, dir: 1 }).ok).toBe(true)
+    expect(S.active.entries.map(e => e.id)).toEqual(['b', '0025'])
+    expect(act(S, { type: 'moveExercise', entry: 1, dir: 1 }).ok).toBe(false)
+  })
+
+  it('writes and clears an exercise note', () => {
+    const S = profile([entry('a', [work()])])
+    act(S, { type: 'note', entry: 0, text: '  grip wide ' })
+    expect(S.active.entries[0].notes).toBe('grip wide')
+    act(S, { type: 'note', entry: 0, text: '' })
+    expect(S.active.entries[0]).not.toHaveProperty('notes')
+  })
+
+  it('pairs two Entries into one Step and unpairs them', () => {
+    const S = profile([entry('a', [work()]), entry('b', [work()])])
+    expect(act(S, { type: 'pair', first: 0, second: 1 }).ok).toBe(true)
+    expect(sessionView(S.active).steps.map(s => s.entries)).toEqual([[0, 1]])
+    expect(act(S, { type: 'unpair', entry: 0 }).ok).toBe(true)
+    expect(sessionView(S.active).steps.map(s => s.entries)).toEqual([[0], [1]])
   })
 })

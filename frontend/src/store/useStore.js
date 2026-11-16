@@ -7,14 +7,9 @@ import { SEED_PLAN } from '../lib/env.js'
 import { seedPlanInto } from '../lib/plans/seed.js'
 import { flush, load, loadLocal, save, LOCAL_KEY, onStorageSync } from '../lib/storage.js'
 import { admit } from '../lib/log/admit.js'
-import { setsDone } from '../lib/workout-model.js'
-import {
-  createActiveSession, completeActiveSession,
-  addActiveExercise, removeActiveExercise, replaceActiveExercise, moveActiveExercise, toggleActiveSet,
-  updateActiveSetField, addActiveSet, removeActiveSet, addActiveWarmup,
-  pairActiveSuperset, unpairActiveSuperset, setActiveIndex, discardActiveSession,
-  syncRoutineFromSession, updateActiveExerciseNote
-} from '../lib/active-workout.js'
+import { act } from '../lib/active-workout.js'
+import { syncRoutineFromSession } from '../lib/routine-sync.js'
+import { runEffects } from './effects.js'
 
 export const DEF = {
   unit: 'kg',
@@ -124,94 +119,21 @@ export const useStore = create((set, get) => {
       persist(S)
     },
     replaceState(S) { persist(normalizeState(S)) },
-    beginSession(routineId, bw) {
-      const current = get().S.active
-      if (current && setsDone(current) > 0) return null
-      const active = createActiveSession(get().S, routineId, bw)
-      get().update(s => { s.active = active })
-      return active
-    },
-    addActiveExercise(exId, targetCfg) {
-      let entry = null
-      get().update(s => { entry = addActiveExercise(s, exId, targetCfg) })
-      return entry
-    },
-    removeActiveExercise(idx) {
-      let ok = false
-      get().update(s => { ok = removeActiveExercise(s, idx) })
-      return ok
-    },
-    replaceActiveExercise(idx, newExId, targetCfg) {
-      let entry = null
-      get().update(s => { entry = replaceActiveExercise(s, idx, newExId, targetCfg) })
-      return entry
-    },
-    moveActiveExercise(idx, dir) {
-      let ok = false
-      get().update(s => { ok = moveActiveExercise(s, idx, dir) })
-      return ok
-    },
-    toggleActiveSet(entryIdx, setIdx) {
-      let outcome = null
-      get().update(s => { outcome = toggleActiveSet(s, entryIdx, setIdx) })
-      return outcome
-    },
-    updateActiveSetField(entryIdx, setIdx, field, value) {
-      let ok = false
-      get().update(s => { ok = updateActiveSetField(s, entryIdx, setIdx, field, value) })
-      return ok
-    },
-    addActiveSet(entryIdx) {
-      let ok = false
-      get().update(s => { ok = addActiveSet(s, entryIdx) })
-      return ok
-    },
-    removeActiveSet(entryIdx, setIdx = null) {
-      let ok = false
-      get().update(s => { ok = removeActiveSet(s, entryIdx, setIdx) })
-      return ok
-    },
-    addActiveWarmup(entryIdx) {
-      let ok = false
-      get().update(s => { ok = addActiveWarmup(s, entryIdx) })
-      return ok
-    },
-    pairActiveSuperset(firstIdx, secondIdx) {
-      let ok = false
-      get().update(s => { ok = pairActiveSuperset(s, firstIdx, secondIdx) })
-      return ok
-    },
-    unpairActiveSuperset(entryIdx) {
-      let ok = false
-      get().update(s => { ok = unpairActiveSuperset(s, entryIdx) })
-      return ok
-    },
-    setActiveIndex(idx) {
-      let ok = false
-      get().update(s => { ok = setActiveIndex(s, idx) })
-      return ok
-    },
-    discardSession() {
-      let ok = false
-      get().update(s => { ok = discardActiveSession(s) })
-      return ok
-    },
-    finishSession() {
-      let result = null
-      get().update(s => { result = completeActiveSession(s) })
-      return result
+    /**
+     * Sends a command to the Active workout and runs its effects.
+     * @returns {{ok: boolean, effects: Array, result?: *}} The view reads only `open-finish` from effects.
+     */
+    act(command) {
+      let res = null
+      get().update(s => { res = act(s, command) })
+      runEffects(res.effects, get().S)
+      return res
     },
     syncRoutineFromSession(routineId, syncedEx) {
       let ok = false
       get().update(s => { ok = syncRoutineFromSession(s, routineId, syncedEx) })
       return ok
     },
-    updateActiveExerciseNote(entryIdx, note) {
-      let ok = false
-      get().update(s => { ok = updateActiveExerciseNote(s, entryIdx, note) })
-      return ok
-    },
-
     async boot() {
       let S = get().S
       const winner = await load({

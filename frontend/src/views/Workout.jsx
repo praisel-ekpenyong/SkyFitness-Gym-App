@@ -11,7 +11,6 @@ import { EFFORT, effortOf, stepEffort, capEffort } from '../lib/effort.js'
 import { sessionView, holdRef, findHoldRow } from '../lib/active-workout.js'
 import { best as bestOf, lastSession } from '../lib/training-log.js'
 import { fmtNum, fmtDate, fmtSec, fmtElapsed, todayISO, exCount, DAYN, sentenceCase } from '../lib/format.js'
-import { playSetComplete } from '../lib/sound.js'
 import { t } from '../lib/i18n.js'
 import Media, { Thumb } from '../components/Media.jsx'
 import { startFlow, exercisePicker, exConfigSheet, exerciseDetailSheet, finishWorkout, workoutCompleteSheet, confirmSheet, exerciseNoteSheet } from '../sheets.jsx'
@@ -205,9 +204,10 @@ function ExerciseBlock({ entryIdx, compact, isCurrent = true, arrived = false, r
 }
 
 /* ---------- active workout ---------- */
+const send = command => useStore.getState().act(command)
+
 export function removeActiveExercise(idx) {
-  useUI.getState().stopWork()
-  useStore.getState().removeActiveExercise(idx)
+  send({ type: 'removeExercise', entry: idx })
 }
 
 /**
@@ -237,7 +237,7 @@ export function replaceActiveExerciseFlow(idx) {
       const seed = seedForReplacement(curS, newEx.id, curA?.routineId, plannedCount)
       delete seed.notes
       exConfigSheet(newEx, null, cfg => {
-        useStore.getState().replaceActiveExercise(idx, newEx.id, cfg)
+        send({ type: 'replaceExercise', entry: idx, exId: newEx.id, target: cfg })
       }, null, routine, seed, null, t('Replace'))
     })
   }
@@ -264,10 +264,10 @@ function ReorderExercisesSheet({ close }) {
   const inSuperset = new Set(supersets.flat())
 
   const move = (idx, dir) => {
-    useStore.getState().moveActiveExercise(idx, dir)
+    send({ type: 'moveExercise', entry: idx, dir })
   }
   const select = idx => {
-    useStore.getState().setActiveIndex(idx)
+    send({ type: 'goTo', entry: idx })
     close()
   }
 
@@ -344,7 +344,6 @@ function ActiveWorkout() {
   const nav = useNavigate()
   const S = useStore(s => s.S)
   const startRest = useUI(s => s.startRest)
-  const stopRest = useUI(s => s.stopRest)
   const resting = useUI(s => !!s.timer)
   const holding = useUI(s => !!s.work)
   const A = S.active
@@ -364,13 +363,14 @@ function ActiveWorkout() {
 
   const nextIdx = view.nextStep?.entries[0] ?? null
 
-  const setField = (idx, i, field, v) => useStore.getState().updateActiveSetField(idx, i, field, v)
-  const addSet = idx => useStore.getState().addActiveSet(idx)
-  const removeSet = idx => useStore.getState().removeActiveSet(idx)
-  const addWarmup = idx => useStore.getState().addActiveWarmup(idx)
-  const removeSetAt = (idx, i) => useStore.getState().removeActiveSet(idx, i)
-  const pairAt = (first, second) => useStore.getState().pairActiveSuperset(first, second)
-  const unpairAt = idx => useStore.getState().unpairActiveSuperset(idx)
+  const setField = (idx, i, field, value) => send({ type: 'editSet', entry: idx, set: i, field, value })
+  const addSet = idx => send({ type: 'addSet', entry: idx })
+  const removeSet = idx => send({ type: 'removeSet', entry: idx })
+  const addWarmup = idx => send({ type: 'addWarmup', entry: idx })
+  const removeSetAt = (idx, i) => send({ type: 'removeSet', entry: idx, set: i })
+  const pairAt = (first, second) => send({ type: 'pair', first, second })
+  const unpairAt = idx => send({ type: 'unpair', entry: idx })
+  const goTo = idx => send({ type: 'goTo', entry: idx })
   const onPairPrev = !isSuperset && cur > 0 ? () => pairAt(cur - 1, cur) : null
   const onPairNext = !isSuperset && cur < A.entries.length - 1 ? () => pairAt(cur, cur + 1) : null
 
@@ -438,32 +438,21 @@ function ActiveWorkout() {
       const at = findHoldRow(useStore.getState().S.active, ref)
       if (!at) return
       const [entryIdx, setIdx] = at
-      useStore.getState().updateActiveSetField(entryIdx, setIdx, 'sec', elapsed)
+      send({ type: 'editSet', entry: entryIdx, set: setIdx, field: 'sec', value: elapsed })
       if (!useStore.getState().S.active.entries[entryIdx].sets[setIdx].done) toggle(entryIdx, setIdx)
     })
   }
 
   const toggle = (idx, i) => {
-    const res = useStore.getState().toggleActiveSet(idx, i)
-    if (!res) return
-
-    if (res.checked) {
-      playSetComplete(S.sound)
-    }
-
-    if (res.next.kind === 'open-finish') workoutCompleteSheet()
-    else if (res.notice === 'cardio') useUI.getState().toast(t('Cardio logged'))
-    else if (res.notice === 'timed') useUI.getState().toast(t('Hold logged'))
-
-    if (res.rest.stop) stopRest()
-    if (res.rest.start) startRest(S.restSec)
+    const res = send({ type: 'toggle', entry: idx, set: i })
+    if (res.effects.some(e => e.type === 'open-finish')) workoutCompleteSheet()
   }
 
   const restKey = <Button size="xs" icon="timer" className="ex-rest" aria-label={t('Rest {0}', fmtSec(S.restSec))} disabled={resting || holding} onClick={() => startRest(S.restSec)}>
     {fmtSec(S.restSec)}
   </Button>
 
-  const discard = () => confirmSheet({ title: t('Discard workout?'), message: t('The sets you logged in this session will be lost.'), confirmText: t('Discard'), danger: true, onConfirm: () => { useStore.getState().discardSession(); stopRest(); useUI.getState().stopWork(); nav('/home') } })
+  const discard = () => confirmSheet({ title: t('Discard workout?'), message: t('The sets you logged in this session will be lost.'), confirmText: t('Discard'), danger: true, onConfirm: () => { send({ type: 'discard' }); nav('/home') } })
 
   return <div className="workout">
     <header className="hdr wk-hdr">
@@ -474,7 +463,7 @@ function ActiveWorkout() {
         {steps.map(({ entries: u, done, total }, k) => {
           return <button key={u[0]} className={'lad-s' + (k === stepIdx ? ' on' : '')} aria-current={k === stepIdx ? 'step' : undefined}
             aria-label={t('Go to {0}', u.map(i => exOr(A.entries[i].id).n).join(' + '))}
-            onClick={() => useStore.getState().setActiveIndex(u[0])}>
+            onClick={() => goTo(u[0])}>
             <span className="lad-b"><i style={{ transform: `scaleX(${total ? done / total : 0})` }} /></span>
           </button>
         })}
@@ -499,14 +488,14 @@ function ActiveWorkout() {
         <ExerciseBlock entryIdx={cur} arrived={shown.moved} restKey={restKey} onToggle={i => toggle(cur, i)} onField={(i, f, v) => setField(cur, i, f, v)} onAddSet={() => addSet(cur)} onRemoveSet={() => removeSet(cur)} onAddWarmup={() => addWarmup(cur)} onRemoveSetAt={i => removeSetAt(cur, i)} onStartTimed={i => startTimed(cur, i)}
           onReplace={replaceActiveExerciseFlow} />
       )}
-      {nextIdx != null && <button className="btn primary wk-next" onClick={() => useStore.getState().setActiveIndex(nextIdx)}>
+      {nextIdx != null && <button className="btn primary wk-next" onClick={() => goTo(nextIdx)}>
         <NextLabel name={exOr(A.entries[nextIdx].id).n} /><Icon name="chevronRight" />
       </button>}
     </> : <div className="empty"><div className="ico"><Icon name="shuffle" /></div>{t('Freestyle workout — add your first exercise.')}</div>}
 
     <div className="wk-nav">
-      <Button icon="chevronLeft" disabled={!view.canPrev} onClick={() => useStore.getState().setActiveIndex(steps[stepIdx - 1].entries[0])}>{t('Prev')}</Button>
-      <Button trailingIcon="chevronRight" disabled={!view.canNext} onClick={() => useStore.getState().setActiveIndex(steps[stepIdx + 1].entries[0])}>{t('Next')}</Button>
+      <Button icon="chevronLeft" disabled={!view.canPrev} onClick={() => send({ type: 'prev' })}>{t('Prev')}</Button>
+      <Button trailingIcon="chevronRight" disabled={!view.canNext} onClick={() => send({ type: 'next' })}>{t('Next')}</Button>
     </div>
     <div className="wk-nav">
       <Button onClick={() => exercisePicker(ex => {
@@ -514,7 +503,7 @@ function ActiveWorkout() {
         const freestyle = !A.routineId
         const seed = freestyle ? freestyleConfig(S, { id: ex.id, ...defaultConfig(ex.id) }) : null
         exConfigSheet(ex, null, cfg => {
-          useStore.getState().addActiveExercise(ex.id, cfg)
+          send({ type: 'addExercise', exId: ex.id, target: cfg })
         }, null, routine, seed)
       })} icon="plus">{t('Add exercise')}</Button>
       {A.entries.length > 0 && <Button icon="pencil" onClick={editWorkoutSheet}>{t('Edit workout')}</Button>}
