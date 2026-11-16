@@ -167,6 +167,10 @@ Adding an exercise to a workout without a routine; seeded from the last time it 
 Adjacent entries paired to be trained back-to-back. Pairing is positional: reorder or unlink and the group dissolves.
 _Avoid_: circuit, giant set
 
+**Step**:
+One stop on an Active workout's ladder: a lone Entry, or a whole Superset. Prev/Next, the progress ladder and the "Next" key move by Steps; Session progress is also read per Step.
+_Avoid_: unit, block, station
+
 **Rest**:
 The recovery interval between sets, between rounds of a superset, or between exercises.
 _Avoid_: break, rest period, pause
