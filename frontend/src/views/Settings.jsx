@@ -153,7 +153,7 @@ export default function Settings() {
     {!MOBILE && <Section title={t('Tip')}>
       <Row icon="lightbulb"
         title={IS_ANDROID ? t('In Chrome: ⋮ menu → Add to Home screen') : t('In Safari: Share → Add to Home Screen')}
-        subtitle={t('to install Sky as a full-screen app.') + ' ' + t('Your data never leaves this device, so export a backup now and then.')} />
+        subtitle={t('to install Sky as a full-screen app. Your data never leaves this device, so export a backup now and then.')} />
     </Section>}
 
     <div className="dim small settings-about"><Mark size={12} /> Sky · {t('free and open source (MIT)')}</div>

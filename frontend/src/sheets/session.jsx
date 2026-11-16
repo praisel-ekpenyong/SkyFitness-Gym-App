@@ -209,9 +209,9 @@ export function FinishSummary({ w, prs, e1prs = [], routineSync = null, close })
         getA11yLabel={slug => {
           const val = load[slug]
           const name = t(MUSCLE_NAME[slug] || slug)
-          if (!val) return `${name}, ${t('not trained')}`
-          const setsText = Number.isInteger(val) ? `${val}.0 effective sets` : `${fmtNum(val)} effective sets`
-          return `${name}, ${setsText}`
+          if (!val) return t('{0}, {1}', name, t('not trained'))
+          const setsText = t('{0} effective sets', Number.isInteger(val) ? `${val}.0` : fmtNum(val))
+          return t('{0}, {1}', name, setsText)
         }}
       />
       <div className="gap12" />

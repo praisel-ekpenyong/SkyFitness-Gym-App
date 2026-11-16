@@ -68,7 +68,7 @@ export default function Home() {
     )
   }
   const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6)
-  const wkLabel = weekOffset === 0 ? t('This week') : `${monday.getDate()} ${monday.toLocaleDateString(dateLocale(), { month: 'short' })} – ${sunday.getDate()} ${sunday.toLocaleDateString(dateLocale(), { month: 'short' })}`
+  const wkLabel = weekOffset === 0 ? t('This week') : t('{0} {1} – {2} {3}', monday.getDate(), monday.toLocaleDateString(dateLocale(), { month: 'short' }), sunday.getDate(), sunday.toLocaleDateString(dateLocale(), { month: 'short' }))
 
   const wThisWeek = S.workouts.filter(w => weekKey(w.d) === weekKey(todayISO())).length
   const plannedPerWeek = Object.keys(S.week).filter(k => S.week[k]).length
@@ -218,7 +218,7 @@ export default function Home() {
           <div className="card-head">
             <h2>{t('Body weight')}</h2>
             <div className="row bw-tools">
-              <Button size="sm" icon="target" aria-label={S.targetW ? `${t('Goal weight')}: ${fmtNum(S.targetW)} ${S.unit}` : t('Set goal weight')} onClick={goalSheet}>
+              <Button size="sm" icon="target" aria-label={S.targetW ? t('Goal weight: {0} {1}', fmtNum(S.targetW), S.unit) : t('Set goal weight')} onClick={goalSheet}>
                 {S.targetW ? fmtNum(S.targetW) : t('Goal')}
               </Button>
               <Button size="sm" icon="plus" onClick={() => bwSheet()}>{t('Log')}</Button>
