@@ -12,3 +12,4 @@ export {
   buildCompletedWorkout, completeActiveSession
 } from './active-finish.js'
 export { diffRoutineWithSession, syncRoutineFromSession } from './routine-sync.js'
+export { sessionView } from './session-view.js'
