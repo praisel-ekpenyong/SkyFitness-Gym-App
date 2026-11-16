@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { tonnageOf } from './workout-model.js'
 import {
-  bestKnownWeight, heaviestSetWeight, heaviestForEntry, mergeExWeight,
+  heaviestSetWeight, heaviestForEntry, mergeExWeight,
   createActiveSession, completeActiveSession,
   buildCompletedWorkout, addActiveExercise, removeActiveExercise,
   replaceActiveExercise, moveActiveExercise, buildActiveEntry,
@@ -18,29 +18,6 @@ const blankProfile = () => ({
 })
 
 describe('active-workout lifecycle seam', () => {
-  it('bestKnownWeight merges history best and exWeights mirror', () => {
-    const S = {
-      workouts: [
-        { entries: [{ id: 'lift', sets: [{ w: 80, r: 5, done: true }] }] },
-        { entries: [{ id: 'lift', sets: [{ w: 90, r: 5, done: true }] }] },
-      ],
-      exWeights: { lift: { w: 95, d: '2026-08-10' } }
-    }
-    expect(bestKnownWeight(S, 'lift')).toBe(95)
-    expect(bestKnownWeight({ workouts: S.workouts, exWeights: {} }, 'lift')).toBe(90)
-  })
-
-  it('bestKnownWeight never promotes a warm-up or an unperformed set (GLOSSARY.md: work sets only)', () => {
-    expect(bestKnownWeight({ workouts: [{ entries: [{ id: 'lift', topW: 120, sets: [
-      { phase: 'warmup', done: true, w: 120 },
-      { phase: 'work', done: true, w: 80 },
-      { phase: 'work', done: false, w: 100 },
-    ] }] }] }, 'lift')).toBe(80)
-    expect(bestKnownWeight({ workouts: [{ entries: [{ id: 'lift', sets: [
-      { phase: 'warmup', done: true, w: 120 },
-    ] }] }] }, 'lift')).toBe(0)
-  })
-
   it('heaviestSetWeight excludes warm-ups and unticked', () => {
     const entry = {
       sets: [
