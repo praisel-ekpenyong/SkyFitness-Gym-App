@@ -151,6 +151,12 @@ describe('toggling a set', () => {
     expect(toggle(S, 0, 2)).toEqual(['sound:set', 'open-finish', 'rest:stop'])
   })
 
+  it('does not ask for the finish sheet when a warm-up is ticked on a last Step with no Work sets', () => {
+    const S = withActive([loaded('ex1', [work(true)]), loaded('ex2', [warm()])], { cur: 1 })
+    expect(sessionView(S.active).step.total).toBe(0)
+    expect(toggle(S, 1, 0)).toEqual(['sound:set'])
+  })
+
   it('asks for the finish sheet, with no rest, when a lone cardio exercise is logged', () => {
     const S = withActive([cardio('ex-cardio')])
     expect(toggle(S, 0, 0)).toEqual(['sound:set', 'open-finish', 'rest:stop'])
@@ -196,9 +202,9 @@ describe('toggling a set', () => {
     expect(toggle(S, 0, 2)).toEqual(['sound:set', 'open-finish', 'rest:stop'])
   })
 
-  it('asks for the finish sheet when an all-warm-up Entry is logged', () => {
+  it('does not ask for the finish sheet when an all-warm-up Entry is logged, since warm-ups never finish a Step', () => {
     const S = withActive([loaded('ex1', [warm()])])
-    expect(toggle(S, 0, 0)).toEqual(['sound:set', 'open-finish'])
+    expect(toggle(S, 0, 0)).toEqual(['sound:set'])
   })
 
   it('moves to the Superset partner mid-round, without resting', () => {

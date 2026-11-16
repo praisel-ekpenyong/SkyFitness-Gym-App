@@ -1,18 +1,6 @@
-import { modeOf, isWorkSet, doneWorkSets, hasWork, isExerciseDone } from './workout-model.js'
-import {
-  supersetUnits, unitOf,
-  setProgressHighWater, supersetFlowStep
-} from './supersetFlow.js'
-
-function describeStep(entries, entryIdx) {
-  const steps = supersetUnits(entries)
-  const step = unitOf(steps, entryIdx)
-  const stepIdx = steps.findIndex(s => s === step)
-  const isLastStep = stepIdx >= steps.length - 1
-  return { step, isLastStep }
-}
-
-const stepWorkDone = (entries, step) => !step.some(i => hasWork(entries, i))
+import { modeOf, isWorkSet, doneWorkSets, isExerciseDone } from './workout-model.js'
+import { setProgressHighWater, supersetFlowStep } from './supersetFlow.js'
+import { stepOf } from './session-view.js'
 
 export function toggleActiveSet(S, entryIdx, setIdx) {
   const A = S?.active
@@ -29,8 +17,10 @@ export function toggleActiveSet(S, entryIdx, setIdx) {
   const cardioEntry = mode === 'cardio'
   const timedEntry = mode === 'time'
 
-  const { step: stepEntries, isLastStep } = describeStep(A.entries, entryIdx)
-  const stepDone = stepWorkDone(A.entries, stepEntries)
+  const step = stepOf(A.entries, entryIdx)
+  const stepEntries = step?.entries ?? [entryIdx]
+  const isLastStep = step?.isLast ?? true
+  const stepDone = !!step?.isDone
 
   let exJustDone = false
   let workoutDone = false
