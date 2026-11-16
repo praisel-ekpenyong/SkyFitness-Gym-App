@@ -1,35 +1,10 @@
-import { bestWeightForEntry, doneWorkSets, isPerformed } from './workout-model.js'
+import { doneWorkSets, isPerformed } from './workout-model.js'
+import { best } from './training-log.js'
 import { is1RMRecord } from './onerm.js'
 import { EXIDX } from './exercises.js'
 import { exerciseMuscleSnapshot } from './muscles.js'
 import { diffRoutineWithSession } from './routine-sync.js'
 import { normalizeWeight, round1 } from './units.js'
-
-function bestLoggedWeight(S, exId) {
-  let best = 0
-  const targetUnit = S?.unit || 'kg'
-  for (const w of S?.workouts || []) {
-    for (const e of w?.entries || []) {
-      if (e?.id === exId) {
-        const cur = bestWeightForEntry(e, w, targetUnit)
-        if (cur > best) best = cur
-      }
-    }
-  }
-  return best
-}
-
-export function bestKnownWeight(S, exId) {
-  if (!S || !exId) return 0
-  const targetUnit = S?.unit || 'kg'
-  const best = bestLoggedWeight(S, exId)
-  const cached = S.exWeights?.[exId]
-  if (cached && typeof cached.w === 'number') {
-    const cur = normalizeWeight(cached.w, cached.unit || targetUnit, targetUnit)
-    if (cur > best) return cur
-  }
-  return best
-}
 
 export function heaviestSetWeight(entry) {
   let mx = 0
@@ -118,7 +93,7 @@ export function completeActiveSession(S, opts = {}) {
   for (const e of A.entries) {
     const mxSets = heaviestSetWeight(e)
     if (mxSets > 0) {
-      const bestHistory = bestLoggedWeight(S, e.id)
+      const bestHistory = best(S, e.id)
       if (mxSets > bestHistory) prs.push(e.id)
     }
     const rec = is1RMRecord(S, e.id, e)

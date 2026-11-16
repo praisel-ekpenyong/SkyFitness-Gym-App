@@ -1,7 +1,7 @@
 
 import { isCardio, isBodyweightEq } from './exercises.js'
 import { isWarmupRow, ensurePlainObject } from './warmup.js'
-import { bestKnownWeight } from './active-finish.js'
+import { best } from './training-log.js'
 import { resolveSetWeight, normalizeWeight, round1 } from './units.js'
 
 export { phaseForSet, isWarmupRow, ensurePlainObject } from './warmup.js'
@@ -192,11 +192,11 @@ export function buildSets(S, cfg, options = {}) {
     }
     return sets
   }
-  const conf = useExWeights ? S?.exWeights?.[cfg.id] : null
+  const bestWeight = useExWeights ? best(S, cfg.id) : 0
   for (let i = 0; i < n; i++) {
     const prev = prevAt(i)
     const usable = prev && prev.r > 0 ? prev : null
-    const w = preferLast && usable ? usable.w : (conf && conf.w > 0 ? conf.w : (usable ? usable.w : cfg.weight))
+    const w = preferLast && usable ? usable.w : (bestWeight > 0 ? bestWeight : (usable ? usable.w : cfg.weight))
     const r = seedWeightOnly ? cfg.reps : (usable ? usable.r : cfg.reps)
     const row = makeRow('reps', { ...cfg, reps: r, weight: w }, { prev: null })
     sets.push(row)
@@ -377,7 +377,7 @@ export function bestWeightForEntry(entry = {}, workout = null, targetUnit = null
 export function seedForReplacement(S, exId, routineId, setsCount) {
   const base = defaultConfig(exId)
   const last = lastEntryForRoutine(S, exId, routineId) || lastEntryFor(S, exId)
-  const bestWeight = bestKnownWeight(S, exId)
+  const bestWeight = best(S, exId)
   return {
     ...base,
     ...(last?.target || {}),

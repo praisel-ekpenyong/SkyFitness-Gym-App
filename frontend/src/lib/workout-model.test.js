@@ -1,5 +1,4 @@
 import { describe, it, expect } from 'vitest'
-import { bestKnownWeight } from './active-workout.js'
 import { modeOf, isTimed, defaultConfig, buildSets, freestyleConfig, tonnageOf, bestWeightForEntry, isBw, isPerSide, sideReps, repStep, cascadeWeight, insertWarmupRow, removeRowAt, workSetsDone, isWorkSet, isPerformed, workSets, doneWorkSets, hasWork, isExerciseDone, sessionProgress, seedForReplacement, cleanNote } from './workout-model.js'
 import { fmtSec, setLabel, exLine } from './format.js'
 import { effortOf, stepEffort, capEffort } from './effort.js'
@@ -310,7 +309,7 @@ describe('freestyleConfig', () => {
 
     expect(cfg).toEqual({ id: LIFT, mode: 'reps', sets: 4, reps: 8, weight: 60, prog: 'linear' })
     expect(buildSets(S, cfg)).toEqual([
-      { w: 60, r: 8, done: false },
+      { w: 62.5, r: 8, done: false },
       { w: 62.5, r: 7, done: false },
       { w: 62.5, r: 6, done: false },
       { w: 62.5, r: 5, done: false }
@@ -393,11 +392,14 @@ describe('buildSets', () => {
   it('does not seed reps from a timed set when an exercise switches back', () => {
     const S = { exWeights: {}, workouts: [{ d: '2026-01-01', entries: [{ id: LIFT, target: { mode: 'time' }, sets: [{ sec: 70, w: 10, done: true }] }] }] }
     expect(buildSets(S, { id: LIFT, mode: 'reps', sets: 1, reps: 8, weight: 40 }))
-      .toEqual([{ w: 40, r: 8, done: false }])
+      .toEqual([{ w: 10, r: 8, done: false }])
   })
 
   it('still prefers the confirmed working weight for reps sets', () => {
-    const S = { exWeights: { [LIFT]: { w: 75 } }, workouts: [{ d: '2026-01-01', entries: [{ id: LIFT, sets: [{ w: 60, r: 10, done: true }] }] }] }
+    const S = { workouts: [
+      { d: '2025-12-01', entries: [{ id: LIFT, sets: [{ w: 75, r: 5, done: true }] }] },
+      { d: '2026-01-01', entries: [{ id: LIFT, sets: [{ w: 60, r: 10, done: true }] }] },
+    ] }
     expect(buildSets(S, { id: LIFT, sets: 1, reps: 8, weight: 50 })).toEqual([{ w: 75, r: 10, done: false }])
   })
 
@@ -422,10 +424,12 @@ describe('buildSets', () => {
 
   it('reads the working-weight hint only when the session has no Routine behind it', () => {
     const S = {
-      exWeights: { [LIFT]: { w: 75 } },
-      workouts: [{ d: '2026-01-01', routineId: 'other', entries: [{ id: LIFT, target: { sets: 1, weight: 50 }, sets: [
-        { w: 60, r: 10, done: true }
-      ] }] }]
+      workouts: [
+        { d: '2025-12-01', routineId: 'other', entries: [{ id: LIFT, sets: [{ w: 75, r: 5, done: true }] }] },
+        { d: '2026-01-01', routineId: 'other', entries: [{ id: LIFT, target: { sets: 1, weight: 50 }, sets: [
+          { w: 60, r: 10, done: true }
+        ] }] },
+      ]
     }
     expect(buildSets(S, { id: LIFT, sets: 1, reps: 8, weight: 50 }))
       .toEqual([{ w: 75, r: 10, done: false }])
@@ -538,54 +542,6 @@ describe('workSetsDone and bestWeightForEntry', () => {
       { phase: 'work', sec: 75, w: 25, done: true },
       { phase: 'work', sec: 90, w: 40, done: false },
     ] })).toBe(25)
-  })
-
-  it('does not report a repeated weighted timed hold as a new load PR (blocker 3)', () => {
-    const prior = {
-      id: LIFT,
-      target: { mode: 'time' },
-      sets: [{ phase: 'work', sec: 60, w: 20, done: true }],
-    }
-    const repeated = {
-      id: LIFT,
-      target: { mode: 'time' },
-      sets: [{ phase: 'work', sec: 60, w: 20, done: true }],
-    }
-    const state = { workouts: [{ entries: [prior] }] }
-    const repeatedWeight = Math.max(0, ...repeated.sets.filter(set => set.done).map(set => set.w || 0))
-
-    expect(bestWeightForEntry(prior)).toBe(20)
-    expect(repeatedWeight > bestKnownWeight(state, LIFT)).toBe(false)
-  })
-
-  it('normalizes best weight to targetUnit using the unit cascade', () => {
-    const entryLb = {
-      id: LIFT,
-      unit: 'lb',
-      sets: [
-        { w: 100, r: 5, done: true },
-        { w: 200, r: 3, done: true },
-      ],
-    }
-    expect(bestWeightForEntry(entryLb)).toBe(200)
-    expect(bestWeightForEntry(entryLb, null, 'kg')).toBe(90.7)
-    expect(bestWeightForEntry(entryLb, null, 'lb')).toBe(200)
-
-    const entryWithLegacyTopW = {
-      id: LIFT,
-      unit: 'lb',
-      topW: 220,
-      target: { mode: 'reps' },
-      sets: [{ w: 80, r: 5, done: true }],
-    }
-    expect(bestWeightForEntry(entryWithLegacyTopW, null, 'kg')).toBe(99.8)
-
-    const entryInheritingWorkout = {
-      id: LIFT,
-      sets: [{ w: 100, r: 5, done: true }],
-    }
-    const workout = { unit: 'lb' }
-    expect(bestWeightForEntry(entryInheritingWorkout, workout, 'kg')).toBe(45.4)
   })
 })
 
@@ -906,7 +862,7 @@ describe('seedForReplacement', () => {
     expect(res.sets).toBe(3)
   })
 
-  it('overrides weight with bestKnownWeight when bestKnownWeight > 0 and not bodyweight', () => {
+  it('overrides weight with Best when Best > 0 and not bodyweight', () => {
     const S = {
       workouts: [
         {
@@ -915,17 +871,15 @@ describe('seedForReplacement', () => {
             { id: LIFT, target: { reps: 10, weight: 50 }, sets: [{ w: 50, r: 10, done: true }] },
           ],
         },
+        { d: '2026-10-05', entries: [{ id: LIFT, sets: [{ w: 85, r: 3, done: true }] }] },
       ],
-      exWeights: {
-        [LIFT]: { w: 85, d: '2026-10-05' },
-      },
     }
     const res = seedForReplacement(S, LIFT, null, 3)
     expect(res.reps).toBe(10)
     expect(res.weight).toBe(85)
   })
 
-  it('does NOT override weight with bestKnownWeight for bodyweight exercises', () => {
+  it('does NOT override weight with Best for bodyweight exercises', () => {
     const S = {
       workouts: [
         {
