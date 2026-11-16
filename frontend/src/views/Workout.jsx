@@ -5,11 +5,10 @@ import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { exOr } from '../lib/exercises.js'
 import { effectiveRoutine, hasEffectiveOverride } from '../lib/history.js'
-import { freestyleConfig, defaultConfig, sessionProgress, modeOf, isBw, isPerSide, sideReps, repStep, workSets, doneWorkSets } from '../lib/workout-model.js'
-import { supersetUnits, unitOf } from '../lib/supersetFlow.js'
+import { freestyleConfig, defaultConfig, modeOf, isBw, isPerSide, sideReps, repStep } from '../lib/workout-model.js'
 import { setLabel } from '../lib/format.js'
 import { EFFORT, effortOf, stepEffort, capEffort } from '../lib/effort.js'
-import { nextUnitTarget, holdRef, findHoldRow } from '../lib/active-workout.js'
+import { sessionView, holdRef, findHoldRow } from '../lib/active-workout.js'
 import { best as bestOf, lastSession } from '../lib/training-log.js'
 import { fmtNum, fmtDate, fmtSec, fmtElapsed, todayISO, exCount, DAYN, sentenceCase } from '../lib/format.js'
 import { playSetComplete } from '../lib/sound.js'
@@ -20,7 +19,7 @@ import Icon from '../components/Icon.jsx'
 import Barbell, { loadsOnBar } from '../components/Barbell.jsx'
 import { Button, Check, NumberField, dotted } from '../components/ui.jsx'
 import { glyphOf } from '../lib/glyphs.js'
-import { isWarmupRow, isPerformed, seedForReplacement } from '../lib/workout-model.js'
+import { isWarmupRow, seedForReplacement } from '../lib/workout-model.js'
 import { evaluateSetMilestone } from '../lib/progression.js'
 import { primaryMuscleName } from '../lib/muscles.js'
 
@@ -243,8 +242,7 @@ export function replaceActiveExerciseFlow(idx) {
     })
   }
 
-  const hasDone = (entry.sets || []).some(isPerformed)
-  if (hasDone) {
+  if (sessionView(A).hasPerformed[idx]) {
     confirmSheet({
       title: t('Replace {0}?', exOr(entry.id).n),
       message: t('The sets you logged for this exercise in this session will be lost.'),
@@ -260,9 +258,10 @@ export function replaceActiveExerciseFlow(idx) {
 /** Bottom sheet listing active workout entries for sequential reordering and fast navigation. */
 function ReorderExercisesSheet({ close }) {
   const entries = useStore(s => s.S.active?.entries || [])
-  const units = supersetUnits(entries)
-  const unitFirst = new Set(units.filter(u => u.length > 1).map(u => u[0]))
-  const inSuperset = new Set(units.filter(u => u.length > 1).flat())
+  const view = sessionView({ entries })
+  const supersets = view.steps.filter(s => s.entries.length > 1).map(s => s.entries)
+  const supersetFirst = new Set(supersets.map(s => s[0]))
+  const inSuperset = new Set(supersets.flat())
 
   const move = (idx, dir) => {
     useStore.getState().moveActiveExercise(idx, dir)
@@ -281,10 +280,9 @@ function ReorderExercisesSheet({ close }) {
     <div className="list">
       {entries.map((entry, idx) => {
         const ex = exOr(entry.id)
-        const done = doneWorkSets(entry).length
-        const total = workSets(entry).length
+        const { done, total } = view.entryProgress[idx]
         return <div key={idx}>
-          {unitFirst.has(idx) && <div className="ss-label"><Icon name="link" />{t('Superset')}</div>}
+          {supersetFirst.has(idx) && <div className="ss-label"><Icon name="link" />{t('Superset')}</div>}
           <div className={'item' + (inSuperset.has(idx) ? ' in-ss' : '')} role="button" tabIndex={0} aria-label={ex.n}
             onClick={() => select(idx)}
             onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); select(idx) } }}>
@@ -350,14 +348,13 @@ function ActiveWorkout() {
   const resting = useUI(s => !!s.timer)
   const holding = useUI(s => !!s.work)
   const A = S.active
-  const units = supersetUnits(A.entries)
-  const cur = Math.min(A.cur, Math.max(0, A.entries.length - 1))
-  const unit = A.entries.length ? unitOf(units, cur) : []
-  const unitIdx = units.findIndex(u => u === unit)
-  const isSuperset = unit.length > 1
-  const unitKey = unit.map(i => i + ':' + A.entries[i].id).join('+')
-  const [shown, setShown] = useState({ key: unitKey, moved: false })
-  if (shown.key !== unitKey) setShown({ key: unitKey, moved: true })
+  const view = sessionView(A)
+  const { cur, steps, stepIdx, progress: prog } = view
+  const step = view.step?.entries ?? []
+  const isSuperset = step.length > 1
+  const stepKey = step.map(i => i + ':' + A.entries[i].id).join('+')
+  const [shown, setShown] = useState({ key: stepKey, moved: false })
+  if (shown.key !== stepKey) setShown({ key: stepKey, moved: true })
   const exRefs = useRef({})
   useEffect(() => {
     if (!isSuperset) return
@@ -365,8 +362,7 @@ function ActiveWorkout() {
     if (el && typeof el.scrollIntoView === 'function') el.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
   }, [cur, isSuperset, A.entries.length])
 
-  const prog = sessionProgress(A)
-  const nextIdx = A.entries.length ? nextUnitTarget(S, cur) : null
+  const nextIdx = view.nextStep?.entries[0] ?? null
 
   const setField = (idx, i, field, v) => useStore.getState().updateActiveSetField(idx, i, field, v)
   const addSet = idx => useStore.getState().addActiveSet(idx)
@@ -382,23 +378,22 @@ function ActiveWorkout() {
   const confirmRemoveExercise = idx => {
     const e = A.entries[idx]
     if (!e) return
-    const hasDone = (e.sets || []).some(isPerformed)
     confirmSheet({
       title: t('Remove {0}?', exOr(e.id).n),
-      message: hasDone
+      message: view.hasPerformed[idx]
         ? t('The sets you logged for this exercise in this session will be lost.')
         : t('This removes the exercise from your current session.'),
       confirmText: t('Remove'), danger: true, onConfirm: () => removeExercise(idx)
     })
   }
   const removeExerciseSheet = () => {
-    if (unit.length > 1) {
+    if (step.length > 1) {
       useUI.getState().openSheet(close => (
         <div>
           <h3>{t('Remove exercise')}</h3>
           <div className="sheet-sub">{t('Which exercise in this superset do you want to remove?')}</div>
           <div className="list">
-            {unit.map(idx => <div key={idx} className="item" onClick={() => { close(); confirmRemoveExercise(idx) }}>
+            {step.map(idx => <div key={idx} className="item" onClick={() => { close(); confirmRemoveExercise(idx) }}>
               <div className="grow"><div className="tt">{exOr(A.entries[idx]?.id).n}</div></div>
               <Icon name="chevronRight" />
             </div>)}
@@ -409,13 +404,13 @@ function ActiveWorkout() {
   }
 
   const replaceExerciseSheet = () => {
-    if (unit.length > 1) {
+    if (step.length > 1) {
       useUI.getState().openSheet(close => (
         <div>
           <h3>{t('Replace exercise')}</h3>
           <div className="sheet-sub">{t('Which exercise in this superset do you want to replace?')}</div>
           <div className="list">
-            {unit.map(idx => <div key={idx} className="item" onClick={() => { close(); replaceActiveExerciseFlow(idx) }}>
+            {step.map(idx => <div key={idx} className="item" onClick={() => { close(); replaceActiveExerciseFlow(idx) }}>
               <div className="grow"><div className="tt">{exOr(A.entries[idx]?.id).n}</div></div>
               <Icon name="chevronRight" />
             </div>)}
@@ -430,7 +425,7 @@ function ActiveWorkout() {
   }
 
   const editWorkoutSheet = () => {
-    const name = unit.map(i => exOr(A.entries[i].id).n).join(' + ')
+    const name = step.map(i => exOr(A.entries[i].id).n).join(' + ')
     useUI.getState().openSheet(close => <EditWorkoutSheet close={close} name={name} count={A.entries.length}
       onReorder={reorderExerciseSheet} onReplace={replaceExerciseSheet} onPairPrev={onPairPrev} onPairNext={onPairNext}
       onRemove={removeExerciseSheet} />)
@@ -475,11 +470,9 @@ function ActiveWorkout() {
       <button className="iconbtn bare wk-min" aria-label={t('Minimize workout')} onClick={() => nav('/home')}><Icon name="chevronDown" /></button>
       <div className="wk-title"><h1>{A.name}</h1><div className="sub"><Elapsed start={A.start} /> · {t('{0} sets', prog.done + '/' + prog.total)}</div></div>
       <button className={'btn sm wk-finish ' + (prog.allDone ? 'done' : 'plain')} aria-label={t('Finish')} onClick={finishWorkout}>{t('Finish')}</button>
-      {units.length > 0 && <div className="lad" role="group" aria-label={t('Exercises in this workout')}>
-        {units.map((u, k) => {
-          const total = u.reduce((n, i) => n + workSets(A.entries[i]).length, 0)
-          const done = u.reduce((n, i) => n + doneWorkSets(A.entries[i]).length, 0)
-          return <button key={u[0]} className={'lad-s' + (k === unitIdx ? ' on' : '')} aria-current={k === unitIdx ? 'step' : undefined}
+      {steps.length > 0 && <div className="lad" role="group" aria-label={t('Exercises in this workout')}>
+        {steps.map(({ entries: u, done, total }, k) => {
+          return <button key={u[0]} className={'lad-s' + (k === stepIdx ? ' on' : '')} aria-current={k === stepIdx ? 'step' : undefined}
             aria-label={t('Go to {0}', u.map(i => exOr(A.entries[i].id).n).join(' + '))}
             onClick={() => useStore.getState().setActiveIndex(u[0])}>
             <span className="lad-b"><i style={{ transform: `scaleX(${total ? done / total : 0})` }} /></span>
@@ -495,7 +488,7 @@ function ActiveWorkout() {
             <span className="row"><Icon name="link" />{t('Superset · do these back-to-back, rest when done')}</span>
             <Button size="xs" variant="ghost" icon="link" title={t('Unpair')} onClick={() => unpairAt(cur)}>{t('Unpair')}</Button>
           </div>
-          {unit.map((idx, k) => <div key={idx} ref={el => { exRefs.current[idx] = el }} className="ss-ex" data-exidx={idx}>
+          {step.map((idx, k) => <div key={idx} ref={el => { exRefs.current[idx] = el }} className="ss-ex" data-exidx={idx}>
             {k > 0 && <div className="ss-amp"><Icon name="plus" /></div>}
             <ExerciseBlock entryIdx={idx} compact isCurrent={idx === cur} restKey={k === 0 ? restKey : null}
               onToggle={i => toggle(idx, i)} onField={(i, f, v) => setField(idx, i, f, v)} onAddSet={() => addSet(idx)} onRemoveSet={() => removeSet(idx)} onAddWarmup={() => addWarmup(idx)} onRemoveSetAt={i => removeSetAt(idx, i)} onStartTimed={i => startTimed(idx, i)}
@@ -512,8 +505,8 @@ function ActiveWorkout() {
     </> : <div className="empty"><div className="ico"><Icon name="shuffle" /></div>{t('Freestyle workout — add your first exercise.')}</div>}
 
     <div className="wk-nav">
-      <Button icon="chevronLeft" disabled={unitIdx <= 0} onClick={() => useStore.getState().setActiveIndex(units[unitIdx - 1][0])}>{t('Prev')}</Button>
-      <Button trailingIcon="chevronRight" disabled={unitIdx < 0 || unitIdx >= units.length - 1} onClick={() => useStore.getState().setActiveIndex(units[unitIdx + 1][0])}>{t('Next')}</Button>
+      <Button icon="chevronLeft" disabled={!view.canPrev} onClick={() => useStore.getState().setActiveIndex(steps[stepIdx - 1].entries[0])}>{t('Prev')}</Button>
+      <Button trailingIcon="chevronRight" disabled={!view.canNext} onClick={() => useStore.getState().setActiveIndex(steps[stepIdx + 1].entries[0])}>{t('Next')}</Button>
     </div>
     <div className="wk-nav">
       <Button onClick={() => exercisePicker(ex => {

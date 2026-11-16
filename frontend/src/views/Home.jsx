@@ -2,7 +2,8 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { effectiveRoutine, effectiveRoutineId, hasEffectiveOverride } from '../lib/history.js'
-import { sessionProgress, setsDone } from '../lib/workout-model.js'
+import { setsDone } from '../lib/workout-model.js'
+import { sessionView } from '../lib/active-workout.js'
 import { tonnage, lastWorkoutInRoutine } from '../lib/training-log.js'
 import { dayStatus } from '../lib/schedule.js'
 import { latestWeighIn, prevWeighIn, deltaTowardGoal } from '../lib/bodyweight.js'
@@ -124,7 +125,7 @@ export default function Home() {
               <h2 className={'home-hero-title d' + (heroFit.step === 'poster' ? '' : ' ' + heroFit.step)}>{heroName}</h2>
               <div className="home-hero-meta">
                 {S.active
-                  ? t('{0} sets logged', fmtNum(sessionProgress(S.active).done))
+                  ? t('{0} sets logged', fmtNum(sessionView(S.active).progress.done))
                   : (routine
                     ? (routine.ex?.length ? exCount(routine.ex.length) : t("Today's routine"))
                     : t('Time to recover and rebuild'))}

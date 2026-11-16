@@ -6,7 +6,8 @@ import {
   replaceActiveExercise, moveActiveExercise, buildActiveEntry,
   updateActiveSetField, addActiveSet, removeActiveSet, addActiveWarmup,
   pairActiveSuperset, unpairActiveSuperset, toggleActiveSet,
-  setActiveIndex, discardActiveSession, updateActiveExerciseNote
+  setActiveIndex, discardActiveSession, updateActiveExerciseNote,
+  sessionView
 } from './active-workout.js'
 
 const clone = o => JSON.parse(JSON.stringify(o))
@@ -817,3 +818,83 @@ describe('active-workout lifecycle seam', () => {
 })
 
 
+
+describe('sessionView', () => {
+  const work = (done = false) => ({ w: 50, r: 8, done })
+  const warm = (done = false) => ({ w: 20, r: 8, done, phase: 'warmup' })
+  const entry = (id, sets, extra = {}) => ({ id, target: { reps: 8, weight: 50 }, sets, ...extra })
+
+  it('reads a Superset as one Step', () => {
+    const view = sessionView({
+      cur: 1,
+      entries: [entry('a', [work()]), entry('b', [work()], { sg: 's1' }), entry('c', [work()], { sg: 's1' }), entry('d', [work()])],
+    })
+    expect(view.steps.map(s => s.entries)).toEqual([[0], [1, 2], [3]])
+    expect(view.stepIdx).toBe(1)
+    expect(view.step.entries).toEqual([1, 2])
+  })
+
+  it('offers the next Step only once every Work set of the current Step is performed', () => {
+    const active = {
+      cur: 0,
+      entries: [entry('a', [work(true), work()]), entry('b', [work()], { sg: 's1' }), entry('c', [work()], { sg: 's1' })],
+    }
+    expect(sessionView(active).nextStep).toBe(null)
+    active.entries[0].sets[1].done = true
+    expect(sessionView(active).nextStep.entries).toEqual([1, 2])
+  })
+
+  it('offers no next Step after the last Step or for a Step with no Work sets', () => {
+    expect(sessionView({ cur: 1, entries: [entry('a', [work(true)]), entry('b', [work(true)])] }).nextStep).toBe(null)
+    expect(sessionView({ cur: 0, entries: [entry('a', [warm(true)]), entry('b', [work()])] }).nextStep).toBe(null)
+  })
+
+  it('counts Work sets only, per Step and for the Session', () => {
+    const view = sessionView({
+      cur: 0,
+      entries: [entry('a', [warm(true), work(true), work()]), entry('b', [warm(true), work(true)])],
+    })
+    expect(view.steps.map(({ done, total }) => ({ done, total }))).toEqual([{ done: 1, total: 2 }, { done: 1, total: 1 }])
+    expect(view.progress).toEqual({ done: 2, total: 3, remaining: 1, exDone: 1, exTotal: 2, allDone: false })
+  })
+
+  it('disables Prev on the first Step and Next on the last, moving by Step', () => {
+    const entries = [entry('a', [work()]), entry('b', [work()], { sg: 's1' }), entry('c', [work()], { sg: 's1' })]
+    const first = sessionView({ cur: 0, entries })
+    expect(first.canPrev).toBe(false)
+    expect(first.canNext).toBe(true)
+    const last = sessionView({ cur: 1, entries })
+    expect(last.canPrev).toBe(true)
+    expect(last.canNext).toBe(false)
+    expect(sessionView({ cur: 2, entries }).stepIdx).toBe(1)
+  })
+
+  it('marks each Entry that has any performed set, warm-ups included', () => {
+    const view = sessionView({ cur: 0, entries: [entry('a', [work()]), entry('b', [warm(true), work()]), entry('c', [work(true)])] })
+    expect(view.hasPerformed).toEqual([false, true, true])
+  })
+
+  it('gates Finish: empty, warm-ups only, early, complete', () => {
+    const gate = entries => sessionView({ cur: 0, entries }).finishGate
+    expect(gate([entry('a', [warm(), work()])])).toBe('empty')
+    expect(gate([entry('a', [warm(true), work()])])).toBe('warmups-only')
+    expect(gate([entry('a', [work(true), work()]), entry('b', [work()])])).toBe('early')
+    expect(gate([entry('a', [warm(), work(true)])])).toBe('complete')
+  })
+
+  it('reads a Freestyle workout with no Entries as an empty view', () => {
+    const view = sessionView({ cur: 0, entries: [] })
+    expect(view.steps).toEqual([])
+    expect(view.step).toBe(null)
+    expect(view.nextStep).toBe(null)
+    expect(view.canPrev).toBe(false)
+    expect(view.canNext).toBe(false)
+    expect(view.progress).toEqual({ done: 0, total: 0, remaining: 0, exDone: 0, exTotal: 0, allDone: false })
+    expect(view.finishGate).toBe('empty')
+  })
+
+  it('counts done/total Work sets per Entry for the reorder list', () => {
+    const view = sessionView({ cur: 0, entries: [entry('a', [warm(true), work(true), work()]), entry('b', [])] })
+    expect(view.entryProgress).toEqual([{ done: 1, total: 2 }, { done: 0, total: 0 }])
+  })
+})
