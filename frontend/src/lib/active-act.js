@@ -5,12 +5,13 @@ import {
 } from './active-session.js'
 import {
   updateActiveSetField, addActiveSet, removeActiveSet, addActiveWarmup,
-  pairActiveSuperset, unpairActiveSuperset
+  pairActiveSuperset, unpairActiveSuperset, holdRef, findHoldRow
 } from './active-sets.js'
 import { toggleActiveSet } from './active-toggle.js'
 import { completeActiveSession } from './active-finish.js'
 import { sessionView } from './session-view.js'
 import { setsDone } from './workout-model.js'
+import { exOr } from './exercises.js'
 
 const fx = (type, extra) => (extra ? { type, ...extra } : { type })
 const no = () => ({ ok: false, effects: [] })
@@ -46,6 +47,22 @@ function toggle(S, { entry, set }) {
   return done(true, effects)
 }
 
+// A hold's ref survives rows shifting under it, so its finish lands on the set it started from.
+function startHold(S, { entry, set }) {
+  const ref = holdRef(S.active, entry, set)
+  if (!ref) return no()
+  const e = S.active.entries[entry]
+  return done(true, [fx('hold:start', { sec: e.sets[set].sec || 45, label: exOr(e.id).n, ref })])
+}
+
+function completeHold(S, { ref, elapsed }) {
+  const at = findHoldRow(S.active, ref)
+  if (!at) return no()
+  const [entry, set] = at
+  updateActiveSetField(S, entry, set, 'sec', elapsed)
+  return S.active.entries[entry].sets[set].done ? done(true) : toggle(S, { entry, set })
+}
+
 function addExercise(S, { exId, target }) {
   const entry = addActiveExercise(S, exId, target)
   return entry ? { ok: true, effects: [], result: entry } : no()
@@ -61,7 +78,7 @@ const stepBy = dir => S => {
 }
 
 const COMMANDS = {
-  begin, discard, finish, toggle, addExercise, goTo,
+  begin, discard, finish, toggle, addExercise, goTo, startHold, completeHold,
   prev: stepBy(-1),
   next: stepBy(1),
   editSet: (S, c) => done(updateActiveSetField(S, c.entry, c.set, c.field, c.value)),

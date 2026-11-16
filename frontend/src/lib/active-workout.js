@@ -5,7 +5,7 @@ export {
 } from './active-session.js'
 export {
   updateActiveSetField, addActiveSet, removeActiveSet, addActiveWarmup,
-  pairActiveSuperset, unpairActiveSuperset, holdRef, findHoldRow
+  pairActiveSuperset, unpairActiveSuperset
 } from './active-sets.js'
 export { toggleActiveSet, nextUnitTarget } from './active-toggle.js'
 export {

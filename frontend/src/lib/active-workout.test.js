@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { tonnage } from './training-log.js'
+import { isWarmupRow } from './warmup.js'
 import {
   createActiveSession, completeActiveSession,
   buildCompletedWorkout, addActiveExercise, removeActiveExercise,
@@ -1073,5 +1074,83 @@ describe('act', () => {
     expect(sessionView(S.active).steps.map(s => s.entries)).toEqual([[0, 1]])
     expect(act(S, { type: 'unpair', entry: 0 }).ok).toBe(true)
     expect(sessionView(S.active).steps.map(s => s.entries)).toEqual([[0], [1]])
+  })
+  describe('timed holds', () => {
+    const hold = (sec = 30) => ({ id: '0001', target: { mode: 'time', sec, sets: 2 }, sets: [{ sec, done: false }, { sec, done: false }] })
+    const holdRefOf = res => res.effects.find(e => e.type === 'hold:start').ref
+
+    it('starts a hold on a set with its seconds and the exercise name', () => {
+      const S = profile([hold(30)])
+      const res = act(S, { type: 'startHold', entry: 0, set: 1 })
+      expect(res.ok).toBe(true)
+      expect(res.effects).toEqual([{ type: 'hold:start', sec: 30, label: '3/4 sit-up', ref: expect.anything() }])
+    })
+
+    it('completes a hold by logging its time on the set and checking it, with the toggle\'s effects', () => {
+      const S = profile([hold(30)])
+      const ref = holdRefOf(act(S, { type: 'startHold', entry: 0, set: 0 }))
+      const res = act(S, { type: 'completeHold', ref, elapsed: 28 })
+      expect(res.ok).toBe(true)
+      expect(S.active.entries[0].sets.map(s => [s.sec, !!s.done])).toEqual([[28, true], [30, false]])
+      expect(types(res)).toEqual(['sound:set', 'rest:start'])
+    })
+
+    it('logs the time on a set already performed without unchecking it', () => {
+      const S = profile([hold(30)])
+      S.active.entries[0].sets[0].done = true
+      const ref = holdRefOf(act(S, { type: 'startHold', entry: 0, set: 0 }))
+      const res = act(S, { type: 'completeHold', ref, elapsed: 40 })
+      expect(res).toEqual({ ok: true, effects: [] })
+      expect(S.active.entries[0].sets[0]).toMatchObject({ sec: 40, done: true })
+    })
+
+    it('lands on the held set when a warm-up is added mid-hold', () => {
+      const S = profile([hold(30)])
+      const ref = holdRefOf(act(S, { type: 'startHold', entry: 0, set: 0 }))
+      act(S, { type: 'addWarmup', entry: 0 })
+      act(S, { type: 'completeHold', ref, elapsed: 30 })
+      expect(S.active.entries[0].sets.map(s => [isWarmupRow(s), !!s.done])).toEqual([
+        [true, false],
+        [false, true],
+        [false, false],
+      ])
+    })
+
+    it('never writes a hold left over from a discarded workout into the next one', () => {
+      const S = profile([hold(30)])
+      const ref = holdRefOf(act(S, { type: 'startHold', entry: 0, set: 0 }))
+      act(S, { type: 'discard' })
+      S.routines = [{ id: 'core', name: 'Core', ex: [{ id: '0001', mode: 'time', sec: 60, sets: 2, prog: 'off' }] }]
+      act(S, { type: 'begin', routineId: 'core' })
+      expect(act(S, { type: 'completeHold', ref, elapsed: 30 })).toEqual({ ok: false, effects: [] })
+      expect(S.active.entries[0].sets.map(s => [s.sec, !!s.done])).toEqual([[60, false], [60, false]])
+    })
+
+    it('logs nothing when the held set is removed mid-hold', () => {
+      const S = profile([hold(30)])
+      const ref = holdRefOf(act(S, { type: 'startHold', entry: 0, set: 1 }))
+      act(S, { type: 'removeSet', entry: 0, set: 1 })
+      expect(act(S, { type: 'completeHold', ref, elapsed: 30 })).toEqual({ ok: false, effects: [] })
+      expect(S.active.entries[0].sets.map(s => [s.sec, !!s.done])).toEqual([[30, false]])
+    })
+
+    it('logs nothing when the held Entry is gone', () => {
+      const S = profile([hold(30), { ...hold(20), id: '0002' }])
+      const ref = holdRefOf(act(S, { type: 'startHold', entry: 0, set: 0 }))
+      act(S, { type: 'removeExercise', entry: 0 })
+      expect(act(S, { type: 'completeHold', ref, elapsed: 30 })).toEqual({ ok: false, effects: [] })
+      expect(S.active.entries[0].sets.every(s => !s.done)).toBe(true)
+    })
+
+    it('stops the hold when the workout is discarded', () => {
+      const S = profile([hold(30)])
+      act(S, { type: 'startHold', entry: 0, set: 0 })
+      expect(types(act(S, { type: 'discard' }))).toContain('hold:stop')
+    })
+
+    it('holds 45 seconds when the set has none', () => {
+      const S = profile([{ id: '0001', target: { mode: 'time' }, sets: [{ done: false }] }])
+      expect(act(S, { type: 'startHold', entry: 0, set: 0 }).effects[0].sec).toBe(45)
+    })
   })
 })

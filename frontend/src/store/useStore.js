@@ -121,12 +121,15 @@ export const useStore = create((set, get) => {
     replaceState(S) { persist(normalizeState(S)) },
     /**
      * Sends a command to the Active workout and runs its effects.
+     * @param {Object} command
+     * @param {Function} [send] - Where follow-up commands go (a hold's `completeHold`).
+     *   A view passes its own sender so it sees their `open-finish` too.
      * @returns {{ok: boolean, effects: Array, result?: *}} The view reads only `open-finish` from effects.
      */
-    act(command) {
+    act(command, send = c => get().act(c)) {
       let res = null
       get().update(s => { res = act(s, command) })
-      runEffects(res.effects, get().S)
+      runEffects(res.effects, get().S, send)
       return res
     },
     syncRoutineFromSession(routineId, syncedEx) {
