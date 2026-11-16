@@ -1,42 +1,8 @@
-import { doneWorkSets, isPerformed } from './workout-model.js'
+import { isPerformed } from './workout-model.js'
 import { records } from './training-log.js'
 import { EXIDX } from './exercises.js'
 import { exerciseMuscleSnapshot } from './muscles.js'
 import { diffRoutineWithSession } from './routine-sync.js'
-import { normalizeWeight, round1 } from './units.js'
-
-export function heaviestSetWeight(entry) {
-  let mx = 0
-  for (const s of doneWorkSets(entry)) {
-    const w = Number(s.w)
-    if (Number.isFinite(w) && w > mx) mx = w
-  }
-  return mx
-}
-
-export function heaviestForEntry(entry) {
-  const base = heaviestSetWeight(entry)
-  const top = Number(entry?.topW)
-  if (Number.isFinite(top) && top > base) return top
-  return base
-}
-
-export function mergeExWeight(S, exId, weight, dateISO) {
-  const w = Number(weight)
-  if (!Number.isFinite(w) || w <= 0) return false
-  if (!exId) return false
-  if (!S.exWeights) S.exWeights = {}
-  const targetUnit = S?.unit || 'kg'
-  const cur = S.exWeights[exId]
-  const curNormalized = cur && typeof cur.w === 'number'
-    ? normalizeWeight(cur.w, cur.unit || targetUnit, targetUnit)
-    : 0
-  if (!cur || w > curNormalized) {
-    S.exWeights[exId] = { w: round1(w), d: dateISO, unit: targetUnit }
-    return true
-  }
-  return false
-}
 
 function planRecord(plan) {
   if (!plan || typeof plan !== 'object') return null
@@ -47,7 +13,7 @@ function planRecord(plan) {
   return out
 }
 
-export function buildCompletedWorkout(active, { end = Date.now(), prs = [], unit = 'kg', snapshotFor } = {}) {
+export function buildCompletedWorkout(active, { end = Date.now(), unit = 'kg', snapshotFor } = {}) {
   const entries = (active?.entries || []).map(entry => {
     const completed = {
       id: entry.id,
@@ -78,7 +44,6 @@ export function buildCompletedWorkout(active, { end = Date.now(), prs = [], unit
     bw: active.bw,
     unit: active.unit || unit,
     entries,
-    prs,
   }
 }
 
@@ -110,12 +75,6 @@ export function completeActiveSession(S, opts = {}) {
   const made = records(S, w)
   const prs = made.filter(r => r.kind === 'load').map(r => r.id)
   const e1prs = made.filter(r => r.kind === 'e1rm').map(r => ({ id: r.id, est: r.est, w: r.w, r: r.r, prev: r.prev }))
-  w.prs = prs
-
-  for (const e of w.entries) {
-    const mx = heaviestForEntry(e)
-    if (mx > 0) mergeExWeight(S, e.id, mx, w.d)
-  }
 
   S.workouts = [...(S.workouts || []), w]
   S.workouts.sort((a, b) => (a.d < b.d ? -1 : a.d > b.d ? 1 : a.start - b.start))

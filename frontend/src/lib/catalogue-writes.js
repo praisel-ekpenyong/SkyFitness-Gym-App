@@ -20,7 +20,6 @@ export function deleteCustomEx(S, ex) {
   }))
   S.customEx = (S.customEx || []).filter(x => x.id !== ex.id)
   ;(S.routines || []).forEach(r => { r.ex = r.ex.filter(e => e.id !== ex.id); cleanupSg(r.ex) })
-  delete (S.exWeights || {})[ex.id]
   S.favorites = (S.favorites || []).filter(id => id !== ex.id)
   return { ok: true, reason: null }
 }

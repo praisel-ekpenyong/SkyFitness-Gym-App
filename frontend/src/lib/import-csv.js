@@ -8,7 +8,6 @@
 import { EXDB, EXIDX } from './exercises.js'
 import { uid } from './format.js'
 import { isWorkSet } from './workout-model.js'
-import { heaviestForEntry, mergeExWeight } from './active-workout.js'
 import { LB_TO_KG, mergeWeighIns, weighInsPreview } from './bodyweight.js'
 
 
@@ -351,7 +350,7 @@ export function parseWorkoutCSV(text, { unit = 'kg' } = {}) {
     const end = day.end != null ? base + day.end : start
     const w = {
       id: 'iw' + uid(), d, start, end: end > start ? end : start,
-      routineId: null, name: day.name || 'Imported', entries, prs: [],
+      routineId: null, name: day.name || 'Imported', entries,
     }
     return w
   })
@@ -445,9 +444,5 @@ export function mergeImport(S, parsed) {
   const customs = parsed.customEx.filter(c => used.has(c.id) && !EXIDX[c.id])
   S.customEx = [...(S.customEx || []), ...customs]
   S.workouts = [...(S.workouts || []), ...fresh].sort((a, b) => (a.d < b.d ? -1 : 1))
-  fresh.forEach(w => (w.entries || []).forEach(e => {
-    const mx = heaviestForEntry(e)
-    if (mx > 0) mergeExWeight(S, e.id, mx, w.d)
-  }))
   return { added: fresh.length, skipped: parsed.workouts.length - fresh.length }
 }

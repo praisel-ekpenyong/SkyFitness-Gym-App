@@ -11,7 +11,7 @@ As of commit `14332f7` (2026-10-28), Sky is structured around five core architec
 1. **Active Workout Lifecycle & Operational Core (`frontend/src/lib/active-*.js`, `workout-model.js`):**
    - Deep mutation modules behind the ADR 0006 lifecycle seam (`beginSession`, `recordWorkingWeight`, `finishSession`).
    - Declarative execution in `active-toggle.js` returning pure outcome descriptors (`{ checked, mode, cur, next, rest, notice }`), keeping UI side effects decoupled from domain calculations.
-   - Monotonic max weight merge (`mergeExWeight`), contiguous superset preservation (`cleanupSg`), and frozen target snapshots (`planRecord`).
+   - Contiguous superset preservation (`cleanupSg`), and frozen target snapshots (`planRecord`).
 2. **Domain Engine & Physiological Logic (`lib/progression.js`, `recovery.js`, `onerm.js`, `effort.js`):**
    - Pure functional computation over immutable history without persistent stall counters.
    - Progression Streams and Runs (ADR 0011) re-evaluating boundaries and stall thresholds on demand.
@@ -36,7 +36,7 @@ As evaluated on 2026-10-28 across the codebase at commit `14332f7`:
 
 - **Exemplary Deep Modules:**
   - `lib/active-toggle.js`: Small interface (`toggleActiveSet(S, entryIdx, setIdx)`), immense internal leverage handling warm-up segregation, high-water mark computation, superset wrapping, working-weight prompt qualification, and progress-gated rest countdowns.
-  - `lib/active-finish.js`: Minimal interface (`completeActiveSession`, `mergeExWeight`), encapsulating PR detection, 1RM record evaluation, monotonic weight caching, and completed workout projection.
+  - `lib/active-finish.js`: Minimal interface (`completeActiveSession`), encapsulating Record detection for the finish summary and completed workout projection. It writes no `exWeights` or `prs` (ADR 0021).
   - `lib/catalogue-query.js`: Single pure query function (`queryCatalogue`) encapsulating scope resolution, tokenization, multi-field matching, equipment faceting, and tiered relevance scoring.
   - `lib/recovery.js`: Pure mathematical pipeline encapsulating causal EWMA normalization and exponential decay over an explicit `now` parameter.
 - **Mixed Depth Modules:**
