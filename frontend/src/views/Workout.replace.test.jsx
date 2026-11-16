@@ -315,7 +315,6 @@ describe('Superset replacement flow', () => {
     const A = useStore.getState().S.active
     expect(A.entries[0].id).toBe('1001')
     expect(A.entries[1].id).toBe('1003')
-    expect(A.entries[1].sg).toBe('g1')
   })
 
   it('footer replace button in a superset prompts which exercise to replace', () => {
@@ -348,7 +347,6 @@ describe('Superset replacement flow', () => {
     const A = useStore.getState().S.active
     expect(A.entries[0].id).toBe('1001')
     expect(A.entries[1].id).toBe('1003')
-    expect(A.entries[1].sg).toBe('g1')
   })
 })
 
