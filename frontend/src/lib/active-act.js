@@ -55,6 +55,13 @@ function startHold(S, { entry, set }) {
   return applied(true, [effect('hold:start', { sec: e.sets[set].sec || 45, label: exOr(e.id).n, ref })])
 }
 
+// Shifting Entries cancels a running hold: its ref names a position, not an Entry.
+function shifted(S, ok) {
+  if (!ok) return refused()
+  S.active.layout = (S.active.layout || 0) + 1
+  return applied(true, [effect('hold:stop')])
+}
+
 function completeHold(S, { ref, elapsed }) {
   const at = findHoldRow(S.active, ref)
   if (!at) return refused()
@@ -85,9 +92,9 @@ const COMMANDS = {
   addSet: (S, command) => applied(addActiveSet(S, command.entry)),
   removeSet: (S, command) => applied(removeActiveSet(S, command.entry, command.set ?? null)),
   addWarmup: (S, command) => applied(addActiveWarmup(S, command.entry)),
-  removeExercise: (S, command) => applied(removeActiveExercise(S, command.entry), [effect('hold:stop')]),
-  replaceExercise: (S, command) => applied(!!replaceActiveExercise(S, command.entry, command.exId, command.target)),
-  moveExercise: (S, command) => applied(moveActiveExercise(S, command.entry, command.dir)),
+  removeExercise: (S, command) => shifted(S, removeActiveExercise(S, command.entry)),
+  replaceExercise: (S, command) => shifted(S, !!replaceActiveExercise(S, command.entry, command.exId, command.target)),
+  moveExercise: (S, command) => shifted(S, moveActiveExercise(S, command.entry, command.dir)),
   note: (S, command) => applied(updateActiveExerciseNote(S, command.entry, command.text)),
   pair: (S, command) => applied(pairActiveSuperset(S, command.first, command.second)),
   unpair: (S, command) => applied(unpairActiveSuperset(S, command.entry)),

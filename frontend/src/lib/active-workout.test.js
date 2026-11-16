@@ -945,6 +945,61 @@ describe('act', () => {
       expect(S.active.entries[0].sets.every(s => !s.done)).toBe(true)
     })
 
+    describe('when Entries shift mid-hold', () => {
+      const lift = id => ({ id, target: { sets: 1, reps: 5 }, sets: [{ w: 50, r: 5, done: false }] })
+      const untouched = S => S.active.entries.every(e => e.sets.every(s => !s.done))
+
+      it('logs nothing when the held Entry is moved', () => {
+        const S = profile([lift('0025'), hold(30)])
+        const ref = holdRefOf(act(S, { type: 'startHold', entry: 1, set: 0 }))
+        expect(act(S, { type: 'moveExercise', entry: 1, dir: -1 }).effects).toEqual([{ type: 'hold:stop' }])
+        expect(act(S, { type: 'completeHold', ref, elapsed: 22 })).toEqual({ ok: false, effects: [] })
+        expect(S.active.entries[0].sets.map(s => s.sec)).toEqual([30, 30])
+        expect(untouched(S)).toBe(true)
+      })
+
+      it('never lands on another Entry of the same exercise swapped into its place', () => {
+        const S = profile([hold(30), hold(60)])
+        const ref = holdRefOf(act(S, { type: 'startHold', entry: 0, set: 0 }))
+        act(S, { type: 'moveExercise', entry: 0, dir: 1 })
+        expect(act(S, { type: 'completeHold', ref, elapsed: 22 })).toEqual({ ok: false, effects: [] })
+        expect(S.active.entries.map(e => e.sets[0].sec)).toEqual([60, 30])
+        expect(untouched(S)).toBe(true)
+      })
+
+      it('never lands on another Entry of the same exercise when an earlier one is removed', () => {
+        const S = profile([lift('0025'), hold(30), hold(60)])
+        const ref = holdRefOf(act(S, { type: 'startHold', entry: 1, set: 0 }))
+        act(S, { type: 'removeExercise', entry: 0 })
+        expect(act(S, { type: 'completeHold', ref, elapsed: 22 })).toEqual({ ok: false, effects: [] })
+        expect(S.active.entries.map(e => e.sets[0].sec)).toEqual([30, 60])
+        expect(untouched(S)).toBe(true)
+      })
+
+      it('logs nothing and stops the hold when an Entry is replaced', () => {
+        const S = profile([lift('0025'), hold(30)])
+        const ref = holdRefOf(act(S, { type: 'startHold', entry: 1, set: 0 }))
+        expect(act(S, { type: 'replaceExercise', entry: 0, exId: '0043' }).effects).toEqual([{ type: 'hold:stop' }])
+        expect(act(S, { type: 'completeHold', ref, elapsed: 22 })).toEqual({ ok: false, effects: [] })
+        expect(untouched(S)).toBe(true)
+      })
+
+      it('still lands the time when an exercise is added mid-hold', () => {
+        const S = profile([hold(30)])
+        const ref = holdRefOf(act(S, { type: 'startHold', entry: 0, set: 0 }))
+        act(S, { type: 'addExercise', exId: '0025' })
+        expect(act(S, { type: 'completeHold', ref, elapsed: 22 }).ok).toBe(true)
+        expect(S.active.entries[0].sets.map(s => [s.sec, !!s.done])).toEqual([[22, true], [30, false]])
+      })
+
+      it('completes a hold on an Active workout saved before layouts were counted', () => {
+        const S = profile([hold(30)])
+        delete S.active.layout
+        const ref = holdRefOf(act(S, { type: 'startHold', entry: 0, set: 0 }))
+        expect(act(S, { type: 'completeHold', ref, elapsed: 22 }).ok).toBe(true)
+      })
+    })
+
     it('stops the hold when the workout is discarded', () => {
       const S = profile([hold(30)])
       act(S, { type: 'startHold', entry: 0, set: 0 })
