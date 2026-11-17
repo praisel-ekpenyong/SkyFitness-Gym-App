@@ -4,7 +4,7 @@ import { createRoot } from 'react-dom/client'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { Switch, Segmented } from './ui.jsx'
 import BodyMap from './BodyMap.jsx'
-import { MUSCLES, INERT, MUSCLE_NAME } from '../lib/muscles.js'
+import { MUSCLES, INERT, MUSCLE_NAME, DELT_HEADS } from '../lib/muscles.js'
 
 let container
 let root
@@ -67,6 +67,8 @@ describe('accessibility rendered-role seam', () => {
 
   it('body map gives each drawable muscle exactly one tab stop with activation; inert stays inert', async () => {
     const onMuscle = vi.fn()
+    // Until ticket 02 draws each head, one shoulder shape stands in for the busiest head (front on an empty load).
+    const DRAWN = MUSCLES.filter(m => !DELT_HEADS.includes(m) || m === 'front-delts')
     await render(<BodyMap load={{}} onMuscle={onMuscle} />)
     const deadline = Date.now() + 3000
     let stops = []
@@ -76,18 +78,18 @@ describe('accessibility rendered-role seam', () => {
       if (stops.length > 0) {
         await act(async () => { await new Promise(r => setTimeout(r, 50)) })
         stops = [...container.querySelectorAll('[tabindex="0"]')]
-        if (stops.length >= MUSCLES.length) break
+        if (stops.length >= DRAWN.length) break
         const stable = [...container.querySelectorAll('[tabindex="0"]')].length
         if (stable === stops.length && Date.now() > deadline - 2000 && stable > 0) break
       }
     }
     stops = [...container.querySelectorAll('[tabindex="0"]')]
-    expect(stops).toHaveLength(MUSCLES.length)
+    expect(stops).toHaveLength(DRAWN.length)
 
     const labelled = [...container.querySelectorAll('[role="button"][aria-label]')]
-    expect(labelled).toHaveLength(MUSCLES.length)
+    expect(labelled).toHaveLength(DRAWN.length)
     const labels = labelled.map(el => el.getAttribute('aria-label')).sort()
-    const expected = MUSCLES.map(slug => MUSCLE_NAME[slug]).sort()
+    const expected = DRAWN.map(slug => MUSCLE_NAME[slug]).sort()
     expect(labels).toEqual(expected)
 
     const inertInteractive = [...container.querySelectorAll('.bm-sil[tabindex], .bm-sil[role]')]
@@ -99,5 +101,23 @@ describe('accessibility rendered-role seam', () => {
       first.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
     })
     expect(onMuscle.mock.calls.length).toBe(before + 1)
+  })
+
+  it('shades the one shoulder shape by the busiest head until each head is drawn', async () => {
+    const onMuscle = vi.fn()
+    await render(<BodyMap load={{ 'front-delts': 1, 'side-delts': 4 }} onMuscle={onMuscle} />)
+    const deadline = Date.now() + 3000
+    let shoulder = null
+    while (!shoulder && Date.now() < deadline) {
+      await act(async () => { await new Promise(r => setTimeout(r, 25)) })
+      shoulder = container.querySelector('[role="button"][aria-label="Side delts"]')
+    }
+    expect(shoulder).toBeTruthy()
+    expect(shoulder.getAttribute('class')).toContain('l4')
+    expect(container.querySelector('[aria-label="Front delts"]')).toBeNull()
+    await act(async () => {
+      shoulder.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    expect(onMuscle).toHaveBeenCalledWith('side-delts')
   })
 })

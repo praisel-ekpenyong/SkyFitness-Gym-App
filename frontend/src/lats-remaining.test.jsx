@@ -51,7 +51,7 @@ function getChip(scope, label) {
   return Array.from(scope.querySelectorAll('.chips button.chip')).find(b => b.textContent.trim() === label)
 }
 
-const HEAD_TO_TOE_DISPLAY = ['Traps', 'Shoulders', 'Chest', 'Upper back', 'Lats', 'Serratus', 'Biceps', 'Triceps', 'Forearms', 'Abs', 'Obliques', 'Lower back', 'Glutes', 'Quads', 'Hamstrings', 'Adductors', 'Hip flexors', 'Calves', 'Shins', 'Cardio']
+const HEAD_TO_TOE_DISPLAY = ['Traps', 'Shoulders', 'Front delts', 'Side delts', 'Rear delts', 'Chest', 'Upper back', 'Lats', 'Serratus', 'Biceps', 'Triceps', 'Forearms', 'Abs', 'Obliques', 'Lower back', 'Glutes', 'Quads', 'Hamstrings', 'Adductors', 'Hip flexors', 'Calves', 'Shins', 'Cardio']
 const EXPECTED_LIBRARY_CHIPS = ['Favorites (1)', 'All', ...HEAD_TO_TOE_DISPLAY]
 
 function expectIsolatedLatsLevels() {
@@ -64,7 +64,7 @@ function expectIsolatedLatsLevels() {
 }
 
 describe('Ticket 03 — Library and Picker filters plus Exercise Detail presentation', () => {
-  it('Library renders 19 muscle chips plus Cardio in head-to-toe order with Lats after Upper back; Favorites/All preserved', async () => {
+  it('Library renders 21 muscle chips plus Shoulders and Cardio in head-to-toe order with Lats after Upper back; Favorites/All preserved', async () => {
     useStore.getState().update(s => { s.favorites = ['0001'] })
     await act(async () => { root.render(<Library />) })
     const firstChipsRow = container.querySelectorAll('.chips')[0]
@@ -177,7 +177,7 @@ describe('Ticket 03 — Library and Picker filters plus Exercise Detail presenta
     tags = Array.from(container.querySelectorAll('.row .tag')).map(t => t.textContent.trim())
     expect(tags.some(t => t.includes('Primary: Upper back'))).toBe(true)
     expect(tags).toContain('Secondary: Biceps')
-    expect(tags.some(t => t.includes('Shoulders'))).toBe(true)
+    expect(tags.some(t => t.includes('Rear delts'))).toBe(true)
   })
 })
 

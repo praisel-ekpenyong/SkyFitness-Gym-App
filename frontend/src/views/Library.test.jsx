@@ -213,7 +213,7 @@ describe('Library view smoke tests', () => {
     const firstChipsRow = container.querySelectorAll('.chips')[0]
     const chips = Array.from(firstChipsRow.querySelectorAll('button.chip')).map(c => c.textContent.trim())
     const expected = [
-      'All', 'Traps', 'Shoulders', 'Chest', 'Upper back', 'Lats', 'Serratus',
+      'All', 'Traps', 'Shoulders', 'Front delts', 'Side delts', 'Rear delts', 'Chest', 'Upper back', 'Lats', 'Serratus',
       'Biceps', 'Triceps', 'Forearms', 'Abs', 'Obliques', 'Lower back',
       'Glutes', 'Quads', 'Hamstrings', 'Adductors', 'Hip flexors',
       'Calves', 'Shins', 'Cardio',

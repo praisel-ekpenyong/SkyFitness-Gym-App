@@ -87,7 +87,7 @@ describe('SessionMuscleDistribution Component', () => {
     const chestBar = rows[0].querySelector('.bar i')
     expect(chestBar?.style.width).toBe('100%')
 
-    expect(rows[1].textContent).toContain('Shoulders')
+    expect(rows[1].textContent).toContain('Front delts')
     expect(rows[1].textContent).toContain('1.2 sets')
     expect(rows[1].textContent).toContain('1.2 assist (3 compound sets)')
     const shouldersBar = rows[1].querySelector('.bar i')
