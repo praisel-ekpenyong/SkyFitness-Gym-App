@@ -3,6 +3,9 @@ html {
   font-size: var(--fs-field); background: var(--bg); overscroll-behavior: none; overflow-x: clip;
   -webkit-text-size-adjust: 100%; min-height: 100%; scroll-padding-bottom: var(--page-clearance);
 }
+/* No visible vertical scrollbars: wheel, trackpad, touch and keys still scroll. Same idiom as .chips and .hm-wrap. */
+html, .sheet, .center, .fullsheet { scrollbar-width: none }
+html::-webkit-scrollbar, .sheet::-webkit-scrollbar, .center::-webkit-scrollbar, .fullsheet::-webkit-scrollbar { display: none }
 html:has(body.resting) { scroll-padding-bottom: var(--timer-clearance) }
 html:has(body.focus-session) { scroll-padding-top: calc(var(--sat) + 96px); scroll-padding-bottom: calc(var(--sab) + 16px) }
 html:has(body.focus-session.resting) { scroll-padding-bottom: calc(var(--sab) + 112px) }
