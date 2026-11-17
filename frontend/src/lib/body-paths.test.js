@@ -1,14 +1,11 @@
 import { describe, it, expect } from 'vitest'
 import bodyPaths from './body-paths.js'
-import { MUSCLES, INERT, DELT_HEADS } from './muscles.js'
+import { MUSCLES, INERT } from './muscles.js'
 
 describe('body-paths SVG geometry', () => {
   const models = ['male', 'female']
   const views = ['front', 'back']
-  // Until the shoulder heads get their own geometry (muscle-model ticket 02),
-  // the old single deltoid shape stands in for all three heads.
-  const INTERIM_SHOULDER = 'deltoids'
-  const allKnownSlugs = new Set([...MUSCLES, ...INERT, INTERIM_SHOULDER])
+  const allKnownSlugs = new Set([...MUSCLES, ...INERT])
 
   it('exports valid structures for male and female front and back models', () => {
     expect(bodyPaths).toBeDefined()
@@ -67,10 +64,7 @@ describe('body-paths SVG geometry', () => {
       const combinedSlugs = new Set([...frontSlugs, ...backSlugs])
 
       MUSCLES.forEach(muscle => {
-        expect(
-          combinedSlugs.has(muscle) || (DELT_HEADS.includes(muscle) && combinedSlugs.has(INTERIM_SHOULDER)),
-          `Expected muscle "${muscle}" to be present in ${model} model`,
-        ).toBe(true)
+        expect(combinedSlugs.has(muscle), `Expected muscle "${muscle}" to be present in ${model} model`).toBe(true)
       })
     })
   })

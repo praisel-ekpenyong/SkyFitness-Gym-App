@@ -4,7 +4,7 @@ import { createRoot } from 'react-dom/client'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { Switch, Segmented } from './ui.jsx'
 import BodyMap from './BodyMap.jsx'
-import { MUSCLES, INERT, MUSCLE_NAME, DELT_HEADS } from '../lib/muscles.js'
+import { MUSCLES, INERT, MUSCLE_NAME } from '../lib/muscles.js'
 
 let container
 let root
@@ -67,8 +67,7 @@ describe('accessibility rendered-role seam', () => {
 
   it('body map gives each drawable muscle exactly one tab stop with activation; inert stays inert', async () => {
     const onMuscle = vi.fn()
-    // Until ticket 02 draws each head, one shoulder shape stands in for the busiest head (front on an empty load).
-    const DRAWN = MUSCLES.filter(m => !DELT_HEADS.includes(m) || m === 'front-delts')
+    const DRAWN = MUSCLES
     await render(<BodyMap load={{}} onMuscle={onMuscle} />)
     const deadline = Date.now() + 3000
     let stops = []
@@ -103,21 +102,22 @@ describe('accessibility rendered-role seam', () => {
     expect(onMuscle.mock.calls.length).toBe(before + 1)
   })
 
-  it('shades the one shoulder shape by the busiest head until each head is drawn', async () => {
+  it('shades and selects each shoulder head on its own', async () => {
     const onMuscle = vi.fn()
-    await render(<BodyMap load={{ 'front-delts': 1, 'side-delts': 4 }} onMuscle={onMuscle} />)
+    await render(<BodyMap load={{ 'front-delts': 0, 'side-delts': 10, 'rear-delts': 2 }} onMuscle={onMuscle} />)
     const deadline = Date.now() + 3000
-    let shoulder = null
-    while (!shoulder && Date.now() < deadline) {
+    const head = name => container.querySelector(`[role="button"][aria-label="${name}"]`)
+    while (!head('Rear delts') && Date.now() < deadline) {
       await act(async () => { await new Promise(r => setTimeout(r, 25)) })
-      shoulder = container.querySelector('[role="button"][aria-label="Side delts"]')
     }
-    expect(shoulder).toBeTruthy()
-    expect(shoulder.getAttribute('class')).toContain('l4')
-    expect(container.querySelector('[aria-label="Front delts"]')).toBeNull()
-    await act(async () => {
-      shoulder.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
-    expect(onMuscle).toHaveBeenCalledWith('side-delts')
+    const level = el => el.getAttribute('class').match(/\bl(\d)\b/)[1]
+    expect(level(head('Side delts'))).toBe('4')
+    expect(level(head('Front delts'))).toBe('0')
+    expect(level(head('Rear delts'))).not.toBe('4')
+    expect(level(head('Rear delts'))).not.toBe('0')
+    for (const [name, slug] of [['Front delts', 'front-delts'], ['Side delts', 'side-delts'], ['Rear delts', 'rear-delts']]) {
+      await act(async () => { head(name).dispatchEvent(new MouseEvent('click', { bubbles: true })) })
+      expect(onMuscle).toHaveBeenLastCalledWith(slug)
+    }
   })
 })
