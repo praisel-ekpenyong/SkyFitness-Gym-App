@@ -4,8 +4,8 @@ import { useUI } from './store/useUI.js'
 import { EXIDX } from './lib/exercises.js'
 import { fmtDate, fmtNum, fmtSigned, fmtVol, fmtDur, durPart, todayISO, exCount, DAYN, MONTHS_LONG, monthKey, setLabel } from './lib/format.js'
 import { effectiveRoutineId, hasEffectiveOverride, deleteWorkout } from './lib/history.js'
-import { setsDone } from './lib/workout-model.js'
-import { tonnage, loadRecords } from './lib/training-log.js'
+import { loadRecords } from './lib/training-log.js'
+import { workoutSummary, summarizeWorkouts } from './lib/workout-summary.js'
 import { effortOf } from './lib/effort.js'
 import { setDayOverride, assignWeekday, dayStatus } from './lib/schedule.js'
 import { recordWeighIn, deleteWeighIn, latestWeighIn } from './lib/bodyweight.js'
@@ -453,9 +453,10 @@ export function WorkoutDetail({ w, close }) {
   const [selectedMuscle, setSelectedMuscle] = useState(null)
   const workoutLoad = loadOfWorkouts([w])
   const recordIds = loadRecords(st, w).map(r => r.id)
+  const sum = workoutSummary(st, w)
   return <>
     <h3>{w.name}</h3>
-    <div className="sheet-sub">{[fmtDate(w.d, true), ...durPart(w.end - w.start), fmtVol(tonnage(st, w), st.unit), ...(w.bw ? [fmtNum(w.bw) + ' ' + st.unit] : [])].join(' · ')}</div>
+    <div className="sheet-sub">{[fmtDate(w.d, true), ...durPart(sum.durationMs), fmtVol(sum.tonnage, st.unit), ...(w.bw ? [fmtNum(w.bw) + ' ' + st.unit] : [])].join(' · ')}</div>
     {w.entries.map((e, i) => {
       const ex = EXIDX[e.id]
       return <div key={i} className="row ex-entry">
@@ -502,8 +503,7 @@ function Calendar({ start, close }) {
   const startOffset = (new Date(y, mo, 1).getDay() + 6) % 7
   const daysIn = new Date(y, mo + 1, 0).getDate()
   const monthWs = st.workouts.filter(w => w.d.startsWith(y + '-' + String(mo + 1).padStart(2, '0')))
-  const monthVol = monthWs.reduce((a, w) => a + tonnage(st, w), 0)
-  const monthMs = monthWs.reduce((a, w) => a + Math.max(0, (w.end || w.start) - w.start), 0)
+  const month = summarizeWorkouts(st, monthWs)
   const cells = []
   for (let i = 0; i < startOffset; i++) cells.push(<div key={'e' + i} />)
   for (let d = 1; d <= daysIn; d++) {
@@ -522,7 +522,7 @@ function Calendar({ start, close }) {
       <h3>{t(MONTHS_LONG[mo])} {y}</h3>
       <button className="iconbtn" onClick={() => setCur(new Date(y, mo + 1, 1))} aria-label={t('Next month')}><Icon name="chevronRight" /></button>
     </div>
-    <div className="small muted cal-sum">{monthWs.length ? `${t(monthWs.length === 1 ? '{0} workout' : '{0} workouts', fmtNum(monthWs.length))} · ${fmtDur(monthMs)} · ${fmtVol(monthVol, st.unit)}` : t('No workouts this month')}</div>
+    <div className="small muted cal-sum">{monthWs.length ? `${t(monthWs.length === 1 ? '{0} workout' : '{0} workouts', fmtNum(monthWs.length))} · ${fmtDur(month.durationMs)} · ${fmtVol(month.tonnage, st.unit)}` : t('No workouts this month')}</div>
     <div className="cal-grid">{['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].map(l => <div key={l} className="cal-h">{t(l)}</div>)}{cells}</div>
     <div className="cal-legend">
       <span><i style={{ background: 'var(--data)' }} />{t('Trained')}</span>
@@ -639,13 +639,14 @@ export function WorkoutRow({ w, onClick }) {
   const st = useStore(s => s.S)
   const glyph = glyphOf((st.routines.find(r => r.id === w.routineId) || {}).emoji)
   const recordCount = loadRecords(st, w).length
+  const sum = workoutSummary(st, w)
   return <div className="item" role="button" tabIndex={0}
-    aria-label={t('{0}, {1}, {2}', w.name, fmtDate(w.d, true), t('{0} sets', fmtNum(setsDone(w))))}
+    aria-label={t('{0}, {1}, {2}', w.name, fmtDate(w.d, true), t('{0} sets', fmtNum(sum.workSets)))}
     onClick={onClick}
     onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick && onClick() } }}>
     <span className="lrow-i"><Icon name={glyph} /></span>
     <div className="grow"><div className="tt">{w.name}</div>
-      <div className="ss">{[fmtDate(w.d, true), ...durPart(w.end - w.start), t('{0} sets', fmtNum(setsDone(w))), fmtVol(tonnage(st, w), st.unit)].join(' · ')}</div></div>
+      <div className="ss">{[fmtDate(w.d, true), ...durPart(sum.durationMs), t('{0} sets', fmtNum(sum.workSets)), fmtVol(sum.tonnage, st.unit)].join(' · ')}</div></div>
     {recordCount > 0 && <span className="pr"><Icon name="trophy" />{t(recordCount === 1 ? '{0} record' : '{0} records', fmtNum(recordCount))}</span>}
     <Icon name="chevronRight" className="chev" />
   </div>
