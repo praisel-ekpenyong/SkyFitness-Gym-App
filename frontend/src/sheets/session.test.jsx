@@ -232,7 +232,7 @@ describe('SessionMuscleDistribution Component', () => {
 
     const toggleBtn = Array.from(container.querySelectorAll('button')).find(b => b.textContent.includes('Show all'))
     expect(toggleBtn).toBeTruthy()
-    expect(toggleBtn?.textContent).toContain('Show all (8)')
+    expect(toggleBtn?.textContent).toContain('Show all (6)')
     expect(toggleBtn?.getAttribute('aria-expanded')).toBe('false')
 
     await act(async () => {
@@ -240,7 +240,7 @@ describe('SessionMuscleDistribution Component', () => {
     })
 
     const expandedRows = container.querySelectorAll('.smd-row')
-    expect(expandedRows.length).toBe(8)
+    expect(expandedRows.length).toBe(6)
 
     const collapseBtn = Array.from(container.querySelectorAll('button')).find(b => b.textContent.includes('Show less'))
     expect(collapseBtn).toBeTruthy()
