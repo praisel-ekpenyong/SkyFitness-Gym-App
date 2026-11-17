@@ -314,6 +314,19 @@ describe('Record badges', () => {
   })
 })
 
+describe('WorkoutRow', () => {
+  it('counts Work sets only, never a performed warm-up', async () => {
+    const w = {
+      id: 'w-warm', name: 'Push Day', d: '2026-03-01', start: 0, end: 60 * 60000,
+      entries: [{ id: '0025', sets: [{ w: 20, r: 10, done: true, phase: 'warmup' }, { w: 40, r: 5, done: true, phase: 'warmup' }, { w: 95, r: 8, done: true }, { w: 95, r: 8, done: true }] }],
+    }
+    useStore.getState().update(s => { s.workouts = [w] })
+    await act(async () => { root.render(<WorkoutRow w={w} onClick={vi.fn()} />) })
+    expect(container.querySelector('.item').getAttribute('aria-label')).toBe('Push Day, Sun 1 Mar, 2 sets')
+    expect(container.querySelector('.ss').textContent).toContain('2 sets')
+  })
+})
+
 describe('WorkoutDetail', () => {
   it('renders exercise notes beneath completed sets when present', async () => {
     const workout = {
