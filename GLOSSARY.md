@@ -95,7 +95,7 @@ A supporting or assisting muscle recruited during a movement, receiving partial 
 _Avoid_: auxiliary muscle, helper muscle
 
 **Muscle filter**:
-The 19 canonical anatomical muscle groups (matching the body map) plus cardio, used to filter exercises in the library and exercise pickers.
+The 21 canonical anatomical muscle groups (matching the muscle map) plus cardio, used to filter exercises in the library and exercise pickers, plus a Shoulders chip that matches any of the three shoulder heads. The custom-exercise muscle picker offers the 21 and cardio, without the Shoulders chip.
 
 **Body part**:
 The coarse grouping of catalogue exercises (chest, back, waist…); also the fallback muscle mapping for customs that name no muscles.
@@ -325,4 +325,4 @@ How much of a muscle's trainedness remains: full for 14 days after the last work
 _Avoid_: detraining as a negative verdict — below-full-retention muscles are simply the ones worth training
 
 **Muscle map**:
-The nineteen drawable muscles in head-to-toe order (also the order of any derived list). Dataset spellings collapse onto them via aliases; anything undrawable is dropped, not guessed. Inert regions (head, hands, joints) are drawn but never shaded.
+The twenty-one drawable muscles in head-to-toe order (also the order of any derived list). The shoulder is three heads: Front delts, Side delts and Rear delts; a plain Shoulders with no head is read as front 1, side 0.4, rear 0.4 when primary and front 0.4 when secondary (ADR 0024). Dataset spellings collapse onto them via aliases; anything undrawable is dropped, not guessed. Inert regions (head, hands, joints) are drawn but never shaded.
