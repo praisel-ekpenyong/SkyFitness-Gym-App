@@ -1,6 +1,7 @@
 import { EXDB } from './exercises-data.js'
 import { t } from './i18n-core.js'
 import { IMG_BASE, GIF_BASE } from './env.js'
+import { withShoulderHeads } from './shoulder-heads.js'
 
 export { EXDB }
 
@@ -32,9 +33,9 @@ EXDB.forEach(e => {
   if (curation) {
     const curated = curation.tg ? { ...e, tg: curation.tg } : { ...e }
     curated.sm = smOf(curated)
-    EXIDX[e.id] = curated
+    EXIDX[e.id] = withShoulderHeads(curated)
   } else {
-    EXIDX[e.id] = e
+    EXIDX[e.id] = withShoulderHeads(e)
   }
 })
 export const BODYPARTS = [...new Set(EXDB.map(e => e.bp))].sort()
