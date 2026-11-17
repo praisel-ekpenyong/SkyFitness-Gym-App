@@ -1,5 +1,5 @@
 /**
- * Movement-pattern corrections to the upstream catalogue (ADR 0012, ADR 0024).
+ * Movement-pattern corrections to the upstream catalogue (ADR 0012, ADR 0025).
  *
  * Each pattern names the curation it applies and the hand-reviewed catalogue
  * ids it applies to. Name patterns only proposed these ids; every id was read

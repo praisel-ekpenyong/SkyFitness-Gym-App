@@ -1,5 +1,7 @@
 # Catalogue curations and hamstring hinge distribution
 
+> Extended by ADR-0025 (movement-pattern corrections): the overlay also removes secondary muscles (`smRemove`), and reviewed pattern id lists live in `lib/catalogue-corrections.js`.
+
 **Status:** resolved — `CATALOGUE_CURATIONS` seam in `exercises.js` active, RDL and SLDL variations re-targeted to primary hamstrings with secondary glutes and lower back
 
 **Context:** 
