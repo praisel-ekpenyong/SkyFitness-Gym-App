@@ -18,7 +18,6 @@ function useBodyPaths() {
   return paths
 }
 
-
 function View({ view, viewKey, levels, onMuscle, selected, primaryOf, getA11yLabel }) {
   return (
     <svg className="bm-v" viewBox={view.vb} role={onMuscle ? 'group' : 'img'} aria-label={onMuscle ? t('Body map') : t('Trained muscles map')}>
