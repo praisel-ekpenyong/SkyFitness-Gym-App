@@ -3,11 +3,11 @@ import { EXIDX, EXDB, smOf, registerCustom } from './exercises.js'
 import { loadOfWorkouts, musclesOf, loadOf, muscleWeightsOf, lastTrainedByMuscle, primaryMuscleOf, primaryMuscleName, secondaryMusclesOf, sessionMuscleDistribution } from './muscles.js'
 
 describe('catalogue secondary muscles', () => {
-  it('maps a bench press to chest, triceps and deltoids', () => {
+  it('maps a bench press to chest, triceps and front delts', () => {
     expect(musclesOf(EXIDX['0025'])).toMatchObject({
       chest: 1,
       triceps: 0.4,
-      deltoids: 0.4,
+      'front-delts': 0.4,
     })
   })
 
@@ -24,7 +24,7 @@ describe('catalogue secondary muscles', () => {
       expect(musclesOf(EXIDX[id])).toMatchObject({
         'upper-back': 1,
         biceps: 0.4,
-        deltoids: 0.4,
+        'rear-delts': 0.4,
       })
     }
   })
@@ -36,7 +36,7 @@ describe('catalogue secondary additions', () => {
     const raw = EXDB.find(e => e.id === '0027')
     expect(raw.sm).not.toContain('rear deltoids')
     expect(smOf(raw)).toContain('rear deltoids')
-    expect(musclesOf(raw)).toHaveProperty('deltoids')
+    expect(musclesOf(raw)).toHaveProperty('rear-delts')
   })
 })
 
@@ -75,7 +75,7 @@ describe('hamstring hinge catalogue curations and set distribution', () => {
       expect(musclesOf(EXIDX[id])).toMatchObject({
         'upper-back': 1,
         biceps: 0.4,
-        deltoids: 0.4,
+        'rear-delts': 0.4,
       })
     }
   })
@@ -101,22 +101,23 @@ describe('map load with warm-up phases', () => {
 })
 
 describe('canonical muscle filter taxonomy & extraction helpers', () => {
-  it('defines FILTER_MUSCLES with 19 anatomical muscles in head-to-toe order plus cardio', async () => {
+  it('defines FILTER_MUSCLES with 21 anatomical muscles in head-to-toe order plus a Shoulders chip and cardio', async () => {
     const { MUSCLES, FILTER_MUSCLES, MUSCLE_NAME } = await import('./muscles.js')
     expect(MUSCLES).toEqual([
-      'trapezius', 'deltoids', 'chest', 'upper-back', 'lats', 'serratus',
+      'trapezius', 'front-delts', 'side-delts', 'rear-delts', 'chest', 'upper-back', 'lats', 'serratus',
       'biceps', 'triceps', 'forearm',
       'abs', 'obliques', 'lower-back',
       'gluteal', 'quadriceps', 'hamstring', 'adductors', 'hip-flexors',
       'calves', 'tibialis',
     ])
-    expect(MUSCLES).toHaveLength(19)
+    expect(MUSCLES).toHaveLength(21)
     expect(MUSCLES.indexOf('lats')).toBe(MUSCLES.indexOf('upper-back') + 1)
     expect(MUSCLES.indexOf('serratus')).toBe(MUSCLES.indexOf('lats') + 1)
     expect(MUSCLE_NAME['lats']).toBe('Lats')
-    expect(FILTER_MUSCLES).toHaveLength(20)
-    expect(FILTER_MUSCLES.slice(0, 19)).toEqual(MUSCLES)
-    expect(FILTER_MUSCLES[19]).toBe('cardio')
+    expect(FILTER_MUSCLES).toHaveLength(23)
+    expect(FILTER_MUSCLES.filter(m => m !== 'shoulders').slice(0, 21)).toEqual(MUSCLES)
+    expect(FILTER_MUSCLES[1]).toBe('shoulders')
+    expect(FILTER_MUSCLES[22]).toBe('cardio')
     FILTER_MUSCLES.forEach(slug => {
       expect(MUSCLE_NAME[slug]).toBeTruthy()
     })
@@ -139,12 +140,12 @@ describe('canonical muscle filter taxonomy & extraction helpers', () => {
     const { secondaryMusclesOf } = await import('./muscles.js')
     const benchSm = secondaryMusclesOf(EXIDX['0025'])
     expect(benchSm).toContain('triceps')
-    expect(benchSm).toContain('deltoids')
+    expect(benchSm).toContain('front-delts')
     expect(benchSm).not.toContain('chest')
 
     const rowSm = secondaryMusclesOf(EXIDX['0027'])
     expect(rowSm).toContain('biceps')
-    expect(rowSm).toContain('deltoids')
+    expect(rowSm).toContain('rear-delts')
     expect(rowSm).not.toContain('upper-back')
 
     const squatSm = secondaryMusclesOf(EXIDX['0043'])
@@ -174,7 +175,7 @@ describe('canonical muscle filter taxonomy & extraction helpers', () => {
     expect(matchesMuscleFilter(bench, 'pectorals')).toBe(true)
 
     expect(matchesMuscleFilter(bench, 'triceps')).toBe(true)
-    expect(matchesMuscleFilter(bench, 'deltoids')).toBe(true)
+    expect(matchesMuscleFilter(bench, 'front-delts')).toBe(true)
     expect(matchesMuscleFilter(bench, 'shoulders')).toBe(true)
 
     expect(matchesMuscleFilter(bench, 'biceps')).toBe(false)
@@ -190,7 +191,8 @@ describe('canonical muscle filter taxonomy & extraction helpers', () => {
     const { bodypartForMuscle } = await import('./muscles.js')
     expect(bodypartForMuscle('trapezius')).toBe('neck')
     expect(bodypartForMuscle('traps')).toBe('neck')
-    expect(bodypartForMuscle('deltoids')).toBe('shoulders')
+    expect(bodypartForMuscle('front-delts')).toBe('shoulders')
+    expect(bodypartForMuscle('rear-delts')).toBe('shoulders')
     expect(bodypartForMuscle('chest')).toBe('chest')
     expect(bodypartForMuscle('upper-back')).toBe('back')
     expect(bodypartForMuscle('lats')).toBe('back')
@@ -217,7 +219,7 @@ describe('canonical muscle filter taxonomy & extraction helpers', () => {
     const bench = EXIDX['0025']
 
     expect(isSecondaryMuscleMatch(bench, 'triceps')).toBe(true)
-    expect(isSecondaryMuscleMatch(bench, 'deltoids')).toBe(true)
+    expect(isSecondaryMuscleMatch(bench, 'front-delts')).toBe(true)
     expect(isSecondaryMuscleMatch(bench, 'shoulders')).toBe(true)
     expect(isSecondaryMuscleMatch('0025', 'triceps')).toBe(true)
 
@@ -247,7 +249,7 @@ describe('canonical muscle filter taxonomy & extraction helpers', () => {
 
     expect(secondaryMatchForQuery(bench, 'triceps')).toBe('triceps')
     expect(secondaryMatchForQuery('0025', 'triceps')).toBe('triceps')
-    expect(secondaryMatchForQuery(bench, 'delts')).toBe('deltoids')
+    expect(secondaryMatchForQuery(bench, 'delts')).toBe('front-delts')
     expect(secondaryMatchForQuery(bench, 'bench')).toBeNull()
     expect(secondaryMatchForQuery(bench, 'chest')).toBeNull()
     expect(secondaryMatchForQuery(bench, 'biceps')).toBeNull()
@@ -379,10 +381,10 @@ describe('legacy custom exercises and BY_BODYPART fallbacks', () => {
     expect(musclesOf(legacyBack)).toEqual({ lats: 0.50, 'upper-back': 0.35, 'lower-back': 0.15 })
 
     const legacyShoulders = { id: 'c-sh', n: 'Old Press', bp: 'shoulders' }
-    expect(primaryMuscleOf(legacyShoulders)).toBe('deltoids')
-    expect(secondaryMusclesOf(legacyShoulders)).toEqual([])
-    expect(matchesMuscleFilter(legacyShoulders, 'deltoids')).toBe(true)
-    expect(musclesOf(legacyShoulders)).toEqual({ deltoids: 1 })
+    expect(primaryMuscleOf(legacyShoulders)).toBe('front-delts')
+    expect(secondaryMusclesOf(legacyShoulders)).toEqual(['side-delts', 'rear-delts'])
+    expect(matchesMuscleFilter(legacyShoulders, 'shoulders')).toBe(true)
+    expect(musclesOf(legacyShoulders)).toEqual({ 'front-delts': 1, 'side-delts': 0.4, 'rear-delts': 0.4 })
 
     const legacyUpperArms = { id: 'c-arms', n: 'Old Arm Lift', bp: 'upper arms' }
     expect(primaryMuscleOf(legacyUpperArms)).toBe('biceps')
@@ -582,8 +584,8 @@ describe('tokenized catalogue search & normalization', () => {
     expect(secondaryMatchForQuery(bench, 'triceps bench')).toBe('triceps')
     expect(secondaryMatchForQuery(bench, 'barbell triceps')).toBe('triceps')
 
-    expect(secondaryMatchForQuery(bench, 'bench delts')).toBe('deltoids')
-    expect(secondaryMatchForQuery(bench, 'bench shoulders')).toBe('deltoids')
+    expect(secondaryMatchForQuery(bench, 'bench delts')).toBe('front-delts')
+    expect(secondaryMatchForQuery(bench, 'bench shoulders')).toBe('front-delts')
 
     expect(secondaryMatchForQuery(bench, 'chest')).toBeNull()
     expect(secondaryMatchForQuery(bench, 'bench chest')).toBeNull()
@@ -638,10 +640,10 @@ describe('sessionMuscleDistribution', () => {
       exercises: ['barbell bench press'],
     })
 
-    const deltoids = dist.find(m => m.slug === 'deltoids')
-    expect(deltoids).toEqual({
-      slug: 'deltoids',
-      name: 'Shoulders',
+    const frontDelts = dist.find(m => m.slug === 'front-delts')
+    expect(frontDelts).toEqual({
+      slug: 'front-delts',
+      name: 'Front delts',
       effectiveSets: 1.2,
       primarySets: 0,
       secondarySets: 3,
@@ -754,8 +756,8 @@ describe('sessionMuscleDistribution', () => {
     }
 
     const dist = sessionMuscleDistribution(workout)
-    expect(dist.map(m => m.slug)).toEqual(['chest', 'deltoids', 'triceps'])
-    expect(dist[1].name).toBe('Shoulders')
+    expect(dist.map(m => m.slug)).toEqual(['chest', 'front-delts', 'triceps'])
+    expect(dist[1].name).toBe('Front delts')
     expect(dist[2].name).toBe('Triceps')
   })
 
