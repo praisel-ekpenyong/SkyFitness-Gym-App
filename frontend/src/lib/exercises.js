@@ -2,11 +2,11 @@ import { EXDB } from './exercises-data.js'
 import { t } from './i18n-core.js'
 import { IMG_BASE, GIF_BASE } from './env.js'
 import { withShoulderHeads } from './shoulder-heads.js'
-import { LOWER_BODY_CORRECTIONS, curationsByIdOf } from './catalogue-corrections.js'
+import { LOWER_BODY_CORRECTIONS, UPPER_BODY_CORRECTIONS, curationsByIdOf } from './catalogue-corrections.js'
 
 export { EXDB }
 
-export const CATALOGUE_CURATIONS = curationsByIdOf(LOWER_BODY_CORRECTIONS, {
+export const CATALOGUE_CURATIONS = curationsByIdOf([...LOWER_BODY_CORRECTIONS, ...UPPER_BODY_CORRECTIONS], {
   '0085': { tg: 'hamstrings', smAdd: ['glutes'] },
   '1459': { tg: 'hamstrings', smAdd: ['glutes'] },
   '0432': { tg: 'hamstrings', smAdd: ['glutes'] },
@@ -17,10 +17,6 @@ export const CATALOGUE_CURATIONS = curationsByIdOf(LOWER_BODY_CORRECTIONS, {
   '1757': { tg: 'hamstrings', smAdd: ['glutes'] },
   '2805': { tg: 'hamstrings', smAdd: ['glutes'] },
   '0115': { tg: 'hamstrings', smAdd: ['glutes'] },
-  '0027': { smAdd: ['rear deltoids'] },
-  '0293': { smAdd: ['rear deltoids'] },
-  '0499': { smAdd: ['rear deltoids'] },
-  '0861': { smAdd: ['rear deltoids'] },
 })
 
 const muscleKey = value => String(value || '').toLowerCase().trim()

@@ -82,8 +82,9 @@ describe('Ticket 03 — Library and Picker filters plus Exercise Detail presenta
     const latsItems = Array.from(container.querySelectorAll('.list .item'))
     const latPulldown = latsItems.find(it => it.textContent.toLowerCase().includes('alternate lateral pulldown'))
     expect(latPulldown).toBeTruthy()
+    // Rows credit lats as a secondary (ADR 0025), so they show as contributors.
     const rowItemUnderLats = latsItems.find(it => it.textContent.toLowerCase().includes('barbell bent over row'))
-    expect(rowItemUnderLats).toBeFalsy()
+    expect(rowItemUnderLats).toBeTruthy()
 
     const upperChip = getChip(container, 'Upper back')
     expect(upperChip).toBeTruthy()
@@ -130,7 +131,7 @@ describe('Ticket 03 — Library and Picker filters plus Exercise Detail presenta
     await act(async () => { latsChip.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
     let items = Array.from(container.querySelectorAll('.list .item'))
     expect(items.some(it => it.textContent.toLowerCase().includes('alternate lateral pulldown'))).toBe(true)
-    expect(items.some(it => it.textContent.toLowerCase().includes('barbell bent over row'))).toBe(false)
+    expect(items.some(it => it.textContent.toLowerCase().includes('barbell bent over row'))).toBe(true)
 
     const upperChip = getChip(container, 'Upper back')
     await act(async () => { upperChip.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
@@ -309,7 +310,7 @@ describe('Ticket 05 — Stats Muscle Balance integration', () => {
     expect(latLoad['upper-back']).toBeCloseTo(0.8, 5)
     const rowLoad = loadOfWorkouts([rowW], null)
     expect(rowLoad['upper-back']).toBeCloseTo(2, 5)
-    expect(rowLoad.lats || 0).toBe(0)
+    expect(rowLoad.lats).toBeCloseTo(0.8, 5)
     const latLevels = levelsOf(latLoad)
     const rowLevels = levelsOf(rowLoad)
     expect(latLevels.lats).toBe(4)

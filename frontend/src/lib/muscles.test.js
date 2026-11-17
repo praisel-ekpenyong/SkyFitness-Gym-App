@@ -1,5 +1,6 @@
 import { describe, expect, it, afterEach } from 'vitest'
 import { EXIDX, EXDB, smOf, registerCustom } from './exercises.js'
+import { UPPER_BODY_CORRECTIONS } from './catalogue-corrections.js'
 import { matchesMuscleFilter, isSecondaryMuscleMatch, loadOfWorkouts, musclesOf, loadOf, muscleWeightsOf, lastTrainedByMuscle, primaryMuscleOf, primaryMuscleName, secondaryMusclesOf, sessionMuscleDistribution } from './muscles.js'
 
 describe('catalogue secondary muscles', () => {
@@ -134,6 +135,71 @@ describe('lower-body movement corrections', () => {
   it('keeps the muscles a lifter picked for a custom squat', () => {
     const custom = { id: 'custom-squat', n: 'My squat', bp: 'upper legs', tg: 'glutes', sm: ['hamstrings'] }
     expect(musclesOf(custom)).toEqual({ gluteal: 1, hamstring: 0.4 })
+  })
+})
+
+describe('upper-body and core movement corrections', () => {
+  it.each([
+    ['barbell bench press', '0025', { chest: 1, 'front-delts': 0.4, triceps: 0.4 }],
+    ['barbell incline bench press', '0047', { chest: 1, 'front-delts': 0.4, triceps: 0.4 }],
+    ['standing military press', '1456', { 'front-delts': 1, 'side-delts': 0.4, triceps: 0.4 }],
+    ['dumbbell lateral raise', '0334', { 'side-delts': 1, trapezius: 0.4 }],
+    ['rope rear-delt row (face pull)', '0203', { 'rear-delts': 1, 'upper-back': 0.4, trapezius: 0.4 }],
+    ['band reverse fly (face pull)', '0993', { 'rear-delts': 1, 'upper-back': 0.4, trapezius: 0.4 }],
+    ['barbell upright row', '0120', { 'side-delts': 1, trapezius: 0.4, biceps: 0.4 }],
+    ['barbell bent over row', '0027', { 'upper-back': 1, lats: 0.4, 'rear-delts': 0.4, biceps: 0.4 }],
+    ['cable pulldown', '0198', { lats: 1, 'upper-back': 0.4, biceps: 0.4 }],
+    ['pull-up', '0652', { lats: 1, 'upper-back': 0.4, biceps: 0.4 }],
+    ['cable triceps pushdown', '0241', { triceps: 1 }],
+    ['barbell curl', '0031', { biceps: 1, forearm: 0.4 }],
+    ['dumbbell hammer curl', '0313', { forearm: 1, biceps: 0.4 }],
+    ['crunch', '0274', { abs: 1, obliques: 0.4 }],
+  ])('credits a %s (%s) with its corrected weights', (_name, id, weights) => {
+    expect(musclesOf(id)).toEqual(weights)
+  })
+
+  // The spec's table, row by row, as muscle weights.
+  const TABLE = {
+    'pull-up, chin-up, pulldown': { lats: 1, 'upper-back': 0.4, biceps: 0.4 },
+    pullover: { lats: 1, chest: 0.4, triceps: 0.4 },
+    row: { 'upper-back': 1, lats: 0.4, 'rear-delts': 0.4, biceps: 0.4 },
+    'face pull, rear-delt raise, reverse fly': { 'rear-delts': 1, 'upper-back': 0.4, trapezius: 0.4 },
+    shrug: { trapezius: 1, forearm: 0.4 },
+    'lateral raise': { 'side-delts': 1, trapezius: 0.4 },
+    'upright row': { 'side-delts': 1, trapezius: 0.4, biceps: 0.4 },
+    'front raise': { 'front-delts': 1 },
+    'overhead press': { 'front-delts': 1, 'side-delts': 0.4, triceps: 0.4 },
+    'bench, chest press, push-up, chest dip, incline press': { chest: 1, 'front-delts': 0.4, triceps: 0.4 },
+    'close-grip bench, triceps dip': { triceps: 1, chest: 0.4, 'front-delts': 0.4 },
+    'fly, crossover, pec deck': { chest: 1, 'front-delts': 0.4 },
+    'triceps extension, pushdown, kickback': { triceps: 1 },
+    curl: { biceps: 1, forearm: 0.4 },
+    'hammer and reverse curl': { forearm: 1, biceps: 0.4 },
+    'crunch, sit-up': { abs: 1, obliques: 0.4 },
+    'leg raise': { abs: 1, 'hip-flexors': 0.4 },
+    'twist, woodchop': { obliques: 1, abs: 0.4 },
+    'plank, rollout': { abs: 1, obliques: 0.4 },
+  }
+
+  it('covers every row of the table', () => {
+    expect(UPPER_BODY_CORRECTIONS.map(p => p.pattern).sort()).toEqual(Object.keys(TABLE).sort())
+  })
+
+  it.each(Object.entries(TABLE))('credits every reviewed %s id with the table weights', (pattern, weights) => {
+    const { ids } = UPPER_BODY_CORRECTIONS.find(p => p.pattern === pattern)
+    for (const id of ids) expect([id, musclesOf(id)]).toEqual([id, weights])
+  })
+
+  it('shows the corrected primary in the Library filter and exercise detail', () => {
+    expect(primaryMuscleName('0313')).toBe('Forearms')
+    expect(primaryMuscleName('0687')).toBe('Obliques')
+    expect(matchesMuscleFilter('0027', 'lats')).toBe(true)
+    expect(isSecondaryMuscleMatch('0027', 'lats')).toBe(true)
+    expect(matchesMuscleFilter('0241', 'front-delts')).toBe(false)
+  })
+
+  it('keeps catalogue tags on a combination move the review left out', () => {
+    expect(musclesOf('3547')).toEqual({ biceps: 1, 'front-delts': 0.4 })
   })
 })
 
@@ -363,7 +429,7 @@ describe('lats taxonomy expansion', () => {
     expect(rowSm).not.toContain('upper-back')
     expect(musclesOf(rowEx)).toMatchObject({ 'upper-back': 1 })
     expect(matchesMuscleFilter(rowEx, 'upper-back')).toBe(true)
-    expect(matchesMuscleFilter(rowEx, 'lats')).toBe(false)
+    expect(isSecondaryMuscleMatch(rowEx, 'lats')).toBe(true)
 
     const latWithRhomboids = { id: 'c-lat', n: 'Custom Pulldown', tg: 'lats', sm: ['rhomboids'], bp: 'back' }
     expect(primaryMuscleOf(latWithRhomboids)).toBe('lats')

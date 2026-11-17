@@ -503,7 +503,7 @@ describe('ExerciseDetail primary and secondary muscle tags', () => {
 
   it('displays only Primary and Equipment tags for pure isolation exercises without secondaries', async () => {
     const isolationEx = {
-      id: '0031',
+      id: 'c-curl',
       n: 'dumbbell bicep curl',
       bp: 'upper arms',
       tg: 'biceps',
