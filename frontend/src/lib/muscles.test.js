@@ -1,6 +1,6 @@
 import { describe, expect, it, afterEach } from 'vitest'
 import { EXIDX, EXDB, smOf, registerCustom } from './exercises.js'
-import { loadOfWorkouts, musclesOf, loadOf, muscleWeightsOf, lastTrainedByMuscle, primaryMuscleOf, primaryMuscleName, secondaryMusclesOf, sessionMuscleDistribution } from './muscles.js'
+import { matchesMuscleFilter, isSecondaryMuscleMatch, loadOfWorkouts, musclesOf, loadOf, muscleWeightsOf, lastTrainedByMuscle, primaryMuscleOf, primaryMuscleName, secondaryMusclesOf, sessionMuscleDistribution } from './muscles.js'
 
 describe('catalogue secondary muscles', () => {
   it('maps a bench press to chest, triceps and front delts', () => {
@@ -11,13 +11,6 @@ describe('catalogue secondary muscles', () => {
     })
   })
 
-  it('maps a squat to glutes, quads and hamstrings', () => {
-    expect(musclesOf(EXIDX['0043'])).toMatchObject({
-      gluteal: 1,
-      quadriceps: 0.4,
-      hamstring: 0.4,
-    })
-  })
 
   it('maps common row variations to the upper back, biceps and rear deltoids', () => {
     for (const id of ['0027', '0293', '0499', '0861']) {
@@ -83,6 +76,67 @@ describe('hamstring hinge catalogue curations and set distribution', () => {
 
 
 
+describe('lower-body movement corrections', () => {
+  it('credits a back squat to quads, with glutes and adductors secondary', () => {
+    expect(musclesOf('0043')).toEqual({ quadriceps: 1, gluteal: 0.4, adductors: 0.4 })
+  })
+
+  it.each([
+    ['front squat', '0042', { quadriceps: 1, gluteal: 0.4, adductors: 0.4 }],
+    ['sled hack squat', '0743', { quadriceps: 1, gluteal: 0.4, adductors: 0.4 }],
+    ['goblet squat', '1760', { quadriceps: 1, gluteal: 0.4, adductors: 0.4 }],
+    ['leg press', '0739', { quadriceps: 1, gluteal: 0.4, adductors: 0.4 }],
+    ['lunge', '0054', { quadriceps: 1, gluteal: 0.4, adductors: 0.4 }],
+    ['split squat', '2368', { quadriceps: 1, gluteal: 0.4, adductors: 0.4 }],
+    ['step-up', '0431', { quadriceps: 1, gluteal: 0.4, adductors: 0.4 }],
+    ['hip thrust', '3236', { gluteal: 1, hamstring: 0.4 }],
+    ['glute bridge', '1409', { gluteal: 1, hamstring: 0.4 }],
+    ['deadlift', '0032', { gluteal: 1, hamstring: 0.4, 'lower-back': 0.4, quadriceps: 0.4, trapezius: 0.4, forearm: 0.4 }],
+    ['rack pull', '0074', { gluteal: 1, hamstring: 0.4, 'lower-back': 0.4, quadriceps: 0.4, trapezius: 0.4, forearm: 0.4 }],
+    ['Romanian deadlift', '0085', { hamstring: 1, gluteal: 0.4, 'lower-back': 0.4 }],
+    ['lying leg curl', '0586', { hamstring: 1, calves: 0.4 }],
+    ['kneeling leg curl', '0582', { hamstring: 1, calves: 0.4 }],
+    ['leg extension', '0585', { quadriceps: 1 }],
+    ['standing calf raise', '1372', { calves: 1 }],
+    ['seated calf raise', '0088', { calves: 1 }],
+    ['back extension', '0489', { 'lower-back': 1, gluteal: 0.4, hamstring: 0.4 }],
+  ])('credits a %s (%s) with its corrected weights', (_name, id, weights) => {
+    expect(musclesOf(id)).toEqual(weights)
+  })
+
+  it('shows the corrected primary in the Library filter and exercise detail', () => {
+    expect(matchesMuscleFilter('0043', 'quadriceps')).toBe(true)
+    expect(isSecondaryMuscleMatch('0043', 'quadriceps')).toBe(false)
+    expect(isSecondaryMuscleMatch('0043', 'gluteal')).toBe(true)
+    expect(matchesMuscleFilter('0043', 'hamstring')).toBe(false)
+    expect(matchesMuscleFilter('0585', 'hamstring')).toBe(false)
+    expect(primaryMuscleName('0043')).toBe('Quads')
+    expect(primaryMuscleName('0739')).toBe('Quads')
+  })
+
+  it('keeps catalogue tags on an exercise the review left out', () => {
+    expect(musclesOf('1489')).toEqual({ quadriceps: 1, calves: 0.4, gluteal: 0.4 })
+    expect(musclesOf('2798')).toEqual({ quadriceps: 1, gluteal: 0.4, hamstring: 0.4, calves: 0.4 })
+  })
+
+  it('re-reads a stored squat workout through the correction in the session distribution', () => {
+    const stored = { id: 'w-old', d: '2025-01-10', entries: [{ id: '0043', sets: [
+      { w: 100, r: 5, done: true }, { w: 100, r: 5, done: true }, { w: 100, r: 5, done: true },
+    ] }] }
+    const before = JSON.stringify(stored)
+    const dist = Object.fromEntries(sessionMuscleDistribution(stored).map(m => [m.slug, m]))
+    expect(Object.keys(dist).sort()).toEqual(['adductors', 'gluteal', 'quadriceps'])
+    expect(dist.quadriceps).toMatchObject({ primarySets: 3, effectiveSets: 3 })
+    expect(dist.gluteal).toMatchObject({ secondarySets: 3, effectiveSets: 1.2 })
+    expect(JSON.stringify(stored)).toBe(before)
+  })
+
+  it('keeps the muscles a lifter picked for a custom squat', () => {
+    const custom = { id: 'custom-squat', n: 'My squat', bp: 'upper legs', tg: 'glutes', sm: ['hamstrings'] }
+    expect(musclesOf(custom)).toEqual({ gluteal: 1, hamstring: 0.4 })
+  })
+})
+
 describe('map load with warm-up phases', () => {
   it('excludes warm-up sets from the by-sets-worked map', () => {
     const w = {
@@ -127,7 +181,7 @@ describe('canonical muscle filter taxonomy & extraction helpers', () => {
     const { primaryMuscleOf } = await import('./muscles.js')
     expect(primaryMuscleOf(EXIDX['0025'])).toBe('chest')
     expect(primaryMuscleOf(EXIDX['0027'])).toBe('upper-back')
-    expect(primaryMuscleOf(EXIDX['0043'])).toBe('gluteal')
+    expect(primaryMuscleOf(EXIDX['0043'])).toBe('quadriceps')
     expect(primaryMuscleOf({ id: 'c1', n: 'Incline Curl', tg: 'biceps', bp: 'upper arms' })).toBe('biceps')
     expect(primaryMuscleOf({ id: 'c2', n: 'Leg Extension', tg: 'quads', bp: 'upper legs' })).toBe('quadriceps')
     expect(primaryMuscleOf({ id: 'c3', n: 'Pullup', bp: 'back' })).toBe('lats')
@@ -149,9 +203,9 @@ describe('canonical muscle filter taxonomy & extraction helpers', () => {
     expect(rowSm).not.toContain('upper-back')
 
     const squatSm = secondaryMusclesOf(EXIDX['0043'])
-    expect(squatSm).toContain('quadriceps')
-    expect(squatSm).toContain('hamstring')
-    expect(squatSm).not.toContain('gluteal')
+    expect(squatSm).toContain('gluteal')
+    expect(squatSm).not.toContain('hamstring')
+    expect(squatSm).not.toContain('quadriceps')
 
     const customSm = secondaryMusclesOf({ id: 'c1', n: 'Hammer Curl', tg: 'biceps', sm: ['forearms', 'brachialis'] })
     expect(customSm).toEqual(['forearm'])

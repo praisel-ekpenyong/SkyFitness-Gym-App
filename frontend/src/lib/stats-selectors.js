@@ -1,4 +1,4 @@
-import { EXDB } from './exercises.js'
+import { EXDB, EXIDX } from './exercises.js'
 import { fatigueOf, strengthOf, fatigueStateOf } from './recovery.js'
 import { MUSCLES, loadOfWorkouts, rankOf, lastTrainedByMuscle } from './muscles.js'
 import { LB_TO_KG } from './bodyweight.js'
@@ -16,7 +16,7 @@ import { strengthExerciseRowsForMuscle } from './strength-exercises.js'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
-const builtInIndex = Object.fromEntries(EXDB.map(ex => [ex.id, ex]))
+const builtInIndex = Object.fromEntries(EXDB.map(ex => [ex.id, EXIDX[ex.id]]))
 export const defaultCatalogue = { lookup: id => builtInIndex[id] ?? null }
 
 const round1 = value => Math.round(value * 10) / 10
