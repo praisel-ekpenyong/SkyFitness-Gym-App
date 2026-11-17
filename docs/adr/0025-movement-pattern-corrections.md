@@ -2,7 +2,7 @@
 
 Extends ADR 0012 (catalogue curations).
 
-**Status:** accepted 2026-11-17. Lower-body rows applied; upper-body and core rows follow.
+**Status:** accepted 2026-11-17. All rows applied: `LOWER_BODY_CORRECTIONS` and `UPPER_BODY_CORRECTIONS`.
 
 ## Context
 
@@ -13,6 +13,9 @@ The upstream catalogue mis-tags whole movement patterns. Squats, hack squats and
 - The curation overlay (`CATALOGUE_CURATIONS`) gains `smRemove`: secondary muscles to drop, spelled as the catalogue spells them. A removed muscle is dropped from `sm` and from `mg`, through `smOf` and `mgOf` in `lib/exercises.js`. The upstream dataset stays untouched.
 - Corrections are reviewed catalogue id lists per pattern in `lib/catalogue-corrections.js`. Name patterns only proposed the ids; every id was read by hand. No name matching happens at runtime. An id may be curated once; a second curation throws at load.
 - Combination moves (a squat jump into a rear lunge, a lunge with a curl) and misfires (hip extensions caught by "extension", calf stretches, reverse calf raises that train the shins) are left out and keep their catalogue tags. The exclusions are listed beside the id lists.
+- Shoulder heads (ADR 0024) are rewritten after the overlay runs. A removal spells the catalogue's plain `shoulders`/`deltoids`; an addition names a head the way the catalogue does, as `front deltoids`, `side deltoids` or `rear deltoids`. The overlay never names a head any other way.
+- Each upper-body and core pattern applies its row in full: the primary, every listed secondary, and removal of every other secondary the reviewed ids carry. The table is read literally, so sit-ups lose hip flexors, pull-ups lose forearms and front raises keep no secondary.
+- The earlier hand-written rear-delt additions on four rows (0027, 0293, 0499, 0861) moved into the row pattern.
 - Two tiers only: primary 1, secondary 0.4. One primary per exercise.
 - The table (★ = change from the catalogue):
 
@@ -60,4 +63,6 @@ Reopen only if the fatigue map visibly misreads glutes after squat days, or a gl
 
 - 4 squat sets now award 4 quad sets, 1.6 glute sets and 1.6 adductor sets, and no hamstring sets.
 - Filtering the Library by quads finds squats as primary matches; the exercise detail shows Quads.
+- Rows now credit lats at 0.4, so the Lats filter lists them as secondary contributors.
+- Hammer and reverse curls count as forearms, and twists as obliques; the Library filter follows.
 - Past session distributions, fatigue, retained strength and balance shift to the corrected answer.
