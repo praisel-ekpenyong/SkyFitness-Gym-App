@@ -4,9 +4,8 @@ import { useUI } from '../store/useUI.js'
 import { EXIDX } from '../lib/exercises.js'
 import { fmtNum, fmtDurParts, fmtDate, todayISO } from '../lib/format.js'
 import { latestWeighIn } from '../lib/bodyweight.js'
-import { setsDone, workSetsDone } from '../lib/workout-model.js'
 import { sessionView } from '../lib/active-workout.js'
-import { tonnage } from '../lib/training-log.js'
+import { workoutSummary } from '../lib/workout-summary.js'
 import { sessionProgressionItems } from '../lib/progression.js'
 import { t } from '../lib/i18n.js'
 import { nav } from '../lib/nav.js'
@@ -140,7 +139,8 @@ export function FinishSummary({ w, prs, e1prs = [], routineSync = null, close })
   const [selectedMuscle, setSelectedMuscle] = useState(null)
   const progressionItems = sessionProgressionItems(w, st)
   const load = loadOfWorkouts([w])
-  const warmUps = setsDone(w) - workSetsDone(w)
+  const sum = workoutSummary(st, w)
+  const warmUps = sum.warmups
   const fig = useFigureFit()
 
   const onDismiss = () => {
@@ -157,10 +157,10 @@ export function FinishSummary({ w, prs, e1prs = [], routineSync = null, close })
     <div className="finish-kicker">{[w.name, fmtDate(w.d, true)].filter(Boolean).join(' · ')}</div>
     <div ref={fig.ref} className={'tiles finish-kpis' + (fig.tight ? ' tight' : '')}>
       <div className="tile"><div className="l">{t('Duration')}</div><div className="v">
-        {fmtDurParts(w.end - w.start).map(([n, u], i) => <Fragment key={i}>{i > 0 && ' '}{n}<span className="u">{u}</span></Fragment>)}
+        {fmtDurParts(sum.durationMs ?? 0).map(([n, u], i) => <Fragment key={i}>{i > 0 && ' '}{n}<span className="u">{u}</span></Fragment>)}
       </div></div>
-      <div className="tile"><div className="l">{t('Volume')}</div><div className="v">{fmtNum(tonnage(st, w))}<span className="u"> {st.unit}</span></div></div>
-      <div className="tile"><div className="l">{t('Sets')}</div><div className="v">{fmtNum(workSetsDone(w))}</div>
+      <div className="tile"><div className="l">{t('Volume')}</div><div className="v">{fmtNum(sum.tonnage)}<span className="u"> {st.unit}</span></div></div>
+      <div className="tile"><div className="l">{t('Sets')}</div><div className="v">{fmtNum(sum.workSets)}</div>
         {warmUps > 0 && <div className="s">{t(warmUps === 1 ? '{0} warm-up' : '{0} warm-ups', fmtNum(warmUps))}</div>}</div>
       <div className="tile"><div className="l">{t('Records')}</div><div className="v">{fmtNum(prs.length)}</div></div>
     </div>

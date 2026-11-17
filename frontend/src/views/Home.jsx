@@ -2,10 +2,10 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { effectiveRoutine, effectiveRoutineId, hasEffectiveOverride } from '../lib/history.js'
-import { setsDone } from '../lib/workout-model.js'
 import { sessionView } from '../lib/active-workout.js'
 import { tonnage, lastWorkoutInRoutine } from '../lib/training-log.js'
 import { dayStatus } from '../lib/schedule.js'
+import { summarizeWorkouts } from '../lib/workout-summary.js'
 import { latestWeighIn, prevWeighIn, deltaTowardGoal } from '../lib/bodyweight.js'
 import { fmtNum, fmtSigned, fmtDate, fmtVol, durPart, todayISO, isoOf, weekKey, DAYS, exCount, exLine, workoutTimestamp } from '../lib/format.js'
 import { t, dateLocale } from '../lib/i18n.js'
@@ -86,8 +86,7 @@ export default function Home() {
   const heroMuscles = heroLoad ? muscleNames(heroLoad) : ''
 
   const todays = doneToday ? S.workouts.filter(w => w.d === todayISO()) : []
-  const todaySets = todays.reduce((n, w) => n + setsDone(w), 0)
-  const todayVol = todays.reduce((n, w) => n + tonnage(S, w), 0)
+  const todaySum = summarizeWorkouts(S, todays)
   const lastSame = routine && !doneToday ? lastWorkoutInRoutine(S, routine.id) : null
   const planEx = !S.active && routine && !doneToday ? routine.ex : []
 
@@ -132,7 +131,7 @@ export default function Home() {
               </div>
               {heroMuscles && <div className="home-hero-note">{heroMuscles}</div>}
               {doneToday && !S.active && <div className="home-hero-note">
-                {[...durPart(todays.reduce((n, w) => n + Math.max(0, (w.end || w.start) - w.start), 0)), t('{0} sets', fmtNum(todaySets)), fmtVol(todayVol, S.unit)].join(' · ')}
+                {[...durPart(todaySum.durationMs), t('{0} sets', fmtNum(todaySum.workSets)), fmtVol(todaySum.tonnage, S.unit)].join(' · ')}
               </div>}
               {lastSame && <div className="home-hero-note dim">{t('Last time')} {fmtDate(lastSame.d)} · {fmtVol(tonnage(S, lastSame), S.unit)}</div>}
             </div>
