@@ -80,6 +80,29 @@ describe('lower-body movement corrections', () => {
   it('credits a back squat to quads, with glutes and adductors secondary', () => {
     expect(musclesOf('0043')).toEqual({ quadriceps: 1, gluteal: 0.4, adductors: 0.4 })
   })
+
+  it.each([
+    ['front squat', '0042', { quadriceps: 1, gluteal: 0.4, adductors: 0.4 }],
+    ['sled hack squat', '0743', { quadriceps: 1, gluteal: 0.4, adductors: 0.4 }],
+    ['goblet squat', '1760', { quadriceps: 1, gluteal: 0.4, adductors: 0.4 }],
+    ['leg press', '0739', { quadriceps: 1, gluteal: 0.4, adductors: 0.4 }],
+    ['lunge', '0054', { quadriceps: 1, gluteal: 0.4, adductors: 0.4 }],
+    ['split squat', '2368', { quadriceps: 1, gluteal: 0.4, adductors: 0.4 }],
+    ['step-up', '0431', { quadriceps: 1, gluteal: 0.4, adductors: 0.4 }],
+    ['hip thrust', '3236', { gluteal: 1, hamstring: 0.4 }],
+    ['glute bridge', '1409', { gluteal: 1, hamstring: 0.4 }],
+    ['deadlift', '0032', { gluteal: 1, hamstring: 0.4, 'lower-back': 0.4, quadriceps: 0.4, trapezius: 0.4, forearm: 0.4 }],
+    ['rack pull', '0074', { gluteal: 1, hamstring: 0.4, 'lower-back': 0.4, quadriceps: 0.4, trapezius: 0.4, forearm: 0.4 }],
+    ['Romanian deadlift', '0085', { hamstring: 1, gluteal: 0.4, 'lower-back': 0.4 }],
+    ['lying leg curl', '0586', { hamstring: 1, calves: 0.4 }],
+    ['kneeling leg curl', '0582', { hamstring: 1, calves: 0.4 }],
+    ['leg extension', '0585', { quadriceps: 1 }],
+    ['standing calf raise', '1372', { calves: 1 }],
+    ['seated calf raise', '0088', { calves: 1 }],
+    ['back extension', '0489', { 'lower-back': 1, gluteal: 0.4, hamstring: 0.4 }],
+  ])('credits a %s (%s) with its corrected weights', (_name, id, weights) => {
+    expect(musclesOf(id)).toEqual(weights)
+  })
 })
 
 describe('map load with warm-up phases', () => {

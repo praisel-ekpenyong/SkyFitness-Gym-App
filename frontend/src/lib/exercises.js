@@ -5,7 +5,7 @@ import { LOWER_BODY_CORRECTIONS, curationsByIdOf } from './catalogue-corrections
 
 export { EXDB }
 
-export const CATALOGUE_CURATIONS = {
+export const CATALOGUE_CURATIONS = curationsByIdOf(LOWER_BODY_CORRECTIONS, {
   '0085': { tg: 'hamstrings', smAdd: ['glutes'] },
   '1459': { tg: 'hamstrings', smAdd: ['glutes'] },
   '0432': { tg: 'hamstrings', smAdd: ['glutes'] },
@@ -20,8 +20,7 @@ export const CATALOGUE_CURATIONS = {
   '0293': { smAdd: ['rear deltoids'] },
   '0499': { smAdd: ['rear deltoids'] },
   '0861': { smAdd: ['rear deltoids'] },
-  ...curationsByIdOf(LOWER_BODY_CORRECTIONS),
-}
+})
 
 const muscleKey = value => String(value || '').toLowerCase().trim()
 const removedBy = ex => new Set((CATALOGUE_CURATIONS[ex?.id]?.smRemove || []).map(muscleKey))
