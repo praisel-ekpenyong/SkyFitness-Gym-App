@@ -12,7 +12,7 @@ import Media, { Thumb } from '../components/Media.jsx'
 import Icon from '../components/Icon.jsx'
 import { Button, Switch, Segmented, SelectRow, Row, SearchField, TextArea, Stepper } from '../components/ui.jsx'
 import { glyphOf, DEFAULT_GLYPH } from '../lib/glyphs.js'
-import { FILTER_MUSCLES, MUSCLES, MUSCLE_NAME, primaryMuscleOf, primaryMuscleName, secondaryMusclesOf } from '../lib/muscles.js'
+import { FILTER_MUSCLES, PICKABLE_MUSCLES, MUSCLES, MUSCLE_NAME, primaryMuscleOf, primaryMuscleName, secondaryMusclesOf } from '../lib/muscles.js'
 import { queryCatalogue } from '../lib/catalogue-query.js'
 import { estimate1RM, REP_CAP } from '../lib/onerm.js'
 import { policyFor, defaultIncrement, POLICIES_FOR, POLICY_NAME, POLICY_DESC, MAX_BW_SETS } from '../lib/progression.js'
@@ -189,7 +189,7 @@ export function CustomExForm({ existing, prefill, onDone, close }) {
 
     <div className="field-l">{t('Primary muscle')}</div>
     <div className="chips">
-      {FILTER_MUSCLES.map(m => (
+      {PICKABLE_MUSCLES.map(m => (
         <button
           key={m}
           className={'chip nocap' + (primary === m ? ' on' : '')}
