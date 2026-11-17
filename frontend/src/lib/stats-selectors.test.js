@@ -447,3 +447,21 @@ describe('read-time unit normalization across selectors (ADR 0019)', () => {
     expect(overLb.exerciseIndex[0]).toMatchObject({ id: LIFT.id, current: 200, unit: 'lb' })
   })
 })
+
+describe('history re-read through the catalogue corrections', () => {
+  it('credits a stored back squat workout to quads in load and fatigue', () => {
+    const stored = workoutAt('0043', 1, [doneSet(100, 5), doneSet(100, 5), doneSet(100, 5)])
+    const S = { unit: 'kg', effort: 'none', bodyweight: [], workouts: [stored] }
+    const before = JSON.stringify(S)
+
+    const over = selectStatsOverview(S, { now: NOW })
+
+    expect(over.muscles.load.quadriceps).toBe(3)
+    expect(over.muscles.load.gluteal).toBe(1.2)
+    expect(over.muscles.load.adductors).toBe(1.2)
+    expect(over.muscles.load.hamstring).toBe(0)
+    expect(over.fatigue.values.quadriceps).toBeGreaterThan(over.fatigue.values.gluteal)
+    expect(over.fatigue.values.hamstring).toBe(0)
+    expect(JSON.stringify(S)).toBe(before)
+  })
+})
