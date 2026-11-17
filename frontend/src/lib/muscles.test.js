@@ -11,13 +11,6 @@ describe('catalogue secondary muscles', () => {
     })
   })
 
-  it('maps a squat to glutes, quads and hamstrings', () => {
-    expect(musclesOf(EXIDX['0043'])).toMatchObject({
-      gluteal: 1,
-      quadriceps: 0.4,
-      hamstring: 0.4,
-    })
-  })
 
   it('maps common row variations to the upper back, biceps and rear deltoids', () => {
     for (const id of ['0027', '0293', '0499', '0861']) {
@@ -83,6 +76,12 @@ describe('hamstring hinge catalogue curations and set distribution', () => {
 
 
 
+describe('lower-body movement corrections', () => {
+  it('credits a back squat to quads, with glutes and adductors secondary', () => {
+    expect(musclesOf('0043')).toEqual({ quadriceps: 1, gluteal: 0.4, adductors: 0.4 })
+  })
+})
+
 describe('map load with warm-up phases', () => {
   it('excludes warm-up sets from the by-sets-worked map', () => {
     const w = {
@@ -126,7 +125,7 @@ describe('canonical muscle filter taxonomy & extraction helpers', () => {
     const { primaryMuscleOf } = await import('./muscles.js')
     expect(primaryMuscleOf(EXIDX['0025'])).toBe('chest')
     expect(primaryMuscleOf(EXIDX['0027'])).toBe('upper-back')
-    expect(primaryMuscleOf(EXIDX['0043'])).toBe('gluteal')
+    expect(primaryMuscleOf(EXIDX['0043'])).toBe('quadriceps')
     expect(primaryMuscleOf({ id: 'c1', n: 'Incline Curl', tg: 'biceps', bp: 'upper arms' })).toBe('biceps')
     expect(primaryMuscleOf({ id: 'c2', n: 'Leg Extension', tg: 'quads', bp: 'upper legs' })).toBe('quadriceps')
     expect(primaryMuscleOf({ id: 'c3', n: 'Pullup', bp: 'back' })).toBe('lats')
@@ -148,9 +147,9 @@ describe('canonical muscle filter taxonomy & extraction helpers', () => {
     expect(rowSm).not.toContain('upper-back')
 
     const squatSm = secondaryMusclesOf(EXIDX['0043'])
-    expect(squatSm).toContain('quadriceps')
-    expect(squatSm).toContain('hamstring')
-    expect(squatSm).not.toContain('gluteal')
+    expect(squatSm).toContain('gluteal')
+    expect(squatSm).not.toContain('hamstring')
+    expect(squatSm).not.toContain('quadriceps')
 
     const customSm = secondaryMusclesOf({ id: 'c1', n: 'Hammer Curl', tg: 'biceps', sm: ['forearms', 'brachialis'] })
     expect(customSm).toEqual(['forearm'])
