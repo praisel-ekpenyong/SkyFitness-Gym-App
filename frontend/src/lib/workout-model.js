@@ -214,7 +214,9 @@ export const doneWorkSets = entry => workSets(entry).filter(isPerformed)
 export const hasWorkSet = entry => doneWorkSets(entry).length > 0
 
 /**
- * Count every completed set in a finished workout.
+ * Count every completed set in a workout, warm-ups included.
+ * Not a metric: lifter-facing set counts read Work sets through the Workout summary (`workout-summary.js`).
+ * The Active workout uses this to ask whether anything at all was performed.
  *
  * @param {Object|null|undefined} w - Workout with an entries array of set rows; nullish yields 0.
  * @returns {number} Number of performed sets (truthy `done`), including warm-ups.

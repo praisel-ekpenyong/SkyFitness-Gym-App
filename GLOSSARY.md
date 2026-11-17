@@ -160,6 +160,10 @@ _Avoid_: treating an unticked warm-up as a miss
 How far the Active workout has come, counted in work sets only — warm-ups never move it. One reading of progress serves every surface that shows or asks about it.
 _Avoid_: counting warm-ups toward done; a separate progress reading per surface.
 
+**Workout summary**:
+The work-set count, duration and Tonnage of one Workout or a span of Workouts. One reading serves every surface; a Workout with no valid end has an unknown duration, never zero.
+_Avoid_: counting warm-ups as sets; a separate count per screen.
+
 **Freestyle**:
 Adding an exercise to a workout without a routine; seeded from the last time it was trained, not generic defaults.
 
