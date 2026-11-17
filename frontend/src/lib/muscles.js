@@ -1,6 +1,6 @@
 
 import { doneWorkSets, hasWorkSet } from './workout-model.js'
-import { EXIDX, smOf, isCardio, exerciseFor } from './exercises.js'
+import { EXIDX, smOf, mgOf, isCardio, exerciseFor } from './exercises.js'
 import { workoutTimestamp } from './format.js'
 
 export const MUSCLES = [
@@ -232,7 +232,7 @@ export function secondaryMusclesOf(exercise) {
   const hasMg = source.mg != null
   if (source.tg || hasSm || hasMg || rawSm.length > 0) {
     if (isPlainShoulders(source.tg)) DELT_HEADS.forEach(add)
-    if (source.mg) add(source.mg)
+    if (mgOf(source)) add(mgOf(source))
     rawSm.forEach(add)
     return out
   }
@@ -396,7 +396,7 @@ export function matchesExerciseSearch(idOrEx, query) {
 export function muscleGroupsOf(ex) {
   const sourceEx = metadataOf(ex)
   const explicit = explicitGroupsOf(sourceEx)
-  const source = explicit || [sourceEx?.tg, sourceEx?.mg, ...arrayOf(smOf(sourceEx))]
+  const source = explicit || [sourceEx?.tg, mgOf(sourceEx), ...arrayOf(smOf(sourceEx))]
   const out = []
   source.forEach(value => {
     const slug = canonicalMuscle(value)
@@ -450,7 +450,7 @@ export function musclesOf(idOrEx) {
   if (explicit) explicit.forEach((m, i) => i === 0 ? addPrimary(m) : add(m, 1))
   else {
     addPrimary(ex.tg)
-    add(ex.mg, SECONDARY)
+    add(mgOf(ex), SECONDARY)
     arrayOf(smOf(ex)).forEach(m => add(m, SECONDARY))
   }
   if (!Object.keys(out).length) Object.assign(out, BY_BODYPART[ex.bp] || {})
