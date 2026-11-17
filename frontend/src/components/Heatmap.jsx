@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { fmtVol, isoOf, todayISO, MONTHS } from '../lib/format.js'
-import { tonnage } from '../lib/training-log.js'
+import { summarizeWorkouts } from '../lib/workout-summary.js'
 import { t } from '../lib/i18n.js'
 
 export default function Heatmap({ S, onDay }) {
@@ -19,14 +19,12 @@ export default function Heatmap({ S, onDay }) {
     return () => el.removeEventListener('scroll', clip)
   }, [])
 
+  const byDay = {}
+  for (const w of S.workouts || []) (byDay[w.d] = byDay[w.d] || []).push(w)
   const agg = {}
-  for (const w of S.workouts || []) {
-    const a = agg[w.d] = agg[w.d] || { n: 0, vol: 0, min: 0 }
-    a.n++; a.vol += tonnage(S, w)
-    const s = Number(w.start)
-    const e = Number(w.end ?? w.start)
-    const dur = Number.isFinite(s) && Number.isFinite(e) ? Math.max(0, Math.round((e - s) / 60000)) : 0
-    a.min += dur
+  for (const [d, ws] of Object.entries(byDay)) {
+    const sum = summarizeWorkouts(S, ws)
+    agg[d] = { n: sum.workouts, vol: sum.tonnage, min: Math.round(sum.durationMs / 60000) }
   }
   const mins = Object.values(agg).map(a => a.min).filter(v => v > 0).sort((a, b) => a - b)
   const q = p => (mins.length ? mins[Math.min(mins.length - 1, Math.floor(p * mins.length))] : 0)
@@ -51,7 +49,7 @@ export default function Heatmap({ S, onDay }) {
       const key = isoOf(day)
       const a = agg[key]
       const cls = 'hm-c l' + level(a) + (key === todayISO() ? ' today' : '') + (day > today ? ' future' : '')
-      const dayLabel = key + (a ? ` · ${t(a.n === 1 ? '{0} workout' : '{0} workouts', a.n)} · ${a.min} min · ${fmtVol(a.vol, S.unit)}` : '')
+      const dayLabel = a ? [key, t(a.n === 1 ? '{0} workout' : '{0} workouts', a.n), ...(a.min ? [t('{0} min', a.min)] : []), fmtVol(a.vol, S.unit)].join(' · ') : key
       cells.push(<div key={d} className={cls}
         role={a ? 'button' : undefined}
         tabIndex={a ? 0 : undefined}

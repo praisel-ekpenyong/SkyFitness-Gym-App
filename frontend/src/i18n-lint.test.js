@@ -42,13 +42,12 @@ const ALLOW = [
   { file: 'views/Workout.jsx', text: "' · ' + t('rescheduled')", reason: 'separator before a whole t() string' },
   { file: 'sheets/catalogue.jsx', text: "` · ${t('last {0}", reason: 'separator before a whole t() string' },
   { file: 'sheets/catalogue.jsx', text: "fmtNum(est) + ' ' + st.unit", reason: 'number plus unit, no words' },
-  { file: 'components/Heatmap.jsx', text: '` · ${t(a.n === 1', reason: 'separator join of whole t() strings, numbers and units' },
   { file: 'components/LineChart.jsx', text: "' ' + unit", reason: 'number plus unit in the chart tooltip' },
   { file: 'components/LineChart.jsx', text: "' · ' + hover.note", reason: 'separator before the point note' },
   { file: 'sheets.jsx', text: "' · ' + exCount(bundle.exerciseCount)", reason: 'separator before a whole t() string' },
   { file: 'sheets.jsx', text: "' · ' + t(bundle.scheduledDays", reason: 'separator before a whole t() string' },
   { file: 'sheets.jsx', text: "fmtNum(w.bw) + ' ' + st.unit", reason: 'number plus unit, no words' },
-  { file: 'sheets.jsx', text: '${fmtDur(monthMs)}', reason: 'separator join of whole t() strings, durations and volumes' },
+  { file: 'sheets.jsx', text: '${fmtDur(month.durationMs)}', reason: 'separator join of whole t() strings, durations and volumes' },
 ]
 
 function sourceFiles() {

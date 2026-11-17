@@ -1,5 +1,5 @@
-import { workSetsDone } from './workout-model.js'
-import { tonnage, loadRecords, e1rmRecords } from './training-log.js'
+import { loadRecords, e1rmRecords } from './training-log.js'
+import { summarizeWorkouts } from './workout-summary.js'
 import { monthKey } from './format.js'
 
 /**
@@ -20,30 +20,20 @@ export function prevMonthKey(yearMonth) {
 }
 
 function metricsFor(S, workouts) {
-  let vol = 0
-  let sets = 0
-  let durationMs = 0
+  const sum = summarizeWorkouts(S, workouts)
   const prs = []
   const e1prs = []
 
   for (const w of workouts || []) {
-    vol += tonnage(S, w)
-    sets += workSetsDone(w)
-    const start = Number(w.start)
-    const end = Number(w.end)
-    if (Number.isFinite(start) && Number.isFinite(end)) {
-      const dur = end - start
-      if (Number.isFinite(dur) && dur > 0) durationMs += dur
-    }
     for (const r of loadRecords(S, w)) if (!prs.includes(r.id)) prs.push(r.id)
     for (const r of e1rmRecords(S, w)) e1prs.push({ ...r, d: w.d, t: w.start })
   }
 
   return {
-    vol,
-    sets,
-    workouts: (workouts || []).length,
-    durationMs,
+    vol: sum.tonnage,
+    sets: sum.workSets,
+    workouts: sum.workouts,
+    durationMs: sum.durationMs,
     prs,
     e1prs,
   }
