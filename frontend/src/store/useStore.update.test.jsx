@@ -65,6 +65,6 @@ describe('act results outlive the update', () => {
     expect(sync.hasDiff).toBe(true)
     expect(JSON.parse(JSON.stringify(sync)).syncedEx.map(e => e.id)).toEqual(['a', 'b'])
     expect(res.result.workout.entries.map(e => e.sets.length)).toEqual([1, 1])
-    expect(useStore.getState().syncRoutineFromSession(sync.routineId, sync.syncedEx)).toBe(true)
+    expect(useStore.getState().actRoutine({ type: 'syncFromSession', routineId: sync.routineId, syncedEx: sync.syncedEx }).ok).toBe(true)
   })
 })
