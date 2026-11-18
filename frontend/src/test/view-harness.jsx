@@ -5,7 +5,8 @@ import { vi } from 'vitest'
 import Workout from '../views/Workout.jsx'
 import RestTimer from '../components/RestTimer.jsx'
 import Modals from '../components/Modals.jsx'
-import { DEF, useStore } from '../store/useStore.js'
+import { useStore } from '../store/useStore.js'
+import { DEF } from '../lib/profile/index.js'
 import { useUI } from '../store/useUI.js'
 
 const clone = value => JSON.parse(JSON.stringify(value))

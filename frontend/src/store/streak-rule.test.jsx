@@ -1,7 +1,8 @@
 // @vitest-environment happy-dom
 // Week streak 03: the freeze rule travels in Restore and Export, Reset puts it back to Gentle, and the plan file never carries it.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { useStore, DEF } from './useStore.js'
+import { useStore } from './useStore.js'
+import { DEF } from '../lib/profile/index.js'
 import { __setSinksForTests, __setLocalWriteForTests, flush } from '../platform/storage.js'
 import { restoreFromBackup, resetProfile } from '../platform/restore.js'
 import { buildPlanBundle } from '../lib/plan-share.js'
