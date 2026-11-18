@@ -1,5 +1,4 @@
-import { t } from './i18n-core.js'
-import { modeOf, isBw, isPerSide, sideReps } from './workout-model.js'
+import { modeOf, isBw } from './workout-model.js'
 import { EFFORT } from './effort.js'
 import { fmtNum, fmtSigned, fmtSec } from './format.js'
 
@@ -19,16 +18,4 @@ export function setLabel(id, s, cfg) {
     return `${load}${reps}` + effortTail(s)
   }
   return `${fmtNum(s.w || 0)}×${reps}` + effortTail(s)
-}
-
-export const formatSet = setLabel
-
-export function exLine(cfg, unit) {
-  const mode = modeOf(cfg)
-  const n = cfg.sets || 1
-  const load = cfg.weight ? ' · ' + (isBw(cfg) ? fmtSigned(cfg.weight) : fmtNum(cfg.weight)) + ' ' + unit : ''
-  if (mode === 'cardio') return `${n} × ${cfg.min || 20} min @ ${fmtNum(cfg.speed || 8)} km/h`
-  if (mode === 'time') return `${n} × ${fmtSec(cfg.sec || 45)}${load}`
-  const split = isPerSide(cfg) ? ' · ' + t('{0}/side', fmtNum(sideReps(cfg.reps))) : ''
-  return `${n} × ${cfg.reps}${load}${split}`
 }

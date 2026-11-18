@@ -1,4 +1,5 @@
 import { dateLocale, t } from './i18n-core.js'
+import { modeOf, isBw, isPerSide, sideReps } from './workout-model.js'
 
 export function fmtDurParts(ms) {
   const m = Math.floor(ms / 60000)
@@ -54,4 +55,15 @@ export function fmtSec(sec) {
 
 export function fmtElapsed(sec) {
   return clockText(Math.max(0, Math.floor(Number(sec) || 0)))
+}
+
+/** An exercise's planned target as one line, e.g. `3 × 10 · 60 kg`. */
+export function exLine(cfg, unit) {
+  const mode = modeOf(cfg)
+  const n = cfg.sets || 1
+  const load = cfg.weight ? ' · ' + (isBw(cfg) ? fmtSigned(cfg.weight) : fmtNum(cfg.weight)) + ' ' + unit : ''
+  if (mode === 'cardio') return `${n} × ${cfg.min || 20} min @ ${fmtNum(cfg.speed || 8)} km/h`
+  if (mode === 'time') return `${n} × ${fmtSec(cfg.sec || 45)}${load}`
+  const split = isPerSide(cfg) ? ' · ' + t('{0}/side', fmtNum(sideReps(cfg.reps))) : ''
+  return `${n} × ${cfg.reps}${load}${split}`
 }
