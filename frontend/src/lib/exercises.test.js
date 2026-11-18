@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   EXDB,
   EXIDX,
+  mgOf,
   BODYPARTS,
   PINNED_DATASET_COMMIT,
   CDN_IMG_BASE,
@@ -177,5 +178,40 @@ describe('exercise dataset integrity and helpers', () => {
       { eq: 'dumbbell' },
     ]
     expect(equipmentOf(list)).toEqual(['dumbbell', 'barbell', 'cable'])
+  })
+})
+
+describe('curated secondary muscles (smOf, mgOf)', () => {
+  const raw = id => EXDB.find(e => e.id === id)
+
+  it('drops a removed muscle from the secondaries and adds the curated ones', () => {
+    // 0001 3/4 sit-up: catalogue sm is hip flexors and lower back; the crunch row removes both and adds obliques.
+    expect(raw('0001').sm).toEqual(['hip flexors', 'lower back'])
+    expect(smOf(raw('0001'))).toEqual(['obliques'])
+  })
+
+  it('drops a removed main-group muscle', () => {
+    expect(raw('0001').mg).toBe('hip flexors')
+    expect(mgOf(raw('0001'))).toBeUndefined()
+    expect(EXIDX['0001'].mg).toBeUndefined()
+  })
+
+  it('matches removals whatever the case or spacing', () => {
+    const shouted = { id: '0001', mg: ' Hip Flexors ', sm: ['LOWER BACK', 'abs'] }
+    expect(mgOf(shouted)).toBeUndefined()
+    expect(smOf(shouted)).toEqual(['abs', 'obliques'])
+  })
+
+  it('keeps the main group when no curation removes it', () => {
+    // 0085 barbell romanian deadlift: curated, but nothing removed.
+    expect(mgOf(raw('0085'))).toBe(raw('0085').mg)
+    expect(mgOf({ id: 'c-custom', mg: 'hip flexors' })).toBe('hip flexors')
+    expect(mgOf({ id: 'c-custom' })).toBeUndefined()
+  })
+
+  it('leaves an uncurated or custom exercise\'s secondaries as stored', () => {
+    expect(smOf({ id: 'c-custom', sm: ['hip flexors', 'lower back'] })).toEqual(['hip flexors', 'lower back'])
+    expect(smOf({ id: 'c-custom', sm: 'chest' })).toEqual(['chest'])
+    expect(smOf(null)).toEqual([])
   })
 })
