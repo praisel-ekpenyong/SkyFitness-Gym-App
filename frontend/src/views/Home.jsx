@@ -12,6 +12,7 @@ import { t, dateLocale } from '../lib/i18n.js'
 import { exOr } from '../lib/exercises.js'
 import { loadOfRoutine, loadOfActive, rankOf, MUSCLE_NAME } from '../lib/muscles.js'
 import { selectStatsOverview } from '../lib/stats-selectors.js'
+import { streakOf } from '../lib/streak.js'
 import { FATIGUE_LEVELS } from '../lib/recovery-view.js'
 import { bwSheet, goalSheet, dayOverrideSheet, calendarSheet, startFlow, exerciseDetailSheet } from '../sheets.jsx'
 import LineChart from '../components/LineChart.jsx'
@@ -52,6 +53,7 @@ export default function Home() {
   const monday = new Date(today); monday.setDate(today.getDate() - ((today.getDay() + 6) % 7) + weekOffset * 7)
   const doneDays = new Set(S.workouts.map(w => w.d))
   const doneToday = doneDays.has(todayISO())
+  const streak = useMemo(() => streakOf(S), [S])
 
   const strip = []
   for (let i = 0; i < 7; i++) {
@@ -203,6 +205,9 @@ export default function Home() {
                     ? t('No workouts this week')
                     : (wThisWeek === 1 ? t('1 workout this week') : t('{0} workouts this week', wThisWeek)))}
               </div>
+              {streak.current > 0 && <div className="muted small wp-streak">
+                {t('{0}-week streak, {1}', fmtNum(streak.current), streak.freezes === 1 ? t('1 freeze') : t('{0} freezes', fmtNum(streak.freezes)))}
+              </div>}
               <div className="muted small">
                 {t(S.workouts.length === 1 ? '{0} workout total' : '{0} workouts total', fmtNum(S.workouts.length))} · {t('View calendar')}
               </div>

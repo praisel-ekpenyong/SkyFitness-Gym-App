@@ -449,6 +449,16 @@ export default function Stats() {
         <div className="v">{overview.counts.weeks12}<span className="u"> / 12</span></div>
         <div className="s">{t('Last 12 weeks')}</div>
       </button>
+      <button type="button" className="tile tappable" onClick={() => calendarSheet()}>
+        <span className="l">{t('Streak now')}</span>
+        <div className="v">{fmtNum(overview.counts.streak.current)}<span className="u"> {overview.counts.streak.current === 1 ? t('week') : t('weeks')}</span></div>
+        <div className="s">{t('Week streak')}</div>
+      </button>
+      <button type="button" className="tile tappable" onClick={() => calendarSheet()}>
+        <span className="l">{t('Best streak')}</span>
+        <div className="v">{fmtNum(overview.counts.streak.best)}<span className="u"> {overview.counts.streak.best === 1 ? t('week') : t('weeks')}</span></div>
+        <div className="s">{t('Longest run')}</div>
+      </button>
       <button type="button" className="tile tappable" onClick={() => bwSheet()}>
         <span className="l">{t('Weight 30d')}</span>
         <div className="v" style={{ color: bwDelta30 === null ? undefined : deltaTowardGoal(S.targetW, (bw.latest || {}).w || 0, bwDelta30) }}>

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { deleteWorkout, effectiveRoutineId, hasEffectiveOverride, effectiveRoutine, streakWeeks, trainedWeeks } from './history.js'
+import { deleteWorkout, effectiveRoutineId, hasEffectiveOverride, effectiveRoutine, trainedWeeks } from './history.js'
 
 describe('deleteWorkout — the history write seam', () => {
   const S = () => ({
@@ -77,24 +77,6 @@ describe('schedule reads shared by Home, Calendar and the hero', () => {
     const s = S()
     expect(effectiveRoutine(s, '2026-01-07')).toEqual({ id: 'r-pull' })
     expect(effectiveRoutine(s, '2026-01-09')).toBeNull()
-  })
-})
-
-describe('streakWeeks', () => {
-  afterEach(() => { vi.useRealTimers() })
-
-  it('counts back in calendar weeks; the current week may still be in progress', () => {
-    vi.useFakeTimers()
-    vi.setSystemTime(new Date('2026-01-04T12:00:00'))
-    const s = { workouts: [{ d: '2026-01-04' }, { d: '2026-01-02' }, { d: '2025-12-28' }, { d: '2025-12-21' }] }
-    expect(streakWeeks(s)).toBe(3)
-  })
-
-  it('a full gap breaks the streak even when older weeks are populated', () => {
-    vi.useFakeTimers()
-    vi.setSystemTime(new Date('2026-01-04T12:00:00'))
-    const s = { workouts: [{ d: '2026-01-04' }, { d: '2026-01-01' }, { d: '2025-12-15' }] }
-    expect(streakWeeks(s)).toBe(1)
   })
 })
 

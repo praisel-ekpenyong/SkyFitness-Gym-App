@@ -1,4 +1,4 @@
-import { weekKey, workoutTimestamp } from './format.js'
+import { weekKey, mondayOf, workoutTimestamp } from './format.js'
 import { doneWorkSets } from './workout-model.js'
 
 export const EFFORT = {
@@ -98,7 +98,7 @@ export function effortWeeks(S, days) {
     if (!inWindow(w, days)) return
     const k = weekKey(w.d)
     let e = wk.get(k)
-    if (!e) wk.set(k, e = { k, t: mondayOf(w.d), sum: 0, n: 0, sets: 0 })
+    if (!e) wk.set(k, e = { k, t: mondayNoon(w.d), sum: 0, n: 0, sets: 0 })
     e.sets++
     const r = rirOf(s)
     if (r != null) { e.sum += r; e.n++ }
@@ -106,12 +106,8 @@ export function effortWeeks(S, days) {
   return [...wk.values()].filter(e => e.n >= 2).sort((a, b) => a.t - b.t)
     .map(e => ({ t: e.t, rir: e.sum / e.n, n: e.n, sets: e.sets }))
 }
-function mondayOf(iso) {
-  const d = new Date(iso + 'T12:00:00')
-  d.setDate(d.getDate() - ((d.getDay() + 6) % 7))
-  d.setHours(12, 0, 0, 0)
-  return +d
-}
+// Midday on the Monday of the week holding the day key, as epoch milliseconds.
+const mondayNoon = iso => +new Date(mondayOf(iso) + 'T12:00:00')
 
 export const BUCKETS = 4
 export function effortHistogram(S, days) {

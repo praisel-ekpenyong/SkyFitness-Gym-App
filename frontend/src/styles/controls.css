@@ -129,6 +129,8 @@
 .seg button::after { content: ''; position: absolute; inset: -3px 0 }
 .seg button .icn { font-size: var(--fs-body) }
 .seg button:not(.on) { color: var(--label-2); font-weight: 400 }
+.seg button.has-sub { flex-direction: column; gap: 1px; padding: 7px 4px; min-height: 52px }
+.seg-sub { font-size: var(--fs-meta); font-weight: 400; color: var(--label-2); font-variant-numeric: tabular-nums }
 .seg-inline { flex: none; min-width: max(124px, calc(var(--n) * var(--tap-target) + 6px)) }
 .seg-range { margin-bottom: 12px }
 .seg-inline button { padding: 5px 10px; font-size: var(--fs-meta) }

@@ -221,7 +221,7 @@ const RESTORE_TOP_KEYS = [
   'unit', 'restSec', 'sound', 'keepAwake', 'theme', 'accent', 'body', 'targetW',
   'bodyweight', 'routines', 'week', 'dayPlan', 'exWeights', 'workouts', 'customEx',
   'gifSize', 'favorites', 'reminder', 'effort', 'lastExport', 'displayName',
-  'trainingStyle', 'volumeRanges', ...Object.keys(PROFILE_CLEAN),
+  'trainingStyle', 'volumeRanges', 'streakRule', ...Object.keys(PROFILE_CLEAN),
 ]
 
 export function sanitizeRestorePayload(data, now = Date.now()) {

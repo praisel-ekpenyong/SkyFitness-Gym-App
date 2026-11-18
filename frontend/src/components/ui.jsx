@@ -105,12 +105,14 @@ export function Segmented({ options, value, onChange, className = '', label, 'ar
           role="radio"
           aria-checked={o.value === value}
           tabIndex={idx === i ? 0 : -1}
-          className={o.value === value ? 'on' : ''}
+          className={(o.value === value ? 'on' : '') + (o.sub ? ' has-sub' : '')}
+          aria-label={o.ariaLabel}
           onClick={() => onChange(o.value)}
           onKeyDown={onKey}
         >
           {o.icon && <Icon name={o.icon} />}
           {o.label && <span>{o.label}</span>}
+          {o.sub && <span className="seg-sub">{o.sub}</span>}
         </button>
       ))}
     </div>

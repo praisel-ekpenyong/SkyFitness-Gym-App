@@ -35,20 +35,6 @@ export function effectiveRoutine(S, iso) {
   return id ? (S?.routines || []).find(r => r.id === id) || null : null
 }
 
-export function streakWeeks(S, now = Date.now()) {
-  if (!S?.workouts?.length) return 0
-  const weeks = new Set(S.workouts.map(w => weekKey(w.d)))
-  let streak = 0
-  const cur = new Date(now)
-  for (let i = 0; i < 520; i++) {
-    const wk = weekKey(isoOf(cur))
-    if (weeks.has(wk)) streak++
-    else if (i > 0) break
-    cur.setDate(cur.getDate() - 7)
-  }
-  return streak
-}
-
 export function trainedWeeks(S, n = 12, now = Date.now()) {
   if (!S?.workouts?.length) return 0
   const weeks = new Set(S.workouts.map(w => weekKey(w.d)))

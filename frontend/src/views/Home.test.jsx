@@ -7,7 +7,7 @@ import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import Home from './Home.jsx'
 import { useStore, DEF } from '../store/useStore.js'
-import { todayISO } from '../lib/format.js'
+import { todayISO, isoOf } from '../lib/format.js'
 
 vi.mock('react-router-dom', () => ({ useNavigate: () => vi.fn() }))
 
@@ -202,7 +202,7 @@ describe('Home declarative weekly progress card (non-gamified PRODUCT.md voice)'
       s.routines = [routine]
       s.week = { [wd]: routine.id, [(wd + 2) % 7]: routine.id }
       s.dayPlan = {}
-      s.workouts = [{ d: today, name: 'Push', sets: [] }]
+      s.workouts = [{ d: today, name: 'Push', entries: [{ id: 'lift', sets: [{ done: true, w: 60, r: 5 }] }] }]
       s.active = null
       s.bodyweight = []
     })
@@ -214,9 +214,37 @@ describe('Home declarative weekly progress card (non-gamified PRODUCT.md voice)'
     expect(card.textContent).toContain('1 of 2 workouts this week')
     expect(card.textContent).toContain('1 workout total')
     expect(card.textContent).toContain('View calendar')
-    expect(card.textContent.toLowerCase()).not.toContain('streak')
-    expect(container.textContent.toLowerCase()).not.toContain('week streak')
+    expect(card.textContent).toContain('1-week streak, 0 freezes')
     expect(container.querySelector('svg.icn path[d*="M12 20.4c3.2 0 5.4-2.1"]')).toBeNull()
+  })
+
+  it('shows the week streak and freezes as a line under the weekly count', async () => {
+    const today = todayISO()
+    const wd = weekdayFromISO(today)
+    const routine = routineWithEx(3)
+    const weeksAgo = n => {
+      const d = new Date(today + 'T12:00:00')
+      d.setDate(d.getDate() - 7 * n)
+      return isoOf(d)
+    }
+    // Four counted weeks in a row, this one included, earn one freeze under the default Gentle rule.
+    const workouts = [0, 1, 2, 3].map(n => ({
+      id: `w-${n}`, d: weeksAgo(n), name: 'Push', entries: [{ id: 'lift', sets: [{ done: true, w: 60, r: 5 }] }],
+    }))
+    useStore.getState().update(s => {
+      s.routines = [routine]
+      s.week = { [wd]: routine.id }
+      s.dayPlan = {}
+      s.workouts = workouts
+      s.active = null
+      s.bodyweight = []
+    })
+
+    await act(async () => { root.render(<Home />) })
+
+    const card = container.querySelector('button.card[aria-label="Weekly progress and calendar"]')
+    expect(card.querySelector('.wp-t').textContent).toBe('1 of 1 workouts this week')
+    expect(card.textContent).toContain('4-week streak, 1 freeze')
   })
 
   it('renders factual text when no routine is scheduled for the week', async () => {
