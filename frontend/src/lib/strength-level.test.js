@@ -174,6 +174,22 @@ describe('strength levels: thresholds and next level', () => {
     expect(lb.current.level).toBe(kg.current.level)
     expect(lb.next).toEqual({ level: 'Advanced', weight: 400 })
   })
+
+  it('grades the same after a switch to pounds: stamped Weigh-ins and Session body weight read converted (ADR 0028)', () => {
+    const kg = liftOf(profile({ workouts: [session(SQUAT.id, 10, [single(120)], { bw: 80, unit: 'kg' })] }))
+    const fromWorkout = liftOf(profile({
+      unit: 'lb',
+      bodyweight: [],
+      workouts: [session(SQUAT.id, 10, [single(120)], { bw: 80, unit: 'kg' })],
+    }))
+    const fromLog = liftOf(profile({
+      unit: 'lb',
+      bodyweight: [{ ...weighIn(5, 80), unit: 'kg' }],
+      workouts: [session(SQUAT.id, 10, [single(120)], { unit: 'kg' })],
+    }))
+    expect(fromWorkout.current).toEqual(kg.current)
+    expect(fromLog.current).toEqual(kg.current)
+  })
 })
 
 describe('strength levels: exercise stats', () => {

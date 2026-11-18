@@ -1,7 +1,7 @@
 import { EXIDX } from './exercises.js'
 import { isWarmupRow, modeOf, repStep, makeRow, isBw, defaultConfig } from './workout-model.js'
 import { isWorkSet, isPerformed, workSets, doneWorkSets, modeForSet } from './workout-sets.js'
-import { resolveSetWeight } from './units.js'
+import { resolveSetWeight, normalizeWeight, targetIn } from './units.js'
 import { fmtNum, fmtSigned } from './format.js'
 import { t } from './i18n.js'
 
@@ -206,17 +206,25 @@ export function readSession(entry, fallback, workout = null, targetUnit = 'kg') 
   }
 }
 
+// A frozen Prescription in the Profile unit (ADR 0028); the stored one is never rewritten.
+function planIn(plan, from, to) {
+  if (!plan || !Number.isFinite(plan.weight) || plan.weight === 0) return plan
+  const weight = normalizeWeight(plan.weight, from, to)
+  return weight === plan.weight ? plan : { ...plan, weight }
+}
+
 export function sessionsFor(S, exId, fallback) {
   const out = []
   const targetUnit = S?.unit || 'kg'
   ;(S?.workouts || []).forEach(w => {
     const entry = (w.entries || []).find(e => e.id === exId)
     if (workSets(entry).length) {
+      const from = entry.unit ?? w.unit ?? targetUnit
       out.push({
         d: w.d,
         ...readSession(entry, fallback, w, targetUnit),
-        target: entry.target || null,
-        plan: entry.plan || null,
+        target: targetIn(entry.target || null, from, targetUnit),
+        plan: planIn(entry.plan || null, from, targetUnit),
       })
     }
   })

@@ -458,6 +458,22 @@ describe('Training log: last session', () => {
     ] }
     expect(lastSession(S, 'bench').d).toBe('2026-11-08')
   })
+
+  it('reads sets and the Target in the Profile unit after a switch (ADR 0028)', () => {
+    const workouts = [at('2026-11-08', [lift([work(100), { ...work(135), unit: 'lb' }], { target: { reps: 5, weight: 100, inc: 2.5 } })], { unit: 'kg' })]
+    expect(lastSession({ unit: 'lb', workouts }, 'bench')).toEqual({
+      d: '2026-11-08',
+      sets: [work(220.5), { ...work(135), unit: 'lb' }],
+      target: { reps: 5, weight: 220.5, inc: 5.5 },
+    })
+    expect(lastSessionInRoutine({ unit: 'lb', workouts }, 'bench', null).sets[0].w).toBe(220.5)
+  })
+
+  it('returns the stored sets themselves when they are already in the Profile unit', () => {
+    const sets = [work(100)]
+    const S = { unit: 'kg', workouts: [at('2026-11-08', [lift(sets)], { unit: 'kg' })] }
+    expect(lastSession(S, 'bench').sets[0]).toBe(sets[0])
+  })
 })
 
 describe('Training log: latest Work set time', () => {

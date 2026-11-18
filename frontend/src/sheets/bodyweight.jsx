@@ -3,7 +3,7 @@ import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { fmtNum, fmtSigned, fmtVol } from '../lib/format.js'
 import { fmtDate, todayISO } from '../lib/dates.js'
-import { recordWeighIn, deleteWeighIn, latestWeighIn } from '../lib/bodyweight.js'
+import { recordWeighIn, deleteWeighIn, latestWeighIn, weighIns } from '../lib/bodyweight.js'
 import { t } from '../lib/i18n.js'
 import { nav } from '../platform/nav.js'
 import Icon from '../components/Icon.jsx'
@@ -59,7 +59,7 @@ function BwSheet({ required, onDone, close }) {
     close()
     if (onDone) onDone(n); else toast(t('Weight saved'))
   }
-  const recent = [...st.bodyweight].reverse().slice(0, 3)
+  const recent = [...weighIns(st)].reverse().slice(0, 3)
   const delEntry = d => update(s => { deleteWeighIn(s, d) })
   return (
     <>

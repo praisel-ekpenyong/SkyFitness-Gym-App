@@ -4,6 +4,7 @@ import { modeOf, isBw, isPerSide, sideReps, cleanNote } from './workout-model.js
 import { uid, fmtNum, fmtSigned, exCount, fmtSec } from './format.js'
 import { todayISO, DAYN } from './dates.js'
 import { t } from './i18n-core.js'
+import { sanitizeUnit, targetIn } from './units.js'
 
 const PLAN_FMT = 1
 const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0]
@@ -62,7 +63,7 @@ export function buildPlanBundle(S, name) {
     })
   const week = {}
   WEEK_ORDER.forEach(d => { if (S.week?.[d]) week[d] = S.week[d] })
-  return { sky_plan: PLAN_FMT, exported: todayISO(), name: name || '', week, routines, customEx }
+  return { sky_plan: PLAN_FMT, exported: todayISO(), name: name || '', unit: sanitizeUnit(S.unit), week, routines, customEx }
 }
 
 export function parsePlan(raw) {
@@ -83,6 +84,7 @@ export function parsePlan(raw) {
   }))
   return {
     name: (data.name || '').trim(),
+    unit: typeof data.unit === 'string' ? sanitizeUnit(data.unit) : null,
     routines,
     week: data.week || {},
     customEx,
@@ -95,6 +97,9 @@ export function parsePlan(raw) {
 
 export function mergePlan(s, bundle, { schedule } = {}) {
   s.customEx = s.customEx || []
+  // A plan's loads arrive in the importing Profile's unit; a file without a unit is taken as it is (ADR 0028).
+  const unit = sanitizeUnit(s.unit)
+  const fileUnit = bundle.unit || unit
   const exIdMap = {}
   bundle.customEx.forEach(c => {
     const same = s.customEx.find(x => (x.n || '').toLowerCase() === (c.n || '').toLowerCase() && x.bp === c.bp)
@@ -122,7 +127,7 @@ export function mergePlan(s, bundle, { schedule } = {}) {
       name: r.name || t('Shared routine'),
       emoji: r.emoji,
       ...(r.prog ? { prog: r.prog } : {}),
-      ex: (r.ex || []).map(e => ({ ...e, id: exIdMap[e.id] || e.id }))
+      ex: (r.ex || []).map(e => ({ ...targetIn(e, fileUnit, unit), id: exIdMap[e.id] || e.id }))
     })
   })
   if (schedule) {

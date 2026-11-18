@@ -317,6 +317,21 @@ describe('Record badges', () => {
   })
 })
 
+describe('Workout detail sheet after a unit switch (ADR 0028)', () => {
+  it('shows a kg Workout in pounds: Session body weight and every set', async () => {
+    const w = {
+      id: 'w-kg', name: 'Push Day', d: '2026-03-01', start: 1000, end: 4000, unit: 'kg', bw: 80,
+      entries: [{ id: '0025', sets: [{ w: 100, r: 5, done: true }] }],
+    }
+    useStore.getState().update(s => { s.unit = 'lb'; s.workouts = [w] })
+    await act(async () => { workoutDetailSheet(w) })
+    const sheet = useUI.getState().sheets.at(-1)
+    await act(async () => { root.render(sheet.render(vi.fn())) })
+    expect(container.querySelector('.sheet-sub').textContent).toContain('176.4\u00a0lb')
+    expect(container.querySelector('.ex-entry .ss').textContent).toBe('220.5×5')
+  })
+})
+
 describe('WorkoutRow', () => {
   it('counts Work sets only, never a performed warm-up', async () => {
     const w = {

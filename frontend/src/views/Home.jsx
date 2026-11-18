@@ -6,7 +6,7 @@ import { sessionView } from '../lib/active-workout.js'
 import { tonnage, lastWorkoutInRoutine } from '../lib/training-log.js'
 import { dayStatus } from '../lib/schedule.js'
 import { summarizeWorkouts } from '../lib/workout-summary.js'
-import { latestWeighIn, prevWeighIn, deltaTowardGoal } from '../lib/bodyweight.js'
+import { latestWeighIn, prevWeighIn, deltaTowardGoal, weighIns } from '../lib/bodyweight.js'
 import { fmtNum, fmtSigned, fmtVol, NBSP, durPart, exCount } from '../lib/format.js'
 import { fmtDate, todayISO, isoOf, weekKey, DAYS, workoutTimestamp } from '../lib/dates.js'
 import { exLine } from '../lib/format.js'
@@ -82,7 +82,7 @@ export default function Home() {
 
   const wThisWeek = S.workouts.filter(w => weekKey(w.d) === weekKey(todayISO())).length
   const plannedPerWeek = Object.keys(S.week).filter(k => S.week[k]).length
-  const bwPoints = S.bodyweight.slice(-30).map(b => ({ t: workoutTimestamp(b), y: b.w, d: b.d }))
+  const bwPoints = weighIns(S).slice(-30).map(b => ({ t: workoutTimestamp(b), y: b.w, d: b.d }))
 
   const displayName = (S.displayName || '').trim()
   const hasName = !!displayName

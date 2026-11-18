@@ -8,6 +8,8 @@ import {
   mergeWeighIns,
   prevWeighIn,
   recordWeighIn,
+  sessionBodyweight,
+  weighIns,
   weighInsPreview,
 } from './bodyweight.js'
 
@@ -135,6 +137,47 @@ describe('deleteWeighIn / latestWeighIn', () => {
     expect(prevWeighIn({ bodyweight: [{ d: '2026-01-10', w: 80 }, { d: '2026-01-10', w: 81 }] })).toBeNull()
     expect(prevWeighIn({ bodyweight: [] })).toBeNull()
     expect(prevWeighIn({})).toBeNull()
+  })
+})
+
+describe('the Body-weight log read in the Profile unit (ADR 0028)', () => {
+  it('returns the stored log itself when every Weigh-in is already in the Profile unit', () => {
+    const log = [{ d: '2026-01-01', w: 80 }, { d: '2026-01-02', w: 79, unit: 'kg' }]
+    expect(weighIns({ unit: 'kg', bodyweight: log })).toBe(log)
+    expect(weighIns({})).toEqual([])
+  })
+
+  it('converts a Weigh-in stamped in another unit, without writing the stored log', () => {
+    const log = Object.freeze([Object.freeze({ d: '2026-01-01', w: 80, t: 1, unit: 'kg' }), Object.freeze({ d: '2026-01-02', w: 178 })])
+    const read = weighIns({ unit: 'lb', bodyweight: log })
+    expect(read).toEqual([{ d: '2026-01-01', w: 176.4, t: 1, unit: 'lb' }, { d: '2026-01-02', w: 178 }])
+    expect(read[1]).toBe(log[1])
+    expect(weighIns({ unit: 'lb', bodyweight: log })).toBe(read)
+  })
+
+  it('reads the latest and previous Weigh-in in the Profile unit', () => {
+    const S = { unit: 'lb', bodyweight: [{ d: '2026-01-01', w: 80, unit: 'kg' }, { d: '2026-01-02', w: 177 }] }
+    expect(prevWeighIn(S).w).toBe(176.4)
+    expect(latestWeighIn(S).w).toBe(177)
+    expect(latestWeighIn({ unit: 'lb', bodyweight: [{ d: '2026-01-03', w: 80, unit: 'kg' }] }).w).toBe(176.4)
+  })
+
+  it('reads the current body weight in kg from a stamped Weigh-in', () => {
+    expect(currentBodyweightKg({ unit: 'lb', bodyweight: [{ d: '2026-01-10', w: 80, unit: 'kg' }] })).toBe(80)
+  })
+
+  it('drops the stamp when a day is overwritten, since the new value is in the Profile unit', () => {
+    const S = { unit: 'lb', bodyweight: [{ d: '2026-01-10', w: 80, t: 1, unit: 'kg' }] }
+    recordWeighIn(S, { d: '2026-01-10', w: 175 })
+    expect(S.bodyweight).toEqual([{ d: '2026-01-10', w: 175, t: 1 }])
+  })
+
+  it('reads a Session body weight from its own stamp, else the Workout stamp', () => {
+    expect(sessionBodyweight({ unit: 'lb' }, { bw: 80, unit: 'kg' })).toBe(176.4)
+    expect(sessionBodyweight({ unit: 'kg' }, { bw: 176.4, bwUnit: 'lb', unit: 'kg' })).toBe(80)
+    expect(sessionBodyweight({ unit: 'kg' }, { bw: 80 })).toBe(80)
+    expect(sessionBodyweight({ unit: 'kg' }, { bw: null })).toBe(null)
+    expect(sessionBodyweight({ unit: 'kg' }, null)).toBe(null)
   })
 })
 

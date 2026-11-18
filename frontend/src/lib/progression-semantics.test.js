@@ -57,6 +57,25 @@ describe('a finished Entry with zero performed Work sets is a Miss', () => {
   })
 })
 
+describe('a frozen Target and Prescription read in the Profile unit after a switch (ADR 0028)', () => {
+  const inKg = { ...finishedWorkout('2026-04-01', TARGET_3X5, [unticked(62.5, 5), unticked(62.5, 5), unticked(62.5, 5)]), unit: 'kg' }
+  inKg.entries[0].plan = { kind: 'up', weight: 62.5 }
+  const S = { unit: 'lb', workouts: [inKg] }
+  const LINEAR_LB = { ...LINEAR, weight: 132.3 }
+
+  it('converts the session Target and Prescription weights', () => {
+    const [session] = sessionsFor(S, LIFT, LINEAR_LB)
+    expect(session.target.weight).toBe(132.3)
+    expect(session.plan.weight).toBe(137.8)
+  })
+
+  it('holds a fallen-apart Entry at its Prescription, in pounds', () => {
+    const p = nextPrescription(S, LINEAR_LB)
+    expect(p.kind).toBe('hold')
+    expect(p.weight).toBe(137.8)
+  })
+})
+
 describe('unticked Warm-up sets never count as a Miss', () => {
   it('an Entry of Warm-up sets only is not a session at all', () => {
     const S = stateWith([

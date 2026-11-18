@@ -37,7 +37,7 @@ _Avoid_: sync
 Sky ships as a static frontend only; there is no backend to fall back on. Every feature must work from local data alone.
 
 **Read-time unit normalization**:
-Interpreting historical set loads, estimated 1RM calculations, and progressive overload prescriptions dynamically against the active profile unit preference on read without rewriting stored workouts. Prevents artificial progression deloads and record suppression when toggling between kilograms and pounds while keeping stored history immutable.
+Reading logged numbers (Workouts, Weigh-ins, Session body weight) in the Profile's unit, from the unit stamped on each one, without rewriting them. Plans and settings (Routine weights and steps, the Goal weight) carry no stamp, so switching units converts them in place. A switch also stamps any Workout or Weigh-in that has no unit yet, and is refused during a workout. See ADR 0028.
 _Avoid_: data migration, unit conversion migration, history rewriting
 
 ### Planning
@@ -66,7 +66,7 @@ Updating an originating Routine from the final state of an Active workout on the
 _Avoid_: save workout as routine, auto-update plan
 
 **Plan file**:
-A Plan saved as one shareable file: routines, the week schedule, and the custom exercises those routines use. Never carries workouts, weigh-ins or settings; importing it adds fresh routines, never overwrites yours.
+A Plan saved as one shareable file: routines, the week schedule, and the custom exercises those routines use, plus the unit their weights are in. Never carries workouts, weigh-ins or settings; importing it adds fresh routines, never overwrites yours, and converts weights to your unit.
 _Avoid_: calling the file itself "the Plan"
 
 ### Exercises
