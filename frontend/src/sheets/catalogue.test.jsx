@@ -1415,3 +1415,77 @@ describe('ExConfig notes and cues', () => {
 })
 
 
+
+describe('ExConfig Rest duration', () => {
+  const bench = { id: '0025', n: 'barbell bench press', bp: 'chest', tg: 'pectorals', eq: 'barbell' }
+  const steps = { id: '3672', n: 'back and forth step', bp: 'cardio', tg: 'cardio', eq: 'body weight' }
+  const restRow = () => Array.from(container.querySelectorAll('button.lrow')).find(b => b.querySelector('.lrow-t')?.textContent === 'Rest duration')
+  const click = el => el.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  const saveBtn = () => Array.from(container.querySelectorAll('button')).find(b => /^(Save|Add to routine)$/.test(b.textContent.trim()))
+
+  let mounts = 0
+  async function renderConfig(ex, existing) {
+    const onSave = vi.fn()
+    await act(async () => { root.render(<ExConfig key={mounts++} ex={ex} existing={existing} onSave={onSave} close={vi.fn()} />) })
+    return onSave
+  }
+
+  async function pick(label) {
+    await act(async () => { click(restRow()) })
+    const sheet = useUI.getState().sheets.at(-1)
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    const sheetRoot = createRoot(host)
+    await act(async () => { sheetRoot.render(sheet.render(() => useUI.getState().closeSheet(sheet.id))) })
+    const options = Array.from(host.querySelectorAll('button.lrow'))
+    const labels = options.map(o => o.querySelector('.lrow-t').textContent)
+    const option = options.find(o => o.querySelector('.lrow-t').textContent === label)
+    await act(async () => { click(option) })
+    await act(async () => { sheetRoot.unmount() })
+    host.remove()
+    return labels
+  }
+
+  it('reads Default, naming the Profile\'s Rest duration, when the exercise has none of its own', async () => {
+    useStore.getState().update(s => { s.restSec = 120 })
+    await renderConfig(bench, { id: '0025', sets: 3, reps: 8, weight: 60 })
+    expect(restRow().querySelector('.lrow-v').textContent).toBe('Default (120s)')
+  })
+
+  it('offers Default and the Settings durations, and saves the one picked', async () => {
+    const onSave = await renderConfig(bench, { id: '0025', sets: 3, reps: 8, weight: 60 })
+    expect(await pick('180s')).toEqual(['Default (90s)', '60s', '90s', '120s', '150s', '180s'])
+    expect(restRow().querySelector('.lrow-v').textContent).toBe('180s')
+    await act(async () => { click(saveBtn()) })
+    expect(onSave.mock.calls[0][0]).toMatchObject({ sets: 3, reps: 8, rest: 180 })
+  })
+
+  it('stores nothing for Default, or for the Profile\'s own duration', async () => {
+    for (const label of ['Default (90s)', '90s']) {
+      const onSave = await renderConfig(bench, { id: '0025', sets: 3, reps: 8, weight: 60, rest: 150 })
+      expect(restRow().querySelector('.lrow-v').textContent).toBe('150s')
+      await pick(label)
+      await act(async () => { click(saveBtn()) })
+      expect(onSave.mock.calls[0][0], label).not.toHaveProperty('rest')
+    }
+  })
+
+  it('shows a Rest duration from a plan file that is not on the list, and keeps it', async () => {
+    const onSave = await renderConfig(bench, { id: '0025', sets: 3, reps: 8, weight: 60, rest: 75 })
+    expect(restRow().querySelector('.lrow-v').textContent).toBe('75s')
+    await act(async () => { click(saveBtn()) })
+    expect(onSave.mock.calls[0][0].rest).toBe(75)
+  })
+
+  it('has a Rest duration for timed and cardio exercises too', async () => {
+    const timed = await renderConfig(bench, { id: '0025', sets: 3, mode: 'time', sec: 45 })
+    await pick('60s')
+    await act(async () => { click(saveBtn()) })
+    expect(timed.mock.calls[0][0]).toMatchObject({ mode: 'time', rest: 60 })
+
+    const cardio = await renderConfig(steps, null)
+    await pick('120s')
+    await act(async () => { click(saveBtn()) })
+    expect(cardio.mock.calls[0][0]).toMatchObject({ min: 20, rest: 120 })
+  })
+})

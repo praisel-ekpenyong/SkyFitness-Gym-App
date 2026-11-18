@@ -1,7 +1,19 @@
-import { modeOf, isExerciseDone } from './workout-model.js'
+import { modeOf, isExerciseDone, ownRest } from './workout-model.js'
 import { isWorkSet, doneWorkSets } from './workout-sets.js'
 import { setProgressHighWater, supersetFlowStep } from './supersetFlow.js'
 import { stepOf } from './session-view.js'
+
+/**
+ * The rest after a set in a Step: the longest Rest duration among its Entries, an Entry
+ * without its own counting as the Profile's (ADR 0029). Null when no Entry has its own,
+ * so the effect runner applies the Profile's.
+ */
+function stepRest(S, entries, stepEntries) {
+  const own = stepEntries.map(i => ownRest(entries[i]?.target))
+  if (!own.some(sec => sec != null)) return null
+  const profile = S.restSec > 0 ? S.restSec : 0
+  return Math.max(...own.map(sec => sec ?? profile))
+}
 
 export function toggleActiveSet(S, entryIdx, setIdx) {
   const A = S?.active
@@ -82,7 +94,7 @@ export function toggleActiveSet(S, entryIdx, setIdx) {
     mode,
     cur: A.cur,
     next,
-    rest: { start: shouldRest, stop: shouldStopRest },
+    rest: { start: shouldRest, stop: shouldStopRest, sec: shouldRest ? stepRest(S, A.entries, stepEntries) : null },
     notice: exJustDone && cardioEntry ? 'cardio' : exJustDone && timedEntry ? 'timed' : null
   }
 }

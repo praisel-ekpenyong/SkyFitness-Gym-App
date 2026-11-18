@@ -6,7 +6,7 @@ import { fmtNum, fmtVol, exCount, uid, sentenceCase } from '../lib/format.js'
 import { fmtDate } from '../lib/dates.js'
 import { setLabel } from '../lib/set-label.js'
 import { best as bestOf, best1RM, lastSession } from '../lib/training-log.js'
-import { defaultConfig, modeOf, isBw, isPerSide, sideReps } from '../lib/workout-model.js'
+import { defaultConfig, modeOf, isBw, isPerSide, sideReps, ownRest, REST_CHOICES } from '../lib/workout-model.js'
 import * as catalogueWrites from '../lib/catalogue-writes.js'
 import { t, instrFor } from '../lib/i18n.js'
 import { nav } from '../platform/nav.js'
@@ -375,6 +375,14 @@ function ProgressionFields({ ex, mode, c, setC, routine, unit }) {
   </>
 }
 
+/** The exercise's Rest duration: Default follows the Profile's, as Settings sets it. */
+function RestRow({ c, setC, profileRest }) {
+  const own = ownRest(c)
+  const choices = own == null || REST_CHOICES.includes(own) ? REST_CHOICES : [...REST_CHOICES, own].sort((a, b) => a - b)
+  return <SelectRow icon="timer" title={t('Rest duration')} value={own ?? ''} onChange={v => setC(x => ({ ...x, rest: v || undefined }))}
+    options={[{ value: '', label: t('Default ({0})', t('{0}s', profileRest)) }, ...choices.map(v => ({ value: v, label: t('{0}s', v) }))]} />
+}
+
 export function ExConfig({ ex, existing, onSave, onDelete, close, routine, initial, onReplace, actionLabel }) {
   const st = useStore(s => s.S)
   const cardio = isCardio(ex.id)
@@ -399,12 +407,14 @@ export function ExConfig({ ex, existing, onSave, onDelete, close, routine, initi
     if (bw !== isBodyweightEq(ex.id)) flags.bodyweight = bw
     const trimmedNotes = typeof c.notes === 'string' ? c.notes.trim().slice(0, 500) : ''
     const noteProp = trimmedNotes ? { notes: trimmedNotes } : {}
-    if (cardio) onSave({ sets, min: Math.max(1, Math.round(c.min) || 20), speed: Math.max(0, c.speed || 8), ...noteProp })
-    else if (mode === 'time') onSave({ sets, mode: 'time', sec: Math.max(1, Math.round(c.sec) || 45), weight: Math.max(0, c.weight || 0), ...flags, ...prog, ...noteProp })
+    const rest = ownRest(c)
+    const restProp = rest != null && rest !== st.restSec ? { rest } : {}
+    if (cardio) onSave({ sets, min: Math.max(1, Math.round(c.min) || 20), speed: Math.max(0, c.speed || 8), ...restProp, ...noteProp })
+    else if (mode === 'time') onSave({ sets, mode: 'time', sec: Math.max(1, Math.round(c.sec) || 45), weight: Math.max(0, c.weight || 0), ...flags, ...prog, ...restProp, ...noteProp })
     else {
       const typed = Math.max(1, Math.round(c.reps) || 10)
       const reps = perSide ? Math.ceil(typed / 2) * 2 : typed
-      const out = { sets, mode: 'reps', reps, weight: Math.max(0, c.weight || 0), ...flags, ...(perSide ? { side: true } : {}), ...prog, ...noteProp }
+      const out = { sets, mode: 'reps', reps, weight: Math.max(0, c.weight || 0), ...flags, ...(perSide ? { side: true } : {}), ...prog, ...restProp, ...noteProp }
       if (policyFor({ ...c, id: ex.id }, routine, 'reps') === 'double') out.repsMin = Math.min(reps, Math.max(1, Math.round(c.repsMin) || Math.max(1, reps - 2)))
       if (bw && !(out.weight > 0) && c.repsMax > 0) out.repsMax = Math.max(reps, Math.round(c.repsMax))
       onSave(out)
@@ -440,16 +450,17 @@ export function ExConfig({ ex, existing, onSave, onDelete, close, routine, initi
     {mode === 'time' && !bw && <div className="small dim cfg-note">
       {t('A timer runs while you hold the set. Leave the weight at 0 for bodyweight holds.')}
     </div>}
-    {!cardio && <div className="sect-b cfg-note-sm">
-      <Row icon="figureStrength" title={t('Bodyweight')}
+    <div className="sect-b cfg-note-sm">
+      <RestRow c={c} setC={setC} profileRest={st.restSec} />
+      {!cardio && <Row icon="figureStrength" title={t('Bodyweight')}
         subtitle={bw ? t('No weight to enter — just log the reps.') : t('Ask for a weight on every set.')}>
         <Switch checked={bw} label={t('Bodyweight')} onChange={v => setC(x => ({ ...x, bodyweight: v, weight: v ? 0 : x.weight }))} />
-      </Row>
-      {mode === 'reps' && <Row icon="shuffle" title={t('Reps per side')}
+      </Row>}
+      {!cardio && mode === 'reps' && <Row icon="shuffle" title={t('Reps per side')}
         subtitle={perSide ? t('You still log the total: {0} is {1} per side.', c.reps || 0, fmtNum(sideReps(c.reps))) : t('For lunges, single-arm rows and the like.')}>
         <Switch checked={perSide} label={t('Reps per side')} onChange={v => setC(x => ({ ...x, side: v || undefined, reps: v ? Math.ceil((x.reps || 0) / 2) * 2 : x.reps }))} />
       </Row>}
-    </div>}
+    </div>
     {bw && <>
       <div className="row cfgrow cfg-note-sm">
         <Stepper label={t('Added ({0})', st.unit)} value={c.weight || 0} step={2.5}
