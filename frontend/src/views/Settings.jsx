@@ -6,6 +6,8 @@ import { useUI } from '../store/useUI.js'
 import { ACCENTS } from '../lib/format.js'
 import { todayISO, localTZ } from '../lib/dates.js'
 import { effortOf } from '../lib/effort.js'
+import { switchUnit } from '../lib/units.js'
+import { REST_CHOICES } from '../lib/workout-model.js'
 import { wakeLockSupported } from '../platform/wakelock.js'
 import { t } from '../lib/i18n.js'
 import { MOBILE, shareExport, syncReminder } from '../platform/mobile.js'
@@ -30,6 +32,12 @@ export default function Settings() {
   const IS_ANDROID = /android/i.test(navigator.userAgent)
 
   const stampExported = () => update(s => { s.lastExport = Date.now() })
+  // ADR 0028: Routines and the Goal weight convert; logs keep their numbers and read in the new unit.
+  const setUnit = v => {
+    if (v === S.unit) return
+    if (S.active) { toast(t('Finish or discard the workout in progress to switch units.')); return }
+    update(s => { switchUnit(s, v) })
+  }
   const doExport = async () => {
     const json = JSON.stringify(S, null, 2)
     const name = 'sky-backup-' + todayISO() + '.json'
@@ -82,18 +90,18 @@ export default function Settings() {
         subtitle={S.birthYear ? t('Used only for strength levels from age 40') : t('Not set — strength levels are not age-adjusted')}
         value={S.birthYear ? String(S.birthYear) : ''} accessory="chevron" onClick={birthYearSheet} />
     </Section>
-    <Section title={t('General')} footer={t('Note: switching units only changes the label — logged numbers are not converted.')}>
+    <Section title={t('General')} footer={t('Switching converts your routines and goal weight. Logged workouts and weigh-ins keep what you entered and show in the new unit.')}>
       <Row icon="scale" title={t('Weight unit')}>
         <Segmented className="seg-inline" label={t('Weight unit')}
           options={[{ value: 'kg', label: 'kg' }, { value: 'lb', label: 'lb' }]}
-          value={S.unit} onChange={v => update(s => { s.unit = v })} />
+          value={S.unit} onChange={setUnit} />
       </Row>
     </Section>
 
     <Section title={t('During a workout')}>
       <SelectRow icon="timer" title={t('Rest duration')}
         value={S.restSec} onChange={v => update(s => { s.restSec = v })}
-        options={[60, 90, 120, 150, 180].map(v => ({ value: v, label: v + 's' }))} />
+        options={REST_CHOICES.map(v => ({ value: v, label: v + 's' }))} />
       {(wakeOK || !MOBILE) && (
         <Row icon="sun" title={t('Keep screen awake')}
           subtitle={wakeOK ? t('The screen stays on while a workout is running, so you don’t have to unlock your phone between sets.') : t('Not supported in this browser.')}>

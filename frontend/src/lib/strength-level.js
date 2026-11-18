@@ -10,7 +10,7 @@
 import { estimate1RM, DEFAULT_FORMULA } from './onerm.js'
 import { isPerformed, isWorkSet } from './workout-sets.js'
 import { workoutTimestamp } from './dates.js'
-import { normalizeWeight } from './units.js'
+import { weighIns as weighInsInUnit, sessionBodyweight } from './bodyweight.js'
 import { cleanSex } from './sex.js'
 import { ageCoefficientOf } from './birth-year.js'
 
@@ -57,9 +57,9 @@ const round2 = value => Math.round(value * 100) / 100
 
 const profileUnit = S => S?.unit || 'kg'
 
-/** Body-weight log entries with a usable weight, oldest first. Stored in the Profile unit. */
+/** Body-weight log entries with a usable weight, oldest first, in the Profile unit. */
 function weighInsOf(S) {
-  return (Array.isArray(S?.bodyweight) ? S.bodyweight : [])
+  return weighInsInUnit(S)
     .filter(b => b && positiveOf(b.w) !== null && Number.isFinite(workoutTimestamp(b)))
     .slice()
     .sort((a, b) => workoutTimestamp(a) - workoutTimestamp(b))
@@ -69,28 +69,27 @@ function weighInsOf(S) {
  * The most recent Weigh-in in the Profile unit, from the Body-weight log or a workout's own,
  * or null when there is none.
  */
-function latestWeighInOf(S, weighIns) {
-  const unit = profileUnit(S)
+function latestWeighInOf(S, logged) {
   let latest = null
   const consider = (ts, w) => { if (latest === null || ts > latest.ts) latest = { ts, w } }
-  for (const b of weighIns) consider(workoutTimestamp(b), Number(b.w))
+  for (const b of logged) consider(workoutTimestamp(b), Number(b.w))
   for (const workout of S?.workouts || []) {
-    const own = positiveOf(workout?.bw)
+    const own = sessionBodyweight(S, workout)
     const ts = workoutTimestamp(workout)
-    if (own !== null && Number.isFinite(ts)) consider(ts, normalizeWeight(own, workout.bwUnit || unit, unit))
+    if (own !== null && Number.isFinite(ts)) consider(ts, own)
   }
   return latest ? latest.w : null
 }
 
 /** The body weight a workout was lifted at, in the Profile unit, or null when none is within reach. */
-function bodyweightThen(S, workout, weighIns) {
-  const own = positiveOf(workout?.bw)
-  if (own !== null) return normalizeWeight(own, workout.bwUnit || profileUnit(S), profileUnit(S))
+function bodyweightThen(S, workout, logged) {
+  const own = sessionBodyweight(S, workout)
+  if (own !== null) return own
   const ts = workoutTimestamp(workout)
   if (!Number.isFinite(ts)) return null
   let best = null
   let bestGap = Infinity
-  for (const b of weighIns) {
+  for (const b of logged) {
     const gap = Math.abs(workoutTimestamp(b) - ts)
     if (gap <= WEIGH_IN_DAYS * DAY_MS && gap < bestGap) { best = b; bestGap = gap }
   }

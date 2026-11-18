@@ -9,7 +9,7 @@ import { seedPlanInto } from '../lib/plans/seed.js'
 import { flush, load, loadLocal, save, LOCAL_KEY, onStorageSync } from '../platform/storage.js'
 import { DEF, normalizeState } from '../lib/profile/index.js'
 import { act } from '../lib/active-workout.js'
-import { syncRoutineFromSession } from '../lib/routine-sync.js'
+import { actRoutine } from '../lib/routines.js'
 import { runEffects } from './effects.js'
 
 const clone = o => {
@@ -86,10 +86,10 @@ export const useStore = create((set, get) => {
       runEffects(res.effects, () => get().S, send)
       return res
     },
-    syncRoutineFromSession(routineId, syncedEx) {
-      let ok = false
-      get().update(s => { ok = syncRoutineFromSession(s, routineId, syncedEx) })
-      return ok
+    actRoutine(command) {
+      let res = { ok: false }
+      get().update(s => { res = actRoutine(s, command) })
+      return res
     },
     async boot() {
       let S = get().S

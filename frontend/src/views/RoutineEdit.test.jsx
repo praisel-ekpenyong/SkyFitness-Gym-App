@@ -295,5 +295,62 @@ describe('RoutineEdit delete key', () => {
     await act(async () => { del.click() })
     expect(mocks.confirmSheet).toHaveBeenCalledTimes(1)
     expect(mocks.confirmSheet.mock.calls[0][0].danger).toBe(true)
+
+    // Execute confirmation
+    await act(async () => {
+      mocks.confirmSheet.mock.calls[0][0].onConfirm()
+    })
+    expect(useStore.getState().S.routines.find(x => x.id === 'r-test-1')).toBeUndefined()
+    expect(mocks.nav).toHaveBeenCalledWith('/plan')
+  })
+})
+
+describe('RoutineEdit reordering and superset pairing', () => {
+  it('moves exercise down on move down click', async () => {
+    await act(async () => { root.render(<RoutineEdit />) })
+
+    const moveDownBtns = container.querySelectorAll('button[aria-label="Move down"]')
+    expect(moveDownBtns.length).toBe(3)
+
+    await act(async () => {
+      moveDownBtns[0].click()
+    })
+
+    const r = useStore.getState().S.routines.find(x => x.id === 'r-test-1')
+    expect(r.ex[0].id).toBe('0002')
+    expect(r.ex[1].id).toBe('0001')
+  })
+
+  it('toggles superset link with above on superset button click', async () => {
+    await act(async () => { root.render(<RoutineEdit />) })
+
+    // Exercise 2 ('0003') is not currently in a superset with 1 ('0002')
+    const linkBtns = container.querySelectorAll('.rt-link')
+    expect(linkBtns.length).toBe(2)
+
+    await act(async () => {
+      linkBtns[1].click() // Button on exercise 2 linking with exercise 1
+    })
+
+    const r = useStore.getState().S.routines.find(x => x.id === 'r-test-1')
+    expect(r.ex[1].sg).toBeDefined()
+    expect(r.ex[2].sg).toBe(r.ex[1].sg)
+  })
+})
+
+describe('RoutineEdit metadata changes', () => {
+  it('renames routine on input change', async () => {
+    await act(async () => { root.render(<RoutineEdit />) })
+
+    const input = container.querySelector('input.rt-title')
+    await act(async () => {
+      const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set
+      setter.call(input, 'Chest & Triceps')
+      input.dispatchEvent(new Event('input', { bubbles: true }))
+      input.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+
+    const r = useStore.getState().S.routines.find(x => x.id === 'r-test-1')
+    expect(r.name).toBe('Chest & Triceps')
   })
 })

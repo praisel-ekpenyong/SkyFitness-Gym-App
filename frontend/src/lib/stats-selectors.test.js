@@ -292,10 +292,20 @@ describe('overview history', () => {
       workoutAt(LIFT.id, 0, [doneSet(70, 5)]),
     ] }
     const over = selectStatsOverview(S, { now: NOW, catalogue })
-    expect(over.counts).toEqual({ total: 3, month: 1, streak: { current: 3, best: 3, freezes: 0 }, weeks12: 3 })
+    expect(over.counts).toEqual({ total: 3, month: 1, streak: { current: 3, best: 3 }, weeks12: 3 })
     expect(over.workouts.recent.map(w => w.d)).toEqual(['2026-07-01', '2026-06-23', '2026-06-16'])
     expect(over.workouts.forDay('2026-06-23')).toEqual([S.workouts[1]])
     expect(over.workouts.forDay('2026-06-24')).toEqual([])
+  })
+})
+
+describe('exercise sessions read in the Profile unit (ADR 0028)', () => {
+  it('lists the sets of a kg Workout in pounds after a switch, as the chart does', () => {
+    const S = { unit: 'lb', effort: 'none', bodyweight: [], workouts: [workoutAt(LIFT.id, 2, [doneSet(100, 5)], { unit: 'kg' })] }
+    const st = selectExerciseStats(S, LIFT.id, { now: NOW, catalogue })
+    expect(st.recent[0].y).toBe(220.5)
+    expect(st.recent[0].sets.map(s => s.w)).toEqual([220.5])
+    expect(S.workouts[0].entries[0].sets[0].w).toBe(100)
   })
 })
 
@@ -310,6 +320,17 @@ describe('body-weight log readings', () => {
     expect(over.bodyweight.delta30).toBe(-4)
     expect(over.bodyweight.goal).toBe(165)
     expect(over.bodyweightKg).toBeCloseTo(79.832, 3)
+  })
+  it('reads Weigh-ins stamped in kg in a pounds profile, after a unit switch (ADR 0028)', () => {
+    const S = { unit: 'lb', targetW: 165.3, bodyweight: [
+      { d: '2026-06-10', w: 80, unit: 'kg' }, { d: '2026-06-30', w: 176 },
+    ] }
+    const over = selectStatsOverview(S, { now: NOW, catalogue })
+    expect(over.bodyweight.points.map(p => p.y)).toEqual([176.4, 176])
+    expect(over.bodyweight.latest.w).toBe(176)
+    expect(over.bodyweight.delta30).toBe(-0.4)
+    const kgLatest = selectStatsOverview({ unit: 'lb', bodyweight: [{ d: '2026-06-30', w: 80, unit: 'kg' }] }, { now: NOW, catalogue })
+    expect(kgLatest.bodyweightKg).toBeCloseTo(80, 6)
   })
 })
 

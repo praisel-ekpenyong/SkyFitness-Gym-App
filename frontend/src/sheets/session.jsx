@@ -137,7 +137,7 @@ export function FinishSummary({ w, prs, e1prs = [], routineSync = null, close })
 
   const onDismiss = () => {
     if (syncChecked && routineSync?.routineId && routineSync?.syncedEx) {
-      useStore.getState().syncRoutineFromSession(routineSync.routineId, routineSync.syncedEx)
+      useStore.getState().actRoutine({ type: 'syncFromSession', routineId: routineSync.routineId, syncedEx: routineSync.syncedEx })
       toast(t('Routine “{0}” updated', routineSync.routineName))
     }
     close()

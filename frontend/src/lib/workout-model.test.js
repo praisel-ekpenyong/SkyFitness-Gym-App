@@ -832,6 +832,22 @@ describe('seedForReplacement', () => {
     expect(res.bodyweight).toBe(true)
     expect(res.weight).toBe(0)
   })
+
+  it('strips notes from past target history per ADR 0015', () => {
+    const S = {
+      workouts: [
+        {
+          d: '2026-10-01',
+          entries: [
+            { id: LIFT, target: { reps: 8, weight: 60, sets: 5, notes: 'Pin 4' }, sets: [{ w: 60, r: 8, done: true }] },
+          ],
+        },
+      ],
+      exWeights: {},
+    }
+    const res = seedForReplacement(S, LIFT, null, 3)
+    expect(res.notes).toBeUndefined()
+  })
 })
 
 describe('cleanNote', () => {

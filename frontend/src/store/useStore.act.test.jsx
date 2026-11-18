@@ -33,6 +33,12 @@ describe('store.act runs the effects', () => {
     expect(playSetComplete).toHaveBeenCalledWith(false)
   })
 
+  it('starts rest for the Entry\'s own Rest duration when it has one', () => {
+    withActive([{ ...entry('a', [work(), work()]), target: { reps: 8, weight: 50, rest: 180 } }])
+    useStore.getState().act({ type: 'toggle', entry: 0, set: 0 })
+    expect(useUI.getState().timer?.total).toBe(180)
+  })
+
   it('stops rest and returns open-finish for the view after the last set', () => {
     withActive([entry('a', [work(), work()])])
     useUI.getState().startRest(60, () => true)

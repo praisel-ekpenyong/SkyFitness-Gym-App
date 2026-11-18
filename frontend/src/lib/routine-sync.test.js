@@ -480,35 +480,22 @@ describe('diffRoutineWithSession', () => {
       expect(resCleared.syncedEx[1].notes).toBe('Close-grip bench cue')
     })
   })
-})
+  describe('Rest duration', () => {
+    it('keeps each exercise\'s Rest duration, and adds none where it had none, without reporting a change', () => {
+      const routine = { id: 'r1', name: 'Push', ex: [{ ...ex1, rest: 180 }, { ...ex2 }] }
+      const session = { id: 's1', routineId: 'r1', entries: [makeEntry({ ...ex1, rest: 180 }, 3), makeEntry(ex2, 3)] }
+      const res = diffRoutineWithSession(routine, session)
+      expect(res.hasDiff).toBe(false)
+      expect(res.syncedEx[0].rest).toBe(180)
+      expect(res.syncedEx[1]).not.toHaveProperty('rest')
+    })
 
-describe('syncRoutineFromSession', () => {
-  it('updates the matching routine ex array in state and returns true', () => {
-    const S = {
-      routines: [
-        { id: 'r1', name: 'Push', ex: [{ id: '0025', sets: 3 }] },
-        { id: 'r2', name: 'Pull', ex: [{ id: '0027', sets: 3 }] },
-      ],
-    }
-    const syncedEx = [{ id: '0025', sets: 4 }, { id: '0026', sets: 3 }]
-    const ok = syncRoutineFromSession(S, 'r1', syncedEx)
-    expect(ok).toBe(true)
-    expect(S.routines[0].ex).toEqual(syncedEx)
-    expect(S.routines[1].ex).toEqual([{ id: '0027', sets: 3 }])
-  })
-
-  it('safely returns false and no-ops if routine is not found', () => {
-    const S = {
-      routines: [{ id: 'r1', name: 'Push', ex: [{ id: '0025', sets: 3 }] }],
-    }
-    const ok = syncRoutineFromSession(S, 'non-existent', [{ id: '0025', sets: 4 }])
-    expect(ok).toBe(false)
-    expect(S.routines[0].ex).toEqual([{ id: '0025', sets: 3 }])
-  })
-
-  it('safely returns false when S or S.routines is missing', () => {
-    expect(syncRoutineFromSession(null, 'r1', [])).toBe(false)
-    expect(syncRoutineFromSession({}, 'r1', [])).toBe(false)
-    expect(syncRoutineFromSession({ routines: null }, 'r1', [])).toBe(false)
+    it('writes a replacement\'s own Rest duration back to the Routine', () => {
+      const routine = { id: 'r1', name: 'Push', ex: [{ ...ex1, rest: 180 }] }
+      const session = { id: 's1', routineId: 'r1', entries: [makeEntry({ ...ex3, rest: 90 }, 3)] }
+      const S = { routines: [routine] }
+      expect(syncRoutineFromSession(S, 'r1', diffRoutineWithSession(routine, session).syncedEx)).toBe(true)
+      expect(S.routines[0].ex[0]).toMatchObject({ id: ex3.id, rest: 90 })
+    })
   })
 })

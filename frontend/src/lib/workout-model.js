@@ -72,6 +72,13 @@ export const ROW_DEFAULTS = Object.freeze({
   reps: Object.freeze({ reps: 10, weight: 0 }),
 })
 export const SETS_DEFAULTS = Object.freeze({ cardio: 1, time: 3, reps: 3 })
+/** The Rest durations, in seconds, that Settings and an exercise's config offer. */
+export const REST_CHOICES = Object.freeze([60, 90, 120, 150, 180])
+/**
+ * An exercise's own Rest duration in seconds, or null when it follows the Profile's (ADR 0029).
+ * @param {Object} cfg - A Target (`ExCfg`).
+ */
+export const ownRest = cfg => (Number.isFinite(cfg?.rest) && cfg.rest > 0 ? cfg.rest : null)
 
 export function makeRow(mode, target = {}, { prev = null, warmup = false } = {}) {
   const m = normalizeMode(mode, 'reps')
@@ -231,12 +238,14 @@ export function seedForReplacement(S, exId, routineId, setsCount) {
   const base = defaultConfig(exId)
   const last = lastSessionInRoutine(S, exId, routineId) || lastSession(S, exId)
   const bestWeight = best(S, exId)
-  return {
+  const seed = {
     ...base,
     ...(last?.target || {}),
     ...(bestWeight > 0 && !base.bodyweight ? { weight: bestWeight } : {}),
     sets: setsCount ?? base.sets,
   }
+  delete seed.notes
+  return seed
 }
 
 export function cleanNote(value) {

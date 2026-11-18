@@ -120,7 +120,8 @@ off the load. If the load is already as low as it goes, Sky holds the target ins
   and teal. Text meets WCAG AA contrast in both themes under every accent, and the test suite
   checks it.
 - A male or female body for the muscle maps.
-- kg or lb. Switching changes the label only; logged numbers are not converted.
+- kg or lb. Switching converts your routines and goal weight. Logged workouts and weigh-ins keep
+  the numbers you entered and are shown in the new unit. Finish the workout in progress first.
 - Rest length, sounds, and a reminder on days that have a routine planned.
 - An optional display name for the greeting on Home.
 
@@ -206,8 +207,8 @@ npm run build
 ```
 
 The static files go to `frontend/dist/`. Upload them to any static host. The live app is on
-Cloudflare Pages: `frontend/public/_headers` sets its security and cache headers, and
-`netlify.toml` mirrors them for Netlify. [docs/SELF_HOSTING.md](docs/SELF_HOSTING.md) has guides
+Cloudflare Pages: `frontend/public/_headers` sets its security and cache headers.
+[docs/SELF_HOSTING.md](docs/SELF_HOSTING.md) has guides
 for other hosts.
 
 ## Exercise media

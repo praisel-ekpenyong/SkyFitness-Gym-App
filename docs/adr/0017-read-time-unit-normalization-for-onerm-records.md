@@ -1,5 +1,9 @@
 # Read-time unit normalization for estimated 1RM and personal records
 
+> Amended by ADR 0028 (one rule for kg and lb): a unit switch now converts Routines and the Goal weight in place,
+> and the Settings note quoted below no longer applies. Logs are still never rewritten; a switch only stamps a
+> Workout or Weigh-in that has no unit yet.
+
 ## Context
 
 SkyFitness is an offline-first, single-user progressive web application with a global profile display unit preference: `S.unit = 'kg' | 'lb'`. In Settings, the app documents that *"switching units only changes the label — logged numbers are not converted"*, reflecting the intentional choice not to run destructive, irreversible data migrations across stored workout history upon a unit preference toggle.

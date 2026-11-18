@@ -1,5 +1,5 @@
 import { isWarmupRow } from './warmup.js'
-import { resolveSetWeight, normalizeWeight, round1 } from './units.js'
+import { resolveSetWeight, normalizeWeight, round1, setIn, targetIn } from './units.js'
 import { estimate1RM } from './onerm.js'
 import { workoutTimestamp } from './dates.js'
 import { doneWorkSets, metricModeForEntry, metricRowsForEntry, modeForSet, workSets } from './workout-sets.js'
@@ -126,7 +126,7 @@ function sessionIndexFor(workouts) {
         if (!sets.length) continue
         const cur = byEx.get(entry.id)
         if (cur) cur.sets.push(...sets)
-        else byEx.set(entry.id, { workout, sets, target: entry.target || null })
+        else byEx.set(entry.id, { workout, sets, target: entry.target || null, unit: entry.unit ?? workout.unit ?? null })
       }
       for (const [exId, session] of byEx) {
         let slots = index.get(exId)
@@ -140,17 +140,26 @@ function sessionIndexFor(workouts) {
   return index
 }
 
-const publicSession = session => (session ? { d: session.workout.d, sets: session.sets, target: session.target } : null)
+// A session read in the Profile unit: Sets and Target are converted from their stamp (ADR 0028).
+// Rows already in the unit are returned as stored.
+function publicSession(session, unit) {
+  if (!session) return null
+  const from = session.unit ?? unit
+  const read = session.sets.map(set => setIn(set, from, unit))
+  const sets = read.every((set, i) => set === session.sets[i]) ? session.sets : read
+  return { d: session.workout.d, sets, target: targetIn(session.target, from, unit) }
+}
 
 /**
  * Last session: latest Workout holding a performed Work set of the exercise, any Routine.
  * Date order, then start time; later array position breaks an exact tie. Sets span every Entry of the exercise.
+ * Sets and Target are in the Profile's unit.
  * Null when never performed.
  */
 export function lastSession(S, exId) {
   const workouts = logOf(S)
   if (!workouts || !exId) return null
-  return publicSession(sessionIndexFor(workouts).get(exId)?.any)
+  return publicSession(sessionIndexFor(workouts).get(exId)?.any, S.unit || 'kg')
 }
 
 /** Last session within one Routine. Strict: null when that Routine never held the exercise; without a routineId it is lastSession. */
@@ -158,7 +167,7 @@ export function lastSessionInRoutine(S, exId, routineId) {
   if (!routineId) return lastSession(S, exId)
   const workouts = logOf(S)
   if (!workouts || !exId) return null
-  return publicSession(sessionIndexFor(workouts).get(exId)?.byRoutine.get(routineId))
+  return publicSession(sessionIndexFor(workouts).get(exId)?.byRoutine.get(routineId), S.unit || 'kg')
 }
 
 /** Latest Work set time: start timestamp in ms of the exercise's latest performed Work set's Workout (date midnight when unstamped), or null. */

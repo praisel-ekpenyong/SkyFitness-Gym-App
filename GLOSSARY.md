@@ -37,7 +37,7 @@ _Avoid_: sync
 Sky ships as a static frontend only; there is no backend to fall back on. Every feature must work from local data alone.
 
 **Read-time unit normalization**:
-Interpreting historical set loads, estimated 1RM calculations, and progressive overload prescriptions dynamically against the active profile unit preference on read without rewriting stored workouts. Prevents artificial progression deloads and record suppression when toggling between kilograms and pounds while keeping stored history immutable.
+Reading logged numbers (Workouts, Weigh-ins, Session body weight) in the Profile's unit, from the unit stamped on each one, without rewriting them. Plans and settings (Routine weights and steps, the Goal weight) carry no stamp, so switching units converts them in place. A switch also stamps any Workout or Weigh-in that has no unit yet, and is refused during a workout. See ADR 0028.
 _Avoid_: data migration, unit conversion migration, history rewriting
 
 ### Planning
@@ -66,7 +66,7 @@ Updating an originating Routine from the final state of an Active workout on the
 _Avoid_: save workout as routine, auto-update plan
 
 **Plan file**:
-A Plan saved as one shareable file: routines, the week schedule, and the custom exercises those routines use. Never carries workouts, weigh-ins or settings; importing it adds fresh routines, never overwrites yours.
+A Plan saved as one shareable file: routines, the week schedule, and the custom exercises those routines use, plus the unit their weights are in. Never carries workouts, weigh-ins or settings; importing it adds fresh routines, never overwrites yours, and converts weights to your unit.
 _Avoid_: calling the file itself "the Plan"
 
 ### Exercises
@@ -136,14 +136,8 @@ Every finished Workout in the Profile, in date order, and the only source of Bes
 _Avoid_: history cache, remembered weights
 
 **Week streak**:
-Consecutive trained weeks under the Freeze rule. A week counts when it holds a Workout with at least one performed Work set. Every fourth counted week in a run earns a Freeze, up to the rule's bank; a missed week spends one and the streak carries on, and a missed week with none left breaks it. The current week stays open until it ends. Recomputed from the Training log on every read, under the rule in force: rules apply retroactively by design, with no rule history stored.
-_Avoid_: weekly streak, streak alone (a Run is not a streak)
-
-**Freeze**:
-A banked allowance that covers one missed week so the Week streak continues. Earned by every fourth counted week in a run, capped by the Freeze rule's bank; an earned Freeze past the cap is lost.
-
-**Freeze rule**:
-The setting that fixes how many Freezes can be banked: Strict (0), Gentle (1, the default) or Generous (2). Stored on the Profile and carried by Export and Restore, never by the plan file. Rules apply retroactively by design: every week is judged by the rule in force now, so switching rule changes past weeks too, and the picker previews each rule's current and best streak before you switch.
+Weeks trained in a row. A week counts when it holds a Workout with at least one performed Work set. The current week stays open until it ends; any earlier week without a counted Workout breaks the streak. Nothing covers a missed week and there is no setting. Recomputed from the Training log on every read.
+_Avoid_: weekly streak, streak alone (a Run is not a streak), freeze
 
 **Entry**:
 One exercise within a routine or a workout; holds its sets.
@@ -186,7 +180,7 @@ The recovery interval between sets, between rounds of a superset, or between exe
 _Avoid_: break, rest period, pause
 
 **Rest duration**:
-The default length of a rest, set by the lifter, used whenever a rest begins.
+The length of a rest. The lifter sets one in Settings, and an exercise in a Routine may set its own for the rest after its sets; "Default" on the exercise means the one in Settings. After a Superset round the longest Rest duration among its Entries applies. A Manual rest uses the one in Settings.
 _Avoid_: rest time, rest setting
 
 **Rest timer**:

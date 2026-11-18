@@ -1,7 +1,8 @@
 import { EXDB, EXIDX } from './exercises.js'
 import { fatigueOf, strengthOf, fatigueStateOf } from './recovery.js'
 import { MUSCLES, loadOfWorkouts, loadOfRoutine, rankOf, lastTrainedByMuscle } from './muscles.js'
-import { LB_TO_KG } from './bodyweight.js'
+import { LB_TO_KG, weighIns } from './bodyweight.js'
+import { sanitizeUnit, setIn } from './units.js'
 import { best1RM, e1rmSeries, loadRecords, metric } from './training-log.js'
 import {
   displayScale, scaleName, toScale, avgRir,
@@ -96,7 +97,7 @@ function resolveBodyweightKg(S, override) {
   const ordered = entries.slice().sort((a, b) => String(a?.d).localeCompare(String(b?.d)))
   for (let i = ordered.length - 1; i >= 0; i--) {
     const w = Number(ordered[i]?.w)
-    if (Number.isFinite(w) && w > 0) return S?.unit === 'lb' ? w * LB_TO_KG : w
+    if (Number.isFinite(w) && w > 0) return sanitizeUnit(ordered[i].unit ?? S?.unit) === 'lb' ? w * LB_TO_KG : w
   }
   return null
 }
@@ -213,12 +214,12 @@ export function selectStatsOverview(S, opts = {}) {
     value: toScale(scale, bin.rir), hard: bin.rir <= HARD_RIR,
     width: Math.round(bin.n / maxBin * 100), percent: Math.round(bin.pct * 100),
   }))
-  const weighIns = (S?.bodyweight || []).filter(b => Number.isFinite(Number(b.w)) && Number(b.w) > 0 && Number.isFinite(workoutTimestamp(b)))
+  const logged = weighIns(S).filter(b => Number.isFinite(Number(b.w)) && Number(b.w) > 0 && Number.isFinite(workoutTimestamp(b)))
     .slice().sort((a, b) => workoutTimestamp(a) - workoutTimestamp(b))
-  const recentWeight = inWindow(weighIns, now, 30)
+  const recentWeight = inWindow(logged, now, 30)
   const bodyweight = {
-    points: inWindow(weighIns, now, opts.bodyweightDays ?? 90).map(b => ({ t: workoutTimestamp(b), d: b.d, y: Number(b.w) })),
-    latest: weighIns.at(-1) || null,
+    points: inWindow(logged, now, opts.bodyweightDays ?? 90).map(b => ({ t: workoutTimestamp(b), d: b.d, y: Number(b.w) })),
+    latest: logged.at(-1) || null,
     delta30: recentWeight.length > 1 ? round1(recentWeight.at(-1).w - recentWeight[0].w) : null,
     goal: Number.isFinite(S?.targetW) && S.targetW > 0 ? S.targetW : null,
   }
@@ -245,7 +246,7 @@ export function selectStatsOverview(S, opts = {}) {
     exerciseIndex,
     bodyweightKg,
     bodyweight,
-    counts: { total: workouts.length, month: workouts.filter(w => monthKey(w) === monthKey(today)).length, streak: { current: streak.current, best: streak.best, freezes: streak.freezes }, weeks12: trainedWeeks(S, 12, now) },
+    counts: { total: workouts.length, month: workouts.filter(w => monthKey(w) === monthKey(today)).length, streak: { current: streak.current, best: streak.best }, weeks12: trainedWeeks(S, 12, now) },
     workouts: { recent: [...workouts].reverse().slice(0, 6), forDay: day => workouts.filter(w => w.d === day) },
     scale,
     scaleName: scaleName(scale),
@@ -335,7 +336,7 @@ export function selectExerciseStats(S, exId, opts = {}) {
       t: workoutTimestamp(workout),
       d: workout?.d,
       y: round1(mx),
-      sets: rows,
+      sets: rows.map(set => setIn(set, entry?.unit ?? workout?.unit ?? S?.unit, S?.unit || 'kg')),
       target: entry?.target || null,
       record: recordIndexOf(S, workout, exId, rows, mode),
     })

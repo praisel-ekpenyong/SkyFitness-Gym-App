@@ -1,7 +1,6 @@
 import { ACCENTS } from '../format.js'
 import { trainingStyleOf, cleanVolumeRanges } from '../volume-ranges.js'
 import { cleanProfileFields } from './fields.js'
-import { streakRuleOf } from '../streak.js'
 import { DEF } from './def.js'
 import { admit } from './admit.js'
 
@@ -36,7 +35,6 @@ export function normalizeState(raw, now = Date.now()) {
   S.dayPlan = raw.dayPlan && typeof raw.dayPlan === 'object' && !Array.isArray(raw.dayPlan) ? { ...raw.dayPlan } : {}
   S.reminder = { ...base.reminder, ...(raw.reminder && typeof raw.reminder === 'object' && !Array.isArray(raw.reminder) ? raw.reminder : {}) }
   S.trainingStyle = trainingStyleOf(raw)
-  S.streakRule = streakRuleOf(raw)
   S.volumeRanges = cleanVolumeRanges(raw.volumeRanges)
   Object.assign(S, cleanProfileFields(raw, now))
   S.accent = typeof raw.accent === 'string' && Object.hasOwn(ACCENTS, raw.accent) ? raw.accent : base.accent

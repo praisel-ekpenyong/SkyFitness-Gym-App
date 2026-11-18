@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { useStore } from './useStore.js'
 import { DEF } from '../lib/profile/index.js'
 
-describe('useStore.syncRoutineFromSession', () => {
+describe('useStore.actRoutine syncFromSession', () => {
   beforeEach(() => {
     useStore.setState({
       S: {
@@ -18,8 +18,8 @@ describe('useStore.syncRoutineFromSession', () => {
 
   it('mutates target routine ex array in store state and returns true', () => {
     const updatedEx = [{ id: '0025', sets: 4 }, { id: '0026', sets: 3 }]
-    const ok = useStore.getState().syncRoutineFromSession('r1', updatedEx)
-    expect(ok).toBe(true)
+    const res = useStore.getState().actRoutine({ type: 'syncFromSession', routineId: 'r1', syncedEx: updatedEx })
+    expect(res.ok).toBe(true)
 
     const routine = useStore.getState().S.routines.find(r => r.id === 'r1')
     expect(routine.ex).toEqual(updatedEx)
@@ -29,8 +29,8 @@ describe('useStore.syncRoutineFromSession', () => {
   })
 
   it('safely returns false and leaves routines untouched when routine is not found', () => {
-    const ok = useStore.getState().syncRoutineFromSession('r-unknown', [{ id: '0025', sets: 5 }])
-    expect(ok).toBe(false)
+    const res = useStore.getState().actRoutine({ type: 'syncFromSession', routineId: 'r-unknown', syncedEx: [{ id: '0025', sets: 5 }] })
+    expect(res.ok).toBe(false)
 
     expect(useStore.getState().S.routines[0].ex).toEqual([{ id: '0025', sets: 3 }])
   })
