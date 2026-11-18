@@ -12,7 +12,7 @@ const update = (...a) => useStore.getState().update(...a)
 const ui = () => useUI.getState()
 const toast = m => ui().toast(m)
 
-function ImportSummary({ parsed, close }) {
+export function ImportSummary({ parsed, close }) {
   const st = useStore(s => s.S)
   const { added: fresh, skipped: have } = importPreview(st, parsed)
   const isBW = parsed.kind === 'bodyweight'

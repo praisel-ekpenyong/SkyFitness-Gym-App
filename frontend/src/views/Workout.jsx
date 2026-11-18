@@ -219,7 +219,7 @@ function removeActiveExercise(idx) {
 }
 
 /** Bottom sheet listing active workout entries for sequential reordering and fast navigation. */
-function ReorderExercisesSheet({ close }) {
+export function ReorderExercisesSheet({ close }) {
   const entries = useStore(s => s.S.active?.entries || [])
   const view = sessionView({ entries })
   const supersets = view.steps.filter(s => s.entries.length > 1).map(s => s.entries)
@@ -269,7 +269,7 @@ function ReorderExercisesSheet({ close }) {
   </div>
 }
 
-function EditWorkoutSheet({ close, name, count, onReorder, onReplace, onPairPrev, onPairNext, onRemove }) {
+export function EditWorkoutSheet({ close, name, count, onReorder, onReplace, onPairPrev, onPairNext, onRemove }) {
   const holding = useUI(s => !!s.work)
   const run = fn => () => { close(); fn() }
   return <div>

@@ -19,7 +19,7 @@ const ui = () => useUI.getState()
  * @param {string} slug Ranged muscle slug.
  * @param {Function} close Closes the sheet.
  */
-function RangeEditSheet({ slug, close }) {
+export function RangeEditSheet({ slug, close }) {
   const st = useStore(s => s.S)
   const style = trainingStyleOf(st)
   const styleRange = STYLE_RANGES[style][slug]
