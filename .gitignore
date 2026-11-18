@@ -22,7 +22,6 @@ node_modules
 .freebuff/
 .impeccable/
 frontend/.impeccable/
-.netlify/
 .scratchpad/
 .worktrees/
 

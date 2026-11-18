@@ -34,6 +34,5 @@ export const DEF = {
   birthYear: null,
 
   trainingStyle: DEFAULT_STYLE,
-  volumeRanges: {},
-  streakRule: 'gentle'
+  volumeRanges: {}
 }

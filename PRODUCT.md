@@ -65,8 +65,7 @@ prescriptions are read only from what was logged and carry their own `why`.
   interface as the PWA, so design work targets one mobile-first web interface
   with no per-OS design language.
 - **Hosted statically.** The app is served from `skyfitness.pages.dev`
-  (Cloudflare Pages), with Netlify also configured (ADR 0010). The build stays
-  host-agnostic.
+  (Cloudflare Pages), its only host (ADR 0010). The build stays host-agnostic.
 - **One-handed reading of numbers.** Weight, reps, rest seconds and effort
   are the app's payload; they use tabular numerals and are never decorative.
 
@@ -103,8 +102,9 @@ prescriptions are read only from what was logged and carry their own `why`.
 
 Plain, declarative, no hype. Every number comes with a reason — "why this
 number?" must always be answerable, because prescriptions carry a
-translatable `why` template. No streaks, no guilt, no gamified nags: a
-missed session is reported, not punished. Domain vocabulary follows
+translatable `why` template. No guilt, no gamified nags: a missed session
+is reported, not punished. The one streak is a plain count of weeks trained
+in a row, with no freezes and no flames. Domain vocabulary follows
 `GLOSSARY.md` exactly (**workout**, not session-as-record; **entry**,
 **set**, **target**; "Rescheduled", not "re-planned"). Units are lower-case
 ("60 kg" never "60 Kg").

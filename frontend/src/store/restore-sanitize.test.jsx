@@ -201,7 +201,7 @@ describe('Reset replaces the Profile through the Restore path', () => {
 })
 
 describe('Restore keeps every DEF key and puts the Training log in order', () => {
-  it('copies every DEF key except the Active workout, plus the legacy exWeights', async () => {
+  it('copies every DEF key except the Active workout, plus the legacy exWeights and streakRule', async () => {
     const { restoreFromBackup } = await import('../platform/restore.js')
     const legacyCache = { '0025': { w: 999, d: '2026-01-01', unit: 'kg' } }
     const backup = {
@@ -231,6 +231,7 @@ describe('Restore keeps every DEF key and puts the Training log in order', () =>
       expect(S[key], `DEF key ${key}`).toEqual(backup[key])
     }
     expect(S.exWeights).toEqual(legacyCache)
+    expect(S.streakRule).toBe('strict')
   })
 
   it('cleans a restored sex and birth year once, through normalizeState, with the same result as before', async () => {

@@ -56,7 +56,8 @@ describe('Cloudflare Pages deployment configuration', () => {
     expect(parsed['/*']?.['Content-Security-Policy']).toBe(
       "default-src 'self'; img-src 'self' https://cdn.jsdelivr.net; media-src 'self' https://cdn.jsdelivr.net; connect-src 'self' https://cdn.jsdelivr.net"
     )
-    expect(content).toContain('netlify.toml')
+    expect(content.toLowerCase()).not.toContain('netlify')
+    expect(existsSync(resolve(__dirname, '..', '..', 'netlify.toml'))).toBe(false)
   })
 
   it('includes valid _redirects file for SPA client-side routing fallback', () => {
@@ -106,26 +107,5 @@ describe('PWA install metadata', () => {
     expect(match).toBeTruthy()
     expect(match[1]).toBe('manifest.json')
     expect(readFileSync(resolve(publicDir, '..', 'vite.config.js'), 'utf-8')).toContain("base: './'")
-  })
-})
-
-describe('Netlify deployment configuration', () => {
-  it('includes valid netlify.toml at project root with proper build and routing directives', () => {
-    const netlifyPath = resolve(__dirname, '..', '..', 'netlify.toml')
-    expect(existsSync(netlifyPath)).toBe(true)
-
-    const content = readFileSync(netlifyPath, 'utf-8')
-    expect(content).toContain('base = "frontend"')
-    expect(content).toContain('publish = "dist"')
-    expect(content).toContain('command = "npm run build"')
-    expect(content).toContain('from = "/*"')
-    expect(content).toContain('to = "/index.html"')
-    expect(content).toContain('status = 200')
-    expect(content).toContain('X-Content-Type-Options = "nosniff"')
-    expect(content).toContain('X-Frame-Options = "DENY"')
-    expect(content).toContain(
-      `Content-Security-Policy = "default-src 'self'; img-src 'self' https://cdn.jsdelivr.net; media-src 'self' https://cdn.jsdelivr.net; connect-src 'self' https://cdn.jsdelivr.net"`
-    )
-    expect(content).toContain('frontend/public/_headers')
   })
 })
