@@ -15,6 +15,7 @@ import { streakWeeks, trainedWeeks, effectiveRoutine } from './history.js'
 import { strengthExerciseRowsForMuscle } from './strength-exercises.js'
 import { volumeRangeOf, verdictOf } from './volume-ranges.js'
 import { REST } from './schedule.js'
+import { strengthLevelsOf, strengthLevelOf } from './strength-level.js'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
@@ -260,6 +261,7 @@ export function selectStatsOverview(S, opts = {}) {
     },
     fatigue: { values: fatigueValues, states: fatigueStates },
     weeklyVolume: weeklyVolumeOf(S, today, muscleCatalogue),
+    strengthLevels: strengthLevelsOf(S, now),
     strength: {
       values: strengthValues,
       latest,
@@ -366,6 +368,7 @@ export function selectExerciseStats(S, exId, opts = {}) {
     best,
     e1rmPoints,
     e1rmBest,
+    strength: strengthLevelOf(S, exId, now),
     hasEffort: ratedCount > 0,
     effort: ratedCount ? {
       scale,

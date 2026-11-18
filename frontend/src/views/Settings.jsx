@@ -9,7 +9,7 @@ import { t } from '../lib/i18n.js'
 import { MOBILE, shareExport, syncReminder } from '../lib/mobile.js'
 import { backupDue, validateBackup } from '../lib/storage.js'
 import { restoreFromBackup, resetProfile } from '../lib/restore.js'
-import { loadStarterPlan, loadHypertrophyPlan, confirmSheet, importFromApp, displayNameSheet } from '../sheets.jsx'
+import { loadStarterPlan, loadHypertrophyPlan, confirmSheet, importFromApp, displayNameSheet, sexSheet } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
 import Mark from '../components/Mark.jsx'
 import { Section, Row, SelectRow, Switch, Segmented } from '../components/ui.jsx'
@@ -70,6 +70,9 @@ export default function Settings() {
       <Row icon="person" title={t('Display name')}
         subtitle={S.displayName ? t('Shown in the greeting on Home') : t('Not set — Home says “Hi there”')}
         value={S.displayName || ''} accessory="chevron" onClick={displayNameSheet} />
+      <Row icon="person" title={t('Sex')}
+        subtitle={S.sex ? t('Used only for strength levels') : t('Not set — strength levels ask for it')}
+        value={S.sex === 'male' ? t('Male') : S.sex === 'female' ? t('Female') : ''} accessory="chevron" onClick={sexSheet} />
     </Section>
     <Section title={t('General')} footer={t('Note: switching units only changes the label — logged numbers are not converted.')}>
       <Row icon="scale" title={t('Weight unit')}>

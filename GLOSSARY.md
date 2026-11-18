@@ -306,6 +306,14 @@ _Avoid_: e1RM in user-facing prose
 The moment a performed Work set beats every earlier performed Work set of the exercise, on load (the Best at that point) or on Estimated 1RM. An exercise's first performed session sets its Best and is not a Record; a Record has to beat something. Read from the Training log, never stamped: deleting or importing a Workout changes which Sets read as Records. The Set that made it is yellow; the standing Best figure is not.
 _Avoid_: PR, personal record (in lifter-facing copy)
 
+**Strength level**:
+One of Beginner, Novice, Intermediate, Advanced or Elite, graded for a main barbell lift from its Estimated 1RM divided by the body weight at the time, against a Strength standard for the Profile's sex. The current level reads the last 12 weeks; the peak reads every workout. Approximate: a bench of levels, not a verdict.
+_Avoid_: rank, tier
+
+**Strength standard**:
+The body-weight-multiple thresholds that set the Strength levels for one lift and one sex, taken from Strength Level (strengthlevel.com) and rounded. Data only, credited on the Strength levels card and labelled approximate.
+_Avoid_: target, benchmark
+
 **Best**:
 The heaviest load of a performed Work set for one exercise; a standing measurement, where a Record is the moment a Set beat it (or beat the best estimate). Read from the Workouts in history alone, in the Profile's unit: deleting a Workout takes its Best with it, and every screen shows the same figure. Shown in neutral ink, never in the Record's yellow.
 _Avoid_: a remembered Best that outlives the Workout it came from
