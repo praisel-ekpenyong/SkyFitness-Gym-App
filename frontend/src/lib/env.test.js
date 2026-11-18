@@ -7,14 +7,12 @@ import { validateEnv } from './env.js'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
 describe('env seam validates every environment-gated behavior', () => {
-  it('defaults to web, local media, relative base and no analytics when nothing is set', () => {
+  it('defaults to web, local media, relative base when nothing is set', () => {
     expect(validateEnv({})).toEqual({
       mobile: false,
       imgBase: 'media/images/',
       gifBase: 'media/videos/',
       baseUrl: './',
-      umamiSrc: undefined,
-      umamiId: undefined,
     })
   })
 
@@ -40,29 +38,11 @@ describe('env seam validates every environment-gated behavior', () => {
     expect(validateEnv({ BASE_URL: '/sky' }).baseUrl).toBe('/sky/')
   })
 
-  it('enables analytics only when both Umami vars are set, trimmed', () => {
-    expect(validateEnv({
-      VITE_UMAMI_SRC: 'https://stats.example/script.js',
-      VITE_UMAMI_ID: '  abc-123  ',
-    })).toMatchObject({
-      umamiSrc: 'https://stats.example/script.js',
-      umamiId: 'abc-123',
-    })
-    expect(validateEnv({ VITE_UMAMI_SRC: 'https://stats.example/script.js' })).toMatchObject({
-      umamiSrc: undefined,
-      umamiId: undefined,
-    })
-    expect(validateEnv({ VITE_UMAMI_ID: 'abc-123' })).toMatchObject({
-      umamiSrc: undefined,
-      umamiId: undefined,
-    })
-  })
-
   it('is documented by a tracked example covering every variable', () => {
     const examplePath = resolve(__dirname, '..', '..', '.env.example')
     expect(existsSync(examplePath)).toBe(true)
     const content = readFileSync(examplePath, 'utf-8')
-    for (const key of ['VITE_MOBILE', 'VITE_IMG_BASE', 'VITE_GIF_BASE', 'VITE_UMAMI_SRC', 'VITE_UMAMI_ID', 'BASE_URL']) {
+    for (const key of ['VITE_MOBILE', 'VITE_IMG_BASE', 'VITE_GIF_BASE', 'BASE_URL']) {
       expect(content).toContain(key)
     }
   })
