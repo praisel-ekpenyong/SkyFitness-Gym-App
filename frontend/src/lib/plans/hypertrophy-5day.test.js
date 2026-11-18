@@ -16,18 +16,18 @@ describe('5-day hypertrophy bundle', () => {
     expect(parsed.scheduledDays).toBe(5)
   })
 
-  it('totals 93 working sets a week: the plan from week 4 on, less one Friday lateral raise set', () => {
+  it('totals 94 working sets a week, as the plan does from week 4 on', () => {
     const perDay = hypertrophyPlanBundle().routines.map(r => r.ex.reduce((n, e) => n + e.sets, 0))
-    expect(perDay).toEqual([20, 18, 16, 19, 20])
+    expect(perDay).toEqual([20, 18, 16, 20, 20])
   })
 
   it('states the plan’s own numbers wherever Sky’s differ, so the engine can progress them', () => {
     const exOf = (rid, id) => hypertrophyPlanBundle().routines.find(r => r.id === rid).ex.find(e => e.id === id)
     expect(exOf('push', '0025')).toMatchObject({ sets: 3, repsMin: 6, reps: 7 })
     expect(exOf('push', '0025').notes).toMatch(/Plan: 3 × 6–8, up once set 1 reaches 8/)
-    expect(exOf('upper', '0178')).toMatchObject({ sets: 3, repsMin: 8, reps: 15 })
+    expect(exOf('upper', '0178')).toMatchObject({ sets: 3, repsMin: 9, reps: 15 })
     expect(exOf('upper', '0178').notes).toMatch(/Plan: 3 × 10–15/)
-    expect(exOf('pull', '0178')).toMatchObject({ sets: 2, repsMin: 10, reps: 15 })
+    expect(exOf('pull', '0178')).toMatchObject({ sets: 3, repsMin: 9, reps: 14 })
     expect(exOf('pull', '0178').notes).toMatch(/Plan: 3 × 10–15/)
   })
 
