@@ -55,7 +55,7 @@ describe('scenario 1: baseline, 8 clean weeks', () => {
     })
   })
 
-  // Ticket 05 (wontfix): one lift on two days with different set counts is two streams.
+  // Ticket 05 (wontfix): one lift on two days with different Target shapes is two streams.
   it('reads Monday and Thursday bench as separate streams, so their weights can drift apart', () => {
     expect(entriesOf(S, 'Push', '0025')[0].plan.kind).toBe('first')
   })
