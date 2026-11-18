@@ -2,7 +2,8 @@
 // Weekly volume 03: training style and range edits travel in Export and Restore, Reset clears them,
 // and the plan file never carries them.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { useStore, DEF, normalizeState } from './useStore.js'
+import { useStore } from './useStore.js'
+import { DEF, normalizeState } from '../lib/profile/index.js'
 import { useUI } from './useUI.js'
 import { __setSinksForTests, __setLocalWriteForTests, flush, LOCAL_KEY } from '../platform/storage.js'
 import { selectStatsOverview } from '../lib/stats-selectors.js'

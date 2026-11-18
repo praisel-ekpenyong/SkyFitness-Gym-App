@@ -1,5 +1,4 @@
-import { validateBackup, sanitizeRestorePayload } from './storage.js'
-import { DEF } from '../lib/profile/index.js'
+import { DEF, validateBackup, sanitizeRestorePayload } from '../lib/profile/index.js'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { t } from '../lib/i18n.js'
