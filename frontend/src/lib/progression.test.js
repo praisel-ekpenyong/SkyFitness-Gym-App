@@ -57,7 +57,7 @@ describe('readSession', () => {
     expect(readSession({ id: LIFT, target: { sets: 2, sec: 45, mode: 'time' }, sets: [{ sec: 45, done: true }, { sec: 30, done: true }] }).ok).toBe(false)
   })
 
-  it('normalizes set weight against target unit (ADR 0019)', () => {
+  it('normalizes set weight against target unit (ADR 0031)', () => {
     const s1 = readSession({ id: LIFT, target: T, sets: [{ w: 100, r: 5, done: true, unit: 'lb' }] }, null, null, 'kg')
     expect(s1.weight).toBe(45.4)
 
@@ -447,7 +447,7 @@ describe('sessionsFor', () => {
     expect(sessionsFor(S4, LIFT)).toEqual([])
   })
 
-  it('normalizes historical session set weights to active profile unit (ADR 0019)', () => {
+  it('normalizes historical session set weights to active profile unit (ADR 0031)', () => {
     const S = {
       unit: 'kg',
       workouts: [

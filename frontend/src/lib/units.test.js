@@ -155,7 +155,7 @@ describe('setIn: one logged row in another unit', () => {
   })
 })
 
-describe('switchUnit: the Settings switch (ADR 0028)', () => {
+describe('switchUnit: the Settings switch (ADR 0031)', () => {
   const profile = () => ({
     unit: 'kg',
     targetW: 75,

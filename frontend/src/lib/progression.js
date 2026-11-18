@@ -207,7 +207,7 @@ export function readSession(entry, fallback, workout = null, targetUnit = 'kg') 
   }
 }
 
-// A frozen Prescription in the Profile unit (ADR 0028); the stored one is never rewritten.
+// A frozen Prescription in the Profile unit (ADR 0031); the stored one is never rewritten.
 function planIn(plan, from, to) {
   if (!plan || !Number.isFinite(plan.weight) || plan.weight === 0) return plan
   const weight = normalizeWeight(plan.weight, from, to)

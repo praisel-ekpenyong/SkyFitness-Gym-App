@@ -47,7 +47,7 @@ function targetPatch(cfg, from, to) {
 }
 
 /**
- * A Target (ExCfg) with its loads in another unit (ADR 0028).
+ * A Target (ExCfg) with its loads in another unit (ADR 0031).
  *
  * @param {Object|null} cfg - Routine exercise config or a frozen Entry target.
  * @param {string} from - The unit its loads are in.
@@ -75,7 +75,7 @@ export function setIn(set, from, to) {
 }
 
 /**
- * The Settings unit switch, on a Profile draft (ADR 0028). Plans and settings convert in place:
+ * The Settings unit switch, on a Profile draft (ADR 0031). Plans and settings convert in place:
  * every Routine's `weight` and `inc`, and the Goal weight. Logs are never rewritten: a Workout or
  * Weigh-in without a unit stamp is stamped with the outgoing unit, so it keeps reading as it did.
  * Refused while a workout is active, because the Active workout is read in `S.unit`.

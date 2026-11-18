@@ -459,7 +459,7 @@ describe('Training log: last session', () => {
     expect(lastSession(S, 'bench').d).toBe('2026-11-08')
   })
 
-  it('reads sets and the Target in the Profile unit after a switch (ADR 0028)', () => {
+  it('reads sets and the Target in the Profile unit after a switch (ADR 0031)', () => {
     const workouts = [at('2026-11-08', [lift([work(100), { ...work(135), unit: 'lb' }], { target: { reps: 5, weight: 100, inc: 2.5 } })], { unit: 'kg' })]
     expect(lastSession({ unit: 'lb', workouts }, 'bench')).toEqual({
       d: '2026-11-08',

@@ -33,7 +33,7 @@ function fillDefaults(stored, defaults) {
  * The one way a Profile comes in (boot, another tab, a Restore, a CSV import). Runs the upgrade
  * steps from the stored schema version (absent is version 0), fills absent fields from `DEF` at
  * any depth, stamps the current version and puts Workouts in Training-log order.
- * Values are never rewritten: units, `topW` and `asked` stay as stored (ADR 0019, ADR 0020).
+ * Values are never rewritten: units, `topW` and `asked` stay as stored (ADR 0031, ADR 0020).
  * @param {Object} raw - A Profile from boot, another tab, a Restore or a CSV import.
  * @returns {Object} A new Profile at `SCHEMA_VERSION`.
  * @throws {NewerProfileError} When `raw` was saved by a newer Sky; it is refused, never admitted.

@@ -140,7 +140,7 @@ describe('deleteWeighIn / latestWeighIn', () => {
   })
 })
 
-describe('the Body-weight log read in the Profile unit (ADR 0028)', () => {
+describe('the Body-weight log read in the Profile unit (ADR 0031)', () => {
   it('returns the stored log itself when every Weigh-in is already in the Profile unit', () => {
     const log = [{ d: '2026-01-01', w: 80 }, { d: '2026-01-02', w: 79, unit: 'kg' }]
     expect(weighIns({ unit: 'kg', bodyweight: log })).toBe(log)

@@ -55,7 +55,7 @@ describe('Settings screen-awake hint', () => {
   })
 })
 
-describe('Settings weight unit (ADR 0028)', () => {
+describe('Settings weight unit (ADR 0031)', () => {
   const pick = unit => [...container.querySelectorAll('[role="radiogroup"][aria-label="Weight unit"] button')].find(b => b.textContent === unit)
 
   it('converts Routines and the Goal weight, and says so', async () => {
