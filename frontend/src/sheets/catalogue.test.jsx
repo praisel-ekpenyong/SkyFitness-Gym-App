@@ -783,6 +783,64 @@ describe('CustomExForm canonical muscle selection and editing', () => {
     expect(updated.bp).toBe('back')
   })
 
+  it('keeps a legacy plain Shoulders custom exercise as stored when only its name changes', async () => {
+    const legacy = { id: 'c-legacy-sh', n: 'Old press', bp: 'shoulders', tg: 'Shoulders', sm: ['triceps', 'deltoids'], desc: '', eq: 'custom', custom: true }
+    useStore.getState().update(s => { s.customEx = [{ ...legacy, sm: [...legacy.sm] }] })
+
+    await act(async () => {
+      root.render(<CustomExForm existing={legacy} onDone={vi.fn()} close={vi.fn()} />)
+    })
+    const nameInput = container.querySelector('input.input')
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(nameInput, 'Old overhead press')
+      nameInput.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    await act(async () => {
+      container.querySelector('button.btn.primary').dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    const updated = useStore.getState().S.customEx.find(c => c.id === 'c-legacy-sh')
+    expect(updated.n).toBe('Old overhead press')
+    expect(updated.tg).toBe('Shoulders')
+    expect(updated.sm).toEqual(['triceps', 'deltoids'])
+  })
+
+  it('saves the picked heads once the lifter changes a legacy Shoulders exercise\'s muscles', async () => {
+    const legacy = { id: 'c-legacy-sh2', n: 'Old raise', bp: 'shoulders', tg: 'shoulders', sm: [], desc: '', eq: 'custom', custom: true }
+    useStore.getState().update(s => { s.customEx = [{ ...legacy, sm: [] }] })
+
+    await act(async () => {
+      root.render(<CustomExForm existing={legacy} onDone={vi.fn()} close={vi.fn()} />)
+    })
+    const sideDelts = Array.from(container.querySelectorAll('.chips')[0].querySelectorAll('button.chip'))
+      .find(c => c.textContent.trim() === 'Side delts')
+    await act(async () => {
+      sideDelts.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    await act(async () => {
+      container.querySelector('button.btn.primary').dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    const updated = useStore.getState().S.customEx.find(c => c.id === 'c-legacy-sh2')
+    expect(updated.tg).toBe('side-delts')
+  })
+
+  it('keeps a bodypart-only legacy custom exercise reading from its bodypart when saved untouched', async () => {
+    const legacy = { id: 'c-legacy-bp', n: 'Old leg machine', bp: 'upper legs', desc: '', eq: 'custom', custom: true }
+    useStore.getState().update(s => { s.customEx = [{ ...legacy }] })
+
+    await act(async () => {
+      root.render(<CustomExForm existing={legacy} onDone={vi.fn()} close={vi.fn()} />)
+    })
+    await act(async () => {
+      container.querySelector('button.btn.primary').dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    const updated = useStore.getState().S.customEx.find(c => c.id === 'c-legacy-bp')
+    expect(updated.tg).toBeUndefined()
+    expect(updated.bp).toBe('upper legs')
+  })
+
   it('pre-fills primary muscle from bodypart fallback when editing legacy custom exercise without explicit tg/sm', async () => {
     const legacyEx = {
       id: 'c-legacy-1',
