@@ -7,7 +7,7 @@
 
 import { EXDB, EXIDX } from './exercises.js'
 import { uid } from './format.js'
-import { isWorkSet } from './workout-model.js'
+import { isWorkSet } from './workout-sets.js'
 import { LB_TO_KG, mergeWeighIns, weighInsPreview } from './bodyweight.js'
 import { admit, sortWorkouts } from './profile/index.js'
 

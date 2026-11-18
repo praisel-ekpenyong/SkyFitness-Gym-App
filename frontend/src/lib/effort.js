@@ -1,5 +1,5 @@
 import { weekKey, mondayOf, workoutTimestamp } from './dates.js'
-import { doneWorkSets } from './workout-model.js'
+import { doneWorkSets } from './workout-sets.js'
 
 export const EFFORT = {
   rir: { f: 'rir', hd: 'RIR', step: 0.5, min: 0, max: 10 },

@@ -1,4 +1,4 @@
-import { isPerformed } from './workout-model.js'
+import { isPerformed } from './workout-sets.js'
 import { loadRecords, e1rmRecords } from './training-log.js'
 import { EXIDX } from './exercises.js'
 import { exerciseMuscleSnapshot } from './muscles.js'

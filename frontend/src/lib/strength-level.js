@@ -8,7 +8,7 @@
 // step, in the Profile's unit.
 
 import { estimate1RM, DEFAULT_FORMULA } from './onerm.js'
-import { isPerformed, isWorkSet } from './workout-model.js'
+import { isPerformed, isWorkSet } from './workout-sets.js'
 import { workoutTimestamp } from './dates.js'
 import { normalizeWeight } from './units.js'
 import { cleanSex } from './sex.js'

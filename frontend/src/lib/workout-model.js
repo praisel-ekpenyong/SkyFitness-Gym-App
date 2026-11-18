@@ -16,20 +16,6 @@ import {
   metricModeForEntry,
 } from './workout-sets.js'
 
-export {
-  MODES,
-  PHASES,
-  normalizeMode,
-  modeForSet,
-  modeForEntry,
-  isWorkSet,
-  isPerformed,
-  workSets,
-  doneWorkSets,
-  metricRowsForEntry,
-  metricModeForEntry,
-} from './workout-sets.js'
-
 export { phaseForSet, isWarmupRow, ensurePlainObject } from './warmup.js'
 
 /**

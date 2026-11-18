@@ -7,9 +7,8 @@ import {
   displayScale, scaleName, toScale, avgRir,
   effortSummary, effortWeeks, effortHistogram, isHardSet, rirOf, hasEffort, effortOf, HARD_RIR,
 } from './effort.js'
-import {
-  isPerformed, isWorkSet, metricRowsForEntry, metricModeForEntry, modeOf,
-} from './workout-model.js'
+import { modeOf } from './workout-model.js'
+import { isPerformed, isWorkSet, metricRowsForEntry, metricModeForEntry } from './workout-sets.js'
 import { workoutTimestamp, isoOf, weekKey, monthKey } from './dates.js'
 import { trainedWeeks, effectiveRoutine } from './history.js'
 import { streakOf } from './streak.js'

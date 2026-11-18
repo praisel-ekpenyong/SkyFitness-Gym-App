@@ -1,4 +1,5 @@
-import { hasWork, doneWorkSets } from './workout-model.js'
+import { hasWork } from './workout-model.js'
+import { doneWorkSets } from './workout-sets.js'
 
 export function setProgressHighWater(entry, previous = 0) {
   const done = doneWorkSets(entry).length

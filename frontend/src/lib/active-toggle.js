@@ -1,4 +1,5 @@
-import { modeOf, isWorkSet, doneWorkSets, isExerciseDone } from './workout-model.js'
+import { modeOf, isExerciseDone } from './workout-model.js'
+import { isWorkSet, doneWorkSets } from './workout-sets.js'
 import { setProgressHighWater, supersetFlowStep } from './supersetFlow.js'
 import { stepOf } from './session-view.js'
 

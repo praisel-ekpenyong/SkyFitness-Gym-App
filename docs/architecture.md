@@ -69,7 +69,7 @@ Entry: `{ id, target: ExCfg, sets: [Set], plan?, topW?, asked?, n?, muscleSnapsh
 - `topW` — legacy confirmed working weight; no longer written (ADR 0020), still read by Best when present.
 - `n` — frozen name for deleted custom exercises; `muscleSnapshot` — frozen muscle map of a custom exercise, so history survives its edit or deletion. Built-in exercises have none: catalogue corrections re-attribute past sessions on purpose (ADR 0025).
 
-Set shape varies by logged mode (`modeForSet` in `lib/workout-model.js` resolves explicit `phase`/`mode` → unit token → field presence):
+Set shape varies by logged mode (`modeForSet` in `lib/workout-sets.js` resolves explicit `phase`/`mode` → unit token → field presence):
 - reps: `{ w, r, done, rir?/rpe? }`
 - time: `{ sec, w, done }`
 - cardio: `{ min, speed, done }`

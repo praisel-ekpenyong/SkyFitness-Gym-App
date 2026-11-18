@@ -1,5 +1,6 @@
 import { EXIDX } from './exercises.js'
-import { isWorkSet, isPerformed, isWarmupRow, workSets, doneWorkSets, modeOf, repStep, makeRow, modeForSet, isBw, defaultConfig } from './workout-model.js'
+import { isWarmupRow, modeOf, repStep, makeRow, isBw, defaultConfig } from './workout-model.js'
+import { isWorkSet, isPerformed, workSets, doneWorkSets, modeForSet } from './workout-sets.js'
 import { resolveSetWeight } from './units.js'
 import { fmtNum, fmtSigned } from './format.js'
 import { t } from './i18n.js'

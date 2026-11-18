@@ -6,7 +6,8 @@ import { fmtNum, fmtDurParts } from '../lib/format.js'
 import { fmtDate, todayISO } from '../lib/dates.js'
 import { latestWeighIn } from '../lib/bodyweight.js'
 import { sessionView } from '../lib/active-workout.js'
-import { isWarmupRow, seedForReplacement } from '../lib/workout-model.js'
+import { seedForReplacement } from '../lib/workout-model.js'
+import { workSets } from '../lib/workout-sets.js'
 import { workoutSummary } from '../lib/workout-summary.js'
 import { sessionProgressionItems } from '../lib/progression.js'
 import { t } from '../lib/i18n.js'
@@ -285,7 +286,7 @@ export function replaceActiveExerciseFlow(idx, send) {
       const s = useStore.getState().S
       const act = s?.active
       const routine = s?.routines?.find(r => r.id === act?.routineId)
-      const plannedCount = (entry.sets || []).filter(row => !isWarmupRow(row)).length || (entry.sets || []).length
+      const plannedCount = workSets(entry).length || (entry.sets || []).length
       const seed = seedForReplacement(s, newEx.id, act?.routineId, plannedCount)
       delete seed.notes
       exConfigSheet(newEx, null, cfg => {
