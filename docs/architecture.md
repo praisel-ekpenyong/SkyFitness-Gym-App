@@ -120,7 +120,7 @@ Sky ships English only ([ADR 0003](adr/0003-english-only.md)). English strings a
 
 ## Build, PWA, mobile shells
 
-- `vite.config.js`: `base: './'` so the build runs from any static path; there are no dev proxies — Sky has no server, and local media is served straight from `public/`; an Umami analytics script is injected only when both `VITE_UMAMI_SRC`/`VITE_UMAMI_ID` are set — plain builds are telemetry-free.
+- `vite.config.js`: `base: './'` so the build runs from any static path; there are no dev proxies — Sky has no server, and local media is served straight from `public/`; no analytics is injected, so builds are telemetry-free.
 - `public/sw.js`: hand-written runtime service worker. Exercise media (`/media/images/`, `/media/videos/`) cache-first; everything else network-first with cache fallback; final fallback is the cached SPA shell. Rest timer notifications use the Notification API directly.
 - Exercise media: fetched out-of-band into gitignored `frontend/public/media/` via `npm run media:fetch` (cross-platform `scripts/fetch-media.mjs`); Vite copies it verbatim into `dist/` when present, and the app falls back to the pinned CDN per asset when not.
 - Generated artifacts: `lib/exercises-data.js` (dataset of 1,324 exercises) and `lib/body-paths.js` (muscle-map SVG geometry) are generated/pinned — do not edit. Exercise images/GIFs stream from a pinned jsDelivr commit (`VITE_IMG_BASE`/`VITE_GIF_BASE`); they are licensed media and are never committed.

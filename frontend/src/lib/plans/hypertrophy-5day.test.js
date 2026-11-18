@@ -3,7 +3,8 @@ import { hypertrophyPlanBundle, applyHypertrophyPlan, PLAN_REST_SEC } from './hy
 import { parsePlan } from '../plan-share.js'
 import { EXIDX, registerCustom } from '../exercises.js'
 import { primaryMuscleOf, secondaryMusclesOf } from '../muscles.js'
-import { policyFor } from '../progression.js'
+import { policyFor, nextPrescription } from '../progression.js'
+import { isBw } from '../workout-model.js'
 
 const fresh = () => ({ routines: [], week: {}, customEx: [], restSec: 90 })
 
@@ -15,25 +16,40 @@ describe('5-day hypertrophy bundle', () => {
     expect(parsed.scheduledDays).toBe(5)
   })
 
-  it('totals 93 working sets a week: the plan from week 4 on, less one Friday lateral raise set', () => {
+  it('totals 94 working sets a week, as the plan does from week 4 on', () => {
     const perDay = hypertrophyPlanBundle().routines.map(r => r.ex.reduce((n, e) => n + e.sets, 0))
-    expect(perDay).toEqual([20, 18, 16, 19, 20])
+    expect(perDay).toEqual([20, 18, 16, 20, 20])
   })
 
   it('states the plan’s own numbers wherever Sky’s differ, so the engine can progress them', () => {
     const exOf = (rid, id) => hypertrophyPlanBundle().routines.find(r => r.id === rid).ex.find(e => e.id === id)
     expect(exOf('push', '0025')).toMatchObject({ sets: 3, repsMin: 6, reps: 7 })
     expect(exOf('push', '0025').notes).toMatch(/Plan: 3 × 6–8, up once set 1 reaches 8/)
-    expect(exOf('upper', '0178')).toMatchObject({ sets: 3, repsMin: 8, reps: 15 })
+    expect(exOf('upper', '0178')).toMatchObject({ sets: 3, repsMin: 9, reps: 15 })
     expect(exOf('upper', '0178').notes).toMatch(/Plan: 3 × 10–15/)
-    expect(exOf('pull', '0178')).toMatchObject({ sets: 2, repsMin: 10, reps: 15 })
+    expect(exOf('pull', '0178')).toMatchObject({ sets: 3, repsMin: 9, reps: 14 })
     expect(exOf('pull', '0178').notes).toMatch(/Plan: 3 × 10–15/)
   })
 
-  it('ships no personal data: every starting weight is zero and no name appears', () => {
+  it('ships no personal data: no starting weight and no name', () => {
     const bundle = hypertrophyPlanBundle()
-    bundle.routines.flatMap(r => r.ex).forEach(e => expect(e.weight).toBe(0))
+    bundle.routines.flatMap(r => r.ex).forEach(e => expect(e.weight || 0, e.id).toBe(0))
     expect(JSON.stringify(bundle)).not.toMatch(/james/i)
+  })
+
+  it('keeps every loaded exercise out of the bodyweight carve-out, so a different top starts a new stream', () => {
+    const S = fresh()
+    applyHypertrophyPlan(S)
+    registerCustom(S.customEx)
+    const loaded = S.routines.flatMap(r => r.ex.filter(e => !isBw(e)).map(cfg => ({ r, cfg })))
+    expect(loaded.length).toBeGreaterThan(30)
+    loaded.forEach(({ r, cfg }) => {
+      const other = { ...cfg, reps: cfg.reps + 1 }
+      const entry = { id: cfg.id, target: other, sets: [{ w: 20, r: other.reps, done: true }] }
+      const logged = { ...S, workouts: [{ id: 'w1', d: '2026-11-02', routineId: r.id, entries: [entry] }] }
+      expect(nextPrescription(logged, cfg, r).kind, `${r.name} ${cfg.id}`).toBe('first')
+    })
+    registerCustom([])
   })
 
   it('keeps every note inside the 500-character cap', () => {

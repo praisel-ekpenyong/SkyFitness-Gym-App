@@ -77,7 +77,8 @@ const positive = v => (Number.isFinite(v) && v > 0 ? v : null)
 function inStream(session, cfg, mode) {
   if (session.mode !== mode) return false
   const target = session.target || {}
-  const bodyweight = mode === 'reps' && (cfg.weight === 0 || (cfg.weight == null && isBw(cfg)))
+  // A Bodyweight exercise with no load; a saved weight of 0 alone is not one (ADR 0011, 2026-11).
+  const bodyweight = mode === 'reps' && isBw(cfg) && (cfg.weight === 0 || cfg.weight == null)
   if (!bodyweight) {
     const wantTop = positive(mode === 'time' ? cfg.sec : cfg.reps)
     const haveTop = positive(mode === 'time' ? target.sec : target.reps)

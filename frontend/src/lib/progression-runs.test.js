@@ -97,6 +97,49 @@ describe('progression streams', () => {
   })
 })
 
+// Ticket dr13: the carve-out keys on the Bodyweight exercise flag, never on `weight: 0` alone.
+describe('the bodyweight carve-out reads the Bodyweight exercise flag, not a saved weight of 0', () => {
+  const BAR = EXDB.find(e => e.eq === 'barbell' && e.bp === 'chest').id
+  const logged = (routineId, id, target, rows) => ({ d: '2026-01-01', routineId, entries: [{ id, target, sets: rows }] })
+  const HYP = { id: BAR, sets: 3, reps: 12, repsMin: 8, weight: 0, prog: 'double' }
+  const STR = { id: BAR, sets: 3, reps: 5, weight: 0, prog: 'linear' }
+  const routines = [{ id: 'hyp', name: 'Hypertrophy', ex: [HYP] }, { id: 'str', name: 'Strength', ex: [STR] }]
+
+  it('reads two streams for a barbell exercise saved at weight 0, at 3 x 8-12 in one Routine and 3 x 5 in another', () => {
+    const afterHyp = state([logged('hyp', BAR, { sets: 3, reps: 12, repsMin: 8, weight: 0 }, rowsOf(40, 12))], { routines })
+    expect(nextPrescription(afterHyp, STR, routines[1]).kind).toBe('first')
+
+    const afterStr = state([logged('str', BAR, { sets: 3, reps: 5, weight: 0 }, rowsOf(60, 5))], { routines })
+    expect(nextPrescription(afterStr, HYP, routines[0]).kind).toBe('first')
+  })
+
+  it('still reads that barbell exercise\'s own stream when the Target shape matches', () => {
+    const S = state([logged('hyp', BAR, { sets: 3, reps: 12, repsMin: 8, weight: 0 }, rowsOf(40, 12))], { routines })
+    const p = nextPrescription(S, HYP, routines[0])
+    expect(p.kind).toBe('up')
+    expect(p.weight).toBeGreaterThan(40)
+    expect(p.reps).toBe(8)
+  })
+
+  it('puts a loaded catalogue exercise flagged bodyweight in the carve-out', () => {
+    const S = state([logged(null, BAR, { sets: 3, reps: 15 }, rowsOf(0, 15))])
+    const p = nextPrescription(S, { id: BAR, sets: 3, reps: 10, repsMax: 15, weight: 0, bodyweight: true, prog: 'linear' })
+    expect(p).toMatchObject({ kind: 'up', weight: 0, reps: 10, sets: 4 })
+  })
+
+  it('keeps the full shape for a bodyweight catalogue exercise switched to loaded, even at weight 0', () => {
+    const S = state([logged(null, LIFT, { sets: 3, reps: 15 }, rowsOf(0, 15))])
+    expect(nextPrescription(S, { id: LIFT, sets: 3, reps: 10, repsMax: 15, weight: 0, bodyweight: false, prog: 'linear' }).kind).toBe('first')
+    expect(nextPrescription(S, { id: LIFT, sets: 3, reps: 10, repsMax: 15, weight: 0, prog: 'linear' }))
+      .toMatchObject({ kind: 'up', weight: 0, reps: 10, sets: 4 })
+  })
+
+  it('keeps the full shape for a bodyweight exercise trained with a belt', () => {
+    const S = state([logged(null, LIFT, { sets: 3, reps: 15, weight: 10 }, rowsOf(10, 15))])
+    expect(nextPrescription(S, { id: LIFT, sets: 3, reps: 10, repsMax: 15, weight: 10, prog: 'linear' }).kind).toBe('first')
+  })
+})
+
 describe('double progression runs', () => {
   it('deloads only after four no-progress sessions following the baseline', () => {
     expect(DELOAD_AFTER.double).toBe(4)
