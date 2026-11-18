@@ -177,6 +177,8 @@ describe('workout screen hierarchy', () => {
     expect(finishes[0].classList.contains('go')).toBe(false)
     expect(container.textContent).not.toContain('Finish workout early')
     expect(container.querySelector('button.wk-discard')?.textContent).toBe('Discard workout')
+    // Its accessible name is its visible text, not a shorter label (iron-launch 10).
+    expect(container.querySelector('button.wk-discard')?.hasAttribute('aria-label')).toBe(false)
   })
 })
 

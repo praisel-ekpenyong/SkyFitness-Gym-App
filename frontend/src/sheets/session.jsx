@@ -2,7 +2,7 @@ import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { EXIDX, exOr } from '../lib/exercises.js'
-import { fmtNum, fmtDurParts } from '../lib/format.js'
+import { fmtNum, fmtVol, fmtDurParts } from '../lib/format.js'
 import { fmtDate, todayISO } from '../lib/dates.js'
 import { latestWeighIn } from '../lib/bodyweight.js'
 import { sessionView } from '../lib/active-workout.js'
@@ -158,7 +158,7 @@ export function FinishSummary({ w, prs, e1prs = [], routineSync = null, close })
     </div>
     {(prs.length > 0 || e1prs.length > 0) && <div className="finish-records">
       {prs.map(id => <div key={id} className="record capitalize row"><Icon name="trophy" />{t('New record:')} {(EXIDX[id] || {}).n || id}</div>)}
-      {e1prs.map(p => <div key={p.id} className="record capitalize row"><Icon name="chartLine" />{t('Best estimated 1RM:')} {(EXIDX[p.id] || {}).n || p.id} · {fmtNum(p.est)} {st.unit}</div>)}
+      {e1prs.map(p => <div key={p.id} className="record capitalize row"><Icon name="chartLine" />{t('Best estimated 1RM:')} {(EXIDX[p.id] || {}).n || p.id} · {fmtVol(p.est, st.unit)}</div>)}
     </div>}
     {progressionItems.length > 0 && <>
       <h4 className="sec">{t('Progression')}</h4>
@@ -289,9 +289,12 @@ export function replaceActiveExerciseFlow(idx, send) {
       const plannedCount = workSets(entry).length || (entry.sets || []).length
       const seed = seedForReplacement(s, newEx.id, act?.routineId, plannedCount)
       delete seed.notes
-      exConfigSheet(newEx, null, cfg => {
-        send({ type: 'replaceExercise', entry: idx, exId: newEx.id, target: cfg })
-      }, null, routine, seed, null, t('Replace'))
+      exConfigSheet(newEx, {
+        onSave: cfg => send({ type: 'replaceExercise', entry: idx, exId: newEx.id, target: cfg }),
+        routine,
+        initial: seed,
+        actionLabel: t('Replace'),
+      })
     })
   }
 

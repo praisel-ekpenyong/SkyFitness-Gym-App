@@ -53,7 +53,7 @@ const scenes = {
     await clickT(p,/Edit workout/); await p.waitForTimeout(400); await snap(p,'sheet-edit',false)
     await clickT(p,/Reorder exercises/); await p.waitForTimeout(400); await snap(p,'sheet-reorder',false); await p.keyboard.press('Escape'); await p.waitForTimeout(300)
     await clickT(p,/Add exercise/); await p.waitForTimeout(900); await snap(p,'sheet-picker',false); await p.keyboard.press('Escape'); await p.waitForTimeout(300)
-    await p.locator('button[aria-label="Discard"]').click(); await p.waitForTimeout(350); await snap(p,'sheet-confirm',false); await p.keyboard.press('Escape'); await p.waitForTimeout(300)
+    await p.locator('button.wk-discard').click(); await p.waitForTimeout(350); await snap(p,'sheet-confirm',false); await p.keyboard.press('Escape'); await p.waitForTimeout(300)
     await p.goto(base+'#/plan'); await p.waitForTimeout(500); await p.locator('button[aria-label="Share your plan"]').click(); await p.waitForTimeout(350); await snap(p,'sheet-plantools',false); await p.keyboard.press('Escape'); await p.waitForTimeout(300)
     await p.goto(base+'#/plan/r/push'); await p.waitForTimeout(500); await p.locator('button[aria-label="Pick an icon"]').click(); await p.waitForTimeout(350); await snap(p,'sheet-glyph',false); await p.keyboard.press('Escape'); await p.waitForTimeout(300)
     await p.goto(base+'#/library'); await p.waitForTimeout(800); await p.locator('.ex-create').click(); await p.waitForTimeout(350); await snap(p,'sheet-custom',false)

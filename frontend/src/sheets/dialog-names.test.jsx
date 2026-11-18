@@ -60,7 +60,7 @@ const OPENERS = {
   addToRoutineSheet: { renders: 'AddToRoutine', open: () => addToRoutineSheet(ex()) },
   customExSheet: { renders: 'CustomExForm', open: () => customExSheet(null, () => {}) },
   exercisePicker: { renders: 'ExercisePicker', open: () => exercisePicker(() => {}) },
-  exConfigSheet: { renders: 'ExConfig', open: () => exConfigSheet(ex(), null, () => {}) },
+  exConfigSheet: { renders: 'ExConfig', open: () => exConfigSheet(ex(), { onSave: () => {} }) },
   volumeRangesSheet: { renders: 'VolumeRangesSheet', open: volumeRangesSheet },
   rangeEditSheet: { renders: 'RangeEditSheet', open: () => useUI.getState().openSheet(close => <RangeEditSheet slug="chest" close={close} />) },
   importSummary: {

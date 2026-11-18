@@ -278,7 +278,7 @@ describe('Home declarative weekly progress card (non-gamified PRODUCT.md voice)'
 
     await act(async () => { root.render(<Home />) })
 
-    expect(container.querySelector('.bw-card .delta-pill').textContent).toBe('\u22120.2 kg')
+    expect(container.querySelector('.bw-card .delta-pill').textContent).toBe('\u22120.2\u00a0kg')
   })
 })
 

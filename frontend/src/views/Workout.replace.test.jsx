@@ -123,13 +123,13 @@ describe('Workout unperformed entry replacement', () => {
     })
 
     expect(mocks.exConfigSheet).toHaveBeenCalledOnce()
-    const [exArg, existingArg, onSave, onDeleteArg, routineArg, seedArg, onReplaceArg, actionLabelArg] = mocks.exConfigSheet.mock.calls[0]
+    const [exArg, { existing: existingArg, onSave, onDelete: onDeleteArg, routine: routineArg, initial: seedArg, onReplace: onReplaceArg, actionLabel: actionLabelArg }] = mocks.exConfigSheet.mock.calls[0]
     expect(exArg).toEqual(newEx)
-    expect(existingArg).toBeNull()
-    expect(onDeleteArg).toBeNull()
+    expect(existingArg).toBeUndefined()
+    expect(onDeleteArg).toBeUndefined()
     expect(routineArg).toBeUndefined()
     expect(seedArg).toEqual(expect.objectContaining({ sets: 2 }))
-    expect(onReplaceArg).toBeNull()
+    expect(onReplaceArg).toBeUndefined()
     expect(actionLabelArg).toBe('Replace')
 
     act(() => {
@@ -184,7 +184,7 @@ describe('Workout unperformed entry replacement', () => {
     })
 
     expect(mocks.exConfigSheet).toHaveBeenCalledOnce()
-    const [, , onSave, , routineArg, seedArg, , actionLabelArg] = mocks.exConfigSheet.mock.calls[0]
+    const [, { onSave, routine: routineArg, initial: seedArg, actionLabel: actionLabelArg }] = mocks.exConfigSheet.mock.calls[0]
     expect(routineArg).toEqual(expect.objectContaining({ id: routineId }))
     expect(seedArg).toEqual(expect.objectContaining({ sets: 2, reps: 12, weight: 100 }))
     expect(actionLabelArg).toBe('Replace')
@@ -227,7 +227,7 @@ describe('Workout performed entry replacement', () => {
 
     expect(mocks.exConfigSheet).toHaveBeenCalledOnce()
     act(() => {
-      mocks.exConfigSheet.mock.calls[0][2]({ sets: 2, reps: 8, weight: 50 })
+      mocks.exConfigSheet.mock.calls[0][1].onSave({ sets: 2, reps: 8, weight: 50 })
     })
 
     expect(useStore.getState().S.active.entries[0].id).toBe('1002')
@@ -255,7 +255,7 @@ describe('Replace goes through the view\'s sender', () => {
 
     replaceActiveExerciseFlow(0, send)
     act(() => { mocks.exercisePicker.mock.calls[0][0]({ id: '1002', n: 'Incline Bench Press' }) })
-    act(() => { mocks.exConfigSheet.mock.calls[0][2]({ sets: 1, reps: 10, weight: 40 }) })
+    act(() => { mocks.exConfigSheet.mock.calls[0][1].onSave({ sets: 1, reps: 10, weight: 40 }) })
 
     expect(sent).toEqual(['replaceExercise'])
     expect(useStore.getState().S.active.entries[0].id).toBe('1002')
@@ -333,7 +333,7 @@ describe('Superset replacement flow', () => {
     })
 
     act(() => {
-      mocks.exConfigSheet.mock.calls[0][2]({ sets: 1, reps: 10, weight: 40 })
+      mocks.exConfigSheet.mock.calls[0][1].onSave({ sets: 1, reps: 10, weight: 40 })
     })
 
     const A = useStore.getState().S.active
@@ -365,7 +365,7 @@ describe('Superset replacement flow', () => {
     })
 
     act(() => {
-      mocks.exConfigSheet.mock.calls[0][2]({ sets: 1, reps: 10, weight: 40 })
+      mocks.exConfigSheet.mock.calls[0][1].onSave({ sets: 1, reps: 10, weight: 40 })
     })
 
     const A = useStore.getState().S.active
