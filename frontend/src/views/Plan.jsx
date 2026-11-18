@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
-import { uid, exCount } from '../lib/format.js'
+import { exCount } from '../lib/format.js'
 import { DAYN } from '../lib/dates.js'
 import { t } from '../lib/i18n.js'
 import { loadOfRoutine } from '../lib/muscles.js'
@@ -10,19 +10,17 @@ import BodyMap from '../components/BodyMap.jsx'
 import Icon from '../components/Icon.jsx'
 import { Button } from '../components/ui.jsx'
 import StarterCard from '../components/StarterCard.jsx'
-import { DEFAULT_GLYPH } from '../lib/glyphs.js'
 import { fitName, stackClasses, NAME_LAYOUTS } from '../lib/name-fit.js'
 
 export default function Plan() {
   const nav = useNavigate()
   const S = useStore(s => s.S)
-  const update = useStore(s => s.update)
+  const actRoutine = useStore(s => s.actRoutine)
   const todayWd = new Date().getDay()
 
   const addRoutine = () => {
-    const r = { id: uid(), name: t('New routine'), emoji: DEFAULT_GLYPH, ex: [] }
-    update(s => { s.routines.push(r) })
-    nav('/plan/r/' + r.id)
+    const res = actRoutine({ type: 'create' })
+    if (res.ok && res.result) nav('/plan/r/' + res.result.id)
   }
 
   return <div className="page">
