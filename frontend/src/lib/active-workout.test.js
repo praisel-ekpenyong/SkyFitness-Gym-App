@@ -151,6 +151,25 @@ describe('toggling a set', () => {
     expect(toggle(S, 0, 2)).toEqual(['sound:set', 'open-finish', 'rest:stop'])
   })
 
+  it('rests after a set added in place of a removed done set', () => {
+    for (const remove of [{ set: 2 }, {}]) {
+      const S = withActive([loaded('ex1', [work(), work(), work()]), loaded('ex2', [work()])])
+      for (const i of [0, 1, 2]) toggle(S, 0, i)
+      act(S, { type: 'removeSet', entry: 0, ...remove })
+      act(S, { type: 'addSet', entry: 0 })
+      expect(toggle(S, 0, 2)).toEqual(['sound:set', 'rest:stop', 'rest:start'])
+    }
+  })
+
+  it('starts no second rest for a re-ticked set after an unticked set is removed', () => {
+    const S = withActive([loaded('ex1', [work(), work(), work()]), loaded('ex2', [work()])])
+    toggle(S, 0, 0)
+    toggle(S, 0, 1)
+    toggle(S, 0, 1)
+    act(S, { type: 'removeSet', entry: 0, set: 2 })
+    expect(toggle(S, 0, 1)).toEqual(['sound:set'])
+  })
+
   it('does not ask for the finish sheet when a warm-up is ticked on a last Step with no Work sets', () => {
     const S = withActive([loaded('ex1', [work(true)]), loaded('ex2', [warm()])], { cur: 1 })
     expect(sessionView(S.active).step.total).toBe(0)
