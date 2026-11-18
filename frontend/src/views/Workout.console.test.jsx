@@ -5,10 +5,11 @@ import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest'
 import { cleanupViewTest, entry, renderWorkout, resetViewTestState } from '../test/view-harness.jsx'
 import { useStore } from '../store/useStore.js'
 
-vi.mock('../sheets.jsx', () => ({
-  startFlow: vi.fn(), exercisePicker: vi.fn(), exConfigSheet: vi.fn(), exerciseDetailSheet: vi.fn(),
-  finishWorkout: vi.fn(), workoutCompleteSheet: vi.fn(), confirmSheet: vi.fn(), exerciseNoteSheet: vi.fn(),
+vi.mock('../sheets/session.jsx', () => ({
+  startFlow: vi.fn(), finishWorkout: vi.fn(), workoutCompleteSheet: vi.fn(), exerciseNoteSheet: vi.fn(), replaceActiveExerciseFlow: vi.fn(),
 }))
+vi.mock('../sheets/catalogue.jsx', () => ({ exercisePicker: vi.fn(), exConfigSheet: vi.fn(), exerciseDetailSheet: vi.fn() }))
+vi.mock('../sheets/confirm.jsx', () => ({ confirmSheet: vi.fn() }))
 
 const BENCH = '0025'
 const CURL = '0294'

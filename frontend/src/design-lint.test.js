@@ -134,8 +134,8 @@ const RECORD = {
 
 const WORK_JS = [
   { file: 'components/LineChart.jsx', has: "color = 'var(--data)'", why: 'D2 chart ink: the line’s default colour' },
-  { file: 'sheets.jsx', has: "background: 'var(--data)'", why: 'D2 trained calendar days: the calendar legend' },
-  { file: 'sheets.jsx', has: "v > 0 ? 'var(--acc-text)'", why: 'D2 good or bad: a month ahead of the last (DESIGN.md › Conventions › Colour says good or bad)' },
+  { file: 'sheets/history.jsx', has: "background: 'var(--data)'", why: 'D2 trained calendar days: the calendar legend' },
+  { file: 'sheets/history.jsx', has: "v > 0 ? 'var(--acc-text)'", why: 'D2 good or bad: a month ahead of the last (DESIGN.md › Conventions › Colour says good or bad)' },
   { file: 'lib/bodyweight.js', has: "'var(--acc-text)' : 'var(--red-text)'", why: 'D2 the weight delta keeps its good/bad colouring' },
 ]
 

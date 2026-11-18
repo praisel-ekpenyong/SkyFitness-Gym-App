@@ -16,7 +16,7 @@ import {
   musclesOf,
 } from './lib/muscles.js'
 import { buildPlanBundle, parsePlan, mergePlan } from './lib/plan-share.js'
-import { ExercisePicker } from './sheets.jsx'
+import { ExercisePicker } from './sheets/catalogue.jsx'
 
 vi.mock('./platform/sound.js', () => ({
   beep: vi.fn(),

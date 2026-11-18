@@ -7,7 +7,7 @@ import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import Home from './Home.jsx'
 import { useStore, DEF } from '../store/useStore.js'
-import { todayISO, isoOf } from '../lib/format.js'
+import { todayISO, isoOf } from '../lib/dates.js'
 
 vi.mock('react-router-dom', () => ({ useNavigate: () => vi.fn() }))
 

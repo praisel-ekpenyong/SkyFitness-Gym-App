@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { act } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { replaceActiveExerciseFlow } from './Workout.jsx'
+import { replaceActiveExerciseFlow } from '../sheets/session.jsx'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { entry, resetViewTestState, seedActiveWorkout, renderWorkoutApp, cleanupViewTest } from '../test/view-harness.jsx'
@@ -16,7 +16,16 @@ const mocks = vi.hoisted(() => ({
   startFlow: vi.fn(),
 }))
 
-vi.mock('../sheets.jsx', () => mocks)
+vi.mock('../sheets/confirm.jsx', () => ({ confirmSheet: mocks.confirmSheet }))
+vi.mock('../sheets/catalogue.jsx', async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...actual,
+    exercisePicker: mocks.exercisePicker,
+    exConfigSheet: mocks.exConfigSheet,
+    exerciseDetailSheet: mocks.exerciseDetailSheet,
+  }
+})
 vi.mock('../platform/sound.js', () => ({
   beep: vi.fn(),
   vibrate: vi.fn(),
@@ -358,11 +367,14 @@ describe('replace-exercise prompt strings', () => {
     'Which exercise in this superset do you want to replace?',
     'Replace exercise',
   ]
-  const strings = import.meta.glob('./Workout.jsx', { eager: true, query: '?raw', import: 'default' })
+  const strings = {
+    ...import.meta.glob('./Workout.jsx', { eager: true, query: '?raw', import: 'default' }),
+    ...import.meta.glob('../sheets/session.jsx', { eager: true, query: '?raw', import: 'default' }),
+  }
 
   it('keeps every replace-flow string in the source that renders it', () => {
-    expect(Object.keys(strings)).toHaveLength(1)
-    const src = Object.values(strings)[0]
+    expect(Object.keys(strings)).toHaveLength(2)
+    const src = Object.values(strings).join('\n')
     required.forEach(key => {
       const esc = key.replace(/[{}?]/g, '\\$&')
       expect(src).toMatch(new RegExp(`['"\`]${esc}['"\`]`))

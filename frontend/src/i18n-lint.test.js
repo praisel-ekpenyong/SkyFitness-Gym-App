@@ -3,7 +3,7 @@
 // order and the separators in code, where a translation cannot reach them. Write it as one t()
 // string with {0}, {1}… placeholders instead: t('{0}: {1}', day, name).
 //
-// Scope: views/, sheets/, components/ and sheets.jsx (not tests). A string is checked when
+// Scope: views/, sheets/ and components/ (not tests). A string is checked when
 // it is built with a template literal or `+` and its fixed text reads as prose: it holds a space, a
 // separator (· – — …) or is a bare word or unit ("s", "kg"). Strings that can't reach the lifter
 // as text are skipped by where they go:
@@ -44,10 +44,10 @@ const ALLOW = [
   { file: 'sheets/catalogue.jsx', text: "fmtNum(est) + ' ' + st.unit", reason: 'number plus unit, no words' },
   { file: 'components/LineChart.jsx', text: "' ' + unit", reason: 'number plus unit in the chart tooltip' },
   { file: 'components/LineChart.jsx', text: "' · ' + hover.note", reason: 'separator before the point note' },
-  { file: 'sheets.jsx', text: "' · ' + exCount(bundle.exerciseCount)", reason: 'separator before a whole t() string' },
-  { file: 'sheets.jsx', text: "' · ' + t(bundle.scheduledDays", reason: 'separator before a whole t() string' },
-  { file: 'sheets.jsx', text: "fmtNum(w.bw) + ' ' + st.unit", reason: 'number plus unit, no words' },
-  { file: 'sheets.jsx', text: '${fmtDur(month.durationMs)}', reason: 'separator join of whole t() strings, durations and volumes' },
+  { file: 'sheets/plan-tools.jsx', text: "' · ' + exCount(bundle.exerciseCount)", reason: 'separator before a whole t() string' },
+  { file: 'sheets/plan-tools.jsx', text: "' · ' + t(bundle.scheduledDays", reason: 'separator before a whole t() string' },
+  { file: 'sheets/history.jsx', text: "fmtNum(w.bw) + ' ' + st.unit", reason: 'number plus unit, no words' },
+  { file: 'sheets/history.jsx', text: '${fmtDur(month.durationMs)}', reason: 'separator join of whole t() strings, durations and volumes' },
 ]
 
 function sourceFiles() {
@@ -55,7 +55,7 @@ function sourceFiles() {
   for (const dir of ['views', 'sheets', 'components']) {
     for (const f of readdirSync(join(SRC, dir))) if (f.endsWith('.jsx') && !f.includes('.test.')) out.push(`${dir}/${f}`)
   }
-  return [...out, 'sheets.jsx']
+  return out
 }
 
 /** Every string built outside t() in `code` (from `file`) whose fixed text reads as prose. */

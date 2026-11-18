@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { t } from '../lib/i18n.js'
 import { fmtNum } from '../lib/format.js'
-import { WorkoutRow, workoutDetailSheet } from '../sheets.jsx'
+import { WorkoutRow, workoutDetailSheet } from '../sheets/history.jsx'
 import Icon from '../components/Icon.jsx'
 
 export default function History() {
