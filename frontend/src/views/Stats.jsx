@@ -5,13 +5,14 @@ import { selectStatsOverview, selectExerciseStats } from '../lib/stats-selectors
 import { fmtNum, fmtSigned, fmtDate, todayISO, setLabel } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
 import { deltaTowardGoal } from '../lib/bodyweight.js'
-import { bwSheet, goalSheet, calendarSheet, recapSheet, workoutDetailSheet, WorkoutRow } from '../sheets.jsx'
+import { bwSheet, goalSheet, calendarSheet, recapSheet, workoutDetailSheet, WorkoutRow, volumeRangesSheet } from '../sheets.jsx'
 import LineChart from '../components/LineChart.jsx'
 import Heatmap from '../components/Heatmap.jsx'
 import Icon from '../components/Icon.jsx'
 import BodyMap, { BodyMapLegend } from '../components/BodyMap.jsx'
 import { MUSCLE_NAME } from '../lib/muscles.js'
 import { STRENGTH_FLOOR } from '../lib/recovery.js'
+import { trainingStyleOf, trainingStyleName } from '../lib/volume-ranges.js'
 import { FATIGUE_LEVELS } from '../lib/recovery-view.js'
 import { Button, Segmented, SelectRow } from '../components/ui.jsx'
 
@@ -86,12 +87,16 @@ function WeeklyVolume({ S, volume, sel, setSel, toggleSel }) {
   const pct = value => Math.round(Math.min(1, value / scale) * 100) + '%'
   const row = slug => <div key={slug} className="mrow">
     <div className="grow">
-      <div className="nm">{t(MUSCLE_NAME[slug])}</div>
+      <div className="nm">{t(MUSCLE_NAME[slug])}{muscles[slug].edited && <> <span className="tag">{t('edited')}</span></>}</div>
       <div className="smd-sub muted small">{readingText(slug)}</div>
     </div>
     <span className="bar split"><i style={{ width: pct(muscles[slug].done) }} /><i className="quiet" style={{ width: pct(plannedOf(slug)) }} /></span>
   </div>
   return <>
+    <div className="card-head">
+      <h2>{t('{0} training style', trainingStyleName(trainingStyleOf(S)))}</h2>
+      <Button size="sm" icon="pencil" onClick={volumeRangesSheet}>{t('Edit ranges')}</Button>
+    </div>
     <BodyMap className="tappable" load={levels} thresholds={VOLUME_LEVELS} body={S.body} selected={sel} onMuscle={toggleSel}
       getA11yLabel={slug => t('{0}, {1}', t(MUSCLE_NAME[slug]), t('{0}, {1}', setsText(slug), volumeVerdictLabel(muscles[slug].verdict)))} />
     <VolumeLegend />

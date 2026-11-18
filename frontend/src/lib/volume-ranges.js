@@ -1,6 +1,8 @@
 // Volume ranges: the band of effective sets per week a muscle is aimed at, by training style.
 // Sources and per-style tables: .scratch/weekly-volume/spec.md (Pelland 2024–25, Schoenfeld).
 
+import { t } from './i18n.js'
+
 export const DEFAULT_STYLE = 'standard'
 
 /** [low, high] effective sets per week for the 13 ranged muscles. Front delts start at 0: pressing covers them. */
@@ -30,6 +32,15 @@ export const STYLE_RANGES = {
 
 /** Training styles in display order. */
 export const TRAINING_STYLES = ['low', 'standard', 'high']
+
+const STYLE_NAME = { low: 'Low volume', standard: 'Standard', high: 'High volume' }
+
+/**
+ * Lifter-facing name of a training style.
+ * @param {string} style - Training style.
+ * @returns {string}
+ */
+export const trainingStyleName = style => t(STYLE_NAME[style] || STYLE_NAME[DEFAULT_STYLE])
 
 /**
  * The profile's training style; absent or unknown reads as Standard.

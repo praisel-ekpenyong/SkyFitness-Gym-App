@@ -23,7 +23,7 @@ vi.mock('../store/useStore.js', () => ({
 }))
 vi.mock('react-router-dom', () => ({ useNavigate: () => () => {} }))
 vi.mock('../sheets.jsx', () => ({
-  bwSheet: () => {}, goalSheet: () => {}, calendarSheet: () => {}, recapSheet: vi.fn(), workoutDetailSheet: () => {},
+  bwSheet: () => {}, goalSheet: () => {}, calendarSheet: () => {}, recapSheet: vi.fn(), workoutDetailSheet: () => {}, volumeRangesSheet: vi.fn(),
   WorkoutRow: () => React.createElement('div'),
 }))
 vi.mock('../components/LineChart.jsx', () => ({ default: props => React.createElement('div', { 'data-chart-days': props.points.map(p => p.d).join(',') }) }))
