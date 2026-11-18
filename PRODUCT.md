@@ -103,8 +103,9 @@ prescriptions are read only from what was logged and carry their own `why`.
 
 Plain, declarative, no hype. Every number comes with a reason — "why this
 number?" must always be answerable, because prescriptions carry a
-translatable `why` template. No streaks, no guilt, no gamified nags: a
-missed session is reported, not punished. Domain vocabulary follows
+translatable `why` template. No guilt, no gamified nags: a missed session
+is reported, not punished. The one streak is a plain count of weeks trained
+in a row, with no freezes and no flames. Domain vocabulary follows
 `GLOSSARY.md` exactly (**workout**, not session-as-record; **entry**,
 **set**, **target**; "Rescheduled", not "re-planned"). Units are lower-case
 ("60 kg" never "60 Kg").

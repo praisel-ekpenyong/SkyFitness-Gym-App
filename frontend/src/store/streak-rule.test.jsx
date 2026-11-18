@@ -1,11 +1,12 @@
 // @vitest-environment happy-dom
-// Week streak 03: the freeze rule travels in Restore and Export, Reset puts it back to Gentle, and the plan file never carries it.
+// The Freeze rule is gone (docs review 04). An old Profile keeps `streakRule` unread, the way ADR 0021 left `exWeights`.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useStore } from './useStore.js'
-import { DEF } from '../lib/profile/index.js'
-import { __setSinksForTests, __setLocalWriteForTests, flush } from '../platform/storage.js'
+import { DEF, normalizeState } from '../lib/profile/index.js'
+import { __setSinksForTests, __setLocalWriteForTests, flush, LOCAL_KEY } from '../platform/storage.js'
 import { restoreFromBackup, resetProfile } from '../platform/restore.js'
 import { buildPlanBundle } from '../lib/plan-share.js'
+import { streakOf } from '../lib/streak.js'
 
 vi.mock('../platform/sound.js', () => ({
   beep: vi.fn(),
@@ -25,8 +26,7 @@ vi.mock('../platform/mobile.js', () => ({
 vi.mock('react-router-dom', () => ({ useNavigate: () => vi.fn() }))
 
 const cloneDef = () => JSON.parse(JSON.stringify(DEF))
-const ruleNow = () => useStore.getState().S.streakRule
-const setRule = rule => useStore.getState().update(s => { s.streakRule = rule })
+const trained = d => ({ id: `w-${d}`, d, start: 1, end: 2, name: 'Push', entries: [{ id: 'lift', sets: [{ done: true, w: 60, r: 5 }] }] })
 
 beforeEach(() => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true
@@ -45,37 +45,34 @@ afterEach(() => {
   flush()
 })
 
-describe('freeze rule in Export, Restore and Reset', () => {
-  it('a backup taken on Strict restores as Strict', () => {
-    setRule('strict')
-    const exported = JSON.parse(JSON.stringify(useStore.getState().S))
+describe('legacy streakRule', () => {
+  it('is no longer a default: a new or reset Profile has none', () => {
+    expect(DEF).not.toHaveProperty('streakRule')
+    expect(normalizeState({})).not.toHaveProperty('streakRule')
     resetProfile()
-    expect(ruleNow()).toBe('gentle')
-    restoreFromBackup(exported)
-    expect(ruleNow()).toBe('strict')
+    expect(useStore.getState().S).not.toHaveProperty('streakRule')
   })
 
-  it('a backup carrying Generous restores as Generous', () => {
-    restoreFromBackup({ ...cloneDef(), workouts: [], routines: [], streakRule: 'generous' })
-    expect(ruleNow()).toBe('generous')
+  it('an old Profile keeps it unchanged through a normal load, even a value the old rule picker never had', () => {
+    expect(normalizeState({ ...cloneDef(), streakRule: 'generous' }).streakRule).toBe('generous')
+    expect(normalizeState({ ...cloneDef(), streakRule: 'bogus' }).streakRule).toBe('bogus')
   })
 
-  it('a backup with no rule, or an unknown one, restores as Gentle', () => {
-    restoreFromBackup({ ...cloneDef(), workouts: [], routines: [] })
-    expect(ruleNow()).toBe('gentle')
-    restoreFromBackup({ ...cloneDef(), workouts: [], routines: [], streakRule: 'bogus' })
-    expect(ruleNow()).toBe('gentle')
+  it('an old backup restores with it unchanged in the store and in storage, and the streak reads the same', () => {
+    const workouts = ['2026-06-01', '2026-06-08', '2026-06-22'].map(trained)
+    const today = new Date(2026, 5, 24, 12)
+    restoreFromBackup({ ...cloneDef(), workouts, routines: [] })
+    const plain = streakOf(useStore.getState().S, today)
+
+    restoreFromBackup({ ...cloneDef(), workouts, routines: [], streakRule: 'generous' })
+    const S = useStore.getState().S
+    expect(S.streakRule).toBe('generous')
+    expect(streakOf(S, today)).toEqual(plain)
+    flush()
+    expect(JSON.parse(localStorage.getItem(LOCAL_KEY)).streakRule).toBe('generous')
   })
 
-  it('Reset puts the rule back to Gentle', () => {
-    setRule('generous')
-    resetProfile()
-    expect(ruleNow()).toBe('gentle')
-  })
-})
-
-describe('freeze rule in the plan file', () => {
-  it('a plan file never carries the rule', () => {
+  it('a plan file never carries it', () => {
     const S = { ...cloneDef(), streakRule: 'generous', routines: [] }
     const bundle = buildPlanBundle(S, 'Push pull')
     expect('streakRule' in bundle).toBe(false)

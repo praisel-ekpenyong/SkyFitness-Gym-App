@@ -1,65 +1,14 @@
 import { weekKey, isoOf, mondayOf } from './dates.js'
 import { hasWorkSet } from './workout-model.js'
 
-/** Freezes each rule can bank. */
-export const FREEZE_BANK = { strict: 0, gentle: 1, generous: 2 }
-const DEFAULT_RULE = 'gentle'
-const EARN_EVERY = 4
-
-/** The profile's freeze rule; absent or unknown reads as Gentle. */
-export function streakRuleOf(S) {
-  const rule = S?.streakRule
-  return typeof rule === 'string' && Object.hasOwn(FREEZE_BANK, rule) ? rule : DEFAULT_RULE
-}
-
-// Walks the weeks from the first counted week up to the current week under one bank size.
-function walk(counted, currentMonday, bank) {
-  const weeks = {}
-  let run = 0
-  let best = 0
-  let freezes = 0
-  const starts = [...counted].sort()
-  if (starts.length) {
-    const cur = new Date(starts[0] + 'T12:00:00')
-    for (let key = isoOf(cur); key <= currentMonday; key = isoOf(cur)) {
-      const isCurrent = key === currentMonday
-      const wk = weekKey(key)
-      let earned = false
-      let state
-      if (counted.has(key)) {
-        state = 'counted'
-        run++
-        if (run % EARN_EVERY === 0 && freezes < bank) {
-          freezes++
-          earned = true
-        }
-        best = Math.max(best, run)
-      } else if (isCurrent) {
-        state = 'open'
-      } else if (freezes > 0) {
-        state = 'frozen'
-        freezes--
-      } else if (run > 0) {
-        state = 'broke'
-        run = 0
-      } else {
-        state = 'missed'
-      }
-      weeks[wk] = { state, run, bank: freezes, earned }
-      cur.setDate(cur.getDate() + 7)
-    }
-  }
-  return { run, best, freezes, weeks, thisWeekCounted: counted.has(currentMonday) }
-}
-
 /**
- * The week streak under the profile's freeze rule, recomputed from the workouts on every call.
- * A week counts when it holds a Workout with a performed Work set.
- * @param {object} S - Profile with `workouts` and an optional `streakRule`.
+ * The Week streak: weeks trained in a row, recomputed from the workouts on every call.
+ * A week counts when it holds a Workout with a performed Work set. The current week stays open
+ * until it ends; any earlier week without one breaks the streak.
+ * @param {object} S - Profile with `workouts`.
  * @param {Date|number} today - The clock: a Date or epoch milliseconds.
- * @returns {{rule: string, current: number, best: number, freezes: number, toNextFreeze: number,
- *   thisWeekCounted: boolean, weeks: Object<string, {state: string, run: number, bank: number, earned: boolean}>,
- *   preview: Object<string, {current: number, best: number}>}}
+ * @returns {{current: number, best: number, thisWeekCounted: boolean,
+ *   weeks: Object<string, {state: 'counted'|'broke'|'missed'|'open', run: number}>}}
  */
 export function streakOf(S, today = Date.now()) {
   const counted = new Set()
@@ -68,20 +17,30 @@ export function streakOf(S, today = Date.now()) {
     counted.add(mondayOf(w.d))
   }
   const currentMonday = mondayOf(isoOf(new Date(today)))
-  const rule = streakRuleOf(S)
-  const main = walk(counted, currentMonday, FREEZE_BANK[rule])
-  const preview = Object.fromEntries(Object.keys(FREEZE_BANK).map(name => {
-    const r = walk(counted, currentMonday, FREEZE_BANK[name])
-    return [name, { current: r.run, best: r.best }]
-  }))
-  return {
-    rule,
-    current: main.run,
-    best: main.best,
-    freezes: main.freezes,
-    toNextFreeze: EARN_EVERY - (main.run % EARN_EVERY),
-    thisWeekCounted: main.thisWeekCounted,
-    weeks: main.weeks,
-    preview,
+  const weeks = {}
+  let current = 0
+  let best = 0
+  // A malformed day key's Monday reads 'NaN-…', which sorts after every real day, so the walk never reaches it.
+  const first = [...counted].sort()[0]
+  if (first) {
+    const cur = new Date(first + 'T12:00:00')
+    for (let key = isoOf(cur); key <= currentMonday; key = isoOf(cur)) {
+      let state
+      if (counted.has(key)) {
+        state = 'counted'
+        current++
+        best = Math.max(best, current)
+      } else if (key === currentMonday) {
+        state = 'open'
+      } else if (current > 0) {
+        state = 'broke'
+        current = 0
+      } else {
+        state = 'missed'
+      }
+      weeks[weekKey(key)] = { state, run: current }
+      cur.setDate(cur.getDate() + 7)
+    }
   }
+  return { current, best, thisWeekCounted: counted.has(currentMonday), weeks }
 }

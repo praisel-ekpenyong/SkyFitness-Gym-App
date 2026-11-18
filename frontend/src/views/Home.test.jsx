@@ -215,11 +215,12 @@ describe('Home declarative weekly progress card (non-gamified PRODUCT.md voice)'
     expect(card.textContent).toContain('1 of 2 workouts this week')
     expect(card.textContent).toContain('1 workout total')
     expect(card.textContent).toContain('View calendar')
-    expect(card.textContent).toContain('1-week streak, 0 freezes')
+    expect(card.textContent).toContain('1-week streak')
+    expect(card.textContent.toLowerCase()).not.toContain('freeze')
     expect(container.querySelector('svg.icn path[d*="M12 20.4c3.2 0 5.4-2.1"]')).toBeNull()
   })
 
-  it('shows the week streak and freezes as a line under the weekly count', async () => {
+  it('shows the week streak as a plain line under the weekly count', async () => {
     const today = todayISO()
     const wd = weekdayFromISO(today)
     const routine = routineWithEx(3)
@@ -228,7 +229,7 @@ describe('Home declarative weekly progress card (non-gamified PRODUCT.md voice)'
       d.setDate(d.getDate() - 7 * n)
       return isoOf(d)
     }
-    // Four counted weeks in a row, this one included, earn one freeze under the default Gentle rule.
+    // Four counted weeks in a row, this one included.
     const workouts = [0, 1, 2, 3].map(n => ({
       id: `w-${n}`, d: weeksAgo(n), name: 'Push', entries: [{ id: 'lift', sets: [{ done: true, w: 60, r: 5 }] }],
     }))
@@ -245,7 +246,7 @@ describe('Home declarative weekly progress card (non-gamified PRODUCT.md voice)'
 
     const card = container.querySelector('button.card[aria-label="Weekly progress and calendar"]')
     expect(card.querySelector('.wp-t').textContent).toBe('1 of 1 workouts this week')
-    expect(card.querySelector('.wp-streak').textContent.trim()).toBe('4-week streak, 1 freeze')
+    expect(card.querySelector('.wp-streak').textContent.trim()).toBe('4-week streak')
   })
 
   it('a re-render after the week ends shows the new week\'s streak, not last week\'s', async () => {
@@ -257,9 +258,9 @@ describe('Home declarative weekly progress card (non-gamified PRODUCT.md voice)'
         s.workouts = [{ id: 'w1', d: '2026-06-15', name: 'Push', entries: [{ id: 'lift', sets: [{ done: true, w: 60, r: 5 }] }] }]
       })
       await act(async () => { root.render(<Home />) })
-      expect(container.querySelector('.wp-streak').textContent.trim()).toBe('1-week streak, 0 freezes')
+      expect(container.querySelector('.wp-streak').textContent.trim()).toBe('1-week streak')
 
-      // Monday: the empty week has ended with no freeze banked, so the streak broke. The store has not changed.
+      // Monday: the empty week has ended, so the streak broke. The store has not changed.
       vi.setSystemTime(new Date(2026, 5, 29, 9))
       await act(async () => { container.querySelector('button[aria-label="Next week"]').click() })
       expect(container.querySelector('.wp-streak')).toBeNull()
