@@ -151,7 +151,7 @@
 .ss-hd { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: var(--fs-meta); font-weight: 600; color: var(--label-2); margin-bottom: 10px; line-height: 1.3 }
 .ss-hd .row { gap: 6px; align-items: flex-start }
 .ss-hd .btn { color: var(--label-2); flex: none }
-.ss-ex { position: relative }
+.ss-ex { position: relative; scroll-margin-top: 10px }
 .ss-amp { display: flex; justify-content: center; color: var(--label-3); margin: 10px 0; font-size: var(--fs-lead); --icon-stroke: 2.2 }
 .ss-label { font-size: var(--fs-meta); font-weight: 600; color: var(--label-2); margin: 8px 0 4px 2px; display: flex; align-items: center; gap: 5px }
 .ss-label .icn { font-size: var(--fs-meta) }
