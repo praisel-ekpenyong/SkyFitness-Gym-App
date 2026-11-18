@@ -11,6 +11,7 @@ import { act } from '../lib/active-workout.js'
 import { syncRoutineFromSession } from '../lib/routine-sync.js'
 import { runEffects } from './effects.js'
 import { DEFAULT_STYLE, trainingStyleOf, cleanVolumeRanges } from '../lib/volume-ranges.js'
+import { cleanProfileFields } from '../lib/profile-fields.js'
 import { streakRuleOf } from '../lib/streak.js'
 
 export const DEF = {
@@ -42,6 +43,9 @@ export const DEF = {
 
   displayName: null,
 
+  sex: null,
+  birthYear: null,
+
   trainingStyle: DEFAULT_STYLE,
   volumeRanges: {},
   streakRule: 'gentle'
@@ -53,7 +57,7 @@ const clone = o => {
   return JSON.parse(JSON.stringify(o))
 }
 
-export function normalizeState(raw) {
+export function normalizeState(raw, now = Date.now()) {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return clone(DEF)
   const base = clone(DEF)
   const S = { ...base, ...raw }
@@ -68,6 +72,7 @@ export function normalizeState(raw) {
   S.trainingStyle = trainingStyleOf(raw)
   S.streakRule = streakRuleOf(raw)
   S.volumeRanges = cleanVolumeRanges(raw.volumeRanges)
+  Object.assign(S, cleanProfileFields(raw, now))
   S.accent = typeof raw.accent === 'string' && Object.hasOwn(ACCENTS, raw.accent) ? raw.accent : base.accent
   const a = raw.active
   S.active = a && typeof a === 'object' && !Array.isArray(a) && Array.isArray(a.entries) ? a : null

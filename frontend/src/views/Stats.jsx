@@ -7,6 +7,7 @@ import { t } from '../lib/i18n.js'
 import { deltaTowardGoal } from '../lib/bodyweight.js'
 import { bwSheet, goalSheet, calendarSheet, recapSheet, workoutDetailSheet, WorkoutRow, volumeRangesSheet } from '../sheets.jsx'
 import LineChart from '../components/LineChart.jsx'
+import { ExerciseStrengthLine, strengthWordsOf } from '../components/StrengthLine.jsx'
 import Heatmap from '../components/Heatmap.jsx'
 import Icon from '../components/Icon.jsx'
 import BodyMap, { BodyMapLegend } from '../components/BodyMap.jsx'
@@ -14,6 +15,7 @@ import { MUSCLE_NAME } from '../lib/muscles.js'
 import { STRENGTH_FLOOR } from '../lib/recovery.js'
 import { trainingStyleOf, trainingStyleName } from '../lib/volume-ranges.js'
 import { FATIGUE_LEVELS } from '../lib/recovery-view.js'
+import { LEVELS, STRENGTH_REASON, levelStepOf } from '../lib/strength-level.js'
 import { Button, Segmented, SelectRow } from '../components/ui.jsx'
 
 export { FATIGUE_LEVELS }
@@ -252,6 +254,57 @@ function MuscleBalance({ S, overview, win, setWin, setHard }) {
 }
 
 
+/** One lift's row on the Strength levels card: five steps, the current level, the peak and the next level. */
+function StrengthLiftRow({ lift, unit }) {
+  const { peak, trainedLately } = lift
+  const w = strengthWordsOf(lift, unit)
+  const shownLevel = lift.current ?? lift.peak
+  const filled = levelStepOf(shownLevel?.level)
+  const head = w.currentLevel ?? w.untrained ?? (peak ? '' : w.lapsed ?? '')
+  return <div className={'strength-lift' + (trainedLately ? '' : ' dim')}>
+    <div className="sl-head">
+      <span className="nm">{t(lift.name)}</span>
+      <span className="sl-level">{head}</span>
+    </div>
+    {shownLevel && <div className="sl-bar" aria-hidden="true">
+      {LEVELS.map((name, i) => <i key={name} className={i < filled ? 'on' : ''} />)}
+    </div>}
+    <div className="small dim sl-meta">
+      {peak && w.lapsed && <span>{w.lapsed}</span>}
+      {w.needsWeighIn && <span>{w.needsWeighIn}</span>}
+      {w.peak && <span>{w.peak}</span>}
+      {w.next && <span>{w.next}</span>}
+    </div>
+  </div>
+}
+
+/** Strength levels card: grades each main lift against the Profile's sex standard, or asks for what is missing. */
+function StrengthLevelsCard({ S, overview }) {
+  const nav = useNavigate()
+  const reading = overview.strengthLevels
+  return <section className="card strength-levels">
+    <div className="card-head">
+      <h2>{t('Strength levels')} <span className="card-sub">· {t('approximate')}</span></h2>
+    </div>
+    {reading.reason === STRENGTH_REASON.sex && <>
+      <div className="muted small">{t('Set your sex under Settings, Profile to see strength levels.')}</div>
+      <div className="gap8" />
+      <Button size="sm" onClick={() => nav('/settings')}>{t('Open Settings')}</Button>
+    </>}
+    {reading.reason === STRENGTH_REASON.weighIn && <>
+      <div className="muted small">{t('Log a weigh-in to see strength levels.')}</div>
+      <div className="gap8" />
+      <Button size="sm" icon="plus" onClick={() => bwSheet()}>{t('Log')}</Button>
+    </>}
+    {!reading.reason && reading.lifts.map(lift => <StrengthLiftRow key={lift.key} lift={lift} unit={S.unit} />)}
+    <div className="small dim note strength-foot">
+      {t('Standards from Strength Level (strengthlevel.com). Approximate.')}
+      <br />
+      {t('Intermediate is about average among people who log their lifts.')}
+    </div>
+  </section>
+}
+
 function EffortCard({ overview, win, setWin }) {
   const kind = overview.scale
   const hd = overview.scaleName
@@ -401,6 +454,7 @@ export default function Stats() {
             <span className="fig ex-headline-v">{fmtNum(headline)}<span className="u"> {headlineUnit}</span></span>
             <span className="dim small">{onE1 ? t('Estimated 1RM per workout') : curCardio ? t('Top speed per workout') : curTimed ? t('Longest hold per workout') : t('Best set weight per workout')}</span>
           </div>}
+          {exercise?.strength && <ExerciseStrengthLine reading={exercise.strength} unit={S.unit} />}
           {exOpts.length > 1 && <Segmented className="seg-range" label={t('Exercise metric')} value={onEff ? 'effort' : onE1 ? 'e1rm' : 'top'} onChange={setExMetric} options={exOpts} />}
           <div className="chart">
             {onEff
@@ -438,6 +492,7 @@ export default function Stats() {
         <Heatmap S={S} onDay={iso => { const ws = overview.workouts.forDay(iso); if (ws.length === 1) workoutDetailSheet(ws[0]); else if (ws.length) calendarSheet(iso) }} />
       </section>
 
+      <StrengthLevelsCard S={S} overview={overview} />
       {overview.hasEffort && <EffortCard overview={overview} win={effortWin} setWin={setEffortWin} />}
 
       <section className="card">

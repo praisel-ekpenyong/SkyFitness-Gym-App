@@ -1,5 +1,5 @@
 import {
-  modeOf, makeRow,
+  modeOf, makeRow, workSets,
   insertWarmupRow, removeRowAt, cascadeWeight
 } from './workout-model.js'
 import { pairAdjacent, unpairSuperset } from './supersetFlow.js'
@@ -63,6 +63,8 @@ export function removeActiveSet(S, entryIdx, setIdx = null) {
   } else {
     entry.sets = removeRowAt(entry.sets, setIdx)
   }
+  // The high-water mark can't exceed the Work sets left, or a set added in place of a removed one never rests.
+  if (typeof entry.hw === 'number') entry.hw = Math.min(entry.hw, workSets(entry).length)
   return true
 }
 
