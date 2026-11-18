@@ -32,6 +32,17 @@ afterEach(async () => {
   container = null
 })
 
+describe('Settings workout-day reminder', () => {
+  it('is not offered on the web build, which cannot schedule a notification for later', async () => {
+    useStore.getState().update(s => { s.reminder = { ...s.reminder, on: true } })
+    await act(async () => { root.render(<Settings />) })
+
+    const titles = [...container.querySelectorAll('.lrow-t')].map(el => el.textContent)
+    expect(titles).not.toContain('Workout day reminder')
+    expect(titles).not.toContain('Reminder time')
+  })
+})
+
 describe('Settings screen-awake hint', () => {
   it('is the subtitle of the "Keep screen awake" row, not the section footer', async () => {
     await act(async () => { root.render(<Settings />) })

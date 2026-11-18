@@ -112,7 +112,8 @@ export default function Settings() {
       </Row>
     </Section>
 
-    <NotificationsCard S={S} update={update} toast={toast} />
+    {/* Native only: a web page cannot schedule a notification for later without a server (ADR 0001). */}
+    {MOBILE && <NotificationsCard S={S} update={update} toast={toast} />}
 
     <Section title={t('Appearance')}>
       <Row icon="moon" title={t('Theme')}>
