@@ -14,7 +14,7 @@ import { fmtNum, fmtDate, fmtSec, fmtElapsed, todayISO, exCount, DAYN, sentenceC
 import { t } from '../lib/i18n.js'
 import Media, { Thumb } from '../components/Media.jsx'
 import { startFlow, exercisePicker, exConfigSheet, exerciseDetailSheet, finishWorkout, workoutCompleteSheet, confirmSheet, exerciseNoteSheet } from '../sheets.jsx'
-import Icon from '../components/Icon.jsx'
+import Icon, { ICON_NAMES } from '../components/Icon.jsx'
 import Barbell, { loadsOnBar } from '../components/Barbell.jsx'
 import { Button, Check, NumberField, dotted } from '../components/ui.jsx'
 import { glyphOf } from '../lib/glyphs.js'
@@ -39,7 +39,7 @@ function StartChooser() {
     {others.length > 0 && <><h2 className="sec">{t('Other routines')}</h2>
       <div className="list">{others.map(r => <div key={r.id} className="item pad" role="button" tabIndex={0} onClick={() => startFlow(r.id)}
         onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); startFlow(r.id) } }}>
-        <span className="lrow-i"><Icon name={glyphOf(r.emoji)} /></span>
+        <span className="lrow-i"><Icon name={glyphOf(r.emoji, ICON_NAMES)} /></span>
         <div className="grow"><div className="tt">{r.name}</div><div className="ss">{exCount(r.ex.length)}</div></div>
         <span className="tag">{t('Start')}</span></div>)}</div></>}
     <div className="gap12" />

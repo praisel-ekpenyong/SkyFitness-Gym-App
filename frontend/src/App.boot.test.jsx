@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App.jsx'
 import { useStore } from './store/useStore.js'
 
-vi.mock('./lib/sound.js', () => ({
+vi.mock('./platform/sound.js', () => ({
   beep: vi.fn(),
   vibrate: vi.fn(),
   playSetComplete: vi.fn(),
@@ -13,7 +13,7 @@ vi.mock('./lib/sound.js', () => ({
   playTimerComplete: vi.fn(),
   playWorkoutComplete: vi.fn(),
 }))
-vi.mock('./lib/mobile.js', () => ({
+vi.mock('./platform/mobile.js', () => ({
   MOBILE: false,
   nativeLoad: vi.fn(async () => null),
   nativeSave: vi.fn(async () => {}),

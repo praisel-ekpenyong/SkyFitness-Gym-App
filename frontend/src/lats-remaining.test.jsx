@@ -14,12 +14,12 @@ import { act as actOn } from './lib/active-workout.js'
 /** Logs an Active workout into the Training log the way the app does, and returns the Workout. */
 const logged = active => actOn({ unit: 'kg', routines: [], workouts: [], active }, { type: 'finish' }).result.workout
 
-vi.mock('./lib/sound.js', () => ({
+vi.mock('./platform/sound.js', () => ({
   beep: vi.fn(),
   vibrate: vi.fn(),
   playWorkoutComplete: vi.fn(),
 }))
-vi.mock('./lib/mobile.js', () => ({
+vi.mock('./platform/mobile.js', () => ({
   MOBILE: false,
   nativeLoad: vi.fn(async () => null),
   nativeSave: vi.fn(async () => {}),

@@ -19,7 +19,8 @@ Single-context layout: root `GLOSSARY.md` + `docs/adr/`. See `docs/agents/domain
 ## Project shape
 
 - `frontend/` — React 19 + Vite PWA. The entire app lives here.
-- `frontend/src/lib/` — pure training logic (progression, 1RM, recovery) with Vitest tests next to the code. `npm test` in `frontend/`.
+- `frontend/src/lib/` — pure training logic (progression, 1RM, recovery) with Vitest tests next to the code; owns no browser, UI, store or platform dependencies (enforced by `purity.test.js`). `npm test` in `frontend/`.
+- `frontend/src/platform/` — platform adapters and browser edges (storage dual-write, sound, wakelock, back button, nav, mobile/Capacitor file backup, print dialog).
 - Sky is a static build only — no server, no API, no backend.
 
 ## Git worktree discipline

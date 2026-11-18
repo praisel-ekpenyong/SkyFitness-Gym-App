@@ -2,7 +2,7 @@
 // Once a `backButton` listener exists, the plugin stops falling through to finish() — back can then only leave the app through App.exitApp().
 import { MOBILE } from './mobile.js'
 import { useUI } from '../store/useUI.js'
-import { t } from './i18n.js'
+import { t } from '../lib/i18n.js'
 
 export const EXIT_WINDOW = 2000
 

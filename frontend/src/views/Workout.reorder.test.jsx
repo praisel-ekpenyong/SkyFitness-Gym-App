@@ -5,7 +5,7 @@ import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { entry, resetViewTestState, renderWorkoutApp, cleanupViewTest } from '../test/view-harness.jsx'
 
-vi.mock('../lib/sound.js', () => ({
+vi.mock('../platform/sound.js', () => ({
   beep: vi.fn(),
   vibrate: vi.fn(),
   playSetComplete: vi.fn(),

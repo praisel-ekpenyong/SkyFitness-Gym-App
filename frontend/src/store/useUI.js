@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { uid } from '../lib/format.js'
-import { playTimerComplete, playTimerWarning, vibrate } from '../lib/sound.js'
+import { playTimerComplete, playTimerWarning, vibrate } from '../platform/sound.js'
 import { t } from '../lib/i18n.js'
 import { useStore } from './useStore.js'
 

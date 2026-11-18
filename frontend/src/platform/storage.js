@@ -1,8 +1,8 @@
 // iOS Safari evicts website data under storage pressure, so the log's only home can't be localStorage alone.
 
 import { MOBILE, nativeLoad, nativeSave } from './mobile.js'
-import { PROFILE_CLEAN, cleanProfileFields } from './profile-fields.js'
-import { RESTORE_TOP_KEYS } from './profile/restore-keys.js'
+import { PROFILE_CLEAN, cleanProfileFields } from '../lib/profile-fields.js'
+import { RESTORE_TOP_KEYS } from '../lib/profile/restore-keys.js'
 
 export const LOCAL_KEY = 'gym_state_v1'
 

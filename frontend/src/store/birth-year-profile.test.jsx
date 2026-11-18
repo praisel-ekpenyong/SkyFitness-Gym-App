@@ -3,11 +3,11 @@
 // the plan file never carries it, and an invalid stored value reads as not set.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useStore, DEF, normalizeState } from './useStore.js'
-import { __setSinksForTests, __setLocalWriteForTests, flush } from '../lib/storage.js'
-import { restoreFromBackup, resetProfile } from '../lib/restore.js'
+import { __setSinksForTests, __setLocalWriteForTests, flush } from '../platform/storage.js'
+import { restoreFromBackup, resetProfile } from '../platform/restore.js'
 import { buildPlanBundle } from '../lib/plan-share.js'
 
-vi.mock('../lib/sound.js', () => ({
+vi.mock('../platform/sound.js', () => ({
   beep: vi.fn(),
   vibrate: vi.fn(),
   playSetComplete: vi.fn(),
@@ -15,7 +15,7 @@ vi.mock('../lib/sound.js', () => ({
   playTimerComplete: vi.fn(),
   playWorkoutComplete: vi.fn(),
 }))
-vi.mock('../lib/mobile.js', () => ({
+vi.mock('../platform/mobile.js', () => ({
   MOBILE: false,
   nativeLoad: vi.fn(async () => null),
   nativeSave: vi.fn(async () => {}),

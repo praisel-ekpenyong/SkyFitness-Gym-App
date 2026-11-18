@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from 'vitest'
 
-vi.mock('../lib/sound.js', () => ({
+vi.mock('../platform/sound.js', () => ({
   beep: vi.fn(),
   vibrate: vi.fn(),
   playSetComplete: vi.fn(),
@@ -27,7 +27,7 @@ describe('useUI rest timer', () => {
 
   it('finishes work timer early with vibration and elapsed time', async () => {
     vi.useFakeTimers()
-    const { vibrate } = await import('../lib/sound.js')
+    const { vibrate } = await import('../platform/sound.js')
     const { useUI } = await import('./useUI.js')
     const ui = useUI.getState()
     const onDone = vi.fn()

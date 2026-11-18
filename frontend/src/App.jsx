@@ -4,10 +4,11 @@ import { useStore } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
 import { bindUI } from './components/ui.jsx'
 import { ACCENTS, todayISO } from './lib/format.js'
-import { setLang, t, useLang } from './lib/i18n.js'
-import { setNav } from './lib/nav.js'
-import { initBackButton } from './lib/back.js'
-import { useWakeLock } from './lib/wakelock.js'
+import { t } from './lib/i18n.js'
+import { setLang, useLang } from './platform/i18n.js'
+import { setNav } from './platform/nav.js'
+import { initBackButton } from './platform/back.js'
+import { useWakeLock } from './platform/wakelock.js'
 import { startFlow } from './sheets.jsx'
 import Icon from './components/Icon.jsx'
 import Mark from './components/Mark.jsx'
@@ -54,7 +55,7 @@ function Shell() {
   }, [!!S.active])
   useEffect(() => {
     if (!ready) return
-    const go = () => import('./lib/media-warm.js')
+    const go = () => import('./platform/media-warm.js')
       .then(m => m.warmArt(m.exercisesToWarm(useStore.getState().S, todayISO())))
       .catch(() => {})
     const h = window.requestIdleCallback ? window.requestIdleCallback(go, { timeout: 5000 }) : setTimeout(go, 3000)

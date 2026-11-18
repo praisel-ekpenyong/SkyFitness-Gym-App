@@ -2,13 +2,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useStore, DEF, normalizeState } from './useStore.js'
 import { useUI } from './useUI.js'
-import { __setSinksForTests, __setLocalWriteForTests, flush, LOCAL_KEY } from '../lib/storage.js'
+import { __setSinksForTests, __setLocalWriteForTests, flush, LOCAL_KEY } from '../platform/storage.js'
 
-vi.mock('../lib/sound.js', () => ({
+vi.mock('../platform/sound.js', () => ({
   beep: vi.fn(), vibrate: vi.fn(), playSetComplete: vi.fn(), playTimerWarning: vi.fn(),
   playTimerComplete: vi.fn(), playWorkoutComplete: vi.fn(),
 }))
-vi.mock('../lib/mobile.js', () => ({
+vi.mock('../platform/mobile.js', () => ({
   MOBILE: false,
   nativeLoad: vi.fn(async () => null),
   nativeSave: vi.fn(async () => {}),
@@ -63,7 +63,7 @@ describe('a retired accent reads as lime', () => {
   })
 
   it('restoring a backup that chose orange lands on lime', async () => {
-    const { restoreFromBackup } = await import('../lib/restore.js')
+    const { restoreFromBackup } = await import('../platform/restore.js')
     restoreFromBackup({ ...cloneDef(), accent: 'orange' })
     expect(useStore.getState().S.accent).toBe('lime')
   })

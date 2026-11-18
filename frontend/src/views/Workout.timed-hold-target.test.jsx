@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useStore } from '../store/useStore.js'
 import { resetViewTestState, renderWorkoutApp, cleanupViewTest } from '../test/view-harness.jsx'
 
-vi.mock('../lib/sound.js', () => ({
+vi.mock('../platform/sound.js', () => ({
   beep: vi.fn(), vibrate: vi.fn(), playSetComplete: vi.fn(), playTimerWarning: vi.fn(),
   playTimerComplete: vi.fn(), playWorkoutComplete: vi.fn(),
 }))

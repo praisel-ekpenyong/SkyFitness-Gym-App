@@ -8,7 +8,7 @@ import { supersetUnits, cleanupSg, pairAdjacent, unpairSuperset } from '../lib/s
 import { detachRoutine } from '../lib/schedule.js'
 import { Thumb } from '../components/Media.jsx'
 import { glyphPicker, exercisePicker, exConfigSheet, confirmSheet } from '../sheets.jsx'
-import Icon from '../components/Icon.jsx'
+import Icon, { ICON_NAMES } from '../components/Icon.jsx'
 import { glyphOf } from '../lib/glyphs.js'
 import { Button, SelectRow } from '../components/ui.jsx'
 import { POLICIES_FOR, POLICY_NAME, POLICY_DESC } from '../lib/progression.js'
@@ -57,7 +57,7 @@ export default function RoutineEdit() {
         <input className="input rt-title d" defaultValue={r.name} aria-label={t('Routine name')} placeholder={t('Routine name')}
           onChange={e => update(s => { s.routines.find(x => x.id === id).name = e.target.value.trim() || t('Routine') })} />
       </div>
-      <button className="btn sm plain hdr-act" aria-label={t('Pick an icon')} onClick={() => glyphPicker(r.emoji, g => update(s => { s.routines.find(x => x.id === id).emoji = g }))}><Icon name={glyphOf(r.emoji)} />{t('Icon')}</button>
+      <button className="btn sm plain hdr-act" aria-label={t('Pick an icon')} onClick={() => glyphPicker(r.emoji, g => update(s => { s.routines.find(x => x.id === id).emoji = g }))}><Icon name={glyphOf(r.emoji, ICON_NAMES)} />{t('Icon')}</button>
     </div>
 
     {r.ex.length > 0 && (() => {

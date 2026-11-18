@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('../lib/sound.js', async orig => ({
+vi.mock('../platform/sound.js', async orig => ({
   ...(await orig()),
   playSetComplete: vi.fn(),
   playWorkoutComplete: vi.fn(),
@@ -9,7 +9,7 @@ vi.mock('../lib/sound.js', async orig => ({
 
 const { useStore, DEF } = await import('./useStore.js')
 const { useUI } = await import('./useUI.js')
-const { playSetComplete, playWorkoutComplete } = await import('../lib/sound.js')
+const { playSetComplete, playWorkoutComplete } = await import('../platform/sound.js')
 
 const work = (done = false) => ({ w: 50, r: 8, done })
 const entry = (id, sets, extra = {}) => ({ id, target: { reps: 8, weight: 50 }, sets, ...extra })
