@@ -133,6 +133,24 @@ describe('Routine Domain Module (lib/routines.js)', () => {
       })
     })
 
+    it('sanitizes notes via cleanNote, stripping whitespace or deleting empty notes', () => {
+      actRoutine(S, {
+        type: 'addExercise',
+        routineId: 'r-push',
+        exId: '0002',
+        target: { notes: '  pad height 2  ' },
+      })
+      expect(S.routines[0].ex[3].notes).toBe('pad height 2')
+
+      actRoutine(S, {
+        type: 'addExercise',
+        routineId: 'r-push',
+        exId: '0003',
+        target: { notes: '     ' },
+      })
+      expect(S.routines[0].ex[4].notes).toBeUndefined()
+    })
+
     it('returns { ok: false } for unknown routineId or missing exId', () => {
       expect(actRoutine(S, { type: 'addExercise', routineId: 'r-unknown', exId: '0001' }).ok).toBe(false)
       expect(actRoutine(S, { type: 'addExercise', routineId: 'r-push', exId: null }).ok).toBe(false)
@@ -217,6 +235,17 @@ describe('Routine Domain Module (lib/routines.js)', () => {
       expect(S.routines[0].ex[1].sg).toBe('sg-0-1')
     })
 
+    it('sanitizes any new notes provided during replacement', () => {
+      actRoutine(S, {
+        type: 'replaceExercise',
+        routineId: 'r-push',
+        index: 0,
+        exId: '0004',
+        target: { notes: '  incline angle 30  ' },
+      })
+      expect(S.routines[0].ex[0].notes).toBe('incline angle 30')
+    })
+
     it('returns { ok: false } for invalid index or unknown routine', () => {
       expect(actRoutine(S, { type: 'replaceExercise', routineId: 'r-push', index: -1, exId: '0004' }).ok).toBe(false)
       expect(actRoutine(S, { type: 'replaceExercise', routineId: 'r-push', index: 10, exId: '0004' }).ok).toBe(false)
@@ -243,17 +272,10 @@ describe('Routine Domain Module (lib/routines.js)', () => {
       expect(S.routines[0].ex[1].sg).toBeUndefined()
     })
 
-    it('supports linking with previous via withAbove flag', () => {
-      const res = actRoutine(S, { type: 'toggleSuperset', routineId: 'r-push', index: 1, withAbove: true })
-      expect(res.ok).toBe(true)
-      expect(S.routines[0].ex[0].sg).toBeDefined()
-      expect(S.routines[0].ex[1].sg).toBe(S.routines[0].ex[0].sg)
-    })
-
-    it('returns { ok: false } when out of bounds', () => {
+    it('returns { ok: false } when index is out of bounds', () => {
       expect(actRoutine(S, { type: 'toggleSuperset', routineId: 'r-push', index: 2 }).ok).toBe(false)
       expect(actRoutine(S, { type: 'toggleSuperset', routineId: 'r-push', index: -1 }).ok).toBe(false)
-      expect(actRoutine(S, { type: 'toggleSuperset', routineId: 'r-push', index: 0, withAbove: true }).ok).toBe(false)
+      expect(actRoutine(S, { type: 'toggleSuperset', routineId: 'r-push', index: 3 }).ok).toBe(false)
     })
   })
 
@@ -272,24 +294,37 @@ describe('Routine Domain Module (lib/routines.js)', () => {
       expect(S.routines[0].ex[0]).not.toBe(syncedEx[0])
     })
 
-    it('returns { ok: false } for unknown routine or non-array syncedEx', () => {
+    it('returns { ok: false } for unknown routine or non-array syncedEx or missing state', () => {
       expect(actRoutine(S, { type: 'syncFromSession', routineId: 'r-unknown', syncedEx: [] }).ok).toBe(false)
       expect(actRoutine(S, { type: 'syncFromSession', routineId: 'r-push', syncedEx: null }).ok).toBe(false)
+      expect(actRoutine(null, { type: 'syncFromSession', routineId: 'r-push', syncedEx: [] }).ok).toBe(false)
+      expect(actRoutine({}, { type: 'syncFromSession', routineId: 'r-push', syncedEx: [] }).ok).toBe(false)
+      expect(actRoutine({ routines: null }, { type: 'syncFromSession', routineId: 'r-push', syncedEx: [] }).ok).toBe(false)
     })
   })
 
   describe('actRoutine: updateExercise', () => {
-    it('updates configuration of an existing exercise in place', () => {
+    it('updates configuration of an existing exercise in place and sanitizes notes', () => {
       const res = actRoutine(S, {
         type: 'updateExercise',
         routineId: 'r-push',
         index: 0,
-        target: { sets: 5, weight: 70 },
+        target: { sets: 5, weight: 70, notes: '  wrist wraps on  ' },
       })
       expect(res.ok).toBe(true)
       expect(S.routines[0].ex[0].sets).toBe(5)
       expect(S.routines[0].ex[0].weight).toBe(70)
       expect(S.routines[0].ex[0].id).toBe('0025')
+      expect(S.routines[0].ex[0].notes).toBe('wrist wraps on')
+
+      // Empty note clears notes property
+      actRoutine(S, {
+        type: 'updateExercise',
+        routineId: 'r-push',
+        index: 0,
+        target: { notes: '   ' },
+      })
+      expect(S.routines[0].ex[0].notes).toBeUndefined()
     })
   })
 

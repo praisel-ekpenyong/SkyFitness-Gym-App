@@ -27,7 +27,7 @@ export default function RoutineEdit() {
   if (!r) return null
 
   const move = (i, dir) => actRoutine({ type: 'moveExercise', routineId: id, index: i, dir })
-  const toggleLink = i => actRoutine({ type: 'toggleSuperset', routineId: id, index: i, withAbove: true })
+  const toggleLink = i => actRoutine({ type: 'toggleSuperset', routineId: id, index: i - 1 })
 
   const view = routineView(r)
 
@@ -42,7 +42,7 @@ export default function RoutineEdit() {
       <button className="btn sm plain hdr-act" aria-label={t('Pick an icon')} onClick={() => glyphPicker(r.emoji, g => actRoutine({ type: 'setGlyph', routineId: id, emoji: g }))}><Icon name={glyphOf(r.emoji, ICON_NAMES)} />{t('Icon')}</button>
     </div>
 
-    {r.ex.length > 0 && (() => {
+    {view.entries.length > 0 && (() => {
       const load = loadOfRoutine(r)
       const { worked } = rankOf(load)
       return <section className="card rt-cover">
@@ -65,20 +65,18 @@ export default function RoutineEdit() {
       {t('Applies to every exercise in this routine that does not set its own rule.')}
     </div>
 
-    {r.ex.length ? <div className="list">{view.entries.map((item, i) => {
-      const e = r.ex[i]
-      const ex = exOr(e.id)
+    {view.entries.length ? <div className="list">{view.entries.map((item, i) => {
+      const ex = exOr(item.id)
       return <div key={i}>
         {item.isFirstInSuperset && <div className="ss-label"><Icon name="link" />{t('Superset')}</div>}
         <div className={'item rt-ex' + (item.inSuperset ? ' in-ss' : '')} onClick={() => {
           exConfigSheet(ex, {
-            existing: e,
+            existing: item.entry,
             onSave: cfg => actRoutine({ type: 'updateExercise', routineId: id, index: i, target: cfg }),
             onDelete: () => actRoutine({ type: 'removeExercise', routineId: id, index: i }),
             routine: r,
             onReplace: () => exercisePicker(newEx => {
-              const initial = seedForReplacement(S, newEx.id, id, e.sets)
-              if (initial) delete initial.notes
+              const initial = seedForReplacement(S, newEx.id, id, item.sets)
               exConfigSheet(newEx, {
                 onSave: cfg => actRoutine({
                   type: 'replaceExercise',
@@ -96,8 +94,8 @@ export default function RoutineEdit() {
           <Thumb ex={ex} />
           <div className="grow">
             <div className="tt capitalize">{ex.n}</div>
-            <div className="ss">{exLine(e, S.unit)}</div>
-            {item.hasNote && <div className="small dim rt-note"><Icon name="clipboard" size={13} /><span>{e.notes}</span></div>}
+            <div className="ss">{exLine(item, S.unit)}</div>
+            {item.hasNote && <div className="small dim rt-note"><Icon name="clipboard" size={13} /><span>{item.notes}</span></div>}
           </div>
           <div className="rt-tools">
             {i > 0 && <button className={'rt-link' + (item.isLinkedPrev ? ' on-ss' : '')} aria-label={t('Superset with exercise above')} aria-pressed={item.isLinkedPrev} onClick={ev => { ev.stopPropagation(); toggleLink(i) }}><Icon name="link" /><span>{t('Superset with above')}</span></button>}

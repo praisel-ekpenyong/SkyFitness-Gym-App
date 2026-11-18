@@ -44,14 +44,14 @@ function rename(S, command) {
 function setGlyph(S, command) {
   const r = findRoutine(S, command.routineId)
   if (!r) return refused()
-  r.emoji = command.emoji ?? command.glyph
+  r.emoji = command.emoji
   return applied()
 }
 
 function setProgression(S, command) {
   const r = findRoutine(S, command.routineId)
   if (!r) return refused()
-  r.prog = command.prog ?? command.progression
+  r.prog = command.prog
   return applied()
 }
 
@@ -59,7 +59,11 @@ function addExercise(S, command) {
   const r = findRoutine(S, command.routineId)
   if (!r || !command.exId) return refused()
   const defaults = defaultConfig(command.exId)
-  const entry = { id: command.exId, ...defaults, ...(command.target || {}) }
+  const target = { ...(command.target || {}) }
+  const note = cleanNote(target.notes)
+  delete target.notes
+  const entry = { id: command.exId, ...defaults, ...target }
+  if (note) entry.notes = note
   r.ex ??= []
   r.ex.push(entry)
   return applied(entry)
@@ -68,7 +72,7 @@ function addExercise(S, command) {
 function removeExercise(S, command) {
   const r = findRoutine(S, command.routineId)
   if (!r || !Array.isArray(r.ex)) return refused()
-  const idx = command.index ?? command.entry
+  const idx = command.index
   if (typeof idx !== 'number' || idx < 0 || idx >= r.ex.length) return refused()
   r.ex.splice(idx, 1)
   cleanupSg(r.ex)
@@ -78,7 +82,7 @@ function removeExercise(S, command) {
 function moveExercise(S, command) {
   const r = findRoutine(S, command.routineId)
   if (!r || !Array.isArray(r.ex)) return refused()
-  const idx = command.index ?? command.entry
+  const idx = command.index
   const dir = command.dir
   if (typeof idx !== 'number' || typeof dir !== 'number') return refused()
   const targetIdx = idx + dir
@@ -93,7 +97,7 @@ function moveExercise(S, command) {
 function replaceExercise(S, command) {
   const r = findRoutine(S, command.routineId)
   if (!r || !Array.isArray(r.ex)) return refused()
-  const idx = command.index ?? command.entry
+  const idx = command.index
   if (typeof idx !== 'number' || idx < 0 || idx >= r.ex.length) return refused()
   if (!command.exId) return refused()
 
@@ -101,20 +105,12 @@ function replaceExercise(S, command) {
   const defaults = defaultConfig(command.exId)
   const target = { ...command.target }
 
-  // ADR 0015: clear outgoing notes
+  // ADR 0015: clear outgoing notes and sanitize any newly provided notes
   const note = cleanNote(target.notes)
-  if (note) {
-    target.notes = note
-  } else {
-    delete target.notes
-  }
+  delete target.notes
 
   const next = { id: command.exId, ...defaults, ...target }
-  if (note) {
-    next.notes = note
-  } else {
-    delete next.notes
-  }
+  if (note) next.notes = note
 
   if (oldEntry?.sg != null && target.sg === undefined) {
     next.sg = oldEntry.sg
@@ -129,23 +125,9 @@ function toggleSuperset(S, command) {
   const r = findRoutine(S, command.routineId)
   if (!r || !Array.isArray(r.ex)) return refused()
 
-  let first, second
-  if (command.first !== undefined && command.second !== undefined) {
-    first = Math.min(command.first, command.second)
-    second = Math.max(command.first, command.second)
-  } else if (command.withAbove) {
-    const idx = command.index ?? command.entry
-    if (typeof idx !== 'number') return refused()
-    first = idx - 1
-    second = idx
-  } else {
-    const idx = command.index ?? command.entry
-    if (typeof idx !== 'number') return refused()
-    first = idx
-    second = idx + 1
-  }
-
-  if (first < 0 || second >= r.ex.length || second - first !== 1) return refused()
+  const first = command.index
+  if (typeof first !== 'number' || first < 0 || first >= r.ex.length - 1) return refused()
+  const second = first + 1
 
   const cur = r.ex[first]
   const next = r.ex[second]
@@ -168,11 +150,17 @@ function syncFromSession(S, command) {
 function updateExercise(S, command) {
   const r = findRoutine(S, command.routineId)
   if (!r || !Array.isArray(r.ex)) return refused()
-  const idx = command.index ?? command.entry
+  const idx = command.index
   if (typeof idx !== 'number' || idx < 0 || idx >= r.ex.length) return refused()
   const existing = r.ex[idx]
-  r.ex[idx] = { ...existing, ...command.target }
-  return applied(r.ex[idx])
+  const target = { ...command.target }
+  const note = cleanNote(target.notes)
+  delete target.notes
+  const updated = { ...existing, ...target }
+  if (note) updated.notes = note
+  else delete updated.notes
+  r.ex[idx] = updated
+  return applied(updated)
 }
 
 const COMMANDS = {

@@ -21,11 +21,12 @@ Introduce `frontend/src/lib/routines.js` as the deep domain module encapsulating
    - `rename`: Updates routine name.
    - `setGlyph`: Updates routine glyph/emoji.
    - `setProgression`: Updates routine-level progression scheme.
-   - `addExercise`: Appends an exercise entry, seeding default target values via `defaultConfig(exId)` if not provided.
+   - `addExercise`: Appends an exercise entry, seeding default target values via `defaultConfig(exId)` if not provided, and sanitizing notes via `cleanNote`.
    - `removeExercise`: Removes an entry at the specified index and normalizes supersets via `cleanupSg`.
    - `moveExercise`: Swaps entries at the specified index and direction, validating bounds, and normalizes supersets via `cleanupSg`.
-   - `replaceExercise`: Substitutes the exercise at the specified index, clears obsolete notes (ADR 0015), preserves superset membership, and normalizes supersets via `cleanupSg`.
-   - `toggleSuperset`: Inspects adjacency with the subsequent exercise (or paired partner), toggles pairing, and normalizes supersets via `cleanupSg`.
+   - `replaceExercise`: Substitutes the exercise at the specified index, clears obsolete notes (ADR 0015), preserves superset membership, sanitizes any replacement notes via `cleanNote`, and normalizes supersets via `cleanupSg`.
+   - `toggleSuperset`: Inspects adjacency between `index` and `index + 1`, toggles pairing, and normalizes supersets via `cleanupSg`.
+   - `updateExercise`: Updates exercise target parameters in-place at the specified index, sanitizing notes via `cleanNote`.
    - `syncFromSession`: Deep-clones the synchronized exercise array onto `routine.ex`, absorbing the previous `syncRoutineFromSession` action.
    - Precondition checks: Gracefully returns `{ ok: false }` for missing routines or invalid indices. Throws an error on unrecognized command types.
 

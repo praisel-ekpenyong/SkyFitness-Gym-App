@@ -231,12 +231,14 @@ export function seedForReplacement(S, exId, routineId, setsCount) {
   const base = defaultConfig(exId)
   const last = lastSessionInRoutine(S, exId, routineId) || lastSession(S, exId)
   const bestWeight = best(S, exId)
-  return {
+  const seed = {
     ...base,
     ...(last?.target || {}),
     ...(bestWeight > 0 && !base.bodyweight ? { weight: bestWeight } : {}),
     sets: setsCount ?? base.sets,
   }
+  delete seed.notes
+  return seed
 }
 
 export function cleanNote(value) {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { diffRoutineWithSession, syncRoutineFromSession } from './routine-sync.js'
+import { diffRoutineWithSession } from './routine-sync.js'
 
 describe('diffRoutineWithSession', () => {
   const ex1 = { id: '0025', name: 'Barbell Bench Press', sets: 3, reps: 8, weight: 60, mode: 'reps' }
@@ -479,36 +479,5 @@ describe('diffRoutineWithSession', () => {
       expect(resCleared.syncedEx[0].notes).toBeUndefined()
       expect(resCleared.syncedEx[1].notes).toBe('Close-grip bench cue')
     })
-  })
-})
-
-describe('syncRoutineFromSession', () => {
-  it('updates the matching routine ex array in state and returns true', () => {
-    const S = {
-      routines: [
-        { id: 'r1', name: 'Push', ex: [{ id: '0025', sets: 3 }] },
-        { id: 'r2', name: 'Pull', ex: [{ id: '0027', sets: 3 }] },
-      ],
-    }
-    const syncedEx = [{ id: '0025', sets: 4 }, { id: '0026', sets: 3 }]
-    const ok = syncRoutineFromSession(S, 'r1', syncedEx)
-    expect(ok).toBe(true)
-    expect(S.routines[0].ex).toEqual(syncedEx)
-    expect(S.routines[1].ex).toEqual([{ id: '0027', sets: 3 }])
-  })
-
-  it('safely returns false and no-ops if routine is not found', () => {
-    const S = {
-      routines: [{ id: 'r1', name: 'Push', ex: [{ id: '0025', sets: 3 }] }],
-    }
-    const ok = syncRoutineFromSession(S, 'non-existent', [{ id: '0025', sets: 4 }])
-    expect(ok).toBe(false)
-    expect(S.routines[0].ex).toEqual([{ id: '0025', sets: 3 }])
-  })
-
-  it('safely returns false when S or S.routines is missing', () => {
-    expect(syncRoutineFromSession(null, 'r1', [])).toBe(false)
-    expect(syncRoutineFromSession({}, 'r1', [])).toBe(false)
-    expect(syncRoutineFromSession({ routines: null }, 'r1', [])).toBe(false)
   })
 })
