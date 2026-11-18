@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
   pickNewest, backupDue, BACKUP_NAG_MS, LOCAL_KEY, loadLocal, save, flush, load,
   registerSink, __setSinksForTests, __setLocalWriteForTests, __resetStorageBlockedForTests,
-  isStorageBlocked, onStorageSync
+  isStorageBlocked, onStorageSync, isMirrorFailing, requestPersistence
 } from './storage.js'
 
 const copy = (ts, workouts = ['w1']) => ({ ts, state: { _ts: ts, workouts } })
@@ -242,3 +242,45 @@ describe('onStorageSync', () => {
   })
 })
 
+
+describe('mirror write failures', () => {
+  beforeEach(() => { vi.useFakeTimers(); __setLocalWriteForTests(); __resetStorageBlockedForTests() })
+
+  it('a rejected mirror write is reported, a later success clears it, and localStorage state is untouched', async () => {
+    let fail = true
+    __setSinksForTests([{ id: 'idb', read: async () => null, write: async () => { if (fail) throw new Error('boom') } }])
+    save({ n: 1 }); flush()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(isMirrorFailing()).toBe(true)
+    expect(isStorageBlocked()).toBe(false)
+    fail = false
+    save({ n: 2 }); flush()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(isMirrorFailing()).toBe(false)
+    vi.useRealTimers()
+  })
+
+  it('a synchronously throwing mirror is reported too', () => {
+    __setSinksForTests([{ id: 'idb', read: async () => null, write: () => { throw new Error('boom') } }])
+    save({ n: 3 }); flush()
+    expect(isMirrorFailing()).toBe(true)
+    __setSinksForTests([])
+    save({ n: 4 }); flush()
+    __setSinksForTests()
+    vi.useRealTimers()
+  })
+})
+
+describe('requestPersistence', () => {
+  it('asks the browser once and never throws', async () => {
+    const persist = vi.fn(async () => true)
+    expect(await requestPersistence({ persist })).toBe(true)
+    expect(persist).toHaveBeenCalledTimes(1)
+  })
+  it('is a no-op without the API, and swallows a throw or rejection', async () => {
+    expect(await requestPersistence(undefined)).toBe(false)
+    expect(await requestPersistence({})).toBe(false)
+    expect(await requestPersistence({ persist: () => { throw new Error('x') } })).toBe(false)
+    expect(await requestPersistence({ persist: async () => { throw new Error('x') } })).toBe(false)
+  })
+})

@@ -3,11 +3,12 @@ import { createRoot } from 'react-dom/client'
 import App from './App.jsx'
 import { MOBILE, nativeSink } from './platform/mobile.js'
 import { BASE_URL } from './lib/env.js'
-import { registerSink } from './platform/storage.js'
+import { registerSink, requestPersistence } from './platform/storage.js'
 import '@fontsource-variable/archivo/wdth.css'
 import './index.css'
 
 if (MOBILE) registerSink(nativeSink)
+else requestPersistence()
 
 if ('scrollRestoration' in history) history.scrollRestoration = 'manual'
 

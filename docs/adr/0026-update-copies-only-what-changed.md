@@ -27,3 +27,5 @@ several times slower.
 - Every write to the Profile must go through `update` or `act`. That was already the rule; the freeze in tests now
   enforces it.
 - `save()` still serialises the whole Profile. Splitting storage by key is a separate decision, not taken here.
+
+2026-11 amendment: when a set tap's save passes 30 ms on the owner's phone, `workouts` moves under its own storage key, so a tap serialises one key instead of the whole Profile.
