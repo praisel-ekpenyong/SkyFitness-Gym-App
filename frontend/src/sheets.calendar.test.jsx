@@ -137,12 +137,21 @@ describe('Calendar streak header', () => {
 })
 
 describe('Calendar freeze rule picker', () => {
-  const radio = label => [...container.querySelectorAll('[role="radio"]')].find(b => b.textContent === label)
-  const previews = () => [...container.querySelectorAll('.cal-rules li')].map(li => li.textContent)
+  const radios = () => [...container.querySelectorAll('[role="radio"]')]
+  const radio = name => radios().find(b => b.firstElementChild.textContent === name)
 
-  it('lists the three rules with bank sizes and each rule\'s current and best preview', async () => {
+  it('shows each rule\'s current and best streak under its name', async () => {
     await render('2026-06-01T12:00:00')
-    expect(previews()).toEqual([
+    expect(radios().map(b => b.textContent)).toEqual([
+      'Strict0 wk · best 4',
+      'Gentle0 wk · best 5',
+      'Generous0 wk · best 5',
+    ])
+  })
+
+  it('names each rule with its bank size and preview for screen readers', async () => {
+    await render('2026-06-01T12:00:00')
+    expect(radios().map(b => b.getAttribute('aria-label'))).toEqual([
       'Strict (0 freezes): 0 weeks, best 4',
       'Gentle (1 freeze): 0 weeks, best 5',
       'Generous (2 freezes): 0 weeks, best 5',

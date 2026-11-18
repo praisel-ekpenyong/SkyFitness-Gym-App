@@ -42,7 +42,12 @@ export function freezeLine({ rule, freezes, toNextFreeze }) {
 export const RULE_ORDER = ['strict', 'gentle', 'generous']
 export const RULE_NAME = { strict: 'Strict', gentle: 'Gentle', generous: 'Generous' }
 
-/** One picker line: a rule, its bank size, and what its current and best streak would be. */
+/** The short preview under a rule's name in the picker: its current and best streak, e.g. "14 wk · best 14". */
+export function ruleSegmentPreview({ current, best }) {
+  return t('{0} wk · best {1}', fmtNum(current), fmtNum(best))
+}
+
+/** A rule, its bank size, and what its current and best streak would be: the picker option's accessible label. */
 export function rulePreviewLine(rule, { current, best }) {
   const bank = FREEZE_BANK[rule]
   const freezes = bank === 1 ? t('{0} freeze', fmtNum(bank)) : t('{0} freezes', fmtNum(bank))

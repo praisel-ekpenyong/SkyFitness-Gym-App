@@ -230,8 +230,7 @@ h4.sec, .sec {
 .cal-mark-gap { width: 26px; height: 26px }
 .cal-streak { display: flex; flex-wrap: wrap; gap: 4px 12px; justify-content: center; margin-top: 6px; color: var(--label) }
 .cal-streak .cal-next { flex-basis: 100%; text-align: center; color: var(--label-2) }
-.cal-rule { margin: 10px auto 0 }
-.cal-rules { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 2px; text-align: center }
+.cal-rule { margin: 12px 0 10px }
 .cal-explain { min-height: 2.6em; margin: 10px 0 0; text-align: center; color: var(--label) }
 .cal-legend { display: flex; gap: 14px; justify-content: center; margin-top: 12px; font-size: var(--fs-meta); color: var(--label-2) }
 .cal-legend i { display: inline-block; width: 10px; height: 3px; margin-right: 5px; vertical-align: 2px }
