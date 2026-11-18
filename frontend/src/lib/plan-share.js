@@ -1,7 +1,8 @@
 
 import { EXIDX, isBodyweightEq } from './exercises.js'
 import { modeOf, isBw, isPerSide, sideReps, cleanNote } from './workout-model.js'
-import { uid, todayISO, DAYN, fmtNum, fmtSigned, exCount, fmtSec } from './format.js'
+import { uid, fmtNum, fmtSigned, exCount, fmtSec } from './format.js'
+import { todayISO, DAYN } from './dates.js'
 import { t } from './i18n-core.js'
 
 const PLAN_FMT = 1

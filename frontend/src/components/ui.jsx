@@ -2,6 +2,7 @@
 import { Fragment, useRef, useState, useEffect, useCallback, forwardRef } from 'react'
 import Icon from './Icon.jsx'
 import { t } from '../lib/i18n.js'
+import { useUI } from '../store/useUI.js'
 
 
 export const dotted = items => items.filter(Boolean).map((x, i) => <Fragment key={i}>{i > 0 && ' · '}{x}</Fragment>)
@@ -247,7 +248,7 @@ export function Row({ icon, title, subtitle, value, accessory = 'none', onClick,
 export function SelectRow({ icon, title, value, options, onChange, sheetTitle }) {
   const cur = options.find(o => o.value === value)
   const open = () => {
-    const { openSheet } = require_ui()
+    const { openSheet } = useUI.getState()
     const h = openSheet(close => (
       <>
         <h3>{sheetTitle || title}</h3>
@@ -270,16 +271,6 @@ export function SelectRow({ icon, title, value, options, onChange, sheetTitle })
   )
 }
 
-let _ui = null
-/**
- * Registers the UI store module so shared controls can open sheets without importing it at load time; call once at boot.
- * @param {Function} store - The UI store hook whose state exposes the sheet controls.
- */
-export function bindUI(store) { _ui = store }
-function require_ui() {
-  if (!_ui) throw new Error('ui store not bound — call bindUI(useUI) once at boot')
-  return _ui.getState()
-}
 
 /**
  * Themed button with optional leading/trailing icons; use for all tappable actions.

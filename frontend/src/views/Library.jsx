@@ -8,7 +8,7 @@ import { fmtNum, sentenceCase } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
 import { toggleFavorite } from '../lib/catalogue-writes.js'
 import { Thumb } from '../components/Media.jsx'
-import { exerciseDetailSheet, addToRoutineSheet, customExSheet } from '../sheets.jsx'
+import { exerciseDetailSheet, addToRoutineSheet, customExSheet } from '../sheets/catalogue.jsx'
 import Icon from '../components/Icon.jsx'
 import { Button, SearchField } from '../components/ui.jsx'
 

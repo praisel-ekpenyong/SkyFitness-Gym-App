@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { parseWorkoutCSV } from './import-csv.js'
-import { setLabel } from './format.js'
+import { setLabel } from './set-label.js'
 import { effortOf } from './effort.js'
 import { admit } from './profile/index.js'
 

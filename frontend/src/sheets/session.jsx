@@ -1,10 +1,13 @@
 import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
-import { EXIDX } from '../lib/exercises.js'
-import { fmtNum, fmtDurParts, fmtDate, todayISO } from '../lib/format.js'
+import { EXIDX, exOr } from '../lib/exercises.js'
+import { fmtNum, fmtDurParts } from '../lib/format.js'
+import { fmtDate, todayISO } from '../lib/dates.js'
 import { latestWeighIn } from '../lib/bodyweight.js'
 import { sessionView } from '../lib/active-workout.js'
+import { seedForReplacement } from '../lib/workout-model.js'
+import { workSets } from '../lib/workout-sets.js'
 import { workoutSummary } from '../lib/workout-summary.js'
 import { sessionProgressionItems } from '../lib/progression.js'
 import { t } from '../lib/i18n.js'
@@ -14,30 +17,19 @@ import { Button, Switch, TextArea } from '../components/ui.jsx'
 import BodyMap from '../components/BodyMap.jsx'
 import SessionMuscleDistribution from '../components/SessionMuscleDistribution.jsx'
 import { loadOfWorkouts, MUSCLE_NAME } from '../lib/muscles.js'
+import { confirmSheet } from './confirm.jsx'
+import { bwSheet } from './bodyweight.jsx'
+import { exercisePicker, exConfigSheet } from './catalogue.jsx'
 
 const S = () => useStore.getState().S
 const update = (...a) => useStore.getState().update(...a)
 const ui = () => useUI.getState()
 const toast = m => ui().toast(m)
 
-let _bwSheet = null
-let _confirmSheet = null
-/**
- * Wires the weigh-in and confirm seams for session sheets.
- *
- * @param {Function} bwSheet Weigh-in sheet opener.
- * @param {Function} confirmSheet Hub confirm dialog.
- */
-export function configureSessionSheets({ bwSheet, confirmSheet }) {
-  if (bwSheet) _bwSheet = bwSheet
-  if (confirmSheet) _confirmSheet = confirmSheet
-}
-
 export function startFlow(routineId) {
-  if (!_bwSheet) throw new Error('session sheets not wired: missing bwSheet')
   const weighed = latestWeighIn(useStore.getState().S)
   if (weighed && weighed.d === todayISO()) return beginWorkout(routineId, weighed.w)
-  _bwSheet({ required: true, onDone: bw => beginWorkout(routineId, bw) })
+  bwSheet({ required: true, onDone: bw => beginWorkout(routineId, bw) })
 }
 /**
  * Starts the session for a routine and navigates to the workout view.
@@ -249,16 +241,15 @@ export function finishWorkout() {
   const A = S().active
   if (!A) return
   const { finishGate, progress: prog } = sessionView(A)
-  if (!_confirmSheet) throw new Error('session sheets not wired: missing confirmSheet')
   if (finishGate === 'empty' || finishGate === 'warmups-only') {
-    _confirmSheet(finishGate === 'warmups-only'
+    confirmSheet(finishGate === 'warmups-only'
       ? { title: t('Only warm-ups logged so far'), message: t('Only warm-up sets are ticked — finish the workout anyway?'), confirmText: t('Finish anyway'), onConfirm: doFinishWorkout }
       : { title: t('Nothing logged yet'), message: t('You haven’t checked off any sets. Finish the workout anyway?'), confirmText: t('Finish anyway'), onConfirm: doFinishWorkout })
     return
   }
   if (finishGate === 'early') {
     const sets = t(prog.remaining === 1 ? '{0} set still unchecked' : '{0} sets still unchecked', fmtNum(prog.remaining))
-    _confirmSheet({ title: t('Finish early?'), message: t('{0} of {1} exercises done, {2}. Finish the workout now?', fmtNum(prog.exDone), fmtNum(prog.exTotal), sets), confirmText: t('Finish workout'), onConfirm: doFinishWorkout })
+    confirmSheet({ title: t('Finish early?'), message: t('{0} of {1} exercises done, {2}. Finish the workout now?', fmtNum(prog.exDone), fmtNum(prog.exTotal), sets), confirmText: t('Finish workout'), onConfirm: doFinishWorkout })
     return
   }
   doFinishWorkout()
@@ -268,4 +259,51 @@ function doFinishWorkout() {
   if (!ok) return
   const { workout: w, prs, e1prs, routineSync } = result
   ui().openSheet(close => <FinishSummary w={w} prs={prs} e1prs={e1prs} routineSync={routineSync} close={close} />, { kind: 'full', locked: true })
+}
+
+/**
+ * Interactive flow to replace an exercise at `idx` in the active workout.
+ *
+ * Prompts for confirmation when sets have already been performed to avoid
+ * accidental data loss, stops any running work timer, then opens the exercise
+ * picker and configuration sheet before committing the replacement in store.
+ *
+ * @param {number} idx - Index of the exercise entry in active workout entries.
+ * @param {(command: Object) => *} send - The view's sender, so the replacement's effects run like any other command's.
+ */
+export function replaceActiveExerciseFlow(idx, send) {
+  if (typeof send !== 'function') throw new TypeError('Replacing an exercise needs the view\'s sender')
+  const curS = useStore.getState().S
+  const A = curS?.active
+  if (!A) return
+  const entry = A.entries?.[idx]
+  if (!entry) return
+
+  const proceedToPicker = () => {
+    if (useUI.getState().work) useUI.getState().stopWork()
+    exercisePicker(newEx => {
+      if (!newEx) return
+      const s = useStore.getState().S
+      const act = s?.active
+      const routine = s?.routines?.find(r => r.id === act?.routineId)
+      const plannedCount = workSets(entry).length || (entry.sets || []).length
+      const seed = seedForReplacement(s, newEx.id, act?.routineId, plannedCount)
+      delete seed.notes
+      exConfigSheet(newEx, null, cfg => {
+        send({ type: 'replaceExercise', entry: idx, exId: newEx.id, target: cfg })
+      }, null, routine, seed, null, t('Replace'))
+    })
+  }
+
+  if (sessionView(A).hasPerformed[idx]) {
+    confirmSheet({
+      title: t('Replace {0}?', exOr(entry.id).n),
+      message: t('The sets you logged for this exercise in this session will be lost.'),
+      confirmText: t('Replace'),
+      danger: true,
+      onConfirm: proceedToPicker,
+    })
+  } else {
+    proceedToPicker()
+  }
 }

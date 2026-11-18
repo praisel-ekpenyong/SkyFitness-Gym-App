@@ -1,31 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import {
-  todayISO,
-  isoOf,
-  DAYN,
-  DAYS,
-  MONTHS,
-  MONTHS_LONG,
-  fmtDate,
-  fmtDur,
-  durPart,
-  fmtNum,
-  fmtVol,
-  fmtSigned,
-  fmtDurParts,
-  sentenceCase,
-  MINUS,
-  exCount,
-  weekKey,
-  mondayOf,
-  localTZ,
-  uid,
-  ACCENTS,
-  fmtSec,
-  fmtElapsed,
-  setLabel,
-  exLine,
-} from './format.js'
+import { fmtDur, durPart, fmtNum, fmtVol, fmtSigned, fmtDurParts, sentenceCase, MINUS, exCount, uid, ACCENTS, fmtSec, fmtElapsed, exLine } from './format.js'
+import { todayISO, isoOf, DAYN, DAYS, MONTHS, MONTHS_LONG, fmtDate, weekKey, mondayOf, localTZ } from './dates.js'
+import { setLabel } from './set-label.js'
 import { EXDB } from './exercises.js'
 
 const BARBELL_BENCH = EXDB.find(e => e.bp === 'chest' && e.eq === 'barbell')?.id || '0025'

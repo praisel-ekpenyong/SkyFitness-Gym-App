@@ -1,5 +1,5 @@
 import { t } from '../lib/i18n.js'
-import { loadStarterPlan, loadHypertrophyPlan } from '../sheets.jsx'
+import { loadStarterPlan, loadHypertrophyPlan } from '../sheets/plan-tools.jsx'
 import { Button } from './ui.jsx'
 
 export default function StarterCard({ onBuild }) {

@@ -2,14 +2,14 @@ import { lazy, Suspense, useEffect } from 'react'
 import { HashRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import { useStore } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
-import { bindUI } from './components/ui.jsx'
-import { ACCENTS, todayISO } from './lib/format.js'
+import { ACCENTS } from './lib/format.js'
+import { todayISO } from './lib/dates.js'
 import { t } from './lib/i18n.js'
 import { setLang, useLang } from './platform/i18n.js'
 import { setNav } from './platform/nav.js'
 import { initBackButton } from './platform/back.js'
 import { useWakeLock } from './platform/wakelock.js'
-import { startFlow } from './sheets.jsx'
+import { startFlow } from './sheets/session.jsx'
 import Icon from './components/Icon.jsx'
 import Mark from './components/Mark.jsx'
 import TabBar from './components/TabBar.jsx'
@@ -28,7 +28,6 @@ const History = lazy(() => import('./views/History.jsx'))
 const Library = lazy(() => import('./views/Library.jsx'))
 const Settings = lazy(() => import('./views/Settings.jsx'))
 
-bindUI(useUI)
 
 function applyPrefs(theme, accent) {
   const de = document.documentElement

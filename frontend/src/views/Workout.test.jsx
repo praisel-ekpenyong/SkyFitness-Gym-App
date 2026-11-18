@@ -21,7 +21,7 @@ const mocks = vi.hoisted(() => {
     update: mut => mut(state.S),
     act: command => {
       const res = actOn(state.S, command)
-      runEffects(res.effects, state.S)
+      runEffects(res.effects, () => state.S)
       return res
     },
   })
@@ -46,16 +46,20 @@ vi.mock('../store/useUI.js', () => {
   return { useUI }
 })
 vi.mock('react-router-dom', () => ({ useNavigate: () => () => {} }))
-vi.mock('../sheets.jsx', () => ({
+vi.mock('../sheets/session.jsx', async importOriginal => ({
+  ExerciseNoteSheet: (await importOriginal()).ExerciseNoteSheet,
   startFlow: vi.fn(),
+  finishWorkout: vi.fn(),
+  workoutCompleteSheet: mocks.workoutCompleteSheet,
+  exerciseNoteSheet: mocks.exerciseNoteSheet,
+  replaceActiveExerciseFlow: vi.fn(),
+}))
+vi.mock('../sheets/catalogue.jsx', () => ({
   exercisePicker: vi.fn(),
   exConfigSheet: vi.fn(),
   exerciseDetailSheet: vi.fn(),
-  finishWorkout: vi.fn(),
-  workoutCompleteSheet: mocks.workoutCompleteSheet,
-  confirmSheet: vi.fn(),
-  exerciseNoteSheet: mocks.exerciseNoteSheet,
 }))
+vi.mock('../sheets/confirm.jsx', () => ({ confirmSheet: vi.fn() }))
 vi.mock('../components/Media.jsx', () => ({ default: () => null }))
 
 let dom
@@ -133,7 +137,7 @@ describe('header and finish button share one progress reading', () => {
     expect(finish.classList.contains('go')).toBe(false)
 
     await act(async () => { finish.dispatchEvent(new dom.Event('click', { bubbles: true })) })
-    const { finishWorkout } = await import('../sheets.jsx')
+    const { finishWorkout } = await import('../sheets/session.jsx')
     expect(finishWorkout).toHaveBeenCalledOnce()
   })
 })

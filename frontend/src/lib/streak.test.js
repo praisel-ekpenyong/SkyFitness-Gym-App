@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { streakOf } from './streak.js'
-import { weekKey } from './format.js'
+import { weekKey } from './dates.js'
 
 // Mondays used as week anchors. 2026-07-01 is a Wednesday, so its week starts 2026-06-29.
 const trained = d => ({ id: `w-${d}`, d, entries: [{ id: 'lift', sets: [{ done: true, w: 60, r: 5 }] }] })

@@ -1,5 +1,5 @@
 import { effectiveRoutine } from '../lib/history.js'
-import { isoOf } from '../lib/format.js'
+import { isoOf } from '../lib/dates.js'
 import { EXIDX, imgSrc, gifSrc } from '../lib/exercises.js'
 
 export function exercisesToWarm(S, iso, cap = 24) {

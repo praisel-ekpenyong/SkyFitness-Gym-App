@@ -68,7 +68,7 @@ describe('Workout exercise reorder button states', () => {
     const btn = reorderButton()
     expect(btn.disabled).toBe(false)
 
-    act(() => useUI.getState().startWork(30, 'Plank', vi.fn()))
+    act(() => useUI.getState().startWork(30, 'Plank', vi.fn(), () => true))
     expect(btn.disabled).toBe(true)
 
     act(() => useUI.getState().stopWork())

@@ -2,7 +2,6 @@ import { create } from 'zustand'
 import { uid } from '../lib/format.js'
 import { playTimerComplete, playTimerWarning, vibrate } from '../platform/sound.js'
 import { t } from '../lib/i18n.js'
-import { useStore } from './useStore.js'
 
 
 const notificationsSupported = () => typeof window !== 'undefined' && 'Notification' in window
@@ -38,6 +37,11 @@ const maybeRestNotification = async () => {
   }
 }
 
+// The sound setting comes as a getter: useUI must not import useStore (an import cycle).
+const mustRead = soundOn => {
+  if (typeof soundOn !== 'function') throw new TypeError('A timer needs a soundOn getter for the live sound setting')
+}
+
 let toastTm = null
 let timerInt = null
 let timerTick = null
@@ -51,9 +55,9 @@ export const useUI = create((set, get) => ({
   timer: null,
   work: null,
 
-  openSheet(render, { kind = 'sheet', locked = false } = {}) {
+  openSheet(render, { kind = 'sheet', locked = false, label } = {}) {
     const id = uid()
-    set(s => ({ sheets: [...s.sheets, { id, render, kind, locked }] }))
+    set(s => ({ sheets: [...s.sheets, { id, render, kind, locked, label }] }))
     const close = () => get().closeSheet(id)
     return { id, close, lock: v => set(s => ({ sheets: s.sheets.map(x => x.id === id ? { ...x, locked: v } : x) })) }
   },
@@ -66,7 +70,12 @@ export const useUI = create((set, get) => ({
     toastTm = setTimeout(() => set({ toastMsg: '' }), 2200)
   },
 
-  startRest(sec) {
+  /**
+   * @param {number} sec
+   * @param {() => boolean} soundOn - Read on every tick, so muting mid-rest silences it.
+   */
+  startRest(sec, soundOn) {
+    mustRead(soundOn)
     get().stopRest()
     const endsAt = Date.now() + sec * 1000
     set({ timer: { left: sec, total: sec, endsAt } })
@@ -76,7 +85,7 @@ export const useUI = create((set, get) => ({
       if (!tm) return
       const left = Math.max(0, Math.round((tm.endsAt - Date.now()) / 1000))
       if (left === tm.left) return
-      const snd = useStore.getState().S.sound
+      const snd = soundOn()
       if (left <= 0) {
         playTimerComplete(snd); maybeRestNotification(); get().toast(t('Rest over — next set!')); get().stopRest(); return
       }
@@ -99,7 +108,9 @@ export const useUI = create((set, get) => ({
     set({ timer: null })
   },
 
-  startWork(sec, label, onDone) {
+  /** @param {() => boolean} soundOn - Read on every tick, so muting mid-hold silences it. */
+  startWork(sec, label, onDone, soundOn) {
+    mustRead(soundOn)
     get().stopWork()
     get().stopRest()
     const total = Math.max(1, Math.round(sec) || 1)
@@ -111,7 +122,7 @@ export const useUI = create((set, get) => ({
       if (!wk) return
       const left = Math.max(0, Math.round((wk.endsAt - Date.now()) / 1000))
       if (left === wk.left) return
-      const snd = useStore.getState().S.sound
+      const snd = soundOn()
       if (left <= 0) {
         playTimerComplete(snd)
         const done = workDone

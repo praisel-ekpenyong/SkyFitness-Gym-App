@@ -2,7 +2,7 @@ import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Window } from 'happy-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { recapSheet } from '../sheets.jsx'
+import { recapSheet } from '../sheets/history.jsx'
 import Stats from './Stats.jsx'
 
 const DAY = 86400000
@@ -22,10 +22,12 @@ vi.mock('../store/useStore.js', () => ({
   useStore: selector => selector({ S: mocks.S }),
 }))
 vi.mock('react-router-dom', () => ({ useNavigate: () => () => {} }))
-vi.mock('../sheets.jsx', () => ({
-  bwSheet: () => {}, goalSheet: () => {}, calendarSheet: () => {}, recapSheet: vi.fn(), workoutDetailSheet: () => {}, volumeRangesSheet: vi.fn(),
+vi.mock('../sheets/bodyweight.jsx', () => ({ bwSheet: () => {}, goalSheet: () => {} }))
+vi.mock('../sheets/history.jsx', () => ({
+  calendarSheet: () => {}, recapSheet: vi.fn(), workoutDetailSheet: () => {},
   WorkoutRow: () => React.createElement('div'),
 }))
+vi.mock('../sheets/volume.jsx', () => ({ volumeRangesSheet: vi.fn() }))
 vi.mock('../components/LineChart.jsx', () => ({ default: props => React.createElement('div', { 'data-chart-days': props.points.map(p => p.d).join(',') }) }))
 vi.mock('../components/Heatmap.jsx', () => ({ default: () => React.createElement('div') }))
 vi.mock('../components/Icon.jsx', () => ({ default: props => React.createElement('span', props) }))

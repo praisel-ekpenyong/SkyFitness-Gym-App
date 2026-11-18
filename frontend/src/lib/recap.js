@@ -1,6 +1,6 @@
 import { loadRecords, e1rmRecords } from './training-log.js'
 import { summarizeWorkouts } from './workout-summary.js'
-import { monthKey } from './format.js'
+import { monthKey } from './dates.js'
 
 /**
  * Step a calendar month key back by one month.

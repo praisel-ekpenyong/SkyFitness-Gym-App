@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, useState } from 'react'
-import { fmtNum, fmtDate, MONTHS, isoOf } from '../lib/format.js'
+import { fmtNum } from '../lib/format.js'
+import { fmtDate, MONTHS, isoOf } from '../lib/dates.js'
 import { t } from '../lib/i18n.js'
 
 const FALLBACK_W = 340

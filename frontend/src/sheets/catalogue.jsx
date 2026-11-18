@@ -2,7 +2,9 @@ import { useState } from 'react'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { EXIDX, isCardio, isBodyweightEq, allExercises } from '../lib/exercises.js'
-import { fmtDate, fmtNum, exCount, uid, setLabel, sentenceCase } from '../lib/format.js'
+import { fmtNum, exCount, uid, sentenceCase } from '../lib/format.js'
+import { fmtDate } from '../lib/dates.js'
+import { setLabel } from '../lib/set-label.js'
 import { best as bestOf, best1RM, lastSession } from '../lib/training-log.js'
 import { defaultConfig, modeOf, isBw, isPerSide, sideReps } from '../lib/workout-model.js'
 import * as catalogueWrites from '../lib/catalogue-writes.js'
@@ -18,21 +20,12 @@ import { estimate1RM, REP_CAP } from '../lib/onerm.js'
 import { policyFor, defaultIncrement, POLICIES_FOR, POLICY_NAME, POLICY_DESC, MAX_BW_SETS } from '../lib/progression.js'
 import { strengthLevelOf } from '../lib/strength-level.js'
 import { ExerciseStrengthLine } from '../components/StrengthLine.jsx'
+import { confirmSheet } from './confirm.jsx'
 
 const S = () => useStore.getState().S
 const update = (...a) => useStore.getState().update(...a)
 const ui = () => useUI.getState()
 const toast = m => ui().toast(m)
-
-let _confirmSheet = null
-/**
- * Wires the confirm-sheet seam for catalogue sheets.
- *
- * @param {Function} confirmSheet Hub confirm dialog.
- */
-export function configureCatalogueSheets({ confirmSheet }) {
-  if (confirmSheet) _confirmSheet = confirmSheet
-}
 
 function OneRM({ ex }) {
   const st = useStore(s => s.S)
@@ -263,9 +256,8 @@ export const customExSheet = (existing, onDone, prefill) => ui().openSheet(close
  */
 export function deleteCustomEx(ex, afterDelete) {
   if (S().active?.entries.some(e => e.id === ex.id)) { toast(t('Finish your current workout first')); return }
-  if (!_confirmSheet) throw new Error('catalogue sheets not wired: missing confirmSheet')
   let res = null
-  _confirmSheet({
+  confirmSheet({
     title: t('Delete “{0}”?', ex.n),
     message: t('It will be removed from your routines. Already-logged workouts keep their sets.'),
     confirmText: t('Delete'), danger: true,

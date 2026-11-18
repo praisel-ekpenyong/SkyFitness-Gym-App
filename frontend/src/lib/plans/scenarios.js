@@ -1,7 +1,8 @@
 import { applyHypertrophyPlan } from './hypertrophy-5day.js'
 import { act } from '../active-workout.js'
 import { recordWeighIn } from '../bodyweight.js'
-import { isWorkSet, isPerSide } from '../workout-model.js'
+import { isPerSide } from '../workout-model.js'
+import { isWorkSet } from '../workout-sets.js'
 import { registerCustom } from '../exercises.js'
 
 /**

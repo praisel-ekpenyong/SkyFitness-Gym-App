@@ -1,5 +1,6 @@
 
-import { doneWorkSets, cleanNote } from './workout-model.js'
+import { cleanNote } from './workout-model.js'
+import { doneWorkSets } from './workout-sets.js'
 import { cleanupSg, supersetUnits } from './supersetFlow.js'
 import { EXIDX, exOr } from './exercises.js'
 import { MINUS } from './format.js'

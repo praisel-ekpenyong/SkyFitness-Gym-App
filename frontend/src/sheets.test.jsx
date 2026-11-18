@@ -2,7 +2,9 @@
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest'
-import { RecapSheet, recapSheet, finishWorkout, workoutDetailSheet, WorkoutRow, bwSheet } from './sheets.jsx'
+import { RecapSheet, recapSheet, workoutDetailSheet, WorkoutRow } from './sheets/history.jsx'
+import { finishWorkout } from './sheets/session.jsx'
+import { bwSheet } from './sheets/bodyweight.jsx'
 import { useStore, DEF } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
 

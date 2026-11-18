@@ -91,11 +91,9 @@ beforeEach(() => {
 })
 
 describe('save / flush', () => {
-  it('stamps the snapshot and lands it in localStorage synchronously', () => {
-    vi.setSystemTime(1_234_567_890)
-    const snapshot = { workouts: ['w1'] }
+  it('lands the snapshot in localStorage synchronously, unchanged', () => {
+    const snapshot = Object.freeze({ workouts: ['w1'], _ts: 1_234_567_890 })
     save(snapshot)
-    expect(snapshot._ts).toBe(1_234_567_890)
     expect(JSON.parse(localStorage.getItem(LOCAL_KEY))).toEqual({ workouts: ['w1'], _ts: 1_234_567_890 })
     expect(loadLocal()).toEqual(snapshot)
   })
@@ -106,7 +104,7 @@ describe('save / flush', () => {
     save({ n: 2 })
     expect(writes).toEqual([])
     vi.advanceTimersByTime(800)
-    expect(writes).toEqual([{ n: 2, _ts: expect.any(Number) }])
+    expect(writes).toEqual([{ n: 2 }])
   })
 
   it('flush() drains immediately and cannot double-drain', () => {
@@ -129,7 +127,7 @@ describe('save / flush', () => {
     registerSink(extra)
     save({ n: 4 })
     flush()
-    expect(writes).toEqual([{ n: 4, _ts: expect.any(Number) }])
+    expect(writes).toEqual([{ n: 4 }])
   })
 
   it('survives a storage quota exceeded exception and still drains to sinks', () => {
@@ -139,7 +137,7 @@ describe('save / flush', () => {
     expect(() => save({ n: 5 })).not.toThrow()
     expect(writes).toEqual([])
     vi.advanceTimersByTime(800)
-    expect(writes).toEqual([{ n: 5, _ts: expect.any(Number) }])
+    expect(writes).toEqual([{ n: 5 }])
     __setLocalWriteForTests()
     save({ n: 6 })
     expect(JSON.parse(localStorage.getItem(LOCAL_KEY)).n).toBe(6)
@@ -151,7 +149,7 @@ describe('save / flush', () => {
     __setLocalWriteForTests(() => { throw new DOMException('NS_ERROR_DOM_QUOTA_REACHED', 'QuotaExceededError') })
     expect(() => save({ n: 7 })).not.toThrow()
     expect(() => flush()).not.toThrow()
-    expect(writes).toEqual([{ n: 7, _ts: expect.any(Number) }])
+    expect(writes).toEqual([{ n: 7 }])
     __setLocalWriteForTests()
   })
 

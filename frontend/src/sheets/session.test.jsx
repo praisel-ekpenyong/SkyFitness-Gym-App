@@ -2,7 +2,7 @@
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest'
-import { FinishSummary, configureSessionSheets } from './session.jsx'
+import { FinishSummary } from './session.jsx'
 import SessionMuscleDistribution from '../components/SessionMuscleDistribution.jsx'
 import { useStore, DEF } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
@@ -30,10 +30,6 @@ beforeEach(() => {
   })
   useUI.setState({ sheets: [], toastMsg: '', timer: null, work: null })
 
-  configureSessionSheets({
-    bwSheet: vi.fn(),
-    confirmSheet: vi.fn(),
-  })
 
   container = document.createElement('div')
   document.body.appendChild(container)

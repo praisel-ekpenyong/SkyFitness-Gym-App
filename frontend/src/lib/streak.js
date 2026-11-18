@@ -1,4 +1,4 @@
-import { weekKey, isoOf, mondayOf } from './format.js'
+import { weekKey, isoOf, mondayOf } from './dates.js'
 import { hasWorkSet } from './workout-model.js'
 
 /** Freezes each rule can bank. */
