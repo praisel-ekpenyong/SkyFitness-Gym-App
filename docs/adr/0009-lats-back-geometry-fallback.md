@@ -1,6 +1,6 @@
 # Lats back geometry (partitioned MuscleMap sub-paths)
 
-**Status:** resolved — taxonomy live, discrete lats geometry partitioned and active for male and female back models
+Status: Accepted, 2026-08-26. The taxonomy is live and the lats geometry is partitioned for both back models.
 
 **Context:** Ticket 02 required a distinct `lats` SVG path pair for `male.back` and `female.back`. The 19-muscle taxonomy is live: `MUSCLES` = 19 in head-to-toe order with `lats` immediately after `upper-back`, `MUSCLE_NAME['lats']='Lats'`, `MUSCLE_TO_BODYPART['lats']='back'`, `ALIAS` `lats`/`latissimus dorsi`→`lats`, `BY_BODYPART['back']` = `{ lats:0.50, 'upper-back':0.35, 'lower-back':0.15 }`.
 

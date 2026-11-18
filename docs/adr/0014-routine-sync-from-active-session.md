@@ -1,5 +1,7 @@
 # Routine sync from completed active session
 
+Status: Accepted. Amended by [0015](0015-exercise-notes-and-routine-sync.md) (notes), [0029](0029-rest-duration-per-exercise.md) (`rest`), [0030](0030-routine-domain-behind-act-routine.md) (the store action is now `actRoutine` `syncFromSession`) and [0031](0031-the-training-log-is-the-only-reading.md) (Best, not `exWeights`, seeds working weights).
+
 ## Context
 
 In-session workout adjustments (exercise additions, removals, replacements, reorderings, superset links, and set count changes) have been strictly session-local. While this design protected routine templates from accidental mutation during training, it created substantial friction when lifters intentionally evolved their routines in the gym: adopting those changes permanently required remembering the modifications and manually re-entering them in the Routine editor.

@@ -1,5 +1,7 @@
 # The chart metric and the Estimated 1RM series are read from the Training log
 
+Status: Superseded by [0031](0031-the-training-log-is-the-only-reading.md).
+
 Best, Records, last session and Tonnage are read from the Training log, in the Profile's unit, with no unit argument. The exercise chart still scored each Entry on its own, and the Estimated 1RM series walked the log again from the formula module. On one mixed-mode Entry those walks disagreed: Best was 90, the chart's reps score was 40. A legacy `topW` of 200 counted as Best while the series stayed on the 100 × 5 set. The series also kept only the first Entry of an exercise in a Workout, while a Record already takes the best estimate across every Entry of that exercise.
 
 Decision: the Training log also reads the chart metric and the Estimated 1RM series. Both take the Profile first. Neither takes a unit argument or a formula argument.

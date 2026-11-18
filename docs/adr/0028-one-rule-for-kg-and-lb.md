@@ -1,7 +1,6 @@
 # One rule for kg and lb
 
-Status: Accepted, 2026-11-18. Implemented 2026-11-18 (`.scratch/docs-review-2026-11/issues/01`). Amends ADR 0017
-and 0019.
+Status: Superseded by [0031](0031-the-training-log-is-the-only-reading.md).
 
 ## Context
 

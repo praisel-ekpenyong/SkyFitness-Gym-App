@@ -1,30 +1,21 @@
 # Shoulder heads: front, side and rear delts
 
-Extends ADR 0008 (canonical muscle filters); geometry follows ADR 0009's lats split.
-
-**Status:** accepted 2026-11-17. Counting live; the body map draws each head.
-
-## Context
-
-One "Shoulders" muscle hid the commonest volume gap. Every bench and overhead press trains the front delts; side and rear delts grow only from work aimed at them. With one deltoid, a push-heavy week read as well-trained shoulders while side and rear delts got nothing. The catalogue tags 143 exercises `delts` without naming a head, and about 450 more name a plain "shoulders" or "deltoids" helper (20 name "rear deltoids").
+Status: Accepted, 2026-11-17. Amends [0008](0008-canonical-muscle-filters-and-custom-exercise-muscles.md); the geometry follows [0009](0009-lats-back-geometry-fallback.md).
 
 ## Decision
 
-- `deltoids` in the muscle map becomes `front-delts`, `side-delts` and `rear-delts` ("Front delts", "Side delts", "Rear delts"), in head-to-toe order where `deltoids` stood. The muscle map has 21 muscles.
-- **Primary head.** Every delts-primary catalogue exercise names a head from a reviewed id list in `lib/shoulder-heads.js`. Name rules proposed about 112 ids (presses and front raises to front; lateral raises and upright rows to side; rear-delt raises and rows, reverse flyes to rear); the rest (rotator-cuff work, Olympic and kettlebell lifts, odd moves) and every proposal were read by hand. Cuban presses and external rotations go to rear, snatches to side, cleans and thrusters to front. One upper-back row the corrections re-target (1328, dumbbell lying rear delt row) is on the rear list too. This list is the only owner of a primary head: the ADR 0025 patterns never set one. The ids that were hard to call carry a one-line reason beside them. No name matching happens at runtime.
-- **Helper credit follows the movement.** A plain "shoulders"/"deltoids" secondary is read by the exercise's catalogue target: rows and pulls (upper back, lats) to rear, shrugs and high pulls (traps) to side, everything else (pressing, chest, arm, core work) to front. A short reviewed exception list covers pull-ups and pulldowns tagged biceps (rear) and a pullover-to-press (front). "Rear deltoids" always reads as rear.
-- **Rotator cuff reads as rear delts.** Not asked for by the spec, kept because it follows the same rule: the catalogue's "rotator cuff" helper sits on six exercises, four of them shoulder rotations (the lateral-raise pattern drops it from the other two), and external rotation works the rear head alongside the cuff. With no rotator-cuff muscle on the map, dropping it would lose that credit.
-- **A Shoulders bodypart with no muscle tags reads as front 1, side 0.4, rear 0.4.** Not asked for by the spec, kept because it is the plain-Shoulders reading below applied to the bodypart fallback, so a bodypart-only "shoulders" exercise counts the same as one tagged plain Shoulders.
-- The rewrite runs once when the catalogue index is built, after the ADR 0012 curation overlay, so overlay removals of a plain "shoulders" still apply. The upstream dataset stays untouched.
-- **Plain Shoulders is read, never migrated.** A plain Shoulders with no head (custom exercises, plan files, custom-exercise muscle snapshots on old workouts) is read at read time as front 1, side 0.4, rear 0.4 when primary, and front 0.4 when secondary. Stored data is never rewritten. Same principle as ADR 0019's read-time unit normalization.
-- **Filters.** The Library and exercise-picker filters show the three heads plus a Shoulders chip that matches any head; it is a filter only, never credited. The custom-exercise muscle picker offers only the heads.
-- **Drawing.** The front view draws front and side delts, the back view rear and side delts, for both body models. Side delts appear in both views and take their tab stop on the front, like other muscles drawn twice. As with the lats (ADR 0009), no new outline was drawn: the old `deltoids` shapes were partitioned.
-  - Female front already shipped two shapes per shoulder. The outer cap became side delts and the inner shape front delts.
-  - Male front, male back and female back had one shape per shoulder. Each was cut along a gently curved line from the top of the cap to its lower tip, the outer part becoming side delts and the inner part front (front view) or rear (back view) delts. The cut keeps the outline's own curves (split exactly with de Casteljau) and leaves a thin seam like the gaps between every other muscle.
-  - `body-geometry.shoulders.test.js` holds the old shapes and checks that the heads stay inside them, never overlap, and leave only the seam. The body-paths module grew by about 1.9 KB (1.1 KB gzipped), inside the existing size budget.
+- `deltoids` on the Muscle map becomes `front-delts`, `side-delts` and `rear-delts`, in head-to-toe order where `deltoids` stood. The Muscle map has 21 muscles.
+- **Primary head.** Every delts-primary catalogue exercise takes its head from a reviewed id list, `PRIMARY_DELT_HEAD_IDS` in `lib/shoulder-heads.js`. That list is the only owner of a primary head. No name matching happens at runtime.
+- **Helper credit follows the movement.** A plain "shoulders" or "deltoids" secondary is read by the exercise's catalogue target: upper back and lats to rear, traps to side, everything else to front. A short reviewed exception list overrides that rule. "Rear deltoids" and "rotator cuff" read as rear.
+- The rewrite runs once when the catalogue index is built, after the curation overlay (ADR 0012, 0025). The upstream dataset stays untouched.
+- **Plain Shoulders is read, never migrated.** A Shoulders with no head on a custom exercise, a plan file or an old custom-exercise snapshot reads as front 1, side 0.4 and rear 0.4 when primary, and front 0.4 when secondary. A bodypart-only "shoulders" exercise reads like a plain Shoulders primary. Stored data is never rewritten.
+- **Filters.** The Library and exercise-picker filters show the three heads, plus a Shoulders chip that matches any head. The chip is a filter only and is never credited. The custom-exercise muscle picker offers only the heads.
+- **Drawing.** The front view draws front and side delts; the back view draws rear and side delts, for both body models. As with the lats (ADR 0009), the old `deltoids` shapes were partitioned and no new outline was drawn. The female front view already had two shapes per shoulder; the other views had one, cut along a curve that keeps the outline's own curves. `lib/body-geometry.shoulders.test.js` holds the old shapes and checks that the heads stay inside them and never overlap.
+
+Why each id has its head, and why rotator-cuff work reads as rear, is written in `lib/shoulder-heads.js`.
 
 ## Consequences
 
-- Lateral raises count for side delts, rear-delt work for rear delts, and bench pressing gives front delts helper credit. Fatigue, retained strength, balance and session muscle distribution all list the three heads.
-- A legacy Shoulders custom spreads to all three heads. Editing it in the custom-exercise picker shows the heads; saving writes them only if the lifter changes the muscle selection, so an untouched exercise keeps its stored muscles.
-- Delt-head evidence is EMG, not growth; the assignments are a reasonable reading, not a measurement.
+- Lateral raises count for side delts, rear-delt work for rear delts, and bench pressing gives the front delts helper credit. Fatigue, Retained strength, balance and Session muscle distribution list the three heads.
+- A legacy Shoulders custom exercise spreads to all three heads. Editing it shows the heads, and saving writes them only if the lifter changes the muscle selection.
+- Delt-head evidence is EMG, not growth: the assignments are a reasonable reading, not a measurement.
