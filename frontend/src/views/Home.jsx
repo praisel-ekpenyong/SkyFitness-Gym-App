@@ -12,6 +12,7 @@ import { t, dateLocale } from '../lib/i18n.js'
 import { exOr } from '../lib/exercises.js'
 import { loadOfRoutine, loadOfActive, rankOf, MUSCLE_NAME } from '../lib/muscles.js'
 import { selectStatsOverview } from '../lib/stats-selectors.js'
+import { streakOf } from '../lib/streak.js'
 import { FATIGUE_LEVELS } from '../lib/recovery-view.js'
 import { bwSheet, goalSheet, dayOverrideSheet, calendarSheet, startFlow, exerciseDetailSheet } from '../sheets.jsx'
 import LineChart from '../components/LineChart.jsx'
@@ -26,7 +27,8 @@ function muscleNames(load, n = 3) {
   return rankOf(load).worked.slice(0, n).map(m => t(MUSCLE_NAME[m])).join(' · ')
 }
 
-function RecoveryMap({ S, overview }) {
+function RecoveryMap({ S }) {
+  const overview = useMemo(() => selectStatsOverview(S, { now: Date.now() }), [S])
   const tired = Object.keys(overview.fatigue.states).filter(m => overview.fatigue.states[m] !== 'ready')
   return <>
     <div className="home-hero-map"><BodyMap className="hm-fatigue" load={overview.fatigue.values} thresholds={FATIGUE_LEVELS} body={S.body} /></div>
@@ -51,8 +53,7 @@ export default function Home() {
   const monday = new Date(today); monday.setDate(today.getDate() - ((today.getDay() + 6) % 7) + weekOffset * 7)
   const doneDays = new Set(S.workouts.map(w => w.d))
   const doneToday = doneDays.has(todayISO())
-  const overview = useMemo(() => selectStatsOverview(S, { now: Date.now() }), [S])
-  const streak = overview.counts.streak
+  const streak = useMemo(() => streakOf(S), [S])
 
   const strip = []
   for (let i = 0; i < 7; i++) {
@@ -138,7 +139,7 @@ export default function Home() {
             </div>
             {heroLoad
               ? <div className="home-hero-map"><BodyMap load={heroLoad} body={S.body} /></div>
-              : S.workouts.length > 0 && <div className="home-hero-recovery"><RecoveryMap S={S} overview={overview} /></div>}
+              : S.workouts.length > 0 && <div className="home-hero-recovery"><RecoveryMap S={S} /></div>}
           </div>
 
           {S.active ? (
