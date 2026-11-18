@@ -1,6 +1,7 @@
 // iOS Safari evicts website data under storage pressure, so the log's only home can't be localStorage alone.
 
 import { MOBILE, nativeLoad, nativeSave } from './mobile.js'
+import { cleanSex } from './sex.js'
 
 export const LOCAL_KEY = 'gym_state_v1'
 
@@ -218,7 +219,7 @@ const RESTORE_TOP_KEYS = [
   'unit', 'restSec', 'sound', 'keepAwake', 'theme', 'accent', 'body', 'targetW',
   'bodyweight', 'routines', 'week', 'dayPlan', 'exWeights', 'workouts', 'customEx',
   'gifSize', 'favorites', 'reminder', 'effort', 'lastExport', 'displayName',
-  'trainingStyle', 'volumeRanges'
+  'trainingStyle', 'volumeRanges', 'sex'
 ]
 
 export function sanitizeRestorePayload(data) {
@@ -254,6 +255,7 @@ export function sanitizeRestorePayload(data) {
   for (const k of RESTORE_TOP_KEYS) {
     if (data[k] !== undefined) clean[k] = data[k]
   }
+  if (clean.sex !== undefined) clean.sex = cleanSex(clean.sex)
   if (workouts !== undefined) clean.workouts = workouts
   if (routines !== undefined) {
     clean.routines = routines

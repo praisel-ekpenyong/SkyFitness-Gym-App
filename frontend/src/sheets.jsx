@@ -303,6 +303,26 @@ function DisplayNameSheet({ close }) {
 }
 export const displayNameSheet = () => ui().openSheet(close => <DisplayNameSheet close={close} />)
 
+function SexSheet({ close }) {
+  const st = S()
+  const choose = value => {
+    update(s0 => { s0.sex = value })
+    close()
+    toast(value ? t('Sex saved') : t('Sex cleared'))
+  }
+  return <>
+    <h3>{t('Sex')}</h3>
+    <div className="sheet-sub">{t('Only used to pick the strength standards. Stays on this device.')}</div>
+    <div className="gap16" />
+    <Button variant="primary" onClick={() => choose('male')}>{t('Male')}</Button>
+    <div className="gap8" />
+    <Button variant="primary" onClick={() => choose('female')}>{t('Female')}</Button>
+    {st.sex && <><div className="gap8" /><Button variant="ghost" onClick={() => choose(null)}>{t('Clear')}</Button></>}
+  </>
+}
+/** Opens the sex sheet (strength standards only). */
+export const sexSheet = () => ui().openSheet(close => <SexSheet close={close} />)
+
 export const glyphPicker = (current, onPick) => {
   const cur = glyphOf(current)
   return ui().openSheet(close => <>
