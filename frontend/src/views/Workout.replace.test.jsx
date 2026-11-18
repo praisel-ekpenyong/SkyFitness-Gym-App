@@ -247,6 +247,21 @@ describe('Workout performed entry replacement', () => {
   })
 })
 
+describe('Replace goes through the view\'s sender', () => {
+  it('sends the replaceExercise command through the sender it was given, so its effects run', () => {
+    seedActiveWorkout([entry('1001')])
+    const sent = []
+    const send = command => { sent.push(command.type); return useStore.getState().act(command, send) }
+
+    replaceActiveExerciseFlow(0, send)
+    act(() => { mocks.exercisePicker.mock.calls[0][0]({ id: '1002', n: 'Incline Bench Press' }) })
+    act(() => { mocks.exConfigSheet.mock.calls[0][2]({ sets: 1, reps: 10, weight: 40 }) })
+
+    expect(sent).toEqual(['replaceExercise'])
+    expect(useStore.getState().S.active.entries[0].id).toBe('1002')
+  })
+})
+
 describe('Hold timer halted on replace', () => {
   it('halts any running hold timer prior to replacement when no confirmation is needed', () => {
     seedActiveWorkout([entry('1001')])
@@ -254,7 +269,7 @@ describe('Hold timer halted on replace', () => {
     useUI.getState().startWork(30, 'Plank', timerCallback, () => true)
     expect(useUI.getState().work).not.toBeNull()
 
-    replaceActiveExerciseFlow(0)
+    replaceActiveExerciseFlow(0, command => useStore.getState().act(command))
 
     expect(useUI.getState().work).toBeNull()
   })
@@ -267,7 +282,7 @@ describe('Hold timer halted on replace', () => {
     useUI.getState().startWork(30, 'Plank', timerCallback, () => true)
     expect(useUI.getState().work).not.toBeNull()
 
-    replaceActiveExerciseFlow(0)
+    replaceActiveExerciseFlow(0, command => useStore.getState().act(command))
 
     expect(mocks.confirmSheet).toHaveBeenCalledOnce()
     expect(useUI.getState().work).not.toBeNull()
@@ -288,7 +303,7 @@ describe('Hold timer halted on replace', () => {
     useUI.getState().startWork(30, 'Plank', timerCallback, () => true)
     expect(useUI.getState().work).not.toBeNull()
 
-    replaceActiveExerciseFlow(0)
+    replaceActiveExerciseFlow(0, command => useStore.getState().act(command))
 
     expect(mocks.confirmSheet).toHaveBeenCalledOnce()
     expect(useUI.getState().work).not.toBeNull()

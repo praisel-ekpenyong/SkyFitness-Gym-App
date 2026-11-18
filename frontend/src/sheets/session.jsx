@@ -268,8 +268,10 @@ function doFinishWorkout() {
  * picker and configuration sheet before committing the replacement in store.
  *
  * @param {number} idx - Index of the exercise entry in active workout entries.
+ * @param {(command: Object) => *} send - The view's sender, so the replacement's effects run like any other command's.
  */
-export function replaceActiveExerciseFlow(idx) {
+export function replaceActiveExerciseFlow(idx, send) {
+  if (typeof send !== 'function') throw new TypeError('Replacing an exercise needs the view\'s sender')
   const curS = useStore.getState().S
   const A = curS?.active
   if (!A) return
@@ -287,7 +289,7 @@ export function replaceActiveExerciseFlow(idx) {
       const seed = seedForReplacement(s, newEx.id, act?.routineId, plannedCount)
       delete seed.notes
       exConfigSheet(newEx, null, cfg => {
-        useStore.getState().act({ type: 'replaceExercise', entry: idx, exId: newEx.id, target: cfg })
+        send({ type: 'replaceExercise', entry: idx, exId: newEx.id, target: cfg })
       }, null, routine, seed, null, t('Replace'))
     })
   }

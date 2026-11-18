@@ -373,14 +373,14 @@ function ActiveWorkout() {
           <h3>{t('Replace exercise')}</h3>
           <div className="sheet-sub">{t('Which exercise in this superset do you want to replace?')}</div>
           <div className="list">
-            {step.map(idx => <div key={idx} className="item" onClick={() => { close(); replaceActiveExerciseFlow(idx) }}>
+            {step.map(idx => <div key={idx} className="item" onClick={() => { close(); replaceActiveExerciseFlow(idx, send) }}>
               <div className="grow"><div className="tt">{exOr(A.entries[idx]?.id).n}</div></div>
               <Icon name="chevronRight" />
             </div>)}
           </div>
         </div>
       ))
-    } else replaceActiveExerciseFlow(cur)
+    } else replaceActiveExerciseFlow(cur, send)
   }
 
   const reorderExerciseSheet = () => {
@@ -431,12 +431,12 @@ function ActiveWorkout() {
             {k > 0 && <div className="ss-amp"><Icon name="plus" /></div>}
             <ExerciseBlock entryIdx={idx} compact isCurrent={idx === cur} restKey={k === 0 ? restKey : null}
               onToggle={i => toggle(idx, i)} onField={(i, f, v) => setField(idx, i, f, v)} onAddSet={() => addSet(idx)} onRemoveSet={() => removeSet(idx)} onAddWarmup={() => addWarmup(idx)} onRemoveSetAt={i => removeSetAt(idx, i)} onStartTimed={i => startTimed(idx, i)}
-              onReplace={replaceActiveExerciseFlow} />
+              onReplace={idx => replaceActiveExerciseFlow(idx, send)} />
           </div>)}
         </div>
       ) : (
         <ExerciseBlock entryIdx={cur} arrived={shown.moved} restKey={restKey} onToggle={i => toggle(cur, i)} onField={(i, f, v) => setField(cur, i, f, v)} onAddSet={() => addSet(cur)} onRemoveSet={() => removeSet(cur)} onAddWarmup={() => addWarmup(cur)} onRemoveSetAt={i => removeSetAt(cur, i)} onStartTimed={i => startTimed(cur, i)}
-          onReplace={replaceActiveExerciseFlow} />
+          onReplace={idx => replaceActiveExerciseFlow(idx, send)} />
       )}
       {nextIdx != null && <button className="btn primary wk-next" onClick={() => goTo(nextIdx)}>
         <NextLabel name={exOr(A.entries[nextIdx].id).n} /><Icon name="chevronRight" />
