@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
-import { fmtNum, fmtSigned } from '../lib/format.js'
+import { fmtNum, fmtSigned, fmtVol } from '../lib/format.js'
 import { fmtDate, todayISO } from '../lib/dates.js'
 import { recordWeighIn, deleteWeighIn, latestWeighIn } from '../lib/bodyweight.js'
 import { t } from '../lib/i18n.js'
@@ -136,7 +136,7 @@ function GoalSheet({ close }) {
         update(s => { s.targetW = n })
         close()
         const b = latestWeighIn(S())
-        toast(b ? t('Goal set: {0} ({1})', fmtNum(n) + ' ' + st.unit, t('{0} to go', fmtNum(Math.abs(n - b.w)))) : t('Goal set: {0}', fmtNum(n) + ' ' + st.unit))
+        toast(b ? t('Goal set: {0} ({1})', fmtVol(n, st.unit), t('{0} to go', fmtNum(Math.abs(n - b.w)))) : t('Goal set: {0}', fmtVol(n, st.unit)))
       }}>
         {t('Save goal')}
       </Button>

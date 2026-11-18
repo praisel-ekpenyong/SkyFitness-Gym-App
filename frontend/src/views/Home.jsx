@@ -7,7 +7,7 @@ import { tonnage, lastWorkoutInRoutine } from '../lib/training-log.js'
 import { dayStatus } from '../lib/schedule.js'
 import { summarizeWorkouts } from '../lib/workout-summary.js'
 import { latestWeighIn, prevWeighIn, deltaTowardGoal } from '../lib/bodyweight.js'
-import { fmtNum, fmtSigned, fmtVol, durPart, exCount } from '../lib/format.js'
+import { fmtNum, fmtSigned, fmtVol, NBSP, durPart, exCount } from '../lib/format.js'
 import { fmtDate, todayISO, isoOf, weekKey, DAYS, workoutTimestamp } from '../lib/dates.js'
 import { exLine } from '../lib/format.js'
 import { t, dateLocale } from '../lib/i18n.js'
@@ -244,14 +244,14 @@ export default function Home() {
               <div className="fig bw-fig">{fmtNum(bw.w)}<span className="u"> {S.unit}</span></div>
               {!!delta && (
                 <span className="delta-pill" style={{ color: deltaTowardGoal(S.targetW, bw.w, delta) }}>
-                  {fmtSigned(delta)} {S.unit}
+                  {fmtSigned(delta)}{NBSP}{S.unit}
                 </span>
               )}
               <span className="dim small bw-when">{fmtDate(bw.d, true)}</span>
             </div>
             {S.targetW && (
               <div className="goal-row">
-                {t('Goal')} {fmtNum(S.targetW)} {S.unit} · {Math.abs(S.targetW - bw.w) < 0.05 ? t('reached!') : t(S.targetW > bw.w ? '{0} to gain' : '{0} to lose', fmtNum(Math.abs(S.targetW - bw.w)) + ' ' + S.unit)}
+                {t('Goal')} {fmtVol(S.targetW, S.unit)} · {Math.abs(S.targetW - bw.w) < 0.05 ? t('reached!') : t(S.targetW > bw.w ? '{0} to gain' : '{0} to lose', fmtVol(Math.abs(S.targetW - bw.w), S.unit))}
               </div>
             )}
             <div className="chart bw-chart"><LineChart points={bwPoints} h={120} unit={S.unit} goal={S.targetW} /></div>

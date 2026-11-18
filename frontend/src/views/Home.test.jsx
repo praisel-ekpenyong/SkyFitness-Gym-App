@@ -6,7 +6,8 @@ import { readFileSync } from 'node:fs'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import Home from './Home.jsx'
-import { useStore, DEF } from '../store/useStore.js'
+import { useStore } from '../store/useStore.js'
+import { DEF } from '../lib/profile/index.js'
 import { todayISO, isoOf } from '../lib/dates.js'
 
 vi.mock('react-router-dom', () => ({ useNavigate: () => vi.fn() }))
@@ -277,7 +278,7 @@ describe('Home declarative weekly progress card (non-gamified PRODUCT.md voice)'
 
     await act(async () => { root.render(<Home />) })
 
-    expect(container.querySelector('.bw-card .delta-pill').textContent).toBe('\u22120.2 kg')
+    expect(container.querySelector('.bw-card .delta-pill').textContent).toBe('\u22120.2\u00a0kg')
   })
 })
 

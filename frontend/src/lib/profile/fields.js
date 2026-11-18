@@ -1,8 +1,8 @@
-// The Profile's optional strength fields, cleaned the same way on the store path (normalizeState)
-// and the restore path (sanitizeRestorePayload). One clean function per field, one clock.
+// The Profile's optional strength fields. normalizeState cleans them on every way in (boot, sync,
+// Restore), so there is one clean function per field and one clock.
 
-import { cleanSex } from './sex.js'
-import { cleanBirthYear } from './birth-year.js'
+import { cleanSex } from '../sex.js'
+import { cleanBirthYear } from '../birth-year.js'
 
 /** The clean function for each optional Profile field. Keys are the stored top-level keys. */
 export const PROFILE_CLEAN = {

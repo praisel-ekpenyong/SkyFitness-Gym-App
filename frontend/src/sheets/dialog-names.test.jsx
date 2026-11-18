@@ -3,7 +3,8 @@ import { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import Modals from '../components/Modals.jsx'
-import { DEF, useStore } from '../store/useStore.js'
+import { useStore } from '../store/useStore.js'
+import { DEF } from '../lib/profile/index.js'
 import { useUI } from '../store/useUI.js'
 import { exOr } from '../lib/exercises.js'
 import { bwSheet, goalSheet } from './bodyweight.jsx'
@@ -59,7 +60,7 @@ const OPENERS = {
   addToRoutineSheet: { renders: 'AddToRoutine', open: () => addToRoutineSheet(ex()) },
   customExSheet: { renders: 'CustomExForm', open: () => customExSheet(null, () => {}) },
   exercisePicker: { renders: 'ExercisePicker', open: () => exercisePicker(() => {}) },
-  exConfigSheet: { renders: 'ExConfig', open: () => exConfigSheet(ex(), null, () => {}) },
+  exConfigSheet: { renders: 'ExConfig', open: () => exConfigSheet(ex(), { onSave: () => {} }) },
   volumeRangesSheet: { renders: 'VolumeRangesSheet', open: volumeRangesSheet },
   rangeEditSheet: { renders: 'RangeEditSheet', open: () => useUI.getState().openSheet(close => <RangeEditSheet slug="chest" close={close} />) },
   importSummary: {

@@ -91,30 +91,25 @@ export default function RoutineEdit() {
       return <div key={i}>
         {unitFirst.has(i) && <div className="ss-label"><Icon name="link" />{t('Superset')}</div>}
         <div className={'item rt-ex' + (inSS.has(i) ? ' in-ss' : '')} onClick={() => {
-          exConfigSheet(
-            ex,
-            e,
-            cfg => edit(x => { x[i] = { id: x[i].id, sg: x[i].sg, ...cfg } }),
-            () => edit(x => { x.splice(i, 1); cleanupSg(x) }),
-            r,
-            null,
-            () => exercisePicker(newEx => {
+          exConfigSheet(ex, {
+            existing: e,
+            onSave: cfg => edit(x => { x[i] = { id: x[i].id, sg: x[i].sg, ...cfg } }),
+            onDelete: () => edit(x => { x.splice(i, 1); cleanupSg(x) }),
+            routine: r,
+            onReplace: () => exercisePicker(newEx => {
               const initial = seedForReplacement(S, newEx.id, id, e.sets)
               if (initial) delete initial.notes
-              exConfigSheet(
-                newEx,
-                null,
-                cfg => edit(x => {
+              exConfigSheet(newEx, {
+                onSave: cfg => edit(x => {
                   const next = { id: newEx.id, sg: e.sg, ...cfg }
                   if (!e.sg) delete next.sg
                   x[i] = next
                 }),
-                null,
-                r,
-                initial
-              )
-            })
-          )
+                routine: r,
+                initial,
+              })
+            }),
+          })
         }}>
           <Thumb ex={ex} />
           <div className="grow">
@@ -131,7 +126,7 @@ export default function RoutineEdit() {
       </div>
     })}</div> : <div className="empty"><div className="ico"><Icon name="dumbbell" /></div>{t('No exercises yet — add your first one.')}</div>}
 
-    <Button variant="primary" onClick={() => exercisePicker(ex => exConfigSheet(ex, null, cfg => edit(x => { x.push({ id: ex.id, ...cfg }) }), null, r))} icon="plus">{t('Add exercise')}</Button>
+    <Button variant="primary" onClick={() => exercisePicker(ex => exConfigSheet(ex, { onSave: cfg => edit(x => { x.push({ id: ex.id, ...cfg }) }), routine: r }))} icon="plus">{t('Add exercise')}</Button>
     <Button variant="ghost" className="rt-delete" onClick={() => confirmSheet({
       title: t('Delete routine?'), message: t('“{0}” and its exercises will be removed.', r.name), confirmText: t('Delete'), danger: true,
       onConfirm: () => {

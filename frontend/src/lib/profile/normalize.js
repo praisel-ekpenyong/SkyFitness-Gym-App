@@ -1,6 +1,6 @@
 import { ACCENTS } from '../format.js'
 import { trainingStyleOf, cleanVolumeRanges } from '../volume-ranges.js'
-import { cleanProfileFields } from '../profile-fields.js'
+import { cleanProfileFields } from './fields.js'
 import { streakRuleOf } from '../streak.js'
 import { DEF } from './def.js'
 import { admit } from './admit.js'

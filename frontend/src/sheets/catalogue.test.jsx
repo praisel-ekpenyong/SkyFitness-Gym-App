@@ -3,7 +3,8 @@ import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { ExerciseDetail, deleteCustomEx, ExercisePicker, CustomExForm, ExConfig, exConfigSheet } from './catalogue.jsx'
-import { useStore, DEF } from '../store/useStore.js'
+import { useStore } from '../store/useStore.js'
+import { DEF } from '../lib/profile/index.js'
 import { useUI } from '../store/useUI.js'
 
 let container
@@ -1102,7 +1103,7 @@ describe('ExConfig and exConfigSheet onReplace support', () => {
 
   it('passes onReplace through exConfigSheet to ExConfig', async () => {
     const onReplace = vi.fn()
-    exConfigSheet(sampleEx, { id: '0001', sets: 3, reps: 10 }, vi.fn(), vi.fn(), null, null, onReplace)
+    exConfigSheet(sampleEx, { existing: { id: '0001', sets: 3, reps: 10 }, onSave: vi.fn(), onDelete: vi.fn(), onReplace })
 
     const sheets = useUI.getState().sheets
     expect(sheets.length).toBe(1)
@@ -1139,7 +1140,7 @@ describe('ExConfig and exConfigSheet onReplace support', () => {
   })
 
   it('passes actionLabel through exConfigSheet to ExConfig', async () => {
-    exConfigSheet(sampleEx, null, vi.fn(), null, null, null, null, 'Custom Action')
+    exConfigSheet(sampleEx, { onSave: vi.fn(), actionLabel: 'Custom Action' })
     const sheets = useUI.getState().sheets
     expect(sheets.length).toBe(1)
     await act(async () => {

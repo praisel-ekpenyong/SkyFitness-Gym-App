@@ -2,7 +2,8 @@
 // Age adjustment: the birth year travels with Export and Restore, Reset clears it,
 // the plan file never carries it, and an invalid stored value reads as not set.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { useStore, DEF, normalizeState } from './useStore.js'
+import { useStore } from './useStore.js'
+import { DEF, normalizeState } from '../lib/profile/index.js'
 import { __setSinksForTests, __setLocalWriteForTests, flush } from '../platform/storage.js'
 import { restoreFromBackup, resetProfile } from '../platform/restore.js'
 import { buildPlanBundle } from '../lib/plan-share.js'
