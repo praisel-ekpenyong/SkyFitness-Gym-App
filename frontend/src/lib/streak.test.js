@@ -121,6 +121,19 @@ describe('streakOf', () => {
     })
   })
 
+  it('counts the counted weeks left until the next freeze is earned', () => {
+    // Gentle mid-run: three counted weeks, one more earns the freeze.
+    expect(streakOf({ workouts: on('2026-06-15', '2026-06-22', '2026-06-29') }, at(2026, 7, 1)).toNextFreeze).toBe(1)
+    // Gentle with the bank full: five counted weeks, the next freeze comes at the eighth (and would be lost).
+    const full = streakOf({ workouts: on('2026-06-01', '2026-06-08', '2026-06-15', '2026-06-22', '2026-06-29') }, at(2026, 7, 1))
+    expect(full.freezes).toBe(1)
+    expect(full.toNextFreeze).toBe(3)
+    // Strict banks nothing but still counts toward the four-week mark.
+    expect(streakOf({ streakRule: 'strict', workouts: on('2026-06-22', '2026-06-29') }, at(2026, 7, 1)).toNextFreeze).toBe(2)
+    // A fresh streak needs the full four.
+    expect(streakOf({ workouts: [] }, at(2026, 7, 1)).toNextFreeze).toBe(4)
+  })
+
   it('reads the stored rule, with an absent or unknown value as Gentle', () => {
     const workouts = on('2026-06-01')
     expect(streakOf({ workouts, streakRule: 'generous' }, at(2026, 7, 1)).rule).toBe('generous')

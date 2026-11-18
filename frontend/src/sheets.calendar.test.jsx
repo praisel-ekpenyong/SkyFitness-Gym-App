@@ -109,6 +109,19 @@ describe('Calendar week marks', () => {
     expect(explanation()).toBe('No workout, and your rule has no freezes, so the streak started over.')
   })
 
+  it('changing month clears the selected week and its explanation', async () => {
+    await render('2026-06-01T12:00:00')
+    await tap('Week of 15 Jun: counted')
+    expect(explanation()).toBe('You trained, so this week counts. Streak: 5.')
+    const nav = label => act(async () => { container.querySelector(`button[aria-label="${label}"]`).click() })
+    await nav('Previous month')
+    expect(explanation()).toBe('')
+    expect(container.querySelector('button.cal-mark[aria-pressed="true"]')).toBeNull()
+    await nav('Next month')
+    expect(explanation()).toBe('')
+    expect(mark('Week of 15 Jun: counted').getAttribute('aria-pressed')).toBe('false')
+  })
+
   it('marks are buttons with an accessible name', async () => {
     await render('2026-06-01T12:00:00')
     expect(marks().every(b => b.tagName === 'BUTTON' && b.getAttribute('aria-label'))).toBe(true)

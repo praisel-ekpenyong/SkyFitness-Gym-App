@@ -81,6 +81,17 @@ export function weekKey(d) {
 }
 
 /**
+ * The Monday that starts the ISO week holding a day.
+ * @param {string} d - Day key in `YYYY-MM-DD` form.
+ * @returns {string} That week's Monday as a `YYYY-MM-DD` day key.
+ */
+export function mondayOf(d) {
+  const dt = new Date(d + 'T12:00:00')
+  dt.setDate(dt.getDate() - ((dt.getDay() + 6) % 7))
+  return isoOf(dt)
+}
+
+/**
  * Groups a day key or dated record into its calendar month bucket.
  * @param {string|Object} value - Day key string, or an object carrying a `d` day key; empty or missing input reads as empty.
  * @returns {string} `YYYY-MM` prefix, or an empty string when nothing parseable was given.

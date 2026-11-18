@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { weekExplanation, markLabel, freezeLine } from './streak-explain.js'
+import { weekExplanation, markLabel, markIcon, freezeLine } from './streak-explain.js'
 
 describe('weekExplanation', () => {
   it('a counted week says so with its streak, and names an earned freeze', () => {
@@ -7,6 +7,11 @@ describe('weekExplanation', () => {
       .toBe('You trained, so this week counts. Streak: 3.')
     expect(weekExplanation({ state: 'counted', run: 4, earned: true }, 'gentle'))
       .toBe('You trained, so this week counts. Streak: 4. It also earned a freeze.')
+  })
+
+  it('formats the streak number like every other number', () => {
+    expect(weekExplanation({ state: 'counted', run: 1234, earned: false }, 'gentle'))
+      .toBe('You trained, so this week counts. Streak: 1,234.')
   })
 
   it('a frozen week says a freeze covered it and adds nothing', () => {
@@ -35,6 +40,16 @@ describe('markLabel', () => {
     expect(markLabel('3 Nov', 'counted')).toBe('Week of 3 Nov: counted')
     expect(markLabel('10 Nov', 'broke')).toBe('Week of 10 Nov: broke')
     expect(markLabel('17 Nov', 'open')).toBe('Week of 17 Nov: open')
+  })
+})
+
+describe('markIcon', () => {
+  it('gives each week state its icon, and an open week none', () => {
+    expect(markIcon('counted')).toBe('check')
+    expect(markIcon('frozen')).toBe('shield')
+    expect(markIcon('broke')).toBe('xmark')
+    expect(markIcon('missed')).toBe('minus')
+    expect(markIcon('open')).toBeNull()
   })
 })
 

@@ -17,6 +17,7 @@ import {
   MINUS,
   exCount,
   weekKey,
+  mondayOf,
   localTZ,
   uid,
   ACCENTS,
@@ -169,6 +170,15 @@ describe('format utility module', () => {
       expect(weekKey('2026-01-05')).toBe('2026-2')
       expect(weekKey('2026-08-24')).toBe('2026-35')
       expect(weekKey('2026-12-28')).toBe('2026-53')
+    })
+  })
+
+  describe('mondayOf', () => {
+    it('gives the Monday of the ISO week holding a day, across month and year ends', () => {
+      expect(mondayOf('2026-07-01')).toBe('2026-06-29')
+      expect(mondayOf('2026-06-29')).toBe('2026-06-29')
+      expect(mondayOf('2026-07-05')).toBe('2026-06-29')
+      expect(mondayOf('2027-01-01')).toBe('2026-12-28')
     })
   })
 

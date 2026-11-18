@@ -24,7 +24,7 @@ import { parseImport, mergeImport, importPreview } from './lib/import-csv.js'
 import { buildPlanBundle, parsePlan, mergePlan, printPlan } from './lib/plan-share.js'
 import { monthRecap } from './lib/recap.js'
 import { streakOf } from './lib/streak.js'
-import { weekExplanation, markLabel, freezeLine, rulePreviewLine, ruleSegmentPreview, RULE_ORDER, RULE_NAME } from './lib/streak-explain.js'
+import { weekExplanation, markLabel, markIcon, freezeLine, rulePreviewLine, ruleSegmentPreview, RULE_ORDER, RULE_NAME } from './lib/streak-explain.js'
 import { weekKey, isoOf } from './lib/format.js'
 import { MOBILE, shareExport } from './lib/mobile.js'
 import { configureSessionSheets } from './sheets/session.jsx'
@@ -498,12 +498,12 @@ export function WorkoutDetail({ w, close }) {
 }
 export const workoutDetailSheet = w => ui().openSheet(close => <WorkoutDetail w={w} close={close} />)
 
-const WEEK_MARK_ICON = { counted: 'check', frozen: 'shield', broke: 'xmark', missed: 'minus', open: null }
-
 export function Calendar({ start, close }) {
   const st = useStore(s => s.S)
   const [cur, setCur] = useState(() => { const d = start ? new Date(start) : new Date(); d.setDate(1); return d })
   const [sel, setSel] = useState(null)
+  // A new month shows new weeks, so the selected week and its explanation go with the old one.
+  const goMonth = d => { setCur(d); setSel(null) }
   const streak = streakOf(st)
   const y = cur.getFullYear(), mo = cur.getMonth()
   const byDay = {}
@@ -537,15 +537,15 @@ export function Calendar({ start, close }) {
     rows.push(...padded.slice(r * 7, r * 7 + 7), rec
       ? <button key={'m' + r} type="button" className={'cal-mark ' + word + (sel === wk ? ' on' : '')}
           aria-label={markLabel(fmtDate(mondayIso), word)} aria-pressed={sel === wk}
-          onClick={() => setSel(wk)}>{WEEK_MARK_ICON[word] && <Icon name={WEEK_MARK_ICON[word]} />}</button>
+          onClick={() => setSel(wk)}>{markIcon(word) && <Icon name={markIcon(word)} />}</button>
       : <span key={'m' + r} className="cal-mark-gap" />)
   }
   const selected = sel ? streak.weeks[sel] : null
   return <>
     <div className="row between sheet-head">
-      <button className="iconbtn" onClick={() => setCur(new Date(y, mo - 1, 1))} aria-label={t('Previous month')}><Icon name="chevronLeft" /></button>
+      <button className="iconbtn" onClick={() => goMonth(new Date(y, mo - 1, 1))} aria-label={t('Previous month')}><Icon name="chevronLeft" /></button>
       <h3>{t(MONTHS_LONG[mo])} {y}</h3>
-      <button className="iconbtn" onClick={() => setCur(new Date(y, mo + 1, 1))} aria-label={t('Next month')}><Icon name="chevronRight" /></button>
+      <button className="iconbtn" onClick={() => goMonth(new Date(y, mo + 1, 1))} aria-label={t('Next month')}><Icon name="chevronRight" /></button>
     </div>
     <div className="small cal-streak">
       <span>{t(streak.current === 1 ? 'Streak {0} week' : 'Streak {0} weeks', fmtNum(streak.current))}</span>

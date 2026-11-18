@@ -1,4 +1,4 @@
-import { weekKey, isoOf } from './format.js'
+import { weekKey, isoOf, mondayOf } from './format.js'
 import { hasWorkSet } from './workout-model.js'
 
 /** Freezes each rule can bank. */
@@ -11,13 +11,6 @@ const DAY_RE = /^\d{4}-\d{2}-\d{2}$/
 export function streakRuleOf(S) {
   const rule = S?.streakRule
   return typeof rule === 'string' && Object.hasOwn(FREEZE_BANK, rule) ? rule : DEFAULT_RULE
-}
-
-// Monday of the ISO week holding the given day key, as a day key.
-function mondayOf(iso) {
-  const d = new Date(iso + 'T12:00:00')
-  d.setDate(d.getDate() - ((d.getDay() + 6) % 7))
-  return isoOf(d)
 }
 
 // Walks the weeks from the first counted week up to the current week under one bank size.

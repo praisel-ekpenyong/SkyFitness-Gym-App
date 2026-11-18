@@ -6,7 +6,7 @@ import { fmtNum } from './format.js'
 export function weekExplanation(week, rule) {
   switch (week.state) {
     case 'counted': {
-      const base = t('You trained, so this week counts. Streak: {0}.', week.run)
+      const base = t('You trained, so this week counts. Streak: {0}.', fmtNum(week.run))
       return week.earned ? base + ' ' + t('It also earned a freeze.') : base
     }
     case 'frozen':
@@ -27,6 +27,13 @@ export function weekExplanation(week, rule) {
 /** The accessible name of a week's mark, e.g. "Week of 3 Nov: counted". */
 export function markLabel(dayLabel, state) {
   return t('Week of {0}: {1}', dayLabel, t(state))
+}
+
+const MARK_ICON = { counted: 'check', frozen: 'shield', broke: 'xmark', missed: 'minus' }
+
+/** The icon name drawn inside a week's mark, or null for a state with no icon (an open week). */
+export function markIcon(state) {
+  return MARK_ICON[state] ?? null
 }
 
 /** The freeze line under the calendar header: what the bank holds and how the next freeze is earned. */
