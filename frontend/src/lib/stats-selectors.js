@@ -1,6 +1,6 @@
 import { EXDB, EXIDX } from './exercises.js'
 import { fatigueOf, strengthOf, fatigueStateOf } from './recovery.js'
-import { MUSCLES, loadOfWorkouts, rankOf, lastTrainedByMuscle } from './muscles.js'
+import { MUSCLES, loadOfWorkouts, loadOfRoutine, rankOf, lastTrainedByMuscle } from './muscles.js'
 import { LB_TO_KG } from './bodyweight.js'
 import { best1RM, e1rmSeries, loadRecords, metric } from './training-log.js'
 import {
@@ -11,7 +11,7 @@ import {
   isPerformed, isWorkSet, metricRowsForEntry, metricModeForEntry, modeOf,
 } from './workout-model.js'
 import { workoutTimestamp, isoOf, weekKey, monthKey } from './format.js'
-import { streakWeeks, trainedWeeks } from './history.js'
+import { streakWeeks, trainedWeeks, effectiveRoutine } from './history.js'
 import { strengthExerciseRowsForMuscle } from './strength-exercises.js'
 import { volumeRangeOf, verdictOf } from './volume-ranges.js'
 
@@ -110,6 +110,30 @@ function workSetsOf(workouts) {
 }
 
 /**
+ * Planned work-set load still ahead this ISO week: today's routine (only before anything is
+ * trained today) plus every remaining day's effective routine. Null without a week schedule.
+ */
+function plannedLoadOf(S, today, muscleCatalogue) {
+  if (!Object.values(S?.week || {}).some(id => id && id !== 'rest')) return null
+  const week = weekKey(today)
+  const trainedToday = !!S?.active || (S?.workouts || []).some(w => w.d === today)
+  const planned = {}
+  const day = new Date(today + 'T12:00:00')
+  if (trainedToday) day.setDate(day.getDate() + 1)
+  for (let iso = isoOf(day); weekKey(iso) === week; day.setDate(day.getDate() + 1), iso = isoOf(day)) {
+    const routine = effectiveRoutine(S, iso)
+    if (!routine) continue
+    const ex = (routine.ex || []).map(c => {
+      const resolved = muscleCatalogue?.lookup(c?.id)
+      return resolved && typeof resolved === 'object' ? { ...resolved, ...c } : c
+    })
+    const load = loadOfRoutine({ ...routine, ex })
+    for (const slug in load) planned[slug] = (planned[slug] || 0) + load[slug]
+  }
+  return planned
+}
+
+/**
  * Weekly volume reading: effective sets done this ISO week (Workouts plus the Active workout)
  * per muscle, against its volume range.
  */
@@ -118,9 +142,10 @@ function weeklyVolumeOf(S, today, muscleCatalogue) {
   const thisWeek = (S?.workouts || []).filter(w => weekKey(w.d) === week)
   const sources = S?.active ? [...thisWeek, S.active] : thisWeek
   const raw = loadOfWorkouts(projectWorkouts(sources, muscleCatalogue))
+  const planned = plannedLoadOf(S, today, muscleCatalogue)
   const muscles = Object.fromEntries(MUSCLES.map(slug => {
     const done = round1(raw[slug] || 0)
-    const projected = null
+    const projected = planned ? round1((raw[slug] || 0) + (planned[slug] || 0)) : null
     const { range, edited } = volumeRangeOf(S, slug)
     return [slug, { done, projected, range, verdict: verdictOf(projected ?? done, range), edited }]
   }))

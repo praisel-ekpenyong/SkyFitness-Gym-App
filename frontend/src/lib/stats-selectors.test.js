@@ -530,3 +530,61 @@ describe('weekly volume', () => {
     expect(trapezius).toEqual({ done: 2, projected: null, range: null, verdict: null, edited: false })
   })
 })
+
+describe('projected volume', () => {
+  // NOW is Wednesday 1 July 2026; the ISO week runs Monday 29 June to Sunday 5 July.
+  // S.week is indexed by getDay(): 0 Sunday … 6 Saturday.
+  const MONDAY = NOW - 2 * DAY
+  const push = { id: 'push', name: 'Push', ex: [{ id: LIFT.id, sets: 4 }] }
+  const legs = { id: 'legs', name: 'Legs', ex: [{ id: 'squat', sets: 5 }] }
+  const SQUAT = { id: 'squat', n: 'Squat', muscleWeights: { quadriceps: 1, gluteal: 0.4 } }
+  const cat = { lookup: id => [LIFT, SQUAT].find(e => e.id === id) ?? null }
+  const monWedFri = () => ({ routines: [push, legs], week: [null, 'push', null, 'push', null, 'push', null], workouts: [] })
+  const volume = (S, now = NOW) => selectStatsOverview(S, { now, catalogue: cat }).weeklyVolume.muscles
+
+  it('reads a Monday with a full week schedule and nothing trained as on track', () => {
+    const { chest } = volume(monWedFri(), MONDAY)
+    expect(chest).toMatchObject({ done: 0, projected: 12, range: [10, 20], verdict: 'in' })
+  })
+
+  it('adds nothing for a missed past day mid-week', () => {
+    const { chest } = volume(monWedFri())
+    expect(chest).toMatchObject({ done: 0, projected: 8, verdict: 'below' })
+  })
+
+  it('counts a Rescheduled day in place of the week schedule', () => {
+    const S = { ...monWedFri(), dayPlan: { '2026-07-03': 'legs', '2026-07-02': 'push' } }
+    const { chest, quadriceps, gluteal } = volume(S)
+    expect(chest.projected).toBe(8)
+    expect(quadriceps).toMatchObject({ done: 0, projected: 5, verdict: 'below' })
+    expect(gluteal.projected).toBe(2)
+  })
+
+  it('adds nothing for a declared rest day', () => {
+    const S = { ...monWedFri(), dayPlan: { '2026-07-03': 'rest' } }
+    expect(volume(S).chest.projected).toBe(4)
+  })
+
+  it('has no projection without a week schedule, and the verdict reads sets done', () => {
+    const S = { routines: [push], workouts: [workoutAt(LIFT.id, 1, Array.from({ length: 10 }, () => doneSet(60, 8)))] }
+    expect(volume(S).chest).toMatchObject({ done: 10, projected: null, verdict: 'in' })
+  })
+
+  it('does not count today\'s routine again once today is trained', () => {
+    const S = { ...monWedFri(), workouts: [workoutAt(LIFT.id, 0, [doneSet(60, 8), doneSet(60, 8), doneSet(60, 8)])] }
+    expect(volume(S).chest).toMatchObject({ done: 3, projected: 7, verdict: 'below' })
+  })
+
+  it('counts an Active workout mid-session as done and leaves today\'s routine out', () => {
+    const S = { ...monWedFri(), active: { name: 'Push', start: NOW - 1800e3, entries: [{ id: LIFT.id, sets: [
+      doneSet(60, 8), doneSet(60, 8), { done: false, w: 60, r: 8 }, { done: true, warmup: true, w: 40, r: 10 },
+    ] }] } }
+    expect(volume(S).chest).toMatchObject({ done: 2, projected: 6, verdict: 'below' })
+  })
+
+  it('reads above from the projection when the plan passes the top of the range', () => {
+    const big = { ...push, ex: [{ id: LIFT.id, sets: 8 }] }
+    const S = { ...monWedFri(), routines: [big, legs], workouts: [workoutAt(LIFT.id, 1, Array.from({ length: 6 }, () => doneSet(60, 8)))] }
+    expect(volume(S).chest).toMatchObject({ done: 6, projected: 22, verdict: 'above' })
+  })
+})
