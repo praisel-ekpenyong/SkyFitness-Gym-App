@@ -15,7 +15,7 @@ import { applyStarterPlan } from './lib/starter.js'
 import { applyHypertrophyPlan } from './lib/plans/hypertrophy-5day.js'
 import { Thumb } from './components/Media.jsx'
 import Icon from './components/Icon.jsx'
-import { Button, NumberField, Switch } from './components/ui.jsx'
+import { Button, NumberField, Segmented, Switch } from './components/ui.jsx'
 import BodyMap from './components/BodyMap.jsx'
 import { SessionMuscleDistribution } from './components/SessionMuscleDistribution.jsx'
 import { loadOfWorkouts, MUSCLE_NAME } from './lib/muscles.js'
@@ -23,6 +23,9 @@ import { glyphOf, GLYPH_GROUPS } from './lib/glyphs.js'
 import { parseImport, mergeImport, importPreview } from './lib/import-csv.js'
 import { buildPlanBundle, parsePlan, mergePlan, printPlan } from './lib/plan-share.js'
 import { monthRecap } from './lib/recap.js'
+import { streakOf } from './lib/streak.js'
+import { weekExplanation, markLabel, markIcon, freezeLine, rulePreviewLine, ruleSegmentPreview, RULE_ORDER, RULE_NAME } from './lib/streak-explain.js'
+import { weekKey, isoOf } from './lib/format.js'
 import { MOBILE, shareExport } from './lib/mobile.js'
 import { configureSessionSheets } from './sheets/session.jsx'
 import { configureCatalogueSheets } from './sheets/catalogue.jsx'
@@ -495,9 +498,13 @@ export function WorkoutDetail({ w, close }) {
 }
 export const workoutDetailSheet = w => ui().openSheet(close => <WorkoutDetail w={w} close={close} />)
 
-function Calendar({ start, close }) {
+export function Calendar({ start, close }) {
   const st = useStore(s => s.S)
   const [cur, setCur] = useState(() => { const d = start ? new Date(start) : new Date(); d.setDate(1); return d })
+  const [sel, setSel] = useState(null)
+  // A new month shows new weeks, so the selected week and its explanation go with the old one.
+  const goMonth = d => { setCur(d); setSel(null) }
+  const streak = streakOf(st)
   const y = cur.getFullYear(), mo = cur.getMonth()
   const byDay = {}
   st.workouts.forEach(w => (byDay[w.d] = byDay[w.d] || []).push(w))
@@ -517,14 +524,41 @@ function Calendar({ start, close }) {
       close(); ui().openSheet(c2 => <><h3>{fmtDate(iso, true)}</h3><div className="list">{ws.map(w => <WorkoutRow key={w.id} w={w} onClick={() => { c2(); workoutDetailSheet(w) }} />)}</div></>)
     }}><span>{d}</span><i className={dotCls} /></button>)
   }
+  // One row per Monday-first week: seven day cells, then the week's mark (or a gap when it has none).
+  const padded = [...cells]
+  while (padded.length % 7) padded.push(<div key={'p' + padded.length} />)
+  const rows = []
+  for (let r = 0; r < padded.length / 7; r++) {
+    const monday = new Date(y, mo, 1 - startOffset + r * 7, 12)
+    const mondayIso = isoOf(monday)
+    const wk = weekKey(mondayIso)
+    const rec = streak.weeks[wk]
+    const word = rec?.state
+    rows.push(...padded.slice(r * 7, r * 7 + 7), rec
+      ? <button key={'m' + r} type="button" className={'cal-mark ' + word + (sel === wk ? ' on' : '')}
+          aria-label={markLabel(fmtDate(mondayIso), word)} aria-pressed={sel === wk}
+          onClick={() => setSel(wk)}>{markIcon(word) && <Icon name={markIcon(word)} />}</button>
+      : <span key={'m' + r} className="cal-mark-gap" />)
+  }
+  const selected = sel ? streak.weeks[sel] : null
   return <>
     <div className="row between sheet-head">
-      <button className="iconbtn" onClick={() => setCur(new Date(y, mo - 1, 1))} aria-label={t('Previous month')}><Icon name="chevronLeft" /></button>
+      <button className="iconbtn" onClick={() => goMonth(new Date(y, mo - 1, 1))} aria-label={t('Previous month')}><Icon name="chevronLeft" /></button>
       <h3>{t(MONTHS_LONG[mo])} {y}</h3>
-      <button className="iconbtn" onClick={() => setCur(new Date(y, mo + 1, 1))} aria-label={t('Next month')}><Icon name="chevronRight" /></button>
+      <button className="iconbtn" onClick={() => goMonth(new Date(y, mo + 1, 1))} aria-label={t('Next month')}><Icon name="chevronRight" /></button>
     </div>
+    <div className="small cal-streak">
+      <span>{t(streak.current === 1 ? 'Streak {0} week' : 'Streak {0} weeks', fmtNum(streak.current))}</span>
+      <span>{t(streak.best === 1 ? 'Best {0} week' : 'Best {0} weeks', fmtNum(streak.best))}</span>
+      <span>{t(streak.freezes === 1 ? '{0} freeze banked' : '{0} freezes banked', fmtNum(streak.freezes))}</span>
+      <span className="cal-next">{freezeLine(streak)}</span>
+    </div>
+    <Segmented className="cal-rule" label={t('Freeze rule')} value={streak.rule}
+      options={RULE_ORDER.map(v => ({ value: v, label: t(RULE_NAME[v]), sub: ruleSegmentPreview(streak.preview[v]), ariaLabel: rulePreviewLine(v, streak.preview[v]) }))}
+      onChange={v => update(s => { s.streakRule = v })} />
     <div className="small muted cal-sum">{monthWs.length ? `${t(monthWs.length === 1 ? '{0} workout' : '{0} workouts', fmtNum(monthWs.length))} · ${fmtDur(month.durationMs)} · ${fmtVol(month.tonnage, st.unit)}` : t('No workouts this month')}</div>
-    <div className="cal-grid">{['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].map(l => <div key={l} className="cal-h">{t(l)}</div>)}{cells}</div>
+    <div className="cal-grid">{['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].map(l => <div key={l} className="cal-h">{t(l)}</div>)}<div className="cal-h" aria-hidden="true" />{rows}</div>
+    <p className="small cal-explain" aria-live="polite">{selected ? weekExplanation(selected, streak.rule) : ''}</p>
     <div className="cal-legend">
       <span><i style={{ background: 'var(--data)' }} />{t('Trained')}</span>
       <span><i style={{ background: 'var(--label-3)' }} />{t('Planned')}</span>

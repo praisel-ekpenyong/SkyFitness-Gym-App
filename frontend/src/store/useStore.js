@@ -11,6 +11,7 @@ import { act } from '../lib/active-workout.js'
 import { syncRoutineFromSession } from '../lib/routine-sync.js'
 import { runEffects } from './effects.js'
 import { DEFAULT_STYLE, trainingStyleOf, cleanVolumeRanges } from '../lib/volume-ranges.js'
+import { streakRuleOf } from '../lib/streak.js'
 
 export const DEF = {
   unit: 'kg',
@@ -42,7 +43,8 @@ export const DEF = {
   displayName: null,
 
   trainingStyle: DEFAULT_STYLE,
-  volumeRanges: {}
+  volumeRanges: {},
+  streakRule: 'gentle'
 }
 const clone = o => {
   if (typeof structuredClone === 'function') {
@@ -64,6 +66,7 @@ export function normalizeState(raw) {
   S.dayPlan = raw.dayPlan && typeof raw.dayPlan === 'object' && !Array.isArray(raw.dayPlan) ? { ...raw.dayPlan } : {}
   S.reminder = { ...base.reminder, ...(raw.reminder && typeof raw.reminder === 'object' && !Array.isArray(raw.reminder) ? raw.reminder : {}) }
   S.trainingStyle = trainingStyleOf(raw)
+  S.streakRule = streakRuleOf(raw)
   S.volumeRanges = cleanVolumeRanges(raw.volumeRanges)
   S.accent = typeof raw.accent === 'string' && Object.hasOwn(ACCENTS, raw.accent) ? raw.accent : base.accent
   const a = raw.active

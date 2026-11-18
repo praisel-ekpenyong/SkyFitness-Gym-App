@@ -11,7 +11,8 @@ import {
   isPerformed, isWorkSet, metricRowsForEntry, metricModeForEntry, modeOf,
 } from './workout-model.js'
 import { workoutTimestamp, isoOf, weekKey, monthKey } from './format.js'
-import { streakWeeks, trainedWeeks, effectiveRoutine } from './history.js'
+import { trainedWeeks, effectiveRoutine } from './history.js'
+import { streakOf } from './streak.js'
 import { strengthExerciseRowsForMuscle } from './strength-exercises.js'
 import { volumeRangeOf, verdictOf } from './volume-ranges.js'
 import { REST } from './schedule.js'
@@ -237,12 +238,14 @@ export function selectStatsOverview(S, opts = {}) {
   }
   const exerciseIndex = [...index.values()].sort((a, b) => b.current - a.current || a.name.localeCompare(b.name))
 
+  const streak = streakOf(S, now)
+
   return {
     now,
     exerciseIndex,
     bodyweightKg,
     bodyweight,
-    counts: { total: workouts.length, month: workouts.filter(w => monthKey(w) === monthKey(today)).length, streak: streakWeeks(S, now), weeks12: trainedWeeks(S, 12, now) },
+    counts: { total: workouts.length, month: workouts.filter(w => monthKey(w) === monthKey(today)).length, streak: { current: streak.current, best: streak.best, freezes: streak.freezes }, weeks12: trainedWeeks(S, 12, now) },
     workouts: { recent: [...workouts].reverse().slice(0, 6), forDay: day => workouts.filter(w => w.d === day) },
     scale,
     scaleName: scaleName(scale),
