@@ -313,6 +313,10 @@ _Avoid_: a remembered Best that outlives the Workout it came from
 **Effective sets**:
 Training load per muscle counted in sets, weighted primary 1 / secondary 0.4 — deliberately not in kilograms, because tonnage across exercises compares nothing.
 
+**Volume range**:
+The band of Effective sets per ISO week (Monday first) a muscle is aimed at, as whole numbers low to high. A muscle's week reads **below**, **in** or **above** its range; below is phrased as room for more and above as more than the style aims for, never as a warning. Thirteen muscles are ranged; front delts start at 0, so they only ever read in or above. Traps, forearms, lower back, obliques, adductors, serratus, hip flexors and shins are count-only: shown with their sets and no verdict.
+_Avoid_: weekly sets, volume target, MEV, MRV
+
 **Tonnage**:
 Load × reps of performed Work sets; a Warm-up set is excluded, including when it was performed.
 
