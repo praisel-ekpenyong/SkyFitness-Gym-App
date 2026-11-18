@@ -4,6 +4,13 @@ One entry per decision, newest first. A decision here is a settled call; the
 ticket/ADR it points to carries the reasoning. Superseded entries stay listed
 with a pointer to their successor.
 
+- **2026-11-18 — The architecture review's plan: copy only what changed, one way in for a Profile, then cleanup.**
+  The owner accepted all twenty grilling recommendations. Order: rest bug, a phone measurement of one Set tap,
+  immer in `update` (ADR 0026), `lib/profile/` with `admit` on every way in (ADR 0027), `src/platform/`, splitting
+  `sheets.jsx` and both import cycles, the picker cache, dialog labelling. Each ticket is its own branch from `main`;
+  tickets 04-09 run one after another. Four smaller findings are filed `needs-triage`. Spec
+  `.scratch/architecture-review-2026-11/spec.md`; see [reviews](reviews.md).
+
 - **2026-11-16 — The chart metric and the Estimated 1RM series are read from the Training log.** Best stays the heaviest performed Work set of any Mode. The chart scores an Entry in its own Mode, so a mixed-mode Entry may still be 90 on Best and 40 on the chart. The series uses the same per-Workout estimate as Records, across every Entry of the exercise. The catalogue formula and Fatigue's stimulus stay put. Glossary entry for Training log sharpened. ADR 0022, spec `.scratch/training-log-readings/spec.md`.
 
 - **2026-11-09 — Iron becomes its own repository; the old interface is frozen as a fallback.** The owner

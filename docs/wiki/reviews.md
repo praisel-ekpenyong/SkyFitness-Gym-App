@@ -235,3 +235,18 @@ what ran, against what, and where the findings went.
   anything but `useStore.js` imports `admit`.
 - **Verification:** `npm test` in `frontend/` on 2026-11-15 — 89 files, 1,297 tests, passed. No browser pass. The Settings change is the same control writing `effort` only.
 - **Disposition:** committed on `chore/strip-comments` after `aaf60d5`. Recorded in [decisions](decisions.md).
+
+## 2026-11-18 — Software design re-examination (Claude Code session, at the owner's request)
+
+- **Target:** `feat/week-streak@0820876`, against the 2026-10-28 review at `14332f7` (`software-design.md`).
+- **Method:** single-context reading of the store, the Active workout, the Training log, progression, views and
+  sheets; an import-cycle scan; two throwaway Vitest probes (deleted): one reproducing the rest bug through `act`,
+  one timing copy, serialise and cache rebuild on synthetic histories of 100, 400 and 1,000 Workouts. Suite at that
+  commit: 104 files, 1,550 passed, 7 expected fail. No phone or browser pass.
+- **Outcome:** of the October findings, 5 fixed and 8 still open, the rest bug among them. New: the whole-Profile copy
+  per change defeats the Training log caches; Profile rules live inside the store module; two import cycles; `lib/`
+  no longer pure. Details in [software design](software-design.md).
+- **Disposition:** grilled the same day; the owner accepted all twenty recommendations. Spec and tickets 01-13 in
+  `.scratch/architecture-review-2026-11/`; ADR 0026 and ADR 0027 written ahead of implementation. Recorded in
+  [decisions](decisions.md).
+
