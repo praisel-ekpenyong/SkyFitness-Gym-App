@@ -175,3 +175,39 @@ describe('strength levels: exercise stats', () => {
     expect(stats.strength).toBeNull()
   })
 })
+
+describe('strength levels: age adjustment', () => {
+  it('leaves the thresholds unchanged at age 40', () => {
+    const S = profile({ bodyweight: [weighIn(5, 100)], birthYear: 1986, workouts: [session(SQUAT.id, 10, [single(150)], { bw: 100 })] })
+    expect(liftOf(S).current).toEqual({ level: 'Intermediate', ratio: 1.5 })
+    expect(liftOf(S).next).toEqual({ level: 'Advanced', weight: 225 })
+  })
+
+  it('divides the thresholds by the age-60 coefficient of 1.30', () => {
+    const S = profile({ bodyweight: [weighIn(5, 100)], birthYear: 1966, workouts: [session(SQUAT.id, 10, [single(120)], { bw: 100 })] })
+    expect(liftOf(S).current).toEqual({ level: 'Intermediate', ratio: 1.2 })
+    expect(liftOf(S).next).toEqual({ level: 'Advanced', weight: 175 })
+  })
+
+  it('interpolates the coefficient between the age-40 and age-45 rows', () => {
+    const S = profile({ bodyweight: [weighIn(5, 100)], birthYear: 1984, workouts: [session(SQUAT.id, 10, [single(150)], { bw: 100 })] })
+    expect(liftOf(S).next).toEqual({ level: 'Advanced', weight: 220 })
+  })
+
+  it('caps the coefficient at age 80 and above', () => {
+    const S = profile({ bodyweight: [weighIn(5, 100)], birthYear: 1930, workouts: [session(SQUAT.id, 10, [single(100)], { bw: 100 })] })
+    expect(liftOf(S).current).toEqual({ level: 'Intermediate', ratio: 1 })
+    expect(liftOf(S).next).toEqual({ level: 'Advanced', weight: 112.5 })
+  })
+
+  it('does not adjust under 40', () => {
+    const S = profile({ bodyweight: [weighIn(5, 100)], birthYear: 1990, workouts: [session(SQUAT.id, 10, [single(150)], { bw: 100 })] })
+    expect(liftOf(S).next).toEqual({ level: 'Advanced', weight: 225 })
+  })
+
+  it('does not adjust without a birth year', () => {
+    const S = profile({ bodyweight: [weighIn(5, 100)], workouts: [session(SQUAT.id, 10, [single(120)], { bw: 100 })] })
+    expect(liftOf(S).current).toEqual({ level: 'Beginner', ratio: 1.2 })
+    expect(liftOf(S).next).toEqual({ level: 'Novice', weight: 125 })
+  })
+})

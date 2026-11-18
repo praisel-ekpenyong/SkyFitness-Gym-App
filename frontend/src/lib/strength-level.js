@@ -11,6 +11,7 @@ import { isPerformed, isWorkSet } from './workout-model.js'
 import { workoutTimestamp } from './format.js'
 import { normalizeWeight } from './units.js'
 import { cleanSex } from './sex.js'
+import { ageCoefficientOf } from './birth-year.js'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 const CURRENT_WEEKS = 12
@@ -123,7 +124,8 @@ function readLift(S, lift, weighIns, now, graded) {
   const base = { key: lift.key, name: lift.name, trainedLately, current: null, peak: null, next: null }
   if (!graded) return base
 
-  const thresholds = lift[cleanSex(S.sex)]
+  const coefficient = ageCoefficientOf(S.birthYear, now)
+  const thresholds = lift[cleanSex(S.sex)].map(t => t / coefficient)
   const latestW = weighIns.length ? Number(weighIns[weighIns.length - 1].w) : null
   const ratioLevel = ratio => ({ level: LEVELS[levelIndexOf(ratio, thresholds)] ?? null, ratio: round2(ratio) })
   const best = list => list.reduce((m, r) => (m === null || r > m ? r : m), null)

@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { useStore, sanitizeDisplayName } from './store/useStore.js'
+import { cleanBirthYear } from './lib/birth-year.js'
 import { useUI } from './store/useUI.js'
 import { EXIDX } from './lib/exercises.js'
 import { fmtDate, fmtNum, fmtSigned, fmtVol, fmtDur, durPart, todayISO, exCount, DAYN, MONTHS_LONG, monthKey, setLabel } from './lib/format.js'
@@ -322,6 +323,43 @@ function SexSheet({ close }) {
 }
 /** Opens the sex sheet (strength standards only). */
 export const sexSheet = () => ui().openSheet(close => <SexSheet close={close} />)
+
+function BirthYearSheet({ close }) {
+  const st = S()
+  const [v, setV] = useState(st.birthYear ? String(st.birthYear) : '')
+  const clean = /^\d{4}$/.test(v) ? cleanBirthYear(Number(v)) : null
+  const save = () => {
+    if (clean === null) { toast(t('Enter a four-digit year')); return }
+    update(s0 => { s0.birthYear = clean })
+    close()
+    toast(t('Birth year saved'))
+  }
+  const clear = () => {
+    update(s0 => { s0.birthYear = null })
+    close()
+    toast(t('Birth year cleared'))
+  }
+  return <>
+    <h3>{t('Birth year')}</h3>
+    <div className="sheet-sub">{t('Adjusts strength levels from age 40. Stays on this device.')}</div>
+    <input
+      className="input"
+      inputMode="numeric"
+      placeholder="1990"
+      aria-label={t('Birth year')}
+      value={v}
+      maxLength={4}
+      autoFocus
+      onChange={e => setV(e.target.value.replace(/\D/g, ''))}
+      onKeyDown={e => { if (e.key === 'Enter') save() }}
+    />
+    <div className="gap16" />
+    <Button variant="primary" onClick={save} disabled={clean === null}>{t('Save')}</Button>
+    {st.birthYear && <><div className="gap8" /><Button variant="ghost" onClick={clear}>{t('Clear')}</Button></>}
+  </>
+}
+/** Opens the birth year sheet (age adjustment for strength levels only). */
+export const birthYearSheet = () => ui().openSheet(close => <BirthYearSheet close={close} />)
 
 export const glyphPicker = (current, onPick) => {
   const cur = glyphOf(current)

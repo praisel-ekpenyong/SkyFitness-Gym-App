@@ -2,6 +2,7 @@
 
 import { MOBILE, nativeLoad, nativeSave } from './mobile.js'
 import { cleanSex } from './sex.js'
+import { cleanBirthYear } from './birth-year.js'
 
 export const LOCAL_KEY = 'gym_state_v1'
 
@@ -219,7 +220,7 @@ const RESTORE_TOP_KEYS = [
   'unit', 'restSec', 'sound', 'keepAwake', 'theme', 'accent', 'body', 'targetW',
   'bodyweight', 'routines', 'week', 'dayPlan', 'exWeights', 'workouts', 'customEx',
   'gifSize', 'favorites', 'reminder', 'effort', 'lastExport', 'displayName',
-  'trainingStyle', 'volumeRanges', 'sex'
+  'trainingStyle', 'volumeRanges', 'sex', 'birthYear'
 ]
 
 export function sanitizeRestorePayload(data) {
@@ -256,6 +257,7 @@ export function sanitizeRestorePayload(data) {
     if (data[k] !== undefined) clean[k] = data[k]
   }
   if (clean.sex !== undefined) clean.sex = cleanSex(clean.sex)
+  if (clean.birthYear !== undefined) clean.birthYear = cleanBirthYear(clean.birthYear)
   if (workouts !== undefined) clean.workouts = workouts
   if (routines !== undefined) {
     clean.routines = routines

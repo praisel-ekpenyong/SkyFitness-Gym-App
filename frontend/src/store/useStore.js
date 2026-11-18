@@ -12,6 +12,7 @@ import { syncRoutineFromSession } from '../lib/routine-sync.js'
 import { runEffects } from './effects.js'
 import { DEFAULT_STYLE, trainingStyleOf, cleanVolumeRanges } from '../lib/volume-ranges.js'
 import { cleanSex } from '../lib/sex.js'
+import { cleanBirthYear } from '../lib/birth-year.js'
 
 export const DEF = {
   unit: 'kg',
@@ -43,6 +44,7 @@ export const DEF = {
   displayName: null,
 
   sex: null,
+  birthYear: null,
 
   trainingStyle: DEFAULT_STYLE,
   volumeRanges: {}
@@ -69,6 +71,7 @@ export function normalizeState(raw) {
   S.trainingStyle = trainingStyleOf(raw)
   S.volumeRanges = cleanVolumeRanges(raw.volumeRanges)
   S.sex = cleanSex(raw.sex)
+  S.birthYear = cleanBirthYear(raw.birthYear)
   S.accent = typeof raw.accent === 'string' && Object.hasOwn(ACCENTS, raw.accent) ? raw.accent : base.accent
   const a = raw.active
   S.active = a && typeof a === 'object' && !Array.isArray(a) && Array.isArray(a.entries) ? a : null
