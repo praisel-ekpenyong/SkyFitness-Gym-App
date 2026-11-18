@@ -88,8 +88,8 @@ prescriptions are read only from what was logged and carry their own `why`.
   anything needing cloud sync is a non-feature. (ADR 0001)
 - **English only.** Strings stay wrapped in `t()` so a later language remains
   a one-file change. (ADR 0003)
-- **Telemetry-free plain builds.** Analytics only when explicitly configured
-  at build time; the default build phones nowhere.
+- **Telemetry-free plain builds.** No analytics hook exists; the build phones
+  nowhere.
 - **Data honesty over engagement.** Finished workouts freeze the target they
   were trained against; fixing a mistyped set immediately changes the next
   prescription. The UI must never flatter the log — an unticked set is a miss,

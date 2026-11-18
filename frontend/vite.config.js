@@ -3,22 +3,7 @@ import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import { validateEnv } from './src/lib/env.js'
 import { CDN_IMG_BASE, CDN_GIF_BASE } from './src/lib/media-cdn.js'
-
-const { umamiSrc, umamiId } = validateEnv(process.env)
-
-const umami = {
-  name: 'sky-umami',
-  transformIndexHtml() {
-    if (!umamiSrc || !umamiId) return
-    return [{
-      tag: 'script',
-      attrs: { defer: true, src: umamiSrc, 'data-website-id': umamiId },
-      injectTo: 'head'
-    }]
-  }
-}
 
 const frontendDir = dirname(fileURLToPath(import.meta.url))
 
@@ -37,7 +22,7 @@ if (process.env.npm_lifecycle_event === 'build' || process.argv.includes('build'
 }
 
 export default defineConfig({
-  plugins: [react(), umami, mediaNotice],
+  plugins: [react(), mediaNotice],
   base: './',
   build: {
     chunkSizeWarningLimit: 900,
