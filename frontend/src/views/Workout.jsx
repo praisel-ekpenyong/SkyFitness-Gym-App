@@ -318,11 +318,16 @@ function ActiveWorkout() {
   const [shown, setShown] = useState({ key: stepKey, moved: false })
   if (shown.key !== stepKey) setShown({ key: stepKey, moved: true })
   const exRefs = useRef({})
+  const pairShown = useRef(null)
   useEffect(() => {
-    if (!isSuperset) return
+    if (!isSuperset) { pairShown.current = null; return }
+    const arrived = pairShown.current !== stepKey
+    pairShown.current = stepKey
+    // A pair just opened: start at the top, so its banner and first exercise show, as a new single exercise does.
+    if (arrived) { if (typeof window.scrollTo === 'function') window.scrollTo(0, 0); return }
     const el = exRefs.current[cur]
     if (el && typeof el.scrollIntoView === 'function') el.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-  }, [cur, isSuperset, A.entries.length])
+  }, [cur, isSuperset, stepKey, A.entries.length])
 
   const nextIdx = view.nextStep?.entries[0] ?? null
 

@@ -83,6 +83,12 @@ describe('exercise dataset integrity and helpers', () => {
     }
   })
 
+  it('repairs the garbled 45° in catalogue names without touching the dataset', () => {
+    expect(EXIDX['0739'].n).toBe('sled 45° leg press')
+    expect(EXDB.find(e => e.id === '0739').n).toBe('sled 45в° leg press')
+    expect(Object.values(EXIDX).filter(e => /[Ѐ-ӿ]/.test(e.n)).map(e => e.id)).toEqual([])
+  })
+
   it('enriches secondary muscles with smOf without mutating dataset', () => {
     const row = EXIDX['0027']
     expect(row).toBeDefined()
