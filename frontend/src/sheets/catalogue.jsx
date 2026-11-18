@@ -16,6 +16,8 @@ import { FILTER_MUSCLES, PICKABLE_MUSCLES, MUSCLES, MUSCLE_NAME, primaryMuscleOf
 import { queryCatalogue } from '../lib/catalogue-query.js'
 import { estimate1RM, REP_CAP } from '../lib/onerm.js'
 import { policyFor, defaultIncrement, POLICIES_FOR, POLICY_NAME, POLICY_DESC, MAX_BW_SETS } from '../lib/progression.js'
+import { strengthLevelOf } from '../lib/strength-level.js'
+import { ExerciseStrengthLine } from '../components/StrengthLine.jsx'
 
 const S = () => useStore.getState().S
 const update = (...a) => useStore.getState().update(...a)
@@ -69,6 +71,7 @@ export function ExerciseDetail({ ex, close }) {
   const st = useStore(s => s.S)
   const last = lastSession(st, ex.id)
   const best = bestOf(st, ex.id)
+  const strength = strengthLevelOf(st, ex.id, Date.now())
   const favs = st.favorites || []
   const isFav = favs.includes(ex.id)
   const isCardioEx = isCardio(ex)
@@ -100,6 +103,7 @@ export function ExerciseDetail({ ex, close }) {
     </div>
     {ex.desc && <div className="exnote">{ex.desc}</div>}
     {best > 0 && <div className="small row best-line"><Icon name="trophy" /><span>{t('Best')} <b>{fmtNum(best)} {st.unit}</b>{last ? ` · ${t('last {0} · {1}', fmtDate(last.d), last.sets.map(s => setLabel(ex.id, s, last.target)).join(', '))}` : ''}</span></div>}
+    {strength && <ExerciseStrengthLine reading={strength} unit={st.unit} />}
     <div className="gap8" />
     <Button variant="primary" icon="plus" onClick={() => addToRoutineSheet(ex)}>{t('Add to my plan')}</Button>
     {ex.custom && <div className="split">

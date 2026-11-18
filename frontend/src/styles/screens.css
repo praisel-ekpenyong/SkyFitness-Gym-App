@@ -87,6 +87,17 @@
 
 .strength-exercise-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; min-height: 50px; box-shadow: inset 0 1px 0 var(--sep) }
 .str-name { gap: 6px; margin-bottom: 2px }
+
+.strength-lift { padding: 10px 0; box-shadow: inset 0 1px 0 var(--sep) }
+.strength-lift.dim { opacity: .5 }
+.sl-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px }
+.sl-head .nm { font-weight: 600 }
+.sl-head .sl-level { font-size: var(--fs-small); color: var(--label-2) }
+.sl-bar { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin: 8px 0 6px }
+.sl-bar i { height: 6px; border-radius: 3px; background: var(--sep) }
+.sl-bar i.on { background: var(--label) }
+.sl-meta { display: flex; flex-wrap: wrap; gap: 2px 12px }
+.strength-foot { margin-top: 12px }
 .str-n { font-weight: 600; font-size: var(--fs-small); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0 }
 .str-v { display: flex; flex-direction: column; align-items: flex-end; flex: none }
 .str-kg { font-size: var(--fs-figure); font-stretch: var(--narrow); font-weight: 700; line-height: 1.1 }

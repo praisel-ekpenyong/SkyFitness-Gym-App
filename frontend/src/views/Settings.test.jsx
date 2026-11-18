@@ -7,7 +7,7 @@ import { useStore, DEF } from '../store/useStore.js'
 
 vi.mock('react-router-dom', () => ({ useNavigate: () => vi.fn() }))
 vi.mock('../lib/wakelock.js', () => ({ wakeLockSupported: () => true }))
-vi.mock('../sheets.jsx', () => ({ loadStarterPlan: vi.fn(), loadHypertrophyPlan: vi.fn(), confirmSheet: vi.fn(), importFromApp: vi.fn(), displayNameSheet: vi.fn() }))
+vi.mock('../sheets.jsx', () => ({ loadStarterPlan: vi.fn(), loadHypertrophyPlan: vi.fn(), confirmSheet: vi.fn(), importFromApp: vi.fn(), displayNameSheet: vi.fn(), sexSheet: vi.fn(), birthYearSheet: vi.fn() }))
 
 let container
 let root
