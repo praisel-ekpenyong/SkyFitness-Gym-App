@@ -1,6 +1,6 @@
-import { effectiveRoutine } from './history.js'
-import { isoOf } from './format.js'
-import { EXIDX, imgSrc, gifSrc } from './exercises.js'
+import { effectiveRoutine } from '../lib/history.js'
+import { isoOf } from '../lib/format.js'
+import { EXIDX, imgSrc, gifSrc } from '../lib/exercises.js'
 
 export function exercisesToWarm(S, iso, cap = 24) {
   const ids = []

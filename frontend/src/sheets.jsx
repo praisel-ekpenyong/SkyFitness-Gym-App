@@ -11,23 +11,24 @@ import { effortOf } from './lib/effort.js'
 import { setDayOverride, assignWeekday, dayStatus } from './lib/schedule.js'
 import { recordWeighIn, deleteWeighIn, latestWeighIn } from './lib/bodyweight.js'
 import { t } from './lib/i18n.js'
-import { nav } from './lib/nav.js'
+import { nav } from './platform/nav.js'
 import { applyStarterPlan } from './lib/starter.js'
 import { applyHypertrophyPlan } from './lib/plans/hypertrophy-5day.js'
 import { Thumb } from './components/Media.jsx'
-import Icon from './components/Icon.jsx'
+import Icon, { ICON_NAMES } from './components/Icon.jsx'
 import { Button, NumberField, Segmented, Switch } from './components/ui.jsx'
 import BodyMap from './components/BodyMap.jsx'
 import { SessionMuscleDistribution } from './components/SessionMuscleDistribution.jsx'
 import { loadOfWorkouts, MUSCLE_NAME } from './lib/muscles.js'
 import { glyphOf, GLYPH_GROUPS } from './lib/glyphs.js'
 import { parseImport, mergeImport, importPreview } from './lib/import-csv.js'
-import { buildPlanBundle, parsePlan, mergePlan, printPlan } from './lib/plan-share.js'
+import { buildPlanBundle, parsePlan, mergePlan } from './lib/plan-share.js'
+import { printPlan } from './platform/print-plan.js'
 import { monthRecap } from './lib/recap.js'
 import { streakOf } from './lib/streak.js'
 import { weekExplanation, markLabel, markIcon, freezeLine, rulePreviewLine, ruleSegmentPreview, RULE_ORDER, RULE_NAME } from './lib/streak-explain.js'
 import { weekKey, isoOf } from './lib/format.js'
-import { MOBILE, shareExport } from './lib/mobile.js'
+import { MOBILE, shareExport } from './platform/mobile.js'
 import { configureSessionSheets } from './sheets/session.jsx'
 import { configureCatalogueSheets } from './sheets/catalogue.jsx'
 import { configureVolumeSheets } from './sheets/volume.jsx'
@@ -367,7 +368,7 @@ function BirthYearSheet({ close }) {
 export const birthYearSheet = () => ui().openSheet(close => <BirthYearSheet close={close} />)
 
 export const glyphPicker = (current, onPick) => {
-  const cur = glyphOf(current)
+  const cur = glyphOf(current, ICON_NAMES)
   return ui().openSheet(close => <>
     <h3>{t('Pick an icon')}</h3>
     {GLYPH_GROUPS.map(g => (
@@ -480,7 +481,7 @@ function DayOverride({ iso, close }) {
     <div className="sheet-sub">{t('Weekly plan:')} {weeklyR ? weeklyR.name : t('Rest')}{hasOvr && <span className="changed-day"> · {t('changed for this day')}</span>}<br />{t('Sick, missed a day or want a different session? Pick what to train instead.')}</div>
     <div className="list">
       {st.routines.map(r => <div key={r.id} className="item" onClick={() => set(r.id)}>
-        <span className="lrow-i"><Icon name={glyphOf(r.emoji)} /></span>
+        <span className="lrow-i"><Icon name={glyphOf(r.emoji, ICON_NAMES)} /></span>
         <div className="grow"><div className="tt">{r.name}</div><div className="ss">{exCount(r.ex.length)}</div></div>
         {effId === r.id && <Icon name="check" />}</div>)}
       <div className="item" onClick={() => set('rest')}><span className="lrow-i"><Icon name="moon" /></span><div className="grow"><div className="tt">{t('Rest / skip this day')}</div></div>{effId === null && <Icon name="check" />}</div>
@@ -498,7 +499,7 @@ function DayAssign({ day, close }) {
     <div className="list">
       <div className="item" onClick={() => set('')}><span className="lrow-i"><Icon name="moon" /></span><div className="grow"><div className="tt">{t('Rest day')}</div></div>{!st.week[day] && <Icon name="check" />}</div>
       {st.routines.map(r => <div key={r.id} className="item" onClick={() => set(r.id)}>
-        <span className="lrow-i"><Icon name={glyphOf(r.emoji)} /></span>
+        <span className="lrow-i"><Icon name={glyphOf(r.emoji, ICON_NAMES)} /></span>
         <div className="grow"><div className="tt">{r.name}</div><div className="ss">{exCount(r.ex.length)}</div></div>
         {st.week[day] === r.id && <Icon name="check" />}</div>)}
     </div>
@@ -732,7 +733,7 @@ export const recapSheet = (start) => ui().openSheet(close => <RecapSheet start={
 
 export function WorkoutRow({ w, onClick }) {
   const st = useStore(s => s.S)
-  const glyph = glyphOf((st.routines.find(r => r.id === w.routineId) || {}).emoji)
+  const glyph = glyphOf((st.routines.find(r => r.id === w.routineId) || {}).emoji, ICON_NAMES)
   const recordCount = loadRecords(st, w).length
   const sum = workoutSummary(st, w)
   return <div className="item" role="button" tabIndex={0}

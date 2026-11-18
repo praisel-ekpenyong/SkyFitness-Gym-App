@@ -4,9 +4,9 @@ import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useStore, DEF } from './useStore.js'
-import { __setSinksForTests, __setLocalWriteForTests, flush } from '../lib/storage.js'
+import { __setSinksForTests, __setLocalWriteForTests, flush } from '../platform/storage.js'
 
-vi.mock('../lib/sound.js', () => ({
+vi.mock('../platform/sound.js', () => ({
   beep: vi.fn(),
   vibrate: vi.fn(),
   playSetComplete: vi.fn(),
@@ -14,7 +14,7 @@ vi.mock('../lib/sound.js', () => ({
   playTimerComplete: vi.fn(),
   playWorkoutComplete: vi.fn(),
 }))
-vi.mock('../lib/mobile.js', () => ({
+vi.mock('../platform/mobile.js', () => ({
   MOBILE: false,
   nativeLoad: vi.fn(async () => null),
   nativeSave: vi.fn(async () => {}),

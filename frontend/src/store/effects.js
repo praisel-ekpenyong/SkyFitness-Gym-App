@@ -1,5 +1,5 @@
 import { useUI } from './useUI.js'
-import { playSetComplete, playWorkoutComplete } from '../lib/sound.js'
+import { playSetComplete, playWorkoutComplete } from '../platform/sound.js'
 import { t } from '../lib/i18n.js'
 
 const NOTICE = { cardio: () => t('Cardio logged'), timed: () => t('Hold logged') }

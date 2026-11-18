@@ -1,6 +1,3 @@
-
-import { ICON_NAMES } from '../components/Icon.jsx'
-
 export const DEFAULT_GLYPH = 'figureStrength'
 
 export const GLYPH_GROUPS = [
@@ -9,7 +6,6 @@ export const GLYPH_GROUPS = [
   { key: 'Cardio',    items: ['figureRun', 'bike', 'swim', 'boxing', 'timer'] },
   { key: 'Recovery',  items: ['stretch', 'moon', 'heart', 'flame', 'bolt'] },
 ]
-
 
 const LEGACY = {
   '💪': 'arm', '🦾': 'arm', '🫸': 'figureStrength', '🫷': 'pullup',
@@ -28,11 +24,12 @@ const LEGACY = {
 /**
  * Resolves a stored routine glyph to the icon key the UI renders.
  * @param {string} v - Icon key or legacy emoji; falsy yields the default.
+ * @param {string[]} [iconNames=[]] - Supported icon names from the rendering component.
  * @returns {string} Known key unchanged, legacy emoji mapped, otherwise the default glyph; unrecognised emoji retry on the base character first.
  */
-export function glyphOf(v) {
+export function glyphOf(v, iconNames = []) {
   if (!v) return DEFAULT_GLYPH
-  if (ICON_NAMES.includes(v)) return v
+  if (iconNames.includes(v)) return v
   if (LEGACY[v]) return LEGACY[v]
   const base = [...v].filter(c => c !== '️' && c !== '‍')[0]
   return LEGACY[base] || DEFAULT_GLYPH

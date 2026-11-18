@@ -4,16 +4,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useStore, DEF, normalizeState } from './useStore.js'
 import { useUI } from './useUI.js'
-import { __setSinksForTests, __setLocalWriteForTests, flush, LOCAL_KEY } from '../lib/storage.js'
+import { __setSinksForTests, __setLocalWriteForTests, flush, LOCAL_KEY } from '../platform/storage.js'
 import { selectStatsOverview } from '../lib/stats-selectors.js'
 import { switchTrainingStyle, setVolumeRange } from '../lib/volume-ranges.js'
 import { buildPlanBundle, parsePlan, mergePlan } from '../lib/plan-share.js'
 
-vi.mock('../lib/sound.js', () => ({
+vi.mock('../platform/sound.js', () => ({
   beep: vi.fn(), vibrate: vi.fn(), playSetComplete: vi.fn(), playTimerWarning: vi.fn(),
   playTimerComplete: vi.fn(), playWorkoutComplete: vi.fn(),
 }))
-vi.mock('../lib/mobile.js', () => ({
+vi.mock('../platform/mobile.js', () => ({
   MOBILE: false,
   nativeLoad: vi.fn(async () => null),
   nativeSave: vi.fn(async () => {}),
@@ -46,7 +46,7 @@ afterEach(() => {
 
 describe('volume settings travel with the Profile', () => {
   it('a backup carries the training style and range edits through Restore', async () => {
-    const { restoreFromBackup, resetProfile } = await import('../lib/restore.js')
+    const { restoreFromBackup, resetProfile } = await import('../platform/restore.js')
     useStore.getState().update(s => {
       s.routines = [{ id: 'r1', name: 'Push', ex: [{ id: '0025' }] }]
       switchTrainingStyle(s, 'high')
@@ -68,7 +68,7 @@ describe('volume settings travel with the Profile', () => {
   })
 
   it('Reset returns Standard with no edits', async () => {
-    const { resetProfile } = await import('../lib/restore.js')
+    const { resetProfile } = await import('../platform/restore.js')
     useStore.getState().update(s => { switchTrainingStyle(s, 'low'); setVolumeRange(s, 'biceps', [1, 5]) })
     resetProfile()
     const S = useStore.getState().S
@@ -93,7 +93,7 @@ describe('volume settings travel with the Profile', () => {
   })
 
   it('invalid stored ranges and styles are ignored on Restore and on load', async () => {
-    const { restoreFromBackup } = await import('../lib/restore.js')
+    const { restoreFromBackup } = await import('../platform/restore.js')
     const junk = { trainingStyle: 'extreme', volumeRanges: { chest: [12, 8], lats: [3, 99], biceps: [2.5, 9], trapezius: [1, 4], calves: [5, 9] } }
     restoreFromBackup({ ...cloneDef(), ...junk })
     const r = ranges()

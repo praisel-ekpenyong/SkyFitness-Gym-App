@@ -1,5 +1,5 @@
-import { t } from './i18n-core.js'
-import { MOBILE as ENV_MOBILE } from './env.js'
+import { t } from '../lib/i18n-core.js'
+import { MOBILE as ENV_MOBILE } from '../lib/env.js'
 
 export const MOBILE = ENV_MOBILE
 

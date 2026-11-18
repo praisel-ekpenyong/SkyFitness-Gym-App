@@ -7,9 +7,9 @@ import { best as bestOf, best1RM, lastSession } from '../lib/training-log.js'
 import { defaultConfig, modeOf, isBw, isPerSide, sideReps } from '../lib/workout-model.js'
 import * as catalogueWrites from '../lib/catalogue-writes.js'
 import { t, instrFor } from '../lib/i18n.js'
-import { nav } from '../lib/nav.js'
+import { nav } from '../platform/nav.js'
 import Media, { Thumb } from '../components/Media.jsx'
-import Icon from '../components/Icon.jsx'
+import Icon, { ICON_NAMES } from '../components/Icon.jsx'
 import { Button, Switch, Segmented, SelectRow, Row, SearchField, TextArea, Stepper } from '../components/ui.jsx'
 import { glyphOf, DEFAULT_GLYPH } from '../lib/glyphs.js'
 import { FILTER_MUSCLES, PICKABLE_MUSCLES, MUSCLES, MUSCLE_NAME, primaryMuscleOf, primaryMuscleName, secondaryMusclesOf } from '../lib/muscles.js'
@@ -137,7 +137,7 @@ function AddToRoutine({ ex, close }) {
     <div className="sheet-sub">{t('Pick a routine — sets, reps and weight come next.')}</div>
     <div className="list">
       {st.routines.map(r => <div key={r.id} className="item" onClick={() => pick(r.id)}>
-        <span className="lrow-i"><Icon name={glyphOf(r.emoji)} /></span>
+        <span className="lrow-i"><Icon name={glyphOf(r.emoji, ICON_NAMES)} /></span>
         <div className="grow"><div className="tt">{r.name}</div><div className="ss">{exCount(r.ex.length)}</div></div>
         {r.ex.some(e => e.id === ex.id) && <span className="tag">{t('already in')}</span>}<Icon name="plus" className="chev" />
       </div>)}

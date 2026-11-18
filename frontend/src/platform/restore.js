@@ -1,8 +1,8 @@
 import { validateBackup, sanitizeRestorePayload } from './storage.js'
-import { DEF } from './profile/index.js'
+import { DEF } from '../lib/profile/index.js'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
-import { t } from './i18n.js'
+import { t } from '../lib/i18n.js'
 
 const defClone = () => JSON.parse(JSON.stringify(DEF))
 

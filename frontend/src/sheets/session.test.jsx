@@ -6,7 +6,7 @@ import { FinishSummary, configureSessionSheets } from './session.jsx'
 import SessionMuscleDistribution from '../components/SessionMuscleDistribution.jsx'
 import { useStore, DEF } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
-import { setNav } from '../lib/nav.js'
+import { setNav } from '../platform/nav.js'
 
 let container
 let root

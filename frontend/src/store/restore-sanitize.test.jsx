@@ -5,10 +5,10 @@ import { createRoot } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useStore, DEF } from './useStore.js'
 import { useUI } from './useUI.js'
-import { __setSinksForTests, __setLocalWriteForTests, flush, LOCAL_KEY } from '../lib/storage.js'
+import { __setSinksForTests, __setLocalWriteForTests, flush, LOCAL_KEY } from '../platform/storage.js'
 import { todayISO } from '../lib/format.js'
 
-vi.mock('../lib/sound.js', () => ({
+vi.mock('../platform/sound.js', () => ({
   beep: vi.fn(),
   vibrate: vi.fn(),
   playSetComplete: vi.fn(),
@@ -16,7 +16,7 @@ vi.mock('../lib/sound.js', () => ({
   playTimerComplete: vi.fn(),
   playWorkoutComplete: vi.fn(),
 }))
-vi.mock('../lib/mobile.js', () => ({
+vi.mock('../platform/mobile.js', () => ({
   MOBILE: false,
   nativeLoad: vi.fn(async () => null),
   nativeSave: vi.fn(async () => {}),
@@ -58,7 +58,7 @@ afterEach(() => {
 
 describe('Restore skips bad Entries', () => {
   it('one malformed Entry never sinks a Restore; good Workouts and Routines land with a skipped count', async () => {
-    const { restoreFromBackup } = await import('../lib/restore.js')
+    const { restoreFromBackup } = await import('../platform/restore.js')
     const backup = {
       ...cloneDef(),
       workouts: [
@@ -103,7 +103,7 @@ describe('Restore skips bad Entries', () => {
   })
 
   it('a wholly malformed Workout element is skipped while good Workouts still land', async () => {
-    const { restoreFromBackup } = await import('../lib/restore.js')
+    const { restoreFromBackup } = await import('../platform/restore.js')
     const backup = {
       ...cloneDef(),
       workouts: [goodWorkout('w-good'), { id: 'w-bad', d: todayISO() }],
@@ -121,7 +121,7 @@ describe('Restore skips bad Entries', () => {
 
 describe('Restore of an old backup carrying exWeights and stamped prs', () => {
   it('loads, shows the same Best and Records as a backup without them, and keeps both fields unchanged in storage', async () => {
-    const { restoreFromBackup } = await import('../lib/restore.js')
+    const { restoreFromBackup } = await import('../platform/restore.js')
     const { best, records } = await import('../lib/training-log.js')
     const wk = (id, d, w, extra = {}) => ({ id, d, start: 1, end: 2, name: 'Push', entries: [{ id: '0025', sets: [{ w, r: 5, done: true }] }], ...extra })
     const legacyCache = { '0025': { w: 999, d: '2026-01-01', unit: 'kg' }, gone: { w: 5 } }
@@ -182,7 +182,7 @@ describe('stale Day override falls back without badge', () => {
 
 describe('Reset replaces the Profile through the Restore path', () => {
   it('clears planted data, never aliases DEF into the atom, and keeps DEF pristine', async () => {
-    const { resetProfile } = await import('../lib/restore.js')
+    const { resetProfile } = await import('../platform/restore.js')
     useStore.getState().update(s => {
       s.workouts = [{ id: 'w-x', d: todayISO() }]
       s.favorites = ['ex-push']
@@ -201,7 +201,7 @@ describe('Reset replaces the Profile through the Restore path', () => {
 
 describe('Restore keeps every DEF key and puts the Training log in order', () => {
   it('copies every DEF key except the Active workout, plus the legacy exWeights', async () => {
-    const { restoreFromBackup } = await import('../lib/restore.js')
+    const { restoreFromBackup } = await import('../platform/restore.js')
     const legacyCache = { '0025': { w: 999, d: '2026-01-01', unit: 'kg' } }
     const backup = {
       unit: 'lb', restSec: 45, sound: false, keepAwake: false, theme: 'light', accent: 'sky',
@@ -233,7 +233,7 @@ describe('Restore keeps every DEF key and puts the Training log in order', () =>
   })
 
   it('sorts an unsorted backup by date, then start, then original position', async () => {
-    const { restoreFromBackup } = await import('../lib/restore.js')
+    const { restoreFromBackup } = await import('../platform/restore.js')
     const wk = (id, d, start) => ({ id, d, start, end: start + 1, name: 'Push', entries: [] })
     restoreFromBackup({
       ...cloneDef(),
@@ -249,7 +249,7 @@ describe('Restore keeps every DEF key and puts the Training log in order', () =>
   })
 
   it('upgrades a legacy warm-up shape on restore, the same way boot does', async () => {
-    const { restoreFromBackup } = await import('../lib/restore.js')
+    const { restoreFromBackup } = await import('../platform/restore.js')
     const backup = {
       ...cloneDef(),
       workouts: [{

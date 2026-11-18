@@ -4,7 +4,7 @@ How Sky works under the hood: the persisted data model, where it lives, and the 
 
 ## The big picture
 
-Sky is a single-page React 19 app with **no backend**. One zustand store (`frontend/src/store/useStore.js`) holds the entire app state as one serializable object `S`; every mutation goes through `update(mut)` (the Active workout's through `act(command)`, which wraps it), which deep-clones, applies the mutator, and persists. Views read from `S` and never talk to a server. Pure training logic lives in `frontend/src/lib/` beside its Vitest tests; UI lives in `views/` (pages), `sheets/` (per-domain sheet modules: `sheets/session.jsx` and `sheets/catalogue.jsx`, re-exported through the `sheets.jsx` hub), and `components/` (custom control set in `ui.jsx`, focus-trapped modal dialogs in `Modals.jsx`, chart/map/media primitives).
+Sky is a single-page React 19 app with **no backend**. One zustand store (`frontend/src/store/useStore.js`) holds the entire app state as one serializable object `S`; every mutation goes through `update(mut)` (the Active workout's through `act(command)`, which wraps it), which deep-clones, applies the mutator, and persists. Views read from `S` and never talk to a server. Pure training logic lives in `frontend/src/lib/` beside its Vitest tests (kept pure with no browser or UI edge; enforced by `purity.test.js`); platform adapters and browser bindings live in `frontend/src/platform/` (storage, mobile, sound, wakelock, back navigation, printing); UI lives in `views/` (pages), `sheets/` (per-domain sheet modules: `sheets/session.jsx` and `sheets/catalogue.jsx`, re-exported through the `sheets.jsx` hub), and `components/` (custom control set in `ui.jsx`, focus-trapped modal dialogs in `Modals.jsx`, chart/map/media primitives).
 
 Navigation is a HashRouter over `/home /plan /plan/r/:id /workout /stats /history /library /settings`. There are no context providers: cross-cutting ephemeral state (sheet stack, toasts, rest/hold countdowns) lives in a second store, `store/useUI.js`.
 
@@ -78,9 +78,9 @@ Warm-up rows carry `phase: 'warmup'`; rows written before ADR 0027 may carry `wa
 
 ## Persistence protocol
 
-Web build: every `persist()` writes `S` synchronously to `localStorage` (`gym_state_v1`) and mirrors it to IndexedDB (`sky-state` db, `state` store) via `lib/storage.js` on an 800 ms debounce (flushed immediately on `visibilitychange → hidden`). At boot, `pickNewest` compares timestamps (`_ts`) and loads whichever stored snapshot is newer through `admit`, falling back to empty defaults if neither exists. Settings displays a gentle backup reminder when `backupDue` detects that the last successful JSON export (`S.lastExport`) is older than 14 days.
+Web build: every `persist()` writes `S` synchronously to `localStorage` (`gym_state_v1`) and mirrors it to IndexedDB (`sky-state` db, `state` store) via `platform/storage.js` on an 800 ms debounce (flushed immediately on `visibilitychange → hidden`). At boot, `pickNewest` compares timestamps (`_ts`) and loads whichever stored snapshot is newer through `admit`, falling back to empty defaults if neither exists. Settings displays a gentle backup reminder when `backupDue` detects that the last successful JSON export (`S.lastExport`) is older than 14 days.
 
-Mobile (Capacitor) build additionally mirrors state to a native file (`sky-state.json` in `Directory.Data`, via `lib/mobile.js`):
+Mobile (Capacitor) build additionally mirrors state to a native file (`sky-state.json` in `Directory.Data`, via `platform/mobile.js`):
 
 1. Native writes are debounced 800 ms after each persist.
 2. `visibilitychange → hidden` flushes the debounce immediately — backgrounding is often the last event before the OS kills the app.

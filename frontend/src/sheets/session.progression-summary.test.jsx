@@ -5,7 +5,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { FinishSummary, finishWorkout, configureSessionSheets } from './session.jsx'
 import { useStore, DEF } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
-import { setNav } from '../lib/nav.js'
+import { setNav } from '../platform/nav.js'
 
 let container
 let root
