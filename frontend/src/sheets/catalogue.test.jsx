@@ -304,7 +304,7 @@ describe('ExercisePicker canonical muscle filtering and search', () => {
     const chips = Array.from(firstChipsRow.querySelectorAll('button.chip')).map(c => c.textContent.trim())
     const expected = [
       'Favorites (1)', 'Chosen (1)', 'All',
-      'Traps', 'Shoulders', 'Chest', 'Upper back', 'Lats', 'Serratus',
+      'Traps', 'Shoulders', 'Front delts', 'Side delts', 'Rear delts', 'Chest', 'Upper back', 'Lats', 'Serratus',
       'Biceps', 'Triceps', 'Forearms', 'Abs', 'Obliques', 'Lower back',
       'Glutes', 'Quads', 'Hamstrings', 'Adductors', 'Hip flexors',
       'Calves', 'Shins', 'Cardio',
@@ -427,7 +427,7 @@ describe('ExerciseDetail primary and secondary muscle tags', () => {
 
     expect(tagTexts).toContain('Barbell')
 
-    expect(tagTexts).toContain('Secondary: Shoulders')
+    expect(tagTexts).toContain('Secondary: Front delts')
     expect(tagTexts).toContain('Secondary: Triceps')
   })
 
@@ -503,7 +503,7 @@ describe('ExerciseDetail primary and secondary muscle tags', () => {
 
   it('displays only Primary and Equipment tags for pure isolation exercises without secondaries', async () => {
     const isolationEx = {
-      id: '0031',
+      id: 'c-curl',
       n: 'dumbbell bicep curl',
       bp: 'upper arms',
       tg: 'biceps',
@@ -553,7 +553,7 @@ describe('ExerciseDetail primary and secondary muscle tags', () => {
 })
 
 describe('CustomExForm canonical muscle selection and editing', () => {
-  it('renders all 19 canonical muscles plus Cardio in anatomical order for primary muscle selection and gates secondaries until primary is chosen', async () => {
+  it('renders all 21 canonical muscles plus Cardio in anatomical order for primary muscle selection and gates secondaries until primary is chosen', async () => {
     await act(async () => {
       root.render(<CustomExForm onDone={vi.fn()} close={vi.fn()} />)
     })
@@ -566,7 +566,7 @@ describe('CustomExForm canonical muscle selection and editing', () => {
     const primaryChipContainer = container.querySelectorAll('.chips')[0]
     const primaryChips = Array.from(primaryChipContainer.querySelectorAll('button.chip')).map(c => c.textContent.trim())
     const expected = [
-      'Traps', 'Shoulders', 'Chest', 'Upper back', 'Lats', 'Serratus',
+      'Traps', 'Front delts', 'Side delts', 'Rear delts', 'Chest', 'Upper back', 'Lats', 'Serratus',
       'Biceps', 'Triceps', 'Forearms', 'Abs', 'Obliques', 'Lower back',
       'Glutes', 'Quads', 'Hamstrings', 'Adductors', 'Hip flexors',
       'Calves', 'Shins', 'Cardio',
@@ -602,7 +602,7 @@ describe('CustomExForm canonical muscle selection and editing', () => {
     expect(chipRows.length).toBe(2)
     const secondaryChips = Array.from(chipRows[1].querySelectorAll('button.chip'))
     expect(secondaryChips.map(c => c.textContent.trim())).not.toContain('Biceps')
-    expect(secondaryChips.length).toBe(18)
+    expect(secondaryChips.length).toBe(20)
 
     const forearmsSec = secondaryChips.find(c => c.textContent.trim() === 'Forearms')
     expect(forearmsSec).toBeTruthy()
@@ -658,7 +658,7 @@ describe('CustomExForm canonical muscle selection and editing', () => {
     })
 
     let secondaryChips = Array.from(container.querySelectorAll('.chips')[1].querySelectorAll('button.chip'))
-    const shouldersSec = secondaryChips.find(c => c.textContent.trim() === 'Shoulders')
+    const shouldersSec = secondaryChips.find(c => c.textContent.trim() === 'Side delts')
     await act(async () => {
       shouldersSec.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
@@ -669,7 +669,7 @@ describe('CustomExForm canonical muscle selection and editing', () => {
       tricepsSec.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
 
-    const shouldersPrimary = primaryChips().find(c => c.textContent.trim() === 'Shoulders')
+    const shouldersPrimary = primaryChips().find(c => c.textContent.trim() === 'Side delts')
     await act(async () => {
       shouldersPrimary.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
@@ -677,7 +677,7 @@ describe('CustomExForm canonical muscle selection and editing', () => {
     secondaryChips = Array.from(container.querySelectorAll('.chips')[1].querySelectorAll('button.chip'))
     const tricepsSecAfter = secondaryChips.find(c => c.textContent.trim() === 'Triceps')
     expect(tricepsSecAfter?.classList.contains('on')).toBe(true)
-    expect(secondaryChips.some(c => c.textContent.trim() === 'Shoulders')).toBe(false)
+    expect(secondaryChips.some(c => c.textContent.trim() === 'Side delts')).toBe(false)
   })
 
   it('selecting Cardio hides secondary muscle chips and clears existing secondaries', async () => {
@@ -781,6 +781,64 @@ describe('CustomExForm canonical muscle selection and editing', () => {
     expect(updated.tg).toBe('lower-back')
     expect(updated.sm).toEqual(['gluteal', 'quadriceps'])
     expect(updated.bp).toBe('back')
+  })
+
+  it('keeps a legacy plain Shoulders custom exercise as stored when only its name changes', async () => {
+    const legacy = { id: 'c-legacy-sh', n: 'Old press', bp: 'shoulders', tg: 'Shoulders', sm: ['triceps', 'deltoids'], desc: '', eq: 'custom', custom: true }
+    useStore.getState().update(s => { s.customEx = [{ ...legacy, sm: [...legacy.sm] }] })
+
+    await act(async () => {
+      root.render(<CustomExForm existing={legacy} onDone={vi.fn()} close={vi.fn()} />)
+    })
+    const nameInput = container.querySelector('input.input')
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(nameInput, 'Old overhead press')
+      nameInput.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    await act(async () => {
+      container.querySelector('button.btn.primary').dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    const updated = useStore.getState().S.customEx.find(c => c.id === 'c-legacy-sh')
+    expect(updated.n).toBe('Old overhead press')
+    expect(updated.tg).toBe('Shoulders')
+    expect(updated.sm).toEqual(['triceps', 'deltoids'])
+  })
+
+  it('saves the picked heads once the lifter changes a legacy Shoulders exercise\'s muscles', async () => {
+    const legacy = { id: 'c-legacy-sh2', n: 'Old raise', bp: 'shoulders', tg: 'shoulders', sm: [], desc: '', eq: 'custom', custom: true }
+    useStore.getState().update(s => { s.customEx = [{ ...legacy, sm: [] }] })
+
+    await act(async () => {
+      root.render(<CustomExForm existing={legacy} onDone={vi.fn()} close={vi.fn()} />)
+    })
+    const sideDelts = Array.from(container.querySelectorAll('.chips')[0].querySelectorAll('button.chip'))
+      .find(c => c.textContent.trim() === 'Side delts')
+    await act(async () => {
+      sideDelts.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    await act(async () => {
+      container.querySelector('button.btn.primary').dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    const updated = useStore.getState().S.customEx.find(c => c.id === 'c-legacy-sh2')
+    expect(updated.tg).toBe('side-delts')
+  })
+
+  it('keeps a bodypart-only legacy custom exercise reading from its bodypart when saved untouched', async () => {
+    const legacy = { id: 'c-legacy-bp', n: 'Old leg machine', bp: 'upper legs', desc: '', eq: 'custom', custom: true }
+    useStore.getState().update(s => { s.customEx = [{ ...legacy }] })
+
+    await act(async () => {
+      root.render(<CustomExForm existing={legacy} onDone={vi.fn()} close={vi.fn()} />)
+    })
+    await act(async () => {
+      container.querySelector('button.btn.primary').dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    const updated = useStore.getState().S.customEx.find(c => c.id === 'c-legacy-bp')
+    expect(updated.tg).toBeUndefined()
+    expect(updated.bp).toBe('upper legs')
   })
 
   it('pre-fills primary muscle from bodypart fallback when editing legacy custom exercise without explicit tg/sm', async () => {

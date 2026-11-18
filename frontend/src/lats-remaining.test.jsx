@@ -51,7 +51,7 @@ function getChip(scope, label) {
   return Array.from(scope.querySelectorAll('.chips button.chip')).find(b => b.textContent.trim() === label)
 }
 
-const HEAD_TO_TOE_DISPLAY = ['Traps', 'Shoulders', 'Chest', 'Upper back', 'Lats', 'Serratus', 'Biceps', 'Triceps', 'Forearms', 'Abs', 'Obliques', 'Lower back', 'Glutes', 'Quads', 'Hamstrings', 'Adductors', 'Hip flexors', 'Calves', 'Shins', 'Cardio']
+const HEAD_TO_TOE_DISPLAY = ['Traps', 'Shoulders', 'Front delts', 'Side delts', 'Rear delts', 'Chest', 'Upper back', 'Lats', 'Serratus', 'Biceps', 'Triceps', 'Forearms', 'Abs', 'Obliques', 'Lower back', 'Glutes', 'Quads', 'Hamstrings', 'Adductors', 'Hip flexors', 'Calves', 'Shins', 'Cardio']
 const EXPECTED_LIBRARY_CHIPS = ['Favorites (1)', 'All', ...HEAD_TO_TOE_DISPLAY]
 
 function expectIsolatedLatsLevels() {
@@ -64,7 +64,7 @@ function expectIsolatedLatsLevels() {
 }
 
 describe('Ticket 03 — Library and Picker filters plus Exercise Detail presentation', () => {
-  it('Library renders 19 muscle chips plus Cardio in head-to-toe order with Lats after Upper back; Favorites/All preserved', async () => {
+  it('Library renders 21 muscle chips plus Shoulders and Cardio in head-to-toe order with Lats after Upper back; Favorites/All preserved', async () => {
     useStore.getState().update(s => { s.favorites = ['0001'] })
     await act(async () => { root.render(<Library />) })
     const firstChipsRow = container.querySelectorAll('.chips')[0]
@@ -82,8 +82,9 @@ describe('Ticket 03 — Library and Picker filters plus Exercise Detail presenta
     const latsItems = Array.from(container.querySelectorAll('.list .item'))
     const latPulldown = latsItems.find(it => it.textContent.toLowerCase().includes('alternate lateral pulldown'))
     expect(latPulldown).toBeTruthy()
+    // Rows credit lats as a secondary (ADR 0025), so they show as contributors.
     const rowItemUnderLats = latsItems.find(it => it.textContent.toLowerCase().includes('barbell bent over row'))
-    expect(rowItemUnderLats).toBeFalsy()
+    expect(rowItemUnderLats).toBeTruthy()
 
     const upperChip = getChip(container, 'Upper back')
     expect(upperChip).toBeTruthy()
@@ -130,7 +131,7 @@ describe('Ticket 03 — Library and Picker filters plus Exercise Detail presenta
     await act(async () => { latsChip.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
     let items = Array.from(container.querySelectorAll('.list .item'))
     expect(items.some(it => it.textContent.toLowerCase().includes('alternate lateral pulldown'))).toBe(true)
-    expect(items.some(it => it.textContent.toLowerCase().includes('barbell bent over row'))).toBe(false)
+    expect(items.some(it => it.textContent.toLowerCase().includes('barbell bent over row'))).toBe(true)
 
     const upperChip = getChip(container, 'Upper back')
     await act(async () => { upperChip.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
@@ -177,7 +178,7 @@ describe('Ticket 03 — Library and Picker filters plus Exercise Detail presenta
     tags = Array.from(container.querySelectorAll('.row .tag')).map(t => t.textContent.trim())
     expect(tags.some(t => t.includes('Primary: Upper back'))).toBe(true)
     expect(tags).toContain('Secondary: Biceps')
-    expect(tags.some(t => t.includes('Shoulders'))).toBe(true)
+    expect(tags.some(t => t.includes('Rear delts'))).toBe(true)
   })
 })
 
@@ -309,7 +310,7 @@ describe('Ticket 05 — Stats Muscle Balance integration', () => {
     expect(latLoad['upper-back']).toBeCloseTo(0.8, 5)
     const rowLoad = loadOfWorkouts([rowW], null)
     expect(rowLoad['upper-back']).toBeCloseTo(2, 5)
-    expect(rowLoad.lats || 0).toBe(0)
+    expect(rowLoad.lats).toBeCloseTo(0.8, 5)
     const latLevels = levelsOf(latLoad)
     const rowLevels = levelsOf(rowLoad)
     expect(latLevels.lats).toBe(4)

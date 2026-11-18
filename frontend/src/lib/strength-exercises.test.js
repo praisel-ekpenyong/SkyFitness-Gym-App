@@ -62,7 +62,7 @@ describe('strengthExerciseRowsForMuscle', () => {
     expect(benchRow.weight).toBe(1)
     expect(benchRow.primary).toBe('chest')
     expect(flyRow.weight).toBe(0.4)
-    expect(flyRow.primary).toBe('deltoids')
+    expect(flyRow.primary).toBe('front-delts')
     expect(flyRow.decay).toBe(1)
     expect(flyRow.current).toBe(28)
   })

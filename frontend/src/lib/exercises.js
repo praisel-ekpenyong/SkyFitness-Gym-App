@@ -1,30 +1,35 @@
 import { EXDB } from './exercises-data.js'
 import { t } from './i18n-core.js'
 import { IMG_BASE, GIF_BASE } from './env.js'
+import { withShoulderHeads } from './shoulder-heads.js'
+import { muscleKey } from './muscle-spelling.js'
+import { LOWER_BODY_CORRECTIONS, UPPER_BODY_CORRECTIONS, curationsByIdOf } from './catalogue-corrections.js'
 
 export { EXDB }
 
-export const CATALOGUE_CURATIONS = {
-  '0085': { tg: 'hamstrings', smAdd: ['glutes'] },
-  '1459': { tg: 'hamstrings', smAdd: ['glutes'] },
-  '0432': { tg: 'hamstrings', smAdd: ['glutes'] },
-  '0434': { tg: 'hamstrings', smAdd: ['glutes'] },
-  '1009': { tg: 'hamstrings', smAdd: ['glutes'] },
-  '1023': { tg: 'hamstrings', smAdd: ['glutes'] },
-  '1756': { tg: 'hamstrings', smAdd: ['glutes'] },
-  '1757': { tg: 'hamstrings', smAdd: ['glutes'] },
-  '2805': { tg: 'hamstrings', smAdd: ['glutes'] },
-  '0115': { tg: 'hamstrings', smAdd: ['glutes'] },
-  '0027': { smAdd: ['rear deltoids'] },
-  '0293': { smAdd: ['rear deltoids'] },
-  '0499': { smAdd: ['rear deltoids'] },
-  '0861': { smAdd: ['rear deltoids'] },
-}
+/** Reviewed catalogue curations by id (ADR 0012, ADR 0025); see catalogue-corrections.js. */
+export const CATALOGUE_CURATIONS = curationsByIdOf([...LOWER_BODY_CORRECTIONS, ...UPPER_BODY_CORRECTIONS])
 
+const removedBy = ex => new Set((CATALOGUE_CURATIONS[ex?.id]?.smRemove || []).map(muscleKey))
+
+/**
+ * Lists an exercise's secondary muscles with the catalogue curation applied.
+ * @param {Object} ex - Catalogue or custom exercise; nullish yields an empty list.
+ * @returns {string[]} Catalogue `sm` plus curated additions, minus curated removals.
+ */
 export const smOf = ex => {
   const base = Array.isArray(ex?.sm) ? ex.sm : (ex?.sm ? [ex.sm] : [])
+  const removed = removedBy(ex)
   return [...new Set([...base, ...(CATALOGUE_CURATIONS[ex?.id]?.smAdd || [])])]
+    .filter(m => !removed.has(muscleKey(m)))
 }
+
+/**
+ * Reads an exercise's catalogue main-group muscle, dropped when a curation removes it.
+ * @param {Object} ex - Catalogue or custom exercise.
+ * @returns {string|undefined} The `mg` muscle, or undefined when absent or removed.
+ */
+export const mgOf = ex => (ex?.mg && !removedBy(ex).has(muscleKey(ex.mg)) ? ex.mg : undefined)
 
 export const EXIDX = {}
 EXDB.forEach(e => {
@@ -32,9 +37,10 @@ EXDB.forEach(e => {
   if (curation) {
     const curated = curation.tg ? { ...e, tg: curation.tg } : { ...e }
     curated.sm = smOf(curated)
-    EXIDX[e.id] = curated
+    if (curated.mg && !mgOf(curated)) delete curated.mg
+    EXIDX[e.id] = withShoulderHeads(curated)
   } else {
-    EXIDX[e.id] = e
+    EXIDX[e.id] = withShoulderHeads(e)
   }
 })
 export const BODYPARTS = [...new Set(EXDB.map(e => e.bp))].sort()
