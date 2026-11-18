@@ -480,4 +480,22 @@ describe('diffRoutineWithSession', () => {
       expect(resCleared.syncedEx[1].notes).toBe('Close-grip bench cue')
     })
   })
+  describe('Rest duration', () => {
+    it('keeps each exercise\'s Rest duration, and adds none where it had none, without reporting a change', () => {
+      const routine = { id: 'r1', name: 'Push', ex: [{ ...ex1, rest: 180 }, { ...ex2 }] }
+      const session = { id: 's1', routineId: 'r1', entries: [makeEntry({ ...ex1, rest: 180 }, 3), makeEntry(ex2, 3)] }
+      const res = diffRoutineWithSession(routine, session)
+      expect(res.hasDiff).toBe(false)
+      expect(res.syncedEx[0].rest).toBe(180)
+      expect(res.syncedEx[1]).not.toHaveProperty('rest')
+    })
+
+    it('writes a replacement\'s own Rest duration back to the Routine', () => {
+      const routine = { id: 'r1', name: 'Push', ex: [{ ...ex1, rest: 180 }] }
+      const session = { id: 's1', routineId: 'r1', entries: [makeEntry({ ...ex3, rest: 90 }, 3)] }
+      const S = { routines: [routine] }
+      expect(syncRoutineFromSession(S, 'r1', diffRoutineWithSession(routine, session).syncedEx)).toBe(true)
+      expect(S.routines[0].ex[0]).toMatchObject({ id: ex3.id, rest: 90 })
+    })
+  })
 })

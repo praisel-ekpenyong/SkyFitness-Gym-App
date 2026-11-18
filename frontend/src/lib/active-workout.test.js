@@ -283,6 +283,68 @@ describe('toggling a set', () => {
   })
 })
 
+describe('the Rest duration after a set', () => {
+  const work = (done = false) => ({ w: 80, r: 5, done })
+  const lift = (id, sets, rest, extra = {}) => ({ id, target: { reps: 5, weight: 80, ...(rest ? { rest } : {}) }, sets, ...extra })
+  const restOf = res => res.effects.find(e => e.type === 'rest:start')
+  const tick = (S, entry, set) => restOf(act(S, { type: 'toggle', entry, set }))
+
+  it('rests for the Entry\'s own Rest duration, and names none without one so the Profile\'s applies', () => {
+    const own = withActive([lift('ex1', [work(), work()], 180)])
+    expect(tick(own, 0, 0)).toEqual({ type: 'rest:start', sec: 180 })
+    const none = withActive([lift('ex1', [work(), work()])])
+    expect(tick(none, 0, 0)).toEqual({ type: 'rest:start' })
+  })
+
+  it('rests between exercises for the finished Entry\'s own Rest duration', () => {
+    const S = withActive([lift('ex1', [work(true), work()], 150), lift('ex2', [work()], 60)])
+    expect(tick(S, 0, 1)).toEqual({ type: 'rest:start', sec: 150 })
+  })
+
+  it('ignores a Rest duration that is not a positive number of seconds', () => {
+    for (const rest of [0, -30, 'abc', null]) {
+      const S = withActive([{ id: 'ex1', target: { reps: 5, rest }, sets: [work(), work()] }])
+      expect(tick(S, 0, 0), String(rest)).toEqual({ type: 'rest:start' })
+    }
+  })
+
+  it('rests after a Superset round for the longest Rest duration in it, an Entry on Default counting as the Profile\'s', () => {
+    for (const [a, b, sec] of [
+      [180, null, 180],
+      [60, null, 90],
+      [60, 120, 120],
+      [null, 45, 90],
+      [null, null, undefined],
+    ]) {
+      const S = withActive([lift('a', [work(), work()], a, { sg: 's1' }), lift('b', [work(), work()], b, { sg: 's1' })], { cur: 1 })
+      act(S, { type: 'toggle', entry: 0, set: 0 })
+      expect(tick(S, 1, 0)?.sec, `${a}+${b}`).toBe(sec)
+    }
+  })
+
+  it('keeps the same Superset rest whichever member ends the round', () => {
+    const S = withActive([lift('a', [work(true), work(), work()], 150, { sg: 's1' }), lift('b', [work(true)], 60, { sg: 's1' })])
+    expect(tick(S, 0, 1)).toEqual({ type: 'rest:start', sec: 150 })
+  })
+
+  it('carries the Routine exercise\'s Rest duration into the Entry and rests for it', () => {
+    const S = blankProfile()
+    S.routines = [{ id: 'r1', name: 'Push', ex: [{ id: '0025', sets: 2, reps: 8, weight: 50, rest: 150 }, { id: '0026', sets: 2, reps: 10, weight: 40 }] }]
+    act(S, { type: 'begin', routineId: 'r1', bw: 80 })
+    expect(S.active.entries[0].target.rest).toBe(150)
+    expect(S.active.entries[1].target.rest).toBeUndefined()
+    expect(tick(S, 0, 0)).toEqual({ type: 'rest:start', sec: 150 })
+    expect(tick(S, 1, 0)).toEqual({ type: 'rest:start' })
+  })
+
+  it('carries a Rest duration on an added Exercise\'s target', () => {
+    const S = withActive([])
+    const { result: entry } = act(S, { type: 'addExercise', exId: '0025', target: { sets: 2, reps: 8, weight: 60, rest: 120 } })
+    expect(entry.target.rest).toBe(120)
+    expect(tick(S, 0, 0)).toEqual({ type: 'rest:start', sec: 120 })
+  })
+})
+
 describe('the next Step (the Next key)', () => {
   const work = (done = false) => ({ w: 80, r: 5, done })
   const loaded = (id, sets, extra = {}) => ({ id, target: { reps: 5, weight: 80 }, sets, ...extra })

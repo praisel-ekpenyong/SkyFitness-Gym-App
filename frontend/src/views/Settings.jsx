@@ -6,6 +6,7 @@ import { useUI } from '../store/useUI.js'
 import { ACCENTS } from '../lib/format.js'
 import { todayISO, localTZ } from '../lib/dates.js'
 import { effortOf } from '../lib/effort.js'
+import { REST_CHOICES } from '../lib/workout-model.js'
 import { wakeLockSupported } from '../platform/wakelock.js'
 import { t } from '../lib/i18n.js'
 import { MOBILE, shareExport, syncReminder } from '../platform/mobile.js'
@@ -93,7 +94,7 @@ export default function Settings() {
     <Section title={t('During a workout')}>
       <SelectRow icon="timer" title={t('Rest duration')}
         value={S.restSec} onChange={v => update(s => { s.restSec = v })}
-        options={[60, 90, 120, 150, 180].map(v => ({ value: v, label: v + 's' }))} />
+        options={REST_CHOICES.map(v => ({ value: v, label: v + 's' }))} />
       {(wakeOK || !MOBILE) && (
         <Row icon="sun" title={t('Keep screen awake')}
           subtitle={wakeOK ? t('The screen stays on while a workout is running, so you don’t have to unlock your phone between sets.') : t('Not supported in this browser.')}>
@@ -112,7 +113,8 @@ export default function Settings() {
       </Row>
     </Section>
 
-    <NotificationsCard S={S} update={update} toast={toast} />
+    {/* Native only: a web page cannot schedule a notification for later without a server (ADR 0001). */}
+    {MOBILE && <NotificationsCard S={S} update={update} toast={toast} />}
 
     <Section title={t('Appearance')}>
       <Row icon="moon" title={t('Theme')}>

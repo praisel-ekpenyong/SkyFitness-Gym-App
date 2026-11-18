@@ -206,8 +206,8 @@ npm run build
 ```
 
 The static files go to `frontend/dist/`. Upload them to any static host. The live app is on
-Cloudflare Pages: `frontend/public/_headers` sets its security and cache headers, and
-`netlify.toml` mirrors them for Netlify. [docs/SELF_HOSTING.md](docs/SELF_HOSTING.md) has guides
+Cloudflare Pages: `frontend/public/_headers` sets its security and cache headers.
+[docs/SELF_HOSTING.md](docs/SELF_HOSTING.md) has guides
 for other hosts.
 
 ## Exercise media

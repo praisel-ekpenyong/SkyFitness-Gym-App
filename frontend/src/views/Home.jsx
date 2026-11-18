@@ -59,7 +59,8 @@ export default function Home() {
   const monday = new Date(today); monday.setDate(today.getDate() - ((today.getDay() + 6) % 7) + weekOffset * 7)
   const doneDays = new Set(S.workouts.map(w => w.d))
   const doneToday = doneDays.has(todayISO())
-  const streak = useMemo(() => streakOf(S), [S])
+  // Not memoised on S: the streak also depends on today, and a new week can arrive without a store change.
+  const streak = streakOf(S)
 
   const strip = []
   for (let i = 0; i < 7; i++) {
@@ -212,7 +213,7 @@ export default function Home() {
                     : (wThisWeek === 1 ? t('1 workout this week') : t('{0} workouts this week', wThisWeek)))}
               </div>
               {streak.current > 0 && <div className="muted small wp-streak">
-                {t('{0}-week streak, {1}', fmtNum(streak.current), streak.freezes === 1 ? t('1 freeze') : t('{0} freezes', fmtNum(streak.freezes)))}
+                {t('{0}-week streak', fmtNum(streak.current))}
               </div>}
               <div className="muted small">
                 {t(S.workouts.length === 1 ? '{0} workout total' : '{0} workouts total', fmtNum(S.workouts.length))} · {t('View calendar')}

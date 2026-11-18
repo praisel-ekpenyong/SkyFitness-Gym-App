@@ -38,11 +38,12 @@ The production output is emitted to `frontend/dist/`. Because Vite is configured
 
 ### Option C — Netlify
 
-A repository-level `netlify.toml` is provided out of the box with the base directory, build command, SPA redirects, and caching headers pre-configured.
+Sky itself does not deploy to Netlify and the repository ships no `netlify.toml`. If you host your own copy there, configure the site yourself:
 
 1. **Via Netlify Web UI (Git Continuous Deployment):**
    - Connect your repository.
-   - Netlify automatically detects `netlify.toml` at the repository root (`base = "frontend"`, `publish = "dist"`, `command = "npm run build"`).
+   - Set the base directory to `frontend`, the build command to `npm run build` and the publish directory to `dist`.
+   - Netlify reads `_redirects` (SPA fallback) and `_headers` (security and cache headers) from the published folder, so the files in `frontend/public/` apply as they are.
    - Click **Deploy**.
 
 2. **Via Netlify CLI:**
