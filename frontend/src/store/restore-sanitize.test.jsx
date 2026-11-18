@@ -283,6 +283,15 @@ describe('Restore keeps every DEF key and puts the Training log in order', () =>
     restoreFromBackup(backup)
     expect(useStore.getState().S.workouts[0].entries[0].sets[0]).toEqual({ w: 40, r: 5, done: true, phase: 'warmup' })
   })
+
+  it('restores a pre-effort backup with showRir: true as effort rir, the same way boot does', async () => {
+    const { restoreFromBackup } = await import('../platform/restore.js')
+    const { schemaVersion, effort, ...version0 } = cloneDef()
+    restoreFromBackup({ ...version0, showRir: true })
+    const S = useStore.getState().S
+    expect(S.effort).toBe('rir')
+    expect(S).not.toHaveProperty('showRir')
+  })
 })
 
 describe('Normal load of a Profile carrying exWeights and stamped prs', () => {

@@ -127,6 +127,8 @@ describe('the restore path and the schema version', () => {
     const S = normalizeState(clean)
     expect(S.schemaVersion).toBe(SCHEMA_VERSION)
     expect(S.workouts[0].entries[0].sets[0]).toEqual({ w: 40, r: 5, done: true, phase: 'warmup' })
+    expect(S.effort).toBe('rir')
+    expect(S).not.toHaveProperty('showRir')
   })
 
   it('keeps the version a current backup carries', () => {

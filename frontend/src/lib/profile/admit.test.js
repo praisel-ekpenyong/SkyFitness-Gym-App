@@ -98,10 +98,10 @@ describe('admit', () => {
     expect(admit(JSON.parse(JSON.stringify(once)))).toEqual(once)
   })
 
-  it('leaves showRir to the 0 → 1 upgrade step alone', () => {
+  it('leaves showRir to the 0 → 1 upgrade step alone; restore keys only carry it there', () => {
     const hits = sourceFiles()
       .filter(p => readFileSync(p, 'utf8').includes('showRir'))
       .map(p => relative(SRC, p))
-    expect(hits).toEqual(['lib/profile/upgrades.js'])
+    expect(hits.sort()).toEqual(['lib/profile/restore-keys.js', 'lib/profile/upgrades.js'])
   })
 })

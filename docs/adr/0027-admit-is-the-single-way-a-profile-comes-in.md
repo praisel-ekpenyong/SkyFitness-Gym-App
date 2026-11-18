@@ -41,7 +41,8 @@ existing Profiles.
    and stamps the current one. A step still changes shapes only, never values. `DEF` holds the current version, so
    a fresh Profile needs no upgrade.
 2. **Nothing is overlaid on `DEF` before `admit`.** `normalizeState` and Restore hand `admit` the payload as stored,
-   so a missing version is never hidden by `DEF`'s.
+   so a missing version is never hidden by `DEF`'s. Restore carries `showRir` as a legacy key, like `exWeights`,
+   so a pre-effort backup reaches the 0 → 1 step and restores with `effort: 'rir'`, as it would at boot.
 3. **`admit` fills absent fields from `DEF` at any depth.** A field the stored Profile lacks, at the top or inside a
    nested default such as `reminder`, takes `DEF`'s value. A stored value, null or falsy included, is never
    replaced; arrays are values, not defaults to merge into. Filling is not a step: it runs at every version, so a new
