@@ -73,6 +73,7 @@ describe('plan-share engine', () => {
         'name',
         'routines',
         'sky_plan',
+        'unit',
         'week',
       ])
     })
@@ -291,6 +292,43 @@ describe('plan-share engine', () => {
 
       expect(targetState.routines[0].ex[0].notes).toBe('Elbows 45 degrees, pause 1s')
       expect(targetState.routines[0].ex[1].notes).toBeUndefined()
+    })
+  })
+
+  describe('the unit a plan file carries (ADR 0028)', () => {
+    const lbPlan = {
+      unit: 'lb',
+      routines: [{ id: 'r1', name: 'Push', ex: [
+        { id: BARBELL_BENCH, sets: 3, reps: 5, weight: 135, inc: 5 },
+        { id: 'plank', sets: 3, mode: 'time', sec: 45, weight: 10, inc: 5 },
+      ] }],
+      week: {},
+      customEx: [],
+    }
+
+    it('writes the exporting Profile unit into the file, kg when unset', () => {
+      expect(buildPlanBundle({ unit: 'lb', routines: [] }).unit).toBe('lb')
+      expect(buildPlanBundle({ routines: [] }).unit).toBe('kg')
+    })
+
+    it('reads the unit back, and none from an older file', () => {
+      expect(parsePlan({ sky_plan: 1, unit: 'lb', routines: [] }).unit).toBe('lb')
+      expect(parsePlan({ sky_plan: 1, routines: [] }).unit).toBe(null)
+    })
+
+    it('converts the loads into the importing Profile unit; a time step stays seconds', () => {
+      const state = { unit: 'kg', routines: [], customEx: [], week: {} }
+      mergePlan(state, lbPlan)
+      expect(state.routines[0].ex).toEqual([
+        { id: BARBELL_BENCH, sets: 3, reps: 5, weight: 61.2, inc: 2.3 },
+        { id: 'plank', sets: 3, mode: 'time', sec: 45, weight: 4.5, inc: 5 },
+      ])
+    })
+
+    it('imports a file without a unit as it is', () => {
+      const state = { unit: 'kg', routines: [], customEx: [], week: {} }
+      mergePlan(state, { ...lbPlan, unit: null })
+      expect(state.routines[0].ex[0].weight).toBe(135)
     })
   })
 

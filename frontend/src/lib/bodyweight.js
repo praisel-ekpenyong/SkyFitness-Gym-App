@@ -1,6 +1,6 @@
 
 export { LB_TO_KG } from './units.js'
-import { LB_TO_KG } from './units.js'
+import { LB_TO_KG, normalizeWeight, sanitizeUnit } from './units.js'
 
 /**
  * Round a weigh-in to the stored 1-decimal policy.
@@ -35,6 +35,7 @@ export function recordWeighIn(S, { d, w, t } = {}, { overwrite = true } = {}) {
   if (ex) {
     if (!overwrite) return ex
     ex.w = round1(w)
+    delete ex.unit
     if (t !== undefined) ex.t = t
   } else log.push(stored({ d, w, t }))
   log.sort(byDay)
@@ -80,10 +81,38 @@ export function deleteWeighIn(S, iso) {
   return before - S.bodyweight.length
 }
 
+const readings = new WeakMap()
+
+/**
+ * The Body-weight log with every Weigh-in in the Profile unit, in stored order. A Weigh-in stamped
+ * in another unit reads converted; the stored log is never rewritten (ADR 0028). Returns the stored
+ * array itself when nothing needs converting.
+ *
+ * @param {Object} S - Profile state.
+ * @returns {Array<{d: string, w: number, t?: number, unit?: string}>} Weigh-ins in `S.unit`.
+ */
+export function weighIns(S) {
+  const log = Array.isArray(S?.bodyweight) ? S.bodyweight : []
+  const unit = sanitizeUnit(S?.unit)
+  const foreign = b => b?.unit != null && sanitizeUnit(b.unit) !== unit
+  if (!log.some(foreign)) return log
+  let byUnit = readings.get(log)
+  if (!byUnit) readings.set(log, byUnit = new Map())
+  if (!byUnit.has(unit)) byUnit.set(unit, log.map(b => (foreign(b) ? { ...b, w: normalizeWeight(b.w, b.unit, unit), unit } : b)))
+  return byUnit.get(unit)
+}
+
+function latestOf(log) {
+  if (!log.length) return null
+  let best = log[0]
+  for (let i = 1; i < log.length; i++) if (log[i].d > best.d) best = log[i]
+  return best
+}
+
 export function prevWeighIn(S) {
-  const log = S?.bodyweight
-  if (!Array.isArray(log) || log.length < 2) return null
-  const last = latestWeighIn(S)
+  const log = weighIns(S)
+  if (log.length < 2) return null
+  const last = latestOf(log)
   let prev = null
   for (const b of log) {
     if (b.d < last.d && (!prev || b.d > prev.d)) prev = b
@@ -91,18 +120,29 @@ export function prevWeighIn(S) {
   return prev
 }
 
+/** The latest Weigh-in, in the Profile unit, or null. */
 export function latestWeighIn(S) {
-  const log = S?.bodyweight
-  if (!Array.isArray(log) || !log.length) return null
-  let best = log[0]
-  for (let i = 1; i < log.length; i++) if (log[i].d > best.d) best = log[i]
-  return best
+  return latestOf(weighIns(S))
 }
 
 export function currentBodyweightKg(S) {
-  const last = latestWeighIn(S)
+  const last = latestOf(Array.isArray(S?.bodyweight) ? S.bodyweight : [])
   if (!last || !(last.w > 0)) return null
-  return S?.unit === 'lb' ? last.w * LB_TO_KG : last.w
+  return sanitizeUnit(last.unit ?? S?.unit) === 'lb' ? last.w * LB_TO_KG : last.w
+}
+
+/**
+ * A Workout's Session body weight in the Profile unit, read from `bwUnit`, else the Workout's stamp.
+ *
+ * @param {Object} S - Profile state.
+ * @param {Object|null} workout - A finished Workout.
+ * @returns {number|null} Body weight in `S.unit`, or null when the Workout has none.
+ */
+export function sessionBodyweight(S, workout) {
+  const bw = Number(workout?.bw)
+  if (workout?.bw == null || !Number.isFinite(bw) || bw <= 0) return null
+  const unit = sanitizeUnit(S?.unit)
+  return normalizeWeight(bw, workout.bwUnit || workout.unit || unit, unit)
 }
 
 export function deltaTowardGoal(targetW, currentW, delta) {

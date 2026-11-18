@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import Settings from './Settings.jsx'
 import { useStore } from '../store/useStore.js'
 import { DEF } from '../lib/profile/index.js'
+import { useUI } from '../store/useUI.js'
 
 vi.mock('react-router-dom', () => ({ useNavigate: () => vi.fn() }))
 vi.mock('../platform/wakelock.js', () => ({ wakeLockSupported: () => true }))
@@ -51,5 +52,35 @@ describe('Settings screen-awake hint', () => {
     const row = [...container.querySelectorAll('.lrow')].find(r => r.querySelector('.lrow-t')?.textContent === 'Keep screen awake')
     expect(row.querySelector('.lrow-s')?.textContent).toBe(hint)
     expect([...container.querySelectorAll('.sect-f')].map(f => f.textContent)).not.toContain(hint)
+  })
+})
+
+describe('Settings weight unit (ADR 0028)', () => {
+  const pick = unit => [...container.querySelectorAll('[role="radiogroup"][aria-label="Weight unit"] button')].find(b => b.textContent === unit)
+
+  it('converts Routines and the Goal weight, and says so', async () => {
+    useStore.getState().update(s => {
+      s.targetW = 75
+      s.routines = [{ id: 'r', name: 'Push', ex: [{ id: 'bench', sets: 3, reps: 5, weight: 60 }] }]
+    })
+    await act(async () => { root.render(<Settings />) })
+    await act(async () => { pick('lb').click() })
+
+    const S = useStore.getState().S
+    expect(S.unit).toBe('lb')
+    expect(S.targetW).toBe(165.3)
+    expect(S.routines[0].ex[0].weight).toBe(132.3)
+    const footers = [...container.querySelectorAll('.sect-f')].map(f => f.textContent)
+    expect(footers).toContain('Switching converts your routines and goal weight. Logged workouts and weigh-ins keep what you entered and show in the new unit.')
+  })
+
+  it('refuses to switch during a workout and says why', async () => {
+    useStore.getState().update(s => { s.active = { id: 'a', d: '2026-11-18', unit: 'kg', cur: 0, entries: [] } })
+    useUI.setState({ toastMsg: '' })
+    await act(async () => { root.render(<Settings />) })
+    await act(async () => { pick('lb').click() })
+
+    expect(useStore.getState().S.unit).toBe('kg')
+    expect(useUI.getState().toastMsg).toBe('Finish or discard the workout in progress to switch units.')
   })
 })

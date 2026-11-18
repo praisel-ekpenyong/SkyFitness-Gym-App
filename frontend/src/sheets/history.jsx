@@ -5,6 +5,8 @@ import { EXIDX } from '../lib/exercises.js'
 import { fmtNum, fmtSigned, fmtVol, fmtDur, durPart } from '../lib/format.js'
 import { fmtDate, todayISO, MONTHS_LONG, monthKey, weekKey, isoOf } from '../lib/dates.js'
 import { setLabel } from '../lib/set-label.js'
+import { setIn } from '../lib/units.js'
+import { sessionBodyweight } from '../lib/bodyweight.js'
 import { effectiveRoutineId, hasEffectiveOverride, deleteWorkout } from '../lib/history.js'
 import { loadRecords } from '../lib/training-log.js'
 import { workoutSummary, summarizeWorkouts } from '../lib/workout-summary.js'
@@ -48,11 +50,12 @@ export function WorkoutDetail({ w, close }) {
   const workoutLoad = loadOfWorkouts([w])
   const recordIds = loadRecords(st, w).map(r => r.id)
   const sum = workoutSummary(st, w)
+  const bwThen = sessionBodyweight(st, w)
   return (
     <>
       <h3>{w.name}</h3>
       <div className="sheet-sub">
-        {[fmtDate(w.d, true), ...durPart(sum.durationMs), fmtVol(sum.tonnage, st.unit), ...(w.bw ? [fmtVol(w.bw, st.unit)] : [])].join(' · ')}
+        {[fmtDate(w.d, true), ...durPart(sum.durationMs), fmtVol(sum.tonnage, st.unit), ...(bwThen ? [fmtVol(bwThen, st.unit)] : [])].join(' · ')}
       </div>
       {w.entries.map((e, i) => {
         const ex = EXIDX[e.id]
@@ -64,7 +67,7 @@ export function WorkoutDetail({ w, close }) {
                 {ex ? ex.n : (e.n || e.id)} {recordIds.includes(e.id) && <span className="pr"><Icon name="trophy" />{t('Record')}</span>}
               </div>
               <div className="ss">
-                {e.sets.filter(s => s.done).map(s => setLabel(e.id, s, e.target)).join('  ·  ') || t('no sets')}
+                {e.sets.filter(s => s.done).map(s => setLabel(e.id, setIn(s, e.unit ?? w.unit ?? st.unit, st.unit), e.target)).join('  ·  ') || t('no sets')}
               </div>
               {e.notes && <div className="exnote">{e.notes}</div>}
             </div>
