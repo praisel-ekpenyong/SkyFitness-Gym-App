@@ -7,6 +7,8 @@ import { fmtDate, todayISO, MONTHS_LONG, monthKey, weekKey, isoOf } from '../lib
 import { setLabel } from '../lib/set-label.js'
 import { setIn } from '../lib/units.js'
 import { sessionBodyweight } from '../lib/bodyweight.js'
+import { isWarmupRow } from '../lib/warmup.js'
+import { isWorkSet } from '../lib/workout-sets.js'
 import { effectiveRoutineId, hasEffectiveOverride, deleteWorkout } from '../lib/history.js'
 import { loadRecords } from '../lib/training-log.js'
 import { workoutSummary, summarizeWorkouts } from '../lib/workout-summary.js'
@@ -50,6 +52,10 @@ export function WorkoutDetail({ w, close }) {
       </div>
       {w.entries.map((e, i) => {
         const ex = EXIDX[e.id]
+        const doneSets = (e.sets || []).filter(s => s.done)
+        const warmups = doneSets.filter(isWarmupRow)
+        const workSets = doneSets.filter(isWorkSet)
+        const formatSets = sets => sets.map(s => setLabel(e.id, setIn(s, e.unit ?? w.unit ?? st.unit, st.unit), e.target)).join('  ·  ')
         return (
           <div key={i} className="row ex-entry">
             {ex && <Thumb ex={ex} />}
@@ -57,9 +63,21 @@ export function WorkoutDetail({ w, close }) {
               <div className="tt capitalize">
                 {ex ? ex.n : (e.n || e.id)} {recordIds.includes(e.id) && <span className="pr"><Icon name="trophy" />{t('Record')}</span>}
               </div>
-              <div className="ss">
-                {e.sets.filter(s => s.done).map(s => setLabel(e.id, setIn(s, e.unit ?? w.unit ?? st.unit, st.unit), e.target)).join('  ·  ') || t('no sets')}
-              </div>
+              {warmups.length > 0 && (
+                <div className="ss-warm">
+                  {t('Warm-up: {0}', formatSets(warmups))}
+                </div>
+              )}
+              {workSets.length > 0 && (
+                <div className="ss">
+                  {formatSets(workSets)}
+                </div>
+              )}
+              {!doneSets.length && (
+                <div className="ss">
+                  {t('no sets')}
+                </div>
+              )}
               {e.notes && <div className="exnote">{e.notes}</div>}
             </div>
           </div>

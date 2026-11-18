@@ -144,6 +144,7 @@
 .sheet-toggle .tt { font-size: var(--fs-body); font-weight: 600 }
 .ex-entry { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 12px }
 .ex-entry .tt { font-size: var(--fs-body); font-weight: 600; line-height: 1.25 }
+.ex-entry .ss-warm { font-size: var(--fs-meta); color: var(--label-3); margin-top: 2px; font-stretch: var(--semi) }
 .ex-entry .ss { font-size: var(--fs-small); color: var(--label-2); margin-top: 3px; font-stretch: var(--semi) }
 .ex-entry .exnote { margin: 6px 0 0; padding: 7px 10px; font-size: var(--fs-meta) }
 .detail-tags { gap: 5px; flex-wrap: wrap; margin: 10px 0 }

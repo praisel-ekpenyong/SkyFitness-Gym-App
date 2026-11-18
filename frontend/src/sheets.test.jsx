@@ -384,6 +384,77 @@ describe('WorkoutDetail', () => {
     expect(exRows[1].querySelector('.exnote')).toBeNull()
   })
 
+  it('renders performed warm-up sets in .ss-warm above performed work sets in .ss', async () => {
+    const workout = {
+      id: 'w-warm',
+      name: 'Push Day',
+      d: '2026-03-01',
+      start: 1000,
+      end: 4000,
+      entries: [
+        {
+          id: '0025',
+          sets: [
+            { w: 20, r: 10, done: true, phase: 'warmup' },
+            { w: 40, r: 5, done: true, phase: 'warmup' },
+            { w: 45, r: 5, done: false, phase: 'warmup' },
+            { w: 95, r: 8, done: true },
+            { w: 95, r: 8, done: true },
+            { w: 95, r: 8, done: false },
+          ],
+        },
+        {
+          id: '0047',
+          sets: [{ w: 60, r: 10, done: true }],
+        },
+        {
+          id: '0026',
+          sets: [{ w: 20, r: 10, done: true, phase: 'warmup' }],
+        },
+        {
+          id: '0027',
+          sets: [{ w: 20, r: 10, done: false, phase: 'warmup' }, { w: 80, r: 5, done: false }],
+        },
+      ],
+    }
+
+    await act(async () => {
+      workoutDetailSheet(workout)
+    })
+    const sheet = useUI.getState().sheets.at(-1)
+    expect(sheet).toBeTruthy()
+    await act(async () => {
+      root.render(sheet.render(vi.fn()))
+    })
+
+    const exRows = container.querySelectorAll('.ex-entry')
+    expect(exRows.length).toBe(4)
+
+    // Entry 0: Warm-ups + Work sets
+    const row0Warm = exRows[0].querySelector('.ss-warm')
+    const row0Work = exRows[0].querySelector('.ss')
+    expect(row0Warm).toBeTruthy()
+    expect(row0Warm.textContent).toBe('Warm-up: 20×10  ·  40×5')
+    expect(row0Work).toBeTruthy()
+    expect(row0Work.textContent).toBe('95×8  ·  95×8')
+    expect(row0Warm.compareDocumentPosition(row0Work) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+
+    // Entry 1: Work sets only (no .ss-warm)
+    expect(exRows[1].querySelector('.ss-warm')).toBeNull()
+    expect(exRows[1].querySelector('.ss')?.textContent).toBe('60×10')
+
+    // Entry 2: Warm-ups only (renders .ss-warm, no 'no sets' fallback)
+    const row2Warm = exRows[2].querySelector('.ss-warm')
+    expect(row2Warm).toBeTruthy()
+    expect(row2Warm.textContent).toBe('Warm-up: 20×10')
+    expect(exRows[2].querySelector('.ss')).toBeNull()
+    expect(exRows[2].textContent).not.toContain('no sets')
+
+    // Entry 3: Zero performed sets (renders 'no sets', no .ss-warm)
+    expect(exRows[3].querySelector('.ss-warm')).toBeNull()
+    expect(exRows[3].querySelector('.ss')?.textContent).toBe('no sets')
+  })
+
   it('renders compact BodyMap and SessionMuscleDistribution after the exercises list with tap selection', async () => {
     const workout = {
       id: 'w-2',

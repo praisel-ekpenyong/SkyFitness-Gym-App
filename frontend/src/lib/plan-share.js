@@ -34,6 +34,7 @@ function cleanEx(e) {
   if (e.inc > 0) o.inc = e.inc
   if (e.repsMin != null) o.repsMin = e.repsMin
   if (e.repsMax != null) o.repsMax = e.repsMax
+  if (Number.isFinite(e.rest) && e.rest > 0) o.rest = e.rest
   if (e.sg) o.sg = e.sg
   const notes = cleanNote(e.notes)
   if (notes) o.notes = notes

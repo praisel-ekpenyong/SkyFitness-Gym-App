@@ -43,7 +43,7 @@ function toggle(S, { entry, set }) {
   if (res.next.kind === 'open-finish') effects.push(effect('open-finish'))
   else if (res.notice) effects.push(effect('notice', { notice: res.notice }))
   if (res.rest.stop) effects.push(effect('rest:stop'))
-  if (res.rest.start) effects.push(effect('rest:start'))
+  if (res.rest.start) effects.push(effect('rest:start', res.rest.sec ? { sec: res.rest.sec } : null))
   return applied(true, effects)
 }
 
