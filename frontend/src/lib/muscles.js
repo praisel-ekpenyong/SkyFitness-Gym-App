@@ -2,6 +2,9 @@
 import { doneWorkSets, hasWorkSet } from './workout-model.js'
 import { EXIDX, smOf, mgOf, isCardio, exerciseFor } from './exercises.js'
 import { workoutTimestamp } from './format.js'
+import { DELT_HEADS, isPlainShoulders, muscleKey } from './muscle-spelling.js'
+
+export { DELT_HEADS, isPlainShoulders }
 
 export const MUSCLES = [
   'trapezius', 'front-delts', 'side-delts', 'rear-delts', 'chest', 'upper-back', 'lats', 'serratus',
@@ -11,19 +14,19 @@ export const MUSCLES = [
   'calves', 'tibialis',
 ]
 
-/** The three deltoid heads, front to back. */
-export const DELT_HEADS = ['front-delts', 'side-delts', 'rear-delts']
-
 /** Filter chip that matches any shoulder head. Not a muscle: nothing is credited to it. */
 export const SHOULDERS = 'shoulders'
 
-const PLAIN_SHOULDERS = new Set(['shoulders', 'deltoids', 'delts'])
 /**
- * Tells whether a muscle spelling is a plain Shoulders that names no head.
- * Found on custom exercises, plan files and old custom-exercise snapshots; read
- * as front 1, side 0.4, rear 0.4 when primary and front 0.4 when secondary.
+ * Expands a plain Shoulders (the filter chip, or a spelling naming no head) into the three heads.
+ * @param {*} value - Muscle spelling or filter.
+ * @returns {string[]|null} The heads, or null when the value is not plain Shoulders.
  */
-export const isPlainShoulders = value => PLAIN_SHOULDERS.has(String(value || '').toLowerCase().trim())
+const shoulderHeadsOf = value => isPlainShoulders(value) ? DELT_HEADS : null
+
+// A plain Shoulders on custom exercises, plan files and old custom-exercise
+// snapshots is read as front 1, side 0.4, rear 0.4 when primary and front 0.4
+// when secondary (ADR 0024).
 
 const plainShouldersWeights = asPrimary => asPrimary
   ? [['front-delts', 1], ['side-delts', 0.4], ['rear-delts', 0.4]]
@@ -161,17 +164,15 @@ export function hasExplicitMuscleMetadata(ex) {
  * @returns {string|null} Canonical slug such as `quadriceps`, `cardio` for the cardiovascular system, or null when unknown.
  */
 export function canonicalMuscle(value) {
-  const name = String(value || '').toLowerCase().trim()
+  const name = muscleKey(value)
   if (name === 'cardio' || name === 'cardiovascular system') return 'cardio'
   if (MUSCLES.includes(name)) return name
   return ALIAS[name] || null
 }
 
 export function resolveMuscleSlug(value) {
-  if (String(value || '').toLowerCase().trim() === SHOULDERS) return SHOULDERS
-  const slug = canonicalMuscle(value)
-  if (slug) return slug
-  return String(value || '').toLowerCase().trim() || null
+  if (shoulderHeadsOf(value)) return SHOULDERS
+  return canonicalMuscle(value) || muscleKey(value) || null
 }
 
 export function bodypartForMuscle(muscle) {
@@ -223,7 +224,7 @@ export function secondaryMusclesOf(exercise) {
     }
   }
   if (explicit) {
-    if (isPlainShoulders(explicit[0])) DELT_HEADS.forEach(add)
+    shoulderHeadsOf(explicit[0])?.forEach(add)
     explicit.slice(1).forEach(add)
     return out
   }
@@ -231,7 +232,7 @@ export function secondaryMusclesOf(exercise) {
   const hasSm = Array.isArray(source.sm) ? source.sm.length > 0 : source.sm != null
   const hasMg = source.mg != null
   if (source.tg || hasSm || hasMg || rawSm.length > 0) {
-    if (isPlainShoulders(source.tg)) DELT_HEADS.forEach(add)
+    shoulderHeadsOf(source.tg)?.forEach(add)
     if (mgOf(source)) add(mgOf(source))
     rawSm.forEach(add)
     return out
@@ -244,7 +245,8 @@ export function secondaryMusclesOf(exercise) {
 
 export function matchesMuscleFilter(idOrEx, filter) {
   if (!filter) return true
-  if (filter === SHOULDERS) return DELT_HEADS.some(head => matchesMuscleFilter(idOrEx, head))
+  const heads = shoulderHeadsOf(filter)
+  if (heads) return heads.some(head => matchesMuscleFilter(idOrEx, head))
   const target = resolveMuscleSlug(filter)
   if (!target) return true
   const ex = typeof idOrEx === 'string' ? EXIDX[idOrEx] : idOrEx
@@ -261,9 +263,8 @@ export function matchesMuscleFilter(idOrEx, filter) {
 
 export function isSecondaryMuscleMatch(idOrEx, filter) {
   if (!filter || filter === 'cardio' || filter === 'favorites') return false
-  if (filter === SHOULDERS) {
-    return !DELT_HEADS.includes(primaryMuscleOf(idOrEx)) && DELT_HEADS.some(head => isSecondaryMuscleMatch(idOrEx, head))
-  }
+  const heads = shoulderHeadsOf(filter)
+  if (heads) return !heads.includes(primaryMuscleOf(idOrEx)) && heads.some(head => isSecondaryMuscleMatch(idOrEx, head))
   const target = resolveMuscleSlug(filter)
   if (!target || target === 'cardio') return false
   const primary = primaryMuscleOf(idOrEx)
