@@ -245,7 +245,27 @@ describe('Home declarative weekly progress card (non-gamified PRODUCT.md voice)'
 
     const card = container.querySelector('button.card[aria-label="Weekly progress and calendar"]')
     expect(card.querySelector('.wp-t').textContent).toBe('1 of 1 workouts this week')
-    expect(card.textContent).toContain('4-week streak, 1 freeze')
+    expect(card.querySelector('.wp-streak').textContent.trim()).toBe('4-week streak, 1 freeze')
+  })
+
+  it('a re-render after the week ends shows the new week\'s streak, not last week\'s', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    try {
+      // Sunday 28 Jun 2026: last week counted, this week is still open, so the streak is 1.
+      vi.setSystemTime(new Date(2026, 5, 28, 20))
+      useStore.getState().update(s => {
+        s.workouts = [{ id: 'w1', d: '2026-06-15', name: 'Push', entries: [{ id: 'lift', sets: [{ done: true, w: 60, r: 5 }] }] }]
+      })
+      await act(async () => { root.render(<Home />) })
+      expect(container.querySelector('.wp-streak').textContent.trim()).toBe('1-week streak, 0 freezes')
+
+      // Monday: the empty week has ended with no freeze banked, so the streak broke. The store has not changed.
+      vi.setSystemTime(new Date(2026, 5, 29, 9))
+      await act(async () => { container.querySelector('button[aria-label="Next week"]').click() })
+      expect(container.querySelector('.wp-streak')).toBeNull()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('renders factual text when no routine is scheduled for the week', async () => {

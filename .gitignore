@@ -16,7 +16,7 @@ frontend/dist/
 frontend/.tmp/
 .tmp/
 .scratch/
-node_modules/
+node_modules
 *.log
 .DS_Store
 .freebuff/
