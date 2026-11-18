@@ -60,7 +60,7 @@ describe('applyHypertrophyPlan', () => {
     registerCustom(S.customEx)
     const byName = n => S.customEx.find(c => c.n === n)
     expect(primaryMuscleOf(byName('Deep dumbbell sumo squat'))).toBe('adductors')
-    expect(secondaryMusclesOf(byName('Twin D-handle lat pulldown'))).toEqual(expect.arrayContaining(['biceps', 'upper-back', 'deltoids']))
+    expect(secondaryMusclesOf(byName('Twin D-handle lat pulldown'))).toEqual(['biceps', 'upper-back'])
     S.routines.flatMap(r => r.ex).forEach(e => expect(EXIDX[e.id], e.id).toBeDefined())
     registerCustom([])
   })

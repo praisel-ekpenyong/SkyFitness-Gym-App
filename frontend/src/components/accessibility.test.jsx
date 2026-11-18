@@ -67,6 +67,7 @@ describe('accessibility rendered-role seam', () => {
 
   it('body map gives each drawable muscle exactly one tab stop with activation; inert stays inert', async () => {
     const onMuscle = vi.fn()
+    const DRAWN = MUSCLES
     await render(<BodyMap load={{}} onMuscle={onMuscle} />)
     const deadline = Date.now() + 3000
     let stops = []
@@ -76,18 +77,18 @@ describe('accessibility rendered-role seam', () => {
       if (stops.length > 0) {
         await act(async () => { await new Promise(r => setTimeout(r, 50)) })
         stops = [...container.querySelectorAll('[tabindex="0"]')]
-        if (stops.length >= MUSCLES.length) break
+        if (stops.length >= DRAWN.length) break
         const stable = [...container.querySelectorAll('[tabindex="0"]')].length
         if (stable === stops.length && Date.now() > deadline - 2000 && stable > 0) break
       }
     }
     stops = [...container.querySelectorAll('[tabindex="0"]')]
-    expect(stops).toHaveLength(MUSCLES.length)
+    expect(stops).toHaveLength(DRAWN.length)
 
     const labelled = [...container.querySelectorAll('[role="button"][aria-label]')]
-    expect(labelled).toHaveLength(MUSCLES.length)
+    expect(labelled).toHaveLength(DRAWN.length)
     const labels = labelled.map(el => el.getAttribute('aria-label')).sort()
-    const expected = MUSCLES.map(slug => MUSCLE_NAME[slug]).sort()
+    const expected = DRAWN.map(slug => MUSCLE_NAME[slug]).sort()
     expect(labels).toEqual(expected)
 
     const inertInteractive = [...container.querySelectorAll('.bm-sil[tabindex], .bm-sil[role]')]
@@ -99,5 +100,24 @@ describe('accessibility rendered-role seam', () => {
       first.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
     })
     expect(onMuscle.mock.calls.length).toBe(before + 1)
+  })
+
+  it('shades and selects each shoulder head on its own', async () => {
+    const onMuscle = vi.fn()
+    await render(<BodyMap load={{ 'front-delts': 0, 'side-delts': 10, 'rear-delts': 2 }} onMuscle={onMuscle} />)
+    const deadline = Date.now() + 3000
+    const head = name => container.querySelector(`[role="button"][aria-label="${name}"]`)
+    while (!head('Rear delts') && Date.now() < deadline) {
+      await act(async () => { await new Promise(r => setTimeout(r, 25)) })
+    }
+    const level = el => el.getAttribute('class').match(/\bl(\d)\b/)[1]
+    expect(level(head('Side delts'))).toBe('4')
+    expect(level(head('Front delts'))).toBe('0')
+    expect(level(head('Rear delts'))).not.toBe('4')
+    expect(level(head('Rear delts'))).not.toBe('0')
+    for (const [name, slug] of [['Front delts', 'front-delts'], ['Side delts', 'side-delts'], ['Rear delts', 'rear-delts']]) {
+      await act(async () => { head(name).dispatchEvent(new MouseEvent('click', { bubbles: true })) })
+      expect(onMuscle).toHaveBeenLastCalledWith(slug)
+    }
   })
 })

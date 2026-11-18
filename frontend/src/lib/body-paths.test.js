@@ -64,10 +64,7 @@ describe('body-paths SVG geometry', () => {
       const combinedSlugs = new Set([...frontSlugs, ...backSlugs])
 
       MUSCLES.forEach(muscle => {
-        expect(
-          combinedSlugs.has(muscle),
-          `Expected muscle "${muscle}" to be present in ${model} model`,
-        ).toBe(true)
+        expect(combinedSlugs.has(muscle), `Expected muscle "${muscle}" to be present in ${model} model`).toBe(true)
       })
     })
   })

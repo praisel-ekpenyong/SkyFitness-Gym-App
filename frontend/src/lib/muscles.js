@@ -1,20 +1,42 @@
 
 import { doneWorkSets, hasWorkSet } from './workout-model.js'
-import { EXIDX, smOf, isCardio, exerciseFor } from './exercises.js'
+import { EXIDX, smOf, mgOf, isCardio, exerciseFor } from './exercises.js'
 import { workoutTimestamp } from './format.js'
+import { DELT_HEADS, isPlainShoulders, muscleKey } from './muscle-spelling.js'
+
+export { DELT_HEADS, isPlainShoulders }
 
 export const MUSCLES = [
-  'trapezius', 'deltoids', 'chest', 'upper-back', 'lats', 'serratus',
+  'trapezius', 'front-delts', 'side-delts', 'rear-delts', 'chest', 'upper-back', 'lats', 'serratus',
   'biceps', 'triceps', 'forearm',
   'abs', 'obliques', 'lower-back',
   'gluteal', 'quadriceps', 'hamstring', 'adductors', 'hip-flexors',
   'calves', 'tibialis',
 ]
 
+/** Filter chip that matches any shoulder head. Not a muscle: nothing is credited to it. */
+export const SHOULDERS = 'shoulders'
+
+/**
+ * Expands a plain Shoulders (the filter chip, or a spelling naming no head) into the three heads.
+ * @param {*} value - Muscle spelling or filter.
+ * @returns {string[]|null} The heads, or null when the value is not plain Shoulders.
+ */
+const shoulderHeadsOf = value => isPlainShoulders(value) ? DELT_HEADS : null
+
+// A plain Shoulders on custom exercises, plan files and old custom-exercise
+// snapshots is read as front 1, side 0.4, rear 0.4 when primary and front 0.4
+// when secondary (ADR 0024).
+
+const plainShouldersWeights = asPrimary => asPrimary
+  ? [['front-delts', 1], ['side-delts', 0.4], ['rear-delts', 0.4]]
+  : [['front-delts', 0.4]]
+
 export const INERT = ['head', 'hair', 'neck', 'hands', 'feet', 'knees', 'ankles']
 
 export const MUSCLE_NAME = {
-  trapezius: 'Traps', deltoids: 'Shoulders', chest: 'Chest', 'upper-back': 'Upper back',
+  trapezius: 'Traps', shoulders: 'Shoulders',
+  'front-delts': 'Front delts', 'side-delts': 'Side delts', 'rear-delts': 'Rear delts', chest: 'Chest', 'upper-back': 'Upper back',
   lats: 'Lats', serratus: 'Serratus', biceps: 'Biceps', triceps: 'Triceps', forearm: 'Forearms',
   abs: 'Abs', obliques: 'Obliques', 'lower-back': 'Lower back', gluteal: 'Glutes',
   quadriceps: 'Quads', hamstring: 'Hamstrings', adductors: 'Adductors',
@@ -22,11 +44,17 @@ export const MUSCLE_NAME = {
   cardio: 'Cardio',
 }
 
-export const FILTER_MUSCLES = [...MUSCLES, 'cardio']
+/** Muscles a lifter can pick for a custom exercise: the 21 plus cardio. */
+export const PICKABLE_MUSCLES = [...MUSCLES, 'cardio']
+
+/** Library and picker filter chips: the 21 plus cardio, with a Shoulders chip before the heads. */
+export const FILTER_MUSCLES = [...MUSCLES.slice(0, 1), SHOULDERS, ...MUSCLES.slice(1), 'cardio']
 
 const MUSCLE_TO_BODYPART = {
   trapezius: 'neck',
-  deltoids: 'shoulders',
+  'front-delts': 'shoulders',
+  'side-delts': 'shoulders',
+  'rear-delts': 'shoulders',
   chest: 'chest',
   'upper-back': 'back',
   lats: 'back',
@@ -48,13 +76,15 @@ const MUSCLE_TO_BODYPART = {
 }
 
 const ALIAS = {
-  abs: 'abs', pectorals: 'chest', biceps: 'biceps', glutes: 'gluteal', delts: 'deltoids',
+  abs: 'abs', pectorals: 'chest', biceps: 'biceps', glutes: 'gluteal', delts: 'front-delts',
   triceps: 'triceps', 'upper back': 'upper-back', lats: 'lats', calves: 'calves',
   quads: 'quadriceps', forearms: 'forearm', hamstrings: 'hamstring', spine: 'lower-back',
   traps: 'trapezius', adductors: 'adductors', 'serratus anterior': 'serratus',
   abductors: 'gluteal', 'levator scapulae': 'trapezius', 'cardiovascular system': null,
-  shoulders: 'deltoids', deltoids: 'deltoids', 'rear deltoids': 'deltoids',
-  'rotator cuff': 'deltoids', quadriceps: 'quadriceps', core: 'abs', abdominals: 'abs',
+  shoulders: 'front-delts', deltoids: 'front-delts', 'rear deltoids': 'rear-delts',
+  'front delts': 'front-delts', 'side delts': 'side-delts', 'rear delts': 'rear-delts',
+  'front deltoids': 'front-delts', 'side deltoids': 'side-delts', 'lateral deltoids': 'side-delts',
+  'rotator cuff': 'rear-delts', quadriceps: 'quadriceps', core: 'abs', abdominals: 'abs',
   'lower abs': 'abs', chest: 'chest', 'upper chest': 'chest', 'hip flexors': 'hip-flexors',
   obliques: 'obliques', 'lower back': 'lower-back', rhomboids: 'upper-back',
   trapezius: 'trapezius', back: 'upper-back', 'latissimus dorsi': 'lats', latissimus: 'lats',
@@ -67,7 +97,7 @@ const ALIAS = {
 const BY_BODYPART = {
   chest: { chest: 1 },
   back: { lats: 0.50, 'upper-back': 0.35, 'lower-back': 0.15 },
-  shoulders: { deltoids: 1 },
+  shoulders: { 'front-delts': 1, 'side-delts': 0.4, 'rear-delts': 0.4 },
   'upper arms': { biceps: 0.5, triceps: 0.5 },
   'lower arms': { forearm: 1 },
   waist: { abs: 0.7, obliques: 0.3 },
@@ -134,16 +164,15 @@ export function hasExplicitMuscleMetadata(ex) {
  * @returns {string|null} Canonical slug such as `quadriceps`, `cardio` for the cardiovascular system, or null when unknown.
  */
 export function canonicalMuscle(value) {
-  const name = String(value || '').toLowerCase().trim()
+  const name = muscleKey(value)
   if (name === 'cardio' || name === 'cardiovascular system') return 'cardio'
   if (MUSCLES.includes(name)) return name
   return ALIAS[name] || null
 }
 
 export function resolveMuscleSlug(value) {
-  const slug = canonicalMuscle(value)
-  if (slug) return slug
-  return String(value || '').toLowerCase().trim() || null
+  if (shoulderHeadsOf(value)) return SHOULDERS
+  return canonicalMuscle(value) || muscleKey(value) || null
 }
 
 export function bodypartForMuscle(muscle) {
@@ -195,6 +224,7 @@ export function secondaryMusclesOf(exercise) {
     }
   }
   if (explicit) {
+    shoulderHeadsOf(explicit[0])?.forEach(add)
     explicit.slice(1).forEach(add)
     return out
   }
@@ -202,7 +232,8 @@ export function secondaryMusclesOf(exercise) {
   const hasSm = Array.isArray(source.sm) ? source.sm.length > 0 : source.sm != null
   const hasMg = source.mg != null
   if (source.tg || hasSm || hasMg || rawSm.length > 0) {
-    if (source.mg) add(source.mg)
+    shoulderHeadsOf(source.tg)?.forEach(add)
+    if (mgOf(source)) add(mgOf(source))
     rawSm.forEach(add)
     return out
   }
@@ -214,6 +245,8 @@ export function secondaryMusclesOf(exercise) {
 
 export function matchesMuscleFilter(idOrEx, filter) {
   if (!filter) return true
+  const heads = shoulderHeadsOf(filter)
+  if (heads) return heads.some(head => matchesMuscleFilter(idOrEx, head))
   const target = resolveMuscleSlug(filter)
   if (!target) return true
   const ex = typeof idOrEx === 'string' ? EXIDX[idOrEx] : idOrEx
@@ -230,6 +263,8 @@ export function matchesMuscleFilter(idOrEx, filter) {
 
 export function isSecondaryMuscleMatch(idOrEx, filter) {
   if (!filter || filter === 'cardio' || filter === 'favorites') return false
+  const heads = shoulderHeadsOf(filter)
+  if (heads) return !heads.includes(primaryMuscleOf(idOrEx)) && heads.some(head => isSecondaryMuscleMatch(idOrEx, head))
   const target = resolveMuscleSlug(filter)
   if (!target || target === 'cardio') return false
   const primary = primaryMuscleOf(idOrEx)
@@ -362,7 +397,7 @@ export function matchesExerciseSearch(idOrEx, query) {
 export function muscleGroupsOf(ex) {
   const sourceEx = metadataOf(ex)
   const explicit = explicitGroupsOf(sourceEx)
-  const source = explicit || [sourceEx?.tg, sourceEx?.mg, ...arrayOf(smOf(sourceEx))]
+  const source = explicit || [sourceEx?.tg, mgOf(sourceEx), ...arrayOf(smOf(sourceEx))]
   const out = []
   source.forEach(value => {
     const slug = canonicalMuscle(value)
@@ -388,9 +423,12 @@ export function musclesOf(idOrEx) {
   if (sourceEx !== ex) return musclesOf(sourceEx)
   if (ex.muscleWeights && typeof ex.muscleWeights === 'object' && !Array.isArray(ex.muscleWeights)) {
     const snapshot = {}
-    MUSCLES.forEach(slug => {
-      const weight = Number(ex.muscleWeights[slug])
-      if (Number.isFinite(weight) && weight > 0) snapshot[slug] = weight
+    const credit = (slug, weight) => { snapshot[slug] = Math.max(snapshot[slug] || 0, weight) }
+    Object.entries(ex.muscleWeights).forEach(([key, value]) => {
+      const weight = Number(value)
+      if (!Number.isFinite(weight) || weight <= 0) return
+      if (isPlainShoulders(key)) plainShouldersWeights(weight >= 1).forEach(([slug, w]) => credit(slug, w))
+      else if (MUSCLES.includes(key)) credit(key, weight)
     })
     if (Object.keys(snapshot).length) {
       const isStaleBackSnapshot =
@@ -406,11 +444,14 @@ export function musclesOf(idOrEx) {
     const slug = canonicalMuscle(name)
     if (slug && MUSCLES.includes(slug)) out[slug] = Math.max(out[slug] || 0, w)
   }
+  const addPrimary = name => isPlainShoulders(name)
+    ? plainShouldersWeights(true).forEach(([slug, w]) => add(slug, w))
+    : add(name, 1)
   const explicit = explicitGroupsOf(ex)
-  if (explicit) explicit.forEach(m => add(m, 1))
+  if (explicit) explicit.forEach((m, i) => i === 0 ? addPrimary(m) : add(m, 1))
   else {
-    add(ex.tg, 1)
-    add(ex.mg, SECONDARY)
+    addPrimary(ex.tg)
+    add(mgOf(ex), SECONDARY)
     arrayOf(smOf(ex)).forEach(m => add(m, SECONDARY))
   }
   if (!Object.keys(out).length) Object.assign(out, BY_BODYPART[ex.bp] || {})

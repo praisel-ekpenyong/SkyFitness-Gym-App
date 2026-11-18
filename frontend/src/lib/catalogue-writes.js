@@ -32,7 +32,8 @@ export function upsertCustomEx(S, draft) {
       entry.n = draft.n
       entry.tg = draft.tg
       entry.sm = draft.sm
-      entry.bp = bp
+      // A legacy exercise with no primary keeps the bodypart its muscles are read from.
+      if (draft.tg) entry.bp = bp
       entry.desc = draft.desc
     }
     return draft.id
