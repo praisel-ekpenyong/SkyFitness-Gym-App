@@ -84,6 +84,8 @@ function BirthYearSheet({ close }) {
   const st = S()
   const [v, setV] = useState(st.birthYear ? String(st.birthYear) : '')
   const clean = /^\d{4}$/.test(v) ? cleanBirthYear(Number(v), Date.now()) : null
+  const future = /^\d{4}$/.test(v) && Number(v) > new Date(Date.now()).getFullYear()
+  const hint = future ? t("Birth year can't be in the future") : (v && clean === null ? t('Enter a four-digit year') : null)
   const save = () => {
     if (clean === null) { toast(t('Enter a four-digit year')); return }
     setProfileField(close, 'birthYear', clean, t('Birth year saved'))
@@ -104,6 +106,7 @@ function BirthYearSheet({ close }) {
         onChange={e => setV(e.target.value.replace(/\D/g, ''))}
         onKeyDown={e => { if (e.key === 'Enter') save() }}
       />
+      {hint && <div className="small dim" role="alert">{hint}</div>}
       <div className="gap16" />
       <Button variant="primary" onClick={save} disabled={clean === null}>{t('Save')}</Button>
       <ClearFieldButton show={st.birthYear} label={t('Clear')} onClick={clear} />
