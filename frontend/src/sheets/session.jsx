@@ -289,9 +289,12 @@ export function replaceActiveExerciseFlow(idx, send) {
       const plannedCount = workSets(entry).length || (entry.sets || []).length
       const seed = seedForReplacement(s, newEx.id, act?.routineId, plannedCount)
       delete seed.notes
-      exConfigSheet(newEx, null, cfg => {
-        send({ type: 'replaceExercise', entry: idx, exId: newEx.id, target: cfg })
-      }, null, routine, seed, null, t('Replace'))
+      exConfigSheet(newEx, {
+        onSave: cfg => send({ type: 'replaceExercise', entry: idx, exId: newEx.id, target: cfg }),
+        routine,
+        initial: seed,
+        actionLabel: t('Replace'),
+      })
     })
   }
 

@@ -457,9 +457,11 @@ function ActiveWorkout() {
         const routine = S.routines.find(r => r.id === A.routineId)
         const freestyle = !A.routineId
         const seed = freestyle ? freestyleConfig(S, { id: ex.id, ...defaultConfig(ex.id) }) : null
-        exConfigSheet(ex, null, cfg => {
-          send({ type: 'addExercise', exId: ex.id, target: cfg })
-        }, null, routine, seed)
+        exConfigSheet(ex, {
+          onSave: cfg => send({ type: 'addExercise', exId: ex.id, target: cfg }),
+          routine,
+          initial: seed,
+        })
       })} icon="plus">{t('Add exercise')}</Button>
       {A.entries.length > 0 && <Button icon="pencil" onClick={editWorkoutSheet}>{t('Edit workout')}</Button>}
     </div>
