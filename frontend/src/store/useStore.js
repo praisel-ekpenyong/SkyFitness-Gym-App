@@ -11,8 +11,7 @@ import { act } from '../lib/active-workout.js'
 import { syncRoutineFromSession } from '../lib/routine-sync.js'
 import { runEffects } from './effects.js'
 import { DEFAULT_STYLE, trainingStyleOf, cleanVolumeRanges } from '../lib/volume-ranges.js'
-import { cleanSex } from '../lib/sex.js'
-import { cleanBirthYear } from '../lib/birth-year.js'
+import { cleanProfileFields } from '../lib/profile-fields.js'
 
 export const DEF = {
   unit: 'kg',
@@ -56,7 +55,7 @@ const clone = o => {
   return JSON.parse(JSON.stringify(o))
 }
 
-export function normalizeState(raw) {
+export function normalizeState(raw, now = Date.now()) {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return clone(DEF)
   const base = clone(DEF)
   const S = { ...base, ...raw }
@@ -70,8 +69,7 @@ export function normalizeState(raw) {
   S.reminder = { ...base.reminder, ...(raw.reminder && typeof raw.reminder === 'object' && !Array.isArray(raw.reminder) ? raw.reminder : {}) }
   S.trainingStyle = trainingStyleOf(raw)
   S.volumeRanges = cleanVolumeRanges(raw.volumeRanges)
-  S.sex = cleanSex(raw.sex)
-  S.birthYear = cleanBirthYear(raw.birthYear)
+  Object.assign(S, cleanProfileFields(raw, now))
   S.accent = typeof raw.accent === 'string' && Object.hasOwn(ACCENTS, raw.accent) ? raw.accent : base.accent
   const a = raw.active
   S.active = a && typeof a === 'object' && !Array.isArray(a) && Array.isArray(a.entries) ? a : null

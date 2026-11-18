@@ -2,9 +2,10 @@
 // divided by body weight, against a Strength standard (body-weight multiples, approximate).
 //
 // Each workout's lift is divided by the body weight then: the workout's own Weigh-in, else the
-// nearest Body-weight log entry within 30 days, else the workout is skipped. The current level
-// reads the last 12 weeks; the peak reads every workout. Next level is the next threshold times
-// the latest weigh-in, rounded up to a loadable step, in the Profile's unit.
+// nearest Weigh-in in the Body-weight log within 30 days, else the workout is skipped. The current
+// level reads the last 12 weeks; the peak reads every workout. Next level is the next threshold
+// times the latest Weigh-in (log or workout, whichever is most recent), rounded up to a loadable
+// step, in the Profile's unit.
 
 import { estimate1RM, DEFAULT_FORMULA } from './onerm.js'
 import { isPerformed, isWorkSet } from './workout-model.js'
@@ -19,6 +20,12 @@ const WEIGH_IN_DAYS = 30
 
 /** Level names, lowest first. Thresholds in a standard line up with these, Beginner first. */
 export const LEVELS = ['Beginner', 'Novice', 'Intermediate', 'Advanced', 'Elite']
+
+/** The reasons a reading shows no levels. Shared by the lib and the Stats views. */
+export const STRENGTH_REASON = Object.freeze({ sex: 'sex', weighIn: 'weighIn' })
+
+/** How many of the five steps a level fills, Beginner 1 through Elite 5; 0 for no level. */
+export const levelStepOf = level => LEVELS.indexOf(level) + 1
 
 /** Smallest loadable total step per unit: the smallest plate pair (1.25 kg, 2.5 lb per side). */
 const LOAD_STEP = { kg: 2.5, lb: 5 }
@@ -56,6 +63,23 @@ function weighInsOf(S) {
     .filter(b => b && positiveOf(b.w) !== null && Number.isFinite(workoutTimestamp(b)))
     .slice()
     .sort((a, b) => workoutTimestamp(a) - workoutTimestamp(b))
+}
+
+/**
+ * The most recent Weigh-in in the Profile unit, from the Body-weight log or a workout's own,
+ * or null when there is none.
+ */
+function latestWeighInOf(S, weighIns) {
+  const unit = profileUnit(S)
+  let latest = null
+  const consider = (ts, w) => { if (latest === null || ts > latest.ts) latest = { ts, w } }
+  for (const b of weighIns) consider(workoutTimestamp(b), Number(b.w))
+  for (const workout of S?.workouts || []) {
+    const own = positiveOf(workout?.bw)
+    const ts = workoutTimestamp(workout)
+    if (own !== null && Number.isFinite(ts)) consider(ts, normalizeWeight(own, workout.bwUnit || unit, unit))
+  }
+  return latest ? latest.w : null
 }
 
 /** The body weight a workout was lifted at, in the Profile unit, or null when none is within reach. */
@@ -117,32 +141,40 @@ function liftSessionsOf(S, lift, weighIns, now) {
   return sessions
 }
 
-/** One lift's reading. Levels are null when the Profile cannot grade (no sex, no body weight). */
-function readLift(S, lift, weighIns, now, graded) {
+/** The highest value in a list, or null when the list is empty. */
+const maxRatio = ratios => ratios.reduce((m, r) => (m === null || r > m ? r : m), null)
+
+/**
+ * One lift's reading. Levels are null when the Profile cannot grade (no sex, no body weight).
+ * everTrained is true when any workout trained the lift, even one with no body weight to grade it.
+ */
+function readLift(S, lift, latestWeight, weighIns, now, graded) {
   const sessions = liftSessionsOf(S, lift, weighIns, now)
-  const trainedLately = sessions.some(s => s.recent)
-  const base = { key: lift.key, name: lift.name, trainedLately, current: null, peak: null, next: null }
-  if (!graded) return base
+  const identity = {
+    key: lift.key,
+    name: lift.name,
+    everTrained: sessions.length > 0,
+    trainedLately: sessions.some(s => s.recent),
+  }
+  if (!graded) return { ...identity, current: null, peak: null, next: null }
 
   const coefficient = ageCoefficientOf(S.birthYear, now)
   const thresholds = lift[cleanSex(S.sex)].map(t => t / coefficient)
-  const latestW = weighIns.length ? Number(weighIns[weighIns.length - 1].w) : null
-  const ratioLevel = ratio => ({ level: LEVELS[levelIndexOf(ratio, thresholds)] ?? null, ratio: round2(ratio) })
-  const best = list => list.reduce((m, r) => (m === null || r > m ? r : m), null)
+  const levelReadingOf = ratio => ({ level: LEVELS[levelIndexOf(ratio, thresholds)] ?? null, ratio: round2(ratio) })
 
-  const peakRatio = best(sessions.map(s => s.ratio).filter(r => r != null))
-  const currentRatio = best(sessions.filter(s => s.recent).map(s => s.ratio).filter(r => r != null))
-  const peak = peakRatio == null ? null : ratioLevel(peakRatio)
-  const current = currentRatio == null ? null : ratioLevel(currentRatio)
+  const peakRatio = maxRatio(sessions.map(s => s.ratio).filter(r => r != null))
+  const currentRatio = maxRatio(sessions.filter(s => s.recent).map(s => s.ratio).filter(r => r != null))
+  const peak = peakRatio == null ? null : levelReadingOf(peakRatio)
+  const current = currentRatio == null ? null : levelReadingOf(currentRatio)
 
   let next = null
-  if (current && latestW !== null) {
+  if (current && latestWeight !== null) {
     const nextIndex = levelIndexOf(currentRatio, thresholds) + 1
     if (nextIndex < LEVELS.length) {
-      next = { level: LEVELS[nextIndex], weight: roundUpToStep(thresholds[nextIndex] * latestW, profileUnit(S)) }
+      next = { level: LEVELS[nextIndex], weight: roundUpToStep(thresholds[nextIndex] * latestWeight, profileUnit(S)) }
     }
   }
-  return { ...base, current, peak, next }
+  return { ...identity, current, peak, next }
 }
 
 /**
@@ -155,12 +187,12 @@ function readLift(S, lift, weighIns, now, graded) {
 export function strengthLevelsOf(S, now) {
   const sex = cleanSex(S?.sex)
   const weighIns = weighInsOf(S)
-  const anyBodyweight = weighIns.length > 0 || (S?.workouts || []).some(w => positiveOf(w?.bw) !== null)
-  const reason = !sex ? 'sex' : !anyBodyweight ? 'weighIn' : null
+  const latestWeight = latestWeighInOf(S, weighIns)
+  const reason = !sex ? STRENGTH_REASON.sex : latestWeight === null ? STRENGTH_REASON.weighIn : null
   const graded = reason === null
   return {
     reason,
-    lifts: STRENGTH_STANDARDS.map(lift => readLift(S, lift, weighIns, now, graded)),
+    lifts: STRENGTH_STANDARDS.map(lift => readLift(S, lift, latestWeight, weighIns, now, graded)),
   }
 }
 

@@ -6,10 +6,11 @@ const MASTERS = [[40, 1.00], [45, 1.06], [50, 1.13], [55, 1.21], [60, 1.30], [65
 
 /**
  * @param {unknown} value - A stored or restored birth year.
- * @param {number} [year] - The current year, injected for tests.
+ * @param {number} now - Injected millisecond timestamp; the year it falls in is the latest allowed birth year.
  * @returns {number|null} The year when it is four digits and not in the future, else null (not set).
  */
-export function cleanBirthYear(value, year = new Date().getFullYear()) {
+export function cleanBirthYear(value, now) {
+  const year = new Date(now).getFullYear()
   return Number.isInteger(value) && value >= 1000 && value <= 9999 && value <= year ? value : null
 }
 

@@ -86,6 +86,20 @@ describe('strength levels: current, peak and untrained', () => {
     expect(lift.trainedLately).toBe(true)
   })
 
+  it('flags a lift trained long ago with no body weight on its sessions as ever trained, with no peak', () => {
+    const S = profile({ bodyweight: [], workouts: [session(SQUAT.id, 100, [single(120)])] })
+    const lift = liftOf(S)
+    expect(lift.everTrained).toBe(true)
+    expect(lift.trainedLately).toBe(false)
+    expect(lift.peak).toBeNull()
+    expect(lift.current).toBeNull()
+  })
+
+  it('flags a lift with no sessions at all as never trained', () => {
+    const lift = liftOf(profile({ workouts: [session(SQUAT.id, 10, [single(120)], { bw: 80 })] }), 'bench')
+    expect(lift.everTrained).toBe(false)
+  })
+
   it('shows only the peak for a lift not trained in 12 weeks', () => {
     const S = profile({ workouts: [session(SQUAT.id, 100, [single(120)], { bw: 80 })] })
     const lift = liftOf(S)
@@ -189,6 +203,27 @@ describe('strength levels: exercise stats', () => {
     expect(stats.strength.reason).toBe('sex')
     expect(stats.strength.current).toBeNull()
     expect(stats.strength.peak).toBeNull()
+  })
+
+  it('gives the next level from a workout weigh-in when the body-weight log is empty', () => {
+    const S = profile({ bodyweight: [], workouts: [session(SQUAT.id, 10, [single(120)], { bw: 80 })] })
+    expect(liftOf(S).next).toEqual({ level: 'Advanced', weight: 180 })
+  })
+
+  it('takes the next level from the most recent weigh-in across the log and workouts', () => {
+    const S = profile({
+      bodyweight: [weighIn(20, 100)],
+      workouts: [session(SQUAT.id, 10, [single(120)], { bw: 80 })],
+    })
+    expect(liftOf(S).next).toEqual({ level: 'Advanced', weight: 180 })
+  })
+
+  it('takes the next level from a newer log entry over an older workout weigh-in', () => {
+    const S = profile({
+      bodyweight: [weighIn(5, 81)],
+      workouts: [session(SQUAT.id, 10, [single(120)], { bw: 80 })],
+    })
+    expect(liftOf(S).next).toEqual({ level: 'Advanced', weight: 182.5 })
   })
 
   it('gives the weigh-in reason when no body weight is logged anywhere', () => {
