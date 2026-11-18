@@ -52,7 +52,7 @@ export function WorkoutDetail({ w, close }) {
     <>
       <h3>{w.name}</h3>
       <div className="sheet-sub">
-        {[fmtDate(w.d, true), ...durPart(sum.durationMs), fmtVol(sum.tonnage, st.unit), ...(w.bw ? [fmtNum(w.bw) + ' ' + st.unit] : [])].join(' · ')}
+        {[fmtDate(w.d, true), ...durPart(sum.durationMs), fmtVol(sum.tonnage, st.unit), ...(w.bw ? [fmtVol(w.bw, st.unit)] : [])].join(' · ')}
       </div>
       {w.entries.map((e, i) => {
         const ex = EXIDX[e.id]
@@ -306,7 +306,7 @@ export function RecapSheet({ start, close }) {
                   const name = EXIDX[p.id]?.n || p.id
                   return (
                     <div key={p.id + '-' + i} className="lrow">
-                      <div className="lrow-m"><div className="lrow-t capitalize">{name}</div><div className="lrow-s nocap">{fmtNum(p.est)} {st.unit} · {fmtNum(p.w)} × {p.r}</div></div>
+                      <div className="lrow-m"><div className="lrow-t capitalize">{name}</div><div className="lrow-s nocap">{fmtVol(p.est, st.unit)} · {fmtNum(p.w)} × {p.r}</div></div>
                       <div className="lrow-v nocap">{fmtDate(p.d, true)}</div>
                     </div>
                   )

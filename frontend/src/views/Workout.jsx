@@ -10,7 +10,7 @@ import { setLabel } from '../lib/set-label.js'
 import { EFFORT, effortOf, stepEffort, capEffort } from '../lib/effort.js'
 import { sessionView } from '../lib/active-workout.js'
 import { best as bestOf, lastSession } from '../lib/training-log.js'
-import { fmtNum, fmtSec, fmtElapsed, exCount, sentenceCase } from '../lib/format.js'
+import { fmtNum, fmtVol, fmtSec, fmtElapsed, exCount, sentenceCase } from '../lib/format.js'
 import { fmtDate, todayISO, DAYN } from '../lib/dates.js'
 import { t } from '../lib/i18n.js'
 import Media, { Thumb } from '../components/Media.jsx'
@@ -136,7 +136,7 @@ function ExerciseBlock({ entryIdx, compact, isCurrent = true, arrived = false, r
           !cardio && !timed && isPerSide(cfg) && <span className="tag nocap">{t('{0} per side', fmtNum(sideReps(entry.sets.find(s => !s.done)?.r ?? entry.sets[0]?.r)))}</span>,
           muscleName && <span className="tag nocap">{sentenceCase(t(muscleName))}</span>,
           ex.eq && <span className="tag nocap">{sentenceCase(t(ex.eq))}</span>,
-          best > 0 && <span className="tag nocap ex-best">{t('Best')} {fmtNum(best)} {S.unit}</span>,
+          best > 0 && <span className="tag nocap ex-best">{t('Best')} {fmtVol(best, S.unit)}</span>,
         ])}</div>
       </div>
       <Media ex={ex} key={entry.id} compact={compact} minimizable />
@@ -465,7 +465,7 @@ function ActiveWorkout() {
       })} icon="plus">{t('Add exercise')}</Button>
       {A.entries.length > 0 && <Button icon="pencil" onClick={editWorkoutSheet}>{t('Edit workout')}</Button>}
     </div>
-    <button className="btn ghost wk-discard" aria-label={t('Discard')} onClick={discard}>{t('Discard workout')}</button>
+    <button className="btn ghost wk-discard" onClick={discard}>{t('Discard workout')}</button>
   </div>
 }
 
