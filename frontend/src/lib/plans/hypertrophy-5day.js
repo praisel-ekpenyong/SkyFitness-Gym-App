@@ -1,4 +1,5 @@
 import { mergePlan } from '../plan-share.js'
+import { isBodyweightEq } from '../exercises.js'
 import { assignWeekday } from '../schedule.js'
 
 /** Rest the plan asks for between sets; applied only over the factory default. */
@@ -25,12 +26,18 @@ const CUSTOM = [
     desc: 'Lat pulldown with a separate D-handle in each hand, pulling the elbows down to the sides.' },
 ]
 
+/**
+ * No starting weight. A loaded exercise carries no `weight` at all, as a Plan file export
+ * writes it: an explicit 0 is ADR 0011's bodyweight carve-out, which drops the top reps from
+ * the Progression stream's shape. Bodyweight exercises keep 0, so they stay in the carve-out.
+ */
+const noLoad = id => (isBodyweightEq(id) ? { weight: 0 } : {})
 const ex = (id, sets, bottom, top, prog, notes, extra = {}) =>
-  ({ id, sets, reps: top, repsMin: bottom, weight: 0, prog, notes, ...extra })
+  ({ id, sets, reps: top, repsMin: bottom, ...noLoad(id), prog, notes, ...extra })
 const perLeg = (id, sets, bottom, top, notes, extra = {}) =>
   ex(id, sets, bottom * 2, top * 2, 'double', `Reps are both legs together (${bottom}–${top} per leg). ${notes}`, { side: true, ...extra })
 const lin = (id, sets, bottom, top, notes) =>
-  ({ id, sets, reps: bottom, weight: 0, prog: 'linear', inc: 2.5, notes: `${notes}${notes ? ' ' : ''}Range ${bottom}–${top}. ${COMPOUND} ${linear}` })
+  ({ id, sets, reps: bottom, ...noLoad(id), prog: 'linear', inc: 2.5, notes: `${notes}${notes ? ' ' : ''}Range ${bottom}–${top}. ${COMPOUND} ${linear}` })
 const iso = (id, sets, bottom, top, notes = '', extra = {}) =>
   ex(id, sets, bottom, top, 'double', `${notes}${notes ? ' ' : ''}${ISO} ${totalReps(Math.ceil(sets * (bottom + top) / 2))}`, extra)
 const comp = (id, sets, bottom, top, notes = '', extra = {}) =>
