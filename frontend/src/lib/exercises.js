@@ -31,8 +31,16 @@ export const smOf = ex => {
  */
 export const mgOf = ex => (ex?.mg && !removedBy(ex).has(muscleKey(ex.mg)) ? ex.mg : undefined)
 
+/**
+ * Repairs a garbled degree sign in a pinned catalogue name. Upstream spells "45°" as "45в°" in a few
+ * names (UTF-8 read as Windows-1251); the dataset file itself stays untouched (ADR 0012).
+ * @param {Object} e - Catalogue exercise.
+ * @returns {Object} The same exercise, or a copy with the name repaired.
+ */
+const withRepairedName = e => (e.n?.includes('в°') ? { ...e, n: e.n.replaceAll('в°', '°') } : e)
+
 export const EXIDX = {}
-EXDB.forEach(e => {
+EXDB.map(withRepairedName).forEach(e => {
   const curation = CATALOGUE_CURATIONS[e.id]
   if (curation) {
     const curated = curation.tg ? { ...e, tg: curation.tg } : { ...e }
