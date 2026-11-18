@@ -1,6 +1,6 @@
 
 import { create } from 'zustand'
-import { localTZ } from '../lib/format.js'
+import { localTZ } from '../lib/dates.js'
 import { registerCustom } from '../lib/exercises.js'
 import { MOBILE, syncReminder } from '../platform/mobile.js'
 import { SEED_PLAN } from '../lib/env.js'

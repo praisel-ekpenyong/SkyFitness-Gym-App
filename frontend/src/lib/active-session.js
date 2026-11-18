@@ -1,6 +1,7 @@
 import { buildSets, defaultConfig, cleanNote } from './workout-model.js'
 import { nextPrescription, applyPrescription } from './progression.js'
-import { uid, todayISO } from './format.js'
+import { uid } from './format.js'
+import { todayISO } from './dates.js'
 import { t } from './i18n.js'
 import { cleanupSg } from './supersetFlow.js'
 

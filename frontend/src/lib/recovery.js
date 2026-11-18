@@ -1,7 +1,7 @@
 import { exerciseFor } from './exercises.js'
 import { MUSCLES, muscleWeightsOf, lastTrainedByMuscle } from './muscles.js'
 import { isWorkSet, isPerformed } from './workout-model.js'
-import { workoutTimestamp } from './format.js'
+import { workoutTimestamp } from './dates.js'
 import { normalizeWeight } from './units.js'
 
 export const FATIGUE_REF_VOLUME = 2000

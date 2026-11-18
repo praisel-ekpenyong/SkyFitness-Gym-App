@@ -1,5 +1,5 @@
 
-import { weekKey, isoOf } from './format.js'
+import { weekKey, isoOf } from './dates.js'
 
 export function deleteWorkout(S, id) {
   const before = (S.workouts || []).length

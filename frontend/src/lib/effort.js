@@ -1,4 +1,4 @@
-import { weekKey, mondayOf, workoutTimestamp } from './format.js'
+import { weekKey, mondayOf, workoutTimestamp } from './dates.js'
 import { doneWorkSets } from './workout-model.js'
 
 export const EFFORT = {

@@ -10,7 +10,7 @@ import {
 import {
   isPerformed, isWorkSet, metricRowsForEntry, metricModeForEntry, modeOf,
 } from './workout-model.js'
-import { workoutTimestamp, isoOf, weekKey, monthKey } from './format.js'
+import { workoutTimestamp, isoOf, weekKey, monthKey } from './dates.js'
 import { trainedWeeks, effectiveRoutine } from './history.js'
 import { streakOf } from './streak.js'
 import { strengthExerciseRowsForMuscle } from './strength-exercises.js'

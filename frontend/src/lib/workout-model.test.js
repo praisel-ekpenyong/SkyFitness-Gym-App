@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { modeOf, isTimed, defaultConfig, buildSets, freestyleConfig, isBw, isPerSide, sideReps, repStep, cascadeWeight, insertWarmupRow, removeRowAt, workSetsDone, isWorkSet, isPerformed, workSets, doneWorkSets, hasWork, isExerciseDone, sessionProgress, seedForReplacement, cleanNote } from './workout-model.js'
-import { fmtSec, setLabel, exLine } from './format.js'
+import { fmtSec } from './format.js'
+import { setLabel, exLine } from './set-label.js'
 import { effortOf, stepEffort, capEffort } from './effort.js'
 import { pairAdjacent, unpairSuperset, supersetUnits } from './supersetFlow.js'
 import { EXDB } from './exercises.js'
