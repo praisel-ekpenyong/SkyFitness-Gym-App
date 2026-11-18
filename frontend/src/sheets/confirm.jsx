@@ -19,5 +19,5 @@ function ConfirmDialog({ title, message, confirmText, cancelText, danger, onConf
  * Themed replacement for window.confirm — callback-based (no blocking).
  */
 export function confirmSheet(opts) {
-  useUI.getState().openSheet(close => <ConfirmDialog {...opts} close={close} />, { kind: 'center' })
+  useUI.getState().openSheet(close => <ConfirmDialog {...opts} close={close} />, { kind: 'center', label: opts.title || t('Confirm') })
 }
