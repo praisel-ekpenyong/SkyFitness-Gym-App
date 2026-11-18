@@ -317,6 +317,10 @@ Training load per muscle counted in sets, weighted primary 1 / secondary 0.4 —
 The band of Effective sets per ISO week (Monday first) a muscle is aimed at, as whole numbers low to high. A muscle's week reads **below**, **in** or **above** its range; below is phrased as room for more and above as more than the style aims for, never as a warning. Thirteen muscles are ranged; front delts start at 0, so they only ever read in or above. Traps, forearms, lower back, obliques, adductors, serratus, hip flexors and shins are count-only: shown with their sets and no verdict.
 _Avoid_: weekly sets, volume target, MEV, MRV
 
+**Projected volume**:
+The Effective sets a muscle will have by the end of the ISO week if the lifter follows the plan: sets done this week (the Active workout's performed Work sets included) plus the planned work sets of today's effective routine, only while nothing is trained today and no workout is active, plus those of every remaining day's effective routine, Rescheduled days included. A declared rest day and missed past days add nothing. Without a week schedule there is no projection. The Volume range verdict reads the projection when there is one, else the sets done; on screen it shows as sets done and sets planned.
+_Avoid_: forecast, expected sets
+
 **Tonnage**:
 Load × reps of performed Work sets; a Warm-up set is excluded, including when it was performed.
 
