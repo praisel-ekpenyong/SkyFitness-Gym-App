@@ -1,3 +1,5 @@
+import { isPlainShoulders } from './muscle-spelling.js'
+
 // The shoulder head every catalogue exercise trains (ADR 0024).
 //
 // Upstream tags 143 exercises `delts` and about 450 more name a plain
@@ -6,7 +8,9 @@
 // name at runtime: the lists are catalogue ids, proposed by name rules once and
 // then checked by hand one id at a time.
 
-// Primary head of every delts-primary catalogue exercise. Presses, front raises
+// Primary head of every delts-primary catalogue exercise, and of the one
+// upper-back row ADR 0025 re-targets to a head. This list is the only place a
+// catalogue exercise gets a head as its primary. Presses, front raises
 // and cleans go to the front; lateral raises, upright rows, snatches and other
 // arm-out-to-the-side raises to the side; rear-delt raises and rows, reverse
 // flyes, external rotations and Cuban presses to the rear.
@@ -19,13 +23,13 @@ export const PRIMARY_DELT_HEAD_IDS = {
     '0086', // barbell seated behind head military press
     '0087', // barbell seated bradford rocky press
     '0091', // barbell seated overhead press
-    '0100', // barbell skier
+    '0100', // barbell skier: a front raise from the thighs to the shoulders with a hop
     '0105', // barbell standing bradford press
     '1456', // barbell standing close grip military press
     '0107', // barbell standing front raise over head
     '1457', // barbell standing wide military press
     '3305', // barbell thruster
-    '0128', // battling ropes
+    '0128', // battling ropes: arms held in front at shoulder height, making waves
     '0148', // cable alternate shoulder press
     '0161', // cable forward raise
     '0162', // cable front raise
@@ -56,7 +60,7 @@ export const PRIMARY_DELT_HEAD_IDS = {
     '0426', // dumbbell standing overhead press
     '0427', // dumbbell standing palms in press
     '0438', // dumbbell w-press
-    '0445', // ez barbell anti gravity press
+    '0445', // ez barbell anti gravity press: an overhead press from the shoulders
     '0520', // kettlebell alternating press
     '0523', // kettlebell arnold press
     '0527', // kettlebell double jerk
@@ -65,14 +69,14 @@ export const PRIMARY_DELT_HEAD_IDS = {
     '0538', // kettlebell one arm jerk
     '0539', // kettlebell one arm military press to the side
     '0540', // kettlebell one arm push press
-    '0543', // kettlebell pirate supper legs
+    '0543', // kettlebell pirate supper legs: raised to the shoulder in front, then pressed overhead
     '0546', // kettlebell seated press
     '1438', // kettlebell seated two arm military press
     '0547', // kettlebell seesaw press
     '0550', // kettlebell thruster
     '0552', // kettlebell two arm clean
     '0553', // kettlebell two arm military press
-    '2271', // left hook. boxing
+    '2271', // left hook. boxing: the arm swings across the front of the body
     '0587', // lever military press
     '0590', // lever one arm shoulder press
     '0603', // lever shoulder press
@@ -91,7 +95,7 @@ export const PRIMARY_DELT_HEAD_IDS = {
   'side-delts': [
     '0977', // band front lateral raise
     '1017', // band y-raise
-    '0067', // barbell one arm snatch
+    '0067', // barbell one arm snatch: elbow-out high pull to overhead, like an upright row
     '0120', // barbell upright row
     '0119', // barbell upright row v. 2
     '0121', // barbell upright row v. 3
@@ -113,11 +117,11 @@ export const PRIMARY_DELT_HEAD_IDS = {
     '0395', // dumbbell seated lateral raise v. 2
     '0408', // dumbbell side lying one hand raise
     '0415', // dumbbell standing alternate raise
-    '2143', // dumbbell standing around world
+    '2143', // dumbbell standing around world: arms held out to the sides, circling
     '0437', // dumbbell upright row
     '1765', // dumbbell upright row (back pov)
-    '0529', // kettlebell double snatch
-    '0542', // kettlebell one arm snatch
+    '0529', // kettlebell double snatch: elbow-out high pull to overhead, like an upright row
+    '0542', // kettlebell one arm snatch: elbow-out high pull to overhead, like an upright row
     '3237', // landmine lateral raise
     '0584', // lever lateral raise
     '0775', // smith upright row
@@ -158,6 +162,7 @@ export const PRIMARY_DELT_HEAD_IDS = {
     '0601', // lever seated reverse fly (parallel grip)
     '0669', // rear deltoid stretch
     '0762', // smith rear delt row
+    '1328', // dumbbell lying rear delt row: catalogue says upper back; a rear-delt row (ADR 0025)
     '0844', // weighted round arm
   ],
 }
@@ -183,24 +188,21 @@ export const ASSIST_DELT_HEAD_IDS = {
 const HEAD_OF_ID = {}
 for (const [head, ids] of Object.entries(PRIMARY_DELT_HEAD_IDS)) ids.forEach(id => { HEAD_OF_ID[id] = head })
 
-const PLAIN = new Set(['shoulders', 'deltoids', 'delts'])
-const HEAD_NAME = { 'front-delts': 'front delts', 'side-delts': 'side delts', 'rear-delts': 'rear delts' }
-
 /**
  * Rewrites a catalogue exercise's plain shoulder tags onto the heads it trains.
  * @param {Object} ex - Catalogue exercise (already curated).
- * @returns {Object} The same exercise, or a copy naming heads instead of plain shoulders.
+ * @returns {Object} The same exercise, or a copy naming head slugs instead of plain shoulders.
  */
 export function withShoulderHeads(ex) {
   const primaryHead = HEAD_OF_ID[ex.id]
-  const assistHead = HEAD_NAME[ASSIST_DELT_HEAD_IDS[ex.id] || ASSIST_DELT_HEAD_BY_TARGET[ex.tg] || DEFAULT_ASSIST_DELT_HEAD]
+  const assistHead = ASSIST_DELT_HEAD_IDS[ex.id] || ASSIST_DELT_HEAD_BY_TARGET[ex.tg] || DEFAULT_ASSIST_DELT_HEAD
   // "Rear deltoids" and "rotator cuff" already name the rear head (see the muscle aliases).
-  const read = name => PLAIN.has(String(name || '').toLowerCase().trim()) ? assistHead : name
+  const read = name => isPlainShoulders(name) ? assistHead : name
   const names = [ex.mg, ...(Array.isArray(ex.sm) ? ex.sm : [])]
   if (!primaryHead && !names.some(n => read(n) !== n)) return ex
   return {
     ...ex,
-    tg: primaryHead ? HEAD_NAME[primaryHead] : ex.tg,
+    tg: primaryHead || ex.tg,
     mg: ex.mg == null ? ex.mg : read(ex.mg),
     sm: Array.isArray(ex.sm) ? [...new Set(ex.sm.map(read))] : ex.sm,
   }

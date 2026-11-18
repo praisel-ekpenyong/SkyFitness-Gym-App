@@ -2,24 +2,14 @@ import { EXDB } from './exercises-data.js'
 import { t } from './i18n-core.js'
 import { IMG_BASE, GIF_BASE } from './env.js'
 import { withShoulderHeads } from './shoulder-heads.js'
+import { muscleKey } from './muscle-spelling.js'
 import { LOWER_BODY_CORRECTIONS, UPPER_BODY_CORRECTIONS, curationsByIdOf } from './catalogue-corrections.js'
 
 export { EXDB }
 
-export const CATALOGUE_CURATIONS = curationsByIdOf([...LOWER_BODY_CORRECTIONS, ...UPPER_BODY_CORRECTIONS], {
-  '0085': { tg: 'hamstrings', smAdd: ['glutes'] },
-  '1459': { tg: 'hamstrings', smAdd: ['glutes'] },
-  '0432': { tg: 'hamstrings', smAdd: ['glutes'] },
-  '0434': { tg: 'hamstrings', smAdd: ['glutes'] },
-  '1009': { tg: 'hamstrings', smAdd: ['glutes'] },
-  '1023': { tg: 'hamstrings', smAdd: ['glutes'] },
-  '1756': { tg: 'hamstrings', smAdd: ['glutes'] },
-  '1757': { tg: 'hamstrings', smAdd: ['glutes'] },
-  '2805': { tg: 'hamstrings', smAdd: ['glutes'] },
-  '0115': { tg: 'hamstrings', smAdd: ['glutes'] },
-})
+/** Reviewed catalogue curations by id (ADR 0012, ADR 0025); see catalogue-corrections.js. */
+export const CATALOGUE_CURATIONS = curationsByIdOf([...LOWER_BODY_CORRECTIONS, ...UPPER_BODY_CORRECTIONS])
 
-const muscleKey = value => String(value || '').toLowerCase().trim()
 const removedBy = ex => new Set((CATALOGUE_CURATIONS[ex?.id]?.smRemove || []).map(muscleKey))
 
 /**
