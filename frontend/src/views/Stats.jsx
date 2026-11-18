@@ -253,6 +253,26 @@ function MuscleBalance({ S, overview, win, setWin, setHard }) {
 }
 
 
+/** One line in a graded lift's exercise detail: the same wording and states as the Strength levels card. */
+function ExerciseStrengthLine({ reading, unit }) {
+  const { reason, current, peak, next, trainedLately } = reading
+  if (reason === 'sex') return <div className="small muted ex-strength">{t('Set your sex under Settings, Profile to see strength levels.')}</div>
+  if (reason === 'weighIn') return <div className="small muted ex-strength">{t('Log a weigh-in to see strength levels.')}</div>
+  const parts = []
+  if (!trainedLately) {
+    if (peak?.level) parts.push(t('Peak {0}', t(peak.level)), t('not trained lately'))
+    else parts.push(t('not trained yet'))
+  } else {
+    if (current) parts.push(current.level ? t(current.level) : t('Below Beginner'))
+    else parts.push(t('Needs a weigh-in near this lift'))
+    if (peak?.level) parts.push(t('Peak {0}', t(peak.level)))
+    if (next) parts.push(t('Next: {0} at {1}', t(next.level), fmtNum(next.weight) + ' ' + unit))
+  }
+  return <div className={'small ex-strength' + (trainedLately ? '' : ' dim')}>
+    <span className="muted">{t('Strength')}</span> {parts.join(' · ')}
+  </div>
+}
+
 /** One lift's row on the Strength levels card: five steps, the current level, the peak and the next level. */
 function StrengthLiftRow({ lift, unit }) {
   const { current, peak, next, trainedLately } = lift
@@ -442,6 +462,7 @@ export default function Stats() {
             <span className="fig ex-headline-v">{fmtNum(headline)}<span className="u"> {headlineUnit}</span></span>
             <span className="dim small">{onE1 ? t('Estimated 1RM per workout') : curCardio ? t('Top speed per workout') : curTimed ? t('Longest hold per workout') : t('Best set weight per workout')}</span>
           </div>}
+          {exercise?.strength && <ExerciseStrengthLine reading={exercise.strength} unit={S.unit} />}
           {exOpts.length > 1 && <Segmented className="seg-range" label={t('Exercise metric')} value={onEff ? 'effort' : onE1 ? 'e1rm' : 'top'} onChange={setExMetric} options={exOpts} />}
           <div className="chart">
             {onEff

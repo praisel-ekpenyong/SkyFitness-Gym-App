@@ -174,4 +174,41 @@ describe('strength levels: exercise stats', () => {
     const stats = selectExerciseStats(S, BENCH_NOT_GRADED.id, { now: NOW, catalogue })
     expect(stats.strength).toBeNull()
   })
+
+  it('shows the squat level on any squat catalogue id', () => {
+    const HIGH_BAR = { ...SQUAT, id: '1461', n: 'barbell high bar squat' }
+    const squatCatalogue = { lookup: id => (id === HIGH_BAR.id ? HIGH_BAR : catalogue.lookup(id)) }
+    const S = profile({ workouts: [session(HIGH_BAR.id, 10, [single(120)], { bw: 80 })] })
+    const stats = selectExerciseStats(S, HIGH_BAR.id, { now: NOW, catalogue: squatCatalogue })
+    expect(stats.strength.current).toEqual({ level: 'Intermediate', ratio: 1.5 })
+  })
+
+  it('gives the sex reason and no levels when sex is not set', () => {
+    const S = profile({ sex: undefined, workouts: [session(SQUAT.id, 10, [single(120)], { bw: 80 })] })
+    const stats = selectExerciseStats(S, SQUAT.id, { now: NOW, catalogue })
+    expect(stats.strength.reason).toBe('sex')
+    expect(stats.strength.current).toBeNull()
+    expect(stats.strength.peak).toBeNull()
+  })
+
+  it('gives the weigh-in reason when no body weight is logged anywhere', () => {
+    const S = profile({ bodyweight: [], workouts: [session(SQUAT.id, 10, [single(120)])] })
+    const stats = selectExerciseStats(S, SQUAT.id, { now: NOW, catalogue })
+    expect(stats.strength.reason).toBe('weighIn')
+    expect(stats.strength.current).toBeNull()
+  })
+
+  it('marks a lift not trained in 12 weeks as not trained lately and keeps its peak', () => {
+    const S = profile({ workouts: [session(SQUAT.id, 100, [single(120)], { bw: 80 })] })
+    const stats = selectExerciseStats(S, SQUAT.id, { now: NOW, catalogue })
+    expect(stats.strength.trainedLately).toBe(false)
+    expect(stats.strength.current).toBeNull()
+    expect(stats.strength.peak).toEqual({ level: 'Intermediate', ratio: 1.5 })
+  })
+
+  it('gives the next level and its weight from the latest weigh-in', () => {
+    const S = profile({ workouts: [session(SQUAT.id, 10, [single(120)], { bw: 80 })] })
+    const stats = selectExerciseStats(S, SQUAT.id, { now: NOW, catalogue })
+    expect(stats.strength.next).toEqual({ level: 'Advanced', weight: 180 })
+  })
 })
