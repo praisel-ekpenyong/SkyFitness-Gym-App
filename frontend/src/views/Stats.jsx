@@ -2,7 +2,7 @@ import { Fragment, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { selectStatsOverview, selectExerciseStats } from '../lib/stats-selectors.js'
-import { fmtNum, fmtSigned } from '../lib/format.js'
+import { fmtNum, fmtSigned, fmtVol } from '../lib/format.js'
 import { fmtDate, todayISO } from '../lib/dates.js'
 import { setLabel } from '../lib/set-label.js'
 import { t } from '../lib/i18n.js'
@@ -439,7 +439,7 @@ export default function Stats() {
         <div className="v" style={{ color: bwDelta30 === null ? undefined : deltaTowardGoal(S.targetW, (bw.latest || {}).w || 0, bwDelta30) }}>
           {bwDelta30 === null ? '—' : <>{fmtSigned(bwDelta30)}<span className="u"> {S.unit}</span></>}
         </div>
-        <div className="s">{bw.latest ? `${fmtNum(bw.latest.w)} ${S.unit}` : t('No weigh-ins')}</div>
+        <div className="s">{bw.latest ? fmtVol(bw.latest.w, S.unit) : t('No weigh-ins')}</div>
       </button>
     </div>
 
@@ -451,7 +451,7 @@ export default function Stats() {
         {exHist.length ? <>
           <div className="sect-b ex-picker">
             <SelectRow title={t('Exercise')} sheetTitle={t('Exercise progress')} value={curEx} onChange={setExId}
-              options={exHist.map(ex => ({ value: ex.id, label: <><span className="capitalize">{ex.name}</span>{ex.current ? ' · ' + fmtNum(ex.current) + ' ' + ex.unit : ''}</> }))} />
+              options={exHist.map(ex => ({ value: ex.id, label: <><span className="capitalize">{ex.name}</span>{ex.current ? ' · ' + fmtVol(ex.current, ex.unit) : ''}</> }))} />
           </div>
           {headline > 0 && <div className="ex-headline">
             <span className="muted small">{t('Best')}</span>

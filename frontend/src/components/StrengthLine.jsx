@@ -1,5 +1,5 @@
 import { t } from '../lib/i18n.js'
-import { fmtNum } from '../lib/format.js'
+import { fmtNum, fmtVol } from '../lib/format.js'
 import { STRENGTH_REASON } from '../lib/strength-level.js'
 
 /**
@@ -14,7 +14,7 @@ export function strengthWordsOf(lift, unit) {
     untrained: everTrained ? null : t('not trained yet'),
     lapsed: everTrained && !trainedLately ? t('not trained lately') : null,
     needsWeighIn: trainedLately && !current ? t('Needs a weigh-in near this lift') : null,
-    next: next ? t('Next: {0} at {1}', t(next.level), fmtNum(next.weight) + ' ' + unit) : null,
+    next: next ? t('Next: {0} at {1}', t(next.level), fmtVol(next.weight, unit)) : null,
   }
 }
 

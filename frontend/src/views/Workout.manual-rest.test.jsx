@@ -178,7 +178,7 @@ describe('manual rest control', () => {
     click(restControl())
     expect(timerBarText()).toMatch(/^1:30/)
 
-    click(buttonNamed('Discard'))
+    click(buttonNamed('Discard workout'))
     const dialog = view.container.querySelector('[role="alertdialog"]')
     expect(dialog).toBeTruthy()
     click([...dialog.querySelectorAll('button')].find(button => button.textContent.trim() === 'Discard'))

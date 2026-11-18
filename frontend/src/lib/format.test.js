@@ -60,7 +60,9 @@ describe('format utility module', () => {
       expect(fmtNum(1324)).toBe('1,324')
       expect(fmtNum(16910)).toBe('16,910')
       expect(fmtNum(1234.56)).toBe('1,234.6')
-      expect(fmtVol(8200, 'kg')).toBe('8,200 kg')
+      expect(fmtVol(8200, 'kg')).toBe('8,200\u00a0kg')
+      // A number and its unit never break across lines (iron-launch 10).
+      expect(fmtVol(8200, 'kg')).not.toMatch(/\d kg/)
     })
 
     it('exCount formats plural forms correctly', () => {
@@ -87,7 +89,7 @@ describe('format utility module', () => {
       expect(fmtSigned(-0)).toBe('0')
       expect(fmtSigned(0.04)).toBe('0')
       expect(fmtSigned(-0.04)).toBe('0')
-      expect(fmtSigned(-20000, n => fmtVol(n, 'kg'))).toBe('−20,000 kg')
+      expect(fmtSigned(-20000, n => fmtVol(n, 'kg'))).toBe('−20,000\u00a0kg')
       expect(fmtSigned(-30000, fmtDur)).toBe('0 min')
     })
 
@@ -97,7 +99,7 @@ describe('format utility module', () => {
     })
 
     it('signs whatever the magnitude formatter writes: volume, duration, percent', () => {
-      expect(fmtSigned(-2500, n => fmtVol(n, 'kg'))).toBe('−2,500 kg')
+      expect(fmtSigned(-2500, n => fmtVol(n, 'kg'))).toBe('−2,500\u00a0kg')
       expect(fmtSigned(-5400000, fmtDur)).toBe('−1h 30m')
       expect(fmtSigned(12, n => fmtNum(n) + '%')).toBe('+12%')
     })

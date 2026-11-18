@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, useState } from 'react'
-import { fmtNum } from '../lib/format.js'
+import { fmtNum, NBSP } from '../lib/format.js'
 import { fmtDate, MONTHS, isoOf } from '../lib/dates.js'
 import { t } from '../lib/i18n.js'
 
@@ -103,7 +103,7 @@ export default function LineChart({ points, h = 150, unit = '', color = 'var(--d
       onMouseMove={onMove} onMouseDown={onMove}
       onMouseLeave={() => setHover(null)}
       onTouchStart={onMove} onTouchMove={onMove}>
-      <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} role="img" aria-label={t('Chart of {0} readings, latest {1}', points.length, fmtNum(last.y) + (unit ? ' ' + unit : ''))}>
+      <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} role="img" aria-label={t('Chart of {0} readings, latest {1}', points.length, fmtNum(last.y) + (unit ? NBSP + unit : ''))}>
         {grid}
         {goal != null && isFinite(goal) && <>
           <line x1={P.l} y1={Y(goal)} x2={W - P.r} y2={Y(goal)} stroke="var(--label-2)" strokeWidth="1" strokeDasharray="3 3" />
@@ -120,7 +120,7 @@ export default function LineChart({ points, h = 150, unit = '', color = 'var(--d
         </g>}
       </svg>
       {hover && <div className="ctip" ref={tipRef}>
-        {fmtDate(hover.iso, true)} · {fmtNum(hover.v)}{unit ? ' ' + unit : ''}{hover.note ? ' · ' + hover.note : ''}
+        {fmtDate(hover.iso, true)} · {fmtNum(hover.v)}{unit ? NBSP + unit : ''}{hover.note ? ' · ' + hover.note : ''}
       </div>}
     </div>
   )

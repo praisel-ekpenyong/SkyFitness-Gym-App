@@ -71,7 +71,7 @@ describe('RecapSheet', () => {
     expect(rows[1].textContent).toContain('Time trained')
     expect(rows[1].textContent).toContain('50 min')
     expect(rows[2].textContent).toContain('Volume')
-    expect(rows[2].textContent).toContain('550 kg')
+    expect(rows[2].textContent).toContain('550\u00a0kg')
     expect(rows[3].textContent).toContain('Sets')
     expect(rows[3].textContent).toContain('1')
 
