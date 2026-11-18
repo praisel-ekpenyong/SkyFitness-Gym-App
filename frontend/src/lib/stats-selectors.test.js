@@ -3,6 +3,7 @@ import { selectStatsOverview, selectExerciseStats } from './stats-selectors.js'
 import { MUSCLES } from './muscles.js'
 import { STRENGTH_FLOOR } from './recovery.js'
 import { toScale } from './effort.js'
+import { switchTrainingStyle, setVolumeRange, clearVolumeRanges } from './volume-ranges.js'
 
 const DAY = 24 * 60 * 60 * 1000
 const NOW = Date.UTC(2026, 6, 1, 12)
@@ -586,5 +587,82 @@ describe('projected volume', () => {
     const big = { ...push, ex: [{ id: LIFT.id, sets: 8 }] }
     const S = { ...monWedFri(), routines: [big, legs], workouts: [workoutAt(LIFT.id, 1, Array.from({ length: 6 }, () => doneSet(60, 8)))] }
     expect(volume(S).chest).toMatchObject({ done: 6, projected: 22, verdict: 'above' })
+  })
+})
+
+describe('training styles and range edits', () => {
+  const ranges = S => Object.fromEntries(Object.entries(selectStatsOverview(S, { now: NOW, catalogue }).weeklyVolume.muscles)
+    .map(([slug, m]) => [slug, m.range]))
+
+  it('Low volume builds the ranges around the research minimum', () => {
+    const r = ranges({ workouts: [], trainingStyle: 'low' })
+    expect(r).toMatchObject({
+      chest: [4, 10], lats: [4, 10], 'upper-back': [3, 8], 'front-delts': [0, 6], 'side-delts': [4, 10],
+      'rear-delts': [3, 8], biceps: [3, 8], triceps: [3, 8], quadriceps: [4, 10], hamstring: [3, 8],
+      gluteal: [2, 8], calves: [4, 8], abs: [3, 8], trapezius: null,
+    })
+  })
+
+  it('High volume stretches every range', () => {
+    const r = ranges({ workouts: [], trainingStyle: 'high' })
+    expect(r).toMatchObject({
+      chest: [14, 26], lats: [14, 26], 'upper-back': [10, 22], 'front-delts': [0, 16], 'side-delts': [12, 26],
+      'rear-delts': [10, 22], biceps: [12, 22], triceps: [10, 20], quadriceps: [12, 22], hamstring: [10, 20],
+      gluteal: [8, 20], calves: [12, 20], abs: [10, 20], trapezius: null,
+    })
+  })
+
+  it('Standard is the style when none is set, or the stored one is unknown', () => {
+    expect(ranges({ workouts: [], trainingStyle: 'standard' }).chest).toEqual([10, 20])
+    expect(ranges({ workouts: [], trainingStyle: 'extreme' }).chest).toEqual([10, 20])
+  })
+
+  it('a lighter style reads the same sets as in range', () => {
+    const S = { workouts: [workoutAt(LIFT.id, 1, Array.from({ length: 6 }, () => doneSet(60, 8)))] }
+    expect(selectStatsOverview(S, { now: NOW, catalogue }).weeklyVolume.muscles.chest.verdict).toBe('below')
+    expect(selectStatsOverview({ ...S, trainingStyle: 'low' }, { now: NOW, catalogue }).weeklyVolume.muscles.chest.verdict).toBe('in')
+  })
+
+  it('an edited range applies on top of the style and is marked as edited', () => {
+    const S = { workouts: [workoutAt(LIFT.id, 1, Array.from({ length: 6 }, () => doneSet(60, 8)))], trainingStyle: 'high' }
+    setVolumeRange(S, 'chest', [4, 8])
+    const { chest, lats } = selectStatsOverview(S, { now: NOW, catalogue }).weeklyVolume.muscles
+    expect(chest).toMatchObject({ done: 6, range: [4, 8], verdict: 'in', edited: true })
+    expect(lats).toMatchObject({ range: [14, 26], edited: false })
+  })
+
+  it('an edit equal to the style range is not an edit', () => {
+    const S = { workouts: [] }
+    setVolumeRange(S, 'chest', [8, 12])
+    setVolumeRange(S, 'chest', [10, 20])
+    expect(selectStatsOverview(S, { now: NOW, catalogue }).weeklyVolume.muscles.chest).toMatchObject({ range: [10, 20], edited: false })
+  })
+
+  it('ignores stored edits that are not whole numbers from 0 to 40 with the low end at most the high end', () => {
+    const S = { workouts: [], volumeRanges: {
+      chest: [12, 8], lats: [-1, 10], 'upper-back': [5, 41], biceps: [2.5, 9], triceps: '4-8',
+      quadriceps: [4], trapezius: [2, 6], calves: [0, 40],
+    } }
+    const m = selectStatsOverview(S, { now: NOW, catalogue }).weeklyVolume.muscles
+    for (const slug of ['chest', 'lats', 'upper-back', 'biceps', 'triceps', 'quadriceps']) expect(m[slug].edited).toBe(false)
+    expect(m.trapezius).toMatchObject({ range: null, verdict: null, edited: false })
+    expect(m.calves).toMatchObject({ range: [0, 40], edited: true })
+  })
+
+  it('switching style clears every edit', () => {
+    const S = { workouts: [] }
+    setVolumeRange(S, 'chest', [4, 8])
+    setVolumeRange(S, 'biceps', [2, 6])
+    switchTrainingStyle(S, 'low')
+    const m = selectStatsOverview(S, { now: NOW, catalogue }).weeklyVolume.muscles
+    expect(m.chest).toMatchObject({ range: [4, 10], edited: false })
+    expect(m.biceps).toMatchObject({ range: [3, 8], edited: false })
+  })
+
+  it('going back to the style\'s ranges keeps the style and clears the edits', () => {
+    const S = { workouts: [], trainingStyle: 'high' }
+    setVolumeRange(S, 'chest', [4, 8])
+    clearVolumeRanges(S)
+    expect(selectStatsOverview(S, { now: NOW, catalogue }).weeklyVolume.muscles.chest).toMatchObject({ range: [14, 26], edited: false })
   })
 })
