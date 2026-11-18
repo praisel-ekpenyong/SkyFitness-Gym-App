@@ -2,6 +2,7 @@ import { createRequire } from 'node:module'
 import { accessSync, constants } from 'node:fs'
 import { delimiter, dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { defaultPort } from './port.mjs'
 
 export const FRONTEND = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const require = createRequire(join(FRONTEND, 'package.json'))
@@ -18,7 +19,7 @@ export function parseArgs(argv = process.argv.slice(2)) {
 
 export function config(flags = {}) {
   const env = process.env
-  const port = +(flags.port || env.SKY_REVIEW_PORT || 5198)
+  const port = +(flags.port || env.SKY_REVIEW_PORT || defaultPort(FRONTEND))
   const base = (flags.base || env.SKY_REVIEW_BASE || `http://127.0.0.1:${port}/`).replace(/\/?$/, '/')
   const today = flags.today || env.SKY_REVIEW_TODAY || '2026-11-09'
   if (!/^\d{4}-\d{2}-\d{2}$/.test(today)) throw new Error(`today must be YYYY-MM-DD, got "${today}"`)
