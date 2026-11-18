@@ -147,8 +147,12 @@ export const addToRoutineSheet = ex => ui().openSheet(close => <AddToRoutine ex=
 
 export function CustomExForm({ existing, prefill, onDone, close }) {
   const [name, setName] = useState(existing ? existing.n : (prefill || ''))
-  const [primary, setPrimary] = useState(() => existing ? (primaryMuscleOf(existing) || '') : '')
-  const [secondaries, setSecondaries] = useState(() => existing ? (secondaryMusclesOf(existing) || []) : [])
+  const [initialPick] = useState(() => ({
+    primary: existing ? (primaryMuscleOf(existing) || '') : '',
+    secondaries: existing ? (secondaryMusclesOf(existing) || []) : [],
+  }))
+  const [primary, setPrimary] = useState(initialPick.primary)
+  const [secondaries, setSecondaries] = useState(initialPick.secondaries)
   const [desc, setDesc] = useState(existing ? (existing.desc || '') : '')
 
   const selectPrimary = m => {
@@ -173,9 +177,16 @@ export function CustomExForm({ existing, prefill, onDone, close }) {
     if (dup) { toast(t('“{0}” already exists', dup.n)); return }
     const trimmedDesc = desc.trim().slice(0, 1000)
     const finalSm = primary === 'cardio' ? [] : secondaries
+    // The form shows a stored plain Shoulders (or a bodypart-only legacy
+    // exercise) as the muscles it counts for. Save those back only when the
+    // lifter changes the pick, so untouched muscles stay as stored (ADR 0024).
+    const pickChanged = primary !== initialPick.primary
+      || finalSm.length !== initialPick.secondaries.length
+      || finalSm.some(m => !initialPick.secondaries.includes(m))
+    const muscles = existing && !pickChanged ? { tg: existing.tg, sm: existing.sm } : { tg: primary, sm: finalSm }
     let id
     update(s => {
-      id = catalogueWrites.upsertCustomEx(s, { id: existing ? existing.id : null, n: trimmedName, tg: primary, sm: finalSm, desc: trimmedDesc })
+      id = catalogueWrites.upsertCustomEx(s, { id: existing ? existing.id : null, n: trimmedName, ...muscles, desc: trimmedDesc })
     })
     close()
     toast(existing ? t('Saved') : t('“{0}” created', trimmedName))
