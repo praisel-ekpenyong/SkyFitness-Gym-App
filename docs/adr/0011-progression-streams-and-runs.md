@@ -69,3 +69,5 @@ sets survive the next session instead of resetting to the Target. Legacy Entries
 mass-deload on upgrade.
 
 2026-11 amendment: the all-time `exWeights` hint is replaced by Best read from the Training log. See ADR 0021.
+
+2026-11-18 amendment: the bodyweight carve-out keys on the Bodyweight exercise flag (`bodyweight` on the exercise config when set, else the catalogue's equipment), never on `weight: 0` alone. A bodyweight session is now a reps-mode session of a Bodyweight exercise with no load on the plan, either `weight: 0` or no weight. The exercise config sheet writes `weight: 0` when the weight field is left empty, so a barbell or cable exercise saved without a starting weight fell into the carve-out: its stream ignored the top reps, and two Routines with different rep ranges shared one Run. Such an exercise now keeps the full shape, as does a Bodyweight exercise trained with a belt. Bodyweight progression is unchanged: it still applies when every performed work set was logged at zero weight, on any exercise.
