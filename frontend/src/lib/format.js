@@ -13,7 +13,15 @@ export function fmtDurParts(ms) {
 export const fmtDur = ms => fmtDurParts(ms).map(p => p.join('')).join(' ')
 export const durPart = ms => (ms >= 60000 ? [fmtDur(ms)] : [])
 export const fmtNum = n => (Math.round(n * 10) / 10).toLocaleString(dateLocale())
-export const fmtVol = (v, unit) => fmtNum(v) + ' ' + unit
+/** Non-breaking space: a number and its unit never wrap onto separate lines. */
+export const NBSP = '\u00a0'
+/**
+ * Joins a number and its unit with a non-breaking space ("8,200 kg"), for any quantity, not only volume.
+ * @param {number} v - The quantity.
+ * @param {string} unit - The unit label.
+ * @returns {string}
+ */
+export const fmtVol = (v, unit) => fmtNum(v) + NBSP + unit
 
 export const MINUS = '\u2212'
 export function fmtSigned(n, fmt = fmtNum) {

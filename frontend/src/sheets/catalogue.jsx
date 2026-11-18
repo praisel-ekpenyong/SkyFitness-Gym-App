@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { EXIDX, isCardio, isBodyweightEq, allExercises } from '../lib/exercises.js'
-import { fmtNum, exCount, uid, sentenceCase } from '../lib/format.js'
+import { fmtNum, fmtVol, exCount, uid, sentenceCase } from '../lib/format.js'
 import { fmtDate } from '../lib/dates.js'
 import { setLabel } from '../lib/set-label.js'
 import { best as bestOf, best1RM, lastSession } from '../lib/training-log.js'
@@ -37,8 +37,8 @@ function OneRM({ ex }) {
   return <>
     <h4 className="sec">{t('Estimated 1RM')}</h4>
     {best && <div className="onerm-now">
-      {t('From your log:')} <b className="record">{fmtNum(best.est)} {st.unit}</b>
-      <span className="dim"> · {t('{0} × {1} on {2}', fmtNum(best.w) + ' ' + st.unit, best.r, fmtDate(best.d, true))}</span>
+      {t('From your log:')} <b className="record">{fmtVol(best.est, st.unit)}</b>
+      <span className="dim"> · {t('{0} × {1} on {2}', fmtVol(best.w, st.unit), best.r, fmtDate(best.d, true))}</span>
     </div>}
     <div className="row cfgrow onerm-in">
       <Stepper label={t('Weight ({0})', st.unit)} value={w} step={2.5} onChange={setW} />
@@ -46,7 +46,7 @@ function OneRM({ ex }) {
     </div>
     <div className="row between onerm-out">
       <span className="muted small">{t('Estimate')}</span>
-      <b className="onerm-est">{est === null ? '—' : fmtNum(est) + ' ' + st.unit}</b>
+      <b className="onerm-est">{est === null ? '—' : fmtVol(est, st.unit)}</b>
     </div>
     <div className="small dim">{est === null
       ? t('Enter a weight and 1–{0} reps — beyond that an estimate is guesswork.', REP_CAP)
@@ -95,7 +95,7 @@ export function ExerciseDetail({ ex, close }) {
       {!isCardioEx && secondaries.map((s, i) => <span key={i} className="tag nocap">{t('Secondary: {0}', sentenceCase(MUSCLE_NAME[s] || s))}</span>)}
     </div>
     {ex.desc && <div className="exnote">{ex.desc}</div>}
-    {best > 0 && <div className="small row best-line"><Icon name="trophy" /><span>{t('Best')} <b>{fmtNum(best)} {st.unit}</b>{last ? ` · ${t('last {0} · {1}', fmtDate(last.d), last.sets.map(s => setLabel(ex.id, s, last.target)).join(', '))}` : ''}</span></div>}
+    {best > 0 && <div className="small row best-line"><Icon name="trophy" /><span>{t('Best')} <b>{fmtVol(best, st.unit)}</b>{last ? ` · ${t('last {0} · {1}', fmtDate(last.d), last.sets.map(s => setLabel(ex.id, s, last.target)).join(', '))}` : ''}</span></div>}
     {strength && <ExerciseStrengthLine reading={strength} unit={st.unit} />}
     <div className="gap8" />
     <Button variant="primary" icon="plus" onClick={() => addToRoutineSheet(ex)}>{t('Add to my plan')}</Button>
