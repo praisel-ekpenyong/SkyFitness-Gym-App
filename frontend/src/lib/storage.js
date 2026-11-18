@@ -217,7 +217,8 @@ const isGoodRoutine = r => isPlainRecord(r) && typeof r.id === 'string' && r.id.
 const RESTORE_TOP_KEYS = [
   'unit', 'restSec', 'sound', 'keepAwake', 'theme', 'accent', 'body', 'targetW',
   'bodyweight', 'routines', 'week', 'dayPlan', 'exWeights', 'workouts', 'customEx',
-  'gifSize', 'favorites', 'reminder', 'effort', 'lastExport', 'displayName'
+  'gifSize', 'favorites', 'reminder', 'effort', 'lastExport', 'displayName',
+  'trainingStyle', 'volumeRanges'
 ]
 
 export function sanitizeRestorePayload(data) {

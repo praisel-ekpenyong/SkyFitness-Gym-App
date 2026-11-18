@@ -23,7 +23,7 @@ vi.mock('../store/useStore.js', () => ({
 }))
 vi.mock('react-router-dom', () => ({ useNavigate: () => () => {} }))
 vi.mock('../sheets.jsx', () => ({
-  bwSheet: () => {}, goalSheet: () => {}, calendarSheet: () => {}, recapSheet: vi.fn(), workoutDetailSheet: () => {},
+  bwSheet: () => {}, goalSheet: () => {}, calendarSheet: () => {}, recapSheet: vi.fn(), workoutDetailSheet: () => {}, volumeRangesSheet: vi.fn(),
   WorkoutRow: () => React.createElement('div'),
 }))
 vi.mock('../components/LineChart.jsx', () => ({ default: props => React.createElement('div', { 'data-chart-days': props.points.map(p => p.d).join(',') }) }))
@@ -126,7 +126,7 @@ async function unmountStats() {
 function muscleCard() {
   return [...container.querySelectorAll('.card')].find(card =>
     [...card.querySelectorAll('.seg button')].some(button =>
-      ['Muscle balance', 'Fatigue', 'Strength'].includes(button.textContent.trim())))
+      ['Balance', 'Fatigue', 'Strength', 'Volume'].includes(button.textContent.trim())))
 }
 
 function buttonWithText(scope, text) {
@@ -168,7 +168,7 @@ afterEach(async () => {
 describe('Stats muscle recovery view runtime', () => {
   it('dispatches real clicks through Balance, Fatigue, and Strength and preserves selection', async () => {
     await mountStats()
-    expectPressed(viewButton('Muscle balance'))
+    expectPressed(viewButton('Balance'))
     expectPressed(balanceRangeButton('30d'))
 
     await click(balanceRangeButton('30d'))
@@ -187,7 +187,12 @@ describe('Stats muscle recovery view runtime', () => {
     expect(lastMap().thresholds.at(-1)).toEqual({ at: 1, level: 4 })
     expect(container.textContent).toContain('Strength shows retained muscle strength. Train again to reset it.')
 
-    await click(viewButton('Muscle balance'))
+    await click(viewButton('Volume'))
+    expectPressed(viewButton('Volume'))
+    expect(container.textContent).toContain("Effective sets this week against each muscle's volume range.")
+    expect(container.textContent).toContain('No volume range')
+
+    await click(viewButton('Balance'))
     expectPressed(balanceRangeButton('30d'))
     expect(buttonWithText(muscleCard(), 'Hard')).toBeTruthy()
     expect(lastMap().selected).toBe('chest')

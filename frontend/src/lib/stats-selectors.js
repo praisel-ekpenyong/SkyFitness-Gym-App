@@ -1,6 +1,6 @@
 import { EXDB, EXIDX } from './exercises.js'
 import { fatigueOf, strengthOf, fatigueStateOf } from './recovery.js'
-import { MUSCLES, loadOfWorkouts, rankOf, lastTrainedByMuscle } from './muscles.js'
+import { MUSCLES, loadOfWorkouts, loadOfRoutine, rankOf, lastTrainedByMuscle } from './muscles.js'
 import { LB_TO_KG } from './bodyweight.js'
 import { best1RM, e1rmSeries, loadRecords, metric } from './training-log.js'
 import {
@@ -11,8 +11,10 @@ import {
   isPerformed, isWorkSet, metricRowsForEntry, metricModeForEntry, modeOf,
 } from './workout-model.js'
 import { workoutTimestamp, isoOf, weekKey, monthKey } from './format.js'
-import { streakWeeks, trainedWeeks } from './history.js'
+import { streakWeeks, trainedWeeks, effectiveRoutine } from './history.js'
 import { strengthExerciseRowsForMuscle } from './strength-exercises.js'
+import { volumeRangeOf, verdictOf } from './volume-ranges.js'
+import { REST } from './schedule.js'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
@@ -60,15 +62,18 @@ function muscleCatalogueOf(S, catalogue) {
   return { lookup: id => logged.get(id) || catalogue.lookup(id) || null }
 }
 
+/** An entry with its catalogue exercise merged underneath, so muscle attribution reads the catalogue. */
+function withCatalogueEntry(entry, catalogue) {
+  const resolved = catalogue?.lookup(entry?.id)
+  return resolved && typeof resolved === 'object' ? { ...resolved, ...entry } : entry
+}
+
 function projectWorkouts(workouts, catalogue) {
   return (workouts || []).map(workout => ({
     ...workout,
     entries: (workout.entries || [])
       .filter(entry => entry && typeof entry === 'object')
-      .map(entry => {
-        const resolved = catalogue?.lookup(entry.id)
-        return resolved && typeof resolved === 'object' ? { ...resolved, ...entry } : entry
-      }),
+      .map(entry => withCatalogueEntry(entry, catalogue)),
   }))
 }
 
@@ -106,6 +111,55 @@ function workSetsOf(workouts) {
     }
   }
   return out
+}
+
+/** The day an Active workout belongs to: its date, else the day it started. */
+function activeDayOf(active) {
+  if (typeof active?.d === 'string') return active.d
+  return Number.isFinite(active?.start) ? isoOf(new Date(active.start)) : null
+}
+
+/**
+ * Planned work-set load still ahead this ISO week: today's routine (only before anything is
+ * trained today) plus every remaining day's effective routine. Null without a week schedule
+ * naming at least one existing routine.
+ */
+function plannedLoadOf(S, today, muscleCatalogue) {
+  const routineIds = new Set((S?.routines || []).map(r => r?.id))
+  if (!Object.values(S?.week || {}).some(id => id && id !== REST && routineIds.has(id))) return null
+  const week = weekKey(today)
+  const trainedToday = activeDayOf(S?.active) === today || (S?.workouts || []).some(w => w.d === today)
+  const planned = {}
+  const day = new Date(today + 'T12:00:00')
+  if (trainedToday) day.setDate(day.getDate() + 1)
+  for (let iso = isoOf(day); weekKey(iso) === week; day.setDate(day.getDate() + 1), iso = isoOf(day)) {
+    const routine = effectiveRoutine(S, iso)
+    if (!routine) continue
+    const ex = (routine.ex || []).map(c => withCatalogueEntry(c, muscleCatalogue))
+    const load = loadOfRoutine({ ...routine, ex })
+    for (const slug in load) planned[slug] = (planned[slug] || 0) + load[slug]
+  }
+  return planned
+}
+
+/**
+ * Weekly volume reading: effective sets done this ISO week (Workouts plus the Active workout)
+ * per muscle, against its volume range.
+ */
+function weeklyVolumeOf(S, today, muscleCatalogue) {
+  const week = weekKey(today)
+  const thisWeek = (S?.workouts || []).filter(w => weekKey(w.d) === week)
+  const activeDay = activeDayOf(S?.active)
+  const sources = activeDay && weekKey(activeDay) === week ? [...thisWeek, S.active] : thisWeek
+  const raw = loadOfWorkouts(projectWorkouts(sources, muscleCatalogue))
+  const planned = plannedLoadOf(S, today, muscleCatalogue)
+  const muscles = Object.fromEntries(MUSCLES.map(slug => {
+    const done = round1(raw[slug] || 0)
+    const projected = planned ? round1((raw[slug] || 0) + (planned[slug] || 0)) : null
+    const { range, edited } = volumeRangeOf(S, slug)
+    return [slug, { done, projected, range, verdict: verdictOf(projected ?? done, range, slug), edited }]
+  }))
+  return { week, muscles }
 }
 
 export function selectStatsOverview(S, opts = {}) {
@@ -205,6 +259,7 @@ export function selectStatsOverview(S, opts = {}) {
       top: worked.slice(0, 5),
     },
     fatigue: { values: fatigueValues, states: fatigueStates },
+    weeklyVolume: weeklyVolumeOf(S, today, muscleCatalogue),
     strength: {
       values: strengthValues,
       latest,

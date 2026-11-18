@@ -26,6 +26,7 @@ import { monthRecap } from './lib/recap.js'
 import { MOBILE, shareExport } from './lib/mobile.js'
 import { configureSessionSheets } from './sheets/session.jsx'
 import { configureCatalogueSheets } from './sheets/catalogue.jsx'
+import { configureVolumeSheets } from './sheets/volume.jsx'
 
 const S = () => useStore.getState().S
 const update = (...a) => useStore.getState().update(...a)
@@ -657,3 +658,6 @@ configureSessionSheets({ bwSheet, confirmSheet })
 
 export { ExerciseDetail, exerciseDetailSheet, addToRoutineSheet, CustomExForm, customExSheet, deleteCustomEx, ExercisePicker, exercisePicker, ExConfig, exConfigSheet } from './sheets/catalogue.jsx'
 configureCatalogueSheets({ confirmSheet })
+
+export { volumeRangesSheet } from './sheets/volume.jsx'
+configureVolumeSheets({ confirmSheet })

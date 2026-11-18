@@ -1,17 +1,18 @@
-import { useEffect, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { selectStatsOverview, selectExerciseStats } from '../lib/stats-selectors.js'
 import { fmtNum, fmtSigned, fmtDate, todayISO, setLabel } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
 import { deltaTowardGoal } from '../lib/bodyweight.js'
-import { bwSheet, goalSheet, calendarSheet, recapSheet, workoutDetailSheet, WorkoutRow } from '../sheets.jsx'
+import { bwSheet, goalSheet, calendarSheet, recapSheet, workoutDetailSheet, WorkoutRow, volumeRangesSheet } from '../sheets.jsx'
 import LineChart from '../components/LineChart.jsx'
 import Heatmap from '../components/Heatmap.jsx'
 import Icon from '../components/Icon.jsx'
 import BodyMap, { BodyMapLegend } from '../components/BodyMap.jsx'
 import { MUSCLE_NAME } from '../lib/muscles.js'
 import { STRENGTH_FLOOR } from '../lib/recovery.js'
+import { trainingStyleOf, trainingStyleName } from '../lib/volume-ranges.js'
 import { FATIGUE_LEVELS } from '../lib/recovery-view.js'
 import { Button, Segmented, SelectRow } from '../components/ui.jsx'
 
@@ -49,6 +50,70 @@ function StrengthLegend() {
   </div>
 }
 
+// Volume verdicts on the body map's data ramp: below light, in range strong, above full. Count-only stays neutral.
+// `label` reads in the inspector and a11y; `legend` is the shorter legend text.
+const VOLUME_VERDICTS = {
+  below: { level: 1, label: 'Room for more', legend: 'Room for more' },
+  in: { level: 3, label: 'In range', legend: 'In range' },
+  above: { level: 4, label: 'More than your style aims for', legend: 'Above range' },
+}
+const VOLUME_LEVELS = Object.values(VOLUME_VERDICTS).map(({ level }) => ({ at: level, level }))
+
+function VolumeLegend() {
+  return <div className="hm-legend" aria-label={t('Weekly volume')}>
+    {Object.entries(VOLUME_VERDICTS).map(([verdict, { level, legend }]) =>
+      <Fragment key={verdict}><span>{t(legend)}</span><div className={'hm-c l' + level} /></Fragment>)}
+  </div>
+}
+
+const volumeVerdictLabel = verdict => t(VOLUME_VERDICTS[verdict]?.label || 'No volume range')
+
+function WeeklyVolume({ S, volume, sel, setSel, toggleSel }) {
+  const { muscles } = volume
+  const slugs = Object.keys(muscles)
+  const ranged = slugs.filter(slug => muscles[slug].range)
+  const countOnly = slugs.filter(slug => !muscles[slug].range)
+  const levels = Object.fromEntries(slugs.map(slug => [slug, VOLUME_VERDICTS[muscles[slug].verdict]?.level || 0]))
+  const plannedOf = slug => muscles[slug].projected == null ? 0 : Math.max(0, muscles[slug].projected - muscles[slug].done)
+  const scale = Math.max(1, ...slugs.map(slug => Math.max(muscles[slug].done + plannedOf(slug), muscles[slug].range?.[1] || 0)))
+  const setsText = slug => t('{0} sets', fmtNum(muscles[slug].done))
+  const readingText = slug => {
+    const { done, projected, range } = muscles[slug]
+    const parts = [t('{0} done', fmtNum(done))]
+    if (projected != null) parts.push(t('{0} planned', fmtNum(plannedOf(slug))))
+    if (range) parts.push(t('{0} to {1}', range[0], range[1]))
+    return parts.join(', ')
+  }
+  const pct = value => Math.round(Math.min(1, value / scale) * 100) + '%'
+  const row = slug => <div key={slug} className="mrow">
+    <div className="grow">
+      <div className="nm">{t(MUSCLE_NAME[slug])}{muscles[slug].edited && <> <span className="tag">{t('edited')}</span></>}</div>
+      <div className="smd-sub muted small">{readingText(slug)}</div>
+    </div>
+    <span className="bar split"><i style={{ width: pct(muscles[slug].done) }} /><i className="quiet" style={{ width: pct(plannedOf(slug)) }} /></span>
+  </div>
+  return <>
+    <div className="card-head">
+      <h2>{t('{0} training style', trainingStyleName(trainingStyleOf(S)))}</h2>
+      <Button size="sm" icon="pencil" onClick={volumeRangesSheet}>{t('Edit ranges')}</Button>
+    </div>
+    <BodyMap className="tappable" load={levels} thresholds={VOLUME_LEVELS} body={S.body} selected={sel} onMuscle={toggleSel}
+      getA11yLabel={slug => t('{0}, {1}', t(MUSCLE_NAME[slug]), t('{0}, {1}', setsText(slug), volumeVerdictLabel(muscles[slug].verdict)))} />
+    <VolumeLegend />
+    <div className="muted small note">{t('Effective sets this week against each muscle\'s volume range.')}</div>
+    {sel && <div className="muscle-inspector" role="status" aria-live="polite">
+      <div className="muscle-inspector-info">
+        <div className="muscle-inspector-name"><b>{t(MUSCLE_NAME[sel])}</b></div>
+        <div className="muscle-inspector-val">{t('{0} · {1}', readingText(sel), volumeVerdictLabel(muscles[sel].verdict))}</div>
+      </div>
+      <Button size="xs" variant="ghost" icon="xmark" onClick={() => setSel(null)}>{t('Clear')}</Button>
+    </div>}
+    {ranged.map(row)}
+    <h4 className="sec">{t('No volume range')}</h4>
+    {countOnly.map(row)}
+  </>
+}
+
 function fatigueLabel(state) {
   return t(state === 'ready' ? 'Ready' : state === 'recovering' ? 'Recovering' : 'Fatigued')
 }
@@ -68,7 +133,7 @@ function MuscleBalance({ S, overview, win, setWin, setHard }) {
 
   return <div className="card">
     <Segmented className="seg-range" label={t('Muscle view')} value={view} onChange={setView}
-      options={[{ value: 'balance', label: t('Muscle balance') }, { value: 'fatigue', label: t('Fatigue') }, { value: 'strength', label: t('Strength') }]} />
+      options={[{ value: 'balance', label: t('Balance') }, { value: 'fatigue', label: t('Fatigue') }, { value: 'strength', label: t('Strength') }, { value: 'volume', label: t('Volume') }]} />
     {view === 'balance' ? <>
       <div className="card-head">
         <h2 className="cap1">{on ? t('by hard sets') : t('by sets worked')}</h2>
@@ -133,7 +198,8 @@ function MuscleBalance({ S, overview, win, setWin, setHard }) {
             ? t('Every muscle group got at least one hard set in this period.')
             : t('Every muscle group got some work in this period.')}</div>}
       </> : null}
-    </> : view === 'fatigue' ? <>
+    </> : view === 'volume' ? <WeeklyVolume S={S} volume={overview.weeklyVolume} sel={sel} setSel={setSel} toggleSel={toggleSel} />
+    : view === 'fatigue' ? <>
       <BodyMap className="tappable hm-fatigue" load={fatigue} thresholds={FATIGUE_LEVELS} body={S.body} selected={sel} onMuscle={toggleSel}
         getA11yLabel={slug => t('{0}, {1}', t(MUSCLE_NAME[slug]), fatigueLabel(overview.fatigue.states[slug]))} />
       <FatigueLegend />
