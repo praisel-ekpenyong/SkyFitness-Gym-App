@@ -6,22 +6,21 @@
  */
 export const ensurePlainObject = value => value && typeof value === 'object' && !Array.isArray(value) ? value : {}
 
-function normalizedPhase(value, fallback = 'work') {
-  const token = typeof value === 'string' ? value.trim().toLowerCase() : ''
-  if (token === 'warmup' || token === 'warm-up' || token === 'warm_up') return 'warmup'
-  if (token === 'work') return 'work'
-  return fallback === 'warmup' ? 'warmup' : 'work'
-}
-
-export function phaseForSet(set, fallback = 'work') {
+/**
+ * Reads a set row's phase. `admit` upgrades old rows on the way into the Profile, so the phase
+ * field is the only shape readers see (ADR 0027).
+ * @param {Object} set - Set row carrying `phase`; a missing or unknown phase reads as work.
+ * @returns {'warmup'|'work'} The normalized phase.
+ */
+export function phaseForSet(set) {
   const source = ensurePlainObject(set)
-  if (source.phase != null && source.phase !== '') return normalizedPhase(source.phase, fallback)
-  return source.warmup === true ? 'warmup' : normalizedPhase(undefined, fallback)
+  const token = typeof source.phase === 'string' ? source.phase.trim().toLowerCase() : ''
+  return token === 'warmup' || token === 'warm-up' || token === 'warm_up' ? 'warmup' : 'work'
 }
 
 /**
  * Tells callers whether a set row counts as warm-up rather than counted work.
- * @param {Object} set - Set row with an explicit `phase` or legacy `warmup` flag; missing input reads as work.
+ * @param {Object} set - Set row with an explicit `phase`; missing input reads as work.
  * @returns {boolean} True for warm-up rows; false for work rows.
  */
 export function isWarmupRow(set) {

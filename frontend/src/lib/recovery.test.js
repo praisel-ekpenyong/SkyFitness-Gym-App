@@ -415,13 +415,13 @@ describe('accumulation and purity', () => {
 })
 
 
-describe('warm-up flag in strength and fatigue', () => {
+describe('warm-up phase in strength and fatigue', () => {
   it('a warm-up set does not reset strength and does not add fatigue volume', () => {
     const now = Date.UTC(2026, 7, 1, 12)
     const oldWork = { id: 'w1', d: '2026-07-10', start: now - 20 * 86400000, unit: 'kg',
       entries: [{ id: '1254', sets: [{ done: true, w: 80, r: 8 }] }] }
     const warm = { id: 'w2', d: '2026-08-01', start: now - 3600000, unit: 'kg',
-      entries: [{ id: '1254', sets: [{ done: true, warmup: true, w: 20, r: 8 }] }] }
+      entries: [{ id: '1254', sets: [{ done: true, phase: 'warmup', w: 20, r: 8 }] }] }
     const workouts = [oldWork, warm]
     const strength = strengthOf(workouts, now)
     expect(strength.chest).toBeLessThan(1)
@@ -436,7 +436,7 @@ describe('warm-up flag in strength and fatigue', () => {
       entries: [{
         id: '1254',
         sets: [
-          { done: true, warmup: true, w: 40, r: 10 },
+          { done: true, phase: 'warmup', w: 40, r: 10 },
           { done: true, phase: 'warmup', w: 120, r: 1 },
           { done: true, w: 80, r: 8 },
           { done: true, w: 80, r: 8 },

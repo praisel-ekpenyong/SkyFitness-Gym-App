@@ -547,7 +547,7 @@ describe('applyPrescription', () => {
 describe('warm-up rows in session reads (round 3)', () => {
   it('readSession ignores warm-up rows for reps, count, low and ok', () => {
     const s = readSession({ id: LIFT, target: { sets: 2, reps: 5, mode: 'reps' }, sets: [
-      { w: 20, r: 8, done: true, warmup: true },
+      { w: 20, r: 8, done: true, phase: 'warmup' },
       { w: 60, r: 5, done: true },
       { w: 60, r: 6, done: true },
     ] })
@@ -559,7 +559,7 @@ describe('warm-up rows in session reads (round 3)', () => {
 
   it('readSession keeps an undone warm-up out of held/ok in time mode', () => {
     const s = readSession({ id: LIFT, target: { sets: 2, sec: 45, mode: 'time' }, sets: [
-      { sec: 45, done: true, warmup: true },
+      { sec: 45, done: true, phase: 'warmup' },
       { sec: 45, done: true },
       { sec: 30, done: true },
     ] })
@@ -567,10 +567,10 @@ describe('warm-up rows in session reads (round 3)', () => {
     expect(s.ok).toBe(false)
   })
 
-  it('uses phase as authoritative and falls back to the legacy warm-up flag', () => {
+  it('reads the phase as authoritative', () => {
     const s = readSession({ id: LIFT, target: { sets: 1, reps: 5 }, sets: [
       { phase: 'warmup', w: 120, r: 20, done: true },
-      { phase: 'work', warmup: true, w: 60, r: 5, done: true },
+      { phase: 'work', w: 60, r: 5, done: true },
     ] })
     expect(s.count).toBe(1)
     expect(s.weight).toBe(60)
@@ -582,32 +582,32 @@ describe('warm-up rows in session reads (round 3)', () => {
 describe('applyPrescription never touches warm-up rows (round 3)', () => {
   it('leaves a done warm-up exactly as logged', () => {
     const sets = [
-      { w: 20, r: 8, done: true, warmup: true },
+      { w: 20, r: 8, done: true, phase: 'warmup' },
       { w: 60, r: 5, done: true },
       { w: 60, r: 5, done: false },
     ]
     const out = applyPrescription(sets, { kind: 'up', weight: 62.5, reps: 5 })
-    expect(out[0]).toEqual({ w: 20, r: 8, done: true, warmup: true })
+    expect(out[0]).toEqual({ w: 20, r: 8, done: true, phase: 'warmup' })
     expect(out[1]).toEqual({ w: 60, r: 5, done: true })
     expect(out[2]).toEqual({ w: 62.5, r: 5, done: false })
   })
 
   it('grows the work rows, not the warm-up rows, when the policy adds sets', () => {
     const sets = [
-      { w: 20, r: 8, done: true, warmup: true },
+      { w: 20, r: 8, done: true, phase: 'warmup' },
       { w: 60, r: 5, done: true },
       { w: 60, r: 5, done: false },
     ]
     const out = applyPrescription(sets, { kind: 'up', weight: 62.5, reps: 5, sets: 4 })
-    expect(out.filter(s => !s.warmup)).toHaveLength(4)
-    expect(out.filter(s => s.warmup)).toHaveLength(1)
-    expect(out[0]).toEqual({ w: 20, r: 8, done: true, warmup: true })
+    expect(out.filter(s => s.phase !== 'warmup')).toHaveLength(4)
+    expect(out.filter(s => s.phase === 'warmup')).toHaveLength(1)
+    expect(out[0]).toEqual({ w: 20, r: 8, done: true, phase: 'warmup' })
   })
 
   it('an all-warm-up entry terminates and stays untouched', () => {
     const sets = [
-      { w: 20, r: 8, done: true, warmup: true },
-      { w: 25, r: 6, done: true, warmup: true },
+      { w: 20, r: 8, done: true, phase: 'warmup' },
+      { w: 25, r: 6, done: true, phase: 'warmup' },
     ]
     const out = applyPrescription(sets, { kind: 'up', weight: 62.5, reps: 5, sets: 4 })
     expect(out).toEqual(sets)

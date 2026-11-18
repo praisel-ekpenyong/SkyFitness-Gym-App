@@ -127,7 +127,7 @@ describe('editing sets', () => {
     expect(S.active.entries[0].sets[1].w).toBe(60)
     act(S, { type: 'addWarmup', entry: 0 })
     expect(S.active.entries[0].sets).toHaveLength(3)
-    expect(S.active.entries[0].sets[0]).toMatchObject({ warmup: true, phase: 'warmup' })
+    expect(S.active.entries[0].sets[0]).toMatchObject({ phase: 'warmup' })
     expect(act(S, { type: 'removeSet', entry: 0 }).ok).toBe(true)
     expect(act(S, { type: 'removeSet', entry: 0 }).ok).toBe(true)
     expect(act(S, { type: 'removeSet', entry: 0 }).ok).toBe(false)
@@ -137,7 +137,7 @@ describe('editing sets', () => {
 
 describe('toggling a set', () => {
   const work = (done = false, w = 80) => ({ w, r: 5, done })
-  const warm = () => ({ w: 40, r: 5, done: false, phase: 'warmup', warmup: true })
+  const warm = () => ({ w: 40, r: 5, done: false, phase: 'warmup' })
   const loaded = (id, sets, extra = {}) => ({ id, target: { reps: 5, weight: 80 }, sets, ...extra })
   const cardio = id => ({ id, target: { mode: 'cardio', min: 20, speed: 8 }, sets: [{ min: 20, speed: 8, done: false }] })
   const timed = id => ({ id, target: { mode: 'time', sec: 45 }, sets: [{ sec: 45, done: false }] })
@@ -317,7 +317,7 @@ describe('the next Step (the Next key)', () => {
   })
 
   it('is not held back by an unticked warm-up', () => {
-    const S = withActive([loaded('ex1', [{ w: 40, r: 5, done: false, phase: 'warmup', warmup: true }, work(), work()]), loaded('ex2', [work()])])
+    const S = withActive([loaded('ex1', [{ w: 40, r: 5, done: false, phase: 'warmup' }, work(), work()]), loaded('ex2', [work()])])
     act(S, { type: 'toggle', entry: 0, set: 1 })
     act(S, { type: 'toggle', entry: 0, set: 2 })
     expect(nextOf(S)).toBe(1)
@@ -565,6 +565,19 @@ describe('finishing a workout', () => {
     expect('prs' in result.workout).toBe(false)
     expect(result.workout.vol).toBeUndefined()
     expect(tonnage({ unit: 'kg' }, result.workout)).toBe(90 * 5 + 40 * 10)
+  })
+
+  it('lands the finished Workout in the Training log order: date, then start', () => {
+    const S = withActive([{ id: 'ex1', sets: [{ w: 90, r: 5, done: true }], target: { sets: 1, reps: 5 } }], {
+      id: 'active-early', d: '2026-08-10', start: 500,
+    })
+    S.workouts = [
+      { id: 'next-day', d: '2026-08-11', start: 1, entries: [] },
+      { id: 'same-day-late', d: '2026-08-10', start: 900, entries: [] },
+      { id: 'previous-day', d: '2026-08-09', start: 1, entries: [] },
+    ]
+    act(S, { type: 'finish' })
+    expect(S.workouts.map(w => w.id)).toEqual(['previous-day', 'active-early', 'same-day-late', 'next-day'])
   })
 
   it('logs the Workout record and leaves out Entries with nothing performed', () => {

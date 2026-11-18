@@ -3,6 +3,7 @@ import { loadRecords, e1rmRecords } from './training-log.js'
 import { EXIDX } from './exercises.js'
 import { exerciseMuscleSnapshot } from './muscles.js'
 import { diffRoutineWithSession } from './routine-sync.js'
+import { sortWorkouts } from './profile/index.js'
 
 function planRecord(plan) {
   if (!plan || typeof plan !== 'object') return null
@@ -74,8 +75,7 @@ export function completeActiveSession(S) {
   const prs = loadRecords(S, w).map(r => r.id)
   const e1prs = e1rmRecords(S, w)
 
-  S.workouts = [...(S.workouts || []), w]
-  S.workouts.sort((a, b) => (a.d < b.d ? -1 : a.d > b.d ? 1 : a.start - b.start))
+  S.workouts = sortWorkouts([...(S.workouts || []), w])
   S.active = null
   return { workout: w, prs, e1prs, routineSync }
 }

@@ -224,7 +224,7 @@ describe('work-set-only counting', () => {
       unit: 'kg', effort: 'rir', bodyweight: [], workouts: [{
         id: 'w1', d: isoOfTs(NOW - DAY), start: NOW - DAY,
         entries: [{ id: LIFT.id, sets: [
-          { done: true, warmup: true, w: 200, r: 1, rir: 0 },
+          { done: true, phase: 'warmup', w: 200, r: 1, rir: 0 },
           { done: false, w: 200, r: 5, rir: 0 },
           doneSet(60, 8, { rir: 2 }),
         ] }],
@@ -487,7 +487,7 @@ describe('weekly volume', () => {
     const S = { workouts: [
       workoutAt(LIFT.id, 3, [doneSet(60, 8), doneSet(60, 8)]),
       workoutAt(LIFT.id, 1, [
-        { done: true, warmup: true, w: 40, r: 10 },
+        { done: true, phase: 'warmup', w: 40, r: 10 },
         { done: false, w: 60, r: 8 },
         doneSet(60, 8), doneSet(60, 8), doneSet(60, 8),
       ]),
@@ -501,7 +501,7 @@ describe('weekly volume', () => {
     const S = {
       workouts: [workoutAt(LIFT.id, 1, Array.from({ length: 8 }, () => doneSet(60, 8)))],
       active: { name: 'Push', start: NOW - 3600e3, entries: [{ id: LIFT.id, sets: [
-        doneSet(60, 8), doneSet(60, 8), { done: false, w: 60, r: 8 }, { done: true, warmup: true, w: 40, r: 10 },
+        doneSet(60, 8), doneSet(60, 8), { done: false, w: 60, r: 8 }, { done: true, phase: 'warmup', w: 40, r: 10 },
       ] }] },
     }
     const { chest } = selectStatsOverview(S, { now: NOW, catalogue }).weeklyVolume.muscles
@@ -588,7 +588,7 @@ describe('projected volume', () => {
 
   it('counts an Active workout mid-session as done and leaves today\'s routine out', () => {
     const S = { ...monWedFri(), active: { name: 'Push', start: NOW - 1800e3, entries: [{ id: LIFT.id, sets: [
-      doneSet(60, 8), doneSet(60, 8), { done: false, w: 60, r: 8 }, { done: true, warmup: true, w: 40, r: 10 },
+      doneSet(60, 8), doneSet(60, 8), { done: false, w: 60, r: 8 }, { done: true, phase: 'warmup', w: 40, r: 10 },
     ] }] } }
     expect(volume(S).chest).toMatchObject({ done: 2, projected: 6, verdict: 'below' })
   })

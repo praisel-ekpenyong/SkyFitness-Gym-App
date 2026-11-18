@@ -2,6 +2,7 @@
 
 import { MOBILE, nativeLoad, nativeSave } from './mobile.js'
 import { PROFILE_CLEAN, cleanProfileFields } from './profile-fields.js'
+import { RESTORE_TOP_KEYS } from './profile/restore-keys.js'
 
 export const LOCAL_KEY = 'gym_state_v1'
 
@@ -215,15 +216,7 @@ const isGoodWorkout = w => isPlainRecord(w) && Array.isArray(w.entries)
 const isGoodRoutineEx = e => isPlainRecord(e) && typeof e.id === 'string' && e.id.length > 0
 const isGoodRoutine = r => isPlainRecord(r) && typeof r.id === 'string' && r.id.length > 0 && Array.isArray(r.ex)
 
-// Hand-written, not derived from DEF: DEF also holds `active` (restore must never copy it) and
-// omits `exWeights`. The Profile fields come from PROFILE_CLEAN so they clean the same way as the store.
-const RESTORE_TOP_KEYS = [
-  'unit', 'restSec', 'sound', 'keepAwake', 'theme', 'accent', 'body', 'targetW',
-  'bodyweight', 'routines', 'week', 'dayPlan', 'exWeights', 'workouts', 'customEx',
-  'gifSize', 'favorites', 'reminder', 'effort', 'lastExport', 'displayName',
-  'trainingStyle', 'volumeRanges', 'streakRule', ...Object.keys(PROFILE_CLEAN),
-]
-
+// The Profile fields come from PROFILE_CLEAN so they clean the same way as the store.
 export function sanitizeRestorePayload(data, now = Date.now()) {
   if (!data || typeof data !== 'object' || Array.isArray(data)) return { clean: data, skipped: 0 }
   let skipped = 0

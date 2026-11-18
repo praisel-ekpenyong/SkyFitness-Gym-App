@@ -258,7 +258,7 @@ describe('SessionMuscleDistribution Component', () => {
         {
           id: '0025',
           sets: [
-            { w: 50, r: 10, done: true, warmup: true },
+            { w: 50, r: 10, done: true, phase: 'warmup' },
             { w: 100, r: 8, done: false },
           ],
         },

@@ -9,6 +9,7 @@ import { EXDB, EXIDX } from './exercises.js'
 import { uid } from './format.js'
 import { isWorkSet } from './workout-model.js'
 import { LB_TO_KG, mergeWeighIns, weighInsPreview } from './bodyweight.js'
+import { admit, sortWorkouts } from './profile/index.js'
 
 
 /**
@@ -439,10 +440,10 @@ export function importPreview(state, parsed) {
 
 export function mergeImport(S, parsed) {
   if (parsed.kind === 'bodyweight') return mergeWeighIns(S, parsed.bodyweight)
-  const fresh = freshWorkouts(S, parsed)
+  const fresh = admit({ workouts: freshWorkouts(S, parsed) }).workouts
   const used = new Set(fresh.flatMap(w => (w.entries || []).map(e => e.id)))
   const customs = parsed.customEx.filter(c => used.has(c.id) && !EXIDX[c.id])
   S.customEx = [...(S.customEx || []), ...customs]
-  S.workouts = [...(S.workouts || []), ...fresh].sort((a, b) => (a.d < b.d ? -1 : 1))
+  S.workouts = sortWorkouts([...(S.workouts || []), ...fresh])
   return { added: fresh.length, skipped: parsed.workouts.length - fresh.length }
 }

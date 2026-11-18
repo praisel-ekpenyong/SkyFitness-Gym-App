@@ -90,7 +90,7 @@ describe('monthRecap', () => {
       mkWorkout({
         d: '2026-02-10', start: 1000, end: 61000,
         entries: [mkEntry('bench', [
-          s(50, 10, true, { warmup: true }),
+          s(50, 10, true, { phase: 'warmup' }),
           s(100, 5),
         ])],
       }),

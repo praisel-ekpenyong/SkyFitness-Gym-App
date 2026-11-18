@@ -199,6 +199,69 @@ describe('Reset replaces the Profile through the Restore path', () => {
   })
 })
 
+describe('Restore keeps every DEF key and puts the Training log in order', () => {
+  it('copies every DEF key except the Active workout, plus the legacy exWeights', async () => {
+    const { restoreFromBackup } = await import('../lib/restore.js')
+    const legacyCache = { '0025': { w: 999, d: '2026-01-01', unit: 'kg' } }
+    const backup = {
+      unit: 'lb', restSec: 45, sound: false, keepAwake: false, theme: 'light', accent: 'sky',
+      body: 'female', targetW: 78,
+      bodyweight: [{ d: '2026-01-01', w: 78, t: 1 }],
+      routines: [goodRoutine('r-keep')],
+      week: { 1: 'r-keep' },
+      dayPlan: { '2026-01-05': 'r-keep' },
+      workouts: [goodWorkout('w-keep')],
+      active: { id: 'never-restored', entries: [{ id: 'ex-push', sets: [] }] },
+      customEx: [{ id: 'cx-keep', n: 'Cable Thing', bp: 'chest', custom: true }],
+      gifSize: 'small', favorites: ['ex-push'],
+      reminder: { on: true, time: '07:00', tz: 'Europe/Berlin' },
+      effort: 'rpe', lastExport: 1234, displayName: 'Sky',
+      sex: 'female', birthYear: 1990,
+      trainingStyle: 'high', volumeRanges: { chest: [5, 12] }, streakRule: 'strict',
+      exWeights: legacyCache,
+    }
+
+    restoreFromBackup(backup)
+
+    const S = useStore.getState().S
+    expect(S.active).toBeNull()
+    for (const key of Object.keys(DEF)) {
+      if (key === 'active') continue
+      expect(S[key], `DEF key ${key}`).toEqual(backup[key])
+    }
+    expect(S.exWeights).toEqual(legacyCache)
+  })
+
+  it('sorts an unsorted backup by date, then start, then original position', async () => {
+    const { restoreFromBackup } = await import('../lib/restore.js')
+    const wk = (id, d, start) => ({ id, d, start, end: start + 1, name: 'Push', entries: [] })
+    restoreFromBackup({
+      ...cloneDef(),
+      workouts: [
+        wk('late', '2026-02-01', 1),
+        wk('early-second', '2026-01-01', 50),
+        wk('early-first', '2026-01-01', 10),
+        wk('first-tie', '2026-01-01', 10),
+      ],
+    })
+    const S = useStore.getState().S
+    expect(S.workouts.map(w => w.id)).toEqual(['early-first', 'first-tie', 'early-second', 'late'])
+  })
+
+  it('upgrades a legacy warm-up shape on restore, the same way boot does', async () => {
+    const { restoreFromBackup } = await import('../lib/restore.js')
+    const backup = {
+      ...cloneDef(),
+      workouts: [{
+        id: 'w-legacy', d: todayISO(), start: 1, end: 2, name: 'Push',
+        entries: [{ id: 'ex-push', sets: [{ warmup: true, w: 40, r: 5, done: true }, { w: 60, r: 5, done: true }] }],
+      }],
+    }
+    restoreFromBackup(backup)
+    expect(useStore.getState().S.workouts[0].entries[0].sets[0]).toEqual({ w: 40, r: 5, done: true, phase: 'warmup' })
+  })
+})
+
 describe('Normal load of a Profile carrying exWeights and stamped prs', () => {
   it('keeps both unchanged through normalizeState', async () => {
     const { normalizeState } = await import('./useStore.js')

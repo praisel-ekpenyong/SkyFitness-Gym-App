@@ -461,14 +461,14 @@ describe('buildSets', () => {
 })
 
 describe('workSetsDone', () => {
-  it('recognizes both warm-up schemas in work-set counts', () => {
+  it('counts only work phases in work-set totals', () => {
     const w = {
       unit: 'kg',
       entries: [{
         id: LIFT,
         unit: 'kg',
         sets: [
-          { warmup: true, unit: 'kg', w: 20, r: 5, done: true },
+          { phase: 'warmup', unit: 'kg', w: 20, r: 5, done: true },
           { phase: 'warmup', unit: 'kg', w: 30, r: 5, done: true },
           { phase: 'work', unit: 'kg', w: 60, r: 5, done: true },
         ],
@@ -479,9 +479,9 @@ describe('workSetsDone', () => {
 })
 
 describe('the work-set readings — one home for phase and performed', () => {
-  it('isWorkSet reads the phase: both warm-up schemas excluded, a missing phase reads as work', () => {
+  it('isWorkSet reads the phase: warm-ups excluded, a missing phase reads as work', () => {
     expect(isWorkSet({ phase: 'warmup' })).toBe(false)
-    expect(isWorkSet({ warmup: true })).toBe(false)
+    expect(isWorkSet({ phase: 'warm-up' })).toBe(false)
     expect(isWorkSet({ phase: 'work' })).toBe(true)
     expect(isWorkSet({})).toBe(true)
   })
@@ -550,8 +550,8 @@ describe('superset editing', () => {
 describe('session row helpers', () => {
   it('cascadeWeight propagates to same-flag undone rows and never rewrites done sets', () => {
     const rows = [
-      { warmup: true, w: 20, done: true },
-      { warmup: true, w: 20, done: false },
+      { phase: 'warmup', w: 20, done: true },
+      { phase: 'warmup', w: 20, done: false },
       { w: 60, done: true },
       { w: 60, done: false },
       { w: 60, done: false },
@@ -577,13 +577,13 @@ describe('session row helpers', () => {
 
   it('insertWarmupRow inserts before the first work row and copies the last warm-up values', () => {
     const rows = [
-      { warmup: true, w: 20, r: 8, done: true },
-      { warmup: true, w: 30, r: 8, done: false },
+      { phase: 'warmup', w: 20, r: 8, done: true },
+      { phase: 'warmup', w: 30, r: 8, done: false },
       { w: 60, r: 8, done: false },
     ]
     const next = insertWarmupRow(rows, 'reps', { reps: 8 })
     expect(next.length).toBe(4)
-    expect(next[2].warmup).toBe(true)
+    expect(next[2].phase).toBe('warmup')
     expect(next[2].w).toBe(30)
     expect(next[3].w).toBe(60)
   })
@@ -618,7 +618,7 @@ describe('warm-up rows identified by phase alone', () => {
 })
 
 describe('hasWork', () => {
-  const warmup = { done: false, phase: 'warmup', warmup: true }
+  const warmup = { done: false, phase: 'warmup' }
 
   it('ignores warm-up rows, so prep alone never counts as work left', () => {
     expect(hasWork([{ sets: [warmup, { done: true }, { done: true }] }], 0)).toBe(false)
@@ -646,8 +646,8 @@ describe('hasWork', () => {
 })
 
 describe('isExerciseDone', () => {
-  const warmupDone = { done: true, phase: 'warmup', warmup: true }
-  const warmupUndone = { done: false, phase: 'warmup', warmup: true }
+  const warmupDone = { done: true, phase: 'warmup' }
+  const warmupUndone = { done: false, phase: 'warmup' }
 
   it('returns false for nullish entries', () => {
     expect(isExerciseDone(null)).toBe(false)
@@ -673,7 +673,7 @@ describe('isExerciseDone', () => {
 })
 
 describe('sessionProgress', () => {
-  const warmupUnticked = { w: 40, r: 5, done: false, phase: 'warmup', warmup: true }
+  const warmupUnticked = { w: 40, r: 5, done: false, phase: 'warmup' }
   const work = done => ({ w: 100, r: 8, done })
   const probeSession = () => ({ entries: [{ id: '0025', sets: [warmupUnticked, work(true), work(true)] }] })
 
@@ -693,7 +693,7 @@ describe('sessionProgress', () => {
 
   it('ticking or adding warm-up rows never moves done or total', () => {
     const base = { entries: [{ id: 'x', sets: [work(false)] }] }
-    const warmed = { entries: [{ id: 'x', sets: [{ ...work(true), phase: 'warmup', warmup: true }, work(false)] }] }
+    const warmed = { entries: [{ id: 'x', sets: [{ ...work(true), phase: 'warmup' }, work(false)] }] }
     expect(sessionProgress(warmed)).toEqual(sessionProgress(base))
   })
 
@@ -701,7 +701,7 @@ describe('sessionProgress', () => {
     const A = {
       entries: [
         { id: 'a', sets: [work(true)] },
-        { id: 'b', sets: [{ ...work(true), phase: 'warmup', warmup: true }] },
+        { id: 'b', sets: [{ ...work(true), phase: 'warmup' }] },
       ],
     }
     const p = sessionProgress(A)

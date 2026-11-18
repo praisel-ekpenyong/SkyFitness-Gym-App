@@ -14,7 +14,7 @@ describe('diffRoutineWithSession', () => {
       sets = setsOverrides
     } else {
       for (let i = 0; i < warmups; i++) {
-        sets.push({ w: (target.weight || 20) * 0.5, r: target.reps || 10, done: true, phase: 'warmup', warmup: true })
+        sets.push({ w: (target.weight || 20) * 0.5, r: target.reps || 10, done: true, phase: 'warmup' })
       }
       for (let i = 0; i < doneSetsCount; i++) {
         sets.push({ w: target.weight || 50, r: target.reps || 8, done: true, phase: 'work' })

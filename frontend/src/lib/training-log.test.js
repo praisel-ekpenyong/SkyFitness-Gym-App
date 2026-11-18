@@ -35,7 +35,7 @@ describe('Training log: Best', () => {
   it('ignores warm-up and unperformed Sets, and a legacy top weight beside a warm-up', () => {
     const S = { unit: 'kg', workouts: [day('2026-11-01', [lift([
       { phase: 'warmup', done: true, w: 120 },
-      { warmup: true, done: true, w: 130 },
+      { phase: 'warmup', done: true, w: 130 },
       { phase: 'work', done: true, w: 80 },
       { phase: 'work', done: false, w: 100 },
     ], { topW: 120 })])] }
@@ -91,7 +91,7 @@ describe('Training log: chart metric', () => {
   it('leaves warm-ups and unchecked Sets out of a reps score', () => {
     const entry = lift([
       { phase: 'warmup', w: 140, r: 5, done: true },
-      { warmup: true, w: 130, r: 5, done: true },
+      { phase: 'warmup', w: 130, r: 5, done: true },
       { w: 120, r: 5, done: false },
       work(80),
       work(100),
@@ -209,7 +209,7 @@ describe('Training log: Estimated 1RM series', () => {
       d: '2026-01-01', start: 1,
       entries: [{
         id: 'bench', topW: 200, sets: [
-          { w: 20, r: 8, done: true, warmup: true },
+          { w: 20, r: 8, done: true, phase: 'warmup' },
           { w: 100, r: 5, done: true },
           { w: 200, r: 5, done: false },
         ],
@@ -383,9 +383,9 @@ describe('Training log: Tonnage', () => {
     expect(tonnage({ unit: 'kg', workouts: [w] }, w)).toBe(600)
   })
 
-  it('leaves a performed warm-up Set out, in both warm-up shapes', () => {
+  it('leaves a performed warm-up Set out', () => {
     const w = day('2026-11-01', [lift([
-      { warmup: true, w: 20, r: 5, done: true },
+      { phase: 'warmup', w: 20, r: 5, done: true },
       { phase: 'warmup', w: 30, r: 5, done: true },
       { phase: 'work', w: 60, r: 5, done: true },
     ])])

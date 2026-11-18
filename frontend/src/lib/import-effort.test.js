@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { parseWorkoutCSV } from './import-csv.js'
 import { setLabel } from './format.js'
 import { effortOf } from './effort.js'
-import { admit } from './log/admit.js'
+import { admit } from './profile/index.js'
 
 const HEVY = 'title,start_time,end_time,exercise_title,set_index,set_type,weight_kg,reps,rpe'
 const STRONG = 'Date,Workout Name,Exercise Name,Set Order,Weight,Reps,Seconds,RPE'
