@@ -83,7 +83,7 @@ export const useStore = create((set, get) => {
     act(command, send) {
       let res = null
       get().update(s => { res = act(s, command) })
-      runEffects(res.effects, get().S, send)
+      runEffects(res.effects, () => get().S, send)
       return res
     },
     syncRoutineFromSession(routineId, syncedEx) {

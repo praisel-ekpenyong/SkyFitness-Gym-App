@@ -37,6 +37,11 @@ const maybeRestNotification = async () => {
   }
 }
 
+// The sound setting comes as a getter: useUI must not import useStore (an import cycle).
+const mustRead = soundOn => {
+  if (typeof soundOn !== 'function') throw new TypeError('A timer needs a soundOn getter for the live sound setting')
+}
+
 let toastTm = null
 let timerInt = null
 let timerTick = null
@@ -65,17 +70,22 @@ export const useUI = create((set, get) => ({
     toastTm = setTimeout(() => set({ toastMsg: '' }), 2200)
   },
 
-  startRest(sec, sound = true) {
+  /**
+   * @param {number} sec
+   * @param {() => boolean} soundOn - Read on every tick, so muting mid-rest silences it.
+   */
+  startRest(sec, soundOn) {
+    mustRead(soundOn)
     get().stopRest()
     const endsAt = Date.now() + sec * 1000
-    set({ timer: { left: sec, total: sec, endsAt, sound } })
+    set({ timer: { left: sec, total: sec, endsAt } })
     requestRestNotificationPermission()
     timerTick = () => {
       const tm = get().timer
       if (!tm) return
       const left = Math.max(0, Math.round((tm.endsAt - Date.now()) / 1000))
       if (left === tm.left) return
-      const snd = tm.sound ?? true
+      const snd = soundOn()
       if (left <= 0) {
         playTimerComplete(snd); maybeRestNotification(); get().toast(t('Rest over — next set!')); get().stopRest(); return
       }
@@ -98,19 +108,21 @@ export const useUI = create((set, get) => ({
     set({ timer: null })
   },
 
-  startWork(sec, label, onDone, sound = true) {
+  /** @param {() => boolean} soundOn - Read on every tick, so muting mid-hold silences it. */
+  startWork(sec, label, onDone, soundOn) {
+    mustRead(soundOn)
     get().stopWork()
     get().stopRest()
     const total = Math.max(1, Math.round(sec) || 1)
     const endsAt = Date.now() + total * 1000
     workDone = onDone
-    set({ work: { left: total, total, endsAt, label, sound } })
+    set({ work: { left: total, total, endsAt, label } })
     workTick = () => {
       const wk = get().work
       if (!wk) return
       const left = Math.max(0, Math.round((wk.endsAt - Date.now()) / 1000))
       if (left === wk.left) return
-      const snd = wk.sound ?? true
+      const snd = soundOn()
       if (left <= 0) {
         playTimerComplete(snd)
         const done = workDone

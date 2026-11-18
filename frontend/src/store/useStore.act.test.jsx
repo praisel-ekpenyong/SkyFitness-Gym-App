@@ -5,11 +5,13 @@ vi.mock('../platform/sound.js', async orig => ({
   ...(await orig()),
   playSetComplete: vi.fn(),
   playWorkoutComplete: vi.fn(),
+  playTimerWarning: vi.fn(),
+  playTimerComplete: vi.fn(),
 }))
 
 const { useStore, DEF } = await import('./useStore.js')
 const { useUI } = await import('./useUI.js')
-const { playSetComplete, playWorkoutComplete } = await import('../platform/sound.js')
+const { playSetComplete, playWorkoutComplete, playTimerWarning, playTimerComplete } = await import('../platform/sound.js')
 
 const work = (done = false) => ({ w: 50, r: 8, done })
 const entry = (id, sets, extra = {}) => ({ id, target: { reps: 8, weight: 50 }, sets, ...extra })
@@ -32,7 +34,7 @@ describe('store.act runs the effects', () => {
 
   it('stops rest and returns open-finish for the view after the last set', () => {
     withActive([entry('a', [work(), work()])])
-    useUI.getState().startRest(60)
+    useUI.getState().startRest(60, () => true)
     useStore.getState().act({ type: 'toggle', entry: 0, set: 0 })
     const last = useStore.getState().act({ type: 'toggle', entry: 0, set: 1 })
     expect(last.effects.map(e => e.type)).toContain('open-finish')
@@ -47,7 +49,7 @@ describe('store.act runs the effects', () => {
 
   it('finishing stops rest and a running hold, and plays the finish sound', () => {
     withActive([entry('a', [work(true)])])
-    useUI.getState().startWork(30, 'Plank', () => {})
+    useUI.getState().startWork(30, 'Plank', () => {}, () => true)
     const res = useStore.getState().act({ type: 'finish' })
     expect(res.result.workout.entries).toHaveLength(1)
     expect(useUI.getState().work).toBe(null)
@@ -58,11 +60,40 @@ describe('store.act runs the effects', () => {
 
   it('a refused begin changes nothing', () => {
     withActive([entry('a', [work(true)])])
-    useUI.getState().startRest(60)
+    useUI.getState().startRest(60, () => true)
     expect(useStore.getState().act({ type: 'begin', routineId: null }).ok).toBe(false)
     expect(useStore.getState().S.active.id).toBe('a1')
     expect(useUI.getState().timer).not.toBe(null)
   })
+  describe('muting', () => {
+    beforeEach(() => { vi.useFakeTimers() })
+    afterEach(() => { vi.useRealTimers() })
+    const plays = fn => fn.mock.calls.filter(([on]) => on).length
+
+    it('muting during a rest silences that rest\'s warning and end sounds', () => {
+      withActive([entry('a', [work(), work()])], { restSec: 5 })
+      useStore.getState().act({ type: 'toggle', entry: 0, set: 0 })
+      vi.advanceTimersByTime(1_000)
+      useStore.getState().update(s => { s.sound = false })
+      vi.advanceTimersByTime(6_000)
+      expect(useUI.getState().timer).toBe(null)
+      expect(plays(playTimerWarning)).toBe(0)
+      expect(plays(playTimerComplete)).toBe(0)
+    })
+
+    it('muting during a hold silences that hold\'s warning and end sounds', () => {
+      withActive([{ id: '0001', target: { mode: 'time', sec: 5, sets: 1 }, sets: [{ sec: 5, done: false }] }, entry('a', [work()])])
+      const send = command => useStore.getState().act(command, send)
+      send({ type: 'startHold', entry: 0, set: 0 })
+      vi.advanceTimersByTime(1_000)
+      useStore.getState().update(s => { s.sound = false })
+      vi.advanceTimersByTime(6_000)
+      expect(useUI.getState().work).toBe(null)
+      expect(plays(playTimerWarning)).toBe(0)
+      expect(plays(playTimerComplete)).toBe(0)
+    })
+  })
+
   describe('a timed hold', () => {
     const hold = () => ({ id: '0001', target: { mode: 'time', sec: 30, sets: 2 }, sets: [{ sec: 30, done: false }, { sec: 30, done: false }] })
     beforeEach(() => { vi.useFakeTimers() })

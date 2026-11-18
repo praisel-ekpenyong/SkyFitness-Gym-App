@@ -398,7 +398,7 @@ function ActiveWorkout() {
 
   const toggle = (idx, i) => send({ type: 'toggle', entry: idx, set: i })
 
-  const restKey = <Button size="xs" icon="timer" className="ex-rest" aria-label={t('Rest {0}', fmtSec(S.restSec))} disabled={resting || holding} onClick={() => startRest(S.restSec, S.sound)}>
+  const restKey = <Button size="xs" icon="timer" className="ex-rest" aria-label={t('Rest {0}', fmtSec(S.restSec))} disabled={resting || holding} onClick={() => startRest(S.restSec, () => useStore.getState().S.sound)}>
     {fmtSec(S.restSec)}
   </Button>
 

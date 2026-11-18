@@ -21,7 +21,7 @@ const mocks = vi.hoisted(() => {
     update: mut => mut(state.S),
     act: command => {
       const res = actOn(state.S, command)
-      runEffects(res.effects, state.S)
+      runEffects(res.effects, () => state.S)
       return res
     },
   })

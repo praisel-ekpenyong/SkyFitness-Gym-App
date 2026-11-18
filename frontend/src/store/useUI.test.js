@@ -15,7 +15,7 @@ describe('useUI rest timer', () => {
     vi.useFakeTimers()
     const { useUI } = await import('./useUI.js')
     const ui = useUI.getState()
-    ui.startRest(1)
+    ui.startRest(1, () => true)
     expect(() => vi.advanceTimersByTime(1100)).not.toThrow()
     expect(useUI.getState().timer).toBeNull()
     vi.useRealTimers()
@@ -28,7 +28,7 @@ describe('useUI rest timer', () => {
     const ui = useUI.getState()
     const onDone = vi.fn()
 
-    ui.startWork(45, 'Plank', onDone)
+    ui.startWork(45, 'Plank', onDone, () => true)
     expect(useUI.getState().work).toEqual(expect.objectContaining({ left: 45, total: 45, label: 'Plank' }))
 
     vi.advanceTimersByTime(10000)
@@ -41,5 +41,11 @@ describe('useUI rest timer', () => {
     expect(useUI.getState().work).toBeNull()
     vi.useRealTimers()
   })
-})
 
+  it('refuses a timer without a live sound setting, so mute cannot be ignored', async () => {
+    const { useUI } = await import('./useUI.js')
+    expect(() => useUI.getState().startRest(60)).toThrow(/soundOn/)
+    expect(() => useUI.getState().startWork(30, 'Plank', () => {})).toThrow(/soundOn/)
+    expect(useUI.getState().timer).toBeNull()
+  })
+})

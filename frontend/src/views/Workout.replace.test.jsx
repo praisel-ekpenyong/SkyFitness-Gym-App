@@ -89,7 +89,7 @@ describe('Workout exercise replacement controls', () => {
     expect(footerBtn).toBeTruthy()
     expect(footerBtn.disabled).toBe(false)
 
-    act(() => useUI.getState().startWork(30, 'Hold', vi.fn()))
+    act(() => useUI.getState().startWork(30, 'Hold', vi.fn(), () => true))
 
     expect(headerBtn.disabled).toBe(true)
     expect(footerBtn.disabled).toBe(true)
@@ -251,7 +251,7 @@ describe('Hold timer halted on replace', () => {
   it('halts any running hold timer prior to replacement when no confirmation is needed', () => {
     seedActiveWorkout([entry('1001')])
     const timerCallback = vi.fn()
-    useUI.getState().startWork(30, 'Plank', timerCallback)
+    useUI.getState().startWork(30, 'Plank', timerCallback, () => true)
     expect(useUI.getState().work).not.toBeNull()
 
     replaceActiveExerciseFlow(0)
@@ -264,7 +264,7 @@ describe('Hold timer halted on replace', () => {
       entry('1001', [{ w: 60, r: 5, done: true }])
     ])
     const timerCallback = vi.fn()
-    useUI.getState().startWork(30, 'Plank', timerCallback)
+    useUI.getState().startWork(30, 'Plank', timerCallback, () => true)
     expect(useUI.getState().work).not.toBeNull()
 
     replaceActiveExerciseFlow(0)
@@ -285,7 +285,7 @@ describe('Hold timer halted on replace', () => {
       entry('1001', [{ w: 60, r: 5, done: true }])
     ])
     const timerCallback = vi.fn()
-    useUI.getState().startWork(30, 'Plank', timerCallback)
+    useUI.getState().startWork(30, 'Plank', timerCallback, () => true)
     expect(useUI.getState().work).not.toBeNull()
 
     replaceActiveExerciseFlow(0)
