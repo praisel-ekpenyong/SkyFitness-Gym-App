@@ -257,12 +257,12 @@ describe('Ticket 05 — End-to-End Integration & Stats Diagram Parity', () => {
     })
     await act(async () => { await new Promise(r => setTimeout(r, 0)) })
     await act(async () => { await new Promise(r => setTimeout(r, 50)) })
-    for (let i = 0; i < 10 && !document.body.textContent.includes('Muscle balance'); i++) {
+    for (let i = 0; i < 10 && !document.body.textContent.includes('Balance'); i++) {
       await act(async () => { await new Promise(r => setTimeout(r, 50)) })
     }
 
     const statsText = document.body.textContent
-    expect(statsText).toContain('Muscle balance')
+    expect(statsText).toContain('Balance')
     expect(statsText).toContain('Workouts')
 
     const exportedState = JSON.parse(JSON.stringify(useStore.getState().S))
