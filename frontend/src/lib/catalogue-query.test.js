@@ -399,3 +399,40 @@ describe('Catalogue query', () => {
   })
 })
 
+
+describe('Catalogue query usage count', () => {
+  const countingWorkout = (counter, ids) => ({
+    get entries() {
+      counter.reads++
+      return ids.map(id => ({ id }))
+    },
+  })
+
+  it('walks the same Workouts array once across repeated queries', () => {
+    const counter = { reads: 0 }
+    const workouts = [countingWorkout(counter, ['custom-a']), countingWorkout(counter, ['custom-a'])]
+    const profile = {
+      customEx: [exercise('custom-a', 'Specimen press', 'pectorals', 'barbell')],
+      favorites: [],
+      routines: [{ ex: [{ id: 'custom-a' }] }],
+      workouts,
+    }
+
+    const first = queryCatalogue({ profile, scope: { kind: 'chosen' }, search: '' })
+    queryCatalogue({ profile, scope: { kind: 'chosen' }, search: 's' })
+    queryCatalogue({ profile, scope: { kind: 'chosen' }, search: 'sp' })
+
+    expect(first.rows.map(row => [row.exercise.id, row.usageCount])).toEqual([['custom-a', 3]])
+    expect(counter.reads).toBe(2)
+  })
+
+  it('counts afresh when the Workouts array is replaced or the Routines change', () => {
+    const customEx = [exercise('custom-a', 'Specimen press', 'pectorals', 'barbell')]
+    const workouts = [{ entries: [{ id: 'custom-a' }] }]
+    const count = profile => queryCatalogue({ profile, scope: { kind: 'chosen' } }).rows[0]?.usageCount ?? 0
+
+    expect(count({ customEx, routines: [], workouts })).toBe(1)
+    expect(count({ customEx, routines: [{ ex: [{ id: 'custom-a' }] }], workouts })).toBe(2)
+    expect(count({ customEx, routines: [], workouts: [...workouts, { entries: [{ id: 'custom-a' }] }] })).toBe(2)
+  })
+})

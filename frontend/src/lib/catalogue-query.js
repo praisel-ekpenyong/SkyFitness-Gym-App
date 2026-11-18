@@ -121,17 +121,30 @@ function compareChosenUsage(a, b, usage) {
   return String(a.n || '').localeCompare(String(b.n || ''))
 }
 
-function usageMap(profile) {
-  const usage = {}
-  const routines = Array.isArray(profile.routines) ? profile.routines : []
-  const workouts = Array.isArray(profile.workouts) ? profile.workouts : []
-  routines.forEach(routine => {
-    ;(Array.isArray(routine?.ex) ? routine.ex : []).forEach(entry => {
+// Workout usage is cached per Workouts array, so typing in the picker does not
+// re-walk the log; Routines are few and counted on every call.
+const workoutUsageCache = new WeakMap()
+
+function workoutUsage(workouts) {
+  let usage = workoutUsageCache.get(workouts)
+  if (usage) return usage
+  usage = {}
+  workouts.forEach(workout => {
+    const entries = workout?.entries
+    ;(Array.isArray(entries) ? entries : []).forEach(entry => {
       usage[entry.id] = (usage[entry.id] || 0) + 1
     })
   })
-  workouts.forEach(workout => {
-    ;(Array.isArray(workout?.entries) ? workout.entries : []).forEach(entry => {
+  workoutUsageCache.set(workouts, usage)
+  return usage
+}
+
+function usageMap(profile) {
+  const workouts = Array.isArray(profile.workouts) ? profile.workouts : []
+  const usage = { ...workoutUsage(workouts) }
+  const routines = Array.isArray(profile.routines) ? profile.routines : []
+  routines.forEach(routine => {
+    ;(Array.isArray(routine?.ex) ? routine.ex : []).forEach(entry => {
       usage[entry.id] = (usage[entry.id] || 0) + 1
     })
   })
