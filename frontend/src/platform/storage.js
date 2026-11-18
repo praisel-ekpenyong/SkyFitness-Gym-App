@@ -57,7 +57,7 @@ export async function idbLoad() {
  */
 export async function idbSave(snapshot) {
   const db = await openDB()
-  if (!db) return
+  if (!db) throw new Error('IndexedDB unavailable')
   await new Promise((resolve, reject) => {
     const tx = db.transaction(STORE, 'readwrite')
     tx.objectStore(STORE).put(snapshot, KEY)
@@ -94,16 +94,21 @@ export function __resetMirrorFailuresForTests() {
   failedMirrors.clear()
 }
 
+// Every mirror write goes through here so a failure, sync or async, is recorded and never unhandled.
+function writeToSink(sink, snapshot) {
+  try {
+    const r = sink.write(snapshot)
+    if (r && typeof r.then === 'function') r.then(() => failedMirrors.delete(sink.id), () => failedMirrors.add(sink.id))
+    else failedMirrors.delete(sink.id)
+  } catch (e) { failedMirrors.add(sink.id) }
+}
+
 function drain() {
   tm = null
   const snapshot = pending
   pending = null
   if (snapshot) for (const sink of sinks) {
-    try {
-      const r = sink.write(snapshot)
-      if (r && typeof r.then === 'function') r.then(() => failedMirrors.delete(sink.id), () => failedMirrors.add(sink.id))
-      else failedMirrors.delete(sink.id)
-    } catch (e) { failedMirrors.add(sink.id) }
+    writeToSink(sink, snapshot)
   }
 }
 
@@ -200,7 +205,7 @@ export async function load({ running, hasData, overlay }) {
     }
     if (!saved && hasData(running)) {
       const native = sinks.find(s => s.id === 'native')
-      if (native) native.write(running?._ts ? running : { ...running, _ts: Date.now() })
+      if (native) writeToSink(native, running?._ts ? running : { ...running, _ts: Date.now() })
     }
     return null
   }
@@ -216,7 +221,7 @@ export async function load({ running, hasData, overlay }) {
     return overlay(winner)
   }
   if (!mirror && hasData(running) && mirrorSink) {
-    mirrorSink.write(running?._ts ? running : { ...running, _ts: Date.now() })
+    writeToSink(mirrorSink, running?._ts ? running : { ...running, _ts: Date.now() })
   }
   return null
 }

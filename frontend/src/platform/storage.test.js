@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
   pickNewest, backupDue, BACKUP_NAG_MS, LOCAL_KEY, loadLocal, save, flush, load,
   registerSink, __setSinksForTests, __setLocalWriteForTests, __resetStorageBlockedForTests,
-  isStorageBlocked, onStorageSync, isMirrorFailing, requestPersistence
+  isStorageBlocked, onStorageSync, isMirrorFailing, requestPersistence, idbSave, __resetMirrorFailuresForTests
 } from './storage.js'
 
 const copy = (ts, workouts = ['w1']) => ({ ts, state: { _ts: ts, workouts } })
@@ -282,5 +282,26 @@ describe('requestPersistence', () => {
     expect(await requestPersistence({})).toBe(false)
     expect(await requestPersistence({ persist: () => { throw new Error('x') } })).toBe(false)
     expect(await requestPersistence({ persist: async () => { throw new Error('x') } })).toBe(false)
+  })
+})
+
+describe('mirror failure edge cases', () => {
+  beforeEach(() => { vi.useRealTimers(); __resetMirrorFailuresForTests(); __setSinksForTests() })
+
+  it('a failed boot seed is recorded, not an unhandled rejection', async () => {
+    localStorage.clear()
+    const unhandled = vi.fn()
+    process.on('unhandledRejection', unhandled)
+    __setSinksForTests([{ id: 'idb', read: async () => null, write: async () => { throw new Error('seed') } }])
+    await load({ running: { _ts: 5, workouts: ['w'] }, hasData: () => true, overlay: x => x })
+    await new Promise(r => setTimeout(r, 10))
+    process.off('unhandledRejection', unhandled)
+    expect(unhandled).not.toHaveBeenCalled()
+    expect(isMirrorFailing()).toBe(true)
+    __setSinksForTests()
+  })
+
+  it('idbSave rejects when IndexedDB is unavailable so the drain counts it as failed', async () => {
+    await expect(idbSave({ n: 1 })).rejects.toThrow()
   })
 })
