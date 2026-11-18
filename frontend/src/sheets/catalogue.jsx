@@ -114,7 +114,7 @@ function AddToRoutine({ ex, close }) {
   const pick = rid => {
     close()
     const isNew = rid === '_new'
-    exConfigSheet(ex, null, cfg => {
+    exConfigSheet(ex, { onSave: cfg => {
       update(s => {
         let r = isNew ? { id: uid(), name: t('New routine'), emoji: DEFAULT_GLYPH, ex: [] } : s.routines.find(x => x.id === rid)
         if (isNew) s.routines.push(r)
@@ -123,7 +123,7 @@ function AddToRoutine({ ex, close }) {
       const r = isNew ? S().routines[S().routines.length - 1] : st.routines.find(x => x.id === rid)
       toast(t('“{0}” added to {1}', ex.n, r ? r.name : t('routine')))
       if (isNew && r) nav('/plan/r/' + r.id)
-    }, null, isNew ? null : st.routines.find(x => x.id === rid))
+    }, routine: isNew ? null : st.routines.find(x => x.id === rid) })
   }
   return <>
     <h3>{t('Add “{0}”', ex.n)}</h3>
@@ -483,5 +483,17 @@ export function ExConfig({ ex, existing, onSave, onDelete, close, routine, initi
     {onDelete && <><div className="gap8" /><Button variant="danger" onClick={() => { close(); onDelete() }}>{t('Remove from routine')}</Button></>}
   </>
 }
-export const exConfigSheet = (ex, existing, onSave, onDelete, routine, initial, onReplace, actionLabel) => ui().openSheet(close => <ExConfig ex={ex} existing={existing} initial={initial} onSave={onSave} onDelete={onDelete} routine={routine} onReplace={onReplace} actionLabel={actionLabel} close={close} />)
+/**
+ * Opens the exercise configuration sheet.
+ * @param {Object} ex - The exercise being configured.
+ * @param {Object} [options]
+ * @param {Object} [options.existing] - The Routine Entry being edited; omit for a new one.
+ * @param {Function} [options.onSave] - Called with the chosen configuration.
+ * @param {Function} [options.onDelete] - Shows a Remove action when given.
+ * @param {Object} [options.routine] - The Routine the Entry belongs to, for its progression policy.
+ * @param {Object} [options.initial] - Seed values for a new Entry.
+ * @param {Function} [options.onReplace] - Shows a Replace action when given.
+ * @param {string} [options.actionLabel] - Overrides the save button's label.
+ */
+export const exConfigSheet = (ex, { existing, onSave, onDelete, routine, initial, onReplace, actionLabel } = {}) => ui().openSheet(close => <ExConfig ex={ex} existing={existing} initial={initial} onSave={onSave} onDelete={onDelete} routine={routine} onReplace={onReplace} actionLabel={actionLabel} close={close} />)
 

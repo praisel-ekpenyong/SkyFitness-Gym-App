@@ -94,7 +94,7 @@ describe('RoutineEdit exercise replacement', () => {
     })
 
     expect(mocks.exConfigSheet).toHaveBeenCalledTimes(1)
-    const [ex, e, onSave, onDelete, r, initial, onReplace] = mocks.exConfigSheet.mock.calls[0]
+    const [ex, { existing: e, onSave, onDelete, routine: r, initial, onReplace }] = mocks.exConfigSheet.mock.calls[0]
     expect(ex.id).toBe('0001')
     expect(e.id).toBe('0001')
     expect(e.sets).toBe(4)
@@ -111,7 +111,7 @@ describe('RoutineEdit exercise replacement', () => {
       items[0].dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
 
-    const [, e, , , , , onReplace] = mocks.exConfigSheet.mock.calls[0]
+    const [, { existing: e, onReplace }] = mocks.exConfigSheet.mock.calls[0]
 
     await act(async () => {
       onReplace()
@@ -127,9 +127,9 @@ describe('RoutineEdit exercise replacement', () => {
     })
 
     expect(mocks.exConfigSheet).toHaveBeenCalledTimes(2)
-    const [replEx, replExisting, replOnSave, replOnDelete, replR, replInitial] = mocks.exConfigSheet.mock.calls[1]
+    const [replEx, { existing: replExisting, onSave: replOnSave, onDelete: replOnDelete, routine: replR, initial: replInitial }] = mocks.exConfigSheet.mock.calls[1]
     expect(replEx.id).toBe('0004')
-    expect(replExisting).toBeNull()
+    expect(replExisting).toBeUndefined()
     expect(replInitial).toMatchObject({
       sets: 4,
       weight: 65,
@@ -165,7 +165,7 @@ describe('RoutineEdit exercise replacement', () => {
       items[2].dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
 
-    const [, , , , , , onReplace] = mocks.exConfigSheet.mock.calls[0]
+    const [, { onReplace }] = mocks.exConfigSheet.mock.calls[0]
     await act(async () => {
       onReplace()
     })
@@ -176,7 +176,7 @@ describe('RoutineEdit exercise replacement', () => {
       pickerCallback(newEx)
     })
 
-    const [, , replOnSave, , , replInitial] = mocks.exConfigSheet.mock.calls[1]
+    const [, { onSave: replOnSave, initial: replInitial }] = mocks.exConfigSheet.mock.calls[1]
     expect(replInitial.sets).toBe(3)
 
     await act(async () => {
@@ -205,7 +205,7 @@ describe('RoutineEdit exercise replacement', () => {
       items[0].dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
 
-    const [, , , , , , onReplace] = mocks.exConfigSheet.mock.calls[0]
+    const [, { onReplace }] = mocks.exConfigSheet.mock.calls[0]
     await act(async () => {
       onReplace()
     })
@@ -257,7 +257,7 @@ describe('RoutineEdit exercise notes display and replacement', () => {
       items[0].dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
 
-    const [, , , , , , onReplace] = mocks.exConfigSheet.mock.calls[0]
+    const [, { onReplace }] = mocks.exConfigSheet.mock.calls[0]
     await act(async () => {
       onReplace()
     })
@@ -268,8 +268,8 @@ describe('RoutineEdit exercise notes display and replacement', () => {
       pickerCallback(newEx)
     })
 
-    const [, replExisting, replOnSave, , , replInitial] = mocks.exConfigSheet.mock.calls[1]
-    expect(replExisting).toBeNull()
+    const [, { existing: replExisting, onSave: replOnSave, initial: replInitial }] = mocks.exConfigSheet.mock.calls[1]
+    expect(replExisting).toBeUndefined()
     expect(replInitial?.notes).toBeFalsy()
 
     await act(async () => {
