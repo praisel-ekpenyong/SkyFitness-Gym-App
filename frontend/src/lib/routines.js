@@ -55,13 +55,19 @@ function setProgression(S, command) {
   return applied()
 }
 
+function extractTarget(target = {}) {
+  const t = { ...(target || {}) }
+  const hasNote = 'notes' in t
+  const note = cleanNote(t.notes)
+  delete t.notes
+  return { target: t, hasNote, note }
+}
+
 function addExercise(S, command) {
   const r = findRoutine(S, command.routineId)
   if (!r || !command.exId) return refused()
-  const defaults = defaultConfig(command.exId)
-  const target = { ...(command.target || {}) }
-  const note = cleanNote(target.notes)
-  delete target.notes
+  const { target, note } = extractTarget(command.target)
+  const defaults = defaultConfig(command.exId, target.mode)
   const entry = { id: command.exId, ...defaults, ...target }
   if (note) entry.notes = note
   r.ex ??= []
@@ -102,13 +108,8 @@ function replaceExercise(S, command) {
   if (!command.exId) return refused()
 
   const oldEntry = r.ex[idx]
-  const defaults = defaultConfig(command.exId)
-  const target = { ...command.target }
-
-  // ADR 0015: clear outgoing notes and sanitize any newly provided notes
-  const note = cleanNote(target.notes)
-  delete target.notes
-
+  const { target, note } = extractTarget(command.target)
+  const defaults = defaultConfig(command.exId, target.mode)
   const next = { id: command.exId, ...defaults, ...target }
   if (note) next.notes = note
 
@@ -153,12 +154,12 @@ function updateExercise(S, command) {
   const idx = command.index
   if (typeof idx !== 'number' || idx < 0 || idx >= r.ex.length) return refused()
   const existing = r.ex[idx]
-  const target = { ...command.target }
-  const note = cleanNote(target.notes)
-  delete target.notes
+  const { target, hasNote, note } = extractTarget(command.target)
   const updated = { ...existing, ...target }
-  if (note) updated.notes = note
-  else delete updated.notes
+  if (hasNote) {
+    if (note) updated.notes = note
+    else delete updated.notes
+  }
   r.ex[idx] = updated
   return applied(updated)
 }
@@ -188,10 +189,11 @@ export function routineView(routine) {
   const ex = Array.isArray(routine?.ex) ? routine.ex : []
   const units = supersetUnits(ex)
   const unitFirst = new Set(units.filter(u => u.length > 1).map(u => u[0]))
-  const inSS = new Set(units.filter(u => u.length > 1).flat())
+  const supersetIndices = new Set(units.filter(u => u.length > 1).flat())
 
   const steps = units.map((idxs, k) => ({
     entries: idxs,
+    items: idxs.map(i => ex[i]),
     isSuperset: idxs.length > 1,
     isLast: k === units.length - 1,
   }))
@@ -199,7 +201,7 @@ export function routineView(routine) {
   const entries = ex.map((e, i) => {
     const isLinkedPrev = Boolean(i > 0 && e?.sg && ex[i - 1]?.sg === e.sg)
     const isLinkedNext = Boolean(i < ex.length - 1 && e?.sg && ex[i + 1]?.sg === e.sg)
-    const inSuperset = inSS.has(i)
+    const inSuperset = supersetIndices.has(i)
     const isFirstInSuperset = unitFirst.has(i)
     const hasNote = Boolean(cleanNote(e?.notes))
     return {

@@ -151,6 +151,19 @@ describe('Routine Domain Module (lib/routines.js)', () => {
       expect(S.routines[0].ex[4].notes).toBeUndefined()
     })
 
+    it('seeds mode-specific defaults when target specifies a non-default mode', () => {
+      actRoutine(S, {
+        type: 'addExercise',
+        routineId: 'r-push',
+        exId: '0025',
+        target: { mode: 'time' },
+      })
+      const added = S.routines[0].ex[3]
+      expect(added.mode).toBe('time')
+      expect(added.sec).toBe(45)
+      expect(added.reps).toBeUndefined()
+    })
+
     it('returns { ok: false } for unknown routineId or missing exId', () => {
       expect(actRoutine(S, { type: 'addExercise', routineId: 'r-unknown', exId: '0001' }).ok).toBe(false)
       expect(actRoutine(S, { type: 'addExercise', routineId: 'r-push', exId: null }).ok).toBe(false)
@@ -326,6 +339,23 @@ describe('Routine Domain Module (lib/routines.js)', () => {
       })
       expect(S.routines[0].ex[0].notes).toBeUndefined()
     })
+
+    it('preserves existing notes when target omits notes field on partial update', () => {
+      // Entry 0 starts with notes: 'Bench cue'
+      expect(S.routines[0].ex[0].notes).toBe('Bench cue')
+
+      const res = actRoutine(S, {
+        type: 'updateExercise',
+        routineId: 'r-push',
+        index: 0,
+        target: { sets: 4, weight: 65 },
+      })
+
+      expect(res.ok).toBe(true)
+      expect(S.routines[0].ex[0].sets).toBe(4)
+      expect(S.routines[0].ex[0].weight).toBe(65)
+      expect(S.routines[0].ex[0].notes).toBe('Bench cue')
+    })
   })
 
   describe('actRoutine error handling', () => {
@@ -354,8 +384,8 @@ describe('Routine Domain Module (lib/routines.js)', () => {
 
       const view = routineView(routine)
       expect(view.steps).toHaveLength(2)
-      expect(view.steps[0]).toEqual({ entries: [0, 1], isSuperset: true, isLast: false })
-      expect(view.steps[1]).toEqual({ entries: [2], isSuperset: false, isLast: true })
+      expect(view.steps[0]).toEqual({ entries: [0, 1], items: [routine.ex[0], routine.ex[1]], isSuperset: true, isLast: false })
+      expect(view.steps[1]).toEqual({ entries: [2], items: [routine.ex[2]], isSuperset: false, isLast: true })
 
       expect(view.entries).toHaveLength(3)
 
