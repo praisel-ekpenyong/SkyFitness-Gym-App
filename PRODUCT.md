@@ -65,8 +65,7 @@ prescriptions are read only from what was logged and carry their own `why`.
   interface as the PWA, so design work targets one mobile-first web interface
   with no per-OS design language.
 - **Hosted statically.** The app is served from `skyfitness.pages.dev`
-  (Cloudflare Pages), with Netlify also configured (ADR 0010). The build stays
-  host-agnostic.
+  (Cloudflare Pages), its only host (ADR 0010). The build stays host-agnostic.
 - **One-handed reading of numbers.** Weight, reps, rest seconds and effort
   are the app's payload; they use tabular numerals and are never decorative.
 

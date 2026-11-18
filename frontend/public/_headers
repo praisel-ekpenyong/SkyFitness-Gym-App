@@ -1,5 +1,5 @@
 # Sky deploy headers for Cloudflare Pages.
-# Canonical twin: netlify.toml at the repo root — keep the two policies identical.
+# Cloudflare Pages is the only host Sky itself deploys to (ADR 0010).
 # Minimal static policy: everything same-origin; images and media may also come
 # from the pinned exercise-dataset CDN (see PINNED_DATASET_COMMIT in
 # frontend/src/lib/exercises.js). Opt-in analytics hosts are appended here, never inline.
