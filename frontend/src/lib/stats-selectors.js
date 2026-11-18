@@ -13,6 +13,7 @@ import {
 import { workoutTimestamp, isoOf, weekKey, monthKey } from './format.js'
 import { streakWeeks, trainedWeeks } from './history.js'
 import { strengthExerciseRowsForMuscle } from './strength-exercises.js'
+import { volumeRangeOf, verdictOf } from './volume-ranges.js'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
@@ -106,6 +107,24 @@ function workSetsOf(workouts) {
     }
   }
   return out
+}
+
+/**
+ * Weekly volume reading: effective sets done this ISO week (Workouts plus the Active workout)
+ * per muscle, against its volume range.
+ */
+function weeklyVolumeOf(S, today, muscleCatalogue) {
+  const week = weekKey(today)
+  const thisWeek = (S?.workouts || []).filter(w => weekKey(w.d) === week)
+  const sources = S?.active ? [...thisWeek, S.active] : thisWeek
+  const raw = loadOfWorkouts(projectWorkouts(sources, muscleCatalogue))
+  const muscles = Object.fromEntries(MUSCLES.map(slug => {
+    const done = round1(raw[slug] || 0)
+    const projected = null
+    const { range, edited } = volumeRangeOf(S, slug)
+    return [slug, { done, projected, range, verdict: verdictOf(projected ?? done, range), edited }]
+  }))
+  return { week, muscles }
 }
 
 export function selectStatsOverview(S, opts = {}) {
@@ -205,6 +224,7 @@ export function selectStatsOverview(S, opts = {}) {
       top: worked.slice(0, 5),
     },
     fatigue: { values: fatigueValues, states: fatigueStates },
+    weeklyVolume: weeklyVolumeOf(S, today, muscleCatalogue),
     strength: {
       values: strengthValues,
       latest,

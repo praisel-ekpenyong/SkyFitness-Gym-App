@@ -465,3 +465,68 @@ describe('history re-read through the catalogue corrections', () => {
     expect(JSON.stringify(S)).toBe(before)
   })
 })
+
+describe('weekly volume', () => {
+  // NOW is Wednesday 1 July 2026; the ISO week runs Monday 29 June to Sunday 5 July.
+  const COUNT_ONLY = ['trapezius', 'forearm', 'lower-back', 'obliques', 'adductors', 'serratus', 'hip-flexors', 'tibialis']
+
+  it('reads an empty week as zero done against the Standard volume ranges, with count-only muscles unranged', () => {
+    const over = selectStatsOverview({ workouts: [] }, { now: NOW, catalogue })
+    const { muscles } = over.weeklyVolume
+    expect(Object.keys(muscles).sort()).toEqual([...MUSCLES].sort())
+    expect(muscles.chest).toEqual({ done: 0, projected: null, range: [10, 20], verdict: 'below', edited: false })
+    expect(muscles['side-delts'].range).toEqual([8, 20])
+    expect(muscles.gluteal.range).toEqual([4, 16])
+    for (const slug of COUNT_ONLY) {
+      expect(muscles[slug]).toEqual({ done: 0, projected: null, range: null, verdict: null, edited: false })
+    }
+  })
+
+  it('counts performed work sets from this week only, leaving out warm-ups, unchecked sets and last week', () => {
+    const S = { workouts: [
+      workoutAt(LIFT.id, 3, [doneSet(60, 8), doneSet(60, 8)]),
+      workoutAt(LIFT.id, 1, [
+        { done: true, warmup: true, w: 40, r: 10 },
+        { done: false, w: 60, r: 8 },
+        doneSet(60, 8), doneSet(60, 8), doneSet(60, 8),
+      ]),
+    ] }
+    const { chest } = selectStatsOverview(S, { now: NOW, catalogue }).weeklyVolume.muscles
+    expect(chest.done).toBe(3)
+    expect(chest.verdict).toBe('below')
+  })
+
+  it('counts the Active workout as done mid-session', () => {
+    const S = {
+      workouts: [workoutAt(LIFT.id, 1, Array.from({ length: 8 }, () => doneSet(60, 8)))],
+      active: { name: 'Push', start: NOW - 3600e3, entries: [{ id: LIFT.id, sets: [
+        doneSet(60, 8), doneSet(60, 8), { done: false, w: 60, r: 8 }, { done: true, warmup: true, w: 40, r: 10 },
+      ] }] },
+    }
+    const { chest } = selectStatsOverview(S, { now: NOW, catalogue }).weeklyVolume.muscles
+    expect(chest.done).toBe(10)
+    expect(chest.verdict).toBe('in')
+  })
+
+  it('reads above when the sets pass the top of the range, and secondary work counts 0.4', () => {
+    const PRESS = { id: 'press', n: 'Press', muscleWeights: { 'front-delts': 1, triceps: 0.4 } }
+    const cat = { lookup: id => [LIFT, PRESS].find(e => e.id === id) ?? null }
+    const S = { workouts: [workoutAt(PRESS.id, 0, Array.from({ length: 13 }, () => doneSet(40, 8)))] }
+    const { muscles } = selectStatsOverview(S, { now: NOW, catalogue: cat }).weeklyVolume
+    expect(muscles['front-delts']).toMatchObject({ done: 13, range: [0, 12], verdict: 'above' })
+    expect(muscles.triceps).toMatchObject({ done: 5.2, verdict: 'below' })
+  })
+
+  it('never reads front delts as below, even untrained', () => {
+    const { muscles } = selectStatsOverview({ workouts: [] }, { now: NOW, catalogue }).weeklyVolume
+    expect(muscles['front-delts'].verdict).toBe('in')
+  })
+
+  it('gives a count-only muscle its count and no verdict', () => {
+    const SHRUG = { id: 'shrug', n: 'Shrug', muscleWeights: { trapezius: 1 } }
+    const cat = { lookup: id => (id === SHRUG.id ? SHRUG : null) }
+    const S = { workouts: [workoutAt(SHRUG.id, 0, [doneSet(80, 10), doneSet(80, 10)])] }
+    const { trapezius } = selectStatsOverview(S, { now: NOW, catalogue: cat }).weeklyVolume.muscles
+    expect(trapezius).toEqual({ done: 2, projected: null, range: null, verdict: null, edited: false })
+  })
+})
