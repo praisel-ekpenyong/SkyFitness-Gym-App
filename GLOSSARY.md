@@ -313,6 +313,18 @@ _Avoid_: a remembered Best that outlives the Workout it came from
 **Effective sets**:
 Training load per muscle counted in sets, weighted primary 1 / secondary 0.4 — deliberately not in kilograms, because tonnage across exercises compares nothing.
 
+**Volume range**:
+The band of Effective sets per ISO week (Monday first) a muscle is aimed at, as whole numbers low to high. A muscle's week reads **below**, **in** or **above** its range; below is phrased as room for more and above as more than the style aims for, never as a warning. Thirteen muscles are ranged; front delts start at 0, so they only ever read in or above. Traps, forearms, lower back, obliques, adductors, serratus, hip flexors and shins are count-only: shown with their sets and no verdict.
+_Avoid_: weekly sets, volume target, MEV, MRV
+
+**Training style**:
+The lifter's choice of **Low volume**, **Standard** or **High volume**, which sets every Volume range at once (profile field `trainingStyle`; absent means Standard). Any single muscle's range can be edited on top (profile field `volumeRanges`, whole numbers 0 to 40, low end at most the high end; front delts' low end stays at 0); edited muscles are marked, and switching style asks first, then clears every edit. Style and edits travel in Export and Restore, are cleared by Reset and never go in a plan file.
+_Avoid_: program, volume mode, preset
+
+**Projected volume**:
+The Effective sets a muscle will have by the end of the ISO week if the lifter follows the plan: sets done this week (the Active workout's performed Work sets included when it belongs to this week) plus the planned work sets of today's effective routine, only while nothing is trained today and no workout from today is active, plus those of every remaining day's effective routine, Rescheduled days included. A declared rest day and missed past days add nothing. Without a week schedule naming at least one existing routine there is no projection. The Volume range verdict reads the projection when there is one, else the sets done; on screen it shows as sets done and sets planned.
+_Avoid_: forecast, expected sets
+
 **Tonnage**:
 Load × reps of performed Work sets; a Warm-up set is excluded, including when it was performed.
 
