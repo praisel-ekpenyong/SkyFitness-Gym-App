@@ -9,10 +9,6 @@ vi.mock('../platform/sound.js', () => ({
   playTimerComplete: vi.fn(),
   playWorkoutComplete: vi.fn(),
 }))
-vi.mock('./useStore.js', async () => {
-  const { create } = await import('zustand')
-  return { useStore: create(() => ({ S: { sound: true } })) }
-})
 
 describe('useUI rest timer', () => {
   it('ticks down to zero without throwing and announces the end of rest', async () => {

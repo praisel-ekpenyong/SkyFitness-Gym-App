@@ -16,9 +16,9 @@ export function runEffects(effects, S, send) {
   if (!send && effects.some(e => e.type === 'hold:start')) throw new Error('A hold needs a sender for its completeHold')
   const ui = useUI.getState()
   for (const e of effects) {
-    if (e.type === 'rest:start') ui.startRest(S.restSec)
+    if (e.type === 'rest:start') ui.startRest(S.restSec, S.sound)
     else if (e.type === 'rest:stop') ui.stopRest()
-    else if (e.type === 'hold:start') ui.startWork(e.sec, e.label, elapsed => send({ type: 'completeHold', ref: e.ref, elapsed }))
+    else if (e.type === 'hold:start') ui.startWork(e.sec, e.label, elapsed => send({ type: 'completeHold', ref: e.ref, elapsed }), S.sound)
     else if (e.type === 'hold:stop') ui.stopWork()
     else if (e.type === 'sound:set') playSetComplete(S.sound)
     else if (e.type === 'sound:finish') playWorkoutComplete(S.sound)

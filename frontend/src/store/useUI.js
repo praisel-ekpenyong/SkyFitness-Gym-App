@@ -2,7 +2,6 @@ import { create } from 'zustand'
 import { uid } from '../lib/format.js'
 import { playTimerComplete, playTimerWarning, vibrate } from '../platform/sound.js'
 import { t } from '../lib/i18n.js'
-import { useStore } from './useStore.js'
 
 
 const notificationsSupported = () => typeof window !== 'undefined' && 'Notification' in window
@@ -66,17 +65,17 @@ export const useUI = create((set, get) => ({
     toastTm = setTimeout(() => set({ toastMsg: '' }), 2200)
   },
 
-  startRest(sec) {
+  startRest(sec, sound = true) {
     get().stopRest()
     const endsAt = Date.now() + sec * 1000
-    set({ timer: { left: sec, total: sec, endsAt } })
+    set({ timer: { left: sec, total: sec, endsAt, sound } })
     requestRestNotificationPermission()
     timerTick = () => {
       const tm = get().timer
       if (!tm) return
       const left = Math.max(0, Math.round((tm.endsAt - Date.now()) / 1000))
       if (left === tm.left) return
-      const snd = useStore.getState().S.sound
+      const snd = tm.sound ?? true
       if (left <= 0) {
         playTimerComplete(snd); maybeRestNotification(); get().toast(t('Rest over — next set!')); get().stopRest(); return
       }
@@ -99,19 +98,19 @@ export const useUI = create((set, get) => ({
     set({ timer: null })
   },
 
-  startWork(sec, label, onDone) {
+  startWork(sec, label, onDone, sound = true) {
     get().stopWork()
     get().stopRest()
     const total = Math.max(1, Math.round(sec) || 1)
     const endsAt = Date.now() + total * 1000
     workDone = onDone
-    set({ work: { left: total, total, endsAt, label } })
+    set({ work: { left: total, total, endsAt, label, sound } })
     workTick = () => {
       const wk = get().work
       if (!wk) return
       const left = Math.max(0, Math.round((wk.endsAt - Date.now()) / 1000))
       if (left === wk.left) return
-      const snd = useStore.getState().S.sound
+      const snd = wk.sound ?? true
       if (left <= 0) {
         playTimerComplete(snd)
         const done = workDone
