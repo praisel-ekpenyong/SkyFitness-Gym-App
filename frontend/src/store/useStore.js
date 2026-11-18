@@ -7,7 +7,7 @@ import { MOBILE, syncReminder } from '../platform/mobile.js'
 import { SEED_PLAN } from '../lib/env.js'
 import { seedPlanInto } from '../lib/plans/seed.js'
 import { flush, load, loadLocal, save, LOCAL_KEY, onStorageSync } from '../platform/storage.js'
-import { DEF, normalizeState } from '../lib/profile/index.js'
+import { DEF, normalizeState, isNewerProfile, NewerProfileError } from '../lib/profile/index.js'
 import { act } from '../lib/active-workout.js'
 import { actRoutine } from '../lib/routines.js'
 import { runEffects } from './effects.js'
@@ -24,9 +24,12 @@ setAutoFreeze(import.meta.env.MODE === 'test')
 
 const stamp = S => ({ ...S, _ts: Date.now() })
 
+// A Profile saved by a newer Sky is not admitted (ADR 0027). The tab starts empty in memory,
+// flags `newerProfile`, and never writes, so the newer Profile stays on disk as it was.
 function loadState() {
   const raw = loadLocal()
-  return raw ? normalizeState(raw) : clone(DEF)
+  if (isNewerProfile(raw)) return { S: clone(DEF), newerProfile: true }
+  return { S: raw ? normalizeState(raw) : clone(DEF), newerProfile: false }
 }
 
 const hasData = st => !!((st.workouts || []).length || (st.routines || []).length || (st.bodyweight || []).length)
@@ -39,7 +42,12 @@ export function sanitizeDisplayName(v) {
 }
 
 export const useStore = create((set, get) => {
+  const initial = loadState()
+  registerCustom(initial.S.customEx)
+
   const persist = S => {
+    // The stored Profile belongs to a newer Sky: writing would overwrite it with an older shape.
+    if (get().newerProfile) return
     registerCustom(S.customEx)
     let blocked = false
     try {
@@ -52,6 +60,8 @@ export const useStore = create((set, get) => {
   }
 
   onStorageSync(incoming => {
+    // Another tab runs a newer Sky: whatever the timestamps, this tab stops reading and writing.
+    if (isNewerProfile(incoming)) { set({ newerProfile: true }); return }
     const current = get().S
     const incomingTs = Number(incoming?._ts) || 0
     const currentTs = Number(current?._ts) || 0
@@ -68,9 +78,10 @@ export const useStore = create((set, get) => {
   })
 
   return {
-    S: (() => { const s = loadState(); registerCustom(s.customEx); return s })(),
+    S: initial.S,
     ready: false,
     storageBlocked: false,
+    newerProfile: initial.newerProfile,
 
     update(mut) {
       persist(produce(get().S, draft => {
@@ -92,12 +103,20 @@ export const useStore = create((set, get) => {
       return res
     },
     async boot() {
+      if (get().newerProfile) { set({ ready: true }); return }
       let S = get().S
       const winner = await load({
         running: S,
         hasData,
-        overlay: x => normalizeState(x),
+        overlay: x => {
+          try { return normalizeState(x) } catch (e) {
+            if (!(e instanceof NewerProfileError)) throw e
+            set({ newerProfile: true })
+            return null
+          }
+        },
       })
+      if (get().newerProfile) { set({ ready: true }); return }
       if (winner) S = winner
       S = seedPlanInto(S, SEED_PLAN)
       if (MOBILE) syncReminder(S)

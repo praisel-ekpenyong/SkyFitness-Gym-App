@@ -205,6 +205,7 @@ describe('Restore keeps every DEF key and puts the Training log in order', () =>
     const { restoreFromBackup } = await import('../platform/restore.js')
     const legacyCache = { '0025': { w: 999, d: '2026-01-01', unit: 'kg' } }
     const backup = {
+      schemaVersion: DEF.schemaVersion,
       unit: 'lb', restSec: 45, sound: false, keepAwake: false, theme: 'light', accent: 'sky',
       body: 'female', targetW: 78,
       bodyweight: [{ d: '2026-01-01', w: 78, t: 1 }],
@@ -270,8 +271,10 @@ describe('Restore keeps every DEF key and puts the Training log in order', () =>
 
   it('upgrades a legacy warm-up shape on restore, the same way boot does', async () => {
     const { restoreFromBackup } = await import('../platform/restore.js')
+    // A backup with warm-up flags predates the schema version: version 0.
+    const { schemaVersion, ...version0 } = cloneDef()
     const backup = {
-      ...cloneDef(),
+      ...version0,
       workouts: [{
         id: 'w-legacy', d: todayISO(), start: 1, end: 2, name: 'Push',
         entries: [{ id: 'ex-push', sets: [{ warmup: true, w: 40, r: 5, done: true }, { w: 60, r: 5, done: true }] }],
@@ -279,6 +282,15 @@ describe('Restore keeps every DEF key and puts the Training log in order', () =>
     }
     restoreFromBackup(backup)
     expect(useStore.getState().S.workouts[0].entries[0].sets[0]).toEqual({ w: 40, r: 5, done: true, phase: 'warmup' })
+  })
+
+  it('restores a pre-effort backup with showRir: true as effort rir, the same way boot does', async () => {
+    const { restoreFromBackup } = await import('../platform/restore.js')
+    const { schemaVersion, effort, ...version0 } = cloneDef()
+    restoreFromBackup({ ...version0, showRir: true })
+    const S = useStore.getState().S
+    expect(S.effort).toBe('rir')
+    expect(S).not.toHaveProperty('showRir')
   })
 })
 
