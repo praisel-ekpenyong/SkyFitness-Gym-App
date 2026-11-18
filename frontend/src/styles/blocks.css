@@ -200,7 +200,7 @@ h4.sec, .sec {
 .bw-num:focus { background: var(--surface-2) }
 .bw-read .u { margin-top: 2px }
 
-.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; margin-top: 10px }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr) 26px; gap: 3px; margin-top: 10px }
 .cal-h { text-align: center; font-size: var(--fs-meta); color: var(--label-3); padding: 2px 0 4px }
 .cal-d {
   aspect-ratio: 1; border-radius: 6px; background: var(--surface); position: relative;
@@ -214,6 +214,23 @@ h4.sec, .sec {
 .cal-d i.plan { background: var(--label-3) }
 .cal-d i.ovr { background: var(--label-2) }
 .cal-d i.done { background: transparent }
+/* Week marks sit at the end of each week row: counted, frozen, broke, missed, open. */
+.cal-mark {
+  width: 26px; height: 26px; border-radius: 50%; align-self: center; justify-self: center;
+  display: flex; align-items: center; justify-content: center; color: var(--label);
+  border: 1.5px solid transparent; font-size: var(--fs-meta); transition: box-shadow var(--fast);
+}
+.cal-mark .icn { width: 13px; height: 13px; stroke-width: 2.4 }
+.cal-mark.counted { background: var(--label); color: var(--surface) }
+.cal-mark.frozen { border-color: var(--label-2); color: var(--label-2) }
+.cal-mark.broke { border-color: var(--label); color: var(--label) }
+.cal-mark.missed { color: var(--label-3) }
+.cal-mark.open { border: 1.5px dashed var(--label-3) }
+.cal-mark.on { box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px var(--label-2) }
+.cal-mark-gap { width: 26px; height: 26px }
+.cal-streak { display: flex; flex-wrap: wrap; gap: 4px 12px; justify-content: center; margin-top: 6px; color: var(--label) }
+.cal-streak .cal-next { flex-basis: 100%; text-align: center; color: var(--label-2) }
+.cal-explain { min-height: 2.6em; margin: 10px 0 0; text-align: center; color: var(--label) }
 .cal-legend { display: flex; gap: 14px; justify-content: center; margin-top: 12px; font-size: var(--fs-meta); color: var(--label-2) }
 .cal-legend i { display: inline-block; width: 10px; height: 3px; margin-right: 5px; vertical-align: 2px }
 

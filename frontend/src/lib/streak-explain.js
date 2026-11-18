@@ -1,0 +1,39 @@
+import { t } from './i18n-core.js'
+import { FREEZE_BANK } from './streak.js'
+import { fmtNum } from './format.js'
+
+/** The sentence that explains one week's mark in the calendar. */
+export function weekExplanation(week, rule) {
+  switch (week.state) {
+    case 'counted': {
+      const base = t('You trained, so this week counts. Streak: {0}.', week.run)
+      return week.earned ? base + ' ' + t('It also earned a freeze.') : base
+    }
+    case 'frozen':
+      return t('No workout, so a freeze covered it. The streak kept going, but this week adds nothing.')
+    case 'broke':
+      return rule === 'strict'
+        ? t('No workout, and your rule has no freezes, so the streak started over.')
+        : t('No workout and no freeze left, so the streak started over.')
+    case 'missed':
+      return t('No workout this week.')
+    case 'open':
+      return t('Still open. One workout and it counts.')
+    default:
+      return ''
+  }
+}
+
+/** The accessible name of a week's mark, e.g. "Week of 3 Nov: counted". */
+export function markLabel(dayLabel, state) {
+  return t('Week of {0}: {1}', dayLabel, t(state))
+}
+
+/** The freeze line under the calendar header: what the bank holds and how the next freeze is earned. */
+export function freezeLine({ rule, freezes, toNextFreeze }) {
+  if (FREEZE_BANK[rule] === 0) return t('Strict rule: no freezes are banked.')
+  if (freezes >= FREEZE_BANK[rule]) return t('Bank full: the next freeze would be lost.')
+  return toNextFreeze === 1
+    ? t('Next freeze in {0} counted week.', fmtNum(toNextFreeze))
+    : t('Next freeze in {0} counted weeks.', fmtNum(toNextFreeze))
+}
