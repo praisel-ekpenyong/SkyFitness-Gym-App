@@ -1,4 +1,5 @@
 import { mergePlan } from '../plan-share.js'
+import { isBodyweightEq } from '../exercises.js'
 import { assignWeekday } from '../schedule.js'
 
 /** Rest the plan asks for between sets; applied only over the factory default. */
@@ -25,12 +26,18 @@ const CUSTOM = [
     desc: 'Lat pulldown with a separate D-handle in each hand, pulling the elbows down to the sides.' },
 ]
 
+/**
+ * No starting weight. A loaded exercise carries no `weight` at all, as a Plan file export
+ * writes it: an explicit 0 is ADR 0011's bodyweight carve-out, which drops the top reps from
+ * the Progression stream's shape. Bodyweight exercises keep 0, so they stay in the carve-out.
+ */
+const noLoad = id => (isBodyweightEq(id) ? { weight: 0 } : {})
 const ex = (id, sets, bottom, top, prog, notes, extra = {}) =>
-  ({ id, sets, reps: top, repsMin: bottom, weight: 0, prog, notes, ...extra })
+  ({ id, sets, reps: top, repsMin: bottom, ...noLoad(id), prog, notes, ...extra })
 const perLeg = (id, sets, bottom, top, notes, extra = {}) =>
   ex(id, sets, bottom * 2, top * 2, 'double', `Reps are both legs together (${bottom}–${top} per leg). ${notes}`, { side: true, ...extra })
 const lin = (id, sets, bottom, top, notes) =>
-  ({ id, sets, reps: bottom, weight: 0, prog: 'linear', inc: 2.5, notes: `${notes}${notes ? ' ' : ''}Range ${bottom}–${top}. ${COMPOUND} ${linear}` })
+  ({ id, sets, reps: bottom, ...noLoad(id), prog: 'linear', inc: 2.5, notes: `${notes}${notes ? ' ' : ''}Range ${bottom}–${top}. ${COMPOUND} ${linear}` })
 const iso = (id, sets, bottom, top, notes = '', extra = {}) =>
   ex(id, sets, bottom, top, 'double', `${notes}${notes ? ' ' : ''}${ISO} ${totalReps(Math.ceil(sets * (bottom + top) / 2))}`, extra)
 const comp = (id, sets, bottom, top, notes = '', extra = {}) =>
@@ -43,7 +50,7 @@ const ROUTINES = [
     iso('0238', 2, 10, 15, 'Rope or bar, slight hip hinge, arms nearly straight, full overhead stretch.'),
     iso('0179', 2, 10, 15, 'Low to high.'),
     ex('0861', 3, 10, 12, 'double', `Wide grip, elbows flared. Rest 2 min. ${firstSet}`),
-    ex('0178', 3, 8, 15, 'double', `${ISO} Plan: 3 × 10–15, up one step once total reps reach 38 with no set below 10. The bottom here is 8, so climbing back to 10 after a 2.5 kg cable step counts as progress, not a stall.`),
+    ex('0178', 3, 9, 15, 'double', `${ISO} Plan: 3 × 10–15, up one step once total reps reach 38 with no set below 10. The bottom here is 9, so climbing back to 10 after a 2.5 kg cable step counts as progress, not a stall.`),
     iso('0194', 3, 10, 15),
     iso('hyp-bayesian-curl', 3, 10, 15),
   ] },
@@ -67,7 +74,7 @@ const ROUTINES = [
     ex('0180', 3, 8, 12, 'double', `Elbows tucked. Rest 2–3 min. ${firstSet}`),
     ex('0327', 3, 8, 12, 'double', `Chest supported on an incline bench, elbows flared. Rest 2–3 min. ${firstSet}`),
     iso('0225', 3, 12, 15, 'Same exercise every week. Rest 90 s.'),
-    ex('0178', 2, 10, 15, 'double', `${ISO} Plan: 3 × 10–15, as on Monday, up one step once total reps reach 38 with no set below 10. 2 sets here: with 3, Sky would count Friday's sessions toward Monday's progression.`),
+    ex('0178', 3, 9, 14, 'double', `${ISO} Plan: 3 × 10–15, as on Monday, up one step once total reps reach 38 with no set below 10. Top 14 here: with Monday's 3 × 15, Sky would count Friday's sessions toward Monday's progression. Bottom 9, as on Monday.`),
     iso('0318', 3, 8, 12, 'Recline curl: arms hanging behind the body on an incline bench.'),
     iso('0313', 2, 10, 12, 'Rest 90 s.'),
   ] },
