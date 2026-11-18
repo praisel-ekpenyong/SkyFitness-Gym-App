@@ -1,5 +1,6 @@
 
 import { create } from 'zustand'
+import { produce, setAutoFreeze } from 'immer'
 import { localTZ } from '../lib/dates.js'
 import { registerCustom } from '../lib/exercises.js'
 import { MOBILE, syncReminder } from '../platform/mobile.js'
@@ -17,6 +18,11 @@ const clone = o => {
   }
   return JSON.parse(JSON.stringify(o))
 }
+
+// Frozen in tests so code that changes state outside update fails the suite (ADR 0026).
+setAutoFreeze(import.meta.env.MODE === 'test')
+
+const stamp = S => ({ ...S, _ts: Date.now() })
 
 function loadState() {
   const raw = loadLocal()
@@ -67,11 +73,12 @@ export const useStore = create((set, get) => {
     storageBlocked: false,
 
     update(mut) {
-      const S = clone(get().S)
-      mut(S)
-      persist(S)
+      persist(produce(get().S, draft => {
+        mut(draft)
+        draft._ts = Date.now()
+      }))
     },
-    replaceState(S) { persist(normalizeState(S)) },
+    replaceState(S) { persist(stamp(normalizeState(S))) },
     // `send` is where a hold's completeHold goes; a default here would drop its open-finish.
     act(command, send) {
       let res = null
@@ -99,7 +106,7 @@ export const useStore = create((set, get) => {
       if (S.reminder?.on && S.reminder.tz !== tz) {
         S = { ...S, reminder: { ...S.reminder, tz } }
       }
-      if (S !== get().S) persist(S)
+      if (S !== get().S) persist(stamp(S))
       set({ ready: true })
     }
   }
