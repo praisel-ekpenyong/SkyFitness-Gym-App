@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { beforeEach, describe, expect, it } from 'vitest'
-import { useStore, DEF } from './useStore.js'
+import { useStore } from './useStore.js'
+import { DEF } from '../lib/profile/index.js'
 
 describe('useStore.act replaceExercise', () => {
   beforeEach(() => {

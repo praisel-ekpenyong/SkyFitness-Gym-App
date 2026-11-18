@@ -3,7 +3,8 @@ import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { Calendar } from './sheets/history.jsx'
-import { useStore, DEF } from './store/useStore.js'
+import { useStore } from './store/useStore.js'
+import { DEF } from './lib/profile/index.js'
 import { useUI } from './store/useUI.js'
 
 // Clock: Wed 1 Jul 2026, so the current week starts Mon 29 Jun.

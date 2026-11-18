@@ -3,7 +3,8 @@ import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import TabBar from './TabBar.jsx'
-import { useStore, DEF } from '../store/useStore.js'
+import { useStore } from '../store/useStore.js'
+import { DEF } from '../lib/profile/index.js'
 
 const route = vi.hoisted(() => ({ pathname: '/home' }))
 vi.mock('react-router-dom', () => ({ useNavigate: () => vi.fn(), useLocation: () => route }))
