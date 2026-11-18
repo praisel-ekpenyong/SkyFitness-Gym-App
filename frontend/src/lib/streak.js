@@ -5,7 +5,6 @@ import { hasWorkSet } from './workout-model.js'
 export const FREEZE_BANK = { strict: 0, gentle: 1, generous: 2 }
 const DEFAULT_RULE = 'gentle'
 const EARN_EVERY = 4
-const DAY_RE = /^\d{4}-\d{2}-\d{2}$/
 
 /** The profile's freeze rule; absent or unknown reads as Gentle. */
 export function streakRuleOf(S) {
@@ -65,7 +64,7 @@ function walk(counted, currentMonday, bank) {
 export function streakOf(S, today = Date.now()) {
   const counted = new Set()
   for (const w of S?.workouts || []) {
-    if (!DAY_RE.test(w?.d) || !(w.entries || []).some(hasWorkSet)) continue
+    if (!(w.entries || []).some(hasWorkSet)) continue
     counted.add(mondayOf(w.d))
   }
   const currentMonday = mondayOf(isoOf(new Date(today)))
