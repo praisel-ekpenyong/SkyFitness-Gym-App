@@ -1,5 +1,5 @@
 // Volume ranges: the band of effective sets per week a muscle is aimed at, by training style.
-// Sources and per-style tables: .scratch/weekly-volume/spec.md (Pelland 2024–25, Schoenfeld).
+// Terms: GLOSSARY.md (Volume range, Training style). Defaults follow Schoenfeld and Pelland et al. (2024–25).
 
 import { t } from './i18n.js'
 
@@ -30,6 +30,16 @@ export const STYLE_RANGES = {
   },
 }
 
+/** The 13 ranged muscles, in display order; every other muscle is count-only. */
+export const RANGED_MUSCLES = Object.keys(STYLE_RANGES[DEFAULT_STYLE])
+
+/**
+ * Whether a muscle's low end is pinned at 0, so it never reads "below": pressing covers front delts.
+ * @param {string} slug - Muscle slug.
+ * @returns {boolean}
+ */
+export const lowPinned = slug => slug === 'front-delts'
+
 /** Training styles in display order. */
 export const TRAINING_STYLES = ['low', 'standard', 'high']
 
@@ -59,14 +69,16 @@ const isWhole = n => Number.isInteger(n) && n >= 0 && n <= RANGE_MAX
 
 /**
  * A stored per-muscle edit, or null when it is not a usable range for a ranged muscle.
+ * A pinned muscle's low end is clamped to 0.
  * @param {string} slug - Muscle slug.
  * @param {*} value - Stored value, expected [low, high].
  * @returns {[number, number]|null}
  */
 export function validRangeEdit(slug, value) {
-  if (!STYLE_RANGES[DEFAULT_STYLE][slug] || !Array.isArray(value) || value.length !== 2) return null
+  if (!RANGED_MUSCLES.includes(slug) || !Array.isArray(value) || value.length !== 2) return null
   const [low, high] = value
-  return isWhole(low) && isWhole(high) && low <= high ? [low, high] : null
+  if (!isWhole(low) || !isWhole(high) || low > high) return null
+  return [lowPinned(slug) ? 0 : low, high]
 }
 
 /**
@@ -90,7 +102,7 @@ export function volumeRangeOf(S, slug) {
 export function cleanVolumeRanges(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
   const out = {}
-  for (const slug of Object.keys(STYLE_RANGES[DEFAULT_STYLE])) {
+  for (const slug of RANGED_MUSCLES) {
     const edit = validRangeEdit(slug, value[slug])
     if (edit) out[slug] = edit
   }
@@ -139,18 +151,19 @@ export function switchTrainingStyle(S, style) {
  * @returns {boolean}
  */
 export function hasRangeEdits(S) {
-  return Object.keys(STYLE_RANGES[DEFAULT_STYLE]).some(slug => volumeRangeOf(S, slug).edited)
+  return RANGED_MUSCLES.some(slug => volumeRangeOf(S, slug).edited)
 }
 
 /**
  * Where a set count sits against a volume range.
  * @param {number} sets - Effective sets (projected, or done when there is no projection).
  * @param {[number, number]|null} range - Volume range.
+ * @param {string} slug - Muscle slug; a pinned muscle never reads below.
  * @returns {'below'|'in'|'above'|null} Null for a count-only muscle.
  */
-export function verdictOf(sets, range) {
+export function verdictOf(sets, range, slug) {
   if (!range) return null
-  if (sets < range[0]) return 'below'
+  if (sets < range[0] && !lowPinned(slug)) return 'below'
   if (sets > range[1]) return 'above'
   return 'in'
 }

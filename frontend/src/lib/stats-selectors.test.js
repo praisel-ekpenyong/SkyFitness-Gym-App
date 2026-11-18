@@ -523,6 +523,16 @@ describe('weekly volume', () => {
     expect(muscles['front-delts'].verdict).toBe('in')
   })
 
+  it('never reads front delts as below after a per-muscle edit: the low end stays at 0', () => {
+    const stored = { workouts: [], volumeRanges: { 'front-delts': [4, 10] } }
+    expect(selectStatsOverview(stored, { now: NOW, catalogue }).weeklyVolume.muscles['front-delts'])
+      .toMatchObject({ range: [0, 10], verdict: 'in', edited: true })
+    const edited = { workouts: [] }
+    setVolumeRange(edited, 'front-delts', [6, 14])
+    expect(selectStatsOverview(edited, { now: NOW, catalogue }).weeklyVolume.muscles['front-delts'])
+      .toMatchObject({ range: [0, 14], verdict: 'in', edited: true })
+  })
+
   it('gives a count-only muscle its count and no verdict', () => {
     const SHRUG = { id: 'shrug', n: 'Shrug', muscleWeights: { trapezius: 1 } }
     const cat = { lookup: id => (id === SHRUG.id ? SHRUG : null) }
@@ -587,6 +597,48 @@ describe('projected volume', () => {
     const big = { ...push, ex: [{ id: LIFT.id, sets: 8 }] }
     const S = { ...monWedFri(), routines: [big, legs], workouts: [workoutAt(LIFT.id, 1, Array.from({ length: 6 }, () => doneSet(60, 8)))] }
     expect(volume(S).chest).toMatchObject({ done: 6, projected: 22, verdict: 'above' })
+  })
+
+  it('leaves out an Active workout left over from last week and still counts today\'s routine', () => {
+    const lastWeek = NOW - 7 * DAY
+    const S = { ...monWedFri(), active: { name: 'Push', d: '2026-06-24', start: lastWeek, entries: [{ id: LIFT.id, sets: [
+      doneSet(60, 8), doneSet(60, 8), doneSet(60, 8),
+    ] }] } }
+    expect(volume(S).chest).toMatchObject({ done: 0, projected: 8, verdict: 'below' })
+  })
+
+  it('counts an Active workout from earlier this week as done but still projects today\'s routine', () => {
+    const S = { ...monWedFri(), active: { name: 'Push', d: '2026-06-30', start: NOW - DAY, entries: [{ id: LIFT.id, sets: [
+      doneSet(60, 8), doneSet(60, 8),
+    ] }] } }
+    expect(volume(S).chest).toMatchObject({ done: 2, projected: 10, verdict: 'in' })
+  })
+
+  it('has no projection when the week schedule only names routines that no longer exist', () => {
+    const S = { routines: [push], week: [null, 'gone', null, 'gone', null, 'gone', null], workouts: [
+      workoutAt(LIFT.id, 1, Array.from({ length: 10 }, () => doneSet(60, 8))),
+    ] }
+    expect(volume(S).chest).toMatchObject({ done: 10, projected: null, verdict: 'in' })
+  })
+
+  it('on Sunday counts the whole week from Monday and projects only Sunday\'s routine', () => {
+    const SUNDAY = NOW + 4 * DAY
+    const S = { ...monWedFri(), week: ['push', 'push', null, null, null, null, null], workouts: [
+      { ...workoutAt(LIFT.id, -4, [doneSet(60, 8)]), d: '2026-06-29' },
+      { ...workoutAt(LIFT.id, -3, [doneSet(60, 8), doneSet(60, 8)]), d: '2026-07-04' },
+    ] }
+    expect(volume(S, SUNDAY).chest).toMatchObject({ done: 3, projected: 7 })
+    S.workouts.push({ ...workoutAt(LIFT.id, -5, [doneSet(60, 8)]), d: '2026-07-05' })
+    expect(volume(S, SUNDAY).chest).toMatchObject({ done: 4, projected: 4 })
+  })
+
+  it('on Monday starts a fresh week: last week\'s workouts are not counted', () => {
+    const NEXT_MONDAY = NOW + 5 * DAY
+    const S = { ...monWedFri(), workouts: [
+      workoutAt(LIFT.id, 0, Array.from({ length: 6 }, () => doneSet(60, 8))),
+      { ...workoutAt(LIFT.id, -4, Array.from({ length: 6 }, () => doneSet(60, 8))), d: '2026-07-05' },
+    ] }
+    expect(volume(S, NEXT_MONDAY).chest).toMatchObject({ done: 0, projected: 12, verdict: 'in' })
   })
 })
 
