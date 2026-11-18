@@ -1,19 +1,18 @@
 import { allExercises, equipmentOf } from './exercises.js'
 import {
-  exerciseContext,
   isSecondaryMuscleMatch,
-  matchesExerciseSearch,
   matchesMuscleFilter,
   primaryMuscleOf,
   resolveMuscleSlug,
+} from './muscles.js'
+import {
+  exerciseContext,
+  matchesExerciseSearch,
   secondaryMatchForQuery,
   stringIncludesToken,
   tokenizeSearchQuery,
   tokenMatchesExercise,
-} from './muscles.js'
-
-
-export { tokenizeSearchQuery }
+} from './exercise-search.js'
 
 export function scoreExerciseMatch(exercise, tokens, rawQuery = '') {
   if (!exercise) return 0
