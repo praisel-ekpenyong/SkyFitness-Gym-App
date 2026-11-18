@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { diffRoutineWithSession } from './routine-sync.js'
+import { diffRoutineWithSession, syncRoutineFromSession } from './routine-sync.js'
 
 describe('diffRoutineWithSession', () => {
   const ex1 = { id: '0025', name: 'Barbell Bench Press', sets: 3, reps: 8, weight: 60, mode: 'reps' }

@@ -4,6 +4,7 @@ import { defaultConfig, cleanNote } from './workout-model.js'
 import { uid } from './format.js'
 import { DEFAULT_GLYPH } from './glyphs.js'
 import { t } from './i18n.js'
+import { syncRoutineFromSession } from './routine-sync.js'
 
 const refused = () => ({ ok: false })
 const applied = result => (result !== undefined ? { ok: true, result } : { ok: true })
@@ -142,10 +143,7 @@ function toggleSuperset(S, command) {
 }
 
 function syncFromSession(S, command) {
-  const r = findRoutine(S, command.routineId)
-  if (!r || !Array.isArray(command.syncedEx)) return refused()
-  r.ex = command.syncedEx.map(e => ({ ...e }))
-  return applied()
+  return syncRoutineFromSession(S, command.routineId, command.syncedEx) ? applied() : refused()
 }
 
 function updateExercise(S, command) {
@@ -155,6 +153,8 @@ function updateExercise(S, command) {
   if (typeof idx !== 'number' || idx < 0 || idx >= r.ex.length) return refused()
   const existing = r.ex[idx]
   const { target, hasNote, note } = extractTarget(command.target)
+  delete target.id
+  delete target.sg
   const updated = { ...existing, ...target }
   if (hasNote) {
     if (note) updated.notes = note
