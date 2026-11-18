@@ -136,14 +136,8 @@ Every finished Workout in the Profile, in date order, and the only source of Bes
 _Avoid_: history cache, remembered weights
 
 **Week streak**:
-Consecutive trained weeks under the Freeze rule. A week counts when it holds a Workout with at least one performed Work set. Every fourth counted week in a run earns a Freeze, up to the rule's bank; a missed week spends one and the streak carries on, and a missed week with none left breaks it. The current week stays open until it ends. Recomputed from the Training log on every read, under the rule in force: rules apply retroactively by design, with no rule history stored.
-_Avoid_: weekly streak, streak alone (a Run is not a streak)
-
-**Freeze**:
-A banked allowance that covers one missed week so the Week streak continues. Earned by every fourth counted week in a run, capped by the Freeze rule's bank; an earned Freeze past the cap is lost.
-
-**Freeze rule**:
-The setting that fixes how many Freezes can be banked: Strict (0), Gentle (1, the default) or Generous (2). Stored on the Profile and carried by Export and Restore, never by the plan file. Rules apply retroactively by design: every week is judged by the rule in force now, so switching rule changes past weeks too, and the picker previews each rule's current and best streak before you switch.
+Weeks trained in a row. A week counts when it holds a Workout with at least one performed Work set. The current week stays open until it ends; any earlier week without a counted Workout breaks the streak. Nothing covers a missed week and there is no setting. Recomputed from the Training log on every read.
+_Avoid_: weekly streak, streak alone (a Run is not a streak), freeze
 
 **Entry**:
 One exercise within a routine or a workout; holds its sets.
