@@ -1,7 +1,8 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest'
 
-const { useStore, DEF } = await import('./useStore.js')
+const { useStore } = await import('./useStore.js')
+const { DEF } = await import('../lib/profile/index.js')
 const { save } = await import('../platform/storage.js')
 
 const done = { id: 'w0', d: '2026-11-01', name: 'Push', entries: [{ id: 'a', sets: [{ w: 50, r: 8, done: true }] }] }

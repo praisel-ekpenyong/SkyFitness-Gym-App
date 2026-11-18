@@ -3,7 +3,8 @@
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { useStore, DEF } from './useStore.js'
+import { useStore } from './useStore.js'
+import { DEF } from '../lib/profile/index.js'
 import { __setSinksForTests, __setLocalWriteForTests, flush } from '../platform/storage.js'
 
 vi.mock('../platform/sound.js', () => ({

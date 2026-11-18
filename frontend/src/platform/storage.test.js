@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
   pickNewest, backupDue, BACKUP_NAG_MS, LOCAL_KEY, loadLocal, save, flush, load,
   registerSink, __setSinksForTests, __setLocalWriteForTests, __resetStorageBlockedForTests,
-  isStorageBlocked, validateBackup, sanitizeBackup, onStorageSync
+  isStorageBlocked, onStorageSync
 } from './storage.js'
 
 const copy = (ts, workouts = ['w1']) => ({ ts, state: { _ts: ts, workouts } })
@@ -222,29 +222,6 @@ describe('load (web boot protocol)', () => {
     __setSinksForTests([{ id: 'idb', read, write: x => writes.push(x) }])
     const out = await load(bootArgs({ _ts: undefined }, false))
     expect(out).toEqual({ _ts: 5, workouts: ['recovered'], overlaid: true })
-  })
-})
-
-describe('backup validation and sanitization', () => {
-  it('validateBackup accepts valid payloads and rejects malformed objects', () => {
-    expect(validateBackup({ workouts: [], routines: [] })).toBe(true)
-    expect(() => validateBackup(null)).toThrow('not a Sky backup')
-    expect(() => validateBackup([])).toThrow('not a Sky backup')
-    expect(() => validateBackup({ workouts: [] })).toThrow('not a Sky backup')
-    expect(() => validateBackup({ routines: [] })).toThrow('not a Sky backup')
-  })
-
-  it('sanitizeBackup clears in-flight active workout sessions', () => {
-    expect(sanitizeBackup(null)).toBeNull()
-    const state = { active: { id: 'act-1' }, workouts: [] }
-    expect(sanitizeBackup(state)).toEqual({ active: null, workouts: [] })
-  })
-
-  it('sanitizeBackup drops unknown top-level keys instead of passing them through', () => {
-    const state = { active: null, workouts: [], routines: [], alien: { x: 1 } }
-    const clean = sanitizeBackup(state)
-    expect(clean).not.toHaveProperty('alien')
-    expect(clean.workouts).toEqual([])
   })
 })
 

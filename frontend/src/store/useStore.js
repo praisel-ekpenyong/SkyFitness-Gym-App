@@ -112,4 +112,4 @@ export const useStore = create((set, get) => {
   }
 })
 
-export { DEF, normalizeState, hasData }
+export { hasData }

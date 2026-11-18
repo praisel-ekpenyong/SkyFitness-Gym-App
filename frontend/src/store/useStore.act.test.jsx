@@ -9,7 +9,8 @@ vi.mock('../platform/sound.js', async orig => ({
   playTimerComplete: vi.fn(),
 }))
 
-const { useStore, DEF } = await import('./useStore.js')
+const { useStore } = await import('./useStore.js')
+const { DEF } = await import('../lib/profile/index.js')
 const { useUI } = await import('./useUI.js')
 const { playSetComplete, playWorkoutComplete, playTimerWarning, playTimerComplete } = await import('../platform/sound.js')
 

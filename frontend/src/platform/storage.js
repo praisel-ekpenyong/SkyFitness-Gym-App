@@ -1,8 +1,6 @@
 // iOS Safari evicts website data under storage pressure, so the log's only home can't be localStorage alone.
 
 import { MOBILE, nativeLoad, nativeSave } from './mobile.js'
-import { PROFILE_CLEAN, cleanProfileFields } from '../lib/profile-fields.js'
-import { RESTORE_TOP_KEYS } from '../lib/profile/restore-keys.js'
 
 export const LOCAL_KEY = 'gym_state_v1'
 
@@ -201,83 +199,6 @@ export async function load({ running, hasData, overlay }) {
     mirrorSink.write(running?._ts ? running : { ...running, _ts: Date.now() })
   }
   return null
-}
-
-export function validateBackup(data) {
-  if (!data || typeof data !== 'object' || Array.isArray(data) || !Array.isArray(data.workouts) || !Array.isArray(data.routines)) {
-    throw new Error('not a Sky backup')
-  }
-  return true
-}
-
-const isPlainRecord = v => v && typeof v === 'object' && !Array.isArray(v)
-const isGoodWorkoutEntry = e => isPlainRecord(e) && typeof e.id === 'string' && e.id.length > 0 && Array.isArray(e.sets)
-const isGoodWorkout = w => isPlainRecord(w) && Array.isArray(w.entries)
-const isGoodRoutineEx = e => isPlainRecord(e) && typeof e.id === 'string' && e.id.length > 0
-const isGoodRoutine = r => isPlainRecord(r) && typeof r.id === 'string' && r.id.length > 0 && Array.isArray(r.ex)
-
-// The Profile fields come from PROFILE_CLEAN so they clean the same way as the store.
-export function sanitizeRestorePayload(data, now = Date.now()) {
-  if (!data || typeof data !== 'object' || Array.isArray(data)) return { clean: data, skipped: 0 }
-  let skipped = 0
-  let workouts
-  if (Array.isArray(data.workouts)) {
-    workouts = []
-    for (const w of data.workouts) {
-      if (!isGoodWorkout(w)) { skipped++; continue }
-      const entries = []
-      for (const e of w.entries) {
-        if (!isGoodWorkoutEntry(e)) { skipped++; continue }
-        entries.push(e)
-      }
-      workouts.push({ ...w, entries })
-    }
-  }
-  let routines
-  if (Array.isArray(data.routines)) {
-    routines = []
-    for (const r of data.routines) {
-      if (!isGoodRoutine(r)) { skipped++; continue }
-      const ex = []
-      for (const e of r.ex) {
-        if (!isGoodRoutineEx(e)) { skipped++; continue }
-        ex.push(e)
-      }
-      routines.push({ ...r, ex })
-    }
-  }
-  const clean = { active: null }
-  for (const k of RESTORE_TOP_KEYS) {
-    if (data[k] !== undefined) clean[k] = data[k]
-  }
-  const profile = cleanProfileFields(data, now)
-  for (const key of Object.keys(PROFILE_CLEAN)) {
-    if (clean[key] !== undefined) clean[key] = profile[key]
-  }
-  if (workouts !== undefined) clean.workouts = workouts
-  if (routines !== undefined) {
-    clean.routines = routines
-    const ids = new Set(routines.map(r => r.id))
-    if (data.dayPlan && typeof data.dayPlan === 'object' && !Array.isArray(data.dayPlan)) {
-      const dayPlan = { ...data.dayPlan }
-      for (const k of Object.keys(dayPlan)) {
-        const v = dayPlan[k]
-        if (v !== 'rest' && !ids.has(v)) delete dayPlan[k]
-      }
-      clean.dayPlan = dayPlan
-    }
-  }
-  return { clean, skipped }
-}
-
-/**
- * Returns a backup-safe copy of a profile with malformed workouts and routines stripped.
- * @param {Object} data - Raw profile payload of any shape; non-objects pass through unchanged.
- * @returns {Object} Cleaned profile limited to known top-level keys with `active` cleared; stale day-plan overrides pruned.
- */
-export function sanitizeBackup(data) {
-  if (!data || typeof data !== 'object') return data
-  return sanitizeRestorePayload(data).clean
 }
 
 export function onStorageSync(callback) {

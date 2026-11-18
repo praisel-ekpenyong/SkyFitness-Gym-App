@@ -3,7 +3,8 @@
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { useStore, DEF } from './useStore.js'
+import { useStore } from './useStore.js'
+import { DEF } from '../lib/profile/index.js'
 import { useUI } from './useUI.js'
 import { __setSinksForTests, __setLocalWriteForTests, flush, LOCAL_KEY } from '../platform/storage.js'
 import { todayISO } from '../lib/dates.js'
@@ -232,6 +233,24 @@ describe('Restore keeps every DEF key and puts the Training log in order', () =>
     expect(S.exWeights).toEqual(legacyCache)
   })
 
+  it('cleans a restored sex and birth year once, through normalizeState, with the same result as before', async () => {
+    const { restoreFromBackup } = await import('../platform/restore.js')
+    const { sanitizeRestorePayload } = await import('../lib/profile/index.js')
+    const year = new Date().getFullYear()
+
+    restoreFromBackup({ ...cloneDef(), sex: 'male', birthYear: 1966 })
+    expect(useStore.getState().S).toMatchObject({ sex: 'male', birthYear: 1966 })
+
+    restoreFromBackup({ ...cloneDef(), sex: 'robot', birthYear: year + 1 })
+    expect(useStore.getState().S).toMatchObject({ sex: null, birthYear: null })
+
+    restoreFromBackup({ ...cloneDef(), sex: 42, birthYear: '1990' })
+    expect(useStore.getState().S).toMatchObject({ sex: null, birthYear: null })
+
+    // The restore cleaner itself leaves field values to normalizeState.
+    expect(sanitizeRestorePayload({ workouts: [], routines: [], sex: 'robot' }).clean.sex).toBe('robot')
+  })
+
   it('sorts an unsorted backup by date, then start, then original position', async () => {
     const { restoreFromBackup } = await import('../platform/restore.js')
     const wk = (id, d, start) => ({ id, d, start, end: start + 1, name: 'Push', entries: [] })
@@ -264,7 +283,7 @@ describe('Restore keeps every DEF key and puts the Training log in order', () =>
 
 describe('Normal load of a Profile carrying exWeights and stamped prs', () => {
   it('keeps both unchanged through normalizeState', async () => {
-    const { normalizeState } = await import('./useStore.js')
+    const { normalizeState } = await import('../lib/profile/index.js')
     const legacyCache = { '0025': { w: 999, d: '2026-01-01', unit: 'kg' } }
     const w = { id: 'w1', d: '2026-01-01', start: 1, end: 2, name: 'Push', prs: ['0025'], entries: [{ id: '0025', sets: [{ w: 100, r: 5, done: true }] }] }
     const S = normalizeState({ ...cloneDef(), exWeights: legacyCache, workouts: [w] })
