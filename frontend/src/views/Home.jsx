@@ -181,14 +181,10 @@ export default function Home() {
                 <div className="grow"><div className="tt capitalize">{ex.n}</div><div className="ss">{exLine(e, S.unit)}</div></div>
               </div>
             })}
-            {planEx.length > 4 && <button className="item home-more" onClick={() => nav('/plan/r/' + routine.id)}>
-              <div className="grow">
-                <div className="home-more-n">{t('+{0} more', planEx.length - 4)}</div>
-                <div className="ss home-more-names">{planEx.slice(4).map(e => exOr(e.id).n).join(', ')}</div>
-              </div>
-              <Icon name="chevronRight" className="chev" />
-            </button>}
           </div>
+          {planEx.length > 4 && <Button variant="ghost" size="sm" trailingIcon="chevronRight" className="home-more" onClick={() => nav('/plan/r/' + routine.id)}>
+            {t('{0} more', planEx.length - 4)}
+          </Button>}
         </section>}
       </div>
 
