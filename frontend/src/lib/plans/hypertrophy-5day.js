@@ -21,7 +21,7 @@ const CUSTOM = [
     desc: 'Heels on a plate, dumbbells at the sides, knees travelling forward into a deep squat.' },
   { id: 'hyp-db-sumo-squat', n: 'Deep dumbbell sumo squat', bp: 'upper legs', eq: 'dumbbell', tg: 'adductors', sm: ['gluteal', 'quadriceps'],
     desc: 'Wide stance with feet on plates, one dumbbell hanging between the legs, sitting below the plates.' },
-  { id: 'hyp-twin-d-pulldown', n: 'Twin D-handle lat pulldown', bp: 'back', eq: 'cable', tg: 'lats', sm: ['biceps', 'upper-back', 'rear-delts'],
+  { id: 'hyp-twin-d-pulldown', n: 'Twin D-handle lat pulldown', bp: 'back', eq: 'cable', tg: 'lats', sm: ['biceps', 'upper-back'],
     desc: 'Lat pulldown with a separate D-handle in each hand, pulling the elbows down to the sides.' },
 ]
 
