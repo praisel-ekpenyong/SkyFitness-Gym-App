@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
-import { fmtVol, isoOf, todayISO, MONTHS } from '../lib/format.js'
+import { fmtVol } from '../lib/format.js'
+import { isoOf, todayISO, MONTHS } from '../lib/dates.js'
 import { summarizeWorkouts } from '../lib/workout-summary.js'
 import { t } from '../lib/i18n.js'
 

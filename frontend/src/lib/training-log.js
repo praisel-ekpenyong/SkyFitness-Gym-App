@@ -1,8 +1,8 @@
 import { isWarmupRow } from './warmup.js'
 import { resolveSetWeight, normalizeWeight, round1 } from './units.js'
 import { estimate1RM } from './onerm.js'
-import { workoutTimestamp } from './format.js'
-import { doneWorkSets, metricModeForEntry, metricRowsForEntry, modeForSet, workSets } from './workout-model.js'
+import { workoutTimestamp } from './dates.js'
+import { doneWorkSets, metricModeForEntry, metricRowsForEntry, modeForSet, workSets } from './workout-sets.js'
 
 const indexes = new WeakMap()
 

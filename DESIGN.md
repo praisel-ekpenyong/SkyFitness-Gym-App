@@ -204,7 +204,7 @@ clock is the largest size there is. Labels are sentence case and untracked.
 | **The rest dock** | `components/RestTimer.jsx` | The clock is on the largest step (`--fs-hero`); nothing on the phone is larger while it runs. |
 | **Session segments** | `.lad` | One segment per exercise, filling with its work sets: position at a glance and a one-thumb jump. With the header's set count ("0/19 sets") they are the workout's only progress; there is no "Exercise N / M" line. |
 | **Poster hero** | `views/Home.jsx` | Today's routine set huge beside the muscle map it hits: `--fs-poster` on a phone, `--fs-hero` on desktop, a step down when a word is still too wide. A rest day shows what is still recovering instead. |
-| **Weigh-in** | `sheets.jsx` (`.bw-num`, `.bw-pm`) | The figure is on `--fs-hero` and typeable. Two keys either side step it, each with its step written on it ("−0.1", "+0.1"). |
+| **Weigh-in** | `sheets/bodyweight.jsx` (`.bw-num`, `.bw-pm`) | The figure is on `--fs-hero` and typeable. Two keys either side step it, each with its step written on it ("−0.1", "+0.1"). |
 | **Finish screen** | `FinishSummary`, sheet `kind: 'full'` | A full-screen takeover: the workout, stated. The figures lead (`--fs-poster`) and the title sits a step below (`--fs-display`). A figure never breaks: when one is too wide for its half ("31,920 kg" at 360px), Duration and Volume each take the full width (`.finish-kpis.tight`), measured, not guessed. |
 
 ## Component vocabulary

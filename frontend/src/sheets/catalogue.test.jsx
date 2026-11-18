@@ -2,7 +2,7 @@
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { ExerciseDetail, deleteCustomEx, ExercisePicker, CustomExForm, ExConfig, exConfigSheet } from '../sheets.jsx'
+import { ExerciseDetail, deleteCustomEx, ExercisePicker, CustomExForm, ExConfig, exConfigSheet } from './catalogue.jsx'
 import { useStore, DEF } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 

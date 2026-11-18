@@ -19,12 +19,12 @@ vi.mock('react-router-dom', () => ({
   useParams: () => ({ id: 'r-test-1' }),
 }))
 
-vi.mock('../sheets.jsx', () => ({
+vi.mock('../sheets/catalogue.jsx', () => ({
   exConfigSheet: mocks.exConfigSheet,
   exercisePicker: mocks.exercisePicker,
-  glyphPicker: mocks.glyphPicker,
-  confirmSheet: mocks.confirmSheet,
 }))
+vi.mock('../sheets/routine.jsx', () => ({ glyphPicker: mocks.glyphPicker }))
+vi.mock('../sheets/confirm.jsx', () => ({ confirmSheet: mocks.confirmSheet }))
 
 let container
 let root

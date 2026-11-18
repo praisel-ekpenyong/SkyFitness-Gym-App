@@ -1,12 +1,30 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useId, useLayoutEffect, useRef } from 'react'
 import { useUI } from '../store/useUI.js'
 
-function Sheet({ sheet }) {
+function Sheet({ sheet, covered }) {
   const { closeSheet } = useUI()
   const ref = useRef(null)
   const centerRef = useRef(null)
   const drag = useRef({ startY: null, delta: 0 })
   const previousFocus = useRef(null)
+  const titleId = useId()
+
+  // A dialog is named by its first h2/h3; one without a heading must pass a label to openSheet.
+  useLayoutEffect(() => {
+    const dialog = ref.current || centerRef.current
+    if (!dialog) return
+    const heading = dialog.querySelector('h2, h3')
+    if (heading) {
+      if (!heading.id) heading.id = titleId
+      dialog.setAttribute('aria-labelledby', heading.id)
+      return
+    }
+    dialog.removeAttribute('aria-labelledby')
+    if (sheet.label) return
+    const msg = 'Sheet opened an unnamed dialog: give it an h2/h3 or pass `label` to openSheet.'
+    if (import.meta.env.DEV) throw new Error(msg)
+    console.error(msg)
+  })
 
   useEffect(() => {
     previousFocus.current = typeof document !== 'undefined' ? document.activeElement : null
@@ -116,25 +134,25 @@ function Sheet({ sheet }) {
   const role = sheet.kind === 'center' ? 'alertdialog' : 'dialog'
   if (sheet.kind === 'full') {
     return (
-      <div className="fullsheet" ref={centerRef} role={role} aria-modal="true" tabIndex={-1} onKeyDown={onKeyDown}>
+      <div className="fullsheet" inert={covered} ref={centerRef} role={role} aria-modal="true" aria-label={sheet.label} tabIndex={-1} onKeyDown={onKeyDown}>
         <div className="fullsheet-in">{sheet.render(close)}</div>
       </div>
     )
   }
   if (sheet.kind === 'center') {
     return (
-      <div>
+      <div inert={covered}>
         <div className="mback" aria-hidden="true" onClick={() => { if (!sheet.locked) close() }} />
-        <div className="center" ref={centerRef} role={role} aria-modal="true" tabIndex={-1} onKeyDown={onKeyDown}>
+        <div className="center" ref={centerRef} role={role} aria-modal="true" aria-label={sheet.label} tabIndex={-1} onKeyDown={onKeyDown}>
           {sheet.render(close)}
         </div>
       </div>
     )
   }
   return (
-    <div>
+    <div inert={covered}>
       <div className="mback" aria-hidden="true" onClick={() => { if (!sheet.locked) close() }} />
-      <div className="sheet" ref={ref} role={role} aria-modal="true" tabIndex={-1} onKeyDown={onKeyDown}
+      <div className="sheet" ref={ref} role={role} aria-modal="true" aria-label={sheet.label} tabIndex={-1} onKeyDown={onKeyDown}
         onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}
         onMouseDown={onMouseDown} onMouseMove={onMouseMove} onMouseUp={onMouseUp} onMouseLeave={onMouseUp}>
         <div className="grab" />
@@ -151,6 +169,36 @@ export default function Modals() {
   const suppressPop = useRef(false)
   const pushedEntries = useRef(0)
   const sheetEntries = useRef([])
+  const modalRoot = useRef(null)
+  const open = sheets.length > 0
+
+  // Everything outside the dialogs goes inert while one is open; [data-over-modals] (the toast) stays live.
+  // Siblings mounted while a dialog is open go inert too.
+  useLayoutEffect(() => {
+    if (!open || !modalRoot.current) return
+    const made = new Set()
+    const kept = new Map()
+    const parents = []
+    for (let node = modalRoot.current; node.parentElement && node !== document.body; node = node.parentElement) {
+      kept.set(node.parentElement, node)
+      parents.push(node.parentElement)
+    }
+    const shut = sibling => {
+      if (kept.get(sibling.parentElement) === sibling || made.has(sibling)) return
+      if (sibling.hasAttribute('inert') || sibling.hasAttribute('data-over-modals')) return
+      sibling.setAttribute('inert', '')
+      made.add(sibling)
+    }
+    for (const parent of parents) for (const sibling of parent.children) shut(sibling)
+    const watch = typeof MutationObserver === 'function' && new MutationObserver(records => {
+      for (const r of records) for (const n of r.addedNodes) if (n.nodeType === 1 && n.parentElement === r.target) shut(n)
+    })
+    if (watch) for (const parent of parents) watch.observe(parent, { childList: true })
+    return () => {
+      if (watch) watch.disconnect()
+      made.forEach(el => el.removeAttribute('inert'))
+    }
+  }, [open])
 
   useEffect(() => {
     const prev = prevLen.current
@@ -210,8 +258,8 @@ export default function Modals() {
 
   if (!sheets.length) return null
   return (
-    <div id="modal-root" className="open">
-      {sheets.map(s => <Sheet key={s.id} sheet={s} />)}
+    <div id="modal-root" className="open" ref={modalRoot}>
+      {sheets.map((s, i) => <Sheet key={s.id} sheet={s} covered={i < sheets.length - 1} />)}
     </div>
   )
 }

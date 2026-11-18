@@ -1,6 +1,6 @@
 # update copies only what changed
 
-Status: Accepted, 2026-11-18. Not yet implemented (`.scratch/architecture-review-2026-11/issues/04`).
+Status: Accepted, 2026-11-18. Implemented 2026-11-18 (`.scratch/architecture-review-2026-11/issues/04`).
 
 ## Context
 

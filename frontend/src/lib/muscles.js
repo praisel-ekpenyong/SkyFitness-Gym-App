@@ -1,7 +1,8 @@
 
-import { doneWorkSets, hasWorkSet } from './workout-model.js'
+import { hasWorkSet } from './workout-model.js'
+import { doneWorkSets } from './workout-sets.js'
 import { EXIDX, smOf, mgOf, isCardio, exerciseFor } from './exercises.js'
-import { workoutTimestamp } from './format.js'
+import { workoutTimestamp } from './dates.js'
 import { DELT_HEADS, isPlainShoulders, muscleKey } from './muscle-spelling.js'
 
 export { DELT_HEADS, isPlainShoulders }

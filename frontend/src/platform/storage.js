@@ -141,8 +141,8 @@ export function __setLocalWriteForTests(fn) {
   localWriteImpl = fn || ((key, value) => localStorage.setItem(key, value))
 }
 
+// The caller stamps `_ts`; save only reads its argument.
 export function save(snapshot) {
-  snapshot._ts = Date.now()
   try {
     localWriteImpl(LOCAL_KEY, JSON.stringify(snapshot))
     blockedWrites = false

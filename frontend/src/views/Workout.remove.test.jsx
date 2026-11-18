@@ -48,7 +48,7 @@ describe('removing an exercise from the screen', () => {
     expect(removeButton()).toBeTruthy()
     expect(removeButton().disabled).toBe(false)
 
-    act(() => useUI.getState().startWork(30, 'Hold', vi.fn()))
+    act(() => useUI.getState().startWork(30, 'Hold', vi.fn(), () => true))
 
     expect(removeButton().disabled).toBe(true)
   })

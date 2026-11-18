@@ -4,7 +4,7 @@ import { createRoot } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import Plan from './Plan.jsx'
 import { useStore, DEF } from '../store/useStore.js'
-import { DAYN } from '../lib/format.js'
+import { DAYN } from '../lib/dates.js'
 
 vi.mock('react-router-dom', () => ({ useNavigate: () => vi.fn() }))
 vi.mock('../components/BodyMap.jsx', () => ({ default: () => null }))

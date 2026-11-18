@@ -1,7 +1,5 @@
-import {
-  modeOf, makeRow, workSets,
-  insertWarmupRow, removeRowAt, cascadeWeight
-} from './workout-model.js'
+import { modeOf, makeRow, insertWarmupRow, removeRowAt, cascadeWeight } from './workout-model.js'
+import { workSets } from './workout-sets.js'
 import { pairAdjacent, unpairSuperset } from './supersetFlow.js'
 import { isWarmupRow } from './warmup.js'
 

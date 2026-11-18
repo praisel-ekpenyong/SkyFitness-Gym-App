@@ -6,19 +6,22 @@ import { useUI } from '../store/useUI.js'
 import { exOr } from '../lib/exercises.js'
 import { effectiveRoutine, hasEffectiveOverride } from '../lib/history.js'
 import { freestyleConfig, defaultConfig, modeOf, isBw, isPerSide, sideReps, repStep } from '../lib/workout-model.js'
-import { setLabel } from '../lib/format.js'
+import { setLabel } from '../lib/set-label.js'
 import { EFFORT, effortOf, stepEffort, capEffort } from '../lib/effort.js'
 import { sessionView } from '../lib/active-workout.js'
 import { best as bestOf, lastSession } from '../lib/training-log.js'
-import { fmtNum, fmtDate, fmtSec, fmtElapsed, todayISO, exCount, DAYN, sentenceCase } from '../lib/format.js'
+import { fmtNum, fmtSec, fmtElapsed, exCount, sentenceCase } from '../lib/format.js'
+import { fmtDate, todayISO, DAYN } from '../lib/dates.js'
 import { t } from '../lib/i18n.js'
 import Media, { Thumb } from '../components/Media.jsx'
-import { startFlow, exercisePicker, exConfigSheet, exerciseDetailSheet, finishWorkout, workoutCompleteSheet, confirmSheet, exerciseNoteSheet } from '../sheets.jsx'
+import { startFlow, finishWorkout, workoutCompleteSheet, exerciseNoteSheet, replaceActiveExerciseFlow } from '../sheets/session.jsx'
+import { exercisePicker, exConfigSheet, exerciseDetailSheet } from '../sheets/catalogue.jsx'
+import { confirmSheet } from '../sheets/confirm.jsx'
 import Icon, { ICON_NAMES } from '../components/Icon.jsx'
 import Barbell, { loadsOnBar } from '../components/Barbell.jsx'
 import { Button, Check, NumberField, dotted } from '../components/ui.jsx'
 import { glyphOf } from '../lib/glyphs.js'
-import { isWarmupRow, seedForReplacement } from '../lib/workout-model.js'
+import { isWarmupRow } from '../lib/workout-model.js'
 import { evaluateSetMilestone } from '../lib/progression.js'
 import { primaryMuscleName } from '../lib/muscles.js'
 
@@ -215,53 +218,8 @@ function removeActiveExercise(idx) {
   send({ type: 'removeExercise', entry: idx })
 }
 
-/**
- * Interactive flow to replace an exercise at `idx` in the active workout.
- *
- * Prompts for confirmation when sets have already been performed to avoid
- * accidental data loss, stops any running work timer, then opens the exercise
- * picker and configuration sheet before committing the replacement in store.
- *
- * @param {number} idx - Index of the exercise entry in active workout entries.
- */
-export function replaceActiveExerciseFlow(idx) {
-  const S = useStore.getState().S
-  const A = S?.active
-  if (!A) return
-  const entry = A.entries?.[idx]
-  if (!entry) return
-
-  const proceedToPicker = () => {
-    if (useUI.getState().work) useUI.getState().stopWork()
-    exercisePicker(newEx => {
-      if (!newEx) return
-      const curS = useStore.getState().S
-      const curA = curS?.active
-      const routine = curS?.routines?.find(r => r.id === curA?.routineId)
-      const plannedCount = (entry.sets || []).filter(s => !isWarmupRow(s)).length || (entry.sets || []).length
-      const seed = seedForReplacement(curS, newEx.id, curA?.routineId, plannedCount)
-      delete seed.notes
-      exConfigSheet(newEx, null, cfg => {
-        send({ type: 'replaceExercise', entry: idx, exId: newEx.id, target: cfg })
-      }, null, routine, seed, null, t('Replace'))
-    })
-  }
-
-  if (sessionView(A).hasPerformed[idx]) {
-    confirmSheet({
-      title: t('Replace {0}?', exOr(entry.id).n),
-      message: t('The sets you logged for this exercise in this session will be lost.'),
-      confirmText: t('Replace'),
-      danger: true,
-      onConfirm: proceedToPicker,
-    })
-  } else {
-    proceedToPicker()
-  }
-}
-
 /** Bottom sheet listing active workout entries for sequential reordering and fast navigation. */
-function ReorderExercisesSheet({ close }) {
+export function ReorderExercisesSheet({ close }) {
   const entries = useStore(s => s.S.active?.entries || [])
   const view = sessionView({ entries })
   const supersets = view.steps.filter(s => s.entries.length > 1).map(s => s.entries)
@@ -311,7 +269,7 @@ function ReorderExercisesSheet({ close }) {
   </div>
 }
 
-function EditWorkoutSheet({ close, name, count, onReorder, onReplace, onPairPrev, onPairNext, onRemove }) {
+export function EditWorkoutSheet({ close, name, count, onReorder, onReplace, onPairPrev, onPairNext, onRemove }) {
   const holding = useUI(s => !!s.work)
   const run = fn => () => { close(); fn() }
   return <div>
@@ -415,14 +373,14 @@ function ActiveWorkout() {
           <h3>{t('Replace exercise')}</h3>
           <div className="sheet-sub">{t('Which exercise in this superset do you want to replace?')}</div>
           <div className="list">
-            {step.map(idx => <div key={idx} className="item" onClick={() => { close(); replaceActiveExerciseFlow(idx) }}>
+            {step.map(idx => <div key={idx} className="item" onClick={() => { close(); replaceActiveExerciseFlow(idx, send) }}>
               <div className="grow"><div className="tt">{exOr(A.entries[idx]?.id).n}</div></div>
               <Icon name="chevronRight" />
             </div>)}
           </div>
         </div>
       ))
-    } else replaceActiveExerciseFlow(cur)
+    } else replaceActiveExerciseFlow(cur, send)
   }
 
   const reorderExerciseSheet = () => {
@@ -440,7 +398,7 @@ function ActiveWorkout() {
 
   const toggle = (idx, i) => send({ type: 'toggle', entry: idx, set: i })
 
-  const restKey = <Button size="xs" icon="timer" className="ex-rest" aria-label={t('Rest {0}', fmtSec(S.restSec))} disabled={resting || holding} onClick={() => startRest(S.restSec)}>
+  const restKey = <Button size="xs" icon="timer" className="ex-rest" aria-label={t('Rest {0}', fmtSec(S.restSec))} disabled={resting || holding} onClick={() => startRest(S.restSec, () => useStore.getState().S.sound)}>
     {fmtSec(S.restSec)}
   </Button>
 
@@ -473,12 +431,12 @@ function ActiveWorkout() {
             {k > 0 && <div className="ss-amp"><Icon name="plus" /></div>}
             <ExerciseBlock entryIdx={idx} compact isCurrent={idx === cur} restKey={k === 0 ? restKey : null}
               onToggle={i => toggle(idx, i)} onField={(i, f, v) => setField(idx, i, f, v)} onAddSet={() => addSet(idx)} onRemoveSet={() => removeSet(idx)} onAddWarmup={() => addWarmup(idx)} onRemoveSetAt={i => removeSetAt(idx, i)} onStartTimed={i => startTimed(idx, i)}
-              onReplace={replaceActiveExerciseFlow} />
+              onReplace={idx => replaceActiveExerciseFlow(idx, send)} />
           </div>)}
         </div>
       ) : (
         <ExerciseBlock entryIdx={cur} arrived={shown.moved} restKey={restKey} onToggle={i => toggle(cur, i)} onField={(i, f, v) => setField(cur, i, f, v)} onAddSet={() => addSet(cur)} onRemoveSet={() => removeSet(cur)} onAddWarmup={() => addWarmup(cur)} onRemoveSetAt={i => removeSetAt(cur, i)} onStartTimed={i => startTimed(cur, i)}
-          onReplace={replaceActiveExerciseFlow} />
+          onReplace={idx => replaceActiveExerciseFlow(idx, send)} />
       )}
       {nextIdx != null && <button className="btn primary wk-next" onClick={() => goTo(nextIdx)}>
         <NextLabel name={exOr(A.entries[nextIdx].id).n} /><Icon name="chevronRight" />

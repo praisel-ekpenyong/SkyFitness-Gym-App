@@ -3,7 +3,7 @@ import {
   rirOf, toScale, displayScale, avgRir, effortSummary, hasEffort, effortWeeks,
   effortHistogram, isHardSet, HARD_RIR, MIN_RATED
 } from './effort.js'
-import { isoOf } from './format.js'
+import { isoOf } from './dates.js'
 
 const daysAgo = n => { const d = new Date(); d.setDate(d.getDate() - n); return d }
 const W = (n, sets) => {

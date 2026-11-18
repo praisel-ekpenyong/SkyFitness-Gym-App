@@ -4,13 +4,14 @@ import { createRoot } from 'react-dom/client'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import Stats from './Stats.jsx'
 import { useStore, DEF } from '../store/useStore.js'
-import { todayISO, isoOf } from '../lib/format.js'
+import { todayISO, isoOf } from '../lib/dates.js'
 
 vi.mock('react-router-dom', () => ({ useNavigate: () => () => {} }))
-vi.mock('../sheets.jsx', () => ({
-  bwSheet: () => {}, goalSheet: () => {}, calendarSheet: () => {}, recapSheet: () => {},
-  workoutDetailSheet: () => {}, volumeRangesSheet: () => {}, WorkoutRow: () => null,
+vi.mock('../sheets/bodyweight.jsx', () => ({ bwSheet: () => {}, goalSheet: () => {} }))
+vi.mock('../sheets/history.jsx', () => ({
+  calendarSheet: () => {}, recapSheet: () => {}, workoutDetailSheet: () => {}, WorkoutRow: () => null,
 }))
+vi.mock('../sheets/volume.jsx', () => ({ volumeRangesSheet: () => {} }))
 vi.mock('../components/LineChart.jsx', () => ({ default: () => null }))
 vi.mock('../components/Heatmap.jsx', () => ({ default: () => null }))
 vi.mock('../components/BodyMap.jsx', () => ({ default: () => null, BodyMapLegend: () => null }))

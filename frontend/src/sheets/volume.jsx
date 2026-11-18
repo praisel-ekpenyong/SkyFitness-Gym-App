@@ -8,19 +8,10 @@ import {
   STYLE_RANGES, TRAINING_STYLES, RANGED_MUSCLES, RANGE_MAX, trainingStyleOf, volumeRangeOf, validRangeEdit, hasRangeEdits,
   lowPinned, setVolumeRange, clearVolumeRanges, switchTrainingStyle, trainingStyleName,
 } from '../lib/volume-ranges.js'
+import { confirmSheet } from './confirm.jsx'
 
 const update = (...a) => useStore.getState().update(...a)
 const ui = () => useUI.getState()
-
-let _confirmSheet = null
-/**
- * Wires the confirm-sheet seam for volume sheets.
- *
- * @param {Function} confirmSheet Hub confirm dialog.
- */
-export function configureVolumeSheets({ confirmSheet }) {
-  if (confirmSheet) _confirmSheet = confirmSheet
-}
 
 /**
  * One muscle's volume range on top of the training style. A pinned muscle offers only its high end.
@@ -28,7 +19,7 @@ export function configureVolumeSheets({ confirmSheet }) {
  * @param {string} slug Ranged muscle slug.
  * @param {Function} close Closes the sheet.
  */
-function RangeEditSheet({ slug, close }) {
+export function RangeEditSheet({ slug, close }) {
   const st = useStore(s => s.S)
   const style = trainingStyleOf(st)
   const styleRange = STYLE_RANGES[style][slug]
@@ -72,7 +63,7 @@ function VolumeRangesSheet() {
   const pickStyle = next => {
     if (next === style) return
     if (!edits) { update(s => switchTrainingStyle(s, next)); return }
-    _confirmSheet({
+    confirmSheet({
       title: t('Switch to {0}?', trainingStyleName(next)),
       message: t('Switching style clears your edited volume ranges.'),
       confirmText: t('Switch style'),

@@ -1,5 +1,6 @@
 import { supersetUnits } from './supersetFlow.js'
-import { workSets, doneWorkSets, sessionProgress, isPerformed, isWarmupRow } from './workout-model.js'
+import { sessionProgress, isWarmupRow } from './workout-model.js'
+import { workSets, doneWorkSets, isPerformed } from './workout-sets.js'
 
 const setsOf = e => (Array.isArray(e?.sets) ? e.sets : [])
 

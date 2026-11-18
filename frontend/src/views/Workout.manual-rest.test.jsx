@@ -126,7 +126,7 @@ describe('manual rest control', () => {
   it('is disabled while a Hold timer runs and is available again when the hold ends', () => {
     view = renderWorkoutApp([entry('1001')])
 
-    act(() => { useUI.getState().startWork(3, 'Hold', vi.fn()) })
+    act(() => { useUI.getState().startWork(3, 'Hold', vi.fn(), () => true) })
     expect(timerBarText()).toMatch(/^0:03/)
     expect(restControl().disabled).toBe(true)
 

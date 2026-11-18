@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { act } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { replaceActiveExerciseFlow } from './Workout.jsx'
+import { replaceActiveExerciseFlow } from '../sheets/session.jsx'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { entry, resetViewTestState, seedActiveWorkout, renderWorkoutApp, cleanupViewTest } from '../test/view-harness.jsx'
@@ -16,7 +16,16 @@ const mocks = vi.hoisted(() => ({
   startFlow: vi.fn(),
 }))
 
-vi.mock('../sheets.jsx', () => mocks)
+vi.mock('../sheets/confirm.jsx', () => ({ confirmSheet: mocks.confirmSheet }))
+vi.mock('../sheets/catalogue.jsx', async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...actual,
+    exercisePicker: mocks.exercisePicker,
+    exConfigSheet: mocks.exConfigSheet,
+    exerciseDetailSheet: mocks.exerciseDetailSheet,
+  }
+})
 vi.mock('../platform/sound.js', () => ({
   beep: vi.fn(),
   vibrate: vi.fn(),
@@ -80,7 +89,7 @@ describe('Workout exercise replacement controls', () => {
     expect(footerBtn).toBeTruthy()
     expect(footerBtn.disabled).toBe(false)
 
-    act(() => useUI.getState().startWork(30, 'Hold', vi.fn()))
+    act(() => useUI.getState().startWork(30, 'Hold', vi.fn(), () => true))
 
     expect(headerBtn.disabled).toBe(true)
     expect(footerBtn.disabled).toBe(true)
@@ -238,14 +247,29 @@ describe('Workout performed entry replacement', () => {
   })
 })
 
+describe('Replace goes through the view\'s sender', () => {
+  it('sends the replaceExercise command through the sender it was given, so its effects run', () => {
+    seedActiveWorkout([entry('1001')])
+    const sent = []
+    const send = command => { sent.push(command.type); return useStore.getState().act(command, send) }
+
+    replaceActiveExerciseFlow(0, send)
+    act(() => { mocks.exercisePicker.mock.calls[0][0]({ id: '1002', n: 'Incline Bench Press' }) })
+    act(() => { mocks.exConfigSheet.mock.calls[0][2]({ sets: 1, reps: 10, weight: 40 }) })
+
+    expect(sent).toEqual(['replaceExercise'])
+    expect(useStore.getState().S.active.entries[0].id).toBe('1002')
+  })
+})
+
 describe('Hold timer halted on replace', () => {
   it('halts any running hold timer prior to replacement when no confirmation is needed', () => {
     seedActiveWorkout([entry('1001')])
     const timerCallback = vi.fn()
-    useUI.getState().startWork(30, 'Plank', timerCallback)
+    useUI.getState().startWork(30, 'Plank', timerCallback, () => true)
     expect(useUI.getState().work).not.toBeNull()
 
-    replaceActiveExerciseFlow(0)
+    replaceActiveExerciseFlow(0, command => useStore.getState().act(command))
 
     expect(useUI.getState().work).toBeNull()
   })
@@ -255,10 +279,10 @@ describe('Hold timer halted on replace', () => {
       entry('1001', [{ w: 60, r: 5, done: true }])
     ])
     const timerCallback = vi.fn()
-    useUI.getState().startWork(30, 'Plank', timerCallback)
+    useUI.getState().startWork(30, 'Plank', timerCallback, () => true)
     expect(useUI.getState().work).not.toBeNull()
 
-    replaceActiveExerciseFlow(0)
+    replaceActiveExerciseFlow(0, command => useStore.getState().act(command))
 
     expect(mocks.confirmSheet).toHaveBeenCalledOnce()
     expect(useUI.getState().work).not.toBeNull()
@@ -276,10 +300,10 @@ describe('Hold timer halted on replace', () => {
       entry('1001', [{ w: 60, r: 5, done: true }])
     ])
     const timerCallback = vi.fn()
-    useUI.getState().startWork(30, 'Plank', timerCallback)
+    useUI.getState().startWork(30, 'Plank', timerCallback, () => true)
     expect(useUI.getState().work).not.toBeNull()
 
-    replaceActiveExerciseFlow(0)
+    replaceActiveExerciseFlow(0, command => useStore.getState().act(command))
 
     expect(mocks.confirmSheet).toHaveBeenCalledOnce()
     expect(useUI.getState().work).not.toBeNull()
@@ -358,11 +382,14 @@ describe('replace-exercise prompt strings', () => {
     'Which exercise in this superset do you want to replace?',
     'Replace exercise',
   ]
-  const strings = import.meta.glob('./Workout.jsx', { eager: true, query: '?raw', import: 'default' })
+  const strings = {
+    ...import.meta.glob('./Workout.jsx', { eager: true, query: '?raw', import: 'default' }),
+    ...import.meta.glob('../sheets/session.jsx', { eager: true, query: '?raw', import: 'default' }),
+  }
 
   it('keeps every replace-flow string in the source that renders it', () => {
-    expect(Object.keys(strings)).toHaveLength(1)
-    const src = Object.values(strings)[0]
+    expect(Object.keys(strings)).toHaveLength(2)
+    const src = Object.values(strings).join('\n')
     required.forEach(key => {
       const esc = key.replace(/[{}?]/g, '\\$&')
       expect(src).toMatch(new RegExp(`['"\`]${esc}['"\`]`))

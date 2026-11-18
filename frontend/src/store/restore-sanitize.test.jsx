@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useStore, DEF } from './useStore.js'
 import { useUI } from './useUI.js'
 import { __setSinksForTests, __setLocalWriteForTests, flush, LOCAL_KEY } from '../platform/storage.js'
-import { todayISO } from '../lib/format.js'
+import { todayISO } from '../lib/dates.js'
 
 vi.mock('../platform/sound.js', () => ({
   beep: vi.fn(),
