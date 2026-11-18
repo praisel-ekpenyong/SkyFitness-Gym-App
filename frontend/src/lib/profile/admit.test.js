@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { dirname, join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { admit, toDisk } from './admit.js'
+import { admit } from './index.js'
 
 const SRC = join(dirname(fileURLToPath(import.meta.url)), '../..')
 
@@ -47,27 +47,61 @@ describe('admit', () => {
     expect(admit(overlay({ showRir: false })).effort).toBe('none')
   })
 
-  it('round-trips through disk without writing showRir', () => {
-    const raw = { showRir: true, unit: 'kg', workouts: [] }
+  it('upgrades a legacy warm-up flag to the phase shape without touching values', () => {
+    const raw = {
+      unit: 'lb',
+      topW: { 0025: { w: 100 } },
+      asked: true,
+      workouts: [{
+        id: 'w1', d: '2026-01-02', start: 2,
+        entries: [{
+          id: '0025', topW: 100, asked: true,
+          sets: [
+            { warmup: true, w: 40, r: 5, done: true, topW: 55, asked: true },
+            { w: 60, r: 5, done: true },
+          ],
+        }],
+      }],
+    }
+    const out = admit(raw)
+    expect(out.workouts[0].entries[0].sets).toEqual([
+      { w: 40, r: 5, done: true, topW: 55, asked: true, phase: 'warmup' },
+      { w: 60, r: 5, done: true },
+    ])
+    expect(out.unit).toBe('lb')
+    expect(out.topW).toEqual({ 0025: { w: 100 } })
+    expect(out.asked).toBe(true)
+    expect(out.workouts[0].entries[0].topW).toBe(100)
+    expect(out.workouts[0].entries[0].asked).toBe(true)
+    expect(raw.workouts[0].entries[0].sets[0]).toEqual({ warmup: true, w: 40, r: 5, done: true, topW: 55, asked: true })
+  })
+
+  it('keeps an explicit phase authoritative and still drops the legacy flag', () => {
+    const out = admit({ workouts: [{ d: '2026-01-01', start: 1, entries: [{ id: 'e', sets: [{ phase: 'work', warmup: true, w: 60 }] }] }] })
+    expect(out.workouts[0].entries[0].sets[0]).toEqual({ phase: 'work', w: 60 })
+  })
+
+  it('upgrades the Active workout too', () => {
+    const out = admit({ active: { id: 'a1', d: '2026-01-01', entries: [{ id: 'e', sets: [{ warmup: true, w: 20 }] }] } })
+    expect(out.active.entries[0].sets[0]).toEqual({ phase: 'warmup', w: 20 })
+  })
+
+  it('is idempotent', () => {
+    const raw = {
+      showRir: true, unit: 'kg', workouts: [{
+        d: '2026-01-02', start: 2,
+        entries: [{ id: 'e', sets: [{ warmup: true, w: 40, r: 5, done: true }] }],
+      }],
+    }
     const once = admit(raw)
-    const disk = toDisk(once)
-    expect(disk.showRir).toBeUndefined()
-    expect(disk.effort).toBe('rir')
-    expect(admit(disk)).toEqual(once)
-    expect(admit(toDisk(admit(raw)))).toEqual(once)
+    expect(admit(once)).toEqual(once)
+    expect(admit(JSON.parse(JSON.stringify(once)))).toEqual(once)
   })
 
   it('is the only domain file that reads showRir', () => {
     const hits = sourceFiles()
       .filter(p => readFileSync(p, 'utf8').includes('showRir'))
       .map(p => relative(SRC, p))
-    expect(hits).toEqual(['lib/log/admit.js'])
-  })
-
-  it('is imported only by the load path', () => {
-    const hits = sourceFiles()
-      .filter(p => !p.endsWith('/lib/log/admit.js') && readFileSync(p, 'utf8').includes('log/admit'))
-      .map(p => relative(SRC, p))
-    expect(hits).toEqual(['store/useStore.js'])
+    expect(hits).toEqual(['lib/profile/admit.js'])
   })
 })

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { parseWorkoutCSV, mergeImport, importPreview } from './import-csv.js'
 import { tonnage } from './training-log.js'
+import { admit } from './profile/index.js'
 
 const CSV = [
   'Date,Exercise,Weight,Reps,Set Type',
@@ -21,6 +22,35 @@ describe('CSV warm-up provenance', () => {
     expect(entry.topW).toBe(80)
     expect(parsed.workouts[0].vol).toBeUndefined()
     expect(tonnage({ unit: 'kg' }, parsed.workouts[0])).toBe(400)
+  })
+})
+
+
+describe('CSV import enters through admit and the one Workout order', () => {
+  it('round-trips imported Workouts through admit unchanged', () => {
+    const parsed = parseWorkoutCSV([
+      'Date,Exercise,Weight,Reps,Set Type,RPE',
+      '2026-08-08,Bench Press,100,5,Warm-up,',
+      '2026-08-08,Bench Press,80,5,Working,8',
+      '2026-08-09,Squat (Barbell),120,3,Working,',
+    ].join('\n'), { unit: 'kg' })
+    expect(admit({ workouts: parsed.workouts }).workouts).toEqual(parsed.workouts)
+  })
+
+  it('merges imported Workouts in date, then start, then original-position order', () => {
+    const S = { workouts: [{ id: 'existing', d: '2026-08-09', start: 1, entries: [] }], customEx: [] }
+    const parsed = {
+      kind: 'workouts',
+      customEx: [],
+      workouts: [
+        { id: 'later', d: '2026-08-10', start: 1, entries: [{ id: '0025', sets: [{ w: 50, r: 5, done: true }] }] },
+        { id: 'same-day-second', d: '2026-08-11', start: 9, entries: [{ id: '0025', sets: [{ w: 50, r: 5, done: true }] }] },
+        { id: 'same-day-first', d: '2026-08-11', start: 2, entries: [{ id: '0025', sets: [{ w: 50, r: 5, done: true }] }] },
+        { id: 'earlier', d: '2026-08-08', start: 1, entries: [{ id: '0025', sets: [{ w: 50, r: 5, done: true }] }] },
+      ],
+    }
+    mergeImport(S, parsed)
+    expect(S.workouts.map(w => w.id)).toEqual(['earlier', 'existing', 'later', 'same-day-first', 'same-day-second'])
   })
 })
 

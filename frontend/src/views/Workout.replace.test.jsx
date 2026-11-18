@@ -147,7 +147,7 @@ describe('Workout unperformed entry replacement', () => {
         id: '1001',
         target: { sets: 3, reps: 8 },
         sets: [
-          { w: 40, r: 8, done: false, warmup: true },
+          { w: 40, r: 8, done: false, phase: 'warmup' },
           { w: 80, r: 8, done: false },
           { w: 80, r: 8, done: false },
         ]

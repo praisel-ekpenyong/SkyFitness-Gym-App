@@ -10,7 +10,7 @@ const LIFT = EXDB.find(e => e.bp !== 'cardio' && !['upper legs', 'lower legs', '
 
 const work = (w, r) => ({ w, r, done: true })
 const unticked = (w, r) => ({ w, r: 0, done: false })
-const warmupUnticked = (w, r) => ({ w, r: 0, done: false, warmup: true })
+const warmupUnticked = (w, r) => ({ w, r: 0, done: false, phase: 'warmup' })
 
 const finishedWorkout = (day, target, rows) => ({
   d: day,

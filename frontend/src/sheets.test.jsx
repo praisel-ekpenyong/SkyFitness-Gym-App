@@ -149,7 +149,7 @@ describe('finishWorkout confirmation', () => {
   it('finishes straight away when only an unticked warm-up remains', async () => {
     useStore.getState().update(s => {
       s.active = activeWith([
-        { w: 40, r: 5, done: false, phase: 'warmup', warmup: true },
+        { w: 40, r: 5, done: false, phase: 'warmup' },
         { w: 100, r: 8, done: true },
         { w: 100, r: 8, done: true },
       ])
@@ -164,7 +164,7 @@ describe('finishWorkout confirmation', () => {
   it('asks honestly when only warm-ups are ticked', async () => {
     useStore.getState().update(s => {
       s.active = activeWith([
-        { w: 40, r: 5, done: true, phase: 'warmup', warmup: true },
+        { w: 40, r: 5, done: true, phase: 'warmup' },
         { w: 100, r: 8, done: false },
       ])
     })

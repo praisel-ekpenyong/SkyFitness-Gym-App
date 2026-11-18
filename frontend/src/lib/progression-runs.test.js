@@ -181,7 +181,7 @@ describe('double progression runs', () => {
     S.workouts.push(session({
       d: '2026-01-06',
       rows: [
-        { w: 20, r: 5, done: true, warmup: true },
+        { w: 20, r: 5, done: true, phase: 'warmup' },
         { w: 35, r: 10, done: false },
         { w: 35, r: 10, done: false },
         { w: 35, r: 10, done: false },

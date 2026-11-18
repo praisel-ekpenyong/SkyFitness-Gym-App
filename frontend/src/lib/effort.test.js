@@ -113,10 +113,10 @@ describe('effortSummary', () => {
     expect(effortSummary({ workouts: [] }, 30)).toEqual({ done: 0, rated: 0, hard: 0, avg: null, hardPct: null })
   })
 
-  it('uses phase as authoritative while retaining legacy boolean warm-up fallback', () => {
+  it('uses the phase to separate warm-up rows', () => {
     const summary = effortSummary(S(W(1, [
       { rir: 0, phase: 'warmup' },
-      { rir: 1, phase: 'work', warmup: true },
+      { rir: 1, phase: 'work' },
       { rir: 2 }, { rir: 2 }, { rir: 2 }, { rir: 2 },
     ])), 0)
     expect(summary.done).toBe(5)

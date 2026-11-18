@@ -122,7 +122,7 @@ export const SETS_DEFAULTS = Object.freeze({ cardio: 1, time: 3, reps: 3 })
 
 export function makeRow(mode, target = {}, { prev = null, warmup = false } = {}) {
   const m = normalizeMode(mode, 'reps')
-  const base = warmup ? { done: false, phase: 'warmup', warmup: true } : { done: false }
+  const base = warmup ? { done: false, phase: 'warmup' } : { done: false }
   if (m === 'cardio') {
     const min = prev?.min ?? target.min ?? ROW_DEFAULTS.cardio.min
     const speed = prev?.speed ?? target.speed ?? ROW_DEFAULTS.cardio.speed

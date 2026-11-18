@@ -1,82 +1,21 @@
 
 import { create } from 'zustand'
-import { ACCENTS, localTZ } from '../lib/format.js'
+import { localTZ } from '../lib/format.js'
 import { registerCustom } from '../lib/exercises.js'
 import { MOBILE, syncReminder } from '../lib/mobile.js'
 import { SEED_PLAN } from '../lib/env.js'
 import { seedPlanInto } from '../lib/plans/seed.js'
 import { flush, load, loadLocal, save, LOCAL_KEY, onStorageSync } from '../lib/storage.js'
-import { admit } from '../lib/log/admit.js'
+import { DEF, normalizeState } from '../lib/profile/index.js'
 import { act } from '../lib/active-workout.js'
 import { syncRoutineFromSession } from '../lib/routine-sync.js'
 import { runEffects } from './effects.js'
-import { DEFAULT_STYLE, trainingStyleOf, cleanVolumeRanges } from '../lib/volume-ranges.js'
-import { cleanProfileFields } from '../lib/profile-fields.js'
-import { streakRuleOf } from '../lib/streak.js'
 
-export const DEF = {
-  unit: 'kg',
-  restSec: 90,
-  sound: true,
-  keepAwake: true,
-  theme: 'dark',
-  accent: 'lime',
-  body: 'male',
-  targetW: null,
-
-  bodyweight: [],
-  routines: [],
-  week: {},
-  dayPlan: {},
-  workouts: [],
-  active: null,
-  customEx: [],
-  gifSize: 'full',
-  favorites: [],
-
-
-  reminder: { on: false, time: '08:00', tz: null },
-
-  effort: null,
-
-  lastExport: null,
-
-  displayName: null,
-
-  sex: null,
-  birthYear: null,
-
-  trainingStyle: DEFAULT_STYLE,
-  volumeRanges: {},
-  streakRule: 'gentle'
-}
 const clone = o => {
   if (typeof structuredClone === 'function') {
     try { return structuredClone(o) } catch {}
   }
   return JSON.parse(JSON.stringify(o))
-}
-
-export function normalizeState(raw, now = Date.now()) {
-  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return clone(DEF)
-  const base = clone(DEF)
-  const S = { ...base, ...raw }
-  S.workouts = Array.isArray(raw.workouts) ? raw.workouts : []
-  S.routines = Array.isArray(raw.routines) ? raw.routines : []
-  S.bodyweight = Array.isArray(raw.bodyweight) ? raw.bodyweight : []
-  S.customEx = Array.isArray(raw.customEx) ? raw.customEx : []
-  S.favorites = Array.isArray(raw.favorites) ? raw.favorites : []
-  S.week = raw.week && typeof raw.week === 'object' && !Array.isArray(raw.week) ? { ...raw.week } : {}
-  S.dayPlan = raw.dayPlan && typeof raw.dayPlan === 'object' && !Array.isArray(raw.dayPlan) ? { ...raw.dayPlan } : {}
-  S.reminder = { ...base.reminder, ...(raw.reminder && typeof raw.reminder === 'object' && !Array.isArray(raw.reminder) ? raw.reminder : {}) }
-  S.trainingStyle = trainingStyleOf(raw)
-  S.streakRule = streakRuleOf(raw)
-  S.volumeRanges = cleanVolumeRanges(raw.volumeRanges)
-  Object.assign(S, cleanProfileFields(raw, now))
-  S.accent = typeof raw.accent === 'string' && Object.hasOwn(ACCENTS, raw.accent) ? raw.accent : base.accent
-  const a = raw.active
-  S.active = a && typeof a === 'object' && !Array.isArray(a) && Array.isArray(a.entries) ? a : null
-  return admit(S)
 }
 
 function loadState() {
@@ -166,4 +105,4 @@ export const useStore = create((set, get) => {
   }
 })
 
-export { hasData }
+export { DEF, normalizeState, hasData }

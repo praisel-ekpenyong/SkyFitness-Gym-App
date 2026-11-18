@@ -779,8 +779,8 @@ describe('sessionMuscleDistribution', () => {
         {
           id: '0025',
           sets: [
-            { w: 40, r: 10, done: true, phase: 'warmup', warmup: true },
-            { w: 60, r: 5, done: true, warmup: true },
+            { w: 40, r: 10, done: true, phase: 'warmup' },
+            { w: 60, r: 5, done: true, phase: 'warmup' },
             { w: 80, r: 8, done: true },
             { w: 80, r: 8, done: false },
           ],
@@ -810,7 +810,7 @@ describe('sessionMuscleDistribution', () => {
         {
           id: '0025',
           sets: [
-            { w: 40, r: 10, done: true, warmup: true },
+            { w: 40, r: 10, done: true, phase: 'warmup' },
             { w: 80, r: 8, done: false },
           ],
         },

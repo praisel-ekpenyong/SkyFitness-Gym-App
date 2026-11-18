@@ -119,7 +119,7 @@ describe('header and finish button share one progress reading', () => {
       id: '0025',
       target: { mode: 'reps', reps: 5, weight: 100, bodyweight: false },
       sets: [
-        { w: 40, r: 5, done: false, phase: 'warmup', warmup: true },
+        { w: 40, r: 5, done: false, phase: 'warmup' },
         { w: 100, r: 8, done: true },
         { w: 100, r: 8, done: true },
       ],
