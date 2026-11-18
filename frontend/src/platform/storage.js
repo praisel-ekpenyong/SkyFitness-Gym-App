@@ -53,19 +53,17 @@ export async function idbLoad() {
 /**
  * Writes a snapshot to the IndexedDB mirror without disturbing the localStorage copy.
  * @param {Object} snapshot - Stamped state snapshot to mirror.
- * @returns {Promise<void>} Resolves once the mirror write completes; failures stay silent.
+ * @returns {Promise<void>} Resolves once the mirror write completes; rejects when the write fails so the drain can record it.
  */
 export async function idbSave(snapshot) {
-  try {
-    const db = await openDB()
-    if (!db) return
-    await new Promise((resolve, reject) => {
-      const tx = db.transaction(STORE, 'readwrite')
-      tx.objectStore(STORE).put(snapshot, KEY)
-      tx.oncomplete = resolve
-      tx.onerror = () => reject(tx.error)
-    })
-  } catch (e) {  }
+  const db = await openDB()
+  if (!db) throw new Error('IndexedDB unavailable')
+  await new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE, 'readwrite')
+    tx.objectStore(STORE).put(snapshot, KEY)
+    tx.oncomplete = resolve
+    tx.onerror = () => reject(tx.error)
+  })
 }
 
 export const idbSink = { id: 'idb', read: idbLoad, write: idbSave }
@@ -85,15 +83,32 @@ const DRAIN_MS = 800
 let tm = null
 let pending = null
 
+// Ids of mirrors whose latest write failed. The localStorage copy is still good; this is the "insurance is down" signal.
+const failedMirrors = new Set()
+
+export function isMirrorFailing() {
+  return failedMirrors.size > 0
+}
+
+export function __resetMirrorFailuresForTests() {
+  failedMirrors.clear()
+}
+
+// Every mirror write goes through here so a failure, sync or async, is recorded and never unhandled.
+function writeToSink(sink, snapshot) {
+  try {
+    const r = sink.write(snapshot)
+    if (r && typeof r.then === 'function') r.then(() => failedMirrors.delete(sink.id), () => failedMirrors.add(sink.id))
+    else failedMirrors.delete(sink.id)
+  } catch (e) { failedMirrors.add(sink.id) }
+}
+
 function drain() {
   tm = null
   const snapshot = pending
   pending = null
   if (snapshot) for (const sink of sinks) {
-    try {
-      const r = sink.write(snapshot)
-      if (r && typeof r.catch === 'function') r.catch(() => {})
-    } catch (e) {  }
+    writeToSink(sink, snapshot)
   }
 }
 
@@ -154,6 +169,16 @@ export function save(snapshot) {
   return !blockedWrites
 }
 
+/**
+ * Asks the browser to keep this origin's storage out of eviction. Boot calls it once; never throws.
+ * @param {StorageManager} [manager] - Defaults to navigator.storage; tests inject a fake.
+ * @returns {Promise<boolean>} True when the browser granted persistence.
+ */
+export async function requestPersistence(manager = globalThis.navigator?.storage) {
+  if (typeof manager?.persist !== 'function') return false
+  try { return (await manager.persist()) === true } catch (e) { return false }
+}
+
 export const BACKUP_NAG_MS = 14 * 24 * 60 * 60 * 1000
 
 /**
@@ -180,7 +205,7 @@ export async function load({ running, hasData, overlay }) {
     }
     if (!saved && hasData(running)) {
       const native = sinks.find(s => s.id === 'native')
-      if (native) native.write(running?._ts ? running : { ...running, _ts: Date.now() })
+      if (native) writeToSink(native, running?._ts ? running : { ...running, _ts: Date.now() })
     }
     return null
   }
@@ -196,7 +221,7 @@ export async function load({ running, hasData, overlay }) {
     return overlay(winner)
   }
   if (!mirror && hasData(running) && mirrorSink) {
-    mirrorSink.write(running?._ts ? running : { ...running, _ts: Date.now() })
+    writeToSink(mirrorSink, running?._ts ? running : { ...running, _ts: Date.now() })
   }
   return null
 }
