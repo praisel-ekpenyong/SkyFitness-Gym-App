@@ -14,7 +14,7 @@ import { MUSCLE_NAME } from '../lib/muscles.js'
 import { STRENGTH_FLOOR } from '../lib/recovery.js'
 import { trainingStyleOf, trainingStyleName } from '../lib/volume-ranges.js'
 import { FATIGUE_LEVELS } from '../lib/recovery-view.js'
-import { LEVELS } from '../lib/strength-level.js'
+import { LEVELS, STRENGTH_REASON, levelStepOf } from '../lib/strength-level.js'
 import { Button, Segmented, SelectRow } from '../components/ui.jsx'
 
 export { FATIGUE_LEVELS }
@@ -253,45 +253,56 @@ function MuscleBalance({ S, overview, win, setWin, setHard }) {
 }
 
 
+/**
+ * The words for one lift's reading, shared by the Strength levels card row and the exercise detail line.
+ * A field is null when that part has nothing to say.
+ */
+function strengthWordsOf(lift, unit) {
+  const { everTrained, trainedLately, current, peak, next } = lift
+  return {
+    currentLevel: current ? (current.level ? t(current.level) : t('Below Beginner')) : null,
+    peak: peak?.level ? t('Peak {0}', t(peak.level)) : null,
+    untrained: everTrained ? null : t('not trained yet'),
+    lapsed: everTrained && !trainedLately ? t('not trained lately') : null,
+    needsWeighIn: trainedLately && !current ? t('Needs a weigh-in near this lift') : null,
+    next: next ? t('Next: {0} at {1}', t(next.level), fmtNum(next.weight) + ' ' + unit) : null,
+  }
+}
+
 /** One line in a graded lift's exercise detail: the same wording and states as the Strength levels card. */
 function ExerciseStrengthLine({ reading, unit }) {
-  const { reason, current, peak, next, trainedLately } = reading
-  if (reason === 'sex') return <div className="small muted ex-strength">{t('Set your sex under Settings, Profile to see strength levels.')}</div>
-  if (reason === 'weighIn') return <div className="small muted ex-strength">{t('Log a weigh-in to see strength levels.')}</div>
-  const parts = []
-  if (!trainedLately) {
-    if (peak?.level) parts.push(t('Peak {0}', t(peak.level)), t('not trained lately'))
-    else parts.push(t('not trained yet'))
-  } else {
-    if (current) parts.push(current.level ? t(current.level) : t('Below Beginner'))
-    else parts.push(t('Needs a weigh-in near this lift'))
-    if (peak?.level) parts.push(t('Peak {0}', t(peak.level)))
-    if (next) parts.push(t('Next: {0} at {1}', t(next.level), fmtNum(next.weight) + ' ' + unit))
-  }
+  const { reason, trainedLately, peak } = reading
+  if (reason === STRENGTH_REASON.sex) return <div className="small muted ex-strength">{t('Set your sex under Settings, Profile to see strength levels.')}</div>
+  if (reason === STRENGTH_REASON.weighIn) return <div className="small muted ex-strength">{t('Log a weigh-in to see strength levels.')}</div>
+  const w = strengthWordsOf(reading, unit)
+  const parts = trainedLately
+    ? [w.currentLevel ?? w.needsWeighIn, w.peak, w.next]
+    : [w.peak, w.lapsed ?? w.untrained]
   return <div className={'small ex-strength' + (trainedLately ? '' : ' dim')}>
-    <span className="muted">{t('Strength')}</span> {parts.join(' · ')}
+    <span className="muted">{t('Strength')}</span> {parts.filter(Boolean).join(' · ')}
   </div>
 }
 
 /** One lift's row on the Strength levels card: five steps, the current level, the peak and the next level. */
 function StrengthLiftRow({ lift, unit }) {
-  const { current, peak, next, trainedLately } = lift
-  const bar = current ?? peak
-  const filled = bar?.level ? LEVELS.indexOf(bar.level) + 1 : 0
-  const headLevel = current ? (current.level ? t(current.level) : t('Below Beginner')) : (peak ? '' : t('not trained yet'))
+  const { peak, trainedLately } = lift
+  const w = strengthWordsOf(lift, unit)
+  const shownLevel = lift.current ?? lift.peak
+  const filled = levelStepOf(shownLevel?.level)
+  const head = w.currentLevel ?? w.untrained ?? (peak ? '' : w.lapsed ?? '')
   return <div className={'strength-lift' + (trainedLately ? '' : ' dim')}>
     <div className="sl-head">
       <span className="nm">{t(lift.name)}</span>
-      <span className="sl-level">{headLevel}</span>
+      <span className="sl-level">{head}</span>
     </div>
-    {bar && <div className="sl-bar" aria-hidden="true">
+    {shownLevel && <div className="sl-bar" aria-hidden="true">
       {LEVELS.map((name, i) => <i key={name} className={i < filled ? 'on' : ''} />)}
     </div>}
     <div className="small dim sl-meta">
-      {!trainedLately && peak && <span>{t('not trained lately')}</span>}
-      {trainedLately && !current && <span>{t('Needs a weigh-in near this lift')}</span>}
-      {peak?.level && <span>{t('Peak {0}', t(peak.level))}</span>}
-      {trainedLately && next && <span>{t('Next: {0} at {1}', t(next.level), fmtNum(next.weight) + ' ' + unit)}</span>}
+      {peak && w.lapsed && <span>{w.lapsed}</span>}
+      {w.needsWeighIn && <span>{w.needsWeighIn}</span>}
+      {w.peak && <span>{w.peak}</span>}
+      {w.next && <span>{w.next}</span>}
     </div>
   </div>
 }
@@ -304,12 +315,12 @@ function StrengthLevelsCard({ S, overview }) {
     <div className="card-head">
       <h2>{t('Strength levels')} <span className="card-sub">· {t('approximate')}</span></h2>
     </div>
-    {reading.reason === 'sex' && <>
+    {reading.reason === STRENGTH_REASON.sex && <>
       <div className="muted small">{t('Set your sex under Settings, Profile to see strength levels.')}</div>
       <div className="gap8" />
       <Button size="sm" onClick={() => nav('/settings')}>{t('Open Settings')}</Button>
     </>}
-    {reading.reason === 'weighIn' && <>
+    {reading.reason === STRENGTH_REASON.weighIn && <>
       <div className="muted small">{t('Log a weigh-in to see strength levels.')}</div>
       <div className="gap8" />
       <Button size="sm" icon="plus" onClick={() => bwSheet()}>{t('Log')}</Button>
