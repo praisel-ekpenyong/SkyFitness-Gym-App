@@ -27,7 +27,8 @@ const KNEE_DOMINANT = {
 //   dominant), 1489/0851 sissy squats (quad isolation, already quads), 3119
 //   potty squat (abs), 3222 semi squat jump and 3655 high knees lunge
 //   (cardio), 1688 lunge with twist (waist), squatting rows (3168, 3167,
-//   1717), RDL family (ADR 0012) and 0116/1010 straight-leg deadlifts;
+//   1717), RDL family (its own pattern below) and 0116/1010 straight-leg
+//   deadlifts;
 // - "extension" misfires: hip and reverse-hyper extensions (0980, 0130,
 //   0228, 2286, 0593, 0675), triceps extensions (ticket 04);
 // - calf stretches (1377, 1378, 1390, 1398, 1407, 1599) and tibialis work
@@ -74,6 +75,13 @@ export const LOWER_BODY_CORRECTIONS = [
     ids: ['0032', '0074', '0300', '0578', '0752', '0811', '0117', '0157', '0066'],
   },
   {
+    // ADR 0012: catalogue lower back stays as the third secondary.
+    pattern: 'RDL, stiff-leg, good morning',
+    tg: 'hamstrings',
+    smAdd: ['glutes'],
+    ids: ['0085', '1459', '0432', '0434', '1009', '1023', '1756', '1757', '2805', '0115'],
+  },
+  {
     pattern: 'leg curl',
     tg: 'hamstrings',
     smAdd: ['calves'],
@@ -111,11 +119,11 @@ export const LOWER_BODY_CORRECTIONS = [
 /**
  * Flattens pattern lists into the id-keyed overlay the catalogue index reads.
  * @param {Object[]} patterns - Pattern entries with `ids` and curation fields.
- * @param {Object} [base] - Hand-written curations to merge with; an id may appear once overall.
  * @returns {Object} Map of catalogue id to `{ tg?, smAdd?, smRemove? }`.
+ * @throws {Error} When one catalogue id appears in two patterns.
  */
-export function curationsByIdOf(patterns, base = {}) {
-  const out = { ...base }
+export function curationsByIdOf(patterns) {
+  const out = {}
   for (const { ids, pattern, ...curation } of patterns) {
     for (const id of ids) {
       if (out[id]) throw new Error(`catalogue id ${id} is curated twice (${pattern})`)
@@ -127,7 +135,10 @@ export function curationsByIdOf(patterns, base = {}) {
 
 // Shoulder heads: removals spell the catalogue's plain "shoulders" (heads
 // replace it after removals run, ADR 0024); additions name a head the way the
-// catalogue does, as "front/side/rear deltoids".
+// catalogue does, as "front/side/rear deltoids". These patterns never set a
+// head as the primary: the delt-head patterns below keep their ids for the
+// secondary changes only, and `PRIMARY_DELT_HEAD_IDS` in shoulder-heads.js
+// owns every primary head.
 const DELTS_ASSIST = ['shoulders', 'deltoids']
 
 // Excluded on review, keeping catalogue tags:
@@ -199,7 +210,6 @@ export const UPPER_BODY_CORRECTIONS = [
   },
   {
     pattern: 'face pull, rear-delt raise, reverse fly',
-    tg: 'rear delts',
     smAdd: ['upper back', 'traps'],
     smRemove: [...DELTS_ASSIST, 'biceps'],
     ids: [
@@ -221,7 +231,6 @@ export const UPPER_BODY_CORRECTIONS = [
   },
   {
     pattern: 'lateral raise',
-    tg: 'side delts',
     smAdd: ['traps'],
     smRemove: ['triceps', 'upper back', 'rotator cuff', 'rhomboids'],
     ids: [
@@ -231,13 +240,11 @@ export const UPPER_BODY_CORRECTIONS = [
   },
   {
     pattern: 'upright row',
-    tg: 'side delts',
     smAdd: ['traps', 'biceps'],
     ids: ['0120', '0119', '0121', '0123', '0246', '0363', '0437', '1765', '0775'],
   },
   {
     pattern: 'front raise',
-    tg: 'front delts',
     smRemove: ['triceps', 'upper back', 'biceps', 'trapezius', 'traps', 'forearms'],
     ids: [
       '0978', '0041', '0107', '0161', '0162', '0164', '0310', '0309', '0387',
@@ -246,7 +253,6 @@ export const UPPER_BODY_CORRECTIONS = [
   },
   {
     pattern: 'overhead press',
-    tg: 'front delts',
     smAdd: ['side deltoids', 'triceps'],
     smRemove: ['upper back', 'chest', 'upper chest', 'core'],
     ids: [
