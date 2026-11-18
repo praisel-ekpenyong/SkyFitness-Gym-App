@@ -166,6 +166,8 @@ h4.sec, .sec {
 .mrow .nm { flex: 1; min-width: 0; font-size: var(--fs-small); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--label) }
 .mrow .bar { flex: 0 0 96px; max-width: 120px; height: 4px; border-radius: 1px; background: var(--surface-3); overflow: hidden; display: block }
 .mrow .bar i { display: block; height: 100%; background: var(--data) }
+.mrow .bar.split { display: flex }
+.mrow .bar.split i { flex: none }
 .mrow .v { font-size: var(--fs-meta); color: var(--label-2); min-width: 54px; text-align: right; flex: none }
 .smd-row.tappable { cursor: pointer; border-radius: var(--r-1); padding: 7px 8px; margin: 0 -8px; transition: background var(--fast) }
 .smd-row.tappable:active { background: var(--surface-2) }

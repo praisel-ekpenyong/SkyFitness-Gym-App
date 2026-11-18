@@ -73,13 +73,23 @@ function WeeklyVolume({ S, volume, sel, setSel, toggleSel }) {
   const ranged = slugs.filter(slug => muscles[slug].range)
   const countOnly = slugs.filter(slug => !muscles[slug].range)
   const levels = Object.fromEntries(slugs.map(slug => [slug, VOLUME_LEVEL[muscles[slug].verdict] || 0]))
-  const scale = Math.max(1, ...slugs.map(slug => Math.max(muscles[slug].done, muscles[slug].range?.[1] || 0)))
+  const plannedOf = slug => muscles[slug].projected == null ? 0 : Math.max(0, muscles[slug].projected - muscles[slug].done)
+  const scale = Math.max(1, ...slugs.map(slug => Math.max(muscles[slug].done + plannedOf(slug), muscles[slug].range?.[1] || 0)))
   const setsText = slug => t('{0} sets', fmtNum(muscles[slug].done))
-  const rangeText = slug => t('{0}–{1}', muscles[slug].range[0], muscles[slug].range[1])
+  const readingText = slug => {
+    const { done, projected, range } = muscles[slug]
+    const parts = [t('{0} done', fmtNum(done))]
+    if (projected != null) parts.push(t('{0} planned', fmtNum(plannedOf(slug))))
+    if (range) parts.push(t('{0} to {1}', range[0], range[1]))
+    return parts.join(', ')
+  }
+  const pct = value => Math.round(Math.min(1, value / scale) * 100) + '%'
   const row = slug => <div key={slug} className="mrow">
-    <span className="nm">{t(MUSCLE_NAME[slug])}</span>
-    <span className="bar"><i style={{ width: Math.round(Math.min(1, muscles[slug].done / scale) * 100) + '%' }} /></span>
-    <span className="v">{muscles[slug].range ? t('{0} of {1}', fmtNum(muscles[slug].done), rangeText(slug)) : setsText(slug)}</span>
+    <div className="grow">
+      <div className="nm">{t(MUSCLE_NAME[slug])}</div>
+      <div className="smd-sub muted small">{readingText(slug)}</div>
+    </div>
+    <span className="bar split"><i style={{ width: pct(muscles[slug].done) }} /><i className="quiet" style={{ width: pct(plannedOf(slug)) }} /></span>
   </div>
   return <>
     <BodyMap className="tappable" load={levels} thresholds={VOLUME_LEVELS} body={S.body} selected={sel} onMuscle={toggleSel}
@@ -90,8 +100,8 @@ function WeeklyVolume({ S, volume, sel, setSel, toggleSel }) {
       <div className="muscle-inspector-info">
         <div className="muscle-inspector-name"><b>{t(MUSCLE_NAME[sel])}</b></div>
         <div className="muscle-inspector-val">{muscles[sel].range
-          ? t('{0} · volume range {1} · {2}', setsText(sel), rangeText(sel), volumeVerdictLabel(muscles[sel].verdict))
-          : t('{0} · {1}', setsText(sel), volumeVerdictLabel(null))}</div>
+          ? t('{0} · {1}', readingText(sel), volumeVerdictLabel(muscles[sel].verdict))
+          : t('{0} · {1}', readingText(sel), volumeVerdictLabel(null))}</div>
       </div>
       <Button size="xs" variant="ghost" icon="xmark" onClick={() => setSel(null)}>{t('Clear')}</Button>
     </div>}
