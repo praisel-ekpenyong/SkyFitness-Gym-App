@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { selectStatsOverview, selectExerciseStats } from '../lib/stats-selectors.js'
@@ -51,29 +51,29 @@ function StrengthLegend() {
 }
 
 // Volume verdicts on the body map's data ramp: below light, in range strong, above full. Count-only stays neutral.
-const VOLUME_LEVEL = { below: 1, in: 3, above: 4 }
-const VOLUME_LEVELS = [1, 3, 4].map(level => ({ at: level, level }))
+// `label` reads in the inspector and a11y; `legend` is the shorter legend text.
+const VOLUME_VERDICTS = {
+  below: { level: 1, label: 'Room for more', legend: 'Room for more' },
+  in: { level: 3, label: 'In range', legend: 'In range' },
+  above: { level: 4, label: 'More than your style aims for', legend: 'Above range' },
+}
+const VOLUME_LEVELS = Object.values(VOLUME_VERDICTS).map(({ level }) => ({ at: level, level }))
 
 function VolumeLegend() {
   return <div className="hm-legend" aria-label={t('Weekly volume')}>
-    <span>{t('Room for more')}</span><div className="hm-c l1" />
-    <span>{t('In range')}</span><div className="hm-c l3" />
-    <span>{t('Above range')}</span><div className="hm-c l4" />
+    {Object.entries(VOLUME_VERDICTS).map(([verdict, { level, legend }]) =>
+      <Fragment key={verdict}><span>{t(legend)}</span><div className={'hm-c l' + level} /></Fragment>)}
   </div>
 }
 
-function volumeVerdictLabel(verdict) {
-  return verdict === 'below' ? t('Room for more')
-    : verdict === 'above' ? t('More than your style aims for')
-      : verdict === 'in' ? t('In range') : t('No volume range')
-}
+const volumeVerdictLabel = verdict => t(VOLUME_VERDICTS[verdict]?.label || 'No volume range')
 
 function WeeklyVolume({ S, volume, sel, setSel, toggleSel }) {
   const { muscles } = volume
   const slugs = Object.keys(muscles)
   const ranged = slugs.filter(slug => muscles[slug].range)
   const countOnly = slugs.filter(slug => !muscles[slug].range)
-  const levels = Object.fromEntries(slugs.map(slug => [slug, VOLUME_LEVEL[muscles[slug].verdict] || 0]))
+  const levels = Object.fromEntries(slugs.map(slug => [slug, VOLUME_VERDICTS[muscles[slug].verdict]?.level || 0]))
   const plannedOf = slug => muscles[slug].projected == null ? 0 : Math.max(0, muscles[slug].projected - muscles[slug].done)
   const scale = Math.max(1, ...slugs.map(slug => Math.max(muscles[slug].done + plannedOf(slug), muscles[slug].range?.[1] || 0)))
   const setsText = slug => t('{0} sets', fmtNum(muscles[slug].done))
@@ -104,9 +104,7 @@ function WeeklyVolume({ S, volume, sel, setSel, toggleSel }) {
     {sel && <div className="muscle-inspector" role="status" aria-live="polite">
       <div className="muscle-inspector-info">
         <div className="muscle-inspector-name"><b>{t(MUSCLE_NAME[sel])}</b></div>
-        <div className="muscle-inspector-val">{muscles[sel].range
-          ? t('{0} · {1}', readingText(sel), volumeVerdictLabel(muscles[sel].verdict))
-          : t('{0} · {1}', readingText(sel), volumeVerdictLabel(null))}</div>
+        <div className="muscle-inspector-val">{t('{0} · {1}', readingText(sel), volumeVerdictLabel(muscles[sel].verdict))}</div>
       </div>
       <Button size="xs" variant="ghost" icon="xmark" onClick={() => setSel(null)}>{t('Clear')}</Button>
     </div>}

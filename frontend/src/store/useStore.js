@@ -10,7 +10,7 @@ import { admit } from '../lib/log/admit.js'
 import { act } from '../lib/active-workout.js'
 import { syncRoutineFromSession } from '../lib/routine-sync.js'
 import { runEffects } from './effects.js'
-import { trainingStyleOf, cleanVolumeRanges } from '../lib/volume-ranges.js'
+import { DEFAULT_STYLE, trainingStyleOf, cleanVolumeRanges } from '../lib/volume-ranges.js'
 
 export const DEF = {
   unit: 'kg',
@@ -41,7 +41,7 @@ export const DEF = {
 
   displayName: null,
 
-  trainingStyle: 'standard',
+  trainingStyle: DEFAULT_STYLE,
   volumeRanges: {}
 }
 const clone = o => {
