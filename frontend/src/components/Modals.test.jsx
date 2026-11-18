@@ -54,7 +54,7 @@ function installDom() {
   globalThis.window = dom
   globalThis.document = dom.document
   Object.defineProperty(globalThis, 'navigator', { configurable: true, value: dom.navigator })
-  for (const key of ['HTMLElement', 'Node', 'Element', 'Event']) globalThis[key] = dom[key]
+  for (const key of ['HTMLElement', 'Node', 'Element', 'Event', 'MutationObserver']) globalThis[key] = dom[key]
   globalThis.IS_REACT_ACT_ENVIRONMENT = true
 
   locationMock = { href: 'https://sky.test/#/workout' }
@@ -250,6 +250,28 @@ describe('Modals inert background', () => {
     await setSheets([])
     expect(document.getElementById('page').hasAttribute('inert')).toBe(false)
     expect(document.getElementById('tabs').hasAttribute('inert')).toBe(false)
+  })
+
+  it('makes a sibling mounted while a dialog is open inert too, and live again once it closes', async () => {
+    const renderWith = late => act(async () => {
+      root.render(h(React.Fragment, null,
+        h('main', { id: 'page' }, h('button', null, 'Behind')),
+        late && h('div', { id: 'late' }, h('button', null, 'Late')),
+        h(Modals)))
+    })
+    await renderWith(false)
+    await setSheets([sheet('open')])
+    await renderWith(true)
+    const late = document.getElementById('late')
+    const outside = document.createElement('div')
+    await act(async () => { document.body.appendChild(outside) })
+    expect(late.hasAttribute('inert')).toBe(true)
+    expect(outside.hasAttribute('inert')).toBe(true)
+
+    await setSheets([])
+    expect(late.hasAttribute('inert')).toBe(false)
+    expect(outside.hasAttribute('inert')).toBe(false)
+    outside.remove()
   })
 
   it('makes a sheet covered by another sheet inert', async () => {

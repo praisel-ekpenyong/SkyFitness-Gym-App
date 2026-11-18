@@ -173,17 +173,31 @@ export default function Modals() {
   const open = sheets.length > 0
 
   // Everything outside the dialogs goes inert while one is open; [data-over-modals] (the toast) stays live.
+  // Siblings mounted while a dialog is open go inert too.
   useLayoutEffect(() => {
     if (!open || !modalRoot.current) return
-    const made = []
+    const made = new Set()
+    const kept = new Map()
+    const parents = []
     for (let node = modalRoot.current; node.parentElement && node !== document.body; node = node.parentElement) {
-      for (const sibling of node.parentElement.children) {
-        if (sibling === node || sibling.hasAttribute('inert') || sibling.hasAttribute('data-over-modals')) continue
-        sibling.setAttribute('inert', '')
-        made.push(sibling)
-      }
+      kept.set(node.parentElement, node)
+      parents.push(node.parentElement)
     }
-    return () => made.forEach(el => el.removeAttribute('inert'))
+    const shut = sibling => {
+      if (kept.get(sibling.parentElement) === sibling || made.has(sibling)) return
+      if (sibling.hasAttribute('inert') || sibling.hasAttribute('data-over-modals')) return
+      sibling.setAttribute('inert', '')
+      made.add(sibling)
+    }
+    for (const parent of parents) for (const sibling of parent.children) shut(sibling)
+    const watch = typeof MutationObserver === 'function' && new MutationObserver(records => {
+      for (const r of records) for (const n of r.addedNodes) if (n.nodeType === 1 && n.parentElement === r.target) shut(n)
+    })
+    if (watch) for (const parent of parents) watch.observe(parent, { childList: true })
+    return () => {
+      if (watch) watch.disconnect()
+      made.forEach(el => el.removeAttribute('inert'))
+    }
   }, [open])
 
   useEffect(() => {
