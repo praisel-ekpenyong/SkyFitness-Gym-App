@@ -92,6 +92,43 @@ describe('ExerciseDetail sheet favorite starring', () => {
   })
 })
 
+describe('ExerciseDetail strength line', () => {
+  const DAY = 24 * 60 * 60 * 1000
+  const isoAgo = ageDays => new Date(Date.now() - ageDays * DAY).toISOString().slice(0, 10)
+  const bench = { id: '0025', n: 'Bench press', bp: 'chest', tg: 'pectorals', eq: 'barbell', img: '', gif: '' }
+  const cable = { id: '0001', n: '3/4 sit-up', bp: 'waist', tg: 'abs', eq: 'body weight', img: '', gif: '' }
+
+  it('shows the strength level under Best for a graded lift', async () => {
+    useStore.getState().update(s => {
+      s.sex = 'male'
+      s.bodyweight = [{ d: isoAgo(5), w: 80 }]
+      s.workouts = [{ id: 'w1', d: isoAgo(10), start: Date.now() - 10 * DAY, entries: [{ id: '0025', sets: [{ done: true, w: 80, r: 1 }] }], bw: 80 }]
+    })
+
+    await act(async () => {
+      root.render(<ExerciseDetail ex={bench} close={vi.fn()} />)
+    })
+
+    const line = container.querySelector('.ex-strength')
+    expect(line).toBeTruthy()
+    expect(line.textContent).toContain('Strength Intermediate · Peak Intermediate')
+    expect(line.previousElementSibling.classList.contains('best-line')).toBe(true)
+  })
+
+  it('shows no strength line for an ungraded exercise', async () => {
+    useStore.getState().update(s => {
+      s.sex = 'male'
+      s.bodyweight = [{ d: isoAgo(5), w: 80 }]
+    })
+
+    await act(async () => {
+      root.render(<ExerciseDetail ex={cable} close={vi.fn()} />)
+    })
+
+    expect(container.querySelector('.ex-strength')).toBeNull()
+  })
+})
+
 describe('deleteCustomEx cascading deletion', () => {
   it('removes custom exercise ID from favorites, customEx, and routines, leaving legacy exWeights alone', async () => {
     const customEx = {
