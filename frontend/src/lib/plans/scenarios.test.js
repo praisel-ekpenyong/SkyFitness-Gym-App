@@ -6,12 +6,16 @@ import { DELOAD_AFTER } from '../progression.js'
 
 /*
  * Seven named scenarios on the 5-day hypertrophy plan, generated from a made-up lifter.
- * `it` pins what the engine does today under established ADR 0011 progression rules.
+ * Where the plan's own rule needs an engine Sky does not have, the shipped plan adapts its
+ * numbers instead (ADR 0011 holds), and a test asserts that the shipped plan progresses.
+ * The other gaps were closed wontfix in .scratch/hypertrophy-plan/issues/: each test that
+ * pins today's behaviour for one names its ticket.
  */
 
 const kinds = entries => entries.map(e => e.plan?.kind)
 const firstIndex = (entries, kind) => entries.findIndex(e => e.plan?.kind === kind)
 const work = e => e.sets.filter(s => s.done)
+const weakest = e => Math.min(...work(e).map(s => s.r))
 const dateOfFirst = (S, routine, ex, kind) => {
   const routineId = S.routines.find(r => r.name === routine).id
   const id = S.customEx.find(c => c.n === ex)?.id || ex
@@ -33,9 +37,27 @@ describe('scenario 1: baseline, 8 clean weeks', () => {
     expect(work(squat.at(-1))[0].w).toBe(77.5)
   })
 
-  it('reads Monday and Friday lateral raises as one stream, so it deloads after two Mondays', () => {
-    // Both are 3 × 10–15: same Target shape, so Friday's sessions count toward Monday's Run.
-    expect(firstIndex(entriesOf(S, 'Upper', '0178'), 'deload')).toBe(3)
+  it('raises Thursday bench within the 8 weeks, with no deload', () => {
+    const bench = entriesOf(S, 'Push', '0025')
+    expect(kinds(bench)).toContain('up')
+    expect(kinds(bench)).not.toContain('deload')
+    expect(work(bench.at(-1))[0].w).toBeGreaterThan(work(bench[0])[0].w)
+  })
+
+  it('progresses Monday and Friday lateral raises on separate streams, with no deload', () => {
+    ;['Upper', 'Pull'].forEach(day => {
+      const raise = entriesOf(S, day, '0178')
+      expect(raise[0].plan.kind, day).toBe('first')
+      expect(kinds(raise), day).toContain('up')
+      expect(kinds(raise), day).not.toContain('deload')
+      expect(work(raise.at(-1))[0].w, day).toBeGreaterThan(work(raise[0])[0].w)
+      expect(weakest(raise.at(-1)), day).toBeGreaterThan(weakest(raise[firstIndex(raise, 'up')]))
+    })
+  })
+
+  // Ticket 05 (wontfix): one lift on two days with different set counts is two streams.
+  it('reads Monday and Thursday bench as separate streams, so their weights can drift apart', () => {
+    expect(entriesOf(S, 'Push', '0025')[0].plan.kind).toBe('first')
   })
 })
 
@@ -44,6 +66,7 @@ describe('scenario 1b: isolation total-reps target', () => {
   const S = generateHistory({ weeks: 6, lifter: { '0178': { w: 12.5, e1rm: 19 } }, day: () => ({ gain: { '0178': 0 } }) })
   const raise = entriesOf(S, 'Push', '0178')
 
+  // Ticket 03 (wontfix): no total-reps rule; double progression needs every set at the top.
   it('holds below the top of the range, then deloads a lifter the plan would step up', () => {
     expect(work(raise[0]).map(s => s.r)).toEqual([14, 13, 12, 11])
     expect(kinds(raise)).toEqual(['first', 'hold', 'hold', 'hold', 'hold', 'deload'])
@@ -59,6 +82,7 @@ describe('scenario 2: illness', () => {
   const ill = generateHistory({ weeks: 8, lifter, day: sick })
   const control = generateHistory({ weeks: 8, lifter, day: skipped })
 
+  // Ticket 07 (wontfix): no flag takes a finished Workout out of progression.
   it('counts the sick session as a stall today, so the deload comes a week early', () => {
     expect(dateOfFirst(ill, 'Push', '0194', 'deload')).toBe('2026-10-15')
     expect(dateOfFirst(control, 'Push', '0194', 'deload')).toBe('2026-10-22')
@@ -70,6 +94,7 @@ describe('scenario 3: leg ramp', () => {
   const ramp = ({ week, routine }) => (week < 2 && ['Lower', 'Legs'].includes(routine.name) ? { dropSets: 1 } : {})
   const S = generateHistory({ weeks: 5, day: ramp })
 
+  // Ticket 08 (wontfix): no planned phases, so a dropped ramp set reads as a Miss.
   it('reads a skipped ramp set as missed reps, so the squat holds through the ramp', () => {
     expect(kinds(entriesOf(S, 'Lower', '0043')).slice(0, 4)).toEqual(['first', 'hold', 'hold', 'up'])
   })
@@ -95,6 +120,7 @@ describe('scenario 5: stall and deload', () => {
   const S = generateHistory({ weeks: 8, lifter: { '0194': { w: 27.5, e1rm: 34 } }, day: () => ({ gain: { '0194': 0 } }) })
   const ext = entriesOf(S, 'Push', '0194')
 
+  // Ticket 04 (wontfix): the plan deloads after 3 flat sessions; Sky keeps 4.
   it(`deloads about 10% after ${DELOAD_AFTER.double} flat sessions on double progression`, () => {
     expect(firstIndex(ext, 'deload')).toBe(1 + DELOAD_AFTER.double)
     expect(ext[firstIndex(ext, 'deload')].plan.weight).toBe(25)
@@ -106,6 +132,7 @@ describe('scenario 6: load ceiling', () => {
   const S = generateHistory({ weeks: 8, day: () => ({ ceiling: { 'Heel-elevated dumbbell squat': 30 } }) })
   const squat = entriesOf(S, 'Legs', 'Heel-elevated dumbbell squat')
 
+  // Ticket 06 (wontfix): no per-exercise load ceiling.
   it('keeps prescribing heavier dumbbells once the lifter is capped', () => {
     expect(squat.slice(3).every(e => e.plan.kind === 'up' && work(e)[0].w === 30)).toBe(true)
   })
