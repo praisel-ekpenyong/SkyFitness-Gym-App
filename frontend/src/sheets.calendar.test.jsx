@@ -10,8 +10,8 @@ import { useUI } from './store/useUI.js'
 // Clock: Wed 1 Jul 2026, so the current week starts Mon 29 Jun.
 const NOW = new Date(2026, 6, 1, 12)
 const trained = d => ({ id: `w-${d}`, d, name: 'Push', entries: [{ id: 'lift', sets: [{ done: true, w: 60, r: 5 }] }] })
-// Counted: 11, 18, 25 May and 1 Jun (four, so the first freeze is earned); 8 Jun missed (frozen);
-// 15 Jun counted; 22 Jun missed with no freeze left (broke); this week open.
+// Counted: 11, 18, 25 May and 1 Jun (a run of four); 8 Jun missed (broke);
+// 15 Jun counted; 22 Jun missed (broke); this week open.
 const HISTORY = ['2026-05-11', '2026-05-18', '2026-05-25', '2026-06-01', '2026-06-15'].map(trained)
 
 let container
@@ -52,7 +52,7 @@ describe('Calendar week marks', () => {
     await render('2026-06-01T12:00:00')
     expect(marks().map(b => b.getAttribute('aria-label'))).toEqual([
       'Week of 1 Jun: counted',
-      'Week of 8 Jun: frozen',
+      'Week of 8 Jun: broke',
       'Week of 15 Jun: counted',
       'Week of 22 Jun: broke',
       'Week of 29 Jun: open',
@@ -83,37 +83,32 @@ describe('Calendar week marks', () => {
   it('tapping a mark selects that week and explains it', async () => {
     await render('2026-06-01T12:00:00')
     expect(explanation()).toBe('')
-    await tap('Week of 8 Jun: frozen')
-    expect(explanation()).toBe('No workout, so a freeze covered it. The streak kept going, but this week adds nothing.')
-    expect(mark('Week of 8 Jun: frozen').getAttribute('aria-pressed')).toBe('true')
     await tap('Week of 1 Jun: counted')
-    expect(explanation()).toBe('You trained, so this week counts. Streak: 4. It also earned a freeze.')
+    expect(explanation()).toBe('You trained, so this week counts. Streak: 4.')
+    expect(mark('Week of 1 Jun: counted').getAttribute('aria-pressed')).toBe('true')
+    await tap('Week of 15 Jun: counted')
+    expect(explanation()).toBe('You trained, so this week counts. Streak: 1.')
   })
 
   it('explains a broken week and an open week', async () => {
     await render('2026-06-01T12:00:00')
-    await tap('Week of 22 Jun: broke')
-    expect(explanation()).toBe('No workout and no freeze left, so the streak started over.')
+    await tap('Week of 8 Jun: broke')
+    expect(explanation()).toBe('No workout, so the streak started over.')
     await tap('Week of 29 Jun: open')
     expect(explanation()).toBe('Still open. One workout and it counts.')
   })
 
-  it('a counted week that did not earn a freeze has no freeze sentence', async () => {
-    await render('2026-06-01T12:00:00')
-    await tap('Week of 15 Jun: counted')
-    expect(explanation()).toBe('You trained, so this week counts. Streak: 5.')
-  })
-
-  it('Strict explains a broken week by its rule having no freezes', async () => {
-    await render('2026-06-01T12:00:00', HISTORY, { streakRule: 'strict' })
+  it('an old Profile\'s stored streakRule changes no mark', async () => {
+    await render('2026-06-01T12:00:00', HISTORY, { streakRule: 'generous' })
+    expect(mark('Week of 8 Jun: broke')).toBeTruthy()
     await tap('Week of 8 Jun: broke')
-    expect(explanation()).toBe('No workout, and your rule has no freezes, so the streak started over.')
+    expect(explanation()).toBe('No workout, so the streak started over.')
   })
 
   it('changing month clears the selected week and its explanation', async () => {
     await render('2026-06-01T12:00:00')
     await tap('Week of 15 Jun: counted')
-    expect(explanation()).toBe('You trained, so this week counts. Streak: 5.')
+    expect(explanation()).toBe('You trained, so this week counts. Streak: 1.')
     const nav = label => act(async () => { container.querySelector(`button[aria-label="${label}"]`).click() })
     await nav('Previous month')
     expect(explanation()).toBe('')
@@ -130,62 +125,22 @@ describe('Calendar week marks', () => {
 })
 
 describe('Calendar streak header', () => {
-  it('shows current, best, freezes banked and how the next freeze is earned', async () => {
+  it('shows the current and best weeks in a row', async () => {
     await render('2026-06-01T12:00:00')
     expect(header()).toContain('Streak 0 weeks')
-    expect(header()).toContain('Best 5 weeks')
-    expect(header()).toContain('0 freezes banked')
-    expect(header()).toContain('Next freeze in 4 counted weeks.')
+    expect(header()).toContain('Best 4 weeks')
   })
 
   it('an open current week that is counted adds to the current streak', async () => {
     await render('2026-06-01T12:00:00', [...HISTORY, trained('2026-06-29')])
     expect(header()).toContain('Streak 1 week')
-    expect(header()).toContain('Best 5 weeks')
-  })
-
-  it('Strict has no freezes to bank', async () => {
-    await render('2026-06-01T12:00:00', HISTORY, { streakRule: 'strict' })
-    expect(header()).toContain('Strict rule: no freezes are banked.')
-  })
-})
-
-describe('Calendar freeze rule picker', () => {
-  const radios = () => [...container.querySelectorAll('[role="radio"]')]
-  const radio = name => radios().find(b => b.firstElementChild.textContent === name)
-
-  it('shows each rule\'s current and best streak under its name', async () => {
-    await render('2026-06-01T12:00:00')
-    expect(radios().map(b => b.textContent)).toEqual([
-      'Strict0 wk · best 4',
-      'Gentle0 wk · best 5',
-      'Generous0 wk · best 5',
-    ])
-  })
-
-  it('names each rule with its bank size and preview for screen readers', async () => {
-    await render('2026-06-01T12:00:00')
-    expect(radios().map(b => b.getAttribute('aria-label'))).toEqual([
-      'Strict (0 freezes): 0 weeks, best 4',
-      'Gentle (1 freeze): 0 weeks, best 5',
-      'Generous (2 freezes): 0 weeks, best 5',
-    ])
-  })
-
-  it('marks the chosen rule, Gentle by default', async () => {
-    await render('2026-06-01T12:00:00')
-    expect(radio('Gentle').getAttribute('aria-checked')).toBe('true')
-    expect(radio('Strict').getAttribute('aria-checked')).toBe('false')
-  })
-
-  it('switching rule recomputes the marks and numbers at once', async () => {
-    await render('2026-06-01T12:00:00')
-    expect(mark('Week of 8 Jun: frozen')).toBeTruthy()
-    await act(async () => { radio('Strict').click() })
-    expect(useStore.getState().S.streakRule).toBe('strict')
-    expect(mark('Week of 8 Jun: broke')).toBeTruthy()
-    expect(mark('Week of 8 Jun: frozen')).toBeUndefined()
     expect(header()).toContain('Best 4 weeks')
-    expect(header()).toContain('Strict rule: no freezes are banked.')
+  })
+
+  it('has no freezes and no rule picker', async () => {
+    await render('2026-06-01T12:00:00')
+    expect(container.textContent.toLowerCase()).not.toContain('freeze')
+    expect(container.querySelector('[role="radiogroup"]')).toBeNull()
+    expect(container.querySelector('[role="radio"]')).toBeNull()
   })
 })
