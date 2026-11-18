@@ -311,7 +311,7 @@ export function syncRoutineFromSession(S, routineId, syncedEx) {
   if (!S || !Array.isArray(S.routines) || !routineId || !Array.isArray(syncedEx)) {
     return false
   }
-  const routine = S.routines.find(r => r.id === routineId)
+  const routine = S.routines.find(r => r && r.id === routineId)
   if (!routine) return false
 
   routine.ex = syncedEx.map(e => ({ ...e }))

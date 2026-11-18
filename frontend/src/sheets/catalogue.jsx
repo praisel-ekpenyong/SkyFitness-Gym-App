@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { EXIDX, isCardio, isBodyweightEq, allExercises } from '../lib/exercises.js'
-import { fmtNum, fmtVol, exCount, uid, sentenceCase } from '../lib/format.js'
+import { fmtNum, fmtVol, exCount, sentenceCase } from '../lib/format.js'
 import { fmtDate } from '../lib/dates.js'
 import { setLabel } from '../lib/set-label.js'
 import { best as bestOf, best1RM, lastSession } from '../lib/training-log.js'
@@ -13,7 +13,7 @@ import { nav } from '../platform/nav.js'
 import Media, { Thumb } from '../components/Media.jsx'
 import Icon, { ICON_NAMES } from '../components/Icon.jsx'
 import { Button, Switch, Segmented, SelectRow, Row, SearchField, TextArea, Stepper } from '../components/ui.jsx'
-import { glyphOf, DEFAULT_GLYPH } from '../lib/glyphs.js'
+import { glyphOf } from '../lib/glyphs.js'
 import { FILTER_MUSCLES, PICKABLE_MUSCLES, MUSCLES, MUSCLE_NAME, primaryMuscleOf, primaryMuscleName, secondaryMusclesOf } from '../lib/muscles.js'
 import { queryCatalogue } from '../lib/catalogue-query.js'
 import { estimate1RM, REP_CAP } from '../lib/onerm.js'
@@ -115,14 +115,26 @@ function AddToRoutine({ ex, close }) {
     close()
     const isNew = rid === '_new'
     exConfigSheet(ex, { onSave: cfg => {
-      update(s => {
-        let r = isNew ? { id: uid(), name: t('New routine'), emoji: DEFAULT_GLYPH, ex: [] } : s.routines.find(x => x.id === rid)
-        if (isNew) s.routines.push(r)
-        if (r) r.ex.push({ id: ex.id, ...cfg })
+      let targetRoutineId = rid
+      let routineName = t('routine')
+      if (isNew) {
+        const createRes = useStore.getState().actRoutine({ type: 'create' })
+        if (createRes.ok && createRes.result) {
+          targetRoutineId = createRes.result.id
+          routineName = createRes.result.name
+        }
+      } else {
+        const r = st.routines.find(x => x.id === rid)
+        if (r) routineName = r.name
+      }
+      useStore.getState().actRoutine({
+        type: 'addExercise',
+        routineId: targetRoutineId,
+        exId: ex.id,
+        target: cfg,
       })
-      const r = isNew ? S().routines[S().routines.length - 1] : st.routines.find(x => x.id === rid)
-      toast(t('“{0}” added to {1}', ex.n, r ? r.name : t('routine')))
-      if (isNew && r) nav('/plan/r/' + r.id)
+      toast(t('“{0}” added to {1}', ex.n, routineName))
+      if (isNew && targetRoutineId) nav('/plan/r/' + targetRoutineId)
     }, routine: isNew ? null : st.routines.find(x => x.id === rid) })
   }
   return <>
