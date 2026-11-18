@@ -98,10 +98,10 @@ describe('admit', () => {
     expect(admit(JSON.parse(JSON.stringify(once)))).toEqual(once)
   })
 
-  it('is the only domain file that reads showRir', () => {
+  it('leaves showRir to the 0 → 1 upgrade step alone', () => {
     const hits = sourceFiles()
       .filter(p => readFileSync(p, 'utf8').includes('showRir'))
       .map(p => relative(SRC, p))
-    expect(hits).toEqual(['lib/profile/admit.js'])
+    expect(hits).toEqual(['lib/profile/upgrades.js'])
   })
 })

@@ -2,13 +2,16 @@
 // normalizeState turns it into a Profile (ADR 0027).
 
 import { RESTORE_TOP_KEYS } from './restore-keys.js'
+import { isNewerProfile } from './upgrades.js'
 
 /**
- * Throws unless the payload has the shape of a Sky backup (an object with workouts and routines arrays).
+ * Throws unless the payload has the shape of a Sky backup (an object with workouts and routines arrays)
+ * that this Sky can read. A backup from a newer Sky is refused before its shape is judged.
  * @param {*} data - Parsed backup file.
  * @returns {true} When the payload looks like a backup.
  */
 export function validateBackup(data) {
+  if (isNewerProfile(data)) throw new Error('this backup is from a newer version of Sky. Update Sky, then import it again')
   if (!data || typeof data !== 'object' || Array.isArray(data) || !Array.isArray(data.workouts) || !Array.isArray(data.routines)) {
     throw new Error('not a Sky backup')
   }

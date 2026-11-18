@@ -22,7 +22,7 @@ _Avoid_: offline mode, anonymous mode
 A complete copy of the profile as one file, for safekeeping or moving devices.
 
 **Restore**:
-Loading a full JSON backup file. Replaces the current profile state wholesale on confirmation.
+Loading a full JSON backup file. Replaces the current profile state wholesale on confirmation. A backup saved by a newer version of Sky is refused and changes nothing.
 _Avoid_: sync
 
 **Reset**:

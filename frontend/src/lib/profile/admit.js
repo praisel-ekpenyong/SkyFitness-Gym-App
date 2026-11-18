@@ -1,64 +1,48 @@
-import { EFFORT } from '../effort.js'
+import { DEF } from './def.js'
 import { sortWorkouts } from './workouts.js'
+import { NewerProfileError, SCHEMA_VERSION, schemaVersionOf, upgrade } from './upgrades.js'
 
-function profile(raw) {
+function record(raw) {
   return !!raw && typeof raw === 'object' && !Array.isArray(raw)
 }
 
-function sealEffort(raw) {
-  const e = raw.effort
-  if (e === 'none' || EFFORT[e]) return e
-  return raw.showRir ? 'rir' : 'none'
+const clone = o => {
+  if (typeof structuredClone === 'function') {
+    try { return structuredClone(o) } catch {}
+  }
+  return JSON.parse(JSON.stringify(o))
 }
 
-// Old rows carried `warmup: true`; the Profile now stores the phase shape only (ADR 0027).
-function upgradeSet(set) {
-  if (!profile(set) || set.warmup !== true) return set
-  const { warmup, ...rest } = set
-  return rest.phase == null || rest.phase === '' ? { ...rest, phase: 'warmup' } : rest
-}
-
-function upgradeSets(sets) {
-  if (!Array.isArray(sets)) return sets
-  let changed = false
-  const upgraded = sets.map(set => {
-    const next = upgradeSet(set)
-    if (next !== set) changed = true
-    return next
-  })
-  return changed ? upgraded : sets
-}
-
-function upgradeEntries(entries) {
-  if (!Array.isArray(entries)) return entries
-  let changed = false
-  const upgraded = entries.map(entry => {
-    if (!profile(entry)) return entry
-    const sets = upgradeSets(entry.sets)
-    if (sets === entry.sets) return entry
-    changed = true
-    return { ...entry, sets }
-  })
-  return changed ? upgraded : entries
-}
-
-function upgradeWorkout(workout) {
-  if (!profile(workout)) return workout
-  const entries = upgradeEntries(workout.entries)
-  return entries === workout.entries ? workout : { ...workout, entries }
+// Fills every field the stored Profile lacks from DEF, at any depth. A stored value, null and
+// falsy ones included, is never replaced, and arrays are values, not defaults to merge into.
+function fillDefaults(stored, defaults) {
+  let out = stored
+  for (const [key, def] of Object.entries(defaults)) {
+    const value = stored[key]
+    let next = value
+    if (value === undefined) next = clone(def)
+    else if (record(def) && record(value)) next = fillDefaults(value, def)
+    if (next === value) continue
+    if (out === stored) out = { ...stored }
+    out[key] = next
+  }
+  return out
 }
 
 /**
- * Upgrades an incoming Profile's old shapes and puts its Workouts in Training-log order.
+ * The one way a Profile comes in (boot, another tab, a Restore, a CSV import). Runs the upgrade
+ * steps from the stored schema version (absent is version 0), fills absent fields from `DEF` at
+ * any depth, stamps the current version and puts Workouts in Training-log order.
  * Values are never rewritten: units, `topW` and `asked` stay as stored (ADR 0019, ADR 0020).
  * @param {Object} raw - A Profile from boot, another tab, a Restore or a CSV import.
- * @returns {Object} A new Profile with the legacy `showRir` and `warmup` shapes gone.
+ * @returns {Object} A new Profile at `SCHEMA_VERSION`.
+ * @throws {NewerProfileError} When `raw` was saved by a newer Sky; it is refused, never admitted.
  */
 export function admit(raw) {
-  if (!profile(raw)) return raw
-  const rest = { ...raw, effort: sealEffort(raw) }
-  delete rest.showRir
-  if (Array.isArray(raw.workouts)) rest.workouts = sortWorkouts(raw.workouts.map(upgradeWorkout))
-  if (profile(raw.active)) rest.active = upgradeWorkout(raw.active)
-  return rest
+  if (!record(raw)) return raw
+  const from = schemaVersionOf(raw)
+  if (from > SCHEMA_VERSION) throw new NewerProfileError(raw.schemaVersion)
+  const S = { ...fillDefaults(upgrade(raw, from), DEF), schemaVersion: SCHEMA_VERSION }
+  if (Array.isArray(S.workouts)) S.workouts = sortWorkouts(S.workouts)
+  return S
 }

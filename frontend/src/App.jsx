@@ -11,6 +11,7 @@ import { initBackButton } from './platform/back.js'
 import { useWakeLock } from './platform/wakelock.js'
 import { startFlow } from './sheets/session.jsx'
 import Icon from './components/Icon.jsx'
+import { Button } from './components/ui.jsx'
 import Mark from './components/Mark.jsx'
 import TabBar from './components/TabBar.jsx'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
@@ -40,7 +41,7 @@ function applyPrefs(theme, accent) {
 function Shell() {
   const navigate = useNavigate()
   const loc = useLocation()
-  const { S, ready, storageBlocked } = useStore()
+  const { S, ready, storageBlocked, newerProfile } = useStore()
   const langV = useLang()
   useEffect(() => { setNav(navigate) }, [navigate])
   useEffect(() => { applyPrefs(S.theme, S.accent) }, [S.theme, S.accent])
@@ -68,6 +69,18 @@ function Shell() {
 
   if (!ready) return (
     <div id="app"><div className="boot"><Mark size={22} /></div></div>
+  )
+
+  // ADR 0027: this build cannot read the stored Profile, so it shows nothing and changes nothing.
+  if (newerProfile) return (
+    <div id="app"><div className="narrow">
+      <div role="alert" className="empty error-empty">
+        <div className="ico"><Icon name="info" /></div>
+        <div className="error-t d">{t('Sky has been updated')}</div>
+        {t('Your data was saved by a newer version of Sky, so this one will not open or change it. Reload to get the newer version.')}
+      </div>
+      <Button variant="primary" icon="reset" onClick={() => location.reload()}>{t('Reload Sky')}</Button>
+    </div></div>
   )
 
   return (
