@@ -5,27 +5,20 @@ import { EXIDX } from '../lib/exercises.js'
 import { fmtNum, fmtSigned, fmtVol, fmtDur, durPart } from '../lib/format.js'
 import { fmtDate, todayISO, MONTHS_LONG, monthKey, weekKey, isoOf } from '../lib/dates.js'
 import { setLabel } from '../lib/set-label.js'
+import { isWarmupRow } from '../lib/warmup.js'
+import { isWorkSet } from '../lib/workout-sets.js'
 import { effectiveRoutineId, hasEffectiveOverride, deleteWorkout } from '../lib/history.js'
 import { loadRecords } from '../lib/training-log.js'
 import { workoutSummary, summarizeWorkouts } from '../lib/workout-summary.js'
 import { dayStatus } from '../lib/schedule.js'
 import { monthRecap } from '../lib/recap.js'
 import { streakOf } from '../lib/streak.js'
-import {
-  weekExplanation,
-  markLabel,
-  markIcon,
-  freezeLine,
-  rulePreviewLine,
-  ruleSegmentPreview,
-  RULE_ORDER,
-  RULE_NAME,
-} from '../lib/streak-explain.js'
+import { weekExplanation, markLabel, markIcon } from '../lib/streak-explain.js'
 import { loadOfWorkouts, MUSCLE_NAME } from '../lib/muscles.js'
 import { glyphOf } from '../lib/glyphs.js'
 import { Thumb } from '../components/Media.jsx'
 import Icon, { ICON_NAMES } from '../components/Icon.jsx'
-import { Button, Segmented } from '../components/ui.jsx'
+import { Button } from '../components/ui.jsx'
 import BodyMap from '../components/BodyMap.jsx'
 import { SessionMuscleDistribution } from '../components/SessionMuscleDistribution.jsx'
 import { t } from '../lib/i18n.js'
@@ -56,6 +49,10 @@ export function WorkoutDetail({ w, close }) {
       </div>
       {w.entries.map((e, i) => {
         const ex = EXIDX[e.id]
+        const doneSets = (e.sets || []).filter(s => s.done)
+        const warmups = doneSets.filter(isWarmupRow)
+        const workSets = doneSets.filter(isWorkSet)
+        const formatSets = sets => sets.map(s => setLabel(e.id, s, e.target)).join('  ·  ')
         return (
           <div key={i} className="row ex-entry">
             {ex && <Thumb ex={ex} />}
@@ -63,9 +60,21 @@ export function WorkoutDetail({ w, close }) {
               <div className="tt capitalize">
                 {ex ? ex.n : (e.n || e.id)} {recordIds.includes(e.id) && <span className="pr"><Icon name="trophy" />{t('Record')}</span>}
               </div>
-              <div className="ss">
-                {e.sets.filter(s => s.done).map(s => setLabel(e.id, s, e.target)).join('  ·  ') || t('no sets')}
-              </div>
+              {warmups.length > 0 && (
+                <div className="ss-warm">
+                  {t('Warm-up: {0}', formatSets(warmups))}
+                </div>
+              )}
+              {workSets.length > 0 && (
+                <div className="ss">
+                  {formatSets(workSets)}
+                </div>
+              )}
+              {!doneSets.length && (
+                <div className="ss">
+                  {t('no sets')}
+                </div>
+              )}
               {e.notes && <div className="exnote">{e.notes}</div>}
             </div>
           </div>
@@ -195,16 +204,7 @@ export function Calendar({ start, close }) {
       <div className="small cal-streak">
         <span>{t(streak.current === 1 ? 'Streak {0} week' : 'Streak {0} weeks', fmtNum(streak.current))}</span>
         <span>{t(streak.best === 1 ? 'Best {0} week' : 'Best {0} weeks', fmtNum(streak.best))}</span>
-        <span>{t(streak.freezes === 1 ? '{0} freeze banked' : '{0} freezes banked', fmtNum(streak.freezes))}</span>
-        <span className="cal-next">{freezeLine(streak)}</span>
       </div>
-      <Segmented
-        className="cal-rule"
-        label={t('Freeze rule')}
-        value={streak.rule}
-        options={RULE_ORDER.map(v => ({ value: v, label: t(RULE_NAME[v]), sub: ruleSegmentPreview(streak.preview[v]), ariaLabel: rulePreviewLine(v, streak.preview[v]) }))}
-        onChange={v => update(s => { s.streakRule = v })}
-      />
       <div className="small muted cal-sum">
         {monthWs.length
           ? `${t(monthWs.length === 1 ? '{0} workout' : '{0} workouts', fmtNum(monthWs.length))} · ${fmtDur(month.durationMs)} · ${fmtVol(month.tonnage, st.unit)}`
@@ -215,7 +215,7 @@ export function Calendar({ start, close }) {
         <div className="cal-h" aria-hidden="true" />
         {rows}
       </div>
-      <p className="small cal-explain" aria-live="polite">{selected ? weekExplanation(selected, streak.rule) : ''}</p>
+      <p className="small cal-explain" aria-live="polite">{selected ? weekExplanation(selected) : ''}</p>
       <div className="cal-legend">
         <span><i style={{ background: 'var(--data)' }} />{t('Trained')}</span>
         <span><i style={{ background: 'var(--label-3)' }} />{t('Planned')}</span>

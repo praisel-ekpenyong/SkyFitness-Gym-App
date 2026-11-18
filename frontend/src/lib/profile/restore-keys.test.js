@@ -9,9 +9,12 @@ describe('restore keys derived from DEF', () => {
     }
   })
 
-  it('adds the legacy exWeights key without needing a second hand list', () => {
-    expect(DEF).not.toHaveProperty('exWeights')
-    expect(RESTORE_TOP_KEYS).toContain('exWeights')
-    expect(RESTORE_TOP_KEYS).toHaveLength(Object.keys(DEF).length)
+  it('adds the legacy exWeights and streakRule keys without needing a second hand list', () => {
+    for (const key of ['exWeights', 'streakRule']) {
+      expect(DEF).not.toHaveProperty(key)
+      expect(RESTORE_TOP_KEYS).toContain(key)
+    }
+    // Every DEF key but `active`, plus the two legacy keys.
+    expect(RESTORE_TOP_KEYS).toHaveLength(Object.keys(DEF).length + 1)
   })
 })
