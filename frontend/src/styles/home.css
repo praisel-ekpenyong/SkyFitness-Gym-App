@@ -29,7 +29,10 @@
 
 .welcome-t { font-size: var(--fs-display); margin-bottom: 8px }
 .welcome-b { margin-bottom: 14px }
-.home-more { color: var(--label-2); margin: 4px 0 0 auto; display: flex; padding-inline: 2px }
+/* Text lines up with the exercise names above: 9px item inset + 48px thumb + 12px gap. */
+.item.home-more { min-height: 0; padding: 10px 12px 10px 69px }
+.home-more-n { font-size: var(--fs-meta); font-weight: 600; color: var(--label-2) }
+.item .home-more-names { margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-transform: capitalize }
 
 .week-card { padding: 6px 8px 10px }
 .week-nav { display: flex; align-items: center; justify-content: space-between }
