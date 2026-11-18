@@ -186,7 +186,7 @@ The recovery interval between sets, between rounds of a superset, or between exe
 _Avoid_: break, rest period, pause
 
 **Rest duration**:
-The default length of a rest, set by the lifter, used whenever a rest begins.
+The length of a rest. The lifter sets one in Settings, and an exercise in a Routine may set its own for the rest after its sets; "Default" on the exercise means the one in Settings. After a Superset round the longest Rest duration among its Entries applies. A Manual rest uses the one in Settings.
 _Avoid_: rest time, rest setting
 
 **Rest timer**:

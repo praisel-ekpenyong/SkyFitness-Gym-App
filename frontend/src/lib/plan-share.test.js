@@ -125,6 +125,23 @@ describe('plan-share engine', () => {
     })
   })
 
+  describe('Rest duration', () => {
+    it('carries an exercise\'s Rest duration through a plan file and into the importing Profile', () => {
+      const S = { routines: [{ id: 'r1', name: 'Push Day', ex: [
+        { id: BARBELL_BENCH, sets: 3, reps: 5, weight: 100, rest: 180 },
+        { id: PUSH_UP, sets: 3, reps: 12, rest: 0 },
+        { id: CARDIO, sets: 1, min: 20, speed: 8 },
+      ] }], week: { 1: 'r1' }, customEx: [] }
+      const bundle = buildPlanBundle(S, 'Rest plan')
+      expect(bundle.routines[0].ex.map(e => e.rest)).toEqual([180, undefined, undefined])
+      expect(bundle.routines[0].ex[1]).not.toHaveProperty('rest')
+
+      const into = { routines: [], week: {}, customEx: [] }
+      mergePlan(into, parsePlan(JSON.stringify(bundle)))
+      expect(into.routines[0].ex.map(e => e.rest)).toEqual([180, undefined, undefined])
+    })
+  })
+
   describe('parsePlan', () => {
     it('throws error when importing malformed data or wrong format', () => {
       expect(() => parsePlan(null)).toThrow(/Sky plan file/)
