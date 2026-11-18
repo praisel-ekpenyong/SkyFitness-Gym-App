@@ -135,3 +135,34 @@ describe('Calendar streak header', () => {
     expect(header()).toContain('Strict rule: no freezes are banked.')
   })
 })
+
+describe('Calendar freeze rule picker', () => {
+  const radio = label => [...container.querySelectorAll('[role="radio"]')].find(b => b.textContent === label)
+  const previews = () => [...container.querySelectorAll('.cal-rules li')].map(li => li.textContent)
+
+  it('lists the three rules with bank sizes and each rule\'s current and best preview', async () => {
+    await render('2026-06-01T12:00:00')
+    expect(previews()).toEqual([
+      'Strict (0 freezes): 0 weeks, best 4',
+      'Gentle (1 freeze): 0 weeks, best 5',
+      'Generous (2 freezes): 0 weeks, best 5',
+    ])
+  })
+
+  it('marks the chosen rule, Gentle by default', async () => {
+    await render('2026-06-01T12:00:00')
+    expect(radio('Gentle').getAttribute('aria-checked')).toBe('true')
+    expect(radio('Strict').getAttribute('aria-checked')).toBe('false')
+  })
+
+  it('switching rule recomputes the marks and numbers at once', async () => {
+    await render('2026-06-01T12:00:00')
+    expect(mark('Week of 8 Jun: frozen')).toBeTruthy()
+    await act(async () => { radio('Strict').click() })
+    expect(useStore.getState().S.streakRule).toBe('strict')
+    expect(mark('Week of 8 Jun: broke')).toBeTruthy()
+    expect(mark('Week of 8 Jun: frozen')).toBeUndefined()
+    expect(header()).toContain('Best 4 weeks')
+    expect(header()).toContain('Strict rule: no freezes are banked.')
+  })
+})

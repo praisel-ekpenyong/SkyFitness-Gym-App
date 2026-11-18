@@ -15,7 +15,7 @@ import { applyStarterPlan } from './lib/starter.js'
 import { applyHypertrophyPlan } from './lib/plans/hypertrophy-5day.js'
 import { Thumb } from './components/Media.jsx'
 import Icon from './components/Icon.jsx'
-import { Button, NumberField, Switch } from './components/ui.jsx'
+import { Button, NumberField, Segmented, Switch } from './components/ui.jsx'
 import BodyMap from './components/BodyMap.jsx'
 import { SessionMuscleDistribution } from './components/SessionMuscleDistribution.jsx'
 import { loadOfWorkouts, MUSCLE_NAME } from './lib/muscles.js'
@@ -24,7 +24,7 @@ import { parseImport, mergeImport, importPreview } from './lib/import-csv.js'
 import { buildPlanBundle, parsePlan, mergePlan, printPlan } from './lib/plan-share.js'
 import { monthRecap } from './lib/recap.js'
 import { streakOf } from './lib/streak.js'
-import { weekExplanation, markLabel, freezeLine } from './lib/streak-explain.js'
+import { weekExplanation, markLabel, freezeLine, rulePreviewLine, RULE_ORDER, RULE_NAME } from './lib/streak-explain.js'
 import { weekKey, isoOf } from './lib/format.js'
 import { MOBILE, shareExport } from './lib/mobile.js'
 import { configureSessionSheets } from './sheets/session.jsx'
@@ -553,6 +553,12 @@ export function Calendar({ start, close }) {
       <span>{t(streak.freezes === 1 ? '{0} freeze banked' : '{0} freezes banked', fmtNum(streak.freezes))}</span>
       <span className="cal-next">{freezeLine(streak)}</span>
     </div>
+    <Segmented className="cal-rule" label={t('Freeze rule')} value={streak.rule}
+      options={RULE_ORDER.map(v => ({ value: v, label: t(RULE_NAME[v]) }))}
+      onChange={v => update(s => { s.streakRule = v })} />
+    <ul className="small muted cal-rules">
+      {RULE_ORDER.map(v => <li key={v}>{rulePreviewLine(v, streak.preview[v])}</li>)}
+    </ul>
     <div className="small muted cal-sum">{monthWs.length ? `${t(monthWs.length === 1 ? '{0} workout' : '{0} workouts', fmtNum(monthWs.length))} · ${fmtDur(month.durationMs)} · ${fmtVol(month.tonnage, st.unit)}` : t('No workouts this month')}</div>
     <div className="cal-grid">{['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].map(l => <div key={l} className="cal-h">{t(l)}</div>)}<div className="cal-h" aria-hidden="true" />{rows}</div>
     <p className="small cal-explain" aria-live="polite">{selected ? weekExplanation(selected, streak.rule) : ''}</p>

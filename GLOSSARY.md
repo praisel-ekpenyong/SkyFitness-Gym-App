@@ -143,7 +143,7 @@ _Avoid_: weekly streak, streak alone (a Run is not a streak)
 A banked allowance that covers one missed week so the Week streak continues. Earned by every fourth counted week in a run, capped by the Freeze rule's bank; an earned Freeze past the cap is lost.
 
 **Freeze rule**:
-The setting that fixes how many Freezes can be banked: Strict (0), Gentle (1, the default) or Generous (2). Stored on the Profile and carried by Export and Restore, never by the plan file.
+The setting that fixes how many Freezes can be banked: Strict (0), Gentle (1, the default) or Generous (2). Stored on the Profile and carried by Export and Restore, never by the plan file. Rules apply retroactively by design: every week is judged by the rule in force now, so switching rule changes past weeks too, and the picker previews each rule's current and best streak before you switch.
 
 **Entry**:
 One exercise within a routine or a workout; holds its sets.

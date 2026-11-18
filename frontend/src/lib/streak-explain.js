@@ -37,3 +37,15 @@ export function freezeLine({ rule, freezes, toNextFreeze }) {
     ? t('Next freeze in {0} counted week.', fmtNum(toNextFreeze))
     : t('Next freeze in {0} counted weeks.', fmtNum(toNextFreeze))
 }
+
+/** The freeze rules in the order the picker lists them. */
+export const RULE_ORDER = ['strict', 'gentle', 'generous']
+export const RULE_NAME = { strict: 'Strict', gentle: 'Gentle', generous: 'Generous' }
+
+/** One picker line: a rule, its bank size, and what its current and best streak would be. */
+export function rulePreviewLine(rule, { current, best }) {
+  const bank = FREEZE_BANK[rule]
+  const freezes = bank === 1 ? t('{0} freeze', fmtNum(bank)) : t('{0} freezes', fmtNum(bank))
+  const now = current === 1 ? t('{0} week', fmtNum(current)) : t('{0} weeks', fmtNum(current))
+  return t('{0} ({1}): {2}, best {3}', t(RULE_NAME[rule]), freezes, now, fmtNum(best))
+}
