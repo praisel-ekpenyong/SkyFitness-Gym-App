@@ -3,8 +3,8 @@ import { DEF } from './def.js'
 // A Restore must never copy the in-flight Active workout.
 const NOT_RESTORED = new Set(['active'])
 
-// `exWeights` was written before ADR 0021, and `streakRule` (the Freeze rule) before the Week streak
-// became a plain count. Old backups keep both untouched, though nothing reads them. `showRir` is
+// `exWeights` was written until ADR 0021 (now 0031), and `streakRule` (the Freeze rule) until the
+// Week streak became a plain count. Old backups keep both untouched, though nothing reads them. `showRir` is
 // carried for the 0 → 1 upgrade step, which turns it into `effort` and drops it (ADR 0027).
 const LEGACY_RESTORE_KEYS = ['exWeights', 'streakRule', 'showRir']
 

@@ -34,20 +34,39 @@ export function resolveSetWeight(set, entry = null, workout = null, targetUnit =
   return normalizeWeight(w, rawUnit, targetUnit)
 }
 
+const PLATE_STEP = { kg: 1.25, lb: 2.5 }
+
+/**
+ * An Increment in another unit (ADR 0028, amended 2026-11-19). An Increment is a plate step, not a measured load:
+ * it converts, then rounds to the nearest multiple of the target unit's smallest plate step (1.25 kg, 2.5 lb),
+ * never below one step. The only place `inc` is converted; a time-mode `inc` (seconds) never comes here.
+ *
+ * @param {number} inc - The Increment in `from`.
+ * @param {string} from - The unit it is in.
+ * @param {string} to - The unit wanted.
+ * @returns {number} The Increment in `to`; `inc` itself when the units match or it is not a load.
+ */
+export function convertIncrement(inc, from, to) {
+  if (!isLoad(inc) || sanitizeUnit(from) === sanitizeUnit(to)) return inc
+  const step = PLATE_STEP[sanitizeUnit(to)]
+  const exact = Number(inc) * (sanitizeUnit(to) === 'kg' ? LB_TO_KG : 1 / LB_TO_KG)
+  return Math.max(1, Math.round(exact / step)) * step
+}
+
 const sameUnit = (a, b) => sanitizeUnit(a) === sanitizeUnit(b)
 const isLoad = v => Number.isFinite(Number(v)) && Number(v) !== 0
 
-/** The load fields of a Target that change between two units: `weight`, and `inc` unless the Mode is time (seconds). */
+/** The load fields of a Target that change between two units: `weight` (exact), and `inc` (snapped to a plate step) unless the Mode is time (seconds). */
 function targetPatch(cfg, from, to) {
   const patch = {}
   if (!cfg || sameUnit(from, to)) return patch
   if (isLoad(cfg.weight)) patch.weight = normalizeWeight(cfg.weight, from, to)
-  if (cfg.mode !== 'time' && isLoad(cfg.inc)) patch.inc = normalizeWeight(cfg.inc, from, to)
+  if (cfg.mode !== 'time' && isLoad(cfg.inc)) patch.inc = convertIncrement(cfg.inc, from, to)
   return patch
 }
 
 /**
- * A Target (ExCfg) with its loads in another unit (ADR 0028).
+ * A Target (ExCfg) with its loads in another unit (ADR 0031).
  *
  * @param {Object|null} cfg - Routine exercise config or a frozen Entry target.
  * @param {string} from - The unit its loads are in.
@@ -75,7 +94,7 @@ export function setIn(set, from, to) {
 }
 
 /**
- * The Settings unit switch, on a Profile draft (ADR 0028). Plans and settings convert in place:
+ * The Settings unit switch, on a Profile draft (ADR 0031). Plans and settings convert in place:
  * every Routine's `weight` and `inc`, and the Goal weight. Logs are never rewritten: a Workout or
  * Weigh-in without a unit stamp is stamped with the outgoing unit, so it keeps reading as it did.
  * Refused while a workout is active, because the Active workout is read in `S.unit`.

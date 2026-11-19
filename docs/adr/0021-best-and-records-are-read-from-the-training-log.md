@@ -1,5 +1,7 @@
 # Best and Records are read from the Training log
 
+Status: Superseded by [0031](0031-the-training-log-is-the-only-reading.md).
+
 Best, Records, last session and Tonnage were read in about 14 files. Each one walked `S.workouts` itself and applied the unit only if it remembered to. Tonnage skipped it at all 8 call sites. Two other values were remembered outside the log: `exWeights`, a heaviest-ever cache that only goes up, and `prs`, Records stamped once at finish. As a result, the Library's Best and the Exercise detail's Best differed. A deleted typo Workout (250 kg) stayed as Best forever and stopped every later real Record from showing. Imported history never showed a Record.
 
 Decision: one module, `lib/training-log.js`, reads all of these from the finished Workouts alone, always in `S.unit`. Every function takes the Profile first (`(S, exId)` or `(S, workout)`). There is no unit argument. Caching is internal, keyed on the `S.workouts` array.

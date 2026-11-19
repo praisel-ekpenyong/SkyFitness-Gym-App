@@ -312,7 +312,7 @@ describe('plan-share engine', () => {
     })
   })
 
-  describe('the unit a plan file carries (ADR 0028)', () => {
+  describe('the unit a plan file carries (ADR 0031)', () => {
     const lbPlan = {
       unit: 'lb',
       routines: [{ id: 'r1', name: 'Push', ex: [
@@ -337,7 +337,7 @@ describe('plan-share engine', () => {
       const state = { unit: 'kg', routines: [], customEx: [], week: {} }
       mergePlan(state, lbPlan)
       expect(state.routines[0].ex).toEqual([
-        { id: BARBELL_BENCH, sets: 3, reps: 5, weight: 61.2, inc: 2.3 },
+        { id: BARBELL_BENCH, sets: 3, reps: 5, weight: 61.2, inc: 2.5 },
         { id: 'plank', sets: 3, mode: 'time', sec: 45, weight: 4.5, inc: 5 },
       ])
     })

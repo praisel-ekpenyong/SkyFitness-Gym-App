@@ -1,5 +1,7 @@
 # Working weight is read from the log
 
+Status: Accepted. Amended by [0031](0031-the-training-log-is-the-only-reading.md) (Best is read from the Training log) and [0032](0032-the-active-workout.md) (the "Next" key reads `sessionView`; `nextUnitTarget` is gone).
+
 ## Context
 
 ADR 0006 named "confirming working weight" as part of the Active workout lifecycle seam. After the last Work set

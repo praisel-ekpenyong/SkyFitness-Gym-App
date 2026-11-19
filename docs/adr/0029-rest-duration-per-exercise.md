@@ -1,6 +1,6 @@
 # An exercise may set its own Rest duration
 
-Status: Accepted, 2026-11-18. Amends ADR 0023 on what the effect runner reads for a rest.
+Status: Accepted, 2026-11-18. It amended ADR 0023 on what the effect runner reads for a rest; that rule is now part of [0032](0032-the-active-workout.md).
 
 ## Context
 

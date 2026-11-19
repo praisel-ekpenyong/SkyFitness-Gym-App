@@ -2,18 +2,32 @@ import { isPlainShoulders } from './muscle-spelling.js'
 
 // The shoulder head every catalogue exercise trains (ADR 0024).
 //
+// Why three heads: every bench and overhead press trains the front delts, while
+// side and rear delts grow only from work aimed at them. With one "Shoulders"
+// muscle, a push-heavy week read as well-trained shoulders while side and rear
+// delts got nothing.
+//
 // Upstream tags 143 exercises `delts` and about 450 more name a plain
-// "shoulders" or "deltoids" helper. Sky splits the deltoid into three heads, so
-// each of those is read here as one head. Nothing in this file is matched by
-// name at runtime: the lists are catalogue ids, proposed by name rules once and
-// then checked by hand one id at a time.
+// "shoulders" or "deltoids" helper (20 name "rear deltoids"). Sky splits the
+// deltoid into three heads, so each of those is read here as one head. The
+// rewrite runs once when `exercises.js` builds the catalogue index, after the
+// overlay in catalogue-corrections.js, so an overlay removal of a plain
+// "shoulders" still applies; the upstream dataset stays untouched.
+//
+// Nothing in this file is matched by name at runtime: the lists are catalogue
+// ids. Name rules proposed about 112 primary heads; every proposal, and the
+// rest (rotator-cuff work, Olympic and kettlebell lifts, odd moves), was read
+// by hand one id at a time. Delt-head evidence is EMG, not growth, so these
+// assignments are a reasonable reading, not a measurement.
 
 // Primary head of every delts-primary catalogue exercise, and of the one
 // upper-back row ADR 0025 re-targets to a head. This list is the only place a
-// catalogue exercise gets a head as its primary. Presses, front raises
-// and cleans go to the front; lateral raises, upright rows, snatches and other
+// catalogue exercise gets a head as its primary: the patterns in
+// catalogue-corrections.js never set one. Presses, front raises, cleans and
+// thrusters go to the front; lateral raises, upright rows, snatches and other
 // arm-out-to-the-side raises to the side; rear-delt raises and rows, reverse
-// flyes, external rotations and Cuban presses to the rear.
+// flyes, external rotations and Cuban presses to the rear. An id that was hard
+// to call carries its reason beside it.
 export const PRIMARY_DELT_HEAD_IDS = {
   'front-delts': [
     '0978', // band front raise
@@ -170,6 +184,12 @@ export const PRIMARY_DELT_HEAD_IDS = {
 // Helper "shoulders"/"deltoids" credit follows the movement, read from the
 // exercise's primary target: pressing, chest, arm and core work to the front;
 // rows and pulls to the rear; shrugs and high pulls to the side.
+//
+// "Rear deltoids" always reads as rear, and so does "rotator cuff" (both are
+// aliases in muscles.js). The catalogue puts a rotator-cuff helper on six
+// exercises: four shoulder rotations, and two lateral raises whose pattern
+// drops it. External rotation works the rear head alongside the cuff, and the
+// muscle map has no rotator cuff, so dropping the helper would lose that credit.
 export const ASSIST_DELT_HEAD_BY_TARGET = {
   'upper back': 'rear-delts',
   lats: 'rear-delts',

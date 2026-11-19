@@ -1,5 +1,7 @@
 # Routine domain behind `actRoutine` and `routineView`
 
+Status: Accepted, 2026-11-18.
+
 ## Context
 
 `S.routines` mutations were previously open-coded directly across presentation views and sheets (`views/RoutineEdit.jsx`, `views/Plan.jsx`, `sheets/catalogue.jsx`, and `sheets/session.jsx`). Because routine management was scattered across UI components, callers had to manually coordinate structural invariants:

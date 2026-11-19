@@ -1,5 +1,7 @@
 # The Active workout is one module behind `act` and `sessionView`
 
+Status: Superseded by [0032](0032-the-active-workout.md).
+
 ADR 0006 named the Active workout lifecycle as one seam. By 2026-11 that seam had become shallow. `lib/active-workout.js` only re-exported five files. The store wrapped 17 of their functions in the same `let ok; update(s => ok = fn(s)); return ok`. `views/Workout.jsx` still did the session's own work:
 - It rebuilt the cursor (`units`, `unitOf`, `unitIdx`, Prev/Next) beside `describeUnit` in `active-toggle.js`.
 - It counted Session progress per Step in a second place, and the reorder sheet counted it in a third. `finishWorkout` in `sheets/session.jsx` also counted it, to choose between nothing logged, warm-ups only, finish early and complete.

@@ -1,6 +1,6 @@
 # Active-workout lifecycle behind a named seam
 
-> Superseded in part by ADR-0023 (Active workout behind `act` and `sessionView`): the named store actions below are replaced by one `act(command)`; the lifecycle stays one seam.
+Status: Superseded by [0032](0032-the-active-workout.md).
 
 Inline mutators across `sheets.jsx` and `views/Workout.jsx` owned the riskiest Profile writes — building the Active workout, confirming working weight, finishing a Workout with Record detection and the heaviest-ever (`exWeights`) merge — with three divergent merge policies (always-max/today at `sheets.jsx:915`, only-if-heavier/workout-date at `:1003`, newer-date-wins reading all sets at `lib/import-csv.js:536`) and a duplicated best-weight read (`Workout.jsx:69` = `sheets.jsx:898`). A phantom second argument `update(mut, true)` at `Workout.jsx:185,218` survived unnoticed.
 

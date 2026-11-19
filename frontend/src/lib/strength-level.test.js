@@ -177,7 +177,7 @@ describe('strength levels: thresholds and next level', () => {
     expect(lb.next).toEqual({ level: 'Advanced', weight: 400 })
   })
 
-  it('grades the same after a switch to pounds: stamped Weigh-ins and Session body weight read converted (ADR 0028)', () => {
+  it('grades the same after a switch to pounds: stamped Weigh-ins and Session body weight read converted (ADR 0031)', () => {
     const kg = liftOf(profile({ workouts: [session(SQUAT.id, 10, [single(120)], { bw: 80, unit: 'kg' })] }))
     const fromWorkout = liftOf(profile({
       unit: 'lb',

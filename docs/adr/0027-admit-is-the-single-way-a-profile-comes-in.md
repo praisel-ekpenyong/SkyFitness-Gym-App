@@ -18,7 +18,7 @@ Old data shapes (a `warmup: true` flag, a missing `phase`) are handled by reader
    order: date, then `start`, then original position. It needs no DOM and no store.
 2. Every way in calls `admit`: boot, cross-tab sync, restore and CSV import. Finishing a Workout uses the same order.
 3. `admit` upgrades old **shapes** only, for example `warmup: true` to `phase: 'warmup'`. It never rewrites
-   **values**: units stay converted at read time (ADR 0019), and `topW` and `asked` stay as stored (ADR 0020).
+   **values**: units stay converted at read time (ADR 0031), and `topW` and `asked` stay as stored (ADR 0020).
    Reader branches made dead by an upgrade are removed.
 
 ## Consequences

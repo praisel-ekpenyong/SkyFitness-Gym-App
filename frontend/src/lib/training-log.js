@@ -140,7 +140,7 @@ function sessionIndexFor(workouts) {
   return index
 }
 
-// A session read in the Profile unit: Sets and Target are converted from their stamp (ADR 0028).
+// A session read in the Profile unit: Sets and Target are converted from their stamp (ADR 0031).
 // Rows already in the unit are returned as stored.
 function publicSession(session, unit) {
   if (!session) return null
