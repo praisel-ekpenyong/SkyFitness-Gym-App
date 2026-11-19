@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { best, best1RM, e1rmRecords, e1rmSeries, metric, records, tonnage, lastSession, lastSessionInRoutine, latestWorkSetAt, lastWorkoutInRoutine } from './training-log.js'
+import { best, best1RM, e1rmByWorkout, e1rmRecords, e1rmSeries, metric, records, tonnage, lastSession, lastSessionInRoutine, latestWorkSetAt, lastWorkoutInRoutine } from './training-log.js'
 
 const lift = (sets, extra = {}) => ({ id: 'bench', sets, ...extra })
 const day = (d, entries, unit) => ({ d, entries, ...(unit ? { unit } : {}) })
@@ -272,6 +272,14 @@ describe('Training log: Estimated 1RM series', () => {
     const first = seriesLog.workouts[0]
     expect(e1rmSeries({ unit: 'kg', workouts: [first] }, 'bench')).toHaveLength(1)
     expect(records({ unit: 'kg', workouts: [first] }, first)).toEqual([])
+  })
+
+  it('gives each series point with the Workout it comes from', () => {
+    const byWorkout = e1rmByWorkout(seriesLog, 'bench')
+    expect(byWorkout.map(({ workout, ...point }) => point)).toEqual(e1rmSeries(seriesLog, 'bench'))
+    expect(byWorkout.map(p => p.workout)).toEqual([0, 2, 3].map(i => seriesLog.workouts[i]))
+    expect(byWorkout[0].workout).toBe(seriesLog.workouts[0])
+    expect(e1rmByWorkout(seriesLog, 'run')).toEqual([])
   })
 
   it('drops a deleted Workout from the series and from the standing best', () => {

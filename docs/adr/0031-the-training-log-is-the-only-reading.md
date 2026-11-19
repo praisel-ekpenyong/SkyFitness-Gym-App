@@ -14,7 +14,7 @@ Status: Accepted, 2026-11-19. Supersedes 0017, 0019, 0021, 0022 and 0028.
 - the latest Work set time;
 - Tonnage;
 - the chart metric;
-- the Estimated 1RM series and the standing best estimate.
+- the Estimated 1RM series and the standing best estimate, and the same series with each point's Workout (`e1rmByWorkout`), which Strength levels read.
 
 Every function takes the Profile first (`(S, exId)` or `(S, workout)`) and answers in `S.unit`. None takes a unit argument or a formula argument. Caches are internal, keyed on the `S.workouts` array and the unit. `update` keeps that array's identity when a change does not touch the log (ADR 0026), so the caches survive a Set tap.
 
@@ -55,8 +55,8 @@ One function does the switch: `switchUnit(S, unit)` in `lib/units.js`, called by
 The code wins; these are the facts on `main`.
 
 - **Best also reads a legacy `topW`.** ADR 0021 said Best is the heaviest performed Work set. On an Entry whose Target is reps (or has no Mode) and that has no Warm-up set, a heavier `topW` raises Best, and can make a load Record with no Set behind it. The chart metric is stricter: the Entry must also have a performed reps Set and no Work set in another Mode.
-- **CSV import still writes `topW`.** ADR 0020 says new Workouts stop writing it. That holds for Workouts finished in Sky. CSV import sets it to the heaviest imported Work set. Every imported Set is performed, so it changes no reading.
-- **Strength levels estimate on their own.** ADR 0022 moved the per-exercise series into the Training log. `lib/strength-level.js` still walks the log itself, because one lift spans several exercises. It calls `estimate1RM` with the Set's stamp and `S.unit`.
+- **CSV import no longer writes `topW`** (ticket 16), so no new Workout writes it, as ADR 0020 says. It was always the heaviest imported Work set, so it held nothing the Sets lack. Workouts imported earlier keep their `topW`, read as legacy.
+- **Strength levels read the Training log's estimate** (ticket 16). `lib/strength-level.js` takes each Workout's Estimated 1RM from `e1rmByWorkout`, in `S.unit`. One lift spans several exercises, so a Workout holding two of them counts the greater estimate. The level takes "trained" and "trained lately" from `latestWorkSetAt`. The current window, the peak and the body weight at the time stay the level's own rules.
 - **Fatigue reads in kg.** `lib/recovery.js` converts every load to kg, not `S.unit`, through its own stamp lookup. That lookup also accepts the stamp spellings `u`, `weightUnit`, `weight_unit` and `loadUnit`.
 
 ## Considered options
