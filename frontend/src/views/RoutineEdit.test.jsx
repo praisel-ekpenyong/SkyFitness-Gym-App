@@ -155,6 +155,28 @@ describe('RoutineEdit exercise replacement', () => {
     expect(updatedRoutine.ex[2].sg).toBeUndefined()
   })
 
+  it('saving an exercise replaces its settings, so a setting turned off is cleared', async () => {
+    const st = useStore.getState().S
+    const seeded = JSON.parse(JSON.stringify(st))
+    Object.assign(seeded.routines[0].ex[0], { side: true, rest: 150, prog: 'double', repsMin: 8, inc: 1.25, bodyweight: true, notes: 'Slow eccentric' })
+    useStore.getState().replaceState(seeded)
+    await act(async () => {
+      root.render(<RoutineEdit />)
+    })
+
+    const items = container.querySelectorAll('.list .item')
+    await act(async () => {
+      items[0].dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    const [, { onSave }] = mocks.exConfigSheet.mock.calls[0]
+    await act(async () => {
+      onSave({ sets: 3, mode: 'reps', reps: 10, weight: 20 })
+    })
+
+    const saved = useStore.getState().S.routines.find(x => x.id === 'r-test-1').ex[0]
+    expect(saved).toEqual({ id: '0001', sg: 'sg-0-1', sets: 3, mode: 'reps', reps: 10, weight: 20 })
+  })
+
   it('replaces a non-superset exercise without adding an sg property', async () => {
     await act(async () => {
       root.render(<RoutineEdit />)

@@ -420,7 +420,7 @@ export function ExConfig({ ex, existing, onSave, onDelete, close, routine, initi
     const trimmedNotes = typeof c.notes === 'string' ? c.notes.trim().slice(0, 500) : ''
     const noteProp = trimmedNotes ? { notes: trimmedNotes } : {}
     const rest = ownRest(c)
-    const restProp = rest != null && rest !== st.restSec ? { rest } : {}
+    const restProp = rest != null ? { rest } : {}
     if (cardio) onSave({ sets, min: Math.max(1, Math.round(c.min) || 20), speed: Math.max(0, c.speed || 8), ...restProp, ...noteProp })
     else if (mode === 'time') onSave({ sets, mode: 'time', sec: Math.max(1, Math.round(c.sec) || 45), weight: Math.max(0, c.weight || 0), ...flags, ...prog, ...restProp, ...noteProp })
     else {

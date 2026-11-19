@@ -143,10 +143,10 @@ describe('the bodyweight carve-out reads the Bodyweight exercise flag, not a sav
 describe('double progression runs', () => {
   it('deloads only after four no-progress sessions following the baseline', () => {
     expect(DELOAD_AFTER.double).toBe(4)
-    const four = state(repeat(4, i => session({ d: day(i), rows: rowsOf(40, 9) })))
+    const four = state(repeat(4, i => session({ d: day(i), rows: rowsOf(40, 10) })))
     expect(nextPrescription(four, DOUBLE).kind).toBe('hold')
 
-    const five = state(repeat(5, i => session({ d: day(i), rows: rowsOf(40, 9) })))
+    const five = state(repeat(5, i => session({ d: day(i), rows: rowsOf(40, 10) })))
     const p = nextPrescription(five, DOUBLE)
     expect(p.kind).toBe('deload')
     expect(p.weight).toBe(35)
@@ -154,7 +154,7 @@ describe('double progression runs', () => {
   })
 
   it('following a deload builds up instead of cascading', () => {
-    const workouts = repeat(5, i => session({ d: day(i), rows: rowsOf(40, 9) }))
+    const workouts = repeat(5, i => session({ d: day(i), rows: rowsOf(40, 10) }))
     const S = state(workouts)
 
     const deload = nextPrescription(S, DOUBLE)
@@ -217,7 +217,7 @@ describe('double progression runs', () => {
   })
 
   it('holds at the prescribed deload weight when the deload session was not performed', () => {
-    const S = state(repeat(5, i => session({ d: day(i), rows: rowsOf(40, 9) })))
+    const S = state(repeat(5, i => session({ d: day(i), rows: rowsOf(40, 10) })))
     const deload = nextPrescription(S, DOUBLE)
     expect(deload).toMatchObject({ kind: 'deload', weight: 35, reps: 10 })
 
@@ -476,7 +476,7 @@ describe('Prescription records and the finish boundary', () => {
       { d: '2026-01-01', routineId: 'r1', entries: [{
         id: LIFT,
         target: REP_TARGET,
-        sets: rowsOf(40, 9),
+        sets: rowsOf(40, 10),
       }] },
     ], { routines: [routine] })
 
@@ -486,7 +486,7 @@ describe('Prescription records and the finish boundary', () => {
 
     const completed = finish(S)
     expect(completed.entries[0].plan).toEqual({
-      kind: 'hold', weight: 40, reps: 10,
+      kind: 'hold', weight: 40, reps: 11,
     })
   })
 
@@ -495,7 +495,7 @@ describe('Prescription records and the finish boundary', () => {
     const S = state(repeat(5, i => ({
       d: day(i),
       routineId: 'r1',
-      entries: [{ id: LIFT, target: REP_TARGET, sets: rowsOf(40, 9) }],
+      entries: [{ id: LIFT, target: REP_TARGET, sets: rowsOf(40, 10) }],
     })), { routines: [routine] })
 
     const first = begin(S, 'r1', '2026-01-10')

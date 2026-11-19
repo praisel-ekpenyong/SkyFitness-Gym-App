@@ -1,6 +1,6 @@
 # Progression reads a stream, and stalls read a run
 
-Status: Accepted, 2026-10-27. Amended by [0031](0031-the-training-log-is-the-only-reading.md) (the `exWeights` hint is now Best) and on 2026-11-18 below (the bodyweight carve-out).
+Status: Accepted, 2026-10-27. Amended by [0031](0031-the-training-log-is-the-only-reading.md) (the `exWeights` hint is now Best), on 2026-11-18 below (the bodyweight carve-out), and by [0033](0033-double-progression-drops-below-the-range.md) (double progression drops one Increment on a first set below the range).
 
 Double progression judged every session below the top of the rep range as a Miss. A deload
 prescribed the bottom of the range, which could never be a Hit against the frozen top Target,
