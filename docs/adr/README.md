@@ -20,7 +20,7 @@ A replacement ADR states the decision as it stands, checked against the code, an
 | [0008](0008-canonical-muscle-filters-and-custom-exercise-muscles.md) | Canonical muscle filters and custom exercise muscle mapping | Amended by 0009, 0024 |
 | [0009](0009-lats-back-geometry-fallback.md) | Lats back geometry (partitioned MuscleMap sub-paths) | Accepted |
 | [0010](0010-configured-hosts.md) | Configured hosts; builds stay host-agnostic | Accepted |
-| [0011](0011-progression-streams-and-runs.md) | Progression reads a stream, and stalls read a run | Amended by 0031 |
+| [0011](0011-progression-streams-and-runs.md) | Progression reads a stream, and stalls read a run | Amended by 0031, 0033 |
 | [0012](0012-catalogue-curations-and-hamstring-hinges.md) | Catalogue curations and hamstring hinges | Amended by 0025 |
 | [0013](0013-tokenized-ranked-catalogue-search.md) | Tokenized and ranked catalogue search | Accepted |
 | [0014](0014-routine-sync-from-active-session.md) | Routine sync from completed active session | Amended by 0015, 0029, 0030, 0031 |
@@ -42,3 +42,4 @@ A replacement ADR states the decision as it stands, checked against the code, an
 | [0030](0030-routine-domain-behind-act-routine.md) | Routine domain behind `actRoutine` and `routineView` | Accepted |
 | [0031](0031-the-training-log-is-the-only-reading.md) | The Training log is the only reading, in the Profile's unit | Accepted |
 | [0032](0032-the-active-workout.md) | The Active workout is one module behind `act` and `sessionView` | Accepted |
+| [0033](0033-double-progression-drops-below-the-range.md) | Double progression drops on a first set below the range | Accepted |
