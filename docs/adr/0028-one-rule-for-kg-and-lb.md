@@ -81,3 +81,15 @@ What the inventory found:
 - Profiles change shape the first time they switch: unstamped Workouts and Weigh-ins gain `unit`.
 - A lifter mid-workout is asked to finish or discard it before switching.
 - A plan file exported from a lb Profile imports into a kg Profile in kg.
+
+## Amendment 2026-11-19: an Increment snaps to a plate step
+
+An Increment is a plate step, not a measured load, but the switch and plan import converted `inc` like a load, so 2.5 kg
+became 5.5 lb and ADR 0011 then told a pound lifter to add 5.5 lb. Decision 2 and 5 now read: loads (`weight`, Goal
+weight) convert exactly (round1); `inc` converts, then rounds to the nearest multiple of the target unit's smallest
+plate step (1.25 kg, 2.5 lb), never below one step. 2.5 kg is 5 lb, 1.25 kg is 2.5 lb, 5 kg is 10 lb, 10 kg is
+22.5 lb; 5 lb is 2.5 kg and 10 lb is 5 kg. A time-mode `inc` (seconds) never converts. One function,
+`convertIncrement` in `lib/units.js`, does it for the switch, plan import and reads of a frozen Target (all through
+`targetIn`). The default Increment (no `inc`, `defaultIncrement` in `lib/progression.js`) was already a plate step per
+unit (2.5 or 5 kg, 5 or 10 lb) and is not converted. Consequence: an lb to kg to lb trip can change an odd Increment
+(7.5 lb is 3.75 kg is 7.5 lb, but 3 lb is 1.25 kg is 2.5 lb).
