@@ -9,6 +9,7 @@ import {
   targetIn,
   setIn,
   switchUnit,
+  convertIncrement,
 } from './units.js'
 
 describe('units module', () => {
@@ -115,10 +116,24 @@ describe('units module', () => {
   })
 })
 
+describe('convertIncrement: a plate step, not a measured load (ADR 0028)', () => {
+  it.each([
+    [2.5, 'kg', 'lb', 5], [1.25, 'kg', 'lb', 2.5], [5, 'kg', 'lb', 10], [10, 'kg', 'lb', 22.5],
+    [5, 'lb', 'kg', 2.5], [10, 'lb', 'kg', 5], [2.5, 'lb', 'kg', 1.25],
+  ])('%s %s -> %s is %s', (inc, from, to, want) => expect(convertIncrement(inc, from, to)).toBe(want))
+
+  it('never goes below one plate step, and leaves the same unit and a non-load alone', () => {
+    expect(convertIncrement(0.5, 'kg', 'lb')).toBe(2.5)
+    expect(convertIncrement(0.5, 'lb', 'kg')).toBe(1.25)
+    expect(convertIncrement(2.5, 'kg', 'kg')).toBe(2.5)
+    expect(convertIncrement(undefined, 'kg', 'lb')).toBe(undefined)
+  })
+})
+
 describe('targetIn: a Target (ExCfg) in another unit', () => {
   it('converts weight and the load step, rounded like normalizeWeight', () => {
     const cfg = { id: 'bench', sets: 3, reps: 5, weight: 60, inc: 2.5 }
-    expect(targetIn(cfg, 'kg', 'lb')).toEqual({ id: 'bench', sets: 3, reps: 5, weight: 132.3, inc: 5.5 })
+    expect(targetIn(cfg, 'kg', 'lb')).toEqual({ id: 'bench', sets: 3, reps: 5, weight: 132.3, inc: 5 })
     expect(cfg.weight).toBe(60)
   })
 
@@ -179,7 +194,7 @@ describe('switchUnit: the Settings switch (ADR 0031)', () => {
     expect(S.unit).toBe('lb')
     expect(S.targetW).toBe(165.3)
     expect(S.routines[0].ex).toEqual([
-      { id: 'bench', sets: 3, reps: 5, weight: 132.3, inc: 5.5 },
+      { id: 'bench', sets: 3, reps: 5, weight: 132.3, inc: 5 },
       { id: 'plank', mode: 'time', sets: 3, sec: 45, inc: 5 },
       { id: 'dip', sets: 3, reps: 8, weight: -44.1, bodyweight: true },
     ])

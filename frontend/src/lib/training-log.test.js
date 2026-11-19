@@ -464,7 +464,7 @@ describe('Training log: last session', () => {
     expect(lastSession({ unit: 'lb', workouts }, 'bench')).toEqual({
       d: '2026-11-08',
       sets: [work(220.5), { ...work(135), unit: 'lb' }],
-      target: { reps: 5, weight: 220.5, inc: 5.5 },
+      target: { reps: 5, weight: 220.5, inc: 5 },
     })
     expect(lastSessionInRoutine({ unit: 'lb', workouts }, 'bench', null).sets[0].w).toBe(220.5)
   })
