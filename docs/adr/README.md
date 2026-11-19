@@ -42,3 +42,4 @@ A replacement ADR states the decision as it stands, checked against the code, an
 | [0030](0030-routine-domain-behind-act-routine.md) | Routine domain behind `actRoutine` and `routineView` | Accepted |
 | [0031](0031-the-training-log-is-the-only-reading.md) | The Training log is the only reading, in the Profile's unit | Accepted |
 | [0032](0032-the-active-workout.md) | The Active workout is one module behind `act` and `sessionView` | Accepted |
+| [0033](0033-double-progression-drops-below-the-range.md) | Double progression drops on a first set below the range | Accepted |

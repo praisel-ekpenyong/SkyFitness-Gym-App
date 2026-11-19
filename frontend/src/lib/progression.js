@@ -23,7 +23,7 @@ export const POLICY_DESC = {
   off: 'Targets stay where you set them.',
   linear: 'Hit every rep in every set and the weight goes up. Repeated misses trigger a deload.',
   greyskull: 'Two straight sets plus a final set taken to failure. Beat the target on that set and the weight goes up — double if you double the reps. One failure resets 10 %.',
-  double: 'Work up through a rep range at the same weight. Reach the top of the range in every set and the weight goes up, reps back to the bottom.',
+  double: 'Work up through a rep range at the same weight. Reach the top of the range in every set and the weight goes up, reps back to the bottom. Fall below the bottom on your first set and it drops.',
   time: 'Hold every set for the full duration and the target goes up.'
 }
 
@@ -286,6 +286,16 @@ function loadlessPrescription({ policy, cfg, last }) {
   return { policy, kind: 'up', weight: 0, reps: next, ...carrySets, why: ['Bodyweight — every rep last time, so go for {0} this time.', next] }
 }
 
+// The Run before a heavier one was at this weight and ended in a Hit (ADR 0033).
+function bouncedBack(sessions, start, load) {
+  if (start < 2) return false
+  const w = load(sessions[start])
+  const above = runStart(sessions.slice(0, start), load)
+  if (above < 1 || !(load(sessions[above]) > w)) return false
+  const before = sessions[above - 1]
+  return load(before) === w && !!before.ok
+}
+
 function doublePrescription({ policy, cfg, inc, unit, sessions, last, deloadAt, w }) {
   const top = Math.max(1, cfg.reps > 0 ? cfg.reps : (last.goal || 10))
   const bottom = cfg.repsMin > 0
@@ -293,12 +303,25 @@ function doublePrescription({ policy, cfg, inc, unit, sessions, last, deloadAt, 
     : Math.max(1, top - 2)
   const step = repStep(cfg)
   const range = { top, bottom, step }
+  const load = s => loadOf(s, cfg.weight)
+  const start = runStart(sessions, load)
   if (last.ok) {
+    if (bouncedBack(sessions, start, load) && sessions.slice(start).filter(s => s.ok).length < 2) {
+      return { policy, kind: 'hold', weight: w, reps: top, why: ['Top again: one more time at this weight before adding {0} {1}, since the last jump was too big.', inc, unit] }
+    }
     const nextW = round1(w + inc)
     return { policy, kind: 'up', weight: nextW, reps: bottom, why: ['Top of the rep range in every set — {0} {1} more, back to {2} reps.', inc, unit, bottom] }
   }
 
-  const start = runStart(sessions, s => loadOf(s, cfg.weight))
+  const first = last.reps?.[0] || 0
+  if (first > 0 && first < bottom) {
+    const nextW = round1(w - inc)
+    if (nextW < inc) {
+      return { policy, kind: 'hold', weight: w, reps: bottom, why: ['Lightest load — same weight again; build reps or add the smallest plate.'] }
+    }
+    return { policy, kind: 'down', weight: nextW, reps: bottom, why: ['First set {0} reps, below the {1}–{2} range. {3} {4} less, back to {1} reps.', first, bottom, top, inc, unit] }
+  }
+
   const noProgress = doubleNoProgress(sessions, start, range)
   const stalled = deloadIfStalled(w, inc, noProgress, deloadAt)
   if (stalled?.tag === 'hold') {
@@ -735,6 +758,9 @@ export function evaluateSessionProgression(entry, state, context = {}) {
   } else if (p.kind === 'deload') {
     iconName = 'info'
     text = t('Deload 10% to reset and rebuild')
+  } else if (p.kind === 'down') {
+    iconName = 'arrowDown'
+    text = t('Drop {0} {1}, back to {2} reps', fmtNum(Math.round((oldWeight - p.weight) * 10) / 10), unit, p.reps)
   } else if (p.kind === 'hold') {
     if (policy === 'double' && p.reps != null) {
       iconName = 'target'

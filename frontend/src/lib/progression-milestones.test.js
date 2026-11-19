@@ -975,6 +975,19 @@ describe('evaluateSessionProgression and sessionProgressionItems', () => {
     expect(item.label).toBe('Deload 10% to reset and rebuild')
   })
 
+  it('evaluates a double-progression drop with a down arrow', () => {
+    const entry = {
+      id: '0047',
+      target: { sets: 3, reps: 12, repsMin: 8, weight: 24, prog: 'double', inc: 2 },
+      sets: [{ w: 24, r: 6, done: true }, { w: 24, r: 6, done: true }, { w: 24, r: 5, done: true }]
+    }
+    const item = evaluateSessionProgression(entry, baseState)
+    expect(item.kind).toBe('down')
+    expect(item.isAdvance).toBe(false)
+    expect(item.iconName).toBe('arrowDown')
+    expect(item.label).toBe('Drop 2 kg, back to 8 reps')
+  })
+
   it('evaluates hold on missed linear target', () => {
     const entry = {
       id: '0025',

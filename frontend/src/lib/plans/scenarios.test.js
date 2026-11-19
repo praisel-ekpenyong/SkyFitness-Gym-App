@@ -16,11 +16,6 @@ const kinds = entries => entries.map(e => e.plan?.kind)
 const firstIndex = (entries, kind) => entries.findIndex(e => e.plan?.kind === kind)
 const work = e => e.sets.filter(s => s.done)
 const weakest = e => Math.min(...work(e).map(s => s.r))
-const dateOfFirst = (S, routine, ex, kind) => {
-  const routineId = S.routines.find(r => r.name === routine).id
-  const id = S.customEx.find(c => c.n === ex)?.id || ex
-  return S.workouts.find(w => w.routineId === routineId && w.entries.some(e => e.id === id && e.plan?.kind === kind))?.d
-}
 
 describe('scenario 1: baseline, 8 clean weeks', () => {
   const S = generateHistory({ weeks: 8 })
@@ -83,9 +78,11 @@ describe('scenario 2: illness', () => {
   const control = generateHistory({ weeks: 8, lifter, day: skipped })
 
   // Ticket 07 (wontfix): no flag takes a finished Workout out of progression.
-  it('counts the sick session as a stall today, so the deload comes a week early', () => {
-    expect(dateOfFirst(ill, 'Push', '0194', 'deload')).toBe('2026-10-15')
-    expect(dateOfFirst(control, 'Push', '0194', 'deload')).toBe('2026-10-22')
+  // A sick session's first set falls below the range, so the next one drops (ADR 0033).
+  it('drops one Increment the session after the sick one', () => {
+    const after = entriesOf(ill, 'Push', '0194').find(e => e.plan?.kind === 'down' && e.plan.weight === 22.5)
+    expect(after?.plan).toMatchObject({ kind: 'down', weight: 22.5 })
+    expect(entriesOf(control, 'Push', '0194').some(e => e.plan?.weight === 22.5 && e.plan.kind === 'down')).toBe(false)
   })
 })
 
@@ -121,9 +118,11 @@ describe('scenario 5: stall and deload', () => {
   const ext = entriesOf(S, 'Push', '0194')
 
   // Ticket 04 (wontfix): the plan deloads after 3 flat sessions; Sky keeps 4.
-  it(`deloads about 10% after ${DELOAD_AFTER.double} flat sessions on double progression`, () => {
-    expect(firstIndex(ext, 'deload')).toBe(1 + DELOAD_AFTER.double)
-    expect(ext[firstIndex(ext, 'deload')].plan.weight).toBe(25)
+  // The made-up lifter starts too heavy for the range, so it drops first (ADR 0033).
+  it(`drops into the range, then deloads about 10% after ${DELOAD_AFTER.double} flat sessions on double progression`, () => {
+    expect(ext[firstIndex(ext, 'down')].plan.weight).toBe(25)
+    expect(firstIndex(ext, 'deload')).toBe(firstIndex(ext, 'down') + 1 + DELOAD_AFTER.double)
+    expect(ext[firstIndex(ext, 'deload')].plan.weight).toBe(22.5)
   })
 })
 

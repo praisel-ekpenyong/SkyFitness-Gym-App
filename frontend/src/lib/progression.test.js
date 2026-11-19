@@ -361,6 +361,80 @@ describe('double progression', () => {
     expect(p.reps).toBe(8)
     expect(p.weight).toBe(35)
   })
+
+  it('drops one Increment and returns to the bottom when the first set falls below the range', () => {
+    const p = nextPrescription(hist(LIFT, [[40, 6, 6, 5]], { sets: 3, reps: 12 }), cfg)
+    expect(p.kind).toBe('down')
+    expect(p.weight).toBe(37.5)
+    expect(p.reps).toBe(8)
+    expect(p.why).toEqual(['First set {0} reps, below the {1}–{2} range. {3} {4} less, back to {1} reps.', 6, 8, 12, 2.5, 'kg'])
+  })
+
+  it('drops on the baseline session of a new weight', () => {
+    const p = nextPrescription(hist(LIFT, [[40, 12, 12, 12], [42.5, 7, 7, 6]], { sets: 3, reps: 12 }), cfg)
+    expect(p.kind).toBe('down')
+    expect(p.weight).toBe(40)
+  })
+
+  it('reads fatigue on later sets as normal: no drop while the first set is in the range', () => {
+    const p = nextPrescription(hist(LIFT, [[40, 9, 7, 6]], { sets: 3, reps: 12 }), cfg)
+    expect(p.kind).toBe('hold')
+    expect(p.weight).toBe(40)
+  })
+
+  it('does not drop on an unperformed first set', () => {
+    const p = nextPrescription(hist(LIFT, [[40, null, 9, 9]], { sets: 3, reps: 12 }), cfg)
+    expect(p.kind).toBe('hold')
+    expect(p.weight).toBe(40)
+  })
+
+  it('drops even when the stall count has reached a Deload', () => {
+    const rows = [...Array.from({ length: 4 }, () => [40, 9, 9, 9]), [40, 7, 7, 7]]
+    const p = nextPrescription(hist(LIFT, rows, { sets: 3, reps: 12 }), cfg)
+    expect(p.kind).toBe('down')
+    expect(p.weight).toBe(37.5)
+  })
+
+  it('holds at the lightest load instead of dropping below one Increment', () => {
+    const light = { ...cfg, weight: 2.5, inc: 2.5 }
+    const p = nextPrescription(hist(LIFT, [[2.5, 6, 6, 6]], { sets: 3, reps: 12 }), light)
+    expect(p.kind).toBe('hold')
+    expect(p.weight).toBe(2.5)
+    expect(p.why[0]).toContain('Lightest load')
+  })
+
+  it('a dropped-to weight needs the top twice before going up again', () => {
+    const rows = [[40, 12, 12, 12], [42.5, 7, 6, 6], [40, 12, 12, 12]]
+    const p = nextPrescription(hist(LIFT, rows, { sets: 3, reps: 12 }), cfg)
+    expect(p.kind).toBe('hold')
+    expect(p.weight).toBe(40)
+    expect(p.reps).toBe(12)
+    expect(p.why).toEqual(['Top again: one more time at this weight before adding {0} {1}, since the last jump was too big.', 2.5, 'kg'])
+  })
+
+  it('goes up after the second Hit at a dropped-to weight', () => {
+    const rows = [[40, 12, 12, 12], [42.5, 7, 6, 6], [40, 12, 12, 12], [40, 12, 12, 12]]
+    const p = nextPrescription(hist(LIFT, rows, { sets: 3, reps: 12 }), cfg)
+    expect(p.kind).toBe('up')
+    expect(p.weight).toBe(42.5)
+  })
+
+  it('counts the two Hits within the Run, not back to back', () => {
+    const rows = [[40, 12, 12, 12], [42.5, 7, 6, 6], [40, 12, 12, 12], [40, 11, 10, 10], [40, 12, 12, 12]]
+    const p = nextPrescription(hist(LIFT, rows, { sets: 3, reps: 12 }), cfg)
+    expect(p.kind).toBe('up')
+  })
+
+  it('a weight reached without a bounce goes up on its first Hit', () => {
+    const rows = [[42.5, 12, 12, 12], [40, 12, 12, 12]]
+    const p = nextPrescription(hist(LIFT, rows, { sets: 3, reps: 12 }), cfg)
+    expect(p.kind).toBe('up')
+  })
+
+  it('linear progression never drops on a below-range first set', () => {
+    const p = nextPrescription(hist(LIFT, [[40, 2, 2, 2]], { sets: 3, reps: 5 }), { id: LIFT, sets: 3, reps: 5, weight: 40, prog: 'linear' })
+    expect(p.kind).not.toBe('down')
+  })
 })
 
 describe('timed progression', () => {
