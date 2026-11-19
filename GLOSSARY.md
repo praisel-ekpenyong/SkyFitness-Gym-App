@@ -266,12 +266,16 @@ The exact step a fully hit session adds — bigger for lower-body lifts, overrid
 A session's weakest planned Work set reaching its aim — the previous weakest plus one rep step, clamped to the Target's rep range. Rep progress is not a Hit (the Target top is the Hit); it is the evidence that a double-progression climb is still moving, and it clears the Stall count.
 
 **Stall**:
-For linear, consecutive Misses after the current Run's baseline; a Deload starts a new Run. For Greyskull, every Miss — a reset at the reduced load is part of the program. For double progression and add-time, consecutive sessions in the current Run, after its baseline, that neither reach the Target top nor show progress — Rep progress for double, for add-time the weakest hold reaching the aim `min(working, previous weakest + Increment)`. A progress session clears the count.
+For linear, consecutive Misses after the current Run's baseline; a Deload starts a new Run. For Greyskull, every Miss — a reset at the reduced load is part of the program. For double progression and add-time, consecutive sessions in the current Run, after its baseline, that neither reach the Target top nor show progress — Rep progress for double, for add-time the weakest hold reaching the aim `min(working, previous weakest + Increment)`. A progress session clears the count. A Drop starts a new Run, so it clears the count too.
 _Avoid_: counting every below-top double-progression session as a Miss
 
 **Deload**:
 Cutting the working value roughly 10% after enough Stalls — load for reps work, hold duration for add-time — snapped to a loadable step or timer step, and never below one Increment (5 s for a hold). Rep work returns to the bottom of the rep range. The first session at the new value is a new Run baseline. When the value cannot be reduced, the Prescription holds at the same value and says so.
 _Avoid_: cascading Deloads; a same-weight "deload"
+
+**Drop**:
+Double progression's mirror of the load advance: when the first planned Work set of a session is performed below the rep-range bottom, the next Prescription (kind `down`) takes one Increment off the working load and returns to the range bottom, at once and on any session, a Run baseline included. Unperformed sets never trigger it, and it takes precedence over a Stall-count Deload. It never goes below one Increment; there the Prescription holds and says so. A Drop starts a new Run. When it returns to the load of the Run before the heavier one, and that Run ended in a Hit, the next advance needs two Hits in the current Run (ADR 0033).
+_Avoid_: calling it a Deload (that is the 10% cut after Stalls); dropping on a weak later set
 
 **AMRAP**:
 Greyskull's final set, taken to failure. Doubling its target reps earns a double increment.
@@ -289,7 +293,7 @@ An inline indicator on a checked-off Work set that reached its target, or, on th
 _Avoid_: set alert, failure banner, progress popup
 
 **Progression summary**:
-The section on the workout complete sheet presenting the next Prescription (load advance, rep aim, hold, or deload) for each trained exercise.
+The section on the workout complete sheet presenting the next Prescription (load advance, rep aim, hold, drop, or deload) for each trained exercise.
 _Avoid_: session verdict, workout recap
 
 **Session muscle distribution**:

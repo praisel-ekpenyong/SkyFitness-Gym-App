@@ -22,7 +22,7 @@ import Barbell, { loadsOnBar } from '../components/Barbell.jsx'
 import { Button, Check, NumberField, dotted } from '../components/ui.jsx'
 import { glyphOf } from '../lib/glyphs.js'
 import { isWarmupRow } from '../lib/workout-model.js'
-import { evaluateSetMilestone } from '../lib/progression.js'
+import { evaluateSetMilestone, lowersLoad } from '../lib/progression.js'
 import { primaryMuscleName } from '../lib/muscles.js'
 
 function StartChooser() {
@@ -150,8 +150,8 @@ function ExerciseBlock({ entryIdx, compact, isCurrent = true, arrived = false, r
       </div>
     </div>
     {last && <div className="small dim ex-last">{t('Last time')} {fmtDate(last.d)} · {last.sets.map(s => setLabel(entry.id, s, last.target)).join(', ')}</div>}
-    {plan && plan.why && plan.kind !== 'off' && <div className={'progline' + (plan.kind === 'deload' ? ' warn' : plan.kind === 'up' ? ' up' : '')}>
-      <Icon name={plan.kind === 'up' ? 'arrowUp' : plan.kind === 'deload' ? 'arrowDown' : 'lightbulb'} />
+    {plan && plan.why && plan.kind !== 'off' && <div className={'progline' + (lowersLoad(plan.kind) ? ' warn' : plan.kind === 'up' ? ' up' : '')}>
+      <Icon name={plan.kind === 'up' ? 'arrowUp' : lowersLoad(plan.kind) ? 'arrowDown' : 'lightbulb'} />
       <span>{t(...plan.why)}</span>
     </div>}
     {entry.notes && (
