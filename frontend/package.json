@@ -14,6 +14,7 @@
     "test:preview": "node scripts/test-deploy-preview.mjs",
     "media:fetch": "node ../scripts/fetch-media.mjs",
     "review:seed": "node scripts/review/seed.mjs",
+    "review:port": "node scripts/review/port.mjs",
     "review:serve": "node scripts/review/serve.mjs",
     "review:shots": "node scripts/review/shots.mjs",
     "review:audit": "node scripts/review/audit.mjs",
