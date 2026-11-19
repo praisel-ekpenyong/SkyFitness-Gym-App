@@ -1,6 +1,6 @@
 # An exercise may set its own Rest duration
 
-Status: Accepted, 2026-11-18. It amended ADR 0023 on what the effect runner reads for a rest; that rule is now part of [0032](0032-the-active-workout.md).
+Status: Accepted, 2026-11-18; amended 2026-11-19 below (a picked duration is always stored). It amended ADR 0023 on what the effect runner reads for a rest; that rule is now part of [0032](0032-the-active-workout.md).
 
 ## Context
 
@@ -12,8 +12,8 @@ rest dock; the dock has ±15 s keys, so a lifter adjusting every rest by hand pa
 ## Decision
 
 1. **The field.** An exercise in a Routine (`ExCfg`) may carry `rest`, its own Rest duration in seconds. Absent, the
-   Profile's `restSec` applies. The config sheet stores it only when it differs from the Profile's, like the other
-   config fields, so "Default" follows Settings when Settings changes. Anything but a positive number reads as absent
+   Profile's `restSec` applies. The config sheet stores any duration picked and nothing for "Default", so "Default"
+   follows Settings when Settings changes (amended 2026-11-19, below). Anything but a positive number reads as absent
    (`ownRest` in `lib/workout-model.js`).
 2. **Freezing and the effect.** Target freezing copies `rest` into the Entry's `target`, so editing the Routine
    mid-workout does not change the Active workout. When a performed set starts a rest, `act` emits `rest:start` with
@@ -38,3 +38,10 @@ rest dock; the dock has ±15 s keys, so a lifter adjusting every rest by hand pa
   durations (`REST_CHOICES`). A plan-file value off that list is shown and kept.
 - A finished Workout's frozen Target keeps `rest`. Nothing in the Training log reads it.
 - The built-in 5-day plan sets its rests on its exercises and no longer touches the Profile's Rest duration.
+
+## Amendment 2026-11-19: a picked duration is always stored
+
+Decision 1 stored an exercise's own duration only when it differed from the Profile's. A lifter who picked 90 s while
+Settings said 90 s got nothing stored, and the exercise then followed Settings to 120 s. Once the routine editor's save
+replaced the entry (ADR 0030 amendment), saving any 5-day-plan exercise with `rest: 90` would also have dropped it.
+Now the sheet stores whatever duration is picked; only "Default" stores nothing and follows Settings.
