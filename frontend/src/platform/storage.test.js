@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
   pickNewest, backupDue, BACKUP_NAG_MS, LOCAL_KEY, loadLocal, save, flush, load,
   registerSink, __setSinksForTests, __setLocalWriteForTests, __resetStorageBlockedForTests,
-  isStorageBlocked, onStorageSync, isMirrorFailing, requestPersistence, idbSave, __resetMirrorFailuresForTests
+  isStorageBlocked, onStorageSync, isMirrorFailing, requestPersistence, persistOnFirstKeep, PERSIST_ASKED_KEY, idbSave, __resetMirrorFailuresForTests
 } from './storage.js'
 
 const copy = (ts, workouts = ['w1']) => ({ ts, state: { _ts: ts, workouts } })
@@ -282,6 +282,74 @@ describe('requestPersistence', () => {
     expect(await requestPersistence({})).toBe(false)
     expect(await requestPersistence({ persist: () => { throw new Error('x') } })).toBe(false)
     expect(await requestPersistence({ persist: async () => { throw new Error('x') } })).toBe(false)
+  })
+})
+
+describe('persistOnFirstKeep', () => {
+  beforeEach(() => { vi.useRealTimers(); localStorage.clear() })
+
+  // A fake store: subscribe like zustand, and a change() that emits (state, prev).
+  function fakeStore(S) {
+    let listeners = []
+    let state = { S }
+    return {
+      subscribe: fn => { listeners.push(fn); return () => { listeners = listeners.filter(l => l !== fn) } },
+      change: next => { const prev = state; state = { S: next }; listeners.forEach(l => l(state, prev)) },
+      listeners: () => listeners.length,
+    }
+  }
+  const manager = (persisted = false) => ({ persist: vi.fn(async () => true), persisted: vi.fn(async () => persisted) })
+  const settle = () => new Promise(r => setTimeout(r, 0))
+
+  it('does not ask at boot or on a change that keeps nothing new', async () => {
+    const m = manager()
+    const store = fakeStore({ workouts: [{ id: 'w1' }], bodyweight: [] })
+    persistOnFirstKeep(store.subscribe, m)
+    store.change({ workouts: [{ id: 'w1' }], bodyweight: [], restSec: 120 })
+    await settle()
+    expect(m.persist).not.toHaveBeenCalled()
+  })
+
+  it('asks after the first finished Workout, then never again on this device', async () => {
+    const m = manager()
+    const store = fakeStore({ workouts: [], bodyweight: [] })
+    persistOnFirstKeep(store.subscribe, m)
+    store.change({ workouts: [{ id: 'w1' }], bodyweight: [] })
+    await settle()
+    expect(m.persist).toHaveBeenCalledTimes(1)
+    expect(localStorage.getItem(PERSIST_ASKED_KEY)).toBeTruthy()
+    expect(store.listeners()).toBe(0)
+
+    const reload = fakeStore({ workouts: [{ id: 'w1' }], bodyweight: [] })
+    persistOnFirstKeep(reload.subscribe, m)
+    reload.change({ workouts: [{ id: 'w1' }, { id: 'w2' }], bodyweight: [] })
+    await settle()
+    expect(m.persist).toHaveBeenCalledTimes(1)
+  })
+
+  it('asks after the first Weigh-in', async () => {
+    const m = manager()
+    const store = fakeStore({ workouts: [], bodyweight: [] })
+    persistOnFirstKeep(store.subscribe, m)
+    store.change({ workouts: [], bodyweight: [{ d: '2026-11-19', w: 80 }] })
+    await settle()
+    expect(m.persist).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not ask when storage is already persistent', async () => {
+    const m = manager(true)
+    const store = fakeStore({ workouts: [] })
+    persistOnFirstKeep(store.subscribe, m)
+    store.change({ workouts: [{ id: 'w1' }] })
+    await settle()
+    expect(m.persist).not.toHaveBeenCalled()
+  })
+
+  it('does nothing without the API', async () => {
+    const store = fakeStore({ workouts: [] })
+    persistOnFirstKeep(store.subscribe, undefined)
+    expect(() => store.change({ workouts: [{ id: 'w1' }] })).not.toThrow()
+    await settle()
   })
 })
 
