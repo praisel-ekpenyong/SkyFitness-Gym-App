@@ -28,7 +28,7 @@ Introduce `frontend/src/lib/routines.js` as the deep domain module encapsulating
    - `moveExercise`: Swaps entries at the specified index and direction, validating bounds, and normalizes supersets via `cleanupSg`.
    - `replaceExercise`: Substitutes the exercise at the specified index, clears obsolete notes (ADR 0015), preserves superset membership, sanitizes any replacement notes via `cleanNote`, and normalizes supersets via `cleanupSg`.
    - `toggleSuperset`: Inspects adjacency between `index` and `index + 1`, toggles pairing, and normalizes supersets via `cleanupSg`.
-   - `updateExercise`: Updates exercise target parameters in-place at the specified index, sanitizing notes via `cleanNote`.
+   - `updateExercise`: Replaces the entry at the specified index with the target, keeping only its `id` and superset `sg`, and sanitizing notes via `cleanNote`. A field left out of the target is cleared (amended 2026-11-19: it used to merge, so the routine editor could not turn a setting off).
    - `syncFromSession`: Deep-clones the synchronized exercise array onto `routine.ex`, absorbing the previous `syncRoutineFromSession` action.
    - Precondition checks: Gracefully returns `{ ok: false }` for missing routines or invalid indices. Throws an error on unrecognized command types.
 

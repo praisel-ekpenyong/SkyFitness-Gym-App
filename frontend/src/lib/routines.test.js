@@ -340,21 +340,21 @@ describe('Routine Domain Module (lib/routines.js)', () => {
       expect(S.routines[0].ex[0].notes).toBeUndefined()
     })
 
-    it('preserves existing notes when target omits notes field on partial update', () => {
-      // Entry 0 starts with notes: 'Bench cue'
+    it('replaces the entry with the target, keeping only id and sg', () => {
       expect(S.routines[0].ex[0].notes).toBe('Bench cue')
+      S.routines[0].ex[0].sg = 'sg-a'
+      S.routines[0].ex[0].side = true
+      S.routines[0].ex[0].rest = 150
 
       const res = actRoutine(S, {
         type: 'updateExercise',
         routineId: 'r-push',
         index: 0,
-        target: { sets: 4, weight: 65 },
+        target: { id: '9999', sg: 'sg-b', sets: 4, weight: 65 },
       })
 
       expect(res.ok).toBe(true)
-      expect(S.routines[0].ex[0].sets).toBe(4)
-      expect(S.routines[0].ex[0].weight).toBe(65)
-      expect(S.routines[0].ex[0].notes).toBe('Bench cue')
+      expect(S.routines[0].ex[0]).toEqual({ id: '0025', sg: 'sg-a', sets: 4, weight: 65 })
     })
   })
 
