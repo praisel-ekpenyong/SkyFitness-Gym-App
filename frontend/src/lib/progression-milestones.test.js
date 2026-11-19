@@ -988,6 +988,26 @@ describe('evaluateSessionProgression and sessionProgressionItems', () => {
     expect(item.label).toBe('Drop 2 kg, back to 8 reps')
   })
 
+  it('names the Drop by its Increment, in the Profile unit, unrounded', () => {
+    const entry = {
+      id: '0047',
+      target: { sets: 3, reps: 12, repsMin: 8, weight: 24, prog: 'double', inc: 1.25 },
+      sets: [{ w: 24, r: 6, done: true }, { w: 24, r: 6, done: true }, { w: 24, r: 5, done: true }]
+    }
+    expect(evaluateSessionProgression(entry, baseState).label).toBe('Drop 1.25 kg, back to 8 reps')
+  })
+
+  it('names the Drop in lb when the history was logged in kg', () => {
+    const entry = {
+      id: '0047',
+      target: { sets: 3, reps: 12, repsMin: 8, weight: 110, prog: 'double', inc: 5 },
+      sets: [{ w: 50, r: 6, done: true, unit: 'kg' }, { w: 50, r: 6, done: true, unit: 'kg' }, { w: 50, r: 5, done: true, unit: 'kg' }]
+    }
+    const item = evaluateSessionProgression(entry, { ...baseState, unit: 'lb' })
+    expect(item.kind).toBe('down')
+    expect(item.label).toBe('Drop 5 lb, back to 8 reps')
+  })
+
   it('evaluates hold on missed linear target', () => {
     const entry = {
       id: '0025',

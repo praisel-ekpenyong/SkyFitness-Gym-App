@@ -80,8 +80,13 @@ describe('scenario 2: illness', () => {
   // Ticket 07 (wontfix): no flag takes a finished Workout out of progression.
   // A sick session's first set falls below the range, so the next one drops (ADR 0033).
   it('drops one Increment the session after the sick one', () => {
-    const after = entriesOf(ill, 'Push', '0194').find(e => e.plan?.kind === 'down' && e.plan.weight === 22.5)
-    expect(after?.plan).toMatchObject({ kind: 'down', weight: 22.5 })
+    const push = ill.routines.find(r => r.name === 'Push').id
+    const sessions = ill.workouts.filter(w => w.routineId === push)
+    const sickDay = sessions.findIndex(w => w.d === '2026-09-24')
+    const after = sessions[sickDay + 1]
+    expect(sickDay).toBe(2)
+    expect(after.d).toBe('2026-10-01')
+    expect(after.entries.find(e => e.id === '0194').plan).toMatchObject({ kind: 'down', weight: 22.5 })
     expect(entriesOf(control, 'Push', '0194').some(e => e.plan?.weight === 22.5 && e.plan.kind === 'down')).toBe(false)
   })
 })

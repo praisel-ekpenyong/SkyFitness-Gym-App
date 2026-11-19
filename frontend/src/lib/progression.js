@@ -199,6 +199,7 @@ export function readSession(entry, fallback, workout = null, targetUnit = 'kg') 
   const reps = judged.map(s => (isPerformed(s) ? (s.r || 0) : 0))
   return {
     mode, goal, reps, enough,
+    firstPerformed: isPerformed(judged[0]),
     weight: performedWeight,
     count: judged.length,
     low: reps.length ? Math.min(...reps) : 0,
@@ -296,6 +297,11 @@ function bouncedBack(sessions, start, load) {
   return load(before) === w && !!before.ok
 }
 
+// Prescription kinds that lower the load: the Stall Deload and the Drop (ADR 0033).
+export const lowersLoad = kind => kind === 'deload' || kind === 'down'
+
+const LIGHTEST_LOAD = 'Lightest load — same weight again; build reps or add the smallest plate.'
+
 function doublePrescription({ policy, cfg, inc, unit, sessions, last, deloadAt, w }) {
   const top = Math.max(1, cfg.reps > 0 ? cfg.reps : (last.goal || 10))
   const bottom = cfg.repsMin > 0
@@ -314,18 +320,18 @@ function doublePrescription({ policy, cfg, inc, unit, sessions, last, deloadAt, 
   }
 
   const first = last.reps?.[0] || 0
-  if (first > 0 && first < bottom) {
+  if (last.firstPerformed && first < bottom) {
     const nextW = round1(w - inc)
     if (nextW < inc) {
-      return { policy, kind: 'hold', weight: w, reps: bottom, why: ['Lightest load — same weight again; build reps or add the smallest plate.'] }
+      return { policy, kind: 'hold', weight: w, reps: bottom, why: [LIGHTEST_LOAD] }
     }
-    return { policy, kind: 'down', weight: nextW, reps: bottom, why: ['First set {0} reps, below the {1}–{2} range. {3} {4} less, back to {1} reps.', first, bottom, top, inc, unit] }
+    return { policy, kind: 'down', weight: nextW, reps: bottom, inc, why: ['First set {0} reps, below the {1}–{2} range. {3} {4} less, back to {1} reps.', first, bottom, top, inc, unit] }
   }
 
   const noProgress = doubleNoProgress(sessions, start, range)
   const stalled = deloadIfStalled(w, inc, noProgress, deloadAt)
   if (stalled?.tag === 'hold') {
-    return { policy, kind: 'hold', weight: w, reps: bottom, why: ['Lightest load — same weight again; build reps or add the smallest plate.'] }
+    return { policy, kind: 'hold', weight: w, reps: bottom, why: [LIGHTEST_LOAD] }
   }
   if (stalled?.tag === 'deload') {
     return { policy, kind: 'deload', weight: stalled.at, reps: bottom, why: ['No progress in {0} Workouts — deload to {1} {2}.', noProgress, stalled.at, unit] }
@@ -760,7 +766,7 @@ export function evaluateSessionProgression(entry, state, context = {}) {
     text = t('Deload 10% to reset and rebuild')
   } else if (p.kind === 'down') {
     iconName = 'arrowDown'
-    text = t('Drop {0} {1}, back to {2} reps', fmtNum(Math.round((oldWeight - p.weight) * 10) / 10), unit, p.reps)
+    text = t('Drop {0} {1}, back to {2} reps', p.inc, unit, p.reps)
   } else if (p.kind === 'hold') {
     if (policy === 'double' && p.reps != null) {
       iconName = 'target'

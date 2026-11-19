@@ -1,6 +1,6 @@
 # Double progression drops on a first set below the range
 
-Status: Accepted, 2026-11-19.
+Status: Accepted, 2026-11-19. Amends [0011](0011-progression-streams-and-runs.md): the Drop is a second way the load comes down and a Run starts, outside the Stall Deload. A deliberate exception to [0016](0016-session-boundary-progression-and-live-milestones.md)'s "a session is judged as a whole": the first Work set alone triggers the Drop.
 
 ## Context
 
