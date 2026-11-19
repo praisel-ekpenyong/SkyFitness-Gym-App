@@ -58,10 +58,9 @@ function setProgression(S, command) {
 
 function extractTarget(target = {}) {
   const t = { ...(target || {}) }
-  const hasNote = 'notes' in t
   const note = cleanNote(t.notes)
   delete t.notes
-  return { target: t, hasNote, note }
+  return { target: t, note }
 }
 
 function addExercise(S, command) {
@@ -152,14 +151,11 @@ function updateExercise(S, command) {
   const idx = command.index
   if (typeof idx !== 'number' || idx < 0 || idx >= r.ex.length) return refused()
   const existing = r.ex[idx]
-  const { target, hasNote, note } = extractTarget(command.target)
+  const { target, note } = extractTarget(command.target)
   delete target.id
   delete target.sg
-  const updated = { ...existing, ...target }
-  if (hasNote) {
-    if (note) updated.notes = note
-    else delete updated.notes
-  }
+  const updated = { id: existing.id, ...(existing.sg ? { sg: existing.sg } : {}), ...target }
+  if (note) updated.notes = note
   r.ex[idx] = updated
   return applied(updated)
 }
