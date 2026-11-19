@@ -67,7 +67,7 @@ Completed workout (`buildCompletedWorkout` in `lib/active-finish.js`, reached th
 
 Entry: `{ id, target: ExCfg, sets: [Set], plan?, topW?, asked?, n?, muscleSnapshot? }`
 - `plan` — the resolved Prescription. Active Entries keep the full object (including `why`); finished Entries keep the decision fields `{ kind, weight?, reps?, sec?, sets? }` so later sessions can read the Run boundary (ADR 0011).
-- `topW` — legacy confirmed working weight; no longer written (ADR 0020), still read by Best when present.
+- `topW` — legacy confirmed working weight. Neither a finished Workout (ADR 0020) nor a CSV import writes it; Workouts saved or imported earlier keep theirs, and Best still reads it when present.
 - `n` — frozen name for deleted custom exercises; `muscleSnapshot` — frozen muscle map of a custom exercise, so history survives its edit or deletion. Built-in exercises have none: catalogue corrections re-attribute past sessions on purpose (ADR 0025).
 
 Set shape varies by logged mode (`modeForSet` in `lib/workout-sets.js` resolves explicit `phase`/`mode` → unit token → field presence):

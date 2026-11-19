@@ -309,14 +309,12 @@ export function records(S, workout) {
 }
 
 /**
- * Estimated 1RM series: one point per Workout with an estimable performed Work set of the exercise,
- * in Profile Workout order. `y` is the estimate Records already use for that Workout, across every
- * Entry. `w` and `r` are the Set behind it, `t` and `d` the Workout's. Loads are in the Profile's unit.
- * A hold or a cardio Entry with no reps adds no point.
+ * Estimated 1RM by Workout: the points of e1rmSeries, each with the Workout it comes from, for a
+ * reader that needs more of that Workout than its date (a Strength level reads the body weight then).
  *
- * @returns {Array<{t:number, d:string, y:number, w:number, r:number}>}
+ * @returns {Array<{workout:Object, t:number, d:string, y:number, w:number, r:number}>}
  */
-export function e1rmSeries(S, exId) {
+export function e1rmByWorkout(S, exId) {
   const workouts = logOf(S)
   if (!workouts || !exId) return []
   const sums = summariesFor(workouts, S.unit || 'kg')
@@ -325,6 +323,7 @@ export function e1rmSeries(S, exId) {
     const top = sums[i].get(exId)
     if (!top?.est || !top.estSet) return
     points.push({
+      workout,
       t: workoutTimestamp(workout),
       d: workout.d,
       y: top.est,
@@ -333,6 +332,18 @@ export function e1rmSeries(S, exId) {
     })
   })
   return points
+}
+
+/**
+ * Estimated 1RM series: one point per Workout with an estimable performed Work set of the exercise,
+ * in Profile Workout order. `y` is the estimate Records already use for that Workout, across every
+ * Entry. `w` and `r` are the Set behind it, `t` and `d` the Workout's. Loads are in the Profile's unit.
+ * A hold or a cardio Entry with no reps adds no point.
+ *
+ * @returns {Array<{t:number, d:string, y:number, w:number, r:number}>}
+ */
+export function e1rmSeries(S, exId) {
+  return e1rmByWorkout(S, exId).map(({ workout, ...point }) => point)
 }
 
 /**

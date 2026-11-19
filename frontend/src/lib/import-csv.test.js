@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { parseWorkoutCSV, mergeImport, importPreview } from './import-csv.js'
-import { tonnage } from './training-log.js'
+import { best, e1rmSeries, tonnage } from './training-log.js'
+import { act } from './active-workout.js'
 import { admit } from './profile/index.js'
 
 const CSV = [
@@ -10,7 +11,7 @@ const CSV = [
 ].join('\n')
 
 describe('CSV warm-up provenance', () => {
-  it('retains the imported warm-up phase and excludes it from topW', () => {
+  it('retains the imported warm-up phase and keeps it out of Tonnage', () => {
     const parsed = parseWorkoutCSV(CSV, { unit: 'kg' })
     const entry = parsed.workouts[0].entries[0]
 
@@ -19,9 +20,42 @@ describe('CSV warm-up provenance', () => {
       { w: 100, r: 5, done: true, phase: 'warmup' },
       { w: 80, r: 5, done: true },
     ])
-    expect(entry.topW).toBe(80)
     expect(parsed.workouts[0].vol).toBeUndefined()
     expect(tonnage({ unit: 'kg' }, parsed.workouts[0])).toBe(400)
+  })
+})
+
+
+describe('an imported Workout reads like the same Workout logged in Sky', () => {
+  const sets = [{ w: 80, r: 5, done: true }, { w: 100, r: 3, done: true }, { w: 90, r: 5, done: true }]
+  const csv = ['Date,Exercise,Weight,Reps', ...sets.map(s => `2026-08-08,Bench Press,${s.w},${s.r}`)].join('\n')
+
+  const loggedInSky = () => {
+    const S = {
+      unit: 'kg', routines: [], workouts: [], bodyweight: [],
+      active: { id: 'a1', d: '2026-08-08', start: 1000, routineId: null, name: 'Freestyle', bw: null, unit: 'kg', cur: 0, entries: [{ id: '0025', sets: sets.map(s => ({ ...s })) }] },
+    }
+    act(S, { type: 'finish' })
+    return S
+  }
+
+  it('gives the same Best and remembers no top weight beside its Sets (ADR 0020)', () => {
+    const imported = { unit: 'kg', workouts: [], customEx: [] }
+    mergeImport(imported, parseWorkoutCSV(csv, { unit: 'kg' }))
+    const logged = loggedInSky()
+
+    expect(best(imported, '0025')).toBe(100)
+    expect(best(imported, '0025')).toBe(best(logged, '0025'))
+    expect(e1rmSeries(imported, '0025').map(p => p.y)).toEqual(e1rmSeries(logged, '0025').map(p => p.y))
+    expect(imported.workouts[0].entries[0]).not.toHaveProperty('topW')
+    expect(logged.workouts[0].entries[0]).not.toHaveProperty('topW')
+  })
+
+  it('leaves the top weight of a Workout imported earlier as it was stored', () => {
+    const earlier = { id: 'iw-old', d: '2026-08-01', start: 1, entries: [{ id: '0025', topW: 100, sets: [{ w: 100, r: 5, done: true }] }] }
+    const S = { unit: 'kg', workouts: [earlier], customEx: [] }
+    mergeImport(S, parseWorkoutCSV(csv, { unit: 'kg' }))
+    expect(S.workouts.find(w => w.id === 'iw-old').entries[0].topW).toBe(100)
   })
 })
 

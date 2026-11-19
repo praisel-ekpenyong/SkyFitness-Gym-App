@@ -1,14 +1,14 @@
 // Strength levels: one main barbell lift graded from Beginner to Elite by its Estimated 1RM
 // divided by body weight, against a Strength standard (body-weight multiples, approximate).
 //
-// Each workout's lift is divided by the body weight then: the workout's own Weigh-in, else the
-// nearest Weigh-in in the Body-weight log within 30 days, else the workout is skipped. The current
-// level reads the last 12 weeks; the peak reads every workout. Next level is the next threshold
-// times the latest Weigh-in (log or workout, whichever is most recent), rounded up to a loadable
-// step, in the Profile's unit.
+// Each workout's Estimated 1RM is the Training log's, in the Profile's unit; a workout holding two
+// exercises of one lift counts the greater. It is divided by the body weight then: the workout's own
+// Weigh-in, else the nearest Weigh-in in the Body-weight log within 30 days, else the workout is
+// skipped. The current level reads the last 12 weeks; the peak reads every workout. Next level is
+// the next threshold times the latest Weigh-in (log or workout, whichever is most recent), rounded
+// up to a loadable step, in the Profile's unit.
 
-import { estimate1RM, DEFAULT_FORMULA } from './onerm.js'
-import { isPerformed, isWorkSet } from './workout-sets.js'
+import { e1rmByWorkout, latestWorkSetAt } from './training-log.js'
 import { workoutTimestamp } from './dates.js'
 import { weighIns as weighInsInUnit, sessionBodyweight } from './bodyweight.js'
 import { cleanSex } from './sex.js'
@@ -96,21 +96,6 @@ function bodyweightThen(S, workout, logged) {
   return best ? Number(best.w) : null
 }
 
-/** The best Estimated 1RM a workout set for this lift, in the Profile unit (refused above 12 reps). */
-function bestEstimateOf(S, workout, lift) {
-  let best = null
-  for (const entry of workout?.entries || []) {
-    if (!entry || typeof entry !== 'object' || !lift.ids.includes(entry.id)) continue
-    for (const set of entry.sets || []) {
-      if (!set || typeof set !== 'object' || !isPerformed(set) || !isWorkSet(set)) continue
-      const setUnit = set.unit ?? entry.unit ?? workout.unit ?? profileUnit(S)
-      const est = estimate1RM(set.w, set.r, DEFAULT_FORMULA, setUnit, profileUnit(S))
-      if (est != null && (best === null || est > best)) best = est
-    }
-  }
-  return best
-}
-
 /** Index of the highest threshold the ratio reaches, or -1 when it is below Beginner. */
 const levelIndexOf = (ratio, thresholds) => thresholds.reduce((n, t) => (ratio >= t ? n + 1 : n), 0) - 1
 
@@ -121,23 +106,35 @@ function roundUpToStep(weight, unit) {
   return Math.round(steps * step * 10) / 10
 }
 
-/** Every workout that trained this lift, with its best estimate and body weight then. */
-function liftSessionsOf(S, lift, weighIns, now) {
-  const windowStart = now - CURRENT_WEEKS * 7 * DAY_MS
-  const sessions = []
-  for (const workout of S?.workouts || []) {
-    const ts = workoutTimestamp(workout)
-    if (!Number.isFinite(ts)) continue
-    const trained = (workout?.entries || []).some(entry =>
-      entry && typeof entry === 'object' && lift.ids.includes(entry.id)
-      && (entry.sets || []).some(set => set && typeof set === 'object' && isPerformed(set) && isWorkSet(set)))
-    if (!trained) continue
-    const est = bestEstimateOf(S, workout, lift)
-    const bw = est != null ? bodyweightThen(S, workout, weighIns) : null
-    const ratio = est != null && bw != null ? est / bw : null
-    sessions.push({ ts, recent: ts > windowStart, ratio })
+/**
+ * Every workout with an Estimated 1RM of this lift in the Training log and a body weight then:
+ * its greatest estimate divided by that body weight, and whether it falls in the current window.
+ */
+function liftRatiosOf(S, lift, weighIns, windowStart) {
+  const byWorkout = new Map()
+  for (const id of lift.ids) {
+    for (const point of e1rmByWorkout(S, id)) {
+      const held = byWorkout.get(point.workout)
+      if (!held || point.y > held.y) byWorkout.set(point.workout, point)
+    }
   }
-  return sessions
+  const ratios = []
+  for (const { workout, t, y } of byWorkout.values()) {
+    if (!Number.isFinite(t)) continue
+    const bw = bodyweightThen(S, workout, weighIns)
+    if (bw != null) ratios.push({ recent: t > windowStart, ratio: y / bw })
+  }
+  return ratios
+}
+
+/** When the lift was last trained: its latest performed Work set time in the Training log, or null. */
+function lastTrainedAt(S, lift) {
+  let last = null
+  for (const id of lift.ids) {
+    const at = latestWorkSetAt(S, id)
+    if (at != null && (last === null || at > last)) last = at
+  }
+  return last
 }
 
 /** The highest value in a list, or null when the list is empty. */
@@ -148,12 +145,13 @@ const maxRatio = ratios => ratios.reduce((m, r) => (m === null || r > m ? r : m)
  * everTrained is true when any workout trained the lift, even one with no body weight to grade it.
  */
 function readLift(S, lift, latestWeight, weighIns, now, graded) {
-  const sessions = liftSessionsOf(S, lift, weighIns, now)
+  const windowStart = now - CURRENT_WEEKS * 7 * DAY_MS
+  const lastAt = lastTrainedAt(S, lift)
   const identity = {
     key: lift.key,
     name: lift.name,
-    everTrained: sessions.length > 0,
-    trainedLately: sessions.some(s => s.recent),
+    everTrained: lastAt !== null,
+    trainedLately: lastAt !== null && lastAt > windowStart,
   }
   if (!graded) return { ...identity, current: null, peak: null, next: null }
 
@@ -161,8 +159,9 @@ function readLift(S, lift, latestWeight, weighIns, now, graded) {
   const thresholds = lift[cleanSex(S.sex)].map(t => t / coefficient)
   const levelReadingOf = ratio => ({ level: LEVELS[levelIndexOf(ratio, thresholds)] ?? null, ratio: round2(ratio) })
 
-  const peakRatio = maxRatio(sessions.map(s => s.ratio).filter(r => r != null))
-  const currentRatio = maxRatio(sessions.filter(s => s.recent).map(s => s.ratio).filter(r => r != null))
+  const ratios = liftRatiosOf(S, lift, weighIns, windowStart)
+  const peakRatio = maxRatio(ratios.map(r => r.ratio))
+  const currentRatio = maxRatio(ratios.filter(r => r.recent).map(r => r.ratio))
   const peak = peakRatio == null ? null : levelReadingOf(peakRatio)
   const current = currentRatio == null ? null : levelReadingOf(currentRatio)
 

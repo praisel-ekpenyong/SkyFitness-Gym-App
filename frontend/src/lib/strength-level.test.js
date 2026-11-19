@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { selectStatsOverview, selectExerciseStats } from './stats-selectors.js'
+import { best1RM } from './training-log.js'
+import { switchUnit } from './units.js'
 
 const DAY = 24 * 60 * 60 * 1000
 const NOW = Date.UTC(2026, 6, 1, 12)
@@ -189,6 +191,28 @@ describe('strength levels: thresholds and next level', () => {
     }))
     expect(fromWorkout.current).toEqual(kg.current)
     expect(fromLog.current).toEqual(kg.current)
+  })
+})
+
+describe('strength levels: read from the Training log', () => {
+  it('grades from the Training log estimate after a switch to pounds, across the lift exercises of one Workout', () => {
+    const S = profile({
+      bodyweight: [],
+      workouts: [{
+        ...session(SQUAT.id, 10, [{ done: true, w: 100, r: 5 }], { bw: 80 }),
+        entries: [
+          { id: SQUAT.id, sets: [{ done: true, w: 100, r: 5 }] },
+          { id: '1461', sets: [{ done: true, w: 225, r: 3, unit: 'lb' }] },
+        ],
+      }],
+    })
+    expect(switchUnit(S, 'lb')).toBe(true)
+    const estimate = Math.max(best1RM(S, SQUAT.id).est, best1RM(S, '1461').est)
+    expect(estimate).toBe(257.3)
+    const bodyweightThen = 176.4 // the Workout's 80 kg, read in pounds
+    const lift = liftOf(S)
+    expect(lift.current).toEqual({ level: 'Novice', ratio: Math.round(estimate / bodyweightThen * 100) / 100 })
+    expect(lift.peak).toEqual(lift.current)
   })
 })
 
