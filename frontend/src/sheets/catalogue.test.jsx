@@ -1460,14 +1460,24 @@ describe('ExConfig Rest duration', () => {
     expect(onSave.mock.calls[0][0]).toMatchObject({ sets: 3, reps: 8, rest: 180 })
   })
 
-  it('stores nothing for Default, or for the Profile\'s own duration', async () => {
-    for (const label of ['Default (90s)', '90s']) {
-      const onSave = await renderConfig(bench, { id: '0025', sets: 3, reps: 8, weight: 60, rest: 150 })
-      expect(restRow().querySelector('.lrow-v').textContent).toBe('150s')
-      await pick(label)
-      await act(async () => { click(saveBtn()) })
-      expect(onSave.mock.calls[0][0], label).not.toHaveProperty('rest')
-    }
+  it('stores nothing for Default', async () => {
+    const onSave = await renderConfig(bench, { id: '0025', sets: 3, reps: 8, weight: 60, rest: 150 })
+    expect(restRow().querySelector('.lrow-v').textContent).toBe('150s')
+    await pick('Default (90s)')
+    await act(async () => { click(saveBtn()) })
+    expect(onSave.mock.calls[0][0]).not.toHaveProperty('rest')
+  })
+
+  it('keeps a picked duration that equals the Profile\'s, so it does not follow a later Settings change', async () => {
+    const picked = await renderConfig(bench, { id: '0025', sets: 3, reps: 8, weight: 60 })
+    await pick('90s')
+    await act(async () => { click(saveBtn()) })
+    expect(picked.mock.calls[0][0].rest).toBe(90)
+
+    const kept = await renderConfig(bench, { id: '0025', sets: 3, reps: 8, weight: 60, rest: 90 })
+    expect(restRow().querySelector('.lrow-v').textContent).toBe('90s')
+    await act(async () => { click(saveBtn()) })
+    expect(kept.mock.calls[0][0].rest).toBe(90)
   })
 
   it('shows a Rest duration from a plan file that is not on the list, and keeps it', async () => {
