@@ -37,5 +37,4 @@ rest dock; the dock has ±15 s keys, so a lifter adjusting every rest by hand pa
 - The config sheet has one Rest duration row, a `SelectRow` like the one in Settings, offering Default and the same
   durations (`REST_CHOICES`). A plan-file value off that list is shown and kept.
 - A finished Workout's frozen Target keeps `rest`. Nothing in the Training log reads it.
-- Setting the built-in plan's rests on its exercises is a follow-up in `lib/plans/`, which can then drop the
-  factory-90 s check and the rest notes.
+- The built-in 5-day plan sets its rests on its exercises and no longer touches the Profile's Rest duration.

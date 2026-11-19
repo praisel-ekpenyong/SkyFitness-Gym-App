@@ -1,10 +1,11 @@
 import { describe, it, expect } from 'vitest'
-import { hypertrophyPlanBundle, applyHypertrophyPlan, PLAN_REST_SEC } from './hypertrophy-5day.js'
+import { hypertrophyPlanBundle, applyHypertrophyPlan, REST_COMPOUND } from './hypertrophy-5day.js'
 import { parsePlan } from '../plan-share.js'
 import { EXIDX, registerCustom } from '../exercises.js'
 import { primaryMuscleOf, secondaryMusclesOf } from '../muscles.js'
 import { policyFor, nextPrescription } from '../progression.js'
 import { isBw } from '../workout-model.js'
+import { act } from '../active-workout.js'
 
 const fresh = () => ({ routines: [], week: {}, customEx: [], restSec: 90 })
 
@@ -117,13 +118,43 @@ describe('applyHypertrophyPlan', () => {
     all.forEach(({ e, r }) => expect(['linear', 'double']).toContain(policyFor(e, r, 'reps')))
   })
 
-  it('moves the rest timer to 3 minutes only from the factory default', () => {
-    const S = fresh()
-    expect(applyHypertrophyPlan(S).restChanged).toBe(true)
-    expect(S.restSec).toBe(PLAN_REST_SEC)
+  it('leaves the Profile\'s Rest duration alone', () => {
+    const S = { ...fresh(), restSec: 120 }
+    expect(applyHypertrophyPlan(S)).toEqual({ routineIds: expect.any(Array) })
+    expect(S.restSec).toBe(120)
+    const kept = fresh()
+    applyHypertrophyPlan(kept)
+    expect(kept.restSec).toBe(90)
+  })
 
-    const chosen = { ...fresh(), restSec: 120 }
-    expect(applyHypertrophyPlan(chosen).restChanged).toBe(false)
-    expect(chosen.restSec).toBe(120)
+  it('declares kg and loads into a lb Profile with lb increments', () => {
+    expect(hypertrophyPlanBundle().unit).toBe('kg')
+    const kg = fresh()
+    applyHypertrophyPlan(kg)
+    const lb = { ...fresh(), unit: 'lb' }
+    applyHypertrophyPlan(lb)
+    const incs = S => S.routines.flatMap(r => r.ex).filter(e => e.inc != null).map(e => e.inc)
+    expect(incs(kg).length).toBeGreaterThan(0)
+    incs(kg).forEach(i => expect(i).toBe(2.5))
+    incs(lb).forEach(i => expect(i).toBe(5.5))
+  })
+
+  it('sets each exercise its own Rest duration and keeps rest lines out of the notes', () => {
+    const S = fresh()
+    applyHypertrophyPlan(S)
+    S.routines.flatMap(r => r.ex).forEach(e => {
+      expect(e.rest, e.id).toBeGreaterThan(0)
+      expect(e.notes, e.id).not.toMatch(/\brest\b/i)
+    })
+    const squat = S.routines.find(r => r.name === 'Lower').ex[0]
+    expect(squat.rest).toBe(REST_COMPOUND)
+  })
+
+  it('starts a 180 s rest after a set on a compound lift', () => {
+    const S = { ...fresh(), unit: 'kg', workouts: [], bodyweight: [], dayPlan: {} }
+    const { routineIds } = applyHypertrophyPlan(S)
+    act(S, { type: 'begin', routineId: routineIds[1] })
+    const res = act(S, { type: 'toggle', entry: 0, set: 0 })
+    expect(res.effects.find(e => e.type === 'rest:start')).toEqual({ type: 'rest:start', sec: 180 })
   })
 })

@@ -62,7 +62,7 @@ What the inventory found:
   levels and on the Workout detail sheet, and the set labels on the Workout detail sheet and in Stats' exercise
   sessions. They now read in `S.unit` (`setIn`, `targetIn` and `sessionBodyweight`).
 - **The hypertrophy plan writes `inc: 2.5` whatever the unit**, meaning kg. In a lb Profile it loads as a 2.5 lb step.
-  Not changed here; `lib/plans/` belongs to ticket 02.
+  Fixed afterwards: the bundle declares `unit: 'kg'` and loads through `mergePlan`, so a lb Profile gets lb increments.
 
 ## Considered options
 

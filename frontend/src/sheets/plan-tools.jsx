@@ -26,16 +26,10 @@ export function loadStarterPlan() {
   toast(t('Starter plan loaded — Mon Push · Wed Pull · Fri Legs'))
 }
 
-/**
- * Adds the 5-day hypertrophy plan's routines and custom exercises, assigns Mon/Tue/Thu/Fri/Sat,
- * and says whether the rest timer moved to 3 minutes.
- */
+/** Adds the 5-day hypertrophy plan's routines and custom exercises and assigns Mon/Tue/Thu/Fri/Sat. */
 export function loadHypertrophyPlan() {
-  let restChanged = false
-  update(st => { restChanged = applyHypertrophyPlan(st).restChanged })
-  toast(restChanged
-    ? t('5-day plan loaded — Mon Upper · Tue Lower · Thu Push · Fri Pull · Sat Legs. Rest timer set to 3 min.')
-    : t('5-day plan loaded — Mon Upper · Tue Lower · Thu Push · Fri Pull · Sat Legs'))
+  update(st => { applyHypertrophyPlan(st) })
+  toast(t('5-day plan loaded — Mon Upper · Tue Lower · Thu Push · Fri Pull · Sat Legs'))
 }
 
 export const planToolsSheet = () => ui().openSheet(close => <PlanTools close={close} />)

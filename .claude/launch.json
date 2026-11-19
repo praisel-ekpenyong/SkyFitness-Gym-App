@@ -8,7 +8,9 @@
         "--prefix",
         "frontend",
         "run",
-        "review:serve"
+        "review:serve",
+        "--",
+        "--port=5198"
       ],
       "port": 5198
     },

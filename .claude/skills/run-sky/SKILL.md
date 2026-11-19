@@ -24,13 +24,17 @@ Output goes to `frontend/.tmp/review/` (gitignored).
 
 ## Configuration
 
-Env vars or the same names as `--flags`: `SKY_REVIEW_PORT` (5198), `SKY_REVIEW_BASE`, `SKY_REVIEW_TODAY` (2026-11-09), `SKY_REVIEW_OUT`, `SKY_REVIEW_PROFILE`, `SKY_BROWSER` (else chromium/chrome on PATH). History is seeded relative to the chosen today and the page clock is frozen to it at 10:12 UTC (timezone UTC), so runs are reproducible.
+Env vars or the same names as `--flags`: `SKY_REVIEW_PORT` (default: derived from the worktree path, see Ports), `SKY_REVIEW_BASE`, `SKY_REVIEW_TODAY` (2026-11-09), `SKY_REVIEW_OUT`, `SKY_REVIEW_PROFILE`, `SKY_BROWSER` (else chromium/chrome on PATH). History is seeded relative to the chosen today and the page clock is frozen to it at 10:12 UTC (timezone UTC), so runs are reproducible.
+
+## Ports
+
+Parallel worktrees must not share a port, or one agent's `fuser -k` kills another's server. The default port is derived from the worktree's `frontend/` path: 5200 plus a hash of the path, modulo 700 (5200-5899), so it is stable per worktree and clear of 5173, 5174 and 5198. `npm run review:port` prints it. All tools (`serve`, `shots`, `audit`, `offline`) derive it the same way, so they agree without any setting. `SKY_REVIEW_PORT` or `--port=` overrides it; set it only on a collision. (`.claude/launch.json` pins 5198 for the `sky-build` preview entry.)
 
 ## Gotchas
 
 - Seed before the first load. The app saves an empty profile if it boots with nothing in `localStorage`. The tools use a context init script (`seedStorage` in `lib.mjs`); do the same in anything new, never evaluate after load.
 - Playwright needs `viewport: {}` (or `viewport: null` on a persistent context) to use a real window size; otherwise it forces 1280x720.
-- Never `pkill -f`: it matches its own command line. Stop servers by port: `fuser -k 5198/tcp`.
+- Never `pkill -f`: it matches its own command line. Stop servers by port, never by name, and only your own: `fuser -k "$(npm run -s review:port)"/tcp`.
 - Two dev servers must not share `node_modules/.vite`. Give the second a different cache dir (`--cacheDir`) or serve a build instead.
 - Do not touch ports 5173 or 5174 unless they are yours; they are usually someone's live dev servers.
 - The service worker only exists in the built app. Dev-server runs use `serviceWorkers: 'block'`; `audit` and `offline` use the real one.

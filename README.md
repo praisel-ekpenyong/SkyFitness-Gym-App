@@ -94,7 +94,7 @@ off the load. If the load is already as low as it goes, Sky holds the target ins
 
 ### Stats
 
-- **Muscle maps**, front and back, across 19 muscle groups:
+- **Muscle maps**, front and back, across 21 muscle groups:
   - **Muscle balance:** sets per muscle over a week, 30 days, 90 days or all time, and which
     muscles went untrained.
   - **Fatigue:** how recently each muscle was trained, fading with a 36-hour half-life.
