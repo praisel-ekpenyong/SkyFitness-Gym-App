@@ -46,7 +46,7 @@ The Epley formula (`estimate1RM` in `lib/onerm.js`, refused above 12 reps) also 
 3. **A converted Increment snaps to a plate step** (ticket 15, amending ADR 0028). An Increment is a plate step, not a measured load. It converts, then rounds to the nearest multiple of the target unit's smallest plate step (1.25 kg, 2.5 lb), and never below one step: 2.5 kg becomes 5 lb, 1.25 kg becomes 2.5 lb, and 10 kg becomes 22.5 lb. The switch, plan import and reads of a frozen Target all snap the same way. Loads still convert exactly. The default Increment, used when `inc` is absent, is already a plate step in each unit (2.5 or 5 kg, 5 or 10 lb) and never converts. Until ticket 15 merges, `main` converts an Increment like a load (2.5 kg becomes 5.5 lb).
 4. **A switch fills missing stamps.** It writes the outgoing unit into every Workout and Weigh-in that has no `unit`. No number and no existing stamp changes. Workouts finished in Sky carry the Active workout's unit. Weigh-ins and CSV and Apple Health imports are written in `S.unit` without a stamp, and get one at the next switch.
 5. **No switch during a workout.** The Active workout is read in `S.unit`, so a switch is refused while one exists.
-6. **A plan file carries its unit.** Export writes `unit`. Import converts the loads into the importing Profile's unit. A file without `unit` is read in the importing Profile's unit.
+6. **A plan file carries its unit.** Export writes `unit`. Import converts the loads into the importing Profile's unit. A file without `unit` is read in the importing Profile's unit. The built-in 5-day plan is a plan file in kg and loads the same way (`mergePlan`); the starter plan carries no loads.
 
 One function does the switch: `switchUnit(S, unit)` in `lib/units.js`, called by the Settings control.
 
@@ -58,7 +58,6 @@ The code wins; these are the facts on `main`.
 - **CSV import still writes `topW`.** ADR 0020 says new Workouts stop writing it. That holds for Workouts finished in Sky. CSV import sets it to the heaviest imported Work set. Every imported Set is performed, so it changes no reading.
 - **Strength levels estimate on their own.** ADR 0022 moved the per-exercise series into the Training log. `lib/strength-level.js` still walks the log itself, because one lift spans several exercises. It calls `estimate1RM` with the Set's stamp and `S.unit`.
 - **Fatigue reads in kg.** `lib/recovery.js` converts every load to kg, not `S.unit`, through its own stamp lookup. That lookup also accepts the stamp spellings `u`, `weightUnit`, `weight_unit` and `loadUnit`.
-- **The built-in 5-day plan's Increment is in kg in every unit.** Its `inc: 2.5` loads as 2.5 lb in a lb Profile. Ticket 12 makes the plan declare its unit.
 
 ## Considered options
 

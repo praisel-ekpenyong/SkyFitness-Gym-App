@@ -97,7 +97,7 @@ export function hypertrophyPlanBundle() {
 /**
  * Add the 5-day plan to a profile: five routines, its custom exercises and its five weekdays.
  * Wednesday, Sunday and day overrides are left as they were. The bundle is in kg; `mergePlan` converts
- * it into the Profile's unit (ADR 0028).
+ * it into the Profile's unit (ADR 0031).
  *
  * @param {Object} S - Draft profile state.
  * @returns {{ routineIds: string[] }} The new routine ids in plan order.
