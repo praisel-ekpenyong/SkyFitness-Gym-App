@@ -33,7 +33,7 @@ npm run build
 
 - **Keep it dependency-light.** The frontend is built on React 19, React Router and Zustand. New runtime dependencies need a reason recorded in an ADR; Capacitor is used only for the mobile shells.
 - **Match the style.** Small components, clear names, comments only where the "why" isn't obvious. State lives in the Zustand store (`src/store/useStore.js`); pure helpers live in `src/lib/`.
-- **All persistence goes through `src/lib/storage.js`.** State is mirrored between `localStorage` and `IndexedDB` with timestamp-based reconciliation at boot.
+- **All persistence goes through `src/platform/storage.js`.** State is mirrored between `localStorage` and `IndexedDB` with timestamp-based reconciliation at boot.
 - **Test the flow you touched.** Click through the affected screens (and workout flow) in a browser before finishing changes.
 - **Training logic gets a unit test.** Anything deciding what you lift next, calculating progression, estimating 1RM, computing recovery fatigue, or parsing imported workouts belongs in a pure helper in `src/lib/` with Vitest tests beside it (`npm test`).
 
