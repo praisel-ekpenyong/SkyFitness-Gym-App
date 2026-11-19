@@ -317,7 +317,7 @@ describe('Record badges', () => {
   })
 })
 
-describe('Workout detail sheet after a unit switch (ADR 0028)', () => {
+describe('Workout detail sheet after a unit switch (ADR 0031)', () => {
   it('shows a kg Workout in pounds: Session body weight and every set', async () => {
     const w = {
       id: 'w-kg', name: 'Push Day', d: '2026-03-01', start: 1000, end: 4000, unit: 'kg', bw: 80,

@@ -299,7 +299,7 @@ describe('overview history', () => {
   })
 })
 
-describe('exercise sessions read in the Profile unit (ADR 0028)', () => {
+describe('exercise sessions read in the Profile unit (ADR 0031)', () => {
   it('lists the sets of a kg Workout in pounds after a switch, as the chart does', () => {
     const S = { unit: 'lb', effort: 'none', bodyweight: [], workouts: [workoutAt(LIFT.id, 2, [doneSet(100, 5)], { unit: 'kg' })] }
     const st = selectExerciseStats(S, LIFT.id, { now: NOW, catalogue })
@@ -321,7 +321,7 @@ describe('body-weight log readings', () => {
     expect(over.bodyweight.goal).toBe(165)
     expect(over.bodyweightKg).toBeCloseTo(79.832, 3)
   })
-  it('reads Weigh-ins stamped in kg in a pounds profile, after a unit switch (ADR 0028)', () => {
+  it('reads Weigh-ins stamped in kg in a pounds profile, after a unit switch (ADR 0031)', () => {
     const S = { unit: 'lb', targetW: 165.3, bodyweight: [
       { d: '2026-06-10', w: 80, unit: 'kg' }, { d: '2026-06-30', w: 176 },
     ] }
@@ -446,7 +446,7 @@ it('keeps a named historical exercise selectable after its Custom exercise was d
   expect(over.exercisesFor('chest')[0].name).toBe('Old bench')
 })
 
-describe('read-time unit normalization across selectors (ADR 0019)', () => {
+describe('read-time unit normalization across selectors (ADR 0031)', () => {
   it('normalizes exercise stats points and overview index to active profile unit', () => {
     const workoutLb = workoutAt(LIFT.id, 5, [doneSet(200, 5)], { unit: 'lb' })
     const stateKg = { unit: 'kg', customEx: [LIFT], workouts: [workoutLb] }

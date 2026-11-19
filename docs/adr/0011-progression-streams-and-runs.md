@@ -1,5 +1,7 @@
 # Progression reads a stream, and stalls read a run
 
+Status: Accepted, 2026-10-27. Amended by [0031](0031-the-training-log-is-the-only-reading.md) (the `exWeights` hint is now Best) and on 2026-11-18 below (the bodyweight carve-out).
+
 Double progression judged every session below the top of the rep range as a Miss. A deload
 prescribed the bottom of the range, which could never be a Hit against the frozen top Target,
 so the next session was a Miss too and deloaded again: 40 → 35 → 32.5 → 30 → … until the

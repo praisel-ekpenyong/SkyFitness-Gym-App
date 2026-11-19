@@ -48,7 +48,7 @@ describe('Profile schema version', () => {
     expect(raw.showRir).toBe(true)
   })
 
-  it('never fills a missing unit stamp: only a unit switch does that (ADR 0028)', () => {
+  it('never fills a missing unit stamp: only a unit switch does that (ADR 0031)', () => {
     const raw = { ...legacy(), bodyweight: [{ d: '2026-01-01', w: 80, t: 1 }] }
     for (const out of [admit(raw), normalizeState(raw), admit(admit(raw))]) {
       expect(out.workouts[0]).not.toHaveProperty('unit')

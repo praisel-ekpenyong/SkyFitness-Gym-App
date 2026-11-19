@@ -37,7 +37,7 @@ _Avoid_: sync
 Sky ships as a static frontend only; there is no backend to fall back on. Every feature must work from local data alone.
 
 **Read-time unit normalization**:
-Reading logged numbers (Workouts, Weigh-ins, Session body weight) in the Profile's unit, from the unit stamped on each one, without rewriting them. Plans and settings (Routine weights and steps, the Goal weight) carry no stamp, so switching units converts them in place. A switch also stamps any Workout or Weigh-in that has no unit yet, and is refused during a workout. See ADR 0028.
+Reading logged numbers (Workouts, Weigh-ins, Session body weight) in the Profile's unit, from the unit stamped on each one, without rewriting them. Plans and settings (Routine weights and steps, the Goal weight) carry no stamp, so switching units converts them in place. A switch also stamps any Workout or Weigh-in that has no unit yet, and is refused during a workout. See ADR 0031.
 _Avoid_: data migration, unit conversion migration, history rewriting
 
 ### Planning

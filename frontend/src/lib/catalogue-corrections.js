@@ -1,15 +1,31 @@
 /**
  * Movement-pattern corrections to the upstream catalogue (ADR 0012, ADR 0025).
  *
+ * The pinned catalogue (`exercises-data.js`, never edited) mis-tags whole
+ * movement patterns. Squats, hack squats and leg presses are glutes-primary
+ * with quads at 0.4, so twelve squat sets read as 4.8 quad sets. Most hip
+ * hinges are glutes-primary too. Calf raises credit hamstrings, leg curls
+ * credit glutes and leg extensions credit hamstrings. `exercises.js` applies
+ * these lists as an overlay when it builds the catalogue index; catalogue
+ * exercises are read live, so past workouts re-read through them with no
+ * migration. Custom exercises keep the muscles the lifter picked.
+ *
  * Each pattern names the curation it applies and the hand-reviewed catalogue
  * ids it applies to. Name patterns only proposed these ids; every id was read
  * and checked. Combination moves and misfires are left out on purpose and
- * keep their catalogue tags. No name matching happens at runtime.
+ * keep their catalogue tags; each table lists its exclusions above it. No name
+ * matching happens at runtime. An id may be curated once: `curationsByIdOf`
+ * throws on a second.
  *
  * Curation fields (spelled the way the catalogue spells muscles):
  * - `tg`: overrides the primary target.
  * - `smAdd`: secondary muscles to add.
  * - `smRemove`: secondary muscles to drop, from `sm` and from `mg`.
+ *
+ * Upper-body and core patterns apply their row in full: the primary, every
+ * listed secondary, and removal of every other secondary the reviewed ids
+ * carry. So sit-ups lose hip flexors, pull-ups lose forearms and front raises
+ * keep no secondary.
  */
 
 const KNEE_DOMINANT = {
@@ -75,7 +91,15 @@ export const LOWER_BODY_CORRECTIONS = [
     ids: ['0032', '0074', '0300', '0578', '0752', '0811', '0117', '0157', '0066'],
   },
   {
-    // ADR 0012: catalogue lower back stays as the third secondary.
+    // Hamstring hinges (ADR 0012). The RDL and stiff-leg deadlift load the
+    // hamstrings in a long, stretched position and are programmed as hamstring
+    // builders, but upstream tags most of them glutes-primary, and splits one
+    // movement by implement: barbell straight-leg deadlift 0116 is hamstrings,
+    // dumbbell stiff-leg 0432 glutes. Glutes join as a secondary and the
+    // catalogue's lower back stays the third, so four sets credit hamstrings 4,
+    // glutes 1.6 and lower back 1.6. A full set to all three was rejected: the
+    // lower back holds the spine still, and full sets for a stabiliser overstate
+    // its volume.
     pattern: 'RDL, stiff-leg, good morning',
     tg: 'hamstrings',
     smAdd: ['glutes'],

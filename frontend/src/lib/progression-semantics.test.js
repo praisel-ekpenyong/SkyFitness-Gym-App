@@ -57,7 +57,7 @@ describe('a finished Entry with zero performed Work sets is a Miss', () => {
   })
 })
 
-describe('a frozen Target and Prescription read in the Profile unit after a switch (ADR 0028)', () => {
+describe('a frozen Target and Prescription read in the Profile unit after a switch (ADR 0031)', () => {
   const inKg = { ...finishedWorkout('2026-04-01', TARGET_3X5, [unticked(62.5, 5), unticked(62.5, 5), unticked(62.5, 5)]), unit: 'kg' }
   inKg.entries[0].plan = { kind: 'up', weight: 62.5 }
   const S = { unit: 'lb', workouts: [inKg] }

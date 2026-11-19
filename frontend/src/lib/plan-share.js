@@ -97,7 +97,7 @@ export function parsePlan(raw) {
 
 export function mergePlan(s, bundle, { schedule } = {}) {
   s.customEx = s.customEx || []
-  // A plan's loads arrive in the importing Profile's unit; a file without a unit is taken as it is (ADR 0028).
+  // A plan's loads arrive in the importing Profile's unit; a file without a unit is taken as it is (ADR 0031).
   const unit = sanitizeUnit(s.unit)
   const fileUnit = bundle.unit || unit
   const exIdMap = {}

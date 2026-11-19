@@ -29,6 +29,23 @@ const root = resolve(__dirname, '..', '..')
 // Gitignored build output and fetched media: docs name them, a clean checkout lacks them.
 const ALLOW = ['frontend/.tmp/review/', 'frontend/dist', 'frontend/dist/', 'frontend/public/media/']
 
+// Paths an ADR names as they were when it was written, one file at a time. Superseded and
+// historical ADR bodies stay unchanged (docs/adr/README.md); an entry no longer needed fails the test below.
+const HISTORICAL = new Set([
+  // The storage module has since moved to platform/storage.js.
+  'docs/adr/0004-dual-write-storage.md: lib/storage.js',
+  // The Context describes storage before admit; the module is now platform/storage.js.
+  'docs/adr/0027-admit-is-the-single-way-a-profile-comes-in.md: lib/storage.js',
+  // Superseded by 0032; that ADR deleted this file.
+  'docs/adr/0006-active-workout-lifecycle.md: lib/finish-workout.js',
+  // Superseded by 0032; written as file:line, which is not a path.
+  'docs/adr/0006-active-workout-lifecycle.md: lib/import-csv.js:536',
+  // Superseded by 0031; written as file::function, which is not a path.
+  'docs/adr/0019-read-time-unit-normalization-across-history.md: lib/progression.js::sessionsFor',
+  // Superseded by 0031; written as file::function, which is not a path.
+  'docs/adr/0019-read-time-unit-normalization-across-history.md: lib/stats-selectors.js::selectExerciseStats',
+])
+
 describe('docs paths', () => {
   it('flag a missing link or path as file:line and ignore fenced code', () => {
     const dir = mkdtempSync(join(tmpdir(), 'docs-'))
@@ -49,11 +66,14 @@ describe('docs paths', () => {
     expect(findBrokenRefs([doc], dir)).toEqual(['docs/a.md:2: gone.md', 'docs/a.md:3: lib/gone.js'])
   })
 
-  // docs/adr/ is left out until ticket 08 finishes rewriting the ADRs; it then adds docs/adr here.
   it('point at files that exist in the repo markdown docs', () => {
     const files = execFileSync('git', ['ls-files', '*.md'], { cwd: root, encoding: 'utf8' })
-      .split('\n').filter(f => f && !f.startsWith('docs/adr/') && !f.startsWith('.taste-skill/') && f !== 'CHANGELOG.md')
+      .split('\n').filter(f => f && !f.startsWith('.taste-skill/') && f !== 'CHANGELOG.md')
       .map(f => resolve(root, f))
-    expect(findBrokenRefs(files, root, ALLOW)).toEqual([])
+    const broken = findBrokenRefs(files, root, ALLOW)
+    const withoutLine = b => b.replace(/:\d+: /, ': ')
+    expect(broken.filter(b => !HISTORICAL.has(withoutLine(b)))).toEqual([])
+    expect([...HISTORICAL].filter(h => !broken.some(b => withoutLine(b) === h))).toEqual([])
   })
 })
+

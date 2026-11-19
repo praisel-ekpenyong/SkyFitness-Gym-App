@@ -1,8 +1,6 @@
 # Read-time unit normalization across training history and progression streams
 
-> Amended by ADR 0028 (one rule for kg and lb): "routine definitions remain immutable" no longer holds. A unit
-> switch converts Routine `weight` and `inc` and the Goal weight in place, and stamps unstamped Workouts and
-> Weigh-ins with the outgoing unit. Weigh-ins and last session now read in `S.unit` too.
+Status: Superseded by [0031](0031-the-training-log-is-the-only-reading.md).
 
 ## Context
 

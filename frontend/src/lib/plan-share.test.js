@@ -312,7 +312,7 @@ describe('plan-share engine', () => {
     })
   })
 
-  describe('the unit a plan file carries (ADR 0028)', () => {
+  describe('the unit a plan file carries (ADR 0031)', () => {
     const lbPlan = {
       unit: 'lb',
       routines: [{ id: 'r1', name: 'Push', ex: [

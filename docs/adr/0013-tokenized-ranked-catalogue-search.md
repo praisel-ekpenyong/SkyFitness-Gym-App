@@ -1,6 +1,6 @@
 # Tokenized and ranked catalogue search
 
-**Status:** accepted
+Status: Accepted.
 
 **Context:**
 The exercise catalogue previously searched exercises using strict single-string contiguous substring inclusion (`field.toLowerCase().includes(query)`). This imposed several severe limitations on lifters:

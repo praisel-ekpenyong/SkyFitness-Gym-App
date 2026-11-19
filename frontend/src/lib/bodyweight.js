@@ -85,7 +85,7 @@ const readings = new WeakMap()
 
 /**
  * The Body-weight log with every Weigh-in in the Profile unit, in stored order. A Weigh-in stamped
- * in another unit reads converted; the stored log is never rewritten (ADR 0028). Returns the stored
+ * in another unit reads converted; the stored log is never rewritten (ADR 0031). Returns the stored
  * array itself when nothing needs converting.
  *
  * @param {Object} S - Profile state.
