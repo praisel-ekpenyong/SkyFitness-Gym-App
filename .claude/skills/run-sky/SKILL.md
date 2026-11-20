@@ -28,7 +28,7 @@ Env vars or the same names as `--flags`: `SKY_REVIEW_PORT` (default: derived fro
 
 ## Ports
 
-Parallel worktrees must not share a port, or one agent's `fuser -k` kills another's server. The default port is derived from the worktree's `frontend/` path: 5200 plus a hash of the path, modulo 700 (5200-5899), so it is stable per worktree and clear of 5173, 5174 and 5198. `npm run review:port` prints it. All tools (`serve`, `shots`, `audit`, `offline`) derive it the same way, so they agree without any setting. `SKY_REVIEW_PORT` or `--port=` overrides it; set it only on a collision. (`.claude/launch.json` pins 5198 for the `sky-build` preview entry.)
+Parallel worktrees must not share a port, or one agent's `fuser -k` kills another's server. The default port is derived from the worktree's `frontend/` path: 5200 plus a hash of the path, modulo 700 (5200-5899), so it is stable per worktree and clear of 5173, 5174 and 5198. `npm run review:port` prints it. All tools (`serve`, `shots`, `audit`, `offline`) derive it the same way, so they agree without any setting. `SKY_REVIEW_PORT` or `--port=` overrides it; set it only on a collision. (`.claude/launch.json` pins 5198 for the `sky-build` preview entry on purpose: a launch config needs a fixed port, and the derived range leaves 5198 free for it. Only one checkout uses that entry at a time.)
 
 ## Gotchas
 

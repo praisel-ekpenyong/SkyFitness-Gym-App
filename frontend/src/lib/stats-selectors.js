@@ -1,8 +1,8 @@
 import { EXDB, EXIDX } from './exercises.js'
 import { fatigueOf, strengthOf, fatigueStateOf } from './recovery.js'
 import { MUSCLES, loadOfWorkouts, loadOfRoutine, rankOf, lastTrainedByMuscle } from './muscles.js'
-import { LB_TO_KG, weighIns } from './bodyweight.js'
-import { sanitizeUnit, setIn } from './units.js'
+import { currentBodyweightKg, weighIns } from './bodyweight.js'
+import { setIn } from './units.js'
 import { best1RM, e1rmSeries, loadRecords, metric } from './training-log.js'
 import {
   displayScale, scaleName, toScale, avgRir,
@@ -89,17 +89,9 @@ function inWindow(workouts, now, days) {
 }
 
 function resolveBodyweightKg(S, override) {
-  if (override !== undefined && override !== null) {
-    const n = Number(override)
-    return Number.isFinite(n) && n > 0 ? n : null
-  }
-  const entries = S?.bodyweight || []
-  const ordered = entries.slice().sort((a, b) => String(a?.d).localeCompare(String(b?.d)))
-  for (let i = ordered.length - 1; i >= 0; i--) {
-    const w = Number(ordered[i]?.w)
-    if (Number.isFinite(w) && w > 0) return sanitizeUnit(ordered[i].unit ?? S?.unit) === 'lb' ? w * LB_TO_KG : w
-  }
-  return null
+  if (override === undefined || override === null) return currentBodyweightKg(S)
+  const n = Number(override)
+  return Number.isFinite(n) && n > 0 ? n : null
 }
 
 function workSetsOf(workouts) {

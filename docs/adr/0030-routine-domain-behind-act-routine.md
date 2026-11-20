@@ -33,8 +33,7 @@ Introduce `frontend/src/lib/routines.js` as the deep domain module encapsulating
    - Precondition checks: Gracefully returns `{ ok: false }` for missing routines or invalid indices. Throws an error on unrecognized command types.
 
 2. **`routineView(routine)`**: The companion read model projecting layout properties for presentation:
-   - `steps`: Sequential exercise clusters derived via `supersetUnits(routine.ex)`.
-   - `entries`: Enriched exercise entries providing `isLinkedPrev`, `isLinkedNext`, `inSuperset`, `isFirstInSuperset`, and `hasNote` flags.
+   - `entries`: Enriched exercise entries providing `isLinkedPrev`, `inSuperset`, `isFirstInSuperset`, and `hasNote` flags (2026-11-20: `steps`, `isLinkedNext` and `index` were dropped; nothing in the app read them).
 
 3. **Store Integration**:
    - `useStore.js` exposes `actRoutine(command)` running `actRoutine(s, command)` inside `update(...)`.

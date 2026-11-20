@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import {
   pickNewest, backupDue, BACKUP_NAG_MS, LOCAL_KEY, loadLocal, save, flush, load,
   registerSink, __setSinksForTests, __setLocalWriteForTests, __resetStorageBlockedForTests,
@@ -89,6 +89,8 @@ beforeEach(() => {
   __setLocalWriteForTests()
   __resetStorageBlockedForTests()
 })
+
+afterEach(() => { vi.useRealTimers() })
 
 describe('save / flush', () => {
   it('lands the snapshot in localStorage synchronously, unchanged', () => {
@@ -244,7 +246,6 @@ describe('onStorageSync', () => {
 
 
 describe('mirror write failures', () => {
-  beforeEach(() => { vi.useFakeTimers(); __setLocalWriteForTests(); __resetStorageBlockedForTests() })
 
   it('a rejected mirror write is reported, a later success clears it, and localStorage state is untouched', async () => {
     let fail = true
@@ -257,7 +258,6 @@ describe('mirror write failures', () => {
     save({ n: 2 }); flush()
     await vi.advanceTimersByTimeAsync(0)
     expect(isMirrorFailing()).toBe(false)
-    vi.useRealTimers()
   })
 
   it('a synchronously throwing mirror is reported too', () => {
@@ -266,8 +266,6 @@ describe('mirror write failures', () => {
     expect(isMirrorFailing()).toBe(true)
     __setSinksForTests([])
     save({ n: 4 }); flush()
-    __setSinksForTests()
-    vi.useRealTimers()
   })
 })
 

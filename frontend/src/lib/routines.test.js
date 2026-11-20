@@ -371,7 +371,7 @@ describe('Routine Domain Module (lib/routines.js)', () => {
   })
 
   describe('routineView(routine)', () => {
-    it('derives steps via supersetUnits, isLinkedPrev, isLinkedNext, inSuperset, isFirstInSuperset, and hasNote', () => {
+    it('derives isLinkedPrev, inSuperset, isFirstInSuperset and hasNote for each entry', () => {
       const routine = {
         id: 'r1',
         name: 'Upper',
@@ -383,35 +383,25 @@ describe('Routine Domain Module (lib/routines.js)', () => {
       }
 
       const view = routineView(routine)
-      expect(view.steps).toHaveLength(2)
-      expect(view.steps[0]).toEqual({ entries: [0, 1], items: [routine.ex[0], routine.ex[1]], isSuperset: true, isLast: false })
-      expect(view.steps[1]).toEqual({ entries: [2], items: [routine.ex[2]], isSuperset: false, isLast: true })
-
       expect(view.entries).toHaveLength(3)
 
-      // Entry 0: first in superset, linked next, hasNote: true
-      expect(view.entries[0].index).toBe(0)
+      // Entry 0: first in superset, hasNote: true
       expect(view.entries[0].id).toBe('0001')
       expect(view.entries[0].isLinkedPrev).toBe(false)
-      expect(view.entries[0].isLinkedNext).toBe(true)
       expect(view.entries[0].inSuperset).toBe(true)
       expect(view.entries[0].isFirstInSuperset).toBe(true)
       expect(view.entries[0].hasNote).toBe(true)
 
       // Entry 1: second in superset, linked prev, empty note -> hasNote: false
-      expect(view.entries[1].index).toBe(1)
       expect(view.entries[1].id).toBe('0002')
       expect(view.entries[1].isLinkedPrev).toBe(true)
-      expect(view.entries[1].isLinkedNext).toBe(false)
       expect(view.entries[1].inSuperset).toBe(true)
       expect(view.entries[1].isFirstInSuperset).toBe(false)
       expect(view.entries[1].hasNote).toBe(false)
 
       // Entry 2: standalone, no superset, no note
-      expect(view.entries[2].index).toBe(2)
       expect(view.entries[2].id).toBe('0003')
       expect(view.entries[2].isLinkedPrev).toBe(false)
-      expect(view.entries[2].isLinkedNext).toBe(false)
       expect(view.entries[2].inSuperset).toBe(false)
       expect(view.entries[2].isFirstInSuperset).toBe(false)
       expect(view.entries[2].hasNote).toBe(false)
@@ -419,7 +409,7 @@ describe('Routine Domain Module (lib/routines.js)', () => {
 
     it('handles nullish routine gracefully', () => {
       const view = routineView(null)
-      expect(view).toEqual({ steps: [], entries: [] })
+      expect(view).toEqual({ entries: [] })
     })
   })
 })
