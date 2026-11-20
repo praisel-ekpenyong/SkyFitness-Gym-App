@@ -431,6 +431,23 @@ describe('double progression', () => {
     expect(p.kind).toBe('up')
   })
 
+  it('a Stall Deload back to the earlier load is no bounce: the first Hit goes up', () => {
+    const five = { ...cfg, inc: 5 }
+    const rows = [[40, 12, 12, 12], ...Array.from({ length: 5 }, () => [45, 9, 9, 9])]
+    const deload = nextPrescription(hist(LIFT, rows, { sets: 3, reps: 12 }), five)
+    expect(deload).toMatchObject({ kind: 'deload', weight: 40 })
+    const p = nextPrescription(hist(LIFT, [...rows, [40, 12, 12, 12]], { sets: 3, reps: 12 }), five)
+    expect(p.kind).toBe('up')
+    expect(p.weight).toBe(45)
+  })
+
+  it('a lighter session after a Hit at the heavier load is no bounce', () => {
+    const rows = [[40, 12, 12, 12], [42.5, 12, 12, 12], [40, 12, 12, 12]]
+    const p = nextPrescription(hist(LIFT, rows, { sets: 3, reps: 12 }), cfg)
+    expect(p.kind).toBe('up')
+    expect(p.weight).toBe(42.5)
+  })
+
   it('linear progression never drops on a below-range first set', () => {
     const p = nextPrescription(hist(LIFT, [[40, 2, 2, 2]], { sets: 3, reps: 5 }), { id: LIFT, sets: 3, reps: 5, weight: 40, prog: 'linear' })
     expect(p.kind).not.toBe('down')
