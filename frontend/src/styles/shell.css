@@ -93,6 +93,8 @@ body.focus-session #timer { bottom: 0; padding-bottom: calc(12px + var(--sab)) }
 .sheet-sub { color: var(--label-2); font-size: var(--fs-small); line-height: 1.42; margin-bottom: 14px }
 .sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px }
 .sheet-head h3 { margin: 0; text-align: center; flex: 1; min-width: 0 }
+.recap-title { flex: 1; min-width: 0; text-align: center }
+.recap-sofar { color: var(--label-2); font-size: var(--fs-small); margin-top: 4px }
 .center {
   position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
   width: min(88vw, 340px); background: var(--bg-el); border-radius: var(--r-3); padding: 22px 18px 14px;
