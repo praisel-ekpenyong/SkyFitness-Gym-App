@@ -118,7 +118,8 @@ describe('RecapSheet', () => {
       twoMonths()
       await act(async () => { root.render(<RecapSheet start="2026-11-09" close={vi.fn()} />) })
 
-      expect(container.querySelector('h3')?.textContent).toContain('November 2026 so far')
+      expect(container.querySelector('h3')?.textContent).toBe('November 2026')
+      expect(container.querySelector('.recap-sofar')?.textContent).toBe('So far')
       const rows = container.querySelectorAll('.sect-b')[0].querySelectorAll('.lrow')
       expect(rows.length).toBe(4)
       expect(container.querySelectorAll('.delta-pill').length).toBe(0)
@@ -130,6 +131,7 @@ describe('RecapSheet', () => {
       await act(async () => { root.render(<RecapSheet start="2026-10-01" close={vi.fn()} />) })
 
       expect(container.querySelector('h3')?.textContent).toBe('October 2026')
+      expect(container.querySelector('.recap-sofar')).toBeNull()
       expect(container.querySelectorAll('.delta-pill').length).toBe(4)
     })
   })

@@ -276,7 +276,7 @@ export function RecapSheet({ start, close }) {
     <>
       <div className="row between sheet-head">
         <button className="iconbtn" onClick={() => setCur(new Date(y, mo - 1, 1))} aria-label={t('Previous month')}><Icon name="chevronLeft" /></button>
-        <h3>{isCurrent ? t('{0} {1} so far', t(MONTHS_LONG[mo]), y) : t('{0} {1}', t(MONTHS_LONG[mo]), y)}</h3>
+        <div className="recap-title"><h3>{t('{0} {1}', t(MONTHS_LONG[mo]), y)}</h3>{isCurrent && <div className="recap-sofar">{t('So far')}</div>}</div>
         <button className="iconbtn" onClick={() => setCur(new Date(y, mo + 1, 1))} aria-label={t('Next month')}><Icon name="chevronRight" /></button>
       </div>
       {viewedEmpty && (
