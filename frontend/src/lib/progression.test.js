@@ -403,6 +403,33 @@ describe('double progression', () => {
     expect(p.why[0]).toContain('Lightest load')
   })
 
+  it('drops to one Increment from under two Increments', () => {
+    const p = nextPrescription(hist(LIFT, [[4, 6, 6, 6]], { sets: 3, reps: 12 }), { ...cfg, weight: 4, inc: 2.5 })
+    expect(p.kind).toBe('down')
+    expect(p.weight).toBe(2.5)
+    expect(p.reps).toBe(8)
+  })
+
+  it('drops to one Increment from under two Increments in lb', () => {
+    const S = { ...hist(LIFT, [[8, 6, 6, 6]], { sets: 3, reps: 12 }), unit: 'lb' }
+    const p = nextPrescription(S, { ...cfg, weight: 8, inc: 5 })
+    expect(p.kind).toBe('down')
+    expect(p.weight).toBe(5)
+  })
+
+  it('says what a Drop to one Increment takes off', () => {
+    const p = nextPrescription(hist(LIFT, [[4, 6, 6, 6]], { sets: 3, reps: 12 }), { ...cfg, weight: 4, inc: 2.5 })
+    expect(p.why).toEqual(['First set {0} reps, below the {1}–{2} range. {3} {4} less, back to {1} reps.', 6, 8, 12, 1.5, 'kg'])
+  })
+
+  it('says what comes off a load logged in lb in round figures', () => {
+    const logged = hist(LIFT, [[9, 6, 6, 6]], { sets: 3, reps: 12 })
+    const S = { ...logged, workouts: logged.workouts.map(w => ({ ...w, unit: 'lb' })) }
+    const p = nextPrescription(S, { ...cfg, weight: 4.1, inc: 2.5 })
+    expect(p.weight).toBe(2.5)
+    expect(p.why[4]).toBe(1.6)
+  })
+
   it('a dropped-to weight needs the top twice before going up again', () => {
     const rows = [[40, 12, 12, 12], [42.5, 7, 6, 6], [40, 12, 12, 12]]
     const p = nextPrescription(hist(LIFT, rows, { sets: 3, reps: 12 }), cfg)
