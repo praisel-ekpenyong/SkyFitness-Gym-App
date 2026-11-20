@@ -3,18 +3,10 @@ import { trainingStyleOf, cleanVolumeRanges } from '../volume-ranges.js'
 import { cleanProfileFields } from './fields.js'
 import { DEF } from './def.js'
 import { admit } from './admit.js'
-
-const clone = o => {
-  if (typeof structuredClone === 'function') {
-    try { return structuredClone(o) } catch {}
-  }
-  return JSON.parse(JSON.stringify(o))
-}
-
-const record = v => !!v && typeof v === 'object' && !Array.isArray(v)
+import { isRecord, cloneProfile } from './plain.js'
 
 function freshProfile() {
-  return clone(DEF)
+  return cloneProfile(DEF)
 }
 
 /**
@@ -28,21 +20,21 @@ function freshProfile() {
  * @throws {NewerProfileError} When `raw` was saved by a newer Sky.
  */
 export function normalizeState(raw, now = Date.now()) {
-  if (!record(raw)) return freshProfile()
+  if (!isRecord(raw)) return freshProfile()
   const S = admit(raw)
   if (!Array.isArray(S.workouts)) S.workouts = []
   if (!Array.isArray(S.routines)) S.routines = []
   if (!Array.isArray(S.bodyweight)) S.bodyweight = []
   if (!Array.isArray(S.customEx)) S.customEx = []
   if (!Array.isArray(S.favorites)) S.favorites = []
-  S.week = record(S.week) ? { ...S.week } : {}
-  S.dayPlan = record(S.dayPlan) ? { ...S.dayPlan } : {}
-  S.reminder = record(S.reminder) ? { ...S.reminder } : clone(DEF.reminder)
+  S.week = isRecord(S.week) ? { ...S.week } : {}
+  S.dayPlan = isRecord(S.dayPlan) ? { ...S.dayPlan } : {}
+  S.reminder = isRecord(S.reminder) ? { ...S.reminder } : cloneProfile(DEF.reminder)
   S.trainingStyle = trainingStyleOf(S)
   S.volumeRanges = cleanVolumeRanges(S.volumeRanges)
   Object.assign(S, cleanProfileFields(S, now))
   S.accent = typeof S.accent === 'string' && Object.hasOwn(ACCENTS, S.accent) ? S.accent : DEF.accent
   const a = S.active
-  S.active = record(a) && Array.isArray(a.entries) ? a : null
+  S.active = isRecord(a) && Array.isArray(a.entries) ? a : null
   return S
 }

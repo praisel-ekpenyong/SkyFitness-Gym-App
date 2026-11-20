@@ -187,30 +187,20 @@ export function routineView(routine) {
   const unitFirst = new Set(units.filter(u => u.length > 1).map(u => u[0]))
   const supersetIndices = new Set(units.filter(u => u.length > 1).flat())
 
-  const steps = units.map((idxs, k) => ({
-    entries: idxs,
-    items: idxs.map(i => ex[i]),
-    isSuperset: idxs.length > 1,
-    isLast: k === units.length - 1,
-  }))
-
   const entries = ex.map((e, i) => {
     const isLinkedPrev = Boolean(i > 0 && e?.sg && ex[i - 1]?.sg === e.sg)
-    const isLinkedNext = Boolean(i < ex.length - 1 && e?.sg && ex[i + 1]?.sg === e.sg)
     const inSuperset = supersetIndices.has(i)
     const isFirstInSuperset = unitFirst.has(i)
     const hasNote = Boolean(cleanNote(e?.notes))
     return {
       ...e,
       entry: e,
-      index: i,
       isLinkedPrev,
-      isLinkedNext,
       inSuperset,
       isFirstInSuperset,
       hasNote,
     }
   })
 
-  return { steps, entries }
+  return { entries }
 }

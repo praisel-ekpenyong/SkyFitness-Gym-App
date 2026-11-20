@@ -2,10 +2,7 @@
 // A step changes shapes only, never values. Adding one raises SCHEMA_VERSION by one.
 
 import { EFFORT } from '../effort.js'
-
-function profile(raw) {
-  return !!raw && typeof raw === 'object' && !Array.isArray(raw)
-}
+import { isRecord } from './plain.js'
 
 function sealEffort(raw) {
   const e = raw.effort
@@ -15,7 +12,7 @@ function sealEffort(raw) {
 
 // Old rows carried `warmup: true`; the Profile now stores the phase shape only.
 function upgradeSet(set) {
-  if (!profile(set) || set.warmup !== true) return set
+  if (!isRecord(set) || set.warmup !== true) return set
   const { warmup, ...rest } = set
   return rest.phase == null || rest.phase === '' ? { ...rest, phase: 'warmup' } : rest
 }
@@ -35,7 +32,7 @@ function upgradeEntries(entries) {
   if (!Array.isArray(entries)) return entries
   let changed = false
   const upgraded = entries.map(entry => {
-    if (!profile(entry)) return entry
+    if (!isRecord(entry)) return entry
     const sets = upgradeSets(entry.sets)
     if (sets === entry.sets) return entry
     changed = true
@@ -45,7 +42,7 @@ function upgradeEntries(entries) {
 }
 
 function upgradeWorkout(workout) {
-  if (!profile(workout)) return workout
+  if (!isRecord(workout)) return workout
   const entries = upgradeEntries(workout.entries)
   return entries === workout.entries ? workout : { ...workout, entries }
 }
@@ -55,7 +52,7 @@ function fromVersion0(raw) {
   const next = { ...raw, effort: sealEffort(raw) }
   delete next.showRir
   if (Array.isArray(raw.workouts)) next.workouts = raw.workouts.map(upgradeWorkout)
-  if (profile(raw.active)) next.active = upgradeWorkout(raw.active)
+  if (isRecord(raw.active)) next.active = upgradeWorkout(raw.active)
   return next
 }
 
@@ -82,7 +79,7 @@ export function schemaVersionOf(raw) {
  * @returns {boolean} True when admitting it would read shapes this build does not know.
  */
 export function isNewerProfile(raw) {
-  return profile(raw) && schemaVersionOf(raw) > SCHEMA_VERSION
+  return isRecord(raw) && schemaVersionOf(raw) > SCHEMA_VERSION
 }
 
 /** Thrown by `admit` for a Profile from a newer Sky: it is refused, never admitted. */

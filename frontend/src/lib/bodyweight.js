@@ -125,10 +125,13 @@ export function latestWeighIn(S) {
   return latestOf(weighIns(S))
 }
 
+/** The latest Weigh-in with a usable weight, in kg, or null. A broken entry is skipped, not read as no body weight. */
 export function currentBodyweightKg(S) {
-  const last = latestOf(Array.isArray(S?.bodyweight) ? S.bodyweight : [])
-  if (!last || !(last.w > 0)) return null
-  return sanitizeUnit(last.unit ?? S?.unit) === 'lb' ? last.w * LB_TO_KG : last.w
+  const log = Array.isArray(S?.bodyweight) ? S.bodyweight : []
+  const last = latestOf(log.filter(b => Number(b?.w) > 0))
+  if (!last) return null
+  const w = Number(last.w)
+  return sanitizeUnit(last.unit ?? S?.unit) === 'lb' ? w * LB_TO_KG : w
 }
 
 /**

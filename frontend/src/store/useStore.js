@@ -7,17 +7,10 @@ import { MOBILE, syncReminder } from '../platform/mobile.js'
 import { SEED_PLAN } from '../lib/env.js'
 import { seedPlanInto } from '../lib/plans/seed.js'
 import { flush, load, loadLocal, save, LOCAL_KEY, onStorageSync } from '../platform/storage.js'
-import { DEF, normalizeState, isNewerProfile, NewerProfileError } from '../lib/profile/index.js'
+import { DEF, normalizeState, isNewerProfile, NewerProfileError, cloneProfile } from '../lib/profile/index.js'
 import { act } from '../lib/active-workout.js'
 import { actRoutine } from '../lib/routines.js'
 import { runEffects } from './effects.js'
-
-const clone = o => {
-  if (typeof structuredClone === 'function') {
-    try { return structuredClone(o) } catch {}
-  }
-  return JSON.parse(JSON.stringify(o))
-}
 
 // Frozen in tests so code that changes state outside update fails the suite (ADR 0026).
 setAutoFreeze(import.meta.env.MODE === 'test')
@@ -28,8 +21,8 @@ const stamp = S => ({ ...S, _ts: Date.now() })
 // flags `newerProfile`, and never writes, so the newer Profile stays on disk as it was.
 function loadState() {
   const raw = loadLocal()
-  if (isNewerProfile(raw)) return { S: clone(DEF), newerProfile: true }
-  return { S: raw ? normalizeState(raw) : clone(DEF), newerProfile: false }
+  if (isNewerProfile(raw)) return { S: cloneProfile(DEF), newerProfile: true }
+  return { S: raw ? normalizeState(raw) : cloneProfile(DEF), newerProfile: false }
 }
 
 const hasData = st => !!((st.workouts || []).length || (st.routines || []).length || (st.bodyweight || []).length)

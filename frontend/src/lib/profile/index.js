@@ -5,3 +5,4 @@ export { SCHEMA_VERSION, isNewerProfile, NewerProfileError } from './upgrades.js
 export { RESTORE_TOP_KEYS } from './restore-keys.js'
 export { sortWorkouts } from './workouts.js'
 export { validateBackup, sanitizeRestorePayload, sanitizeBackup } from './restore.js'
+export { isRecord, cloneProfile } from './plain.js'

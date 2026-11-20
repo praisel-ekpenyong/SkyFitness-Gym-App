@@ -187,6 +187,8 @@ describe('canonical-kg reading', () => {
     expect(currentBodyweightKg({ unit: 'lb', bodyweight: [{ d: '2026-01-10', w: 220.462262 }] })).toBeCloseTo(100, 6)
     expect(currentBodyweightKg({ unit: 'kg', bodyweight: [] })).toBeNull()
     expect(currentBodyweightKg({ unit: 'kg', bodyweight: [{ d: '2026-01-10', w: 0 }] })).toBeNull()
+    expect(currentBodyweightKg({ unit: 'kg', bodyweight: [{ d: '2026-01-09', w: 78 }, { d: '2026-01-10', w: 0 }] }), 'skips a broken latest Weigh-in').toBe(78)
+    expect(currentBodyweightKg({ unit: 'kg', bodyweight: [{ d: '2026-01-10', w: '80' }] }), 'reads a numeric string').toBe(80)
   })
 
   it('round-trips 80 kg across units at 1-decimal policy', () => {

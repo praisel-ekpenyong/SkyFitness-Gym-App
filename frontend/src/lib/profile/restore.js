@@ -3,6 +3,7 @@
 
 import { RESTORE_TOP_KEYS } from './restore-keys.js'
 import { isNewerProfile } from './upgrades.js'
+import { isRecord } from './plain.js'
 
 /**
  * Throws unless the payload has the shape of a Sky backup (an object with workouts and routines arrays)
@@ -18,11 +19,10 @@ export function validateBackup(data) {
   return true
 }
 
-const isPlainRecord = v => v && typeof v === 'object' && !Array.isArray(v)
-const isGoodWorkoutEntry = e => isPlainRecord(e) && typeof e.id === 'string' && e.id.length > 0 && Array.isArray(e.sets)
-const isGoodWorkout = w => isPlainRecord(w) && Array.isArray(w.entries)
-const isGoodRoutineEx = e => isPlainRecord(e) && typeof e.id === 'string' && e.id.length > 0
-const isGoodRoutine = r => isPlainRecord(r) && typeof r.id === 'string' && r.id.length > 0 && Array.isArray(r.ex)
+const isGoodWorkoutEntry = e => isRecord(e) && typeof e.id === 'string' && e.id.length > 0 && Array.isArray(e.sets)
+const isGoodWorkout = w => isRecord(w) && Array.isArray(w.entries)
+const isGoodRoutineEx = e => isRecord(e) && typeof e.id === 'string' && e.id.length > 0
+const isGoodRoutine = r => isRecord(r) && typeof r.id === 'string' && r.id.length > 0 && Array.isArray(r.ex)
 
 /**
  * Strips malformed Workouts, Entries and Routines from a backup, keeps only the keys a Restore
