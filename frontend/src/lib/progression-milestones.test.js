@@ -524,6 +524,16 @@ describe('evaluateSetMilestone', () => {
       expect(milestone.label).toBe('Rep progress (+1)')
     })
 
+    it('shows the plain hit, not rep progress against the heavier session, when the bounce guard holds', () => {
+      const target = { mode: 'reps', reps: 12, repsMin: 8, weight: 40, prog: 'double', sets: 3 }
+      const at = (id, d, w, reps) => ({ id, d, entries: [{ id: 'dumbbell-curl', target, sets: reps.map(r => ({ r, w, done: true })) }] })
+      const workouts = [at('w1', '2026-01-01', 40, [12, 12, 12]), at('w2', '2026-01-02', 42.5, [7, 6, 6])]
+      const entry = { id: 'dumbbell-curl', target, sets: [12, 12, 12].map(r => ({ r, w: 40, done: true })) }
+      const state = { unit: 'kg', workouts }
+      expect(evaluateSetMilestone(entry, 2, { state })).toEqual({ kind: 'hit', label: '12/12 reps', reps: 12, targetReps: 12 })
+      expect(evaluateSessionProgression(entry, state).text).toBe('Aim for 12 reps at 40 kg')
+    })
+
     it('badges the per-side rep step when that aim moved', () => {
       const prior = {
         id: 'w1',

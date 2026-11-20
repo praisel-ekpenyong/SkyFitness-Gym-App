@@ -287,10 +287,13 @@ function loadlessPrescription({ policy, cfg, last }) {
   return { policy, kind: 'up', weight: 0, reps: next, ...carrySets, why: ['Bodyweight — every rep last time, so go for {0} this time.', next] }
 }
 
-// The Run before a heavier one was at this weight and ended in a Hit (ADR 0033).
-function bouncedBack(sessions, start, load) {
+const belowRange = (session, bottom) => !!session.firstPerformed && (session.reps?.[0] || 0) < bottom
+
+// A Drop from a heavier Run back to this weight, where the Run before it ended in a Hit (ADR 0033).
+function bouncedBack(sessions, start, load, bottom) {
   if (start < 2) return false
   const w = load(sessions[start])
+  if (!belowRange(sessions[start - 1], bottom)) return false
   const above = runStart(sessions.slice(0, start), load)
   if (above < 1 || !(load(sessions[above]) > w)) return false
   const before = sessions[above - 1]
@@ -312,7 +315,7 @@ function doublePrescription({ policy, cfg, inc, unit, sessions, last, deloadAt, 
   const load = s => loadOf(s, cfg.weight)
   const start = runStart(sessions, load)
   if (last.ok) {
-    if (bouncedBack(sessions, start, load) && sessions.slice(start).filter(s => s.ok).length < 2) {
+    if (bouncedBack(sessions, start, load, bottom) && sessions.slice(start).filter(s => s.ok).length < 2) {
       return { policy, kind: 'hold', weight: w, reps: top, why: ['Top again: one more time at this weight before adding {0} {1}, since the last jump was too big.', inc, unit] }
     }
     const nextW = round1(w + inc)
@@ -320,7 +323,7 @@ function doublePrescription({ policy, cfg, inc, unit, sessions, last, deloadAt, 
   }
 
   const first = last.reps?.[0] || 0
-  if (last.firstPerformed && first < bottom) {
+  if (belowRange(last, bottom)) {
     const nextW = round1(w - inc)
     if (nextW < inc) {
       return { policy, kind: 'hold', weight: w, reps: bottom, why: [LIGHTEST_LOAD] }
@@ -456,7 +459,8 @@ function projectedVerdict(entry, state) {
     const working = readSession(entry, cfg, workout, unit).weight || 0
     step = Math.round((prescription.weight - working) * 10) / 10
   }
-  if (prescription.kind === 'hold' && prev && mode === 'reps' && prescription.reps != null) {
+  const sameLoad = prev && loadOf(prev, cfg.weight) === loadOf(last, cfg.weight)
+  if (prescription.kind === 'hold' && sameLoad && mode === 'reps' && prescription.reps != null) {
     const top = Math.max(1, cfg.reps > 0 ? cfg.reps : 10)
     const bottom = cfg.repsMin > 0 ? Math.min(cfg.repsMin, top) : Math.max(1, top - 2)
     const stepRep = repStep(cfg)
