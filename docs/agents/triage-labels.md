@@ -14,4 +14,4 @@ When a skill mentions a role (e.g. "apply the AFK-ready triage label"), use the 
 
 Edit the "Label in our tracker" column to match whatever vocabulary you actually use.
 
-Completion is not a triage role. `issue-tracker.md` defines `Status: resolved` for merged implementation work, and `claimed` / `resolved` for wayfinding children.
+Completion is not a triage role: a ticket is done when its issue closes (see `issue-tracker.md`).

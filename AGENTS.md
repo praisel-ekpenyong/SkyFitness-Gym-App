@@ -6,11 +6,11 @@ A single-user, no-login, backend-free gym & body-weight tracker.
 
 ### Issue tracker
 
-Issues live as local markdown files under `.scratch/<feature>/` — one directory per feature, one file per ticket. See `docs/agents/issue-tracker.md`.
+Issues live in GitHub Issues on `praisel-ekpenyong/SkyFitness-Gym-App` (public), via the `gh` CLI. See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
-Open triage roles are in `docs/agents/triage-labels.md`. Closing a ticket is defined in `docs/agents/issue-tracker.md`.
+The five default triage labels (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`). See `docs/agents/triage-labels.md`.
 
 ### Domain docs
 
