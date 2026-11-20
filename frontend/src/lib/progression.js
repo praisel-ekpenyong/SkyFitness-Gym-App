@@ -52,19 +52,25 @@ export function policyFor(cfg, routine, mode) {
 }
 
 const round1 = v => Math.round(v * 10) / 10
+const round2 = v => Math.round(v * 100) / 100
 function snap(v, step) {
   if (!(step > 0)) return round1(v)
   return round1(Math.round(v / step) * step)
 }
 function deloadTo(cur, step) {
-  let next = snap(cur * DELOAD_FACTOR, step)
-  if (next >= cur) next = snap(cur - step, step)
-  return Math.max(step, next)
+  const next = snap(cur * DELOAD_FACTOR, step)
+  return next < cur ? next : snap(cur - step, step)
+}
+
+// The Stall Deload and the Drop share this floor (ADR 0033): null when the load cannot go lower.
+function lowerTo(cur, next, step) {
+  const at = Math.max(step, next)
+  return at < cur ? at : null
 }
 
 export function reduceLoad(cur, step) {
-  const next = deloadTo(cur, step)
-  return next >= cur ? { tag: 'hold', at: cur } : { tag: 'deload', at: next }
+  const at = lowerTo(cur, deloadTo(cur, step), step)
+  return at == null ? { tag: 'hold', at: cur } : { tag: 'deload', at }
 }
 
 function deloadIfStalled(cur, step, noProgress, deloadAt) {
@@ -322,25 +328,24 @@ function doublePrescription({ policy, cfg, inc, unit, sessions, last, deloadAt, 
     return { policy, kind: 'up', weight: nextW, reps: bottom, why: ['Top of the rep range in every set — {0} {1} more, back to {2} reps.', inc, unit, bottom] }
   }
 
-  const first = last.reps?.[0] || 0
-  if (belowRange(last, bottom)) {
-    const nextW = round1(w - inc)
-    if (nextW < inc) {
-      return { policy, kind: 'hold', weight: w, reps: bottom, why: [LIGHTEST_LOAD] }
-    }
-    return { policy, kind: 'down', weight: nextW, reps: bottom, inc, why: ['First set {0} reps, below the {1}–{2} range. {3} {4} less, back to {1} reps.', first, bottom, top, inc, unit] }
+  const drop = belowRange(last, bottom)
+  const noProgress = doubleNoProgress(sessions, start, range)
+  if (!drop && noProgress < deloadAt) {
+    const aim = aimUp(range, last.low)
+    return { policy, kind: 'hold', weight: w, reps: aim, why: ['Same weight — aim for {0} reps this time.', aim] }
   }
 
-  const noProgress = doubleNoProgress(sessions, start, range)
-  const stalled = deloadIfStalled(w, inc, noProgress, deloadAt)
-  if (stalled?.tag === 'hold') {
+  const next = drop ? round1(w - inc) : deloadTo(w, inc)
+  const at = lowerTo(w, next, inc)
+  if (at == null) {
     return { policy, kind: 'hold', weight: w, reps: bottom, why: [LIGHTEST_LOAD] }
   }
-  if (stalled?.tag === 'deload') {
-    return { policy, kind: 'deload', weight: stalled.at, reps: bottom, why: ['No progress in {0} Workouts — deload to {1} {2}.', noProgress, stalled.at, unit] }
+  if (!drop) {
+    return { policy, kind: 'deload', weight: at, reps: bottom, why: ['No progress in {0} Workouts — deload to {1} {2}.', noProgress, at, unit] }
   }
-  const aim = aimUp(range, last.low)
-  return { policy, kind: 'hold', weight: w, reps: aim, why: ['Same weight — aim for {0} reps this time.', aim] }
+  const first = last.reps?.[0] || 0
+  const by = at > next ? round2(w - at) : inc
+  return { policy, kind: 'down', weight: at, reps: bottom, by, why: ['First set {0} reps, below the {1}–{2} range. {3} {4} less, back to {1} reps.', first, bottom, top, by, unit] }
 }
 
 function linearPrescription({ policy, inc, unit, cfg, sessions, last, deloadAt, w }) {
@@ -770,7 +775,7 @@ export function evaluateSessionProgression(entry, state, context = {}) {
     text = t('Deload 10% to reset and rebuild')
   } else if (p.kind === 'down') {
     iconName = 'arrowDown'
-    text = t('Drop {0} {1}, back to {2} reps', p.inc, unit, p.reps)
+    text = t('Drop {0} {1}, back to {2} reps', p.by, unit, p.reps)
   } else if (p.kind === 'hold') {
     if (policy === 'double' && p.reps != null) {
       iconName = 'target'

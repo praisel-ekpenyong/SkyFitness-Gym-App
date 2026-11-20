@@ -998,6 +998,17 @@ describe('evaluateSessionProgression and sessionProgressionItems', () => {
     expect(item.label).toBe('Drop 2 kg, back to 8 reps')
   })
 
+  it('names what a Drop to one Increment takes off, not the Increment', () => {
+    const entry = {
+      id: '0047',
+      target: { sets: 3, reps: 12, repsMin: 8, weight: 4, prog: 'double', inc: 2.5 },
+      sets: [{ w: 4, r: 6, done: true }, { w: 4, r: 6, done: true }, { w: 4, r: 6, done: true }]
+    }
+    const item = evaluateSessionProgression(entry, baseState)
+    expect(item.weight).toBe(2.5)
+    expect(item.label).toBe('Drop 1.5 kg, back to 8 reps')
+  })
+
   it('names the Drop by its Increment, in the Profile unit, unrounded', () => {
     const entry = {
       id: '0047',

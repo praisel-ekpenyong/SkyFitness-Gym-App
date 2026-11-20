@@ -274,7 +274,7 @@ Cutting the working value roughly 10% after enough Stalls — load for reps work
 _Avoid_: cascading Deloads; a same-weight "deload"
 
 **Drop**:
-Double progression's mirror of the load advance: when the first planned Work set of a session is performed below the rep-range bottom, the next Prescription (kind `down`) takes one Increment off the working load and returns to the range bottom, at once and on any session, a Run baseline included. Unperformed sets never trigger it, and it takes precedence over a Stall-count Deload. It never goes below one Increment; there the Prescription holds and says so. A Drop starts a new Run. When it returns to the load of the Run before the heavier one, and that Run ended in a Hit, the next advance needs two Hits in the current Run (ADR 0033).
+Double progression's mirror of the load advance: when the first planned Work set of a session is performed below the rep-range bottom, the next Prescription (kind `down`) takes one Increment off the working load and returns to the range bottom, at once and on any session, a Run baseline included. Unperformed sets never trigger it, and it takes precedence over a Stall-count Deload. Like a Deload, it never goes below one Increment: a load under two Increments lands on one Increment, and at one Increment or less the Prescription holds and says so. A Drop starts a new Run. When it returns to the load of the Run before the heavier one, and that Run ended in a Hit, the next advance needs two Hits in the current Run (ADR 0033).
 _Avoid_: calling it a Deload (that is the 10% cut after Stalls); dropping on a weak later set
 
 **AMRAP**:
