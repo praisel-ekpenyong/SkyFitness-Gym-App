@@ -5,8 +5,10 @@ const STRAIGHT_BARS = new Set(['barbell', 'olympic barbell'])
 export const loadsOnBar = eq => STRAIGHT_BARS.has(eq)
 
 const HEIGHT = { big: 52, mid: 44, small: 34, tiny: 26, change: 20 }
+// A pound plate is drawn at the size of the kilo plate that shares its colour.
+const LB_AS_KG = { 45: 20, 35: 15, 25: 10, 10: 5, 5: 2.5, 2.5: 1.25 }
 function sizeOf(plate, unit) {
-  const r = unit === 'lb' ? plate / 2.25 : plate
+  const r = unit === 'lb' ? LB_AS_KG[plate] ?? plate / 2.25 : plate
   if (r >= 20) return 'big'
   if (r >= 15) return 'mid'
   if (r >= 10) return 'small'
