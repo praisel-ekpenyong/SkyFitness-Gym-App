@@ -984,7 +984,7 @@ describe('evaluateSessionProgression and sessionProgressionItems', () => {
     expect(item.kind).toBe('deload')
     expect(item.kind === 'up').toBe(false)
     expect(item.iconName).toBe('info')
-    expect(item.label).toBe('Deload to 90 kg to reset and rebuild')
+    expect(item.label).toBe('Deload to 90 kg')
   })
 
   it('evaluates a double-progression deload with destination weight and reps bottom', () => {
@@ -1056,7 +1056,7 @@ describe('evaluateSessionProgression and sessionProgressionItems', () => {
     const item = evaluateSessionProgression(entry, state)
     expect(item).not.toBeNull()
     expect(item.kind).toBe('deload')
-    expect(item.label).toBe('Deload to 45s to reset and rebuild')
+    expect(item.label).toBe('Deload to 45s')
   })
 
   it('evaluates a double-progression drop with a down arrow', () => {

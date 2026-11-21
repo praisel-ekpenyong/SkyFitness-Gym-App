@@ -279,7 +279,8 @@ describe('FinishSummary Progression Summary', () => {
 
     const card = container.querySelector('.progression-summary')
     expect(card).not.toBeNull()
-    expect(card.textContent).toContain('Deload to 90 kg to reset and rebuild')
+    expect(card.textContent).toContain('Deload to 90 kg')
+    expect(card.textContent).not.toContain('to reset and rebuild')
 
     const piBody = card.querySelector('.pi-body')
     expect(piBody).not.toBeNull()
