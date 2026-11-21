@@ -105,12 +105,15 @@ function replaceExercise(S, command) {
   if (!r || !Array.isArray(r.ex)) return refused()
   const idx = command.index
   if (typeof idx !== 'number' || idx < 0 || idx >= r.ex.length) return refused()
-  if (!command.exId) return refused()
+
+  const exId = command.exId || r.ex[idx]?.id
+  if (!exId) return refused()
 
   const oldEntry = r.ex[idx]
   const { target, note } = extractTarget(command.target)
-  const defaults = defaultConfig(command.exId, target.mode)
-  const next = { id: command.exId, ...defaults, ...target }
+  delete target.id
+  const defaults = defaultConfig(exId, target.mode)
+  const next = { id: exId, ...defaults, ...target }
   if (note) next.notes = note
 
   if (oldEntry?.sg != null && target.sg === undefined) {
@@ -145,21 +148,6 @@ function syncFromSession(S, command) {
   return syncRoutineFromSession(S, command.routineId, command.syncedEx) ? applied() : refused()
 }
 
-function updateExercise(S, command) {
-  const r = findRoutine(S, command.routineId)
-  if (!r || !Array.isArray(r.ex)) return refused()
-  const idx = command.index
-  if (typeof idx !== 'number' || idx < 0 || idx >= r.ex.length) return refused()
-  const existing = r.ex[idx]
-  const { target, note } = extractTarget(command.target)
-  delete target.id
-  delete target.sg
-  const updated = { id: existing.id, ...(existing.sg ? { sg: existing.sg } : {}), ...target }
-  if (note) updated.notes = note
-  r.ex[idx] = updated
-  return applied(updated)
-}
-
 const COMMANDS = {
   create,
   delete: deleteRoutine,
@@ -172,7 +160,6 @@ const COMMANDS = {
   replaceExercise,
   toggleSuperset,
   syncFromSession,
-  updateExercise,
 }
 
 export function actRoutine(S, command) {
