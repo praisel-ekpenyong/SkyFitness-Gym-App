@@ -7,7 +7,7 @@ import { MOBILE, syncReminder } from '../platform/mobile.js'
 import { SEED_PLAN } from '../lib/env.js'
 import { seedPlanInto } from '../lib/plans/seed.js'
 import { flush, load, loadLocal, save, LOCAL_KEY, onStorageSync } from '../platform/storage.js'
-import { DEF, normalizeState, isNewerProfile, NewerProfileError, cloneProfile } from '../lib/profile/index.js'
+import { normalizeState, freshProfile, isNewerProfile, NewerProfileError } from '../lib/profile/index.js'
 import { act } from '../lib/active-workout.js'
 import { actRoutine } from '../lib/routines.js'
 import { runEffects } from './effects.js'
@@ -19,10 +19,9 @@ const stamp = S => ({ ...S, _ts: Date.now() })
 
 // A Profile saved by a newer Sky is not admitted (ADR 0027). The tab starts empty in memory,
 // flags `newerProfile`, and never writes, so the newer Profile stays on disk as it was.
-function loadState() {
-  const raw = loadLocal()
-  if (isNewerProfile(raw)) return { S: cloneProfile(DEF), newerProfile: true }
-  return { S: raw ? normalizeState(raw) : cloneProfile(DEF), newerProfile: false }
+function loadState(raw = loadLocal()) {
+  if (isNewerProfile(raw)) return { S: freshProfile(), newerProfile: true }
+  return { S: normalizeState(raw), newerProfile: false }
 }
 
 const hasData = st => !!((st.workouts || []).length || (st.routines || []).length || (st.bodyweight || []).length)
