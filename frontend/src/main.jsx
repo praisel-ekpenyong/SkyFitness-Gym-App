@@ -4,12 +4,12 @@ import App from './App.jsx'
 import { MOBILE, nativeSink } from './platform/mobile.js'
 import { BASE_URL } from './lib/env.js'
 import { registerSink, persistOnFirstKeep } from './platform/storage.js'
-import { useStore } from './store/useStore.js'
+import { useStore, hasKeptMore } from './store/useStore.js'
 import '@fontsource-variable/archivo/wdth.css'
 import './index.css'
 
 if (MOBILE) registerSink(nativeSink)
-else persistOnFirstKeep(useStore.subscribe, navigator.storage)
+else persistOnFirstKeep(useStore.subscribe, navigator.storage, hasKeptMore)
 
 if ('scrollRestoration' in history) history.scrollRestoration = 'manual'
 
