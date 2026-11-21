@@ -9,7 +9,7 @@ import { sessionView } from '../lib/active-workout.js'
 import { seedForReplacement } from '../lib/workout-model.js'
 import { workSets } from '../lib/workout-sets.js'
 import { workoutSummary } from '../lib/workout-summary.js'
-import { sessionProgressionItems, lowersLoad } from '../lib/progression.js'
+import { sessionProgressionItems } from '../lib/progression.js'
 import { t } from '../lib/i18n.js'
 import { nav } from '../platform/nav.js'
 import Icon from '../components/Icon.jsx'
@@ -180,7 +180,7 @@ export function FinishSummary({ w, prs, e1prs = [], routineSync = null, close })
                 {item.policyName}
               </span>
             </div>
-            <div className={'row pi-body' + (item.isAdvance ? ' up' : lowersLoad(item.kind) ? ' deload' : '')}>
+            <div className={'row pi-body' + (item.kind === 'up' ? ' up' : '')}>
               <Icon name={item.iconName} />
               <span>{item.text}</span>
             </div>

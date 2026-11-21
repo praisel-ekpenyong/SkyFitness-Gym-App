@@ -186,6 +186,10 @@ describe('FinishSummary Progression Summary', () => {
     const arrow = card.querySelector('svg')
     expect(arrow).not.toBeNull()
 
+    const piBody = card.querySelector('.pi-body')
+    expect(piBody).not.toBeNull()
+    expect(piBody.className).toBe('row pi-body up')
+
     const item = card.querySelector('[role="listitem"]')
     expect(item).not.toBeNull()
     expect(item.getAttribute('aria-label')).toContain('60 kg → 62.5 kg (+2.5 kg)')
@@ -277,9 +281,50 @@ describe('FinishSummary Progression Summary', () => {
     expect(card).not.toBeNull()
     expect(card.textContent).toContain('Deload to 90 kg to reset and rebuild')
 
+    const piBody = card.querySelector('.pi-body')
+    expect(piBody).not.toBeNull()
+    expect(piBody.className).toBe('row pi-body')
+    expect(piBody.classList.contains('deload')).toBe(false)
+    expect(piBody.classList.contains('up')).toBe(false)
+
     expect(card.textContent.toLowerCase()).not.toContain('failed')
     expect(card.textContent.toLowerCase()).not.toContain('failure')
     expect(card.textContent.toLowerCase()).not.toContain('penalty')
+  })
+
+  it('displays double progression drop with down arrow and neutral styling', async () => {
+    const w = {
+      id: 'w-drop',
+      d: '2026-10-30',
+      start: 1000,
+      end: 2000,
+      routineId: 'routine-push',
+      entries: [
+        {
+          id: '0047',
+          target: { sets: 3, reps: 12, repsMin: 8, weight: 24, prog: 'double', inc: 2 },
+          sets: [
+            { w: 24, r: 6, done: true },
+            { w: 24, r: 6, done: true },
+            { w: 24, r: 5, done: true },
+          ],
+        },
+      ],
+    }
+
+    await act(async () => {
+      root.render(<FinishSummary w={w} prs={[]} close={vi.fn()} />)
+    })
+
+    const card = container.querySelector('.progression-summary')
+    expect(card).not.toBeNull()
+    expect(card.textContent).toContain('Drop 2 kg, back to 8 reps')
+
+    const piBody = card.querySelector('.pi-body')
+    expect(piBody).not.toBeNull()
+    expect(piBody.className).toBe('row pi-body')
+    expect(piBody.classList.contains('deload')).toBe(false)
+    expect(piBody.classList.contains('up')).toBe(false)
   })
 
   it('displays constructive volume consolidation context on hold', async () => {

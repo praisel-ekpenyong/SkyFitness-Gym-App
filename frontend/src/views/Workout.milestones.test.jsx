@@ -349,4 +349,79 @@ describe('Workout milestone badges', () => {
       expect(setRows()[2].querySelector('.milestone-badge')?.textContent).toBe('AMRAP +3 · +2.5 kg unlocked next session')
     })
   })
+
+  describe('Workout progline prescription display', () => {
+    it('renders progline with up class and arrowUp icon when plan.kind is up', () => {
+      const entry = {
+        id: 'barbell-bench-press',
+        target: { mode: 'reps', reps: 5, weight: 60, prog: 'linear' },
+        plan: { kind: 'up', why: ['Every rep last time — 2.5 kg more.', 2.5, 'kg'] },
+        sets: [{ r: 5, w: 62.5, done: false }]
+      }
+      view = renderWorkout([entry])
+      const progline = view.container.querySelector('.progline')
+      expect(progline).not.toBeNull()
+      expect(progline.className).toBe('progline up')
+      expect(progline.querySelector('svg')).not.toBeNull()
+      expect(progline.textContent).toContain('Every rep last time')
+    })
+
+    it('renders progline with neutral class (no .warn) and info icon when plan.kind is deload', () => {
+      const entry = {
+        id: 'barbell-bench-press',
+        target: { mode: 'reps', reps: 5, weight: 60, prog: 'linear' },
+        plan: { kind: 'deload', why: ['Missed reps — reset to 54 kg and work back up.', 54, 'kg'] },
+        sets: [{ r: 5, w: 54, done: false }]
+      }
+      view = renderWorkout([entry])
+      const progline = view.container.querySelector('.progline')
+      expect(progline).not.toBeNull()
+      expect(progline.className).toBe('progline')
+      expect(view.container.querySelector('.warn')).toBeNull()
+      expect(progline.querySelector('svg')).not.toBeNull()
+      expect(progline.textContent).toContain('Missed reps')
+    })
+
+    it('renders progline with neutral class and arrowDown icon when plan.kind is down', () => {
+      const entry = {
+        id: 'barbell-bench-press',
+        target: { mode: 'reps', reps: 10, weight: 60, prog: 'double' },
+        plan: { kind: 'down', why: ['First set 6 reps, below the 8–10 range. 2.5 kg less, back to 8 reps.', 6, 8, 10, 2.5, 'kg'] },
+        sets: [{ r: 8, w: 57.5, done: false }]
+      }
+      view = renderWorkout([entry])
+      const progline = view.container.querySelector('.progline')
+      expect(progline).not.toBeNull()
+      expect(progline.className).toBe('progline')
+      expect(view.container.querySelector('.warn')).toBeNull()
+      expect(progline.querySelector('svg')).not.toBeNull()
+      expect(progline.textContent).toContain('First set 6 reps')
+    })
+
+    it('renders progline with lightbulb icon for hold and baseline first prescriptions', () => {
+      const entry = {
+        id: 'barbell-bench-press',
+        target: { mode: 'reps', reps: 5, weight: 60, prog: 'linear' },
+        plan: { kind: 'hold', why: ['Missed reps last time — same weight again (1 of 3 to go).', 1, 3] },
+        sets: [{ r: 5, w: 60, done: false }]
+      }
+      view = renderWorkout([entry])
+      const progline = view.container.querySelector('.progline')
+      expect(progline).not.toBeNull()
+      expect(progline.className).toBe('progline')
+      expect(progline.querySelector('svg')).not.toBeNull()
+      expect(progline.textContent).toContain('Missed reps last time')
+    })
+
+    it('does not render progline when plan.kind is off', () => {
+      const entry = {
+        id: 'barbell-bench-press',
+        target: { mode: 'reps', reps: 5, weight: 60, prog: 'off' },
+        plan: { kind: 'off', why: ['No automatic progression'] },
+        sets: [{ r: 5, w: 60, done: false }]
+      }
+      view = renderWorkout([entry])
+      expect(view.container.querySelector('.progline')).toBeNull()
+    })
+  })
 })
