@@ -124,4 +124,18 @@ export const useStore = create((set, get) => {
   }
 })
 
+const countArray = (obj, key) => {
+  const S = obj?.S ?? obj
+  return Array.isArray(S?.[key]) ? S[key].length : 0
+}
+
+/**
+ * Returns true when `next` has more finished Workouts or Weigh-ins than `prev`.
+ * Accepts either store slices ({ S }) or raw profile states.
+ */
+export function hasKeptMore(prev, next) {
+  return countArray(next, 'workouts') > countArray(prev, 'workouts') ||
+         countArray(next, 'bodyweight') > countArray(prev, 'bodyweight')
+}
+
 export { hasData }

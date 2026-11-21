@@ -174,16 +174,13 @@ export function save(snapshot) {
  * @param {StorageManager} [manager] - Defaults to navigator.storage; tests inject a fake.
  * @returns {Promise<boolean>} True when the browser granted persistence.
  */
-export async function requestPersistence(manager = globalThis.navigator?.storage) {
+async function requestPersistence(manager = globalThis.navigator?.storage) {
   if (typeof manager?.persist !== 'function') return false
   try { return (await manager.persist()) === true } catch (e) { return false }
 }
 
 // Firefox prompts on every persist() call until the lifter ticks "Remember", so Sky asks once per device (ADR 0004).
 export const PERSIST_ASKED_KEY = 'sky_persist_asked'
-
-const count = (S, key) => (Array.isArray(S?.[key]) ? S[key].length : 0)
-const keptMore = (prev, next) => count(next, 'workouts') > count(prev, 'workouts') || count(next, 'bodyweight') > count(prev, 'bodyweight')
 
 async function requestPersistenceOnce(manager) {
   try {
@@ -195,14 +192,15 @@ async function requestPersistenceOnce(manager) {
 }
 
 /**
- * Requests persistent storage after the first change that adds a Workout or a Weigh-in, at most once per device.
- * @param {(listener: (state: {S: Object}, prev: {S: Object}) => void) => () => void} subscribe - The store's subscribe.
+ * Requests persistent storage after the first change that adds user data, at most once per device.
+ * @param {(listener: (state: any, prev: any) => void) => () => void} subscribe - The store's subscribe.
  * @param {StorageManager} [manager] - navigator.storage; without persist() nothing is watched.
+ * @param {(prev: any, next: any) => boolean} [hasKeptMore] - Predicate telling whether the change kept user data.
  */
-export function persistOnFirstKeep(subscribe, manager) {
-  if (typeof manager?.persist !== 'function') return
+export function persistOnFirstKeep(subscribe, manager, hasKeptMore) {
+  if (typeof manager?.persist !== 'function' || typeof hasKeptMore !== 'function') return
   const stop = subscribe((state, prev) => {
-    if (!keptMore(prev?.S, state?.S)) return
+    if (!hasKeptMore(prev, state)) return
     stop()
     requestPersistenceOnce(manager)
   })
