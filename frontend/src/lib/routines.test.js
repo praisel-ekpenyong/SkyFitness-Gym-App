@@ -316,51 +316,95 @@ describe('Routine Domain Module (lib/routines.js)', () => {
     })
   })
 
-  describe('actRoutine: updateExercise', () => {
-    it('updates configuration of an existing exercise in place and sanitizes notes', () => {
+  describe('actRoutine: replaceExercise (sheet update with same exercise id)', () => {
+    it('updates configuration of an existing exercise in place, applying defaultConfig and sanitizing notes', () => {
       const res = actRoutine(S, {
-        type: 'updateExercise',
+        type: 'replaceExercise',
         routineId: 'r-push',
         index: 0,
+        exId: '0025',
         target: { sets: 5, weight: 70, notes: '  wrist wraps on  ' },
       })
       expect(res.ok).toBe(true)
-      expect(S.routines[0].ex[0].sets).toBe(5)
-      expect(S.routines[0].ex[0].weight).toBe(70)
       expect(S.routines[0].ex[0].id).toBe('0025')
+      expect(S.routines[0].ex[0].sets).toBe(5)
+      expect(S.routines[0].ex[0].reps).toBe(10) // seeded from defaultConfig('0025')
+      expect(S.routines[0].ex[0].weight).toBe(70)
+      expect(S.routines[0].ex[0].mode).toBe('reps')
       expect(S.routines[0].ex[0].notes).toBe('wrist wraps on')
 
       // Empty note clears notes property
       actRoutine(S, {
-        type: 'updateExercise',
+        type: 'replaceExercise',
         routineId: 'r-push',
         index: 0,
+        exId: '0025',
         target: { notes: '   ' },
       })
       expect(S.routines[0].ex[0].notes).toBeUndefined()
     })
 
-    it('replaces the entry with the target, keeping only id and sg', () => {
-      expect(S.routines[0].ex[0].notes).toBe('Bench cue')
+    it('replaces the entry with target and defaultConfig, preserving sg and notes', () => {
       S.routines[0].ex[0].sg = 'sg-a'
+      S.routines[0].ex[1].sg = 'sg-a'
       S.routines[0].ex[0].side = true
       S.routines[0].ex[0].rest = 150
 
       const res = actRoutine(S, {
-        type: 'updateExercise',
+        type: 'replaceExercise',
         routineId: 'r-push',
         index: 0,
-        target: { id: '9999', sg: 'sg-b', sets: 4, weight: 65 },
+        exId: '0025',
+        target: { sets: 4, weight: 65, notes: 'New cue' },
       })
 
       expect(res.ok).toBe(true)
-      expect(S.routines[0].ex[0]).toEqual({ id: '0025', sg: 'sg-a', sets: 4, weight: 65 })
+      expect(S.routines[0].ex[0]).toEqual({
+        id: '0025',
+        ...defaultConfig('0025'),
+        sets: 4,
+        weight: 65,
+        sg: 'sg-a',
+        notes: 'New cue',
+      })
+    })
+
+    it('defaults exId to existing exercise id when command.exId is omitted', () => {
+      const res = actRoutine(S, {
+        type: 'replaceExercise',
+        routineId: 'r-push',
+        index: 0,
+        target: { sets: 5, reps: 8, weight: 70 },
+      })
+      expect(res.ok).toBe(true)
+      expect(S.routines[0].ex[0].id).toBe('0025')
+      expect(S.routines[0].ex[0].sets).toBe(5)
+      expect(S.routines[0].ex[0].reps).toBe(8)
+      expect(S.routines[0].ex[0].weight).toBe(70)
+    })
+
+    it('ignores any id passed inside target object', () => {
+      const res = actRoutine(S, {
+        type: 'replaceExercise',
+        routineId: 'r-push',
+        index: 0,
+        exId: '0025',
+        target: { id: '9999', sets: 4, weight: 65 },
+      })
+      expect(res.ok).toBe(true)
+      expect(S.routines[0].ex[0].id).toBe('0025')
+    })
+
+    it('returns { ok: false } when exId is missing and existing entry has no id', () => {
+      S.routines[0].ex[0] = {}
+      expect(actRoutine(S, { type: 'replaceExercise', routineId: 'r-push', index: 0 }).ok).toBe(false)
     })
   })
 
   describe('actRoutine error handling', () => {
     it('throws only on unknown command type', () => {
       expect(() => actRoutine(S, { type: 'unrecognized_cmd' })).toThrow(/Unknown Routine command/)
+      expect(() => actRoutine(S, { type: 'updateExercise' })).toThrow(/Unknown Routine command/)
     })
 
     it('gracefully returns { ok: false } for null state or missing routines', () => {

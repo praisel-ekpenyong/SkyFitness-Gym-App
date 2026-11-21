@@ -72,7 +72,7 @@ export default function RoutineEdit() {
         <div className={'item rt-ex' + (item.inSuperset ? ' in-ss' : '')} onClick={() => {
           exConfigSheet(ex, {
             existing: item.entry,
-            onSave: cfg => actRoutine({ type: 'updateExercise', routineId: id, index: i, target: cfg }),
+            onSave: cfg => actRoutine({ type: 'replaceExercise', routineId: id, index: i, exId: ex.id, target: cfg }),
             onDelete: () => actRoutine({ type: 'removeExercise', routineId: id, index: i }),
             routine: r,
             onReplace: () => exercisePicker(newEx => {
