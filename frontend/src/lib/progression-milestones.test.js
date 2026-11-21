@@ -3,7 +3,8 @@ import {
   evaluateSetMilestone,
   evaluateSessionProgression,
   sessionProgressionItems,
-  prescriptionIcon
+  prescriptionIcon,
+  prescriptionStyle
 } from './progression.js'
 
 describe('evaluateSetMilestone', () => {
@@ -1187,6 +1188,41 @@ describe('evaluateSessionProgression and sessionProgressionItems', () => {
       expect(prescriptionIcon({ kind: 'hold', policy: 'double', reps: 10 })).toBe('target')
       expect(prescriptionIcon({ kind: 'first' })).toBe('target')
       expect(prescriptionIcon({ kind: 'off' })).toBe('check')
+    })
+
+    it('returns lightbulb for non-directional prescriptions when workoutView is true', () => {
+      expect(prescriptionIcon('up', { workoutView: true })).toBe('arrowUp')
+      expect(prescriptionIcon('deload', { workoutView: true })).toBe('info')
+      expect(prescriptionIcon('down', { workoutView: true })).toBe('arrowDown')
+      expect(prescriptionIcon('hold', { workoutView: true })).toBe('lightbulb')
+      expect(prescriptionIcon('first', { workoutView: true })).toBe('lightbulb')
+      expect(prescriptionIcon('off', { workoutView: true })).toBe('lightbulb')
+      expect(prescriptionIcon({ kind: 'up' }, { workoutView: true })).toBe('arrowUp')
+      expect(prescriptionIcon({ kind: 'deload' }, { workoutView: true })).toBe('info')
+      expect(prescriptionIcon({ kind: 'down' }, { workoutView: true })).toBe('arrowDown')
+      expect(prescriptionIcon({ kind: 'hold' }, { workoutView: true })).toBe('lightbulb')
+      expect(prescriptionIcon({ kind: 'first' }, { workoutView: true })).toBe('lightbulb')
+      expect(prescriptionIcon({ kind: 'off' }, { workoutView: true })).toBe('lightbulb')
+    })
+  })
+
+  describe('prescriptionStyle', () => {
+    it('returns "up" for up kind strings and objects', () => {
+      expect(prescriptionStyle('up')).toBe('up')
+      expect(prescriptionStyle({ kind: 'up' })).toBe('up')
+    })
+
+    it('returns empty string for non-up kinds and objects', () => {
+      expect(prescriptionStyle('deload')).toBe('')
+      expect(prescriptionStyle('down')).toBe('')
+      expect(prescriptionStyle('hold')).toBe('')
+      expect(prescriptionStyle('first')).toBe('')
+      expect(prescriptionStyle('off')).toBe('')
+      expect(prescriptionStyle({ kind: 'deload' })).toBe('')
+      expect(prescriptionStyle({ kind: 'down' })).toBe('')
+      expect(prescriptionStyle({ kind: 'hold' })).toBe('')
+      expect(prescriptionStyle(null)).toBe('')
+      expect(prescriptionStyle(undefined)).toBe('')
     })
   })
 })

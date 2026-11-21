@@ -306,8 +306,6 @@ function bouncedBack(sessions, start, load, bottom) {
   return load(before) === w && !!before.ok
 }
 
-// Prescription kinds that lower the load: the Stall Deload and the Drop (ADR 0033).
-export const lowersLoad = kind => kind === 'deload' || kind === 'down'
 
 function doublePrescription({ policy, cfg, inc, unit, sessions, last, deloadAt, w }) {
   const top = Math.max(1, cfg.reps > 0 ? cfg.reps : (last.goal || 10))
@@ -705,19 +703,31 @@ export function evaluateSetMilestone(entry, setIdx, context = {}) {
  * Maps a Prescription kind (up, down, deload, hold, first, off) to an icon name.
  *
  * @param {string|Object} kindOrPlan Prescription kind string or prescription object.
- * @param {Object} [options] Optional { policy, reps }.
+ * @param {Object} [options] Optional { policy, reps, workoutView }.
  * @returns {string} Icon identifier.
  */
 export function prescriptionIcon(kindOrPlan, options = {}) {
   const plan = typeof kindOrPlan === 'object' && kindOrPlan !== null ? kindOrPlan : null
   const kind = plan ? plan.kind : kindOrPlan
-  const policy = options.policy ?? plan?.policy
-  const reps = options.reps ?? plan?.reps
   if (kind === 'up') return 'arrowUp'
   if (kind === 'deload') return 'info'
   if (kind === 'down') return 'arrowDown'
+  if (options.workoutView) return 'lightbulb'
+  const policy = options.policy ?? plan?.policy
+  const reps = options.reps ?? plan?.reps
   if (kind === 'first' || (kind === 'hold' && policy === 'double' && reps != null)) return 'target'
   return 'check'
+}
+
+/**
+ * Maps a Prescription kind or object to its CSS presentation class ('up' or empty string).
+ *
+ * @param {string|Object} kindOrPlan Prescription kind string or prescription object.
+ * @returns {string} Presentation class ('up' or '').
+ */
+export function prescriptionStyle(kindOrPlan) {
+  const kind = typeof kindOrPlan === 'object' && kindOrPlan !== null ? kindOrPlan.kind : kindOrPlan
+  return kind === 'up' ? 'up' : ''
 }
 
 /**

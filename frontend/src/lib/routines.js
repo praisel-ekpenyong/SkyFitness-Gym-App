@@ -100,6 +100,16 @@ function moveExercise(S, command) {
   return applied()
 }
 
+/**
+ * Replaces an exercise at the specified index or updates its configuration in-place.
+ *
+ * Passing the same `exId` or omitting it performs an in-place configuration update
+ * (updating targets and notes while uniformly spreading `defaultConfig` and preserving `sg`).
+ *
+ * @param {Object} S Store state.
+ * @param {Object} command Replace command payload `{ routineId, index, exId?, target? }`.
+ * @returns {Object} Result `{ ok: boolean, result?: Object }`.
+ */
 function replaceExercise(S, command) {
   const r = findRoutine(S, command.routineId)
   if (!r || !Array.isArray(r.ex)) return refused()
