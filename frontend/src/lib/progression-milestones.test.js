@@ -982,7 +982,79 @@ describe('evaluateSessionProgression and sessionProgressionItems', () => {
     expect(item.kind).toBe('deload')
     expect(item.isAdvance).toBe(false)
     expect(item.iconName).toBe('info')
-    expect(item.label).toBe('Deload 10% to reset and rebuild')
+    expect(item.label).toBe('Deload to 90 kg to reset and rebuild')
+  })
+
+  it('evaluates a double-progression deload with destination weight and reps bottom', () => {
+    const priorWorkouts = Array.from({ length: 4 }, (_, i) => ({
+      id: `w-dp-${i}`,
+      d: `2026-10-1${i}`,
+      entries: [
+        {
+          id: '0047',
+          target: { sets: 3, reps: 12, repsMin: 8, weight: 40, prog: 'double', inc: 2.5 },
+          sets: [{ w: 40, r: 9, done: true }, { w: 40, r: 9, done: true }, { w: 40, r: 9, done: true }]
+        }
+      ]
+    }))
+    const state = { ...baseState, workouts: priorWorkouts }
+    const entry = {
+      id: '0047',
+      target: { sets: 3, reps: 12, repsMin: 8, weight: 40, prog: 'double', inc: 2.5 },
+      sets: [{ w: 40, r: 9, done: true }, { w: 40, r: 9, done: true }, { w: 40, r: 9, done: true }]
+    }
+    const item = evaluateSessionProgression(entry, state)
+    expect(item).not.toBeNull()
+    expect(item.kind).toBe('deload')
+    expect(item.label).toBe('Deload to 35 kg, back to 8 reps')
+  })
+
+  it('evaluates a double-progression deload at the floor with destination weight and reps bottom', () => {
+    const priorWorkouts = Array.from({ length: 4 }, (_, i) => ({
+      id: `w-dp-floor-${i}`,
+      d: `2026-10-1${i}`,
+      entries: [
+        {
+          id: '0047',
+          target: { sets: 3, reps: 12, repsMin: 8, weight: 4, prog: 'double', inc: 2.5 },
+          sets: [{ w: 4, r: 9, done: true }, { w: 4, r: 9, done: true }, { w: 4, r: 9, done: true }]
+        }
+      ]
+    }))
+    const state = { ...baseState, workouts: priorWorkouts }
+    const entry = {
+      id: '0047',
+      target: { sets: 3, reps: 12, repsMin: 8, weight: 4, prog: 'double', inc: 2.5 },
+      sets: [{ w: 4, r: 9, done: true }, { w: 4, r: 9, done: true }, { w: 4, r: 9, done: true }]
+    }
+    const item = evaluateSessionProgression(entry, state)
+    expect(item).not.toBeNull()
+    expect(item.kind).toBe('deload')
+    expect(item.label).toBe('Deload to 2.5 kg, back to 8 reps')
+  })
+
+  it('evaluates a time-mode deload with destination seconds', () => {
+    const priorWorkouts = Array.from({ length: 3 }, (_, i) => ({
+      id: `w-t-${i}`,
+      d: `2026-10-1${i}`,
+      entries: [
+        {
+          id: '0020',
+          target: { sets: 3, sec: 60, prog: 'time', inc: 5, mode: 'time' },
+          sets: [{ sec: 50, done: true }, { sec: 50, done: true }, { sec: 50, done: true }]
+        }
+      ]
+    }))
+    const state = { ...baseState, workouts: priorWorkouts }
+    const entry = {
+      id: '0020',
+      target: { sets: 3, sec: 60, prog: 'time', inc: 5, mode: 'time' },
+      sets: [{ sec: 50, done: true }, { sec: 50, done: true }, { sec: 50, done: true }]
+    }
+    const item = evaluateSessionProgression(entry, state)
+    expect(item).not.toBeNull()
+    expect(item.kind).toBe('deload')
+    expect(item.label).toBe('Deload to 45s to reset and rebuild')
   })
 
   it('evaluates a double-progression drop with a down arrow', () => {

@@ -275,7 +275,7 @@ describe('FinishSummary Progression Summary', () => {
 
     const card = container.querySelector('.progression-summary')
     expect(card).not.toBeNull()
-    expect(card.textContent).toContain('Deload 10% to reset and rebuild')
+    expect(card.textContent).toContain('Deload to 90 kg to reset and rebuild')
 
     expect(card.textContent.toLowerCase()).not.toContain('failed')
     expect(card.textContent.toLowerCase()).not.toContain('failure')
