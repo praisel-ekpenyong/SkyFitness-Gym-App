@@ -400,7 +400,16 @@ describe('double progression', () => {
     const p = nextPrescription(hist(LIFT, [[2.5, 6, 6, 6]], { sets: 3, reps: 12 }), light)
     expect(p.kind).toBe('hold')
     expect(p.weight).toBe(2.5)
-    expect(p.why[0]).toContain('Lightest load')
+    expect(p.why).toEqual(['Lightest load — same weight again; build reps to reach the {0}–{1} range.', 8, 12])
+  })
+
+  it('holds at the lightest load when stalling without dropping below one Increment', () => {
+    const light = { ...cfg, weight: 2.5, inc: 2.5 }
+    const rows = Array.from({ length: 5 }, () => [2.5, 9, 9, 9])
+    const p = nextPrescription(hist(LIFT, rows, { sets: 3, reps: 12 }), light)
+    expect(p.kind).toBe('hold')
+    expect(p.weight).toBe(2.5)
+    expect(p.why).toEqual(['Lightest load — same weight again; build reps.'])
   })
 
   it('drops to one Increment from under two Increments', () => {

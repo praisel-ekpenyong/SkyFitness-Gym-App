@@ -309,8 +309,6 @@ function bouncedBack(sessions, start, load, bottom) {
 // Prescription kinds that lower the load: the Stall Deload and the Drop (ADR 0033).
 export const lowersLoad = kind => kind === 'deload' || kind === 'down'
 
-const LIGHTEST_LOAD = 'Lightest load — same weight again; build reps or add the smallest plate.'
-
 function doublePrescription({ policy, cfg, inc, unit, sessions, last, deloadAt, w }) {
   const top = Math.max(1, cfg.reps > 0 ? cfg.reps : (last.goal || 10))
   const bottom = cfg.repsMin > 0
@@ -338,7 +336,10 @@ function doublePrescription({ policy, cfg, inc, unit, sessions, last, deloadAt, 
   const next = drop ? round1(w - inc) : deloadTo(w, inc)
   const at = lowerTo(w, next, inc)
   if (at == null) {
-    return { policy, kind: 'hold', weight: w, reps: bottom, why: [LIGHTEST_LOAD] }
+    const why = drop
+      ? ['Lightest load — same weight again; build reps to reach the {0}–{1} range.', bottom, top]
+      : ['Lightest load — same weight again; build reps.']
+    return { policy, kind: 'hold', weight: w, reps: bottom, why }
   }
   if (!drop) {
     return { policy, kind: 'deload', weight: at, reps: bottom, why: ['No progress in {0} Workouts — deload to {1} {2}.', noProgress, at, unit] }
@@ -772,7 +773,13 @@ export function evaluateSessionProgression(entry, state, context = {}) {
     }
   } else if (p.kind === 'deload') {
     iconName = 'info'
-    text = t('Deload 10% to reset and rebuild')
+    if (p.sec != null) {
+      text = t('Deload to {0}s to reset and rebuild', p.sec)
+    } else if (policy === 'double' && p.reps != null) {
+      text = t('Deload to {0} {1}, back to {2} reps', fmtNum(p.weight), unit, p.reps)
+    } else {
+      text = t('Deload to {0} {1} to reset and rebuild', fmtNum(p.weight), unit)
+    }
   } else if (p.kind === 'down') {
     iconName = 'arrowDown'
     text = t('Drop {0} {1}, back to {2} reps', p.by, unit, p.reps)
