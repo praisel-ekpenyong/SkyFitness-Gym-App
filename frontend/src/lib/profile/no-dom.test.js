@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { dirname, join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { DEF, normalizeState } from './index.js'
+import { DEF, normalizeState, freshProfile } from './index.js'
+import * as profileIndex from './index.js'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 
@@ -26,5 +27,16 @@ describe('lib/profile is a seam with no DOM and no store', () => {
       .filter(p => /from\s+['"][^'"]*store\//.test(readFileSync(p, 'utf8')))
       .map(p => relative(HERE, p))
     expect(hits).toEqual([])
+  })
+
+  it('exports freshProfile and keeps plain helpers internal', () => {
+    expect(profileIndex.freshProfile).toBeTypeOf('function')
+    const fresh = freshProfile()
+    expect(fresh).toEqual(DEF)
+    expect(fresh).not.toBe(DEF)
+    expect(fresh.reminder).not.toBe(DEF.reminder)
+
+    expect(profileIndex.cloneProfile).toBeUndefined()
+    expect(profileIndex.isRecord).toBeUndefined()
   })
 })
