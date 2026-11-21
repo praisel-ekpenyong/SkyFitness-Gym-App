@@ -174,7 +174,7 @@ describe('RoutineEdit exercise replacement', () => {
     })
 
     const saved = useStore.getState().S.routines.find(x => x.id === 'r-test-1').ex[0]
-    expect(saved).toEqual({ id: '0001', sg: 'sg-0-1', sets: 3, mode: 'reps', reps: 10, weight: 20 })
+    expect(saved).toEqual({ id: '0001', sg: 'sg-0-1', sets: 3, mode: 'reps', reps: 10, weight: 20, bodyweight: true })
   })
 
   it('replaces a non-superset exercise without adding an sg property', async () => {

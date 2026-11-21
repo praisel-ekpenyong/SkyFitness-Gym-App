@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 import {
   evaluateSetMilestone,
   evaluateSessionProgression,
-  sessionProgressionItems
+  sessionProgressionItems,
+  prescriptionIcon,
+  prescriptionStyle
 } from './progression.js'
 
 describe('evaluateSetMilestone', () => {
@@ -844,7 +846,7 @@ describe('evaluateSessionProgression and sessionProgressionItems', () => {
     expect(item.id).toBe('0025')
     expect(item.policy).toBe('linear')
     expect(item.kind).toBe('up')
-    expect(item.isAdvance).toBe(true)
+    expect(item.kind === 'up').toBe(true)
     expect(item.iconName).toBe('arrowUp')
     expect(item.label).toBe('60 kg → 62.5 kg (+2.5 kg)')
     expect(item.text).toBe(item.label)
@@ -880,7 +882,7 @@ describe('evaluateSessionProgression and sessionProgressionItems', () => {
     expect(item).not.toBeNull()
     expect(item.policy).toBe('double')
     expect(item.kind).toBe('hold')
-    expect(item.isAdvance).toBe(false)
+    expect(item.kind === 'up').toBe(false)
     expect(item.iconName).toBe('target')
     expect(item.label).toBe('Aim for 10 reps at 24 kg')
   })
@@ -898,7 +900,7 @@ describe('evaluateSessionProgression and sessionProgressionItems', () => {
     const item = evaluateSessionProgression(entry, baseState)
     expect(item).not.toBeNull()
     expect(item.kind).toBe('up')
-    expect(item.isAdvance).toBe(true)
+    expect(item.kind === 'up').toBe(true)
     expect(item.iconName).toBe('arrowUp')
     expect(item.label).toBe('Aim for 11 reps')
     expect(item.label).not.toContain('0 kg → 0 kg')
@@ -918,7 +920,7 @@ describe('evaluateSessionProgression and sessionProgressionItems', () => {
     const item = evaluateSessionProgression(entry, baseState)
     expect(item).not.toBeNull()
     expect(item.kind).toBe('up')
-    expect(item.isAdvance).toBe(true)
+    expect(item.kind === 'up').toBe(true)
     expect(item.iconName).toBe('arrowUp')
     expect(item.label).toBe('4 sets (+1 set)')
     expect(item.label).not.toContain('0 kg → 0 kg')
@@ -937,7 +939,7 @@ describe('evaluateSessionProgression and sessionProgressionItems', () => {
     const item = evaluateSessionProgression(entry, baseState)
     expect(item).not.toBeNull()
     expect(item.kind).toBe('hold')
-    expect(item.isAdvance).toBe(false)
+    expect(item.kind === 'up').toBe(false)
     expect(item.label).toBe('Hold at 10 reps to solidify volume')
     expect(item.label).not.toContain('0 kg')
   })
@@ -954,7 +956,7 @@ describe('evaluateSessionProgression and sessionProgressionItems', () => {
     const item = evaluateSessionProgression(entry, baseState)
     expect(item).not.toBeNull()
     expect(item.kind).toBe('up')
-    expect(item.isAdvance).toBe(true)
+    expect(item.kind === 'up').toBe(true)
     expect(item.label).toBe('45s → 50s (+5s)')
   })
 
@@ -980,7 +982,7 @@ describe('evaluateSessionProgression and sessionProgressionItems', () => {
     const item = evaluateSessionProgression(entry, state)
     expect(item).not.toBeNull()
     expect(item.kind).toBe('deload')
-    expect(item.isAdvance).toBe(false)
+    expect(item.kind === 'up').toBe(false)
     expect(item.iconName).toBe('info')
     expect(item.label).toBe('Deload to 90 kg to reset and rebuild')
   })
@@ -1065,7 +1067,7 @@ describe('evaluateSessionProgression and sessionProgressionItems', () => {
     }
     const item = evaluateSessionProgression(entry, baseState)
     expect(item.kind).toBe('down')
-    expect(item.isAdvance).toBe(false)
+    expect(item.kind === 'up').toBe(false)
     expect(item.iconName).toBe('arrowDown')
     expect(item.label).toBe('Drop 2 kg, back to 8 reps')
   })
@@ -1110,7 +1112,7 @@ describe('evaluateSessionProgression and sessionProgressionItems', () => {
     const item = evaluateSessionProgression(entry, baseState)
     expect(item).not.toBeNull()
     expect(item.kind).toBe('hold')
-    expect(item.isAdvance).toBe(false)
+    expect(item.kind === 'up').toBe(false)
     expect(item.label).toBe('Hold at 60 kg to solidify volume')
   })
 
@@ -1165,5 +1167,62 @@ describe('evaluateSessionProgression and sessionProgressionItems', () => {
     expect(items[0].label).toBe('60 kg → 62.5 kg (+2.5 kg)')
     expect(items[1].id).toBe('0047')
     expect(items[1].label).toBe('Aim for 10 reps at 24 kg')
+  })
+
+  describe('prescriptionIcon', () => {
+    it('maps all prescription kinds to their expected icon names', () => {
+      expect(prescriptionIcon('up')).toBe('arrowUp')
+      expect(prescriptionIcon('deload')).toBe('info')
+      expect(prescriptionIcon('down')).toBe('arrowDown')
+      expect(prescriptionIcon('hold')).toBe('check')
+      expect(prescriptionIcon('hold', { policy: 'double', reps: 10 })).toBe('target')
+      expect(prescriptionIcon('first')).toBe('target')
+      expect(prescriptionIcon('off')).toBe('check')
+    })
+
+    it('accepts prescription objects', () => {
+      expect(prescriptionIcon({ kind: 'up' })).toBe('arrowUp')
+      expect(prescriptionIcon({ kind: 'deload' })).toBe('info')
+      expect(prescriptionIcon({ kind: 'down' })).toBe('arrowDown')
+      expect(prescriptionIcon({ kind: 'hold' })).toBe('check')
+      expect(prescriptionIcon({ kind: 'hold', policy: 'double', reps: 10 })).toBe('target')
+      expect(prescriptionIcon({ kind: 'first' })).toBe('target')
+      expect(prescriptionIcon({ kind: 'off' })).toBe('check')
+    })
+
+    it('returns lightbulb for non-directional prescriptions when workoutView is true', () => {
+      expect(prescriptionIcon('up', { workoutView: true })).toBe('arrowUp')
+      expect(prescriptionIcon('deload', { workoutView: true })).toBe('info')
+      expect(prescriptionIcon('down', { workoutView: true })).toBe('arrowDown')
+      expect(prescriptionIcon('hold', { workoutView: true })).toBe('lightbulb')
+      expect(prescriptionIcon('first', { workoutView: true })).toBe('lightbulb')
+      expect(prescriptionIcon('off', { workoutView: true })).toBe('lightbulb')
+      expect(prescriptionIcon({ kind: 'up' }, { workoutView: true })).toBe('arrowUp')
+      expect(prescriptionIcon({ kind: 'deload' }, { workoutView: true })).toBe('info')
+      expect(prescriptionIcon({ kind: 'down' }, { workoutView: true })).toBe('arrowDown')
+      expect(prescriptionIcon({ kind: 'hold' }, { workoutView: true })).toBe('lightbulb')
+      expect(prescriptionIcon({ kind: 'first' }, { workoutView: true })).toBe('lightbulb')
+      expect(prescriptionIcon({ kind: 'off' }, { workoutView: true })).toBe('lightbulb')
+    })
+  })
+
+  describe('prescriptionStyle', () => {
+    it('returns "up" for up kind strings and objects', () => {
+      expect(prescriptionStyle('up')).toBe('up')
+      expect(prescriptionStyle({ kind: 'up' })).toBe('up')
+    })
+
+    it('returns empty string for non-up kinds and objects', () => {
+      expect(prescriptionStyle('deload')).toBe('')
+      expect(prescriptionStyle('down')).toBe('')
+      expect(prescriptionStyle('hold')).toBe('')
+      expect(prescriptionStyle('first')).toBe('')
+      expect(prescriptionStyle('off')).toBe('')
+      expect(prescriptionStyle({ kind: 'deload' })).toBe('')
+      expect(prescriptionStyle({ kind: 'down' })).toBe('')
+      expect(prescriptionStyle({ kind: 'hold' })).toBe('')
+      expect(prescriptionStyle(null)).toBe('')
+      expect(prescriptionStyle(undefined)).toBe('')
+    })
   })
 })

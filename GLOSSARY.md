@@ -21,6 +21,10 @@ _Avoid_: offline mode, anonymous mode
 **Export**:
 A complete copy of the profile as one file, for safekeeping or moving devices.
 
+**Backup reminder**:
+The prompt in Settings to take an Export, shown once the Profile holds a Routine, a Workout or a Weigh-in and no Export was taken in the last 14 days.
+_Avoid_: backup nag
+
 **Restore**:
 Loading a full JSON backup file. Replaces the current profile state wholesale on confirmation. A backup saved by a newer version of Sky is refused and changes nothing.
 _Avoid_: sync

@@ -5,7 +5,7 @@ import { DEF } from './def.js'
 import { admit } from './admit.js'
 import { isRecord, cloneProfile } from './plain.js'
 
-function freshProfile() {
+export function freshProfile() {
   return cloneProfile(DEF)
 }
 
