@@ -702,6 +702,25 @@ export function evaluateSetMilestone(entry, setIdx, context = {}) {
 }
 
 /**
+ * Maps a Prescription kind (up, down, deload, hold, first, off) to an icon name.
+ *
+ * @param {string|Object} kindOrPlan Prescription kind string or prescription object.
+ * @param {Object} [options] Optional { policy, reps }.
+ * @returns {string} Icon identifier.
+ */
+export function prescriptionIcon(kindOrPlan, options = {}) {
+  const plan = typeof kindOrPlan === 'object' && kindOrPlan !== null ? kindOrPlan : null
+  const kind = plan ? plan.kind : kindOrPlan
+  const policy = options.policy ?? plan?.policy
+  const reps = options.reps ?? plan?.reps
+  if (kind === 'up') return 'arrowUp'
+  if (kind === 'deload') return 'info'
+  if (kind === 'down') return 'arrowDown'
+  if (kind === 'first' || (kind === 'hold' && policy === 'double' && reps != null)) return 'target'
+  return 'check'
+}
+
+/**
  * Evaluates a single completed entry against its next prescription, returning a progression descriptor.
  *
  * @param {Object} entry Completed workout entry.
@@ -749,12 +768,8 @@ export function evaluateSessionProgression(entry, state, context = {}) {
   const isLoadless = (p.weight === 0) || (oldWeight <= 0 && isBw(cfg)) || (p.weight == null && isBw(cfg))
 
   let text = ''
-  let iconName = 'check'
-  let isAdvance = false
 
   if (p.kind === 'up') {
-    isAdvance = true
-    iconName = 'arrowUp'
     if (!isLoadless && p.weight != null && p.weight > 0) {
       const delta = Math.round((p.weight - oldWeight) * 10) / 10
       const deltaStr = delta > 0 ? ` (${fmtSigned(delta)} ${unit})` : ''
@@ -772,7 +787,6 @@ export function evaluateSessionProgression(entry, state, context = {}) {
       text = t('Progress earned')
     }
   } else if (p.kind === 'deload') {
-    iconName = 'info'
     if (p.sec != null) {
       text = t('Deload to {0}s to reset and rebuild', p.sec)
     } else if (policy === 'double' && p.reps != null) {
@@ -781,11 +795,9 @@ export function evaluateSessionProgression(entry, state, context = {}) {
       text = t('Deload to {0} {1} to reset and rebuild', fmtNum(p.weight), unit)
     }
   } else if (p.kind === 'down') {
-    iconName = 'arrowDown'
     text = t('Drop {0} {1}, back to {2} reps', p.by, unit, p.reps)
   } else if (p.kind === 'hold') {
     if (policy === 'double' && p.reps != null) {
-      iconName = 'target'
       const wVal = p.weight ?? oldWeight
       if (wVal > 0 && !isLoadless) {
         text = t('Aim for {0} reps at {1} {2}', p.reps, fmtNum(wVal), unit)
@@ -793,27 +805,22 @@ export function evaluateSessionProgression(entry, state, context = {}) {
         text = t('Aim for {0} reps', p.reps)
       }
     } else if (p.sec != null) {
-      iconName = 'check'
       text = t('Hold at {0}s to solidify volume', p.sec)
     } else if (isLoadless && p.reps != null) {
-      iconName = 'check'
       text = t('Hold at {0} reps to solidify volume', p.reps)
     } else if (oldWeight <= 0 && p.reps != null) {
-      iconName = 'check'
       text = t('Hold at {0} reps to solidify volume', p.reps)
     } else {
-      iconName = 'check'
       const wVal = p.weight ?? oldWeight
       text = t('Hold at {0} {1} to solidify volume', fmtNum(wVal), unit)
     }
   } else if (p.kind === 'first') {
-    iconName = 'target'
     text = t('First session baseline')
   } else {
-    iconName = 'check'
     text = t('Targets stay where you set them')
   }
 
+  const iconName = prescriptionIcon(p.kind, { policy, reps: p.reps })
   const label = text
   const ariaLabel = `${exName}: ${policyName}, ${text}`
 
@@ -831,7 +838,6 @@ export function evaluateSessionProgression(entry, state, context = {}) {
     label,
     text,
     iconName,
-    isAdvance,
     ariaLabel,
   }
 }
