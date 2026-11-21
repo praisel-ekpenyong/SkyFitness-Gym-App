@@ -12,6 +12,11 @@ const TONES = {
   lb: { 45: 'blue', 35: 'yellow', 25: 'green', 10: 'white', 5: 'red' },
 }
 
+const SIZES = {
+  kg: { 25: 'big', 20: 'big', 15: 'mid', 10: 'small', 5: 'tiny', 2.5: 'change', 1.25: 'change' },
+  lb: { 45: 'big', 35: 'mid', 25: 'small', 10: 'tiny', 5: 'change', 2.5: 'change' },
+}
+
 const unitOf = unit => (PLATES[unit] ? unit : 'kg')
 const clean = n => Math.round(n * 1000) / 1000
 const exact = n => n.toLocaleString(dateLocale())
@@ -38,6 +43,14 @@ export function platesFor(total, unit = 'kg') {
  * @returns {string} 'red' | 'blue' | 'yellow' | 'green' | 'white' | 'steel'.
  */
 export const plateTone = (plate, unit = 'kg') => TONES[unitOf(unit)][plate] || 'steel'
+
+/**
+ * Visual size tier for one plate.
+ * @param {number} plate - Plate weight in `unit`.
+ * @param {string} unit - Profile weight unit.
+ * @returns {'big' | 'mid' | 'small' | 'tiny' | 'change'}
+ */
+export const plateSize = (plate, unit = 'kg') => SIZES[unitOf(unit)][plate] || 'change'
 
 /**
  * The same reading in words, for the caption and for screen readers.
