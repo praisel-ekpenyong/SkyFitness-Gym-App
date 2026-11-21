@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { BAR_WEIGHT, platesFor, plateCaption, plateTone } from './plates.js'
+import { BAR_WEIGHT, platesFor, plateCaption, plateTone, plateSize } from './plates.js'
 
 describe('platesFor', () => {
   it('loads the heaviest calibrated plates first, per side, on a 20 kg bar', () => {
@@ -68,5 +68,48 @@ describe('plateTone', () => {
   it('falls back to steel for a change plate', () => {
     expect(plateTone(1.25, 'kg')).toBe('steel')
     expect(plateTone(2.5, 'lb')).toBe('steel')
+  })
+})
+
+describe('plateSize', () => {
+  it('maps kilograms to standard height tiers', () => {
+    expect([25, 20, 15, 10, 5, 2.5, 1.25].map(p => plateSize(p, 'kg'))).toEqual([
+      'big',
+      'big',
+      'mid',
+      'small',
+      'tiny',
+      'change',
+      'change',
+    ])
+  })
+
+  it('defaults unit to kilograms', () => {
+    expect(plateSize(25)).toBe('big')
+    expect(plateSize(20)).toBe('big')
+    expect(plateSize(15)).toBe('mid')
+    expect(plateSize(10)).toBe('small')
+    expect(plateSize(5)).toBe('tiny')
+    expect(plateSize(2.5)).toBe('change')
+    expect(plateSize(1.25)).toBe('change')
+  })
+
+  it('maps pounds to the tier of their colour-matched kilo partner', () => {
+    expect([45, 35, 25, 10, 5, 2.5].map(p => plateSize(p, 'lb'))).toEqual([
+      'big',
+      'mid',
+      'small',
+      'tiny',
+      'change',
+      'change',
+    ])
+  })
+
+  it('falls back to change for unknown plates or unknown units', () => {
+    expect(plateSize(50, 'kg')).toBe('change')
+    expect(plateSize(100, 'lb')).toBe('change')
+    expect(plateSize(0, 'kg')).toBe('change')
+    expect(plateSize(20, 'unknown')).toBe('big')
+    expect(plateSize(99, 'unknown')).toBe('change')
   })
 })
