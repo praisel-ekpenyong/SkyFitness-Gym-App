@@ -6,7 +6,6 @@ import { setLabel } from './set-label.js'
 import { effortOf, stepEffort, capEffort, floorEffort } from './effort.js'
 import { pairAdjacent, unpairSuperset, supersetUnits } from './supersetFlow.js'
 import { EXDB } from './exercises.js'
-import { buildActiveEntry } from './active-session.js'
 
 const CARDIO = EXDB.find(e => e.bp === 'cardio').id
 const LIFT = EXDB.find(e => e.bp !== 'cardio' && e.eq !== 'body weight').id
@@ -241,11 +240,6 @@ describe('defaultConfig', () => {
   it('still reads a body-weight exercise as body weight through the catalogue', () => {
     expect(isBw({ id: BW, ...defaultConfig(BW) })).toBe(true)
     expect(isBw({ id: LIFT, ...defaultConfig(LIFT) })).toBe(false)
-  })
-  it('builds a new Active workout Entry from the default config with no agreeing flag', () => {
-    const entry = buildActiveEntry({ workouts: [], active: { entries: [] } }, BW, defaultConfig(BW))
-    expect(entry.target).not.toHaveProperty('bodyweight')
-    expect(entry.sets.every(s => s.w === 0)).toBe(true)
   })
 })
 

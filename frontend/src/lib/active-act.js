@@ -11,7 +11,7 @@ import { toggleActiveSet } from './active-toggle.js'
 import { completeActiveSession } from './active-finish.js'
 import { sessionView } from './session-view.js'
 import { setsDone } from './workout-model.js'
-import { exOr, EXIDX } from './exercises.js'
+import { exOr, isKnownExercise } from './exercises.js'
 
 const effect = (type, extra) => (extra ? { type, ...extra } : { type })
 const refused = () => ({ ok: false, effects: [] })
@@ -70,12 +70,8 @@ function completeHold(S, { ref, elapsed }) {
   return S.active.entries[entry].sets[set].done ? applied(true) : toggle(S, { entry, set })
 }
 
-// Known: in the catalogue (or registered custom) index, or a custom exercise in the Profile.
-const isKnownExercise = (S, exId) =>
-  Boolean(exId && (EXIDX[exId] || (S.customEx || []).some(c => c?.id === exId)))
-
 function addExercise(S, { exId, target }) {
-  if (!isKnownExercise(S, exId)) return refused()
+  if (!isKnownExercise(exId)) return refused()
   const entry = addActiveExercise(S, exId, target)
   return entry ? { ok: true, effects: [], result: entry } : refused()
 }
