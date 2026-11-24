@@ -14,7 +14,8 @@ function Weight({ initial }) {
   return <NumberField value={value} onChange={setValue} aria-label="Weight" />
 }
 
-const input = () => container.querySelector('[aria-label="Weight"]')
+let label
+const input = () => container.querySelector(`[aria-label="${label}"]`)
 
 function type(text) {
   act(() => {
@@ -25,6 +26,7 @@ function type(text) {
 
 beforeEach(() => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true
+  label = 'Weight'
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
@@ -87,5 +89,38 @@ describe('NumberField when a render is discarded', () => {
     expect(input().value).toBe('62.')
     act(() => rerender())
     expect(input().value).toBe('62.')
+  })
+})
+
+// The set row's effort field is nullable and passes `value={v ?? ''}`, so the stored null comes back as ''.
+describe('NumberField in an optional field', () => {
+  let stored
+  function Effort() {
+    const [value, setValue] = useState(null)
+    stored = value
+    return <NumberField nullable value={value ?? ''} onChange={setValue} aria-label="RIR" placeholder="—" />
+  }
+
+  beforeEach(() => {
+    label = 'RIR'
+    act(() => root.render(<StrictMode><Effort /></StrictMode>))
+  })
+
+  it('keeps a leading "." while the lifter types a fraction', () => {
+    type('.')
+    expect(input().value).toBe('.')
+    expect(stored).toBe(null)
+    type('.5')
+    expect(input().value).toBe('.5')
+    expect(stored).toBe(0.5)
+  })
+
+  it('stores null and shows the placeholder when cleared', () => {
+    type('8')
+    expect(stored).toBe(8)
+    type('')
+    expect(stored).toBe(null)
+    expect(input().value).toBe('')
+    expect(input().placeholder).toBe('—')
   })
 })
