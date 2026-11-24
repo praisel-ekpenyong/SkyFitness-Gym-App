@@ -147,6 +147,7 @@ describe('RoutineEdit exercise replacement', () => {
       reps: 8,
       weight: 65,
       mode: 'reps',
+      rowId: expect.any(String),
     })
     expect(updatedRoutine.ex[1].id).toBe('0002')
     expect(updatedRoutine.ex[1].sg).toBe('sg-0-1')
@@ -173,7 +174,7 @@ describe('RoutineEdit exercise replacement', () => {
     })
 
     const saved = useStore.getState().S.routines.find(x => x.id === 'r-test-1').ex[0]
-    expect(saved).toEqual({ id: '0001', sg: 'sg-0-1', sets: 3, mode: 'reps', reps: 10, weight: 20 })
+    expect(saved).toEqual({ id: '0001', sg: 'sg-0-1', sets: 3, mode: 'reps', reps: 10, weight: 20, rowId: expect.any(String) })
   })
 
   it('replaces a non-superset exercise without adding an sg property', async () => {
@@ -212,6 +213,7 @@ describe('RoutineEdit exercise replacement', () => {
       reps: 10,
       weight: 40,
       mode: 'reps',
+      rowId: expect.any(String),
     })
     expect(updatedRoutine.ex[2].sg).toBeUndefined()
   })
@@ -323,6 +325,36 @@ describe('RoutineEdit delete key', () => {
     })
     expect(useStore.getState().S.routines.find(x => x.id === 'r-test-1')).toBeUndefined()
     expect(mocks.nav).toHaveBeenCalledWith('/plan')
+  })
+})
+
+describe('Routine rows keep their own targets', () => {
+  it('keeps the middle row\'s target when that row moves down', async () => {
+    const current = useStore.getState().S
+    useStore.getState().replaceState({
+      ...current,
+      routines: [{
+        ...current.routines[0],
+        ex: [
+          { id: '0025', sets: 3, reps: 5, weight: 60, mode: 'reps' },
+          { id: '0025', sets: 4, reps: 8, weight: 80, mode: 'reps' },
+          { id: '0025', sets: 2, reps: 12, weight: 40, mode: 'reps' },
+        ],
+      }],
+    })
+    await act(async () => { root.render(<RoutineEdit />) })
+
+    const items = () => [...container.querySelectorAll('.list .item')]
+    const middle = items()[1]
+    expect(middle.textContent).toContain('4 × 8')
+    const moveDown = middle.querySelector('button[aria-label="Move down"]')
+    moveDown.focus()
+    await act(async () => { moveDown.click() })
+
+    const focused = document.activeElement.closest('.item')
+    expect(focused.textContent).toContain('4 × 8')
+    expect(focused.textContent).toContain('80')
+    expect(items().map(el => el.textContent.match(/\d+ × \d+/)[0])).toEqual(['3 × 5', '2 × 12', '4 × 8'])
   })
 })
 

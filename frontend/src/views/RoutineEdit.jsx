@@ -67,7 +67,7 @@ export default function RoutineEdit() {
 
     {view.entries.length ? <div className="list">{view.entries.map((item, i) => {
       const ex = exOr(item.id)
-      return <div key={i}>
+      return <div key={item.rowId}>
         {item.isFirstInSuperset && <div className="ss-label"><Icon name="link" />{t('Superset')}</div>}
         <div className={'item rt-ex' + (item.inSuperset ? ' in-ss' : '')} onClick={() => {
           exConfigSheet(ex, {

@@ -185,6 +185,38 @@ describe('Workout exercise reorder sheet interaction', () => {
   })
 })
 
+describe('set rows keep their figures when the ladder shifts', () => {
+  function weightInputs() {
+    return [...view.container.querySelectorAll('input.num')].filter(el => el.getAttribute('aria-label').includes('Weight'))
+  }
+
+  function typeInto(input, text) {
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set
+    act(() => {
+      setter.call(input, text)
+      input.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+  }
+
+  it('keeps the middle set\'s in-progress figure when a warm-up is inserted above it', () => {
+    view = renderWorkoutApp([entry('0025', [
+      { w: 40, r: 5, done: false },
+      { w: 80, r: 5, done: false },
+      { w: 80, r: 3, done: false },
+    ])])
+    const editing = weightInputs()[1]
+    typeInto(editing, '80.')
+    expect(editing.value).toBe('80.')
+
+    const addWarmup = [...view.container.querySelectorAll('button')].find(b => b.textContent.includes('Add warm-up set'))
+    click(addWarmup)
+
+    expect(editing.isConnected).toBe(true)
+    expect(editing.value).toBe('80.')
+    expect(weightInputs().map(el => el.value)).toEqual(['80', '40', '80.', '80'])
+  })
+})
+
 describe('Reorder sheet with no active workout', () => {
   // A stale sheet can outlive finish/discard; its selector must return a cached value, not a fresh [].
   it('renders an empty list without a getSnapshot warning or a render loop', () => {

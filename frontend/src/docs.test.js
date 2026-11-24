@@ -47,16 +47,9 @@ const HISTORICAL = new Set([
 // Checks the standards name before the file exists. Delete the entry when the file lands.
 const PLANNED = new Set([
   'CODING_STANDARDS.md: frontend/tsconfig.json',
-  'CODING_STANDARDS.md: frontend/eslint-suppressions.json',
   'CODING_STANDARDS.md: frontend/tsc-baseline.json',
   'CODING_STANDARDS.md: frontend/src/lib/profile/profile-keys.test.js',
-  'CODING_STANDARDS.md: frontend/scripts/check-frontend-state.mjs',
-  'CODING_STANDARDS.md: frontend/frontend-state-allowlist.json',
-  'CODING_STANDARDS.md: frontend/react-doctor-floor.json',
-  'CODING_STANDARDS.md: frontend/scripts/check-react-doctor-floor.mjs',
   'docs/DRAFT_GUARD.md: frontend/src/lib/profile/profile-keys.test.js',
-  'docs/TESTING_STANDARDS.md: frontend/eslint-suppressions.json',
-  'docs/adr/0034-oxlint-and-eslint-with-per-tool-ratchets.md: frontend/eslint-suppressions.json',
   'docs/adr/0035-typescript-starts-as-checkjs-with-an-error-baseline.md: frontend/tsconfig.json',
   'docs/adr/0035-typescript-starts-as-checkjs-with-an-error-baseline.md: frontend/tsc-baseline.json',
 ])

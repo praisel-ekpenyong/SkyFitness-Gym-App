@@ -229,6 +229,11 @@ describe('Restore keeps every DEF key and puts the Training log in order', () =>
     expect(S.active).toBeNull()
     for (const key of Object.keys(DEF)) {
       if (key === 'active') continue
+      if (key === 'routines') {
+        expect(S.routines.map(r => ({ ...r, ex: r.ex.map(({ rowId, ...e }) => e) })), 'DEF key routines').toEqual(backup.routines)
+        expect(S.routines.every(r => r.ex.every(e => typeof e.rowId === 'string' && e.rowId))).toBe(true)
+        continue
+      }
       expect(S[key], `DEF key ${key}`).toEqual(backup[key])
     }
     expect(S.exWeights).toEqual(legacyCache)
