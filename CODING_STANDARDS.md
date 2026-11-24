@@ -751,12 +751,12 @@ no ticket or issue number: the number rots, and the reason belongs in the
 comment or the ADR. A change that departs from an ADR adds a dated amendment to
 that ADR in the same change (judgement call, no tooth). Exception: none.
 
-**Why:** `1dd9352` and `add69cd` removed ticket ids from the source. Two remain,
-in `lib/import-csv.js` ("issue #74") and `lib/catalogue-corrections.js`
-("ticket 04").
-**To add:** a guard test, `frontend/src/comments.test.js`, with a regex over
-comment text in non-test source and a failing fixture. Empty allowlist: fix the
-two first. The rest of this rule is a judgement call, no tooth.
+**Why:** `1dd9352` and `add69cd` removed ticket ids from the source; the
+last two, in `lib/import-csv.js` and `lib/catalogue-corrections.js`, were
+reworded when the guard landed.
+**Runs:** `frontend/src/comments.test.js`, a regex over the parsed comments of
+non-test source, with a fixture it must reject (`#97`). No allowlist. Commit
+hashes stay allowed. The rest of this rule is a judgement call, no tooth.
 
 ## Testing
 
@@ -803,7 +803,7 @@ names every one:
 
 | Tool | Runs today | To add |
 |---|---|---|
-| Vitest guard tests, in `npm test` | `purity.test.js`, `import-cycles.test.js`, `design-tokens.test.js`, `design-lint.test.js`, `env.test.js`, `i18n-lint.test.js`, `sheets/dialog-names.test.jsx`, `docs.test.js`, `platform/storage.test.js` (the 800ms debounce) | `effect-types.test.js`, `comments.test.js`, `profile-keys.test.js`, the save round-trip tests, the `warmArt` test, the `flush()` test |
+| Vitest guard tests, in `npm test` | `purity.test.js`, `import-cycles.test.js`, `design-tokens.test.js`, `design-lint.test.js`, `env.test.js`, `i18n-lint.test.js`, `sheets/dialog-names.test.jsx`, `docs.test.js`, `platform/storage.test.js` (the 800ms debounce), `comments.test.js` | `effect-types.test.js`, `profile-keys.test.js`, the save round-trip tests, the `warmArt` test, the `flush()` test |
 | ESLint 10, `npm run lint` after oxlint (CI and pre-commit today) | no rule: its old rules moved to oxlint | Only the `react-hooks` compiler rules and the `no-restricted-syntax` selectors (including `vi.mock` scope). Ratchet: `frontend/eslint-suppressions.json` |
 | oxlint, `npm run lint` (CI and pre-commit) | `correctness` category, `react/rules-of-hooks`, `react/exhaustive-deps`, `no-throw-literal`, `prefer-promise-reject-errors`, all at error. Ratchet: `frontend/lint-baseline.json`, checked by `scripts/check-lint-baseline.mjs` with its failing fixture in `npm test` | `complexity`, restricted globals and properties (including `Date.now` in `lib/`), `unicorn/no-array-sort`, `unicorn/no-array-reverse`, `react/no-array-index-key`, `jsx-a11y/*`. Ratchet: `frontend/lint-baseline.json` |
 | tsc | nothing | `tsconfig.json`, `npm run typecheck` in the hook and CI. Ratchet: `frontend/tsc-baseline.json` |
@@ -818,8 +818,7 @@ says it is too slow for the unit suite.
 
 1. ESLint config only: the `react-hooks` compiler rules at error (0 hits), then
    the rules that need `frontend/eslint-suppressions.json`. Fix the small real hits
-   first: 4 bare store reads, 1 selector `[]`, 1 UTC day key, the `LB_TO_KG` copies,
-   the 2 ticket ids.
+   first: 4 bare store reads, 1 selector `[]`, 1 UTC day key, the `LB_TO_KG` copies.
 2. The ESLint `no-restricted-syntax` selector block with its allowlists.
 3. oxlint, `frontend/lint-baseline.json` and its script with a failing fixture,
    with `no-restricted-globals`, `no-restricted-properties` (the `Date.now`
