@@ -4,6 +4,7 @@ import { isWorkSet, isPerformed, workSets, doneWorkSets, modeForSet } from './wo
 import { resolveSetWeight, normalizeWeight, targetIn, entryUnit } from './units.js'
 import { fmtNum, fmtSigned } from './format.js'
 import { t } from './i18n.js'
+import { todayISO } from './dates.js'
 
 export const POLICIES = ['off', 'linear', 'greyskull', 'double', 'time']
 
@@ -759,7 +760,9 @@ export function evaluateSessionProgression(entry, state, context = {}) {
     if (!inWorkouts) {
       const dummyWorkout = {
         id: 'session-entry-' + entry.id,
-        d: entry.d || new Date().toISOString().slice(0, 10),
+        // Stand-in Workout day key uses local calendar date (issue #132).
+        // Passing `now` into evaluateSessionProgression is deferred to clock ticket #113.
+        d: entry.d || todayISO(),
         entries: [entry],
         unit: state?.unit || 'kg'
       }

@@ -1,8 +1,10 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import {
   readSession, sessionsFor, stallCount, nextPrescription, applyPrescription,
-  policyFor, defaultIncrement, POLICIES_FOR, DELOAD_AFTER, MAX_BW_SETS
+  policyFor, defaultIncrement, POLICIES_FOR, DELOAD_AFTER, MAX_BW_SETS,
+  evaluateSessionProgression
 } from './progression.js'
+import * as units from './units.js'
 import { EXDB } from './exercises.js'
 
 const LIFT = EXDB.find(e => e.bp !== 'cardio' && !['upper legs', 'lower legs', 'back', 'hips', 'glutes'].includes(e.bp)).id
@@ -770,5 +772,71 @@ describe('applyPrescription never touches warm-up rows (round 3)', () => {
     ]
     const out = applyPrescription(sets, { kind: 'up', weight: 62.5, reps: 5, sets: 4 })
     expect(out).toEqual(sets)
+  })
+})
+
+describe('evaluateSessionProgression stand-in workout date (issue #132)', () => {
+  const origTZ = process.env.TZ
+
+  afterEach(() => {
+    vi.useRealTimers()
+    if (origTZ === undefined) {
+      delete process.env.TZ
+    } else {
+      process.env.TZ = origTZ
+    }
+    vi.restoreAllMocks()
+  })
+
+  it('builds a stand-in workout with local day key near midnight in a UTC-negative zone', () => {
+    process.env.TZ = 'America/Los_Angeles'
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-03-10T22:00:00-08:00'))
+
+    let standInWorkout = null
+    vi.spyOn(units, 'entryUnit').mockImplementation((entry, workout, fallback) => {
+      standInWorkout = workout
+      return workout?.unit ?? fallback ?? 'kg'
+    })
+
+    const entry = {
+      id: LIFT,
+      target: { sets: 3, reps: 5, weight: 60, prog: 'linear' },
+      sets: [
+        { w: 60, r: 5, done: true },
+        { w: 60, r: 5, done: true },
+        { w: 60, r: 5, done: true },
+      ],
+    }
+
+    evaluateSessionProgression(entry, { unit: 'kg', workouts: [] })
+    expect(standInWorkout).not.toBeNull()
+    expect(standInWorkout.d).toBe('2026-03-10')
+  })
+
+  it('builds a stand-in workout with local day key just after midnight in an east-of-UTC zone', () => {
+    process.env.TZ = 'Asia/Tokyo'
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-03-11T00:30:00+09:00'))
+
+    let standInWorkout = null
+    vi.spyOn(units, 'entryUnit').mockImplementation((entry, workout, fallback) => {
+      standInWorkout = workout
+      return workout?.unit ?? fallback ?? 'kg'
+    })
+
+    const entry = {
+      id: LIFT,
+      target: { sets: 3, reps: 5, weight: 60, prog: 'linear' },
+      sets: [
+        { w: 60, r: 5, done: true },
+        { w: 60, r: 5, done: true },
+        { w: 60, r: 5, done: true },
+      ],
+    }
+
+    evaluateSessionProgression(entry, { unit: 'kg', workouts: [] })
+    expect(standInWorkout).not.toBeNull()
+    expect(standInWorkout.d).toBe('2026-03-11')
   })
 })
