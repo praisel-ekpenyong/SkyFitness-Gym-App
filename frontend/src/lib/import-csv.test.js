@@ -265,14 +265,14 @@ describe('exercise notes CSV import mapping', () => {
 })
 
 describe('date-only Apple Health weigh-in and CSV workout alignment', () => {
-  it('an imported Apple Health weigh-in and a CSV workout dated the same day produce timestamps on the same local day and in the order the file implies', () => {
+  it('an imported Apple Health weigh-in and a CSV workout dated the same day produce timestamps on the same local day and have matching dates', () => {
     const ahCsv = [
       'Date,Weight',
       '2026-03-10,75.5',
     ].join('\n')
     const workoutCsv = [
       'Date,Exercise,Weight,Reps',
-      '2026-03-10 10:00,Bench Press,100,5',
+      '2026-03-10,Bench Press,100,5',
     ].join('\n')
 
     const parsedBw = parseBodyweight(ahCsv, { unit: 'kg' })
@@ -284,10 +284,39 @@ describe('date-only Apple Health weigh-in and CSV workout alignment', () => {
     const bwDate = new Date(weighIn.t)
     const workoutDate = new Date(workout.start)
 
+    expect(weighIn.d).toBe(workout.d)
     expect(bwDate.getFullYear()).toBe(workoutDate.getFullYear())
     expect(bwDate.getMonth()).toBe(workoutDate.getMonth())
     expect(bwDate.getDate()).toBe(workoutDate.getDate())
-    expect(weighIn.t).toBeLessThanOrEqual(workout.start)
+    expect(weighIn.t).toBe(workout.start)
+    expect(workout.start).toBe(new Date('2026-03-10T12:00:00').getTime())
+  })
+
+  it('timed CSV workouts compute timestamps from midnight without rolling over', () => {
+    const workoutCsv = [
+      'Date,Exercise,Weight,Reps',
+      '2026-03-10 10:00,Bench Press,100,5',
+    ].join('\n')
+    const parsed = parseWorkoutCSV(workoutCsv, { unit: 'kg' })
+    const workout = parsed.workouts[0]
+    const workoutDate = new Date(workout.start)
+    expect(workoutDate.getFullYear()).toBe(2026)
+    expect(workoutDate.getMonth()).toBe(2)
+    expect(workoutDate.getDate()).toBe(10)
+    expect(workoutDate.getHours()).toBe(10)
+    expect(workoutDate.getMinutes()).toBe(0)
+  })
+
+  it('timed bodyweight CSV computes timestamp from midnight', () => {
+    const ahCsv = [
+      'Date,Weight',
+      '2026-03-10 08:30,75.5',
+    ].join('\n')
+    const parsed = parseBodyweight(ahCsv, { unit: 'kg' })
+    const bw = parsed.bodyweight[0]
+    const bwDate = new Date(bw.t)
+    expect(bwDate.getHours()).toBe(8)
+    expect(bwDate.getMinutes()).toBe(30)
   })
 })
 

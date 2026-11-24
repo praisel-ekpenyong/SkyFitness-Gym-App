@@ -749,6 +749,7 @@ export function evaluateSessionProgression(entry, state, context = {}) {
     (workout?.routineId ? state?.routines?.find(r => r.id === workout.routineId) : null) ||
     null
 
+  let dummyWorkout = null
   let effectiveS = state
   if (workout) {
     const inWorkouts = (state?.workouts || []).some(w => w.id === workout.id || w === workout)
@@ -758,10 +759,10 @@ export function evaluateSessionProgression(entry, state, context = {}) {
   } else {
     const inWorkouts = (state?.workouts || []).some(w => (w.entries || []).includes(entry))
     if (!inWorkouts) {
-      const dummyWorkout = {
+      dummyWorkout = {
         id: 'session-entry-' + entry.id,
-        // Stand-in Workout day key uses local calendar date (issue #132).
-        // Passing `now` into evaluateSessionProgression is deferred to clock ticket #113.
+        // Stand-in Workout day key uses local calendar date.
+        // Passing now into evaluateSessionProgression is deferred to clock audit.
         d: entry.d || todayISO(),
         entries: [entry],
         unit: state?.unit || 'kg'
@@ -843,6 +844,7 @@ export function evaluateSessionProgression(entry, state, context = {}) {
 
   return {
     id: entry.id,
+    d: (workout?.d || dummyWorkout?.d) ?? null,
     exName,
     policy,
     policyName,

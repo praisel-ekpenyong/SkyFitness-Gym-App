@@ -345,9 +345,9 @@ export function parseWorkoutCSV(text, { unit = 'kg' } = {}) {
       const conv2 = ss.map(({ u, ...s }) => (s.w !== undefined ? { ...s, w: convRow({ ...s, u }) } : s))
       return { id, sets: conv2, ...(day.exNotes?.get(id) ? { notes: day.exNotes.get(id) } : {}) }
     })
-    const base = parseDay(d).getTime()
-    const start = base + (day.start ?? 18 * 3600000)
-    const end = day.end != null ? base + day.end : start
+    const midnight = new Date(parseDay(d).setHours(0, 0, 0, 0)).getTime()
+    const start = day.start != null ? midnight + day.start : parseDay(d).getTime()
+    const end = day.end != null ? midnight + day.end : start
     const w = {
       id: 'iw' + uid(), d, start, end: end > start ? end : start,
       routineId: null, name: day.name || 'Imported', entries,
@@ -398,7 +398,10 @@ export function parseBodyweight(text, { unit = 'kg' } = {}) {
       const when = parseWhen(String(rows[i][dCol] ?? ''))
       const w = num(rows[i][wCol])
       if (!when || !w) continue
-      out.set(when.d, { w, t: parseDay(when.d).getTime() + (when.t ?? 0) })
+      const t = when.t != null
+        ? new Date(parseDay(when.d).setHours(0, 0, 0, 0)).getTime() + when.t
+        : parseDay(when.d).getTime()
+      out.set(when.d, { w, t })
     }
   }
 
