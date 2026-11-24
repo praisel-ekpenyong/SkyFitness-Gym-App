@@ -731,17 +731,11 @@ Sky is pure ECMAScript (`"type": "module"`). Use `import.meta.url`,
 (`__dirname`, `__filename`, `require`) or create shims named after them.
 Exception: none.
 
-**To add:** oxlint `eslint/no-restricted-globals` for `__dirname`, `__filename`
-and `require`. ESLint's `globals.node` hides them today. The rule has no
-exception for tests: fix these hits first (re-run 2026-11-24, oxlint finds
-exactly these three): `components/Icon.test.js:6`, `sw.test.js:11` and
-`index-html.test.js:29` use the global `__dirname`. The ban on shims also hits
-`docs.test.js`, `deployment.test.js` and `lib/env.test.js`, which declare their
-own `const __dirname`, and `scripts/test-deploy-preview.mjs` (same shim) and
-`scripts/review/lib.mjs` (`const require = createRequire(...)`); replace each
-with `import.meta.dirname` (no tool finds the shims until an ESLint
-`no-restricted-syntax` selector on `VariableDeclarator[id.name=/^(__dirname|__filename|require)$/]`
-is added).
+**Runs:** oxlint `eslint/no-restricted-globals` bans `__dirname`, `__filename`
+and `require`; oxlint skips tests, so ESLint `no-restricted-globals` bans them in
+test files. ESLint `no-restricted-syntax` on
+`VariableDeclarator[id.name=/^(__dirname|__filename|require)$/]` bans shims. No
+baseline entries.
 
 ### Session performance: nothing starves the lifter
 

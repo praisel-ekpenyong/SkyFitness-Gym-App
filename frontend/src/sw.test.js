@@ -8,7 +8,7 @@ describe('Sky Service Worker (sw.js)', () => {
   let cacheStore = {}
 
   function loadServiceWorker() {
-    const swPath = path.resolve(__dirname, '../public/sw.js')
+    const swPath = path.resolve(import.meta.dirname, '../public/sw.js')
     const swCode = fs.readFileSync(swPath, 'utf-8')
     const executeServiceWorker = new Function('self', 'caches', 'location', swCode)
     executeServiceWorker(globalThis.self, globalThis.caches, globalThis.location)
