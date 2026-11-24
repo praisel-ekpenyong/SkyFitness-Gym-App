@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  readSession, sessionsFor, stallCount, nextPrescription, reduceLoad, DELOAD_AFTER, MIN_TIME_SEC
+  readSession, stallCount, nextPrescription, reduceLoad, DELOAD_AFTER, MIN_TIME_SEC
 } from './progression.js'
 import { act } from './active-workout.js'
 import { EXDB } from './exercises.js'
@@ -9,7 +9,6 @@ import { EXDB } from './exercises.js'
 const LIFT = EXDB.find(e => e.bp !== 'cardio' && !['upper legs', 'lower legs', 'back', 'hips', 'glutes'].includes(e.bp)).id
 const DOUBLE = { id: LIFT, sets: 3, reps: 12, repsMin: 10, weight: 40, prog: 'double' }
 const REP_TARGET = { sets: 3, reps: 12, weight: 40 }
-const TIME_TARGET = { sets: 2, sec: 45, mode: 'time' }
 
 const work = (w, r) => ({ w, r, done: true })
 const held = (sec, done = true) => ({ sec, w: 0, done })
@@ -503,7 +502,7 @@ describe('Prescription records and the finish boundary', () => {
     expect(deload).toMatchObject({ kind: 'deload', weight: 35, reps: 10 })
     first.entries[0].sets.forEach(s => { s.done = true })
 
-    const done = finish(S)
+    finish(S)
 
     const second = begin(S, 'r1', '2026-01-11')
     expect(second.entries[0].plan.kind).toBe('hold')

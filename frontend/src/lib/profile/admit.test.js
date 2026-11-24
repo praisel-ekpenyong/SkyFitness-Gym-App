@@ -50,7 +50,7 @@ describe('admit', () => {
   it('upgrades a legacy warm-up flag to the phase shape without touching values', () => {
     const raw = {
       unit: 'lb',
-      topW: { 0025: { w: 100 } },
+      topW: { '0025': { w: 100 } },
       asked: true,
       workouts: [{
         id: 'w1', d: '2026-01-02', start: 2,
@@ -69,7 +69,7 @@ describe('admit', () => {
       { w: 60, r: 5, done: true },
     ])
     expect(out.unit).toBe('lb')
-    expect(out.topW).toEqual({ 0025: { w: 100 } })
+    expect(out.topW).toEqual({ '0025': { w: 100 } })
     expect(out.asked).toBe(true)
     expect(out.workouts[0].entries[0].topW).toBe(100)
     expect(out.workouts[0].entries[0].asked).toBe(true)

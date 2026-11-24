@@ -1,6 +1,6 @@
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
-import { effectiveRoutineId, hasEffectiveOverride } from '../lib/history.js'
+import { effectiveRoutineId } from '../lib/history.js'
 import { setDayOverride, assignWeekday } from '../lib/schedule.js'
 import { exCount } from '../lib/format.js'
 import { fmtDate, DAYN } from '../lib/dates.js'
