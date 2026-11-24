@@ -1,9 +1,15 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+// @vitest-environment happy-dom
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 
 const plugin = vi.hoisted(() => ({
   permission: 'granted',
   scheduled: [],
   cancels: 0,
+  scheduleError: null,
+}))
+
+const fs = vi.hoisted(() => ({
+  writeError: null,
 }))
 
 vi.mock('@capacitor/local-notifications', () => ({
@@ -11,11 +17,28 @@ vi.mock('@capacitor/local-notifications', () => ({
     cancel: async () => { plugin.cancels++ },
     checkPermissions: async () => ({ display: plugin.permission }),
     requestPermissions: async () => ({ display: plugin.permission }),
-    schedule: async ({ notifications }) => { plugin.scheduled.push(notifications) },
+    schedule: async ({ notifications }) => {
+      if (plugin.scheduleError) throw plugin.scheduleError
+      plugin.scheduled.push(notifications)
+    },
   },
 }))
 
-import { syncReminder, __resetReminderForTests } from './mobile.js'
+vi.mock('@capacitor/filesystem', () => ({
+  Filesystem: {
+    writeFile: async () => {
+      if (fs.writeError) throw fs.writeError
+    },
+  },
+  Directory: { Data: 'DATA', Cache: 'CACHE' },
+  Encoding: { UTF8: 'utf8' },
+}))
+
+import { nativeSave, nativeSink, syncReminder, __resetReminderForTests } from './mobile.js'
+import {
+  save, flush, loadLocal, isMirrorFailing,
+  __setSinksForTests, __resetMirrorFailuresForTests,
+} from './storage.js'
 
 const profile = (reminder, week = { 1: 'r1', 4: 'r1' }) => ({
   reminder,
@@ -24,10 +47,20 @@ const profile = (reminder, week = { 1: 'r1', 4: 'r1' }) => ({
 })
 
 beforeEach(() => {
+  localStorage.clear()
   __resetReminderForTests()
+  __resetMirrorFailuresForTests()
+  __setSinksForTests()
   plugin.permission = 'granted'
   plugin.scheduled = []
   plugin.cancels = 0
+  plugin.scheduleError = null
+  fs.writeError = null
+})
+
+afterEach(() => {
+  __setSinksForTests()
+  __resetMirrorFailuresForTests()
 })
 
 describe('syncReminder', () => {
@@ -79,5 +112,51 @@ describe('syncReminder', () => {
     await syncReminder(S)
     await syncReminder(S, true)
     expect(plugin.scheduled).toHaveLength(2)
+  })
+})
+
+describe('nativeSave / nativeSink', () => {
+  it('nativeSave rejects when Filesystem.writeFile rejects', async () => {
+    fs.writeError = new Error('disk full')
+    await expect(nativeSave(profile({ on: false }))).rejects.toThrow('disk full')
+  })
+
+  it('marks the mirror as failing when Filesystem.writeFile rejects and clears it on a later success', async () => {
+    __setSinksForTests([nativeSink])
+    fs.writeError = new Error('disk full')
+    save({ ...profile({ on: false }), _ts: 1 })
+    flush()
+    await vi.waitFor(() => expect(isMirrorFailing()).toBe(true), { timeout: 200 })
+    expect(loadLocal()).toEqual({ ...profile({ on: false }), _ts: 1 })
+
+    fs.writeError = null
+    save({ ...profile({ on: false }), _ts: 2 })
+    flush()
+    await vi.waitFor(() => expect(isMirrorFailing()).toBe(false), { timeout: 200 })
+  })
+
+  it('awaits syncReminder before resolving', async () => {
+    await nativeSink.write(profile({ on: true, time: '07:30' }))
+    expect(plugin.scheduled).toHaveLength(1)
+  })
+
+  it('keeps the mirror healthy when reminder scheduling fails', async () => {
+    __setSinksForTests([nativeSink])
+    fs.writeError = new Error('disk full')
+    save({ ...profile({ on: false }), _ts: 1 })
+    flush()
+    await vi.waitFor(() => expect(isMirrorFailing()).toBe(true), { timeout: 200 })
+
+    fs.writeError = null
+    plugin.scheduleError = new Error('notifications unavailable')
+    save({ ...profile({ on: true, time: '08:00' }), _ts: 2 })
+    flush()
+    await vi.waitFor(() => expect(isMirrorFailing()).toBe(false), { timeout: 200 })
+  })
+
+  it('still completes syncReminder cleanly when Filesystem.writeFile rejects', async () => {
+    fs.writeError = new Error('disk full')
+    await expect(nativeSink.write(profile({ on: true, time: '07:30' }))).rejects.toThrow('disk full')
+    expect(plugin.scheduled).toHaveLength(1)
   })
 })
