@@ -11,6 +11,7 @@ const processEnv = {
   message: 'Read process.env only in lib/env.js (validateEnv); use env.* instead.',
 }
 
+// Single-owner formatting (CODING_STANDARDS.md): time is formatted only in lib/format.js and lib/dates.js.
 const noModulo60 = {
   selector: "BinaryExpression[operator='%'][right.value=60]",
   message: 'Format durations and times through lib/format.js or lib/dates.js, not `% 60`.',
@@ -27,6 +28,39 @@ const noModulo60 = {
 const noCommonJsShim = {
   selector: 'VariableDeclarator[id.name=/^(__dirname|__filename|require)$/]',
   message: 'Do not shim CommonJS globals. Use import.meta.dirname, import.meta.filename or import.meta.url.',
+}
+
+// One owner per derived value: the unit fallback. PROFILE_CLEAN cleans S.unit on the way in.
+const noKgFallback = {
+  selector: "LogicalExpression[right.value='kg']",
+  message: "No `|| 'kg'` fallback: S.unit is cleaned by PROFILE_CLEAN; other units go through lib/units.js (sanitizeUnit, entryUnit).",
+}
+
+// src/ selectors and the files that own each one. A later block's no-restricted-syntax
+// replaces the earlier options, so srcRestrictedSyntax gives every src file one block
+// with every selector except those its owner exemptions drop. Exempt patterns must not overlap.
+const SRC_TESTS = 'src/**/*.test.{js,jsx,mjs}'
+const srcSelectors = [
+  { selector: noCommonJsShim, exempt: [] },
+  { selector: noModulo60, exempt: ['src/lib/format.js', 'src/lib/dates.js'] },
+  // The 18 existing hits are baselined in eslint-suppressions.json.
+  { selector: noKgFallback, exempt: ['src/lib/units.js'] },
+  // Allowlist: Vite build flags, not configuration.
+  // useStore.js: import.meta.env.MODE turns on Immer's auto-freeze in tests only.
+  // Modals.jsx: import.meta.env.DEV throws on a bad modal call in development only.
+  { selector: importMetaEnv, exempt: ['src/lib/env.js', SRC_TESTS, 'src/store/useStore.js', 'src/components/Modals.jsx'] },
+  { selector: processEnv, exempt: ['src/lib/env.js', SRC_TESTS] },
+]
+
+function srcRestrictedSyntax() {
+  const block = (files, pattern) => ({
+    files,
+    rules: {
+      'no-restricted-syntax': ['error', ...srcSelectors.filter(s => !s.exempt.includes(pattern)).map(s => s.selector)],
+    },
+  })
+  const owners = [...new Set(srcSelectors.flatMap(s => s.exempt))]
+  return [block(['src/**/*.{js,jsx,mjs}']), ...owners.map(pattern => block([pattern], pattern))]
 }
 
 export default [
@@ -68,31 +102,5 @@ export default [
       }))],
     },
   },
-  // Single-owner formatting (CODING_STANDARDS.md): time is formatted only in
-  // lib/format.js and lib/dates.js.
-  {
-    files: ['src/**/*.{js,jsx}'],
-    ignores: ['src/lib/format.js', 'src/lib/dates.js'],
-    rules: {
-      'no-restricted-syntax': ['error', noCommonJsShim, noModulo60],
-    },
-  },
-  // Environment reads only in lib/env.js. These blocks repeat the selectors above
-  // because a later no-restricted-syntax replaces the earlier one.
-  {
-    files: ['src/**/*.{js,jsx,mjs}'],
-    ignores: ['src/lib/env.js', 'src/lib/format.js', 'src/lib/dates.js', '**/*.test.{js,jsx,mjs}'],
-    rules: { 'no-restricted-syntax': ['error', noCommonJsShim, noModulo60, importMetaEnv, processEnv] },
-  },
-  {
-    files: ['src/lib/format.js', 'src/lib/dates.js'],
-    rules: { 'no-restricted-syntax': ['error', noCommonJsShim, importMetaEnv, processEnv] },
-  },
-  // Allowlist: Vite build flags, not configuration.
-  // useStore.js: import.meta.env.MODE turns on Immer's auto-freeze in tests only.
-  // Modals.jsx: import.meta.env.DEV throws on a bad modal call in development only.
-  {
-    files: ['src/store/useStore.js', 'src/components/Modals.jsx'],
-    rules: { 'no-restricted-syntax': ['error', noCommonJsShim, noModulo60, processEnv] },
-  },
+  ...srcRestrictedSyntax(),
 ]

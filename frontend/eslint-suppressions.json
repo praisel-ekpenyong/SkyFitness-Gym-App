@@ -4,6 +4,41 @@
       "count": 5
     }
   },
+  "src/lib/active-finish.js": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/lib/active-session.js": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/lib/plan-share.js": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/lib/progression.js": {
+    "no-restricted-syntax": {
+      "count": 5
+    }
+  },
+  "src/lib/stats-selectors.js": {
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "src/lib/strength-level.js": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/lib/training-log.js": {
+    "no-restricted-syntax": {
+      "count": 7
+    }
+  },
   "src/sheets/catalogue.jsx": {
     "react-hooks/purity": {
       "count": 1
