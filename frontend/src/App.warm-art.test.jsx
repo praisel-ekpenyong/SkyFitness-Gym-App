@@ -24,7 +24,8 @@ let container
 beforeEach(() => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true
   localStorage.clear()
-  globalThis.fetch = vi.fn(() => Promise.reject(new Error('network disabled in tests')))
+  vi.stubGlobal('fetch', vi.fn(() => Promise.reject(new Error('network disabled in tests'))))
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] })
   idle = []
   window.requestIdleCallback = vi.fn(cb => idle.push(cb))
   window.cancelIdleCallback = vi.fn()
@@ -37,10 +38,17 @@ afterEach(async () => {
   container = null
   delete window.requestIdleCallback
   delete window.cancelIdleCallback
+  vi.useRealTimers()
+  vi.unstubAllGlobals()
   vi.clearAllMocks()
 })
 
-const settle = () => act(async () => { await new Promise(r => setTimeout(r, 50)) })
+// Runs every timer due in the next minute, so a timer fallback would fire, then
+// waits for the media-warm import that a fired callback starts.
+const settle = () => act(async () => {
+  await vi.advanceTimersByTimeAsync(60_000)
+  await vi.dynamicImportSettled()
+})
 
 describe('warming exercise art', () => {
   it('waits for the browser to be idle', async () => {

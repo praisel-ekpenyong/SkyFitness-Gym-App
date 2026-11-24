@@ -1113,10 +1113,12 @@ describe('act', () => {
   })
 })
 
+/** A 50 kg × 8 work set, and a lift Entry of such sets aiming at the same. */
+const workSet = (done = false) => ({ w: 50, r: 8, done })
+const liftEntry = (id, sets, target = {}) => ({ id, target: { reps: 8, weight: 50, ...target }, sets })
+
 describe('a refused command', () => {
-  const work = (done = false) => ({ w: 50, r: 8, done })
-  const lift = (id, sets) => ({ id, target: { reps: 8, weight: 50 }, sets })
-  const live = () => withActive([lift('0025', [work(true)]), lift('0026', [work()])], { cur: 1 })
+  const live = () => withActive([liftEntry('0025', [workSet(true)]), liftEntry('0026', [workSet()])], { cur: 1 })
   const staleRef = { workout: 'a1', layout: 0, entryId: '0025', set: 9 }
 
   it.each([
@@ -1149,10 +1151,8 @@ describe('a refused command', () => {
 })
 
 describe('effects stay small and plain', () => {
-  const work = (done = false) => ({ w: 50, r: 8, done })
-  const lift = (id, sets, target = {}) => ({ id, target: { reps: 8, weight: 50, ...target }, sets })
   const hold = { id: '0001', target: { mode: 'time', sec: 30, sets: 2 }, sets: [{ sec: 30, done: false }, { sec: 30, done: false }] }
-  const live = () => withActive([lift('0025', [work(true), work()], { rest: 180 }), hold, lift('0026', [work()])])
+  const live = () => withActive([liftEntry('0025', [workSet(true), workSet()], { rest: 180 }), hold, liftEntry('0026', [workSet()])])
   const holdRef = S => act(S, { type: 'startHold', entry: 1, set: 0 }).effects[0].ref
 
   it.each([
