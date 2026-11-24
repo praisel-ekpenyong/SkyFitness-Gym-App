@@ -1148,6 +1148,25 @@ describe('a refused command', () => {
     expect(act(S, command)).toStrictEqual({ ok: false, effects: [] })
     expect(S).toStrictEqual(before)
   })
+
+  it.each([
+    ['addExercise with no exercise id', { type: 'addExercise' }],
+    ['addExercise of an unknown exercise', { type: 'addExercise', exId: 'no-such-exercise' }],
+  ])('%s leaves the Profile unchanged and asks for no effects', (_, command) => {
+    const S = live()
+    const before = structuredClone(S)
+    expect(act(S, command)).toStrictEqual({ ok: false, effects: [] })
+    expect(S).toStrictEqual(before)
+  })
+})
+
+describe('adding an exercise to the Active workout', () => {
+  it('adds a catalogue exercise and a custom exercise from the Profile', () => {
+    const S = { ...withActive([]), customEx: [{ id: 'c-custom', n: 'Custom lift', custom: true }] }
+    expect(act(S, { type: 'addExercise', exId: '0025' }).ok).toBe(true)
+    expect(act(S, { type: 'addExercise', exId: 'c-custom' }).ok).toBe(true)
+    expect(ids(S)).toEqual(['0025', 'c-custom'])
+  })
 })
 
 describe('effects stay small and plain', () => {
