@@ -786,10 +786,11 @@ our own modules. Exception: a module in `platform/`, which is the boundary. A
 test must be able to fail for a bug a lifter or a caller would see. If you can't
 name the bug, don't write the test (a judgement call, no tooth).
 
-**To add:** an ESLint rule in the test files, scoped in
+**Runs:** ESLint `no-restricted-syntax` in the test files (`noOwnModuleMock` in
+`frontend/eslint.config.js`), scoped in
 [`docs/TESTING_STANDARDS.md`](./docs/TESTING_STANDARDS.md): fail `vi.mock` of a
-relative path that is not in `platform/`, with the selector run on 2026-11-24:
-39 hits in 11 files, baseline in `frontend/eslint-suppressions.json`.
+relative path that is not in `platform/`. 38 hits in 11 files (2026-11-25) are
+baselined in `frontend/eslint-suppressions.json`.
 
 Worked examples, the seam table, and the red flags:
 [`docs/TESTING_STANDARDS.md`](./docs/TESTING_STANDARDS.md).

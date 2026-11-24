@@ -1,4 +1,9 @@
 {
+  "src/components/Modals.test.jsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
   "src/components/TabBar.jsx": {
     "react-hooks/static-components": {
       "count": 5
@@ -15,6 +20,11 @@
     }
   },
   "src/lib/plan-share.js": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/lib/profile/admit-defaults.test.js": {
     "no-restricted-syntax": {
       "count": 1
     }
@@ -69,9 +79,54 @@
       "count": 1
     }
   },
+  "src/views/Plan.test.jsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/views/RoutineEdit.test.jsx": {
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
   "src/views/Settings.jsx": {
     "react-hooks/purity": {
       "count": 1
+    }
+  },
+  "src/views/Settings.mobile.test.jsx": {
+    "no-restricted-syntax": {
+      "count": 4
+    }
+  },
+  "src/views/Settings.test.jsx": {
+    "no-restricted-syntax": {
+      "count": 4
+    }
+  },
+  "src/views/Stats.recovery.test.jsx": {
+    "no-restricted-syntax": {
+      "count": 8
+    }
+  },
+  "src/views/Stats.streak.test.jsx": {
+    "no-restricted-syntax": {
+      "count": 6
+    }
+  },
+  "src/views/Workout.console.test.jsx": {
+    "no-restricted-syntax": {
+      "count": 3
+    }
+  },
+  "src/views/Workout.replace.test.jsx": {
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "src/views/Workout.test.jsx": {
+    "no-restricted-syntax": {
+      "count": 6
     }
   }
 }

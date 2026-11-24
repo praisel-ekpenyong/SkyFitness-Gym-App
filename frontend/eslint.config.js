@@ -36,9 +36,18 @@ const noKgFallback = {
   message: "No `|| 'kg'` fallback: S.unit is cleaned by PROFILE_CLEAN; other units go through lib/units.js (sanitizeUnit, entryUnit).",
 }
 
+// TESTING_STANDARDS.md "Teeth": a test mocks only the boundary. The lookahead lets any
+// relative path through platform/ pass; package mocks (Capacitor) are not relative.
+// `\x2F` is a slash: an esquery regex cannot contain one.
+const noOwnModuleMock = {
+  selector: "CallExpression[callee.object.name='vi'][callee.property.name='mock'][arguments.0.value=/^\\.(?!.*platform\\x2F)/]",
+  message: 'Do not vi.mock our own modules; mock only the boundary (platform/, localStorage, Capacitor).',
+}
+
 // src/ selectors and the files that own each one. A later block's no-restricted-syntax
 // replaces the earlier options, so srcRestrictedSyntax gives every src file one block
-// with every selector except those its owner exemptions drop. Exempt patterns must not overlap.
+// with every selector except those its owner exemptions drop. A selector with `only` runs in
+// those patterns alone. Exempt and only patterns must not overlap.
 const SRC_TESTS = 'src/**/*.test.{js,jsx,mjs}'
 const srcSelectors = [
   { selector: noCommonJsShim, exempt: [] },
@@ -50,16 +59,19 @@ const srcSelectors = [
   // Modals.jsx: import.meta.env.DEV throws on a bad modal call in development only.
   { selector: importMetaEnv, exempt: ['src/lib/env.js', SRC_TESTS, 'src/store/useStore.js', 'src/components/Modals.jsx'] },
   { selector: processEnv, exempt: ['src/lib/env.js', SRC_TESTS] },
+  // The existing hits are baselined in eslint-suppressions.json.
+  { selector: noOwnModuleMock, exempt: [], only: [SRC_TESTS] },
 ]
 
 function srcRestrictedSyntax() {
+  const applies = (s, pattern) => !s.exempt.includes(pattern) && (!s.only || s.only.includes(pattern))
   const block = (files, pattern) => ({
     files,
     rules: {
-      'no-restricted-syntax': ['error', ...srcSelectors.filter(s => !s.exempt.includes(pattern)).map(s => s.selector)],
+      'no-restricted-syntax': ['error', ...srcSelectors.filter(s => applies(s, pattern)).map(s => s.selector)],
     },
   })
-  const owners = [...new Set(srcSelectors.flatMap(s => s.exempt))]
+  const owners = [...new Set(srcSelectors.flatMap(s => [...s.exempt, ...(s.only ?? [])]))]
   return [block(['src/**/*.{js,jsx,mjs}']), ...owners.map(pattern => block([pattern], pattern))]
 }
 
