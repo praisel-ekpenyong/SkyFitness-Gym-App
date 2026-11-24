@@ -75,13 +75,15 @@ export function addActiveWarmup(S, entryIdx) {
 }
 
 export function pairActiveSuperset(S, firstIdx, secondIdx) {
-  if (!S?.active?.entries) return false
+  const entries = S?.active?.entries
+  if (!entries?.[firstIdx] || !entries[secondIdx] || !Number.isInteger(firstIdx) || !Number.isInteger(secondIdx)) return false
+  if (Math.abs(firstIdx - secondIdx) !== 1) return false
   S.active.entries = pairAdjacent(S.active.entries, firstIdx, secondIdx)
   return true
 }
 
 export function unpairActiveSuperset(S, entryIdx) {
-  if (!S?.active?.entries) return false
+  if (!Number.isInteger(entryIdx) || !S?.active?.entries?.[entryIdx]) return false
   S.active.entries = unpairSuperset(S.active.entries, entryIdx)
   return true
 }

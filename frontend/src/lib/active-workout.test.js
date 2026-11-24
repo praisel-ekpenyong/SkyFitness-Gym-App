@@ -1187,6 +1187,25 @@ describe('a refused goTo', () => {
   })
 })
 
+describe('a refused pair or unpair', () => {
+  const live = () => withActive([liftEntry('0025', [workSet()]), liftEntry('0026', [workSet()]), liftEntry('0027', [workSet()])])
+
+  it.each([
+    ['pair with a non-integer index', { type: 'pair', first: 'a', second: 1 }],
+    ['pair past the end', { type: 'pair', first: 2, second: 3 }],
+    ['pair before the start', { type: 'pair', first: -1, second: 0 }],
+    ['pair of non-adjacent Entries', { type: 'pair', first: 0, second: 2 }],
+    ['pair of an Entry with itself', { type: 'pair', first: 1, second: 1 }],
+    ['unpair with a non-integer index', { type: 'unpair', entry: 0.5 }],
+    ['unpair past the end', { type: 'unpair', entry: 3 }],
+  ])('%s leaves the Profile unchanged and asks for no effects', (_, command) => {
+    const S = live()
+    const before = structuredClone(S)
+    expect(act(S, command)).toStrictEqual({ ok: false, effects: [] })
+    expect(S).toStrictEqual(before)
+  })
+})
+
 describe('effects stay small and plain', () => {
   const hold = { id: '0001', target: { mode: 'time', sec: 30, sets: 2 }, sets: [{ sec: 30, done: false }, { sec: 30, done: false }] }
   const live = () => withActive([liftEntry('0025', [workSet(true), workSet()], { rest: 180 }), hold, liftEntry('0026', [workSet()])])
