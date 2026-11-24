@@ -1112,3 +1112,38 @@ describe('act', () => {
     })
   })
 })
+
+describe('a refused command', () => {
+  const work = (done = false) => ({ w: 50, r: 8, done })
+  const lift = (id, sets) => ({ id, target: { reps: 8, weight: 50 }, sets })
+  const live = () => withActive([lift('0025', [work(true)]), lift('0026', [work()])], { cur: 1 })
+  const staleRef = { workout: 'a1', layout: 0, entryId: '0025', set: 9 }
+
+  it.each([
+    ['begin over logged sets', live, { type: 'begin', routineId: null, bw: 80 }],
+    ['discard with no workout', blankProfile, { type: 'discard' }],
+    ['finish with no workout', blankProfile, { type: 'finish' }],
+    ['toggle a missing set', live, { type: 'toggle', entry: 0, set: 9 }],
+    ['editSet on a missing set', live, { type: 'editSet', entry: 0, set: 9, field: 'w', value: 60 }],
+    ['addSet to a missing Entry', live, { type: 'addSet', entry: 9 }],
+    ['removeSet of the only set', live, { type: 'removeSet', entry: 1 }],
+    ['addWarmup to a missing Entry', live, { type: 'addWarmup', entry: 9 }],
+    ['addExercise with no workout', blankProfile, { type: 'addExercise', exId: '0027' }],
+    ['removeExercise out of range', live, { type: 'removeExercise', entry: 9 }],
+    ['replaceExercise out of range', live, { type: 'replaceExercise', entry: 9, exId: '0027' }],
+    ['moveExercise past the end', live, { type: 'moveExercise', entry: 1, dir: 1 }],
+    ['note on a missing Entry', live, { type: 'note', entry: 9, text: 'cue' }],
+    ['pair with no workout', blankProfile, { type: 'pair', first: 0, second: 1 }],
+    ['unpair with no workout', blankProfile, { type: 'unpair', entry: 0 }],
+    ['goTo with no workout', blankProfile, { type: 'goTo', entry: 0 }],
+    ['next past the last Step', live, { type: 'next' }],
+    ['prev with no workout', blankProfile, { type: 'prev' }],
+    ['startHold on a missing set', live, { type: 'startHold', entry: 0, set: 9 }],
+    ['completeHold on a stale ref', live, { type: 'completeHold', ref: staleRef, elapsed: 30 }],
+  ])('%s leaves the Profile unchanged and asks for no effects', (_, make, command) => {
+    const S = make()
+    const before = structuredClone(S)
+    expect(act(S, command)).toStrictEqual({ ok: false, effects: [] })
+    expect(S).toStrictEqual(before)
+  })
+})
