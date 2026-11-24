@@ -45,13 +45,13 @@ export function TextArea({ className = '', ...rest }) {
 }
 
 export function SearchField({ value, onChange, onClear, className = '', style, 'aria-label': ariaLabel, ...rest }) {
-  const label = ariaLabel || rest.placeholder || 'Search'
+  const label = ariaLabel || rest.placeholder || t('Search')
   return (
     <div className={'search searchf ' + className} style={style}>
       <Icon name="magnifier" className="lead" />
       <input className="field input" value={value} onChange={onChange} aria-label={label} {...rest} />
       {!!value && (
-        <button type="button" className="clear" onClick={onClear} aria-label="Clear">
+        <button type="button" className="clear" onClick={onClear} aria-label={t('Clear')}>
           <Icon name="xmark" />
         </button>
       )}
@@ -186,7 +186,7 @@ export function Slider({ value, min = 0, max = 100, step = 1, onChange, classNam
       className={'sld' + (drag ? ' dragging' : '') + ' ' + className}
       role="slider"
       tabIndex={0}
-      aria-label={rest['aria-label'] || 'Slider'}
+      aria-label={rest['aria-label'] || t('Slider')}
       aria-valuenow={value} aria-valuemin={min} aria-valuemax={max}
       data-nodrag                                  /* keeps the sheet from swipe-dismissing */
       onKeyDown={key}
@@ -205,7 +205,7 @@ export function Check({ checked, onChange, className = '', size, children, 'aria
       type="button"
       role="checkbox"
       aria-checked={!!checked}
-      aria-label={ariaLabel || rest['aria-label'] || 'Complete set'}
+      aria-label={ariaLabel || rest['aria-label'] || t('Complete set')}
       className={'chk' + (checked ? ' on' : '') + ' ' + className}
       style={size ? { width: size, height: size } : null}
       onClick={() => onChange(!checked)}
