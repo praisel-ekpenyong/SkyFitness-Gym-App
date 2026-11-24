@@ -37,6 +37,6 @@ export default defineConfig({
     }
   },
   test: {
-    include: ['src/**/*.{test,spec}.?(c|m)[jt]s?(x)', 'scripts/review/**/*.test.mjs', '../scripts/**/*.{test,spec}.?(c|m)[jt]s?(x)']
+    include: ['src/**/*.{test,spec}.?(c|m)[jt]s?(x)', 'scripts/*.test.mjs', 'scripts/review/**/*.test.mjs', '../scripts/**/*.{test,spec}.?(c|m)[jt]s?(x)']
   }
 })

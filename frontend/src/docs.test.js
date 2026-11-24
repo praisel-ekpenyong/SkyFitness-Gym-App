@@ -48,11 +48,8 @@ const HISTORICAL = new Set([
 
 // Checks the standards name before the file exists. Delete the entry when the file lands.
 const PLANNED = new Set([
-  'CODING_STANDARDS.md: frontend/.oxlintrc.json',
   'CODING_STANDARDS.md: frontend/tsconfig.json',
   'CODING_STANDARDS.md: frontend/eslint-suppressions.json',
-  'CODING_STANDARDS.md: frontend/lint-baseline.json',
-  'CODING_STANDARDS.md: frontend/scripts/check-lint-baseline.mjs',
   'CODING_STANDARDS.md: frontend/tsc-baseline.json',
   'CODING_STANDARDS.md: frontend/src/effect-types.test.js',
   'CODING_STANDARDS.md: frontend/src/lib/profile/profile-keys.test.js',
@@ -66,7 +63,6 @@ const PLANNED = new Set([
   'docs/TESTING_STANDARDS.md: frontend/eslint-suppressions.json',
   'docs/TESTING_STANDARDS.md: frontend/src/effect-types.test.js',
   'docs/adr/0034-oxlint-and-eslint-with-per-tool-ratchets.md: frontend/eslint-suppressions.json',
-  'docs/adr/0034-oxlint-and-eslint-with-per-tool-ratchets.md: frontend/lint-baseline.json',
   'docs/adr/0035-typescript-starts-as-checkjs-with-an-error-baseline.md: frontend/tsconfig.json',
   'docs/adr/0035-typescript-starts-as-checkjs-with-an-error-baseline.md: frontend/tsc-baseline.json',
 ])

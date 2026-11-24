@@ -5,4 +5,5 @@
 # Skip once, knowingly: git commit --no-verify
 
 cd frontend || exit 1
-npm run lint --silent -- --quiet && npm test
+# npm run lint: oxlint through its ratchet (lint-baseline.json), then ESLint.
+npm run lint --silent && npm test

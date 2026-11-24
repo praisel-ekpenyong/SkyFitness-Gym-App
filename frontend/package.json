@@ -8,7 +8,8 @@
     "build": "vite build",
     "build:mobile": "VITE_MOBILE=1 vite build && cap sync",
     "preview": "vite preview",
-    "lint": "eslint .",
+    "lint": "node scripts/check-lint-baseline.mjs && eslint .",
+    "lint:baseline": "node scripts/check-lint-baseline.mjs --write",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:fatigue-probe": "node scripts/fatigue-monotonic-probe.mjs",
@@ -42,7 +43,6 @@
     "@capacitor/assets": "^4.0.0",
     "@capacitor/cli": "^7.6.8",
     "@capacitor/ios": "^7.6.8",
-    "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.62.1",
     "@vitejs/plugin-react": "^6.1.1",
     "eslint": "^10.15.0",
@@ -50,6 +50,7 @@
     "globals": "^17.14.0",
     "happy-dom": "^21.0.4",
     "linkedom": "^0.18.13",
+    "oxlint": "1.95.0",
     "vite": "^8.2.2",
     "vitest": "^4.1.11"
   }
