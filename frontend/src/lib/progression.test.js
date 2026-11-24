@@ -400,16 +400,48 @@ describe('double progression', () => {
     const p = nextPrescription(hist(LIFT, [[2.5, 6, 6, 6]], { sets: 3, reps: 12 }), light)
     expect(p.kind).toBe('hold')
     expect(p.weight).toBe(2.5)
-    expect(p.why).toEqual(['Lightest load — same weight again; build reps to reach the {0}–{1} range.', 8, 12])
+    expect(p.reps).toBe(8)
+    expect(p.why).toEqual([
+      'First set {0} reps, below the {1}–{2} range. Already at the lightest load — same weight again.',
+      6, 8, 12
+    ])
   })
 
-  it('holds at the lightest load when stalling without dropping below one Increment', () => {
+  it('uses singular rep when the first set was 1 rep below the range at the lightest load', () => {
     const light = { ...cfg, weight: 2.5, inc: 2.5 }
-    const rows = Array.from({ length: 5 }, () => [2.5, 9, 9, 9])
+    const p = nextPrescription(hist(LIFT, [[2.5, 1, 0, 0]], { sets: 3, reps: 12 }), light)
+    expect(p.kind).toBe('hold')
+    expect(p.weight).toBe(2.5)
+    expect(p.reps).toBe(8)
+    expect(p.why).toEqual([
+      'First set {0} rep, below the {1}–{2} range. Already at the lightest load — same weight again.',
+      1, 8, 12
+    ])
+  })
+
+  it('holds at the lightest load after four stalled sessions without progress', () => {
+    const light = { ...cfg, weight: 2.5, inc: 2.5 }
+    const rows = Array.from({ length: 5 }, () => [2.5, 8, 8, 8])
     const p = nextPrescription(hist(LIFT, rows, { sets: 3, reps: 12 }), light)
     expect(p.kind).toBe('hold')
     expect(p.weight).toBe(2.5)
-    expect(p.why).toEqual(['Lightest load — same weight again; build reps.'])
+    expect(p.reps).toBe(8)
+    expect(p.why).toEqual([
+      'No progress in {0} Workouts. Already at the lightest load — build reps.',
+      4
+    ])
+  })
+
+  it('states load and rep reset in why when deloading above the floor', () => {
+    const rows = Array.from({ length: 5 }, () => [40, 9, 9, 9])
+    const p = nextPrescription(hist(LIFT, rows, { sets: 3, reps: 12 }), cfg)
+    expect(p.kind).toBe('deload')
+    expect(p.weight).toBe(35)
+    expect(p.reps).toBe(8)
+    expect(p.why).toEqual([
+      'No progress in {0} Workouts — deload to {1} {2}, back to {3} reps.',
+      4, 35, 'kg', 8
+    ])
   })
 
   it('drops to one Increment from under two Increments', () => {

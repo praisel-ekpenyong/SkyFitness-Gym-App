@@ -302,5 +302,25 @@ describe('Workout exercise notes and note sheet', () => {
     expect(mocks.S.active.entries[0].notes).toBeUndefined()
     expect(close).toHaveBeenCalledOnce()
   })
+
+  it('renders info icon for deload and arrowDown for drop in the progline', async () => {
+    await mount([
+      exercise('0025', [false], {
+        plan: { kind: 'deload', weight: 90, why: ['Deload test'] }
+      })
+    ])
+    const deloadIcon = container.querySelector('.progline svg')
+    expect(deloadIcon.innerHTML).toContain('11 12h1v4h1')
+
+    await unmount()
+
+    await mount([
+      exercise('0025', [false], {
+        plan: { kind: 'down', weight: 37.5, why: ['Drop test'] }
+      })
+    ])
+    const dropIcon = container.querySelector('.progline svg')
+    expect(dropIcon.innerHTML).toContain('18 13l-6 6')
+  })
 })
 

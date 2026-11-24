@@ -306,7 +306,6 @@ function bouncedBack(sessions, start, load, bottom) {
   return load(before) === w && !!before.ok
 }
 
-
 function doublePrescription({ policy, cfg, inc, unit, sessions, last, deloadAt, w }) {
   const top = Math.max(1, cfg.reps > 0 ? cfg.reps : (last.goal || 10))
   const bottom = cfg.repsMin > 0
@@ -333,16 +332,19 @@ function doublePrescription({ policy, cfg, inc, unit, sessions, last, deloadAt, 
 
   const next = drop ? round1(w - inc) : deloadTo(w, inc)
   const at = lowerTo(w, next, inc)
+  const first = last.reps?.[0] || 0
   if (at == null) {
     const why = drop
-      ? ['Lightest load — same weight again; build reps to reach the {0}–{1} range.', bottom, top]
-      : ['Lightest load — same weight again; build reps.']
+      ? [first === 1
+          ? 'First set {0} rep, below the {1}–{2} range. Already at the lightest load — same weight again.'
+          : 'First set {0} reps, below the {1}–{2} range. Already at the lightest load — same weight again.',
+        first, bottom, top]
+      : ['No progress in {0} Workouts. Already at the lightest load — build reps.', noProgress]
     return { policy, kind: 'hold', weight: w, reps: bottom, why }
   }
   if (!drop) {
-    return { policy, kind: 'deload', weight: at, reps: bottom, why: ['No progress in {0} Workouts — deload to {1} {2}.', noProgress, at, unit] }
+    return { policy, kind: 'deload', weight: at, reps: bottom, why: ['No progress in {0} Workouts — deload to {1} {2}, back to {3} reps.', noProgress, at, unit, bottom] }
   }
-  const first = last.reps?.[0] || 0
   const by = at > next ? round2(w - at) : inc
   return { policy, kind: 'down', weight: at, reps: bottom, by, why: ['First set {0} reps, below the {1}–{2} range. {3} {4} less, back to {1} reps.', first, bottom, top, by, unit] }
 }
@@ -798,11 +800,13 @@ export function evaluateSessionProgression(entry, state, context = {}) {
     }
   } else if (p.kind === 'deload') {
     if (p.sec != null) {
-      text = t('Deload to {0}s to reset and rebuild', p.sec)
+      text = t('Deload to {0}s', p.sec)
     } else if (policy === 'double' && p.reps != null) {
       text = t('Deload to {0} {1}, back to {2} reps', fmtNum(p.weight), unit, p.reps)
+    } else if (p.weight != null) {
+      text = t('Deload to {0} {1}', fmtNum(p.weight), unit)
     } else {
-      text = t('Deload to {0} {1} to reset and rebuild', fmtNum(p.weight), unit)
+      text = t('Deload to reset and rebuild')
     }
   } else if (p.kind === 'down') {
     text = t('Drop {0} {1}, back to {2} reps', p.by, unit, p.reps)
