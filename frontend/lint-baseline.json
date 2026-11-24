@@ -2,19 +2,75 @@
   "src/App.jsx": {
     "react-hooks/exhaustive-deps": 2
   },
+  "src/components/Barbell.jsx": {
+    "jsx-a11y/prefer-tag-over-role": 1
+  },
+  "src/components/Heatmap.jsx": {
+    "jsx-a11y/no-static-element-interactions": 1
+  },
+  "src/components/LineChart.jsx": {
+    "jsx-a11y/no-static-element-interactions": 1
+  },
+  "src/components/Media.jsx": {
+    "jsx-a11y/prefer-tag-over-role": 1
+  },
   "src/components/Modals.jsx": {
-    "react-hooks/exhaustive-deps": 3
+    "react-hooks/exhaustive-deps": 3,
+    "jsx-a11y/no-static-element-interactions": 3
+  },
+  "src/components/OfflineBadge.jsx": {
+    "jsx-a11y/prefer-tag-over-role": 1
   },
   "src/components/RestTimer.jsx": {
     "react-hooks/exhaustive-deps": 2
   },
+  "src/components/SessionMuscleDistribution.jsx": {
+    "jsx-a11y/no-static-element-interactions": 1
+  },
+  "src/components/ui.jsx": {
+    "jsx-a11y/prefer-tag-over-role": 3
+  },
+  "src/sheets/catalogue.jsx": {
+    "jsx-a11y/click-events-have-key-events": 2,
+    "jsx-a11y/no-static-element-interactions": 2,
+    "jsx-a11y/prefer-tag-over-role": 2
+  },
+  "src/sheets/history.jsx": {
+    "jsx-a11y/prefer-tag-over-role": 1
+  },
+  "src/sheets/profile.jsx": {
+    "jsx-a11y/no-autofocus": 2
+  },
+  "src/sheets/schedule.jsx": {
+    "jsx-a11y/click-events-have-key-events": 5,
+    "jsx-a11y/no-static-element-interactions": 5
+  },
   "src/sheets/session.jsx": {
-    "react-hooks/exhaustive-deps": 2
+    "react-hooks/exhaustive-deps": 2,
+    "jsx-a11y/no-autofocus": 1,
+    "jsx-a11y/prefer-tag-over-role": 2
+  },
+  "src/views/Home.jsx": {
+    "jsx-a11y/prefer-tag-over-role": 1
   },
   "src/views/Library.jsx": {
-    "react-hooks/exhaustive-deps": 1
+    "react-hooks/exhaustive-deps": 1,
+    "jsx-a11y/prefer-tag-over-role": 2
   },
   "src/views/RoutineEdit.jsx": {
-    "react-hooks/exhaustive-deps": 2
+    "react-hooks/exhaustive-deps": 2,
+    "jsx-a11y/click-events-have-key-events": 1,
+    "jsx-a11y/no-static-element-interactions": 1
+  },
+  "src/views/Settings.jsx": {
+    "jsx-a11y/prefer-tag-over-role": 1
+  },
+  "src/views/Stats.jsx": {
+    "jsx-a11y/prefer-tag-over-role": 4
+  },
+  "src/views/Workout.jsx": {
+    "jsx-a11y/click-events-have-key-events": 4,
+    "jsx-a11y/no-static-element-interactions": 4,
+    "jsx-a11y/prefer-tag-over-role": 5
   }
 }

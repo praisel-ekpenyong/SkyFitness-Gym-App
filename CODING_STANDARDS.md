@@ -452,9 +452,9 @@ under `key={i}`, and so do the editable Routine rows in `views/RoutineEdit.jsx`
 (line 70). Clickable `div` rows ship without a keyboard path; the a11y hit list
 is the count.
 **To add:** oxlint `react/no-array-index-key` (18 hits in 11 files; fix the
-editable lists first) and `jsx-a11y/click-events-have-key-events`,
+editable lists first). **Runs:** oxlint `jsx-a11y/click-events-have-key-events`,
 `jsx-a11y/no-static-element-interactions`, `jsx-a11y/prefer-tag-over-role` and
-`jsx-a11y/no-autofocus` (57 hits in 19 files, re-measured 2026-11-24), all in
+`jsx-a11y/no-autofocus` (57 hits in 19 files, re-measured 2026-11-24), in
 `frontend/lint-baseline.json`.
 
 ### Sort a copy, never the state
