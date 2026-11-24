@@ -6,12 +6,12 @@ import RoutineEdit from './RoutineEdit.jsx'
 import { useStore } from '../store/useStore.js'
 import { DEF } from '../lib/profile/index.js'
 import { useUI } from '../store/useUI.js'
+import { buttonNamed, leafTexts, pick } from '../test/sheet-host.jsx'
 
 const mocks = vi.hoisted(() => ({
   nav: vi.fn(),
   exConfigSheet: vi.fn(),
   exercisePicker: vi.fn(),
-  glyphPicker: vi.fn(),
   confirmSheet: vi.fn(),
 }))
 
@@ -24,7 +24,6 @@ vi.mock('../sheets/catalogue.jsx', () => ({
   exConfigSheet: mocks.exConfigSheet,
   exercisePicker: mocks.exercisePicker,
 }))
-vi.mock('../sheets/routine.jsx', () => ({ glyphPicker: mocks.glyphPicker }))
 vi.mock('../sheets/confirm.jsx', () => ({ confirmSheet: mocks.confirmSheet }))
 
 let container
@@ -379,36 +378,39 @@ describe('RoutineEdit metadata changes', () => {
 
 describe('RoutineEdit round trip: pick, save, read the routine', () => {
   const routine = () => useStore.getState().S.routines.find(x => x.id === 'r-test-1')
+  const linkButtons = () => container.querySelectorAll('button[aria-label="Superset with exercise above"]')
 
   it('Progression stores the rule picked, the one shown when the routine has none included', async () => {
     await act(async () => { root.render(<RoutineEdit />) })
-    const progRow = [...container.querySelectorAll('.lrow')].find(r => r.querySelector('.lrow-t')?.textContent === 'Progression')
-    expect(progRow.querySelector('.lrow-v').textContent).toBe('Linear progression')
+    expect(leafTexts(buttonNamed(container, 'Progression'))).toContain('Linear progression')
     expect(routine()).not.toHaveProperty('prog')
 
-    await act(async () => { progRow.click() })
-    const sheet = useUI.getState().sheets.at(-1)
-    const host = document.createElement('div')
-    document.body.appendChild(host)
-    const sheetRoot = createRoot(host)
-    await act(async () => { sheetRoot.render(sheet.render(() => useUI.getState().closeSheet(sheet.id))) })
-    const option = [...host.querySelectorAll('button.lrow')].find(o => o.querySelector('.lrow-t').textContent === 'Linear progression')
-    await act(async () => { option.click() })
-    await act(async () => { sheetRoot.unmount() })
-    host.remove()
+    await pick(container, 'Progression', 'Linear progression')
 
     expect(routine().prog).toBe('linear')
   })
 
-  it('Add exercise stores no bodyweight flag for a body-weight exercise the sheet saved as body weight', async () => {
+  it('Icon stores the glyph picked, the one shown included', async () => {
     await act(async () => { root.render(<RoutineEdit />) })
-    const add = [...container.querySelectorAll('button')].find(b => b.textContent === 'Add exercise')
-    await act(async () => { add.click() })
-    const pushUp = { id: '0662', n: 'push-up', bp: 'chest', tg: 'pectorals', eq: 'body weight' }
-    await act(async () => { mocks.exercisePicker.mock.calls[0][0](pushUp) })
-    const [, { onSave }] = mocks.exConfigSheet.mock.calls[0]
-    await act(async () => { onSave({ sets: 3, mode: 'reps', reps: 12, weight: 0 }) })
 
-    expect(routine().ex[3]).toEqual({ id: '0662', sets: 3, mode: 'reps', reps: 12, weight: 0 })
+    await pick(container, 'Pick an icon', 'arm')
+    expect(routine().emoji).toBe('arm')
+
+    await pick(container, 'Pick an icon', 'dumbbell')
+    expect(routine().emoji).toBe('dumbbell')
+  })
+
+  it('Superset with above pairs the two exercises, and a second tap stores no group on either', async () => {
+    await act(async () => { root.render(<RoutineEdit />) })
+
+    await act(async () => { linkButtons()[1].click() })
+    const sg = routine().ex[1].sg
+    expect(sg).toBeTruthy()
+    expect(routine().ex[2].sg).toBe(sg)
+    expect(linkButtons()[1].getAttribute('aria-pressed')).toBe('true')
+
+    await act(async () => { linkButtons()[1].click() })
+    expect(routine().ex[2]).not.toHaveProperty('sg')
+    expect(routine().ex.map(e => e.sg)).toEqual(['sg-0-1', 'sg-0-1', undefined])
   })
 })

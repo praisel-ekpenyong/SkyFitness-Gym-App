@@ -6,6 +6,7 @@ import { ExerciseDetail, deleteCustomEx, ExercisePicker, CustomExForm, ExConfig,
 import { useStore } from '../store/useStore.js'
 import { DEF } from '../lib/profile/index.js'
 import { useUI } from '../store/useUI.js'
+import { buttonNamed, leafTexts, pick } from '../test/sheet-host.jsx'
 
 let container
 let root
@@ -1505,12 +1506,10 @@ describe('ExConfig round trip: pick, save to the routine, change the Setting, re
   const pushUp = { id: '0662', n: 'push-up', bp: 'chest', tg: 'pectorals', eq: 'body weight' }
   const steps = { id: '3672', n: 'back and forth step', bp: 'cardio', tg: 'cardio', eq: 'body weight' }
   const click = el => el.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-  const saveBtn = () => Array.from(container.querySelectorAll('button')).find(b => b.textContent.trim() === 'Save')
-  const row = title => Array.from(container.querySelectorAll('.lrow')).find(r => r.querySelector('.lrow-t')?.textContent === title)
-  const switchOf = title => row(title).querySelector('[role="switch"]')
-  const stepper = label => Array.from(container.querySelectorAll('.stp-w')).find(w => w.querySelector('.stp-l').textContent === label)
-  const stepUp = async label => { await act(async () => { click(stepper(label).querySelector('[aria-label="Increase"]')) }) }
-  const stepDown = async label => { await act(async () => { click(stepper(label).querySelector('[aria-label="Decrease"]')) }) }
+    const switchOf = name => container.querySelector(`[role="switch"][aria-label="${name}"]`)
+  const stepperValue = label => container.querySelector(`input[aria-label="${label}"]`).value
+  const stepUp = async label => { await act(async () => { click(buttonNamed(container, `Increase ${label}`)) }) }
+  const stepDown = async label => { await act(async () => { click(buttonNamed(container, `Decrease ${label}`)) }) }
   const entry = () => useStore.getState().S.routines[0].ex[0]
   const routine = () => useStore.getState().S.routines[0]
 
@@ -1520,20 +1519,7 @@ describe('ExConfig round trip: pick, save to the routine, change the Setting, re
     const onSave = cfg => useStore.getState().actRoutine({ type: 'replaceExercise', routineId: 'r-rt', index: 0, exId: ex.id, target: cfg })
     await act(async () => { root.render(<ExConfig key={mounts++} ex={ex} existing={entry()} routine={routine()} onSave={onSave} close={vi.fn()} />) })
   }
-  const save = async () => { await act(async () => { click(saveBtn()) }) }
-
-  async function pick(title, label) {
-    await act(async () => { click(row(title)) })
-    const sheet = useUI.getState().sheets.at(-1)
-    const host = document.createElement('div')
-    document.body.appendChild(host)
-    const sheetRoot = createRoot(host)
-    await act(async () => { sheetRoot.render(sheet.render(() => useUI.getState().closeSheet(sheet.id))) })
-    const option = Array.from(host.querySelectorAll('button.lrow')).find(o => o.querySelector('.lrow-t').textContent === label)
-    await act(async () => { click(option) })
-    await act(async () => { sheetRoot.unmount() })
-    host.remove()
-  }
+  const save = async () => { await act(async () => { click(buttonNamed(container, 'Save')) }) }
 
   describe('Bodyweight switch: stores only a difference from the catalogue', () => {
     it('stores nothing for a body-weight exercise saved as body weight', async () => {
@@ -1575,8 +1561,8 @@ describe('ExConfig round trip: pick, save to the routine, change the Setting, re
 
     it('keeps a picked rule that equals the routine\'s, so a later routine change does not move it', async () => {
       await openEntry(bench, { sets: 3, reps: 8, weight: 60, mode: 'reps' })
-      expect(row('Rule').querySelector('.lrow-v').textContent).toBe(follow)
-      await pick('Rule', 'Linear progression')
+      expect(leafTexts(buttonNamed(container, 'Rule'))).toContain(follow)
+      await pick(container, 'Rule', 'Linear progression')
       await save()
       useStore.getState().actRoutine({ type: 'setProgression', routineId: 'r-rt', prog: 'double' })
       expect(entry().prog).toBe('linear')
@@ -1584,24 +1570,24 @@ describe('ExConfig round trip: pick, save to the routine, change the Setting, re
 
     it('stores nothing for Follow the routine, so the entry takes up a later routine change', async () => {
       await openEntry(bench, { sets: 3, reps: 8, weight: 60, mode: 'reps', prog: 'greyskull' })
-      await pick('Rule', follow)
+      await pick(container, 'Rule', follow)
       await save()
       expect(entry()).not.toHaveProperty('prog')
       useStore.getState().actRoutine({ type: 'setProgression', routineId: 'r-rt', prog: 'double' })
       await openEntry(bench, entry())
-      expect(row('Rule').querySelector('.lrow-v').textContent).toBe('Follow the routine (Double progression)')
+      expect(leafTexts(buttonNamed(container, 'Rule'))).toContain('Follow the routine (Double progression)')
     })
   })
 
   describe('Progression step: follows the weight unit until stepped', () => {
     it('stores nothing untouched, so the step follows a later unit change', async () => {
       await openEntry(bench, { sets: 3, reps: 8, weight: 60, mode: 'reps' })
-      expect(stepper('Step (kg)').querySelector('input').value).toBe('2.5')
+      expect(stepperValue('Step (kg)')).toBe('2.5')
       await save()
       expect(entry()).not.toHaveProperty('inc')
       useStore.getState().update(s => { s.unit = 'lb' })
       await openEntry(bench, entry())
-      expect(stepper('Step (lb)').querySelector('input').value).toBe('5')
+      expect(stepperValue('Step (lb)')).toBe('5')
     })
 
     it('keeps a step stepped back to the unit\'s, so a later unit change does not move it', async () => {
@@ -1612,7 +1598,30 @@ describe('ExConfig round trip: pick, save to the routine, change the Setting, re
       expect(entry().inc).toBe(2.5)
       useStore.getState().update(s => { s.unit = 'lb' })
       await openEntry(bench, entry())
-      expect(stepper('Step (lb)').querySelector('input').value).toBe('2.5')
+      expect(stepperValue('Step (lb)')).toBe('2.5')
+    })
+  })
+
+  describe('Progression step in seconds: a timed hold steps by 5 s until stepped', () => {
+    const hold = { sets: 3, sec: 45, weight: 0, mode: 'time', prog: 'time' }
+
+    it('stores nothing untouched', async () => {
+      await openEntry(bench, hold)
+      expect(stepperValue('Step (seconds)')).toBe('5')
+      await save()
+      expect(entry()).not.toHaveProperty('inc')
+    })
+
+    it('stores the step picked, the shown one included', async () => {
+      await openEntry(bench, hold)
+      await stepUp('Step (seconds)')
+      await save()
+      expect(entry()).toMatchObject({ mode: 'time', inc: 10 })
+
+      await openEntry(bench, entry())
+      await stepDown('Step (seconds)')
+      await save()
+      expect(entry()).toMatchObject({ mode: 'time', inc: 5 })
     })
   })
 
@@ -1647,6 +1656,7 @@ describe('ExConfig round trip: pick, save to the routine, change the Setting, re
       ['Reps', bench, { sets: 3, reps: 8, weight: 60, mode: 'reps' }, { reps: 9 }],
       ['Weight (kg)', bench, { sets: 3, reps: 8, weight: 60, mode: 'reps' }, { weight: 62.5 }],
       ['Seconds', bench, { sets: 3, sec: 45, weight: 0, mode: 'time' }, { sec: 50 }],
+      ['Weight (kg)', bench, { sets: 3, sec: 45, weight: 0, mode: 'time' }, { mode: 'time', weight: 2.5 }],
       ['Intervals', steps, { sets: 1, min: 20, speed: 8 }, { sets: 2 }],
       ['Minutes', steps, { sets: 1, min: 20, speed: 8 }, { min: 21 }],
       ['Speed (km/h)', steps, { sets: 1, min: 20, speed: 8 }, { speed: 8.5 }],

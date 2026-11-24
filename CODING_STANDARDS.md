@@ -324,10 +324,11 @@ save that merged into the old entry let cleared settings survive.
 **Runs:** one round-trip test per saving control: pick, save, change the Setting,
 assert the entry. `frontend/src/sheets/catalogue.test.jsx` covers the config
 sheet: Rest and the progression Rule (Default stores nothing; a pick equal to
-what it follows is kept), Step (a value stepped back to the unit's is kept), the
-bodyweight switch (only a difference from the catalogue is stored), and the
-controls that follow no Setting. `frontend/src/views/RoutineEdit.test.jsx`
-covers the routine editor's Progression and its saves.
+what it follows is kept), Step in the weight unit and in seconds (a value
+stepped back to the default is kept), the bodyweight switch (only a difference
+from the catalogue is stored), and the controls that follow no Setting.
+`frontend/src/views/RoutineEdit.test.jsx` covers the routine editor's
+Progression, Icon and superset link.
 [`docs/architecture.md`](./docs/architecture.md) states the same rule.
 
 ## Front-end state and store discipline
