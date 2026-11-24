@@ -22,7 +22,6 @@ import { bwSheet } from './bodyweight.jsx'
 import { exercisePicker, exConfigSheet } from './catalogue.jsx'
 
 const S = () => useStore.getState().S
-const update = (...a) => useStore.getState().update(...a)
 const ui = () => useUI.getState()
 const toast = m => ui().toast(m)
 

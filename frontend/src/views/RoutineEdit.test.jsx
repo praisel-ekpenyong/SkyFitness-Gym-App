@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import React, { act } from 'react'
+import { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import RoutineEdit from './RoutineEdit.jsx'
@@ -94,7 +94,7 @@ describe('RoutineEdit exercise replacement', () => {
     })
 
     expect(mocks.exConfigSheet).toHaveBeenCalledTimes(1)
-    const [ex, { existing: e, onSave, onDelete, routine: r, initial, onReplace }] = mocks.exConfigSheet.mock.calls[0]
+    const [ex, { existing: e, onReplace }] = mocks.exConfigSheet.mock.calls[0]
     expect(ex.id).toBe('0001')
     expect(e.id).toBe('0001')
     expect(e.sets).toBe(4)
@@ -111,7 +111,7 @@ describe('RoutineEdit exercise replacement', () => {
       items[0].dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
 
-    const [, { existing: e, onReplace }] = mocks.exConfigSheet.mock.calls[0]
+    const [, { onReplace }] = mocks.exConfigSheet.mock.calls[0]
 
     await act(async () => {
       onReplace()
@@ -127,7 +127,7 @@ describe('RoutineEdit exercise replacement', () => {
     })
 
     expect(mocks.exConfigSheet).toHaveBeenCalledTimes(2)
-    const [replEx, { existing: replExisting, onSave: replOnSave, onDelete: replOnDelete, routine: replR, initial: replInitial }] = mocks.exConfigSheet.mock.calls[1]
+    const [replEx, { existing: replExisting, onSave: replOnSave, initial: replInitial }] = mocks.exConfigSheet.mock.calls[1]
     expect(replEx.id).toBe('0004')
     expect(replExisting).toBeUndefined()
     expect(replInitial).toMatchObject({

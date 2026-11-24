@@ -15,8 +15,6 @@ describe('sound and haptics engine', () => {
   let resumedCount
   let destination
   let audioContextInstances
-  let originalWindow
-  let originalNavigator
 
   beforeEach(() => {
     _resetAudioContext()

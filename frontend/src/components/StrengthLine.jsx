@@ -1,5 +1,5 @@
 import { t } from '../lib/i18n.js'
-import { fmtNum, fmtVol } from '../lib/format.js'
+import { fmtVol } from '../lib/format.js'
 import { STRENGTH_REASON } from '../lib/strength-level.js'
 
 /**
@@ -20,7 +20,7 @@ export function strengthWordsOf(lift, unit) {
 
 /** One line in a graded lift's exercise detail: the same wording and states as the Strength levels card. */
 export function ExerciseStrengthLine({ reading, unit }) {
-  const { reason, trainedLately, peak } = reading
+  const { reason, trainedLately } = reading
   if (reason === STRENGTH_REASON.sex) return <div className="small muted ex-strength">{t('Set your sex under Settings, Profile to see strength levels.')}</div>
   if (reason === STRENGTH_REASON.weighIn) return <div className="small muted ex-strength">{t('Log a weigh-in to see strength levels.')}</div>
   const w = strengthWordsOf(reading, unit)

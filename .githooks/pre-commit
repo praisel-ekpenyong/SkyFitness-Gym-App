@@ -5,4 +5,4 @@
 # Skip once, knowingly: git commit --no-verify
 
 cd frontend || exit 1
-npm test
+npm run lint --silent -- --quiet && npm test

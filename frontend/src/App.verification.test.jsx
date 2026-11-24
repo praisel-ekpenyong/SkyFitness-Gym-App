@@ -8,7 +8,6 @@ import { DEF } from './lib/profile/index.js'
 import { fatigueOf, strengthOf } from './lib/recovery.js'
 import { EXIDX } from './lib/exercises.js'
 import {
-  FILTER_MUSCLES,
   primaryMuscleOf,
   secondaryMusclesOf,
   matchesMuscleFilter,

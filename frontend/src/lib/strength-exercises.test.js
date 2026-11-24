@@ -77,6 +77,13 @@ describe('strengthExerciseRowsForMuscle', () => {
     expect(benchRow.current).toBe(102)
   })
 
+  it('leaves out exercises with no performed, loaded Work set', () => {
+    const S = unitState([workout(3, [bench, squat]), workout(2, [undone, noLoad])])
+    expect(strengthExerciseRowsForMuscle(S, NOW, 'upper-back')).toEqual([])
+    expect(strengthExerciseRowsForMuscle(S, NOW, 'chest').map(r => r.id)).toEqual(['bench'])
+    expect(strengthExerciseRowsForMuscle(S, NOW, 'quadriceps').map(r => r.id)).toEqual(['squat'])
+  })
+
   it('returns nothing for a muscle nothing trains', () => {
     const S = unitState([workout(3, [bench])])
     expect(strengthExerciseRowsForMuscle(S, NOW, 'biceps')).toEqual([])
