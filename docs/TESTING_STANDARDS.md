@@ -201,10 +201,12 @@ files; the selector above, run on 2026-11-24) mock one of our own modules (`../s
 `frontend/eslint-suppressions.json` and only shrink. A new test that mocks its
 own module fails.
 
-**To add, with the rule in `CODING_STANDARDS.md`:** a round-trip test per saving
-control ("Default decides"), a test that walks `DEF` against
-`PROFILE_CLEAN`, and the closed effect and command sets
+**Runs:** the closed effect and command sets
 (`frontend/src/effect-types.test.js`).
+
+**To add, with the rule in `CODING_STANDARDS.md`:** a round-trip test per saving
+control ("Default decides") and a test that walks `DEF` against
+`PROFILE_CLEAN`.
 
 **Judgement call, no tooth:** "name the bug", the seam table, and whether a
 test is a tautology.

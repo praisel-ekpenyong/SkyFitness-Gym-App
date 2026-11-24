@@ -98,8 +98,8 @@ throws from `runEffects`.
 `lib/` returns effects and never performs them. `runEffects` is the only store
 code that touches `useUI`. A view sends commands and renders `sessionView`.
 
-**Runs:** `frontend/src/lib/purity.test.js`.
-**To add:** the closed-set guard test `frontend/src/effect-types.test.js`.
+**Runs:** `frontend/src/lib/purity.test.js`, and the closed-set guard test
+`frontend/src/effect-types.test.js`.
 Detail: [`docs/EFFECT_STANDARDS.md`](./docs/EFFECT_STANDARDS.md).
 
 ## Control flow
@@ -803,7 +803,7 @@ names every one:
 
 | Tool | Runs today | To add |
 |---|---|---|
-| Vitest guard tests, in `npm test` | `purity.test.js`, `import-cycles.test.js`, `design-tokens.test.js`, `design-lint.test.js`, `env.test.js`, `i18n-lint.test.js`, `sheets/dialog-names.test.jsx`, `docs.test.js`, `platform/storage.test.js` (the 800ms debounce), `comments.test.js` | `effect-types.test.js`, `profile-keys.test.js`, the save round-trip tests, the `warmArt` test, the `flush()` test |
+| Vitest guard tests, in `npm test` | `purity.test.js`, `import-cycles.test.js`, `design-tokens.test.js`, `design-lint.test.js`, `env.test.js`, `i18n-lint.test.js`, `sheets/dialog-names.test.jsx`, `docs.test.js`, `platform/storage.test.js` (the 800ms debounce), `comments.test.js`, `effect-types.test.js` | `profile-keys.test.js`, the save round-trip tests, the `warmArt` test, the `flush()` test |
 | ESLint 10, `npm run lint` after oxlint (CI and pre-commit today) | no rule: its old rules moved to oxlint | Only the `react-hooks` compiler rules and the `no-restricted-syntax` selectors (including `vi.mock` scope). Ratchet: `frontend/eslint-suppressions.json` |
 | oxlint, `npm run lint` (CI and pre-commit) | `correctness` category, `react/rules-of-hooks`, `react/exhaustive-deps`, `no-throw-literal`, `prefer-promise-reject-errors`, all at error. Ratchet: `frontend/lint-baseline.json`, checked by `scripts/check-lint-baseline.mjs` with its failing fixture in `npm test` | `complexity`, restricted globals and properties (including `Date.now` in `lib/`), `unicorn/no-array-sort`, `unicorn/no-array-reverse`, `react/no-array-index-key`, `jsx-a11y/*`. Ratchet: `frontend/lint-baseline.json` |
 | tsc | nothing | `tsconfig.json`, `npm run typecheck` in the hook and CI. Ratchet: `frontend/tsc-baseline.json` |
