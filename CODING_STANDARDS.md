@@ -507,13 +507,19 @@ get a test that every catalogue value is a filter option, but none exists.
 
 Judgement calls, no tooth: 1, 2, 3, 4, 7 and 8 (wording and order).
 **Runs** for 5 and 6: `frontend/src/i18n-lint.test.js` reads the label of every
-text button, menu row and `confirmSheet` confirm. It fails a label that ends in
-"…" or "..." (a placeholder such as `Search…` is not an action). It fails a
-destructive label (Delete, Discard, Reset, Erase, Wipe, Clear all, Remove) that
-is not `variant="danger"`, a `danger` class or prop, or `danger: true` on
-`confirmSheet`. A key that opens a `danger: true` confirm also passes: the red
-text keys Delete routine and Discard workout (see `DESIGN.md`) work this way.
-"Remove set" is undoable and acts at once; a bare "Clear" empties a field.
+text button, menu row and `confirmSheet` confirm and cancel. It fails a label
+that ends in "…" or "..." (a placeholder such as `Search…` is not an action),
+the cancel label included. It fails a destructive label (Delete, Discard, Reset,
+Erase, Wipe, Clear all, Clear everything, or Remove except "Remove set") that is
+not `<Button variant="danger">`, a `danger` class on `<Button>` or `<button>`,
+`Row`'s `danger` prop, or `danger: true` on `confirmSheet`; a cancel label is
+not checked for this. A key whose click does nothing but open a `danger: true`
+confirm also passes: the onClick is that `confirmSheet` call, or a function
+whose whole body is that call, declared once in the file. A conditional that
+can reach another path fails, and so does a name declared twice. The red text
+keys Delete routine and Discard workout (see `DESIGN.md`) work this way.
+"Remove set" takes a set off the running workout and acts at once; a bare
+"Clear" empties a field.
 Hits at the start: 0 for rule 5, 0 for rule 6.
 
 ## Sheets and dialogs
