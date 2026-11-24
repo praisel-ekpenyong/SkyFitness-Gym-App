@@ -496,7 +496,7 @@ describe('Training log: latest Work set time', () => {
 
   it('falls back to the date and answers null when never performed', () => {
     const S = { unit: 'kg', workouts: [{ d: '2026-11-01', entries: [lift([work(60)])] }] }
-    expect(latestWorkSetAt(S, 'bench')).toBe(new Date('2026-11-01').getTime())
+    expect(latestWorkSetAt(S, 'bench')).toBe(new Date('2026-11-01T12:00:00').getTime())
     expect(latestWorkSetAt(S, 'squat')).toBe(null)
     expect(latestWorkSetAt({ unit: 'kg', workouts: [] }, 'bench')).toBe(null)
   })

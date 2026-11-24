@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseWorkoutCSV, mergeImport, importPreview } from './import-csv.js'
+import { parseWorkoutCSV, parseBodyweight, mergeImport, importPreview } from './import-csv.js'
 import { best, e1rmSeries, tonnage } from './training-log.js'
 import { act } from './active-workout.js'
 import { admit } from './profile/index.js'
@@ -263,4 +263,32 @@ describe('exercise notes CSV import mapping', () => {
     expect(res.workouts[0].entries[0].notes).toBe('Right shoulder tight')
   })
 })
+
+describe('date-only Apple Health weigh-in and CSV workout alignment', () => {
+  it('an imported Apple Health weigh-in and a CSV workout dated the same day produce timestamps on the same local day and in the order the file implies', () => {
+    const ahCsv = [
+      'Date,Weight',
+      '2026-03-10,75.5',
+    ].join('\n')
+    const workoutCsv = [
+      'Date,Exercise,Weight,Reps',
+      '2026-03-10 10:00,Bench Press,100,5',
+    ].join('\n')
+
+    const parsedBw = parseBodyweight(ahCsv, { unit: 'kg' })
+    const parsedWorkouts = parseWorkoutCSV(workoutCsv, { unit: 'kg' })
+
+    const weighIn = parsedBw.bodyweight[0]
+    const workout = parsedWorkouts.workouts[0]
+
+    const bwDate = new Date(weighIn.t)
+    const workoutDate = new Date(workout.start)
+
+    expect(bwDate.getFullYear()).toBe(workoutDate.getFullYear())
+    expect(bwDate.getMonth()).toBe(workoutDate.getMonth())
+    expect(bwDate.getDate()).toBe(workoutDate.getDate())
+    expect(weighIn.t).toBeLessThanOrEqual(workout.start)
+  })
+})
+
 
