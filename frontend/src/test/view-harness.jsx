@@ -9,6 +9,9 @@ import { useStore } from '../store/useStore.js'
 import { DEF, normalizeState } from '../lib/profile/index.js'
 import { useUI } from '../store/useUI.js'
 
+// The harness reads the clock once, like the store does.
+const normalizeAtEdge = raw => normalizeState(raw, Date.now())
+
 const clone = value => JSON.parse(JSON.stringify(value))
 
 
@@ -41,7 +44,7 @@ export function seedActiveWorkout(entries, { cur = 0, start = Date.now() } = {})
         entries,
       }
     : null
-  useStore.setState({ S: normalizeState(S, Date.now()) })
+  useStore.setState({ S: normalizeAtEdge(S) })
 }
 
 export function renderWorkout(entries, options) {

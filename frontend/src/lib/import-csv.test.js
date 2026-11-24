@@ -330,4 +330,12 @@ describe('lb weigh-in import converts like normalizeWeight', () => {
     expect(res.bodyweight[0].w).toBe(normalizeWeight(176.4, 'lb', 'kg'))
     expect(res.bodyweight[0].w).toBe(80)
   })
+
+  it('imports a lb workout CSV into kg through the same path', () => {
+    const csv = 'Date,Exercise,Weight,Weight Unit,Reps\n2026-08-08,Bench Press,176.4,lb,5'
+    const res = parseWorkoutCSV(csv, { unit: 'kg' })
+    const set = res.workouts[0].entries[0].sets[0]
+    expect(set.w).toBe(normalizeWeight(176.4, 'lb', 'kg'))
+    expect(set.w).toBe(80)
+  })
 })

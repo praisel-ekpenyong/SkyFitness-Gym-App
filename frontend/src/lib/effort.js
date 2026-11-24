@@ -1,4 +1,4 @@
-import { weekKey, mondayOf, workoutTimestamp } from './dates.js'
+import { weekKey, mondayOf, workoutTimestamp, assertClock } from './dates.js'
 import { doneWorkSets } from './workout-sets.js'
 
 export const EFFORT = {
@@ -73,6 +73,7 @@ export const avgRir = sets => {
 }
 
 export function effortSummary(S, days, now) {
+  assertClock(now)
   let done = 0, rated = 0, sum = 0, hard = 0
   eachDoneSet(S, (s, w) => {
     if (!inWindow(w, days, now)) return
@@ -96,6 +97,7 @@ export function hasEffort(S) {
 }
 
 export function effortWeeks(S, days, now) {
+  assertClock(now)
   const wk = new Map()
   eachDoneSet(S, (s, w) => {
     if (!inWindow(w, days, now)) return
@@ -114,6 +116,7 @@ const mondayNoon = iso => +new Date(mondayOf(iso) + 'T12:00:00')
 
 export const BUCKETS = 4
 export function effortHistogram(S, days, now) {
+  assertClock(now)
   const bins = new Array(BUCKETS + 1).fill(0)
   let rated = 0
   eachDoneSet(S, (s, w) => {

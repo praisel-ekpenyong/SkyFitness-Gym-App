@@ -5,6 +5,7 @@ import { isPerSide } from '../workout-model.js'
 import { isWorkSet } from '../workout-sets.js'
 import { registerCustom } from '../exercises.js'
 import { epleyReps } from '../onerm.js'
+import { round1 } from '../units.js'
 
 /**
  * Deterministic synthetic history for the 5-day hypertrophy plan. Everything here is made up:
@@ -34,7 +35,7 @@ const WEEKLY_GAIN = 0.01
 
 const iso = ms => new Date(ms).toISOString().slice(0, 10)
 const weekday = ms => new Date(ms).getUTCDay()
-const round = v => Math.round(v * 10) / 10
+const round = round1
 
 const ZERO_LOAD_CAPACITY = 30
 

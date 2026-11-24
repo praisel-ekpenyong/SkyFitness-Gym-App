@@ -60,7 +60,7 @@ describe('legacy streakRule', () => {
 
   it('an old backup restores with it unchanged in the store and in storage, and the streak reads the same', () => {
     const workouts = ['2026-06-01', '2026-06-08', '2026-06-22'].map(trained)
-    const today = new Date(2026, 5, 24, 12)
+    const today = new Date(2026, 5, 24, 12).getTime()
     restoreFromBackup({ ...cloneDef(), workouts, routines: [] })
     const plain = streakOf(useStore.getState().S, today)
 

@@ -238,7 +238,7 @@ export function selectStatsOverview(S, opts = {}) {
     exerciseIndex,
     bodyweightKg,
     bodyweight,
-    counts: { total: workouts.length, month: workouts.filter(w => monthKey(w) === monthKey(today)).length, streak: { current: streak.current, best: streak.best }, weeks12: trainedWeeks(S, 12, now) },
+    counts: { total: workouts.length, month: workouts.filter(w => monthKey(w) === monthKey(today)).length, streak: { current: streak.current, best: streak.best }, weeks12: trainedWeeks(S, now) },
     workouts: { recent: [...workouts].reverse().slice(0, 6), forDay: day => workouts.filter(w => w.d === day) },
     scale,
     scaleName: scaleName(scale),

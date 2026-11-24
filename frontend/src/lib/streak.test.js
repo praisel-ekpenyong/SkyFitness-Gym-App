@@ -7,7 +7,7 @@ const trained = d => ({ id: `w-${d}`, d, entries: [{ id: 'lift', sets: [{ done: 
 const warmupOnly = d => ({ id: `w-${d}`, d, entries: [{ id: 'lift', sets: [{ done: true, phase: 'warmup', w: 20, r: 10 }] }] })
 const uncheckedOnly = d => ({ id: `w-${d}`, d, entries: [{ id: 'lift', sets: [{ done: false, w: 60, r: 5 }] }] })
 const on = (...dates) => dates.map(trained)
-const at = (y, m, d) => new Date(y, m - 1, d, 12)
+const at = (y, m, d) => new Date(y, m - 1, d, 12).getTime()
 const key = iso => weekKey(iso)
 
 describe('streakOf', () => {

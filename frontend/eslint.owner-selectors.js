@@ -19,7 +19,7 @@ const lbSelectors = [
 const weekdaySelectors = [
   {
     selector: "BinaryExpression[operator='%'][right.value=7][left.type='BinaryExpression'][left.operator='+'][left.right.value=6][left.left.callee.property.name='getDay']",
-    message: 'Get the Monday-first weekday from lib/dates.js (mondayOf), not (getDay() + 6) % 7.',
+    message: 'Get the Monday-first weekday from lib/dates.js (mondayIndexOf), not (getDay() + 6) % 7.',
   },
 ]
 
@@ -30,6 +30,8 @@ const owners = [
   { files: datesOwner, own: [...lbSelectors] },
 ]
 const others = [...lbSelectors, ...weekdaySelectors]
+// The One-owner selectors a non-owner file gets, for a file that needs its own rule list.
+export const ownerSelectorsForOthers = others
 
 /**
  * @param {object[]} [everywhere] - Selectors from other tickets that apply to every file.

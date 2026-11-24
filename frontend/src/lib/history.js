@@ -1,5 +1,5 @@
 
-import { weekKey, isoOf } from './dates.js'
+import { weekKey, isoOf, assertClock } from './dates.js'
 
 export function deleteWorkout(S, id) {
   const before = (S.workouts || []).length
@@ -35,7 +35,16 @@ export function effectiveRoutine(S, iso) {
   return id ? (S?.routines || []).find(r => r.id === id) || null : null
 }
 
-export function trainedWeeks(S, n = 12, now) {
+/**
+ * Counts how many of the last `n` weeks hold a workout.
+ * @param {Object} S - Profile with `workouts`.
+ * @param {number} now - The clock: epoch milliseconds.
+ * @param {number} [n] - Weeks to look back, the current one included.
+ * @returns {number} Trained weeks, 0..n.
+ * @throws {TypeError} When `now` is not a finite number.
+ */
+export function trainedWeeks(S, now, n = 12) {
+  assertClock(now)
   if (!S?.workouts?.length) return 0
   const weeks = new Set(S.workouts.map(w => weekKey(w.d)))
   const cur = new Date(now)

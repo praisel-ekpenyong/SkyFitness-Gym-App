@@ -1,13 +1,14 @@
 import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'
-import ownerSelectors from './eslint.owner-selectors.js'
+import ownerSelectors, { ownerSelectorsForOthers } from './eslint.owner-selectors.js'
 
 // oxlint is the main linter (.oxlintrc.json, ADR 0034) and owns every rule it supports:
 // its correctness category, rules-of-hooks, exhaustive-deps, no-unused-vars, no-empty.
 // ESLint keeps only what oxlint cannot do: the react-hooks compiler rules and
 // no-restricted-syntax selectors. A rule runs in one tool, never two.
+
 // The no-restricted-syntax selectors for every file. Flat config replaces a rule's options, so ownerSelectors re-lists these in each override.
-const SHARED_SYNTAX = [
+const UTC_SYNTAX = [
   // Local dates, never UTC (CODING_STANDARDS.md "Local dates, never UTC").
   {
     selector: "CallExpression[callee.property.name='slice'][callee.object.callee.property.name='toISOString']",
@@ -17,6 +18,8 @@ const SHARED_SYNTAX = [
     selector: "NewExpression[callee.name='Date'][arguments.length=1] > :matches(MemberExpression[property.name='d'], Identifier[name='d'])",
     message: "new Date('YYYY-MM-DD') parses as UTC midnight: use parseDay() from lib/dates.js (local noon).",
   },
+]
+const STORE_SYNTAX = [
   // CODING_STANDARDS.md "The state caps", rule 3: subscribe to a slice; a selector returns no fresh [] or {}.
   {
     selector: 'CallExpression[callee.name=/^use(Store|UI)$/][arguments.length=0]',
@@ -27,6 +30,15 @@ const SHARED_SYNTAX = [
     message: 'A selector returns no fresh [] or {}: hoist a const EMPTY or use useShallow.',
   },
 ]
+
+const SHARED_SYNTAX = [...UTC_SYNTAX, ...STORE_SYNTAX]
+
+// lib/ takes the clock as an argument. uid() in format.js and todayISO() in dates.js own the reads.
+// oxlint bans Date.now() there (.oxlintrc.json); this selector is the part it cannot do.
+const CLOCK_SYNTAX = [{
+  selector: "NewExpression[callee.name='Date'][arguments.length=0]",
+  message: 'lib/ takes the clock as an argument; new Date() reads it. Read the clock at the edge.',
+}]
 
 export default [
   { ignores: ['dist/', 'android/', 'ios/', 'public/', 'coverage/'] },
@@ -61,16 +73,15 @@ export default [
   // never UTC"), the store-selector rules ("The state caps", rule 3), and in lib/ the clock.
   ...ownerSelectors(SHARED_SYNTAX, [
     {
-      // lib/ takes the clock as an argument. uid() in format.js and todayISO() in dates.js own the reads.
-      // oxlint bans Date.now() there (.oxlintrc.json); this selector is the part it cannot do.
       files: ['src/lib/**/*.js'],
       ignores: ['src/lib/format.js', 'src/lib/dates.js', 'src/lib/**/*.test.js'],
-      selectors: [{
-        selector: "NewExpression[callee.name='Date'][arguments.length=0]",
-        message: 'lib/ takes the clock as an argument; new Date() reads it. Read the clock at the edge.',
-      }],
+      selectors: CLOCK_SYNTAX,
     },
   ]),
-  // lib/plans/scenarios.js, the dev scenario generator, is UTC end to end on purpose.
-  { files: ['src/lib/plans/scenarios.js'], rules: { 'no-restricted-syntax': 'off' } },
+  // lib/plans/scenarios.js, the dev scenario generator, is UTC end to end on purpose: it alone
+  // skips the UTC-day selectors. The store, owner and clock selectors still apply there.
+  {
+    files: ['src/lib/plans/scenarios.js'],
+    rules: { 'no-restricted-syntax': ['error', ...STORE_SYNTAX, ...CLOCK_SYNTAX, ...ownerSelectorsForOthers] },
+  },
 ]
