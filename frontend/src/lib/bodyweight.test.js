@@ -198,7 +198,7 @@ describe('canonical-kg reading', () => {
     expect(Math.round(asLb * LB_TO_KG * 10) / 10).toBe(80)
   })
 
-  it('rounds a pound weigh-in via normalizeWeight so it agrees with logged Sets', () => {
+  it('rounds a pound weigh-in to one decimal in kg so it agrees with logged Sets', () => {
     const profile = { bodyweight: [{ w: 180, unit: 'lb', d: '2026-03-10' }], unit: 'kg' }
     expect(currentBodyweightKg(profile)).toBe(81.6)
     expect(currentBodyweightKg(profile)).toBe(normalizeWeight(180, 'lb', 'kg'))

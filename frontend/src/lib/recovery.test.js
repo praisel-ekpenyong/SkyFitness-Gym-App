@@ -131,9 +131,7 @@ describe('fatigueOf and strengthOf', () => {
 
   it('clamps 15-rep sets at REP_CAP for intensity weighting even though estimate1RM refuses them', () => {
     expect(estimate1RM(50, 15)).toBeNull()
-    const fifteen = [doneWorkoutAt(SINGLE.id, NOW, 1)]
-    fifteen[0].entries[0].sets[0].w = 50
-    fifteen[0].entries[0].sets[0].r = 15
+    const fifteen = [workoutAt(SINGLE.id, NOW, [{ done: true, w: 50, r: 15 }])]
     const weighted = 750 * (5 / 7) ** 1.5
     expect(fatigueOf(fifteen, NOW)[SINGLE_SLUG]).toBeCloseTo(
       1 - Math.exp(-weighted / FATIGUE_REF_VOLUME),

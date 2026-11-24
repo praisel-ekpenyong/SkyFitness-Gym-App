@@ -48,9 +48,9 @@ function emptyMuscleMap(value) {
   return Object.fromEntries(MUSCLES.map(slug => [slug, value]))
 }
 
-// Recovery clamps reps at REP_CAP instead of refusing > 12 reps (unlike estimate1RM),
+// Recovery clamps reps at REP_CAP instead of refusing reps above REP_CAP (unlike estimate1RM),
 // so high-rep sets stay smoothly intensity-weighted rather than falling back to 1.0 raw tonnage.
-const epley1RM = (load, reps) => (reps === 1 ? load : FORMULAS.epley(load, Math.min(reps || 1, REP_CAP)))
+const epley1RM = (load, reps) => (reps === 1 ? load : FORMULAS.epley(load, Math.min(reps, REP_CAP)))
 
 function numeric(value) {
   if (value === null || value === undefined || value === '' || typeof value === 'boolean') return null
