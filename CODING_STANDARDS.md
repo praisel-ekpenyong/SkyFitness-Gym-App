@@ -36,8 +36,10 @@ in review. Each rule is an imperative that names its one legal exception, and a
   `memo-dependencies` baselined in `frontend/eslint-suppressions.json`.
   `react-hooks/todo` stays off. The `no-restricted-syntax` selectors are not on
   yet. A rule runs in one tool, never two.
-- **tsc** (strict, `allowJs`, `checkJs`) joins when `frontend/tsconfig.json`
-  exists. Then oxlint adds its type-aware rows through `oxlint-tsgolint`.
+- **tsc** (strict, `allowJs`, `checkJs`, `frontend/tsconfig.json`) runs in the
+  pre-commit hook and in CI (`npm run typecheck`, ratcheted by
+  `frontend/tsc-baseline.json` via `frontend/scripts/check-tsc-baseline.mjs`).
+  Next, oxlint adds its type-aware rows through `oxlint-tsgolint`.
 - **Vitest guard tests** (`npm test`) and `frontend/scripts/check-*.mjs`
   scripts cover what no linter can express.
 
@@ -194,13 +196,13 @@ caller omit this today, and what does the function assume when it does?
 ## Types and TypeScript migration
 
 The target is strict TypeScript, reached by checking the JavaScript first. The
-tree is JavaScript today: `frontend/` has no `.ts` file and no `tsconfig`.
+tree is JavaScript today (`frontend/` has no `.ts` file yet), checked by
+`frontend/tsconfig.json`.
 
 ### The checker comes first
 
-Add `frontend/tsconfig.json` with `strict: true`, `allowJs` and `checkJs` over
-all app code, and run `npm run typecheck` in the pre-commit hook and in CI
-(about 1.6 s). A probe measured 6247 errors at `strict`: 2950 in app code (`lib/`
+`frontend/tsconfig.json` runs with `strict: true`, `allowJs` and `checkJs` over
+all app code, and `npm run typecheck` runs in the pre-commit hook and in CI. A probe measured 6247 errors at `strict`: 2950 in app code (`lib/`
 1652, `sheets/` 452, `views/` 388, `components/` 291, `platform/` 77, `store/` 65,
 the `src` root 25) and 3297 in tests. About three quarters are implicit `any`.
 The errors are a ratchet, not a blocker: `frontend/tsc-baseline.json` holds the
@@ -209,8 +211,9 @@ error count per file, may only shrink, and fails on a stale entry. One command,
 new and must be clean. Exception: none.
 
 **Why:** a type that nothing checks is an unenforced rule.
-**To add:** `frontend/tsconfig.json`, `npm run typecheck` in
-`.github/workflows/test.yml` and `.githooks/pre-commit`, and
+**Runs:** `frontend/tsconfig.json`, `npm run typecheck`
+(`frontend/scripts/check-tsc-baseline.mjs`, with its failing fixture in
+`npm test`) in `.github/workflows/test.yml` and `.githooks/pre-commit`, and
 `frontend/tsc-baseline.json`.
 
 ### Name the entities in JSDoc first
@@ -816,7 +819,7 @@ names every one:
 | Vitest guard tests, in `npm test` | `purity.test.js`, `import-cycles.test.js`, `design-tokens.test.js`, `design-lint.test.js`, `env.test.js`, `i18n-lint.test.js`, `sheets/dialog-names.test.jsx`, `docs.test.js`, `platform/storage.test.js` (the 800ms debounce), `comments.test.js`, `effect-types.test.js`, the `warmArt` test (`App.warm-art.test.jsx`), the `flush()` test (`store/useStore.flush.test.jsx`), the save round-trip tests (`sheets/catalogue.test.jsx`, `views/RoutineEdit.test.jsx`) | `profile-keys.test.js` |
 | ESLint 10, `npm run lint` after the oxlint ratchet (CI only) | `react-hooks/set-state-in-effect`, `react-hooks/no-deriving-state-in-effects`, `react-hooks/set-state-in-render`, `react-hooks/immutability`, `react-hooks/preserve-manual-memoization`, `react-hooks/globals`, all at error, 0 hits. `static-components` (9 hits, 2 files), `purity` (5), `refs` (2, 1 file), `memo-dependencies` (1), at error with `frontend/eslint-suppressions.json`. `react-hooks/todo` stays off | the `no-restricted-syntax` selectors (including `vi.mock` scope). Ratchet: `frontend/eslint-suppressions.json` |
 | oxlint, ratchet in the pre-commit hook and in `npm run lint` (CI) | `correctness` category, `react/rules-of-hooks`, `react/exhaustive-deps`, `no-throw-literal`, `prefer-promise-reject-errors`, all at error. Ratchet: `frontend/lint-baseline.json`, checked by `scripts/check-lint-baseline.mjs` with its failing fixture in `npm test` | `complexity`, restricted globals and properties (including `Date.now` in `lib/`), `unicorn/no-array-sort`, `unicorn/no-array-reverse`, `react/no-array-index-key`, `jsx-a11y/*`. Ratchet: `frontend/lint-baseline.json` |
-| tsc | nothing | `tsconfig.json`, `npm run typecheck` in the hook and CI. Ratchet: `frontend/tsc-baseline.json` |
+| tsc | `frontend/tsconfig.json` (`strict`, `allowJs`, `checkJs` over app code), `npm run typecheck` in the hook and CI. Ratchet: `frontend/tsc-baseline.json`, checked by `frontend/scripts/check-tsc-baseline.mjs` with its failing fixture in `npm test` | tests joining `tsconfig.json` (last) |
 | oxlint type-aware (`oxlint-tsgolint`) | nothing | `no-floating-promises`, `no-misused-promises`, `only-throw-error`, `switch-exhaustiveness-check`, `no-explicit-any`, `no-non-null-assertion`, `ban-ts-comment` |
 | `frontend/scripts/check-frontend-state.mjs`, in `npm test` | The `use-state` cap, with its failing fixture. Ratchet: `frontend/frontend-state-allowlist.json` | nothing |
 | Babel and CI | `npm run test:fatigue-probe` and `npm run build` in CI | `babel-plugin-react-compiler`; the `React Doctor` CI step and its floor `frontend/react-doctor-floor.json` |
@@ -836,9 +839,8 @@ says it is too slow for the unit suite.
    override for `lib/`) and `exhaustive-deps` moving out of ESLint in the same
    change. ESLint has left the pre-commit hook: the hook runs the oxlint
    ratchet, and ESLint (about 19 s with the compiler rules) runs in CI.
-   `tsc` in the hook is still to add.
-4. `tsconfig.json`, `npm run typecheck` and `frontend/tsc-baseline.json`, then
-   the JSDoc `@typedef`s. Then oxlint's type-aware rows.
+4. `tsconfig.json`, `npm run typecheck` and `frontend/tsc-baseline.json` run in
+   the hook and CI; next are the JSDoc `@typedef`s, then oxlint's type-aware rows.
 5. The guard tests still to add.
 6. Rename `lib/` to `.ts`, then the rest, then tests.
 7. `babel-plugin-react-compiler`, after the ESLint compiler rules are green.
