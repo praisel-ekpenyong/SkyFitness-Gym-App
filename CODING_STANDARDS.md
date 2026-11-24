@@ -297,14 +297,14 @@ JSON backup restore, or CSV import — must pass through `admit` in
 
 Never inject raw objects directly into the store or storage. Exception: none.
 
-**Runs:** `admit-defaults.test.js`, `upgrades.test.js`, `workouts.test.js` and
-`restore-keys.test.js` under `frontend/src/lib/profile/`.
-**To add:** a test that walks `Object.keys(DEF)` and fails a Profile field that
-is in none of `PROFILE_CLEAN`, a structural list, or a pass-through list with a
-reason, so a new field forces a decision about cleaning
-(`frontend/src/lib/profile/profile-keys.test.js`). Today `PROFILE_CLEAN` cleans
-two fields and `normalizeState` hand-cleans five more, and readers defend
-themselves with 18 `|| 'kg'` fallbacks.
+**Runs:** `admit-defaults.test.js`, `upgrades.test.js`, `workouts.test.js`,
+`restore-keys.test.js` and `profile-keys.test.js` under
+`frontend/src/lib/profile/`. `profile-keys.test.js` walks `Object.keys(DEF)` and
+fails a Profile field that is in none of `PROFILE_CLEAN`, a structural list, or
+a pass-through list with a reason, so a new field forces a decision about
+cleaning. Of the 26 `DEF` keys, `PROFILE_CLEAN` cleans 9, 10 are structural
+(`normalizeState` resets them to their type) and 7 pass through. A hostile
+payload comes in through `normalizeState` as a clean Profile.
 
 ### Dual-write persistence
 
@@ -822,7 +822,7 @@ names every one:
 
 | Tool | Runs today | To add |
 |---|---|---|
-| Vitest guard tests, in `npm test` | `purity.test.js`, `import-cycles.test.js`, `design-tokens.test.js`, `design-lint.test.js`, `env.test.js`, `i18n-lint.test.js`, `sheets/dialog-names.test.jsx`, `docs.test.js`, `platform/storage.test.js` (the 800ms debounce), `comments.test.js`, `effect-types.test.js`, the `warmArt` test (`App.warm-art.test.jsx`), the `flush()` test (`store/useStore.flush.test.jsx`), the save round-trip tests (`sheets/catalogue.test.jsx`, `views/RoutineEdit.test.jsx`) | `profile-keys.test.js` |
+| Vitest guard tests, in `npm test` | `purity.test.js`, `import-cycles.test.js`, `design-tokens.test.js`, `design-lint.test.js`, `env.test.js`, `i18n-lint.test.js`, `sheets/dialog-names.test.jsx`, `docs.test.js`, `platform/storage.test.js` (the 800ms debounce), `comments.test.js`, `effect-types.test.js`, the `warmArt` test (`App.warm-art.test.jsx`), the `flush()` test (`store/useStore.flush.test.jsx`), the save round-trip tests (`sheets/catalogue.test.jsx`, `views/RoutineEdit.test.jsx`), `lib/profile/profile-keys.test.js` | |
 | ESLint 10, `npm run lint` after the oxlint ratchet (CI only) | `react-hooks/set-state-in-effect`, `react-hooks/no-deriving-state-in-effects`, `react-hooks/set-state-in-render`, `react-hooks/immutability`, `react-hooks/preserve-manual-memoization`, `react-hooks/globals`, all at error, 0 hits. `static-components` (9 hits, 2 files), `purity` (5), `refs` (2, 1 file), `memo-dependencies` (1), at error with `frontend/eslint-suppressions.json`. `react-hooks/todo` stays off | the `no-restricted-syntax` selectors (including `vi.mock` scope). Ratchet: `frontend/eslint-suppressions.json` |
 | oxlint, ratchet in the pre-commit hook and in `npm run lint` (CI) | `correctness` category, `react/rules-of-hooks`, `react/exhaustive-deps`, `no-throw-literal`, `prefer-promise-reject-errors`, `complexity`, restricted globals and properties (except `Date.now` in `lib/`), `unicorn/no-array-sort`, `unicorn/no-array-reverse`, `react/no-array-index-key`, `jsx-a11y/click-events-have-key-events`, `jsx-a11y/no-static-element-interactions`, `jsx-a11y/prefer-tag-over-role`, `jsx-a11y/no-autofocus`, all at error. Ratchet: `frontend/lint-baseline.json`, checked by `scripts/check-lint-baseline.mjs` with its failing fixture in `npm test` | `Date.now` in `lib/` (the clock). Ratchet when it lands: `frontend/lint-baseline.json` |
 | tsc | nothing | `tsconfig.json`, `npm run typecheck` in the hook and CI. Ratchet: `frontend/tsc-baseline.json` |

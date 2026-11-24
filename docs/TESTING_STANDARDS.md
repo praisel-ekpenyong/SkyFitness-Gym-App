@@ -213,8 +213,8 @@ control ("Default decides") in `sheets/catalogue.test.jsx` and
 **Runs:** the closed effect and command sets
 (`frontend/src/effect-types.test.js`).
 
-**To add, with the rule in `CODING_STANDARDS.md`:** a test that walks `DEF`
-against `PROFILE_CLEAN`.
+**Runs, with the rule in `CODING_STANDARDS.md`:** a test that walks `DEF`
+against `PROFILE_CLEAN` (`frontend/src/lib/profile/profile-keys.test.js`).
 
 **Judgement call, no tooth:** "name the bug", the seam table, and whether a
 test is a tautology.

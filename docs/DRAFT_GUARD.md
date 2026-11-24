@@ -103,12 +103,9 @@ State persistence is guarded by `platform/storage.js`
   pending Profile reaches the mirror without waiting 800ms.
 - `lib/active-workout.test.js` — a refused `act` command leaves the Profile
   unchanged and returns `effects: []`.
-
-**To add:**
-
-- `frontend/src/lib/profile/profile-keys.test.js`: every `DEF` key is cleaned,
-  structural, or on a pass-through list with a reason (see "State ingestion goes
-  through `admit`" in `CODING_STANDARDS.md`).
+- `lib/profile/profile-keys.test.js` — every `DEF` key is cleaned, structural,
+  or on a pass-through list with a reason (see "State ingestion goes through
+  `admit`" in `CODING_STANDARDS.md`).
 
 The guards here are tests, not lint: no linter sees an edit reach a live
 workout.

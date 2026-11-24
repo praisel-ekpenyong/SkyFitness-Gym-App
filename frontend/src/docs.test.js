@@ -46,8 +46,6 @@ const HISTORICAL = new Set([
 const PLANNED = new Set([
   'CODING_STANDARDS.md: frontend/tsconfig.json',
   'CODING_STANDARDS.md: frontend/tsc-baseline.json',
-  'CODING_STANDARDS.md: frontend/src/lib/profile/profile-keys.test.js',
-  'docs/DRAFT_GUARD.md: frontend/src/lib/profile/profile-keys.test.js',
   'docs/adr/0035-typescript-starts-as-checkjs-with-an-error-baseline.md: frontend/tsconfig.json',
   'docs/adr/0035-typescript-starts-as-checkjs-with-an-error-baseline.md: frontend/tsc-baseline.json',
 ])
