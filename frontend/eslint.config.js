@@ -33,12 +33,13 @@ export default [
       'react-hooks/memo-dependencies': 'error',
     },
   },
-  // Local dates, never UTC (CODING_STANDARDS.md "Local dates, never UTC").
+  // One no-restricted-syntax array: flat config replaces a rule's options, never merges them.
   {
     files: ['**/*.{js,jsx,mjs}'],
     rules: {
       'no-restricted-syntax': [
         'error',
+        // Local dates, never UTC (CODING_STANDARDS.md "Local dates, never UTC").
         {
           selector: "CallExpression[callee.property.name='slice'][callee.object.callee.property.name='toISOString']",
           message: "toISOString() is UTC: build a day key with todayISO() or isoOf() from lib/dates.js.",
@@ -46,6 +47,15 @@ export default [
         {
           selector: "NewExpression[callee.name='Date'][arguments.length=1] > :matches(MemberExpression[property.name='d'], Identifier[name='d'])",
           message: "new Date('YYYY-MM-DD') parses as UTC midnight: use parseDay() from lib/dates.js (local noon).",
+        },
+        // CODING_STANDARDS.md "The state caps", rule 3: subscribe to a slice; a selector returns no fresh [] or {}.
+        {
+          selector: 'CallExpression[callee.name=/^use(Store|UI)$/][arguments.length=0]',
+          message: 'Subscribe to a slice: useStore(s => s.S.unit), useStore(s => s.update).',
+        },
+        {
+          selector: 'CallExpression[callee.name=/^use(Store|UI)$/] > ArrowFunctionExpression > :matches(ObjectExpression, ArrayExpression, LogicalExpression[right.type=/^(Array|Object)Expression$/])',
+          message: 'A selector returns no fresh [] or {}: hoist a const EMPTY or use useShallow.',
         },
       ],
     },

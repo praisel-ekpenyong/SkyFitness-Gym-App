@@ -7,7 +7,10 @@ import { Button } from './ui.jsx'
 export default function RestTimer() {
   const timer = useUI(s => s.timer)
   const work = useUI(s => s.work)
-  const { addRest, stopRest, finishWorkEarly, stopWork } = useUI()
+  const addRest = useUI(s => s.addRest)
+  const stopRest = useUI(s => s.stopRest)
+  const finishWorkEarly = useUI(s => s.finishWorkEarly)
+  const stopWork = useUI(s => s.stopWork)
   const on = work || timer
   useEffect(() => {
     document.body.classList.toggle('resting', !!on)
