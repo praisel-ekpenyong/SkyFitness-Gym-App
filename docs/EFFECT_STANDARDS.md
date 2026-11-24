@@ -129,8 +129,9 @@ types: the keys of `COMMANDS` in `active-act.js` against the list in
 [ADR 0032](./adr/0032-the-active-workout.md). In JavaScript this pair stands in for
 `typescript/switch-exhaustiveness-check`, which needs `tsconfig`.
 
-**To add:** a test that `JSON.parse(JSON.stringify(effects))` deep-equals
-`effects` for every command, which pins "payloads stay small and plain". A
+**Runs:** `lib/active-workout.test.js` asserts that
+`JSON.parse(JSON.stringify(effects))` deep-equals `effects` for every command,
+which pins "payloads stay small and plain". A
 reviewer, not a tool, checks the other rules here: that a view does not decide
 the next set, that `lib/` does not catch a refusal into an empty success, and
 that a Manual rest is the only caller of `startRest` outside the runner

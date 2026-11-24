@@ -96,19 +96,19 @@ State persistence is guarded by `platform/storage.js`
   original position. `admit` calls it.
 - `platform/storage.test.js` — the IndexedDB mirror waits 800ms, and `flush()`
   drains it immediately.
+- `lib/routines.test.js` — an edit to a Routine's exercise config while a
+  workout is active leaves `S.active` deep-equal to the copy taken before:
+  `actRoutine` runs with `S.active` set, and `entries[].target` does not move.
+- `store/useStore.flush.test.jsx` — hiding the document calls `flush()`: the
+  pending Profile reaches the mirror without waiting 800ms.
+- `lib/active-workout.test.js` — a refused `act` command leaves the Profile
+  unchanged and returns `effects: []`.
 
 **To add:**
 
-- A test that an edit to a Routine's exercise config while a workout is active
-  leaves `S.active.entries[].target` unchanged. Drive `actRoutine` with
-  `S.active` set and assert `S.active` deep-equals the copy taken before.
-- A test that hiding the document calls `flush()`. The listener is in
-  `useStore.js`.
 - `frontend/src/lib/profile/profile-keys.test.js`: every `DEF` key is cleaned,
   structural, or on a pass-through list with a reason (see "State ingestion goes
   through `admit`" in `CODING_STANDARDS.md`).
-- A test that a refused `act` command leaves the Profile unchanged and returns
-  `effects: []`.
 
-None of the four exists yet. They are tests, not lint: no linter sees an edit
-reach a live workout.
+The guards here are tests, not lint: no linter sees an edit reach a live
+workout.
