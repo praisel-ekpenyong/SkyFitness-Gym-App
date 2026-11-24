@@ -182,3 +182,137 @@ describe('attribute text a lifter reads or hears goes through t()', () => {
     ].join('\n'))).toEqual([])
   })
 })
+
+// Action consistency rules 5 and 6 (CODING_STANDARDS.md). An action is a text button (<Button>,
+// <button className="btn …">), a menu row (<Row title>, <button className="lrow …">) or the
+// confirm and cancel labels of a confirmSheet. Its label is the t() text, JSX text or string it
+// shows. A placeholder or icon-only button (iconbtn) is not an action label here.
+// - Rule 5: an action label does not end in "…" or "...". The confirm sheet is what asks.
+// - Rule 6: a destructive label (Delete, Discard, Reset, Erase, Wipe, Clear all, Remove) is
+//   danger: variant="danger", a danger class, Row's danger prop, or danger: true on confirmSheet.
+//   A key whose click opens a danger: true confirmSheet (inline, or through a function declared in
+//   the same file) is danger too: DESIGN.md draws Delete routine and Discard workout as red text
+//   keys (.rt-delete, .wk-discard) with no fill, and the confirm sheet carries the danger.
+//   "Remove set" is not destructive: rule 6 lets an undoable action act at once, and "Add set"
+//   sits beside it. A bare "Clear" empties a field or a selection and is not destructive either.
+const ELLIPSIS = /(…|\.\.\.)$/
+const DESTRUCTIVE = /^(Delete|Discard|Reset|Erase|Wipe)\b|^Clear (all|everything)\b|^Remove\b(?! set\b)/
+
+/** Every action label in `code` (from `file`) that breaks rule 5 ('ellipsis') or rule 6 ('danger'). */
+function actionHitsIn(file, code = readFileSync(join(SRC, file), 'utf8')) {
+  const ast = parseAst(code, { lang: 'jsx' })
+  const lineOf = pos => code.slice(0, pos).split('\n').length
+  const isT = n => n?.type === 'CallExpression' && n.callee.type === 'Identifier' && n.callee.name === 't'
+  // The label text a node shows: t() first arguments, JSX text and string literals, never attributes.
+  const labels = node => {
+    const out = []
+    const walk = (n, parent) => {
+      if (!n || typeof n !== 'object' || n.type === 'JSXAttribute') return
+      if (isT(n)) { if (n.arguments[0]?.type === 'Literal' && typeof n.arguments[0].value === 'string') out.push(n.arguments[0].value); return }
+      if (n.type === 'JSXText' && n.value.trim()) out.push(n.value.trim())
+      if (n.type === 'Literal' && typeof n.value === 'string' && parent?.type !== 'Property' && n.value.trim()) out.push(n.value.trim())
+      for (const v of Object.values(n)) for (const c of Array.isArray(v) ? v : [v]) if (c && typeof c.type === 'string') walk(c, n)
+    }
+    walk(node, null)
+    return out
+  }
+  const attr = (el, name) => el.attributes.find(a => a.type === 'JSXAttribute' && a.name.name === name)
+  const attrText = a => (a?.value?.type === 'Literal' ? String(a.value.value) : '')
+  const declared = new Map()
+  const index = n => {
+    if (n.type === 'VariableDeclarator' && n.id.type === 'Identifier') declared.set(n.id.name, n.init)
+    if (n.type === 'FunctionDeclaration' && n.id) declared.set(n.id.name, n.body)
+    for (const v of Object.values(n)) for (const c of Array.isArray(v) ? v : [v]) if (c && typeof c.type === 'string') index(c)
+  }
+  index(ast)
+  const optionObjects = call => {
+    const objs = []
+    const collect = n => {
+      if (!n || typeof n !== 'object') return
+      if (n.type === 'ObjectExpression') return objs.push(n)
+      for (const v of Object.values(n)) for (const c of Array.isArray(v) ? v : [v]) if (c && typeof c.type === 'string') collect(c)
+    }
+    call.arguments.forEach(collect)
+    return objs
+  }
+  const isConfirm = n => n.type === 'CallExpression' && n.callee.type === 'Identifier' && n.callee.name === 'confirmSheet'
+  const isDangerOpts = o => o.properties.some(p => p.type === 'Property' && (p.key.name ?? p.key.value) === 'danger' && p.value.type === 'Literal' && p.value.value === true)
+  // Whether `node` (an onClick value) opens a confirmSheet whose every options object is danger.
+  const opensDangerConfirm = (node, seen = new Set()) => {
+    if (!node || typeof node !== 'object') return false
+    if (node.type === 'Identifier' && declared.has(node.name) && !seen.has(node.name)) return opensDangerConfirm(declared.get(node.name), new Set([...seen, node.name]))
+    if (isConfirm(node)) { const objs = optionObjects(node); return objs.length > 0 && objs.every(isDangerOpts) }
+    return Object.values(node).some(v => (Array.isArray(v) ? v : [v]).some(c => c && typeof c.type === 'string' && opensDangerConfirm(c, seen)))
+  }
+  const out = []
+  const check = (node, texts, danger) => {
+    const text = code.slice(node.start, node.end).replace(/\s+/g, ' ')
+    if (texts.some(s => ELLIPSIS.test(s))) out.push({ file, line: lineOf(node.start), rule: 'ellipsis', text })
+    if (!danger && texts.some(s => DESTRUCTIVE.test(s))) out.push({ file, line: lineOf(node.start), rule: 'danger', text })
+  }
+  const visit = node => {
+    if (node.type === 'JSXElement') {
+      const el = node.openingElement
+      const tag = el.name.type === 'JSXIdentifier' ? el.name.name : ''
+      const cls = attrText(attr(el, 'className')).split(/\s+/)
+      const confirms = opensDangerConfirm(attr(el, 'onClick')?.value)
+      if (tag === 'Button') check(node, labels({ children: node.children }), confirms || attrText(attr(el, 'variant')) === 'danger')
+      else if (tag === 'button' && (cls.includes('btn') || cls.includes('lrow'))) check(node, labels({ children: node.children }), confirms || cls.includes('danger'))
+      else if (tag === 'Row' && attr(el, 'onClick')) check(node, labels(attr(el, 'title')?.value), confirms || !!attr(el, 'danger'))
+    }
+    if (isConfirm(node)) {
+      for (const o of optionObjects(node)) {
+        const prop = k => o.properties.find(p => p.type === 'Property' && (p.key.name ?? p.key.value) === k)
+        check(o, [...labels(prop('confirmText')?.value), ...labels(prop('cancelText')?.value)], isDangerOpts(o))
+      }
+    }
+    for (const value of Object.values(node)) {
+      for (const child of Array.isArray(value) ? value : [value]) {
+        if (child && typeof child === 'object' && typeof child.type === 'string') visit(child)
+      }
+    }
+  }
+  visit(ast)
+  return out
+}
+
+describe('action labels follow Action consistency rules 5 and 6', () => {
+  it('no view, sheet or component ends an action label in an ellipsis or leaves a destructive action plain', () => {
+    const bad = sourceFiles().flatMap(f => actionHitsIn(f)).map(h => `${h.file}:${h.line}: [${h.rule}] ${h.text.slice(0, 120)}`)
+    expect(bad, `Rule 5: drop the "…" from an action label (the confirm sheet asks). Rule 6: a destructive action is variant="danger" (danger: true on confirmSheet).\n${bad.join('\n')}`).toEqual([])
+  })
+
+  // A check on the rules themselves, so a parser change cannot silently empty the guard.
+  it('fails an action label that ends in an ellipsis, and passes a placeholder', () => {
+    const hits = code => actionHitsIn('fixture.jsx', code).map(h => h.rule)
+    expect(hits('const a = <Button variant="danger" onClick={go}>{t(\'Delete workout…\')}</Button>')).toEqual(['ellipsis'])
+    expect(hits('const a = <button className="lrow tap"><span>{t(\'Rename...\')}</span></button>')).toEqual(['ellipsis'])
+    expect(hits('confirmSheet({ title: t(\'Sure?\'), confirmText: t(\'Finish…\') })')).toEqual(['ellipsis'])
+    expect(hits([
+      'const a = <input placeholder={t(\'Search…\')} />',
+      'const b = <Button onClick={go}>{t(\'Rename\')}</Button>',
+      'const c = <p>{t(\'Loading…\')}</p>',
+    ].join('\n'))).toEqual([])
+  })
+
+  it('fails a destructive button or confirm that is not danger, and passes the danger ones', () => {
+    const hits = code => actionHitsIn('fixture.jsx', code).map(h => h.rule)
+    expect(hits('const a = <Button variant="ghost" onClick={go}>{t(\'Delete routine\')}</Button>')).toEqual(['danger'])
+    expect(hits('const a = <button className="btn ghost" onClick={go}>{t(\'Discard workout\')}</button>')).toEqual(['danger'])
+    expect(hits('const a = <Row title={t(\'Reset everything\')} onClick={go} />')).toEqual(['danger'])
+    expect(hits('confirmSheet({ title: t(\'Delete?\'), confirmText: t(\'Delete\'), onConfirm: go })')).toEqual(['danger'])
+    expect(hits('const a = <Button variant="ghost" onClick={() => confirmSheet({ confirmText: t(\'Delete\') })}>{t(\'Delete routine\')}</Button>')).toEqual(['danger', 'danger'])
+    expect(hits([
+      'const a = <Button variant="danger" icon="trash" onClick={go}>{t(\'Delete workout\')}</Button>',
+      'const b = <button className="lrow tap danger" onClick={go}><span>{t(\'Remove exercise\')}</span></button>',
+      'const c = <Row icon="trash" title={t(\'Reset everything\')} danger onClick={go} />',
+      'confirmSheet(x ? { confirmText: t(\'Discard\'), danger: true } : { confirmText: t(\'Finish anyway\') })',
+      'const d = <Button variant="ghost" onClick={go}>{t(\'Clear\')}</Button>',
+      'const e = <Button variant="ghost" onClick={go}>{t(\'Remove set\')}</Button>',
+      'const f = <button className="iconbtn bare" aria-label={t(\'Delete entry for {0}\', d)} onClick={go} />',
+      'const g = <Button variant="ghost" onClick={() => confirmSheet({ confirmText: t(\'Delete\'), danger: true })}>{t(\'Delete routine\')}</Button>',
+      'const discard = () => confirmSheet({ confirmText: t(\'Discard\'), danger: true })',
+      'const h = <button className="btn ghost wk-discard" onClick={discard}>{t(\'Discard workout\')}</button>',
+    ].join('\n'))).toEqual([])
+  })
+})

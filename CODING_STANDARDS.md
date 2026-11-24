@@ -506,10 +506,15 @@ get a test that every catalogue value is a filter option, but none exists.
    the clipboard.
 
 Judgement calls, no tooth: 1, 2, 3, 4, 7 and 8 (wording and order).
-**To add** for 5 and 6: extend `frontend/src/i18n-lint.test.js`, which already
-walks user-facing strings. Fail an action label that ends in "…" (a placeholder
-such as `Search…` is not an action). Fail a destructive button that is not
-`variant="danger"` or `danger: true` on `confirmSheet`.
+**Runs** for 5 and 6: `frontend/src/i18n-lint.test.js` reads the label of every
+text button, menu row and `confirmSheet` confirm. It fails a label that ends in
+"…" or "..." (a placeholder such as `Search…` is not an action). It fails a
+destructive label (Delete, Discard, Reset, Erase, Wipe, Clear all, Remove) that
+is not `variant="danger"`, a `danger` class or prop, or `danger: true` on
+`confirmSheet`. A key that opens a `danger: true` confirm also passes: the red
+text keys Delete routine and Discard workout (see `DESIGN.md`) work this way.
+"Remove set" is undoable and acts at once; a bare "Clear" empties a field.
+Hits at the start: 0 for rule 5, 0 for rule 6.
 
 ## Sheets and dialogs
 
