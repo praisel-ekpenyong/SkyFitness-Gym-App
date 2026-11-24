@@ -6,12 +6,12 @@ import RoutineEdit from './RoutineEdit.jsx'
 import { useStore } from '../store/useStore.js'
 import { DEF } from '../lib/profile/index.js'
 import { useUI } from '../store/useUI.js'
+import { buttonNamed, leafTexts, pick } from '../test/sheet-host.jsx'
 
 const mocks = vi.hoisted(() => ({
   nav: vi.fn(),
   exConfigSheet: vi.fn(),
   exercisePicker: vi.fn(),
-  glyphPicker: vi.fn(),
   confirmSheet: vi.fn(),
 }))
 
@@ -24,7 +24,6 @@ vi.mock('../sheets/catalogue.jsx', () => ({
   exConfigSheet: mocks.exConfigSheet,
   exercisePicker: mocks.exercisePicker,
 }))
-vi.mock('../sheets/routine.jsx', () => ({ glyphPicker: mocks.glyphPicker }))
 vi.mock('../sheets/confirm.jsx', () => ({ confirmSheet: mocks.confirmSheet }))
 
 let container
@@ -174,7 +173,7 @@ describe('RoutineEdit exercise replacement', () => {
     })
 
     const saved = useStore.getState().S.routines.find(x => x.id === 'r-test-1').ex[0]
-    expect(saved).toEqual({ id: '0001', sg: 'sg-0-1', sets: 3, mode: 'reps', reps: 10, weight: 20, bodyweight: true })
+    expect(saved).toEqual({ id: '0001', sg: 'sg-0-1', sets: 3, mode: 'reps', reps: 10, weight: 20 })
   })
 
   it('replaces a non-superset exercise without adding an sg property', async () => {
@@ -374,5 +373,44 @@ describe('RoutineEdit metadata changes', () => {
 
     const r = useStore.getState().S.routines.find(x => x.id === 'r-test-1')
     expect(r.name).toBe('Chest & Triceps')
+  })
+})
+
+describe('RoutineEdit round trip: pick, save, read the routine', () => {
+  const routine = () => useStore.getState().S.routines.find(x => x.id === 'r-test-1')
+  const linkButtons = () => container.querySelectorAll('button[aria-label="Superset with exercise above"]')
+
+  it('Progression stores the rule picked, the one shown when the routine has none included', async () => {
+    await act(async () => { root.render(<RoutineEdit />) })
+    expect(leafTexts(buttonNamed(container, 'Progression'))).toContain('Linear progression')
+    expect(routine()).not.toHaveProperty('prog')
+
+    await pick(container, 'Progression', 'Linear progression')
+
+    expect(routine().prog).toBe('linear')
+  })
+
+  it('Icon stores the glyph picked, the one shown included', async () => {
+    await act(async () => { root.render(<RoutineEdit />) })
+
+    await pick(container, 'Pick an icon', 'arm')
+    expect(routine().emoji).toBe('arm')
+
+    await pick(container, 'Pick an icon', 'dumbbell')
+    expect(routine().emoji).toBe('dumbbell')
+  })
+
+  it('Superset with above pairs the two exercises, and a second tap stores no group on either', async () => {
+    await act(async () => { root.render(<RoutineEdit />) })
+
+    await act(async () => { linkButtons()[1].click() })
+    const sg = routine().ex[1].sg
+    expect(sg).toBeTruthy()
+    expect(routine().ex[2].sg).toBe(sg)
+    expect(linkButtons()[1].getAttribute('aria-pressed')).toBe('true')
+
+    await act(async () => { linkButtons()[1].click() })
+    expect(routine().ex[2]).not.toHaveProperty('sg')
+    expect(routine().ex.map(e => e.sg)).toEqual(['sg-0-1', 'sg-0-1', undefined])
   })
 })

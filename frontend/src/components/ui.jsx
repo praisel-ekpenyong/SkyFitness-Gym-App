@@ -122,13 +122,14 @@ export function Segmented({ options, value, onChange, className = '', label, 'ar
 
 export function Stepper({ value, step = 1, onChange, decimal = true, className = '', label, unit, 'aria-label': ariaLabel }) {
   const set = v => onChange(Math.max(0, Math.round((v || 0) * 100) / 100))
-  const decLabel = ariaLabel ? t('Decrease {0}', ariaLabel) : t('Decrease')
-  const incLabel = ariaLabel ? t('Increase {0}', ariaLabel) : t('Increase')
+  const name = ariaLabel || label
+  const decLabel = name ? t('Decrease {0}', name) : t('Decrease')
+  const incLabel = name ? t('Increase {0}', name) : t('Increase')
   const inner = (
     <div className={'stp ' + className}>
       <button type="button" onClick={() => set((+value || 0) - step)} aria-label={decLabel}><Icon name="minus" /></button>
       <span className="val">
-        <NumberField value={value} decimal={decimal} onChange={onChange} aria-label={ariaLabel || label} />
+        <NumberField value={value} decimal={decimal} onChange={onChange} aria-label={name} />
         {unit && <i>{unit}</i>}
       </span>
       <button type="button" onClick={() => set((+value || 0) + step)} aria-label={incLabel}><Icon name="plus" /></button>

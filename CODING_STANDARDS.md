@@ -321,13 +321,15 @@ what it follows.
 **Why:** `6972de7`: the config sheet dropped a picked rest equal to the Profile's,
 so the exercise later followed Settings when the lifter changed it. `fb53d9b`: a
 save that merged into the old entry let cleared settings survive.
-**Runs:** `frontend/src/sheets/catalogue.test.jsx` covers the Rest control
-(Default stores nothing; a pick equal to Settings is kept).
-**To add:** one round-trip test per remaining control of the config sheet and of
-the routine editor (`frontend/src/views/RoutineEdit.test.jsx`): pick, save,
-change the Setting, assert the entry; for the bodyweight switch, assert only a
-difference is stored. [`docs/architecture.md`](./docs/architecture.md) states the
-same rule.
+**Runs:** one round-trip test per saving control: pick, save, change the Setting,
+assert the entry. `frontend/src/sheets/catalogue.test.jsx` covers the config
+sheet: Rest and the progression Rule (Default stores nothing; a pick equal to
+what it follows is kept), Step in the weight unit and in seconds (a value
+stepped back to the default is kept), the bodyweight switch (only a difference
+from the catalogue is stored), and the controls that follow no Setting.
+`frontend/src/views/RoutineEdit.test.jsx` covers the routine editor's
+Progression, Icon and superset link.
+[`docs/architecture.md`](./docs/architecture.md) states the same rule.
 
 ## Front-end state and store discipline
 
@@ -731,7 +733,7 @@ or delay rest timers and audio cues:
 
 The first bullet is a judgement call, no tooth.
 **Runs:** `platform/storage.test.js` holds the 800ms debounce (`DRAIN_MS`).
-**To add:** a test that the `warmArt` call in `App.jsx` sits inside
+`App.warm-art.test.jsx` holds the `warmArt` call in `App.jsx` inside
 `requestIdleCallback`.
 
 ### Design for testability
@@ -803,7 +805,7 @@ names every one:
 
 | Tool | Runs today | To add |
 |---|---|---|
-| Vitest guard tests, in `npm test` | `purity.test.js`, `import-cycles.test.js`, `design-tokens.test.js`, `design-lint.test.js`, `env.test.js`, `i18n-lint.test.js`, `sheets/dialog-names.test.jsx`, `docs.test.js`, `platform/storage.test.js` (the 800ms debounce), `comments.test.js`, `effect-types.test.js` | `profile-keys.test.js`, the save round-trip tests, the `warmArt` test, the `flush()` test |
+| Vitest guard tests, in `npm test` | `purity.test.js`, `import-cycles.test.js`, `design-tokens.test.js`, `design-lint.test.js`, `env.test.js`, `i18n-lint.test.js`, `sheets/dialog-names.test.jsx`, `docs.test.js`, `platform/storage.test.js` (the 800ms debounce), `comments.test.js`, `effect-types.test.js`, the `warmArt` test (`App.warm-art.test.jsx`), the `flush()` test (`store/useStore.flush.test.jsx`), the save round-trip tests (`sheets/catalogue.test.jsx`, `views/RoutineEdit.test.jsx`) | `profile-keys.test.js` |
 | ESLint 10, `npm run lint` after oxlint (CI and pre-commit today) | no rule: its old rules moved to oxlint | Only the `react-hooks` compiler rules and the `no-restricted-syntax` selectors (including `vi.mock` scope). Ratchet: `frontend/eslint-suppressions.json` |
 | oxlint, `npm run lint` (CI and pre-commit) | `correctness` category, `react/rules-of-hooks`, `react/exhaustive-deps`, `no-throw-literal`, `prefer-promise-reject-errors`, all at error. Ratchet: `frontend/lint-baseline.json`, checked by `scripts/check-lint-baseline.mjs` with its failing fixture in `npm test` | `complexity`, restricted globals and properties (including `Date.now` in `lib/`), `unicorn/no-array-sort`, `unicorn/no-array-reverse`, `react/no-array-index-key`, `jsx-a11y/*`. Ratchet: `frontend/lint-baseline.json` |
 | tsc | nothing | `tsconfig.json`, `npm run typecheck` in the hook and CI. Ratchet: `frontend/tsc-baseline.json` |
@@ -827,7 +829,7 @@ says it is too slow for the unit suite.
    ESLint (about 19 s with the compiler rules) in CI.
 4. `tsconfig.json`, `npm run typecheck` and `frontend/tsc-baseline.json`, then
    the JSDoc `@typedef`s. Then oxlint's type-aware rows.
-5. The guard tests and the round-trip tests.
+5. The guard tests still to add.
 6. Rename `lib/` to `.ts`, then the rest, then tests.
 7. `babel-plugin-react-compiler`, after the ESLint compiler rules are green.
    Add `'use no memo'` (or move the import) in `App.jsx` and

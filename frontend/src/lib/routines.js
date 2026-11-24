@@ -63,11 +63,17 @@ function extractTarget(target = {}) {
   return { target: t, note }
 }
 
+// "Default decides": a stored bodyweight flag means the entry disagrees with the catalogue.
+function seedWithoutAgreeingFlags(exId, mode) {
+  const { bodyweight: _agrees, ...seed } = defaultConfig(exId, mode)
+  return seed
+}
+
 function addExercise(S, command) {
   const r = findRoutine(S, command.routineId)
   if (!r || !command.exId) return refused()
   const { target, note } = extractTarget(command.target)
-  const defaults = defaultConfig(command.exId, target.mode)
+  const defaults = seedWithoutAgreeingFlags(command.exId, target.mode)
   const entry = { id: command.exId, ...defaults, ...target }
   if (note) entry.notes = note
   r.ex ??= []
@@ -104,7 +110,8 @@ function moveExercise(S, command) {
  * Replaces an exercise at the specified index or updates its configuration in-place.
  *
  * Passing the same `exId` or omitting it performs an in-place configuration update
- * (updating targets and notes while uniformly spreading `defaultConfig` and preserving `sg`).
+ * (updating targets and notes over the exercise's default seed, minus a bodyweight
+ * flag that agrees with the catalogue, and preserving `sg`).
  *
  * @param {Object} S Store state.
  * @param {Object} command Replace command payload `{ routineId, index, exId?, target? }`.
@@ -122,7 +129,7 @@ function replaceExercise(S, command) {
   const oldEntry = r.ex[idx]
   const { target, note } = extractTarget(command.target)
   delete target.id
-  const defaults = defaultConfig(exId, target.mode)
+  const defaults = seedWithoutAgreeingFlags(exId, target.mode)
   const next = { id: exId, ...defaults, ...target }
   if (note) next.notes = note
 

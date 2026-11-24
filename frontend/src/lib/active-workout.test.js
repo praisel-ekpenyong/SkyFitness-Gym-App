@@ -1112,3 +1112,74 @@ describe('act', () => {
     })
   })
 })
+
+/** A 50 kg × 8 work set, and a lift Entry of such sets aiming at the same. */
+const workSet = (done = false) => ({ w: 50, r: 8, done })
+const liftEntry = (id, sets, target = {}) => ({ id, target: { reps: 8, weight: 50, ...target }, sets })
+
+describe('a refused command', () => {
+  const live = () => withActive([liftEntry('0025', [workSet(true)]), liftEntry('0026', [workSet()])], { cur: 1 })
+  const staleRef = { workout: 'a1', layout: 0, entryId: '0025', set: 9 }
+
+  it.each([
+    ['begin over logged sets', live, { type: 'begin', routineId: null, bw: 80 }],
+    ['discard with no workout', blankProfile, { type: 'discard' }],
+    ['finish with no workout', blankProfile, { type: 'finish' }],
+    ['toggle a missing set', live, { type: 'toggle', entry: 0, set: 9 }],
+    ['editSet on a missing set', live, { type: 'editSet', entry: 0, set: 9, field: 'w', value: 60 }],
+    ['addSet to a missing Entry', live, { type: 'addSet', entry: 9 }],
+    ['removeSet of the only set', live, { type: 'removeSet', entry: 1 }],
+    ['addWarmup to a missing Entry', live, { type: 'addWarmup', entry: 9 }],
+    ['addExercise with no workout', blankProfile, { type: 'addExercise', exId: '0027' }],
+    ['removeExercise out of range', live, { type: 'removeExercise', entry: 9 }],
+    ['replaceExercise out of range', live, { type: 'replaceExercise', entry: 9, exId: '0027' }],
+    ['moveExercise past the end', live, { type: 'moveExercise', entry: 1, dir: 1 }],
+    ['note on a missing Entry', live, { type: 'note', entry: 9, text: 'cue' }],
+    ['pair with no workout', blankProfile, { type: 'pair', first: 0, second: 1 }],
+    ['unpair with no workout', blankProfile, { type: 'unpair', entry: 0 }],
+    ['goTo with no workout', blankProfile, { type: 'goTo', entry: 0 }],
+    ['next past the last Step', live, { type: 'next' }],
+    ['prev with no workout', blankProfile, { type: 'prev' }],
+    ['startHold on a missing set', live, { type: 'startHold', entry: 0, set: 9 }],
+    ['completeHold on a stale ref', live, { type: 'completeHold', ref: staleRef, elapsed: 30 }],
+  ])('%s leaves the Profile unchanged and asks for no effects', (_, make, command) => {
+    const S = make()
+    const before = structuredClone(S)
+    expect(act(S, command)).toStrictEqual({ ok: false, effects: [] })
+    expect(S).toStrictEqual(before)
+  })
+})
+
+describe('effects stay small and plain', () => {
+  const hold = { id: '0001', target: { mode: 'time', sec: 30, sets: 2 }, sets: [{ sec: 30, done: false }, { sec: 30, done: false }] }
+  const live = () => withActive([liftEntry('0025', [workSet(true), workSet()], { rest: 180 }), hold, liftEntry('0026', [workSet()])])
+  const holdRef = S => act(S, { type: 'startHold', entry: 1, set: 0 }).effects[0].ref
+
+  it.each([
+    ['begin', () => ({ ...blankProfile(), routines: [{ id: 'r1', name: 'Push', ex: [{ id: '0025', sets: 2, reps: 8, weight: 50 }] }] }), { type: 'begin', routineId: 'r1', bw: 80 }],
+    ['discard', live, { type: 'discard' }],
+    ['finish', live, { type: 'finish' }],
+    ['toggle', live, { type: 'toggle', entry: 0, set: 1 }],
+    ['editSet', live, { type: 'editSet', entry: 0, set: 1, field: 'w', value: 60 }],
+    ['addSet', live, { type: 'addSet', entry: 0 }],
+    ['removeSet', live, { type: 'removeSet', entry: 0 }],
+    ['addWarmup', live, { type: 'addWarmup', entry: 0 }],
+    ['addExercise', live, { type: 'addExercise', exId: '0027' }],
+    ['removeExercise', live, { type: 'removeExercise', entry: 2 }],
+    ['replaceExercise', live, { type: 'replaceExercise', entry: 2, exId: '0027' }],
+    ['moveExercise', live, { type: 'moveExercise', entry: 2, dir: -1 }],
+    ['note', live, { type: 'note', entry: 0, text: 'cue' }],
+    ['pair', live, { type: 'pair', first: 1, second: 2 }],
+    ['unpair', live, { type: 'unpair', entry: 0 }],
+    ['goTo', live, { type: 'goTo', entry: 2 }],
+    ['prev', () => withActive(live().active.entries, { cur: 2 }), { type: 'prev' }],
+    ['next', live, { type: 'next' }],
+    ['startHold', live, { type: 'startHold', entry: 1, set: 0 }],
+    ['completeHold', live, S => ({ type: 'completeHold', ref: holdRef(S), elapsed: 28 })],
+  ])('%s returns effects that survive a JSON round trip', (_, make, command) => {
+    const S = make()
+    const res = act(S, typeof command === 'function' ? command(S) : command)
+    expect(res.ok).toBe(true)
+    expect(JSON.parse(JSON.stringify(res.effects))).toStrictEqual(res.effects)
+  })
+})
