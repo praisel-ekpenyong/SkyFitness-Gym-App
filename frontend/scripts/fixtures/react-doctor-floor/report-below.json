@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 3,
+  "ok": true,
+  "summary": {
+    "errorCount": 0,
+    "warningCount": 100,
+    "affectedFileCount": 30,
+    "totalDiagnosticCount": 100,
+    "score": 53,
+    "scoreLabel": "Critical"
+  },
+  "projects": []
+}
