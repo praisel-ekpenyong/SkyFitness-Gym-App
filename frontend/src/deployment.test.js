@@ -1,10 +1,8 @@
 import { existsSync, readFileSync } from 'node:fs'
-import { resolve, dirname } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
-const __dirname = dirname(fileURLToPath(import.meta.url))
-const publicDir = resolve(__dirname, '..', 'public')
+const publicDir = resolve(import.meta.dirname, '..', 'public')
 
 function parseHeadersFile(content) {
   const sections = {}
@@ -57,7 +55,7 @@ describe('Cloudflare Pages deployment configuration', () => {
       "default-src 'self'; img-src 'self' https://cdn.jsdelivr.net; media-src 'self' https://cdn.jsdelivr.net; connect-src 'self' https://cdn.jsdelivr.net"
     )
     expect(content.toLowerCase()).not.toContain('netlify')
-    expect(existsSync(resolve(__dirname, '..', '..', 'netlify.toml'))).toBe(false)
+    expect(existsSync(resolve(import.meta.dirname, '..', '..', 'netlify.toml'))).toBe(false)
   })
 
   it('includes valid _redirects file for SPA client-side routing fallback', () => {

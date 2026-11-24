@@ -114,6 +114,9 @@
       {
         "checkGlobalObject": true,
         "globals": [
+          { "name": "__dirname", "message": "__dirname is CommonJS. Sky is ESM: use import.meta.dirname, import.meta.filename or import.meta.url." },
+          { "name": "__filename", "message": "__filename is CommonJS. Sky is ESM: use import.meta.dirname, import.meta.filename or import.meta.url." },
+          { "name": "require", "message": "require is CommonJS. Sky is ESM: use import.meta.dirname, import.meta.filename or import.meta.url." },
           { "name": "localStorage", "message": "localStorage belongs to platform/storage.js." },
           { "name": "indexedDB", "message": "indexedDB belongs to platform/storage.js." },
           { "name": "AudioContext", "message": "AudioContext belongs to platform/sound.js." },
@@ -157,6 +160,9 @@
           {
             "checkGlobalObject": true,
             "globals": [
+              { "name": "__dirname", "message": "__dirname is CommonJS. Sky is ESM: use import.meta.dirname, import.meta.filename or import.meta.url." },
+              { "name": "__filename", "message": "__filename is CommonJS. Sky is ESM: use import.meta.dirname, import.meta.filename or import.meta.url." },
+              { "name": "require", "message": "require is CommonJS. Sky is ESM: use import.meta.dirname, import.meta.filename or import.meta.url." },
               { "name": "AudioContext", "message": "AudioContext belongs to platform/sound.js." },
           { "name": "webkitAudioContext", "message": "webkitAudioContext belongs to platform/sound.js." },
               { "name": "console", "message": "console belongs to components/ErrorBoundary.jsx and components/Modals.jsx." },
@@ -181,6 +187,9 @@
           {
             "checkGlobalObject": true,
             "globals": [
+              { "name": "__dirname", "message": "__dirname is CommonJS. Sky is ESM: use import.meta.dirname, import.meta.filename or import.meta.url." },
+              { "name": "__filename", "message": "__filename is CommonJS. Sky is ESM: use import.meta.dirname, import.meta.filename or import.meta.url." },
+              { "name": "require", "message": "require is CommonJS. Sky is ESM: use import.meta.dirname, import.meta.filename or import.meta.url." },
               { "name": "localStorage", "message": "localStorage belongs to platform/storage.js." },
               { "name": "indexedDB", "message": "indexedDB belongs to platform/storage.js." },
               { "name": "console", "message": "console belongs to components/ErrorBoundary.jsx and components/Modals.jsx." },
@@ -204,6 +213,9 @@
           {
             "checkGlobalObject": true,
             "globals": [
+              { "name": "__dirname", "message": "__dirname is CommonJS. Sky is ESM: use import.meta.dirname, import.meta.filename or import.meta.url." },
+              { "name": "__filename", "message": "__filename is CommonJS. Sky is ESM: use import.meta.dirname, import.meta.filename or import.meta.url." },
+              { "name": "require", "message": "require is CommonJS. Sky is ESM: use import.meta.dirname, import.meta.filename or import.meta.url." },
               { "name": "localStorage", "message": "localStorage belongs to platform/storage.js." },
               { "name": "indexedDB", "message": "indexedDB belongs to platform/storage.js." },
               { "name": "AudioContext", "message": "AudioContext belongs to platform/sound.js." },
@@ -229,6 +241,9 @@
           {
             "checkGlobalObject": true,
             "globals": [
+              { "name": "__dirname", "message": "__dirname is CommonJS. Sky is ESM: use import.meta.dirname, import.meta.filename or import.meta.url." },
+              { "name": "__filename", "message": "__filename is CommonJS. Sky is ESM: use import.meta.dirname, import.meta.filename or import.meta.url." },
+              { "name": "require", "message": "require is CommonJS. Sky is ESM: use import.meta.dirname, import.meta.filename or import.meta.url." },
               { "name": "localStorage", "message": "localStorage belongs to platform/storage.js." },
               { "name": "indexedDB", "message": "indexedDB belongs to platform/storage.js." },
               { "name": "AudioContext", "message": "AudioContext belongs to platform/sound.js." },
@@ -260,6 +275,9 @@
           {
             "checkGlobalObject": true,
             "globals": [
+              { "name": "__dirname", "message": "__dirname is CommonJS. Sky is ESM: use import.meta.dirname, import.meta.filename or import.meta.url." },
+              { "name": "__filename", "message": "__filename is CommonJS. Sky is ESM: use import.meta.dirname, import.meta.filename or import.meta.url." },
+              { "name": "require", "message": "require is CommonJS. Sky is ESM: use import.meta.dirname, import.meta.filename or import.meta.url." },
               { "name": "localStorage", "message": "localStorage belongs to platform/storage.js." },
               { "name": "indexedDB", "message": "indexedDB belongs to platform/storage.js." },
               { "name": "AudioContext", "message": "AudioContext belongs to platform/sound.js." },
@@ -298,6 +316,9 @@
           {
             "checkGlobalObject": true,
             "globals": [
+              { "name": "__dirname", "message": "__dirname is CommonJS. Sky is ESM: use import.meta.dirname, import.meta.filename or import.meta.url." },
+              { "name": "__filename", "message": "__filename is CommonJS. Sky is ESM: use import.meta.dirname, import.meta.filename or import.meta.url." },
+              { "name": "require", "message": "require is CommonJS. Sky is ESM: use import.meta.dirname, import.meta.filename or import.meta.url." },
               { "name": "localStorage", "message": "localStorage belongs to platform/storage.js." },
               { "name": "indexedDB", "message": "indexedDB belongs to platform/storage.js." },
               { "name": "AudioContext", "message": "AudioContext belongs to platform/sound.js." },
@@ -318,6 +339,9 @@
           {
             "checkGlobalObject": true,
             "globals": [
+              { "name": "__dirname", "message": "__dirname is CommonJS. Sky is ESM: use import.meta.dirname, import.meta.filename or import.meta.url." },
+              { "name": "__filename", "message": "__filename is CommonJS. Sky is ESM: use import.meta.dirname, import.meta.filename or import.meta.url." },
+              { "name": "require", "message": "require is CommonJS. Sky is ESM: use import.meta.dirname, import.meta.filename or import.meta.url." },
               { "name": "localStorage", "message": "localStorage belongs to platform/storage.js." },
               { "name": "indexedDB", "message": "indexedDB belongs to platform/storage.js." },
               { "name": "AudioContext", "message": "AudioContext belongs to platform/sound.js." },
@@ -344,6 +368,9 @@
           {
             "checkGlobalObject": true,
             "globals": [
+              { "name": "__dirname", "message": "__dirname is CommonJS. Sky is ESM: use import.meta.dirname, import.meta.filename or import.meta.url." },
+              { "name": "__filename", "message": "__filename is CommonJS. Sky is ESM: use import.meta.dirname, import.meta.filename or import.meta.url." },
+              { "name": "require", "message": "require is CommonJS. Sky is ESM: use import.meta.dirname, import.meta.filename or import.meta.url." },
               { "name": "indexedDB", "message": "indexedDB belongs to platform/storage.js." },
               { "name": "AudioContext", "message": "AudioContext belongs to platform/sound.js." },
           { "name": "webkitAudioContext", "message": "webkitAudioContext belongs to platform/sound.js." },

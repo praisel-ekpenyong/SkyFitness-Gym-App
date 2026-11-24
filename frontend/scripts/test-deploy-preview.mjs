@@ -1,11 +1,9 @@
 import { createServer } from 'node:http'
 import { readFileSync, existsSync, mkdirSync } from 'node:fs'
-import { resolve, extname, join, dirname } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { resolve, extname, join } from 'node:path'
 import { chromium } from 'playwright'
 
-const __dirname = dirname(fileURLToPath(import.meta.url))
-const frontendDir = resolve(__dirname, '..')
+const frontendDir = resolve(import.meta.dirname, '..')
 const distDir = resolve(frontendDir, 'dist')
 const screenshotsDir = process.env.ARTIFACT_DIR || resolve(frontendDir, '.tmp', 'screenshots')
 

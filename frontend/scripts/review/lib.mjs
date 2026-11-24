@@ -1,12 +1,10 @@
 import { createRequire } from 'node:module'
 import { accessSync, constants } from 'node:fs'
-import { delimiter, dirname, join, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { delimiter, join, resolve } from 'node:path'
 import { defaultPort } from './port.mjs'
 
-export const FRONTEND = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..')
-const require = createRequire(join(FRONTEND, 'package.json'))
-export const { chromium } = require('playwright-core')
+export const FRONTEND = resolve(import.meta.dirname, '..', '..')
+export const { chromium } = createRequire(join(FRONTEND, 'package.json'))('playwright-core')
 
 export function parseArgs(argv = process.argv.slice(2)) {
   const flags = {}, rest = []
