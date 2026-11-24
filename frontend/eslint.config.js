@@ -33,4 +33,15 @@ export default [
       'react-hooks/memo-dependencies': 'error',
     },
   },
+  // One owner per derived value: the unit fallback. PROFILE_CLEAN cleans S.unit on the way in.
+  {
+    files: ['src/**/*.{js,jsx}'],
+    ignores: ['src/lib/units.js'],
+    rules: {
+      'no-restricted-syntax': ['error', {
+        selector: "LogicalExpression[right.value='kg']",
+        message: "No `|| 'kg'` fallback: S.unit is cleaned by PROFILE_CLEAN; other units go through lib/units.js (sanitizeUnit, entryUnit).",
+      }],
+    },
+  },
 ]
