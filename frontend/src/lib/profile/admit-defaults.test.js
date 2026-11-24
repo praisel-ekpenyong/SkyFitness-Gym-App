@@ -57,10 +57,10 @@ describe('admit fills nested defaults from DEF', () => {
   })
 
   it('reaches boot, another tab and a Restore through normalizeState', () => {
-    expect(normalizeState(stored()).reminder.lead).toBe(10)
-    expect(normalizeState(stored({ reminder: { on: true, lead: 25 } })).reminder).toMatchObject({ on: true, time: '08:00', lead: 25 })
+    expect(normalizeState(stored(), Date.now()).reminder.lead).toBe(10)
+    expect(normalizeState(stored({ reminder: { on: true, lead: 25 } }), Date.now()).reminder).toMatchObject({ on: true, time: '08:00', lead: 25 })
     const { clean } = sanitizeRestorePayload(stored())
-    expect(normalizeState(clean).reminder).toMatchObject({ time: '07:00', lead: 10, snooze: { min: 5, max: 30 } })
-    expect(normalizeState(clean).display).toEqual({ compact: false })
+    expect(normalizeState(clean, Date.now()).reminder).toMatchObject({ time: '07:00', lead: 10, snooze: { min: 5, max: 30 } })
+    expect(normalizeState(clean, Date.now()).display).toEqual({ compact: false })
   })
 })

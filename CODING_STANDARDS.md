@@ -628,18 +628,18 @@ the rule is stated; the other sections point here.
 
 **Why:** a default hides the clock from every caller that omits it, and tests run
 on wall time without saying so. `streakOf(S, today = Date.now())` even names a
-millisecond value `today`. Eight reads sit outside the two owners: four are
+millisecond value `today`. Seven reads sat outside the two owners: four were
 defaults (`lib/active-finish.js`, `lib/history.js`, `lib/streak.js`,
-`lib/profile/normalize.js`), the rest are in `lib/active-finish.js`,
-`lib/active-session.js`, `lib/effort.js` (a bare `Date.now()` inside a filter)
-and `lib/progression.js`.
-**To add:** oxlint `eslint/no-restricted-properties` (`Date.now`), in an
+`lib/profile/normalize.js`), one a bare `Date.now()` inside a filter
+(`lib/effort.js`). Those five are fixed: the caller passes `now`. Two remain in
+`lib/active-finish.js` and `lib/active-session.js`, baselined.
+**Runs:** oxlint `eslint/no-restricted-properties` (`Date.now`), in an
 `overrides` block for `src/lib/**` with the two owner files and tests excluded,
 and ESLint `no-restricted-syntax`
 (`NewExpression[callee.name='Date'][arguments.length=0]`) scoped the same way.
-Fix the four defaults and `lib/effort.js` first; baseline the rest in
-`frontend/lint-baseline.json` (oxlint) and `frontend/eslint-suppressions.json`
-(ESLint).
+The two remaining `Date.now()` reads are in `frontend/lint-baseline.json`
+(oxlint, one each); `frontend/eslint-suppressions.json` holds none, because no
+`new Date()` read sits outside the owners.
 
 ### Single-owner formatting
 

@@ -48,14 +48,14 @@ afterEach(() => {
 describe('legacy streakRule', () => {
   it('is no longer a default: a new or reset Profile has none', () => {
     expect(DEF).not.toHaveProperty('streakRule')
-    expect(normalizeState({})).not.toHaveProperty('streakRule')
+    expect(normalizeState({}, Date.now())).not.toHaveProperty('streakRule')
     resetProfile()
     expect(useStore.getState().S).not.toHaveProperty('streakRule')
   })
 
   it('an old Profile keeps it unchanged through a normal load, even a value the old rule picker never had', () => {
-    expect(normalizeState({ ...cloneDef(), streakRule: 'generous' }).streakRule).toBe('generous')
-    expect(normalizeState({ ...cloneDef(), streakRule: 'bogus' }).streakRule).toBe('bogus')
+    expect(normalizeState({ ...cloneDef(), streakRule: 'generous' }, Date.now()).streakRule).toBe('generous')
+    expect(normalizeState({ ...cloneDef(), streakRule: 'bogus' }, Date.now()).streakRule).toBe('bogus')
   })
 
   it('an old backup restores with it unchanged in the store and in storage, and the streak reads the same', () => {

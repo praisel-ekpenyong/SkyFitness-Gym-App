@@ -33,4 +33,16 @@ export default [
       'react-hooks/memo-dependencies': 'error',
     },
   },
+  {
+    // lib/ takes the clock as an argument. uid() in format.js and todayISO() in dates.js own the reads.
+    // oxlint bans Date.now() there (.oxlintrc.json); this selector is the part it cannot do.
+    files: ['src/lib/**/*.js'],
+    ignores: ['src/lib/format.js', 'src/lib/dates.js', 'src/lib/**/*.test.js'],
+    rules: {
+      'no-restricted-syntax': ['error', {
+        selector: "NewExpression[callee.name='Date'][arguments.length=0]",
+        message: 'lib/ takes the clock as an argument; new Date() reads it. Read the clock at the edge.',
+      }],
+    },
+  },
 ]

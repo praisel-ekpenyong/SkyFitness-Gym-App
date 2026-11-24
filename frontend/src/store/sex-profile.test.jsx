@@ -75,11 +75,11 @@ describe('Reset clears sex', () => {
 
 describe('invalid stored values read as not set', () => {
   it('normalizeState keeps male and female and drops anything else', () => {
-    expect(normalizeState({ sex: 'male' }).sex).toBe('male')
-    expect(normalizeState({ sex: 'female' }).sex).toBe('female')
-    expect(normalizeState({ sex: 'other' }).sex).toBeNull()
-    expect(normalizeState({ sex: 42 }).sex).toBeNull()
-    expect(normalizeState({}).sex).toBeNull()
+    expect(normalizeState({ sex: 'male' }, Date.now()).sex).toBe('male')
+    expect(normalizeState({ sex: 'female' }, Date.now()).sex).toBe('female')
+    expect(normalizeState({ sex: 'other' }, Date.now()).sex).toBeNull()
+    expect(normalizeState({ sex: 42 }, Date.now()).sex).toBeNull()
+    expect(normalizeState({}, Date.now()).sex).toBeNull()
   })
 })
 

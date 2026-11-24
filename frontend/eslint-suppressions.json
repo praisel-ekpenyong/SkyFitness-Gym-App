@@ -10,6 +10,9 @@
     }
   },
   "src/sheets/history.jsx": {
+    "react-hooks/purity": {
+      "count": 1
+    },
     "react-hooks/static-components": {
       "count": 4
     }

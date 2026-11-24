@@ -41,7 +41,7 @@ export function seedActiveWorkout(entries, { cur = 0, start = Date.now() } = {})
         entries,
       }
     : null
-  useStore.setState({ S: normalizeState(S) })
+  useStore.setState({ S: normalizeState(S, Date.now()) })
 }
 
 export function renderWorkout(entries, options) {

@@ -196,11 +196,11 @@ export function selectStatsOverview(S, opts = {}) {
   const scale = displayScale(S)
   const effortWin = inWindow(workouts, now, effortDays)
   const scoped = { ...S, workouts: effortWin }
-  const sum = effortSummary(scoped, 0)
-  const weeks = effortWeeks(scoped, 0).map(e => ({
+  const sum = effortSummary(scoped, 0, now)
+  const weeks = effortWeeks(scoped, 0, now).map(e => ({
     t: e.t, rir: e.rir, y: toScale(scale, e.rir), n: e.n, sets: e.sets,
   }))
-  const bins = effortHistogram(scoped, 0)
+  const bins = effortHistogram(scoped, 0, now)
   const maxBin = Math.max(1, ...bins.map(bin => bin.n))
   const histogram = bins.map(bin => ({ ...bin,
     value: toScale(scale, bin.rir), hard: bin.rir <= HARD_RIR,

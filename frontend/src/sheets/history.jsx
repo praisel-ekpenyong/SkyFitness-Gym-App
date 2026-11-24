@@ -132,7 +132,7 @@ export function Calendar({ start, close }) {
   const [sel, setSel] = useState(null)
   // A new month shows new weeks, so the selected week and its explanation go with the old one.
   const goMonth = d => { setCur(d); setSel(null) }
-  const streak = streakOf(st)
+  const streak = streakOf(st, Date.now())
   const y = cur.getFullYear(), mo = cur.getMonth()
   const byDay = {}
   st.workouts.forEach(w => (byDay[w.d] = byDay[w.d] || []).push(w))
