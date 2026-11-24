@@ -1,5 +1,6 @@
 import { buildSets, defaultConfig, cleanNote, isEntryIndex } from './workout-model.js'
 import { nextPrescription, applyPrescription } from './progression.js'
+import { withSetId } from './active-sets.js'
 import { uid } from './format.js'
 import { todayISO } from './dates.js'
 import { t } from './i18n.js'
@@ -37,7 +38,7 @@ export function createActiveSession(S, routineId, bw) {
   const routine = routineId ? (S.routines || []).find(r => r.id === routineId) : null
   const entries = (routine ? routine.ex : []).map(cfg => {
     const plan = nextPrescription(S, cfg, routine)
-    const sets = applyPrescription(seedSets(S, cfg, routine?.id, plan), plan)
+    const sets = applyPrescription(seedSets(S, cfg, routine?.id, plan), plan).map(withSetId)
     /** @type {Target} */
     const target = { ...cfg }
     /** @type {Entry} */
@@ -101,7 +102,7 @@ export function buildActiveEntry(S, exId, targetCfg = {}) {
   const baseSets = freestyle
     ? buildSets(S, full, { preferLast: true })
     : (plan ? seedSets(S, full, S?.active?.routineId, plan) : buildSets(S, full))
-  const sets = freestyle ? baseSets : applyPrescription(baseSets, plan)
+  const sets = (freestyle ? baseSets : applyPrescription(baseSets, plan)).map(withSetId)
   /** @type {Partial<Target>} */
   const target = { ...targetCfg }
   /** @type {Entry} */

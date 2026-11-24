@@ -151,6 +151,11 @@ function hasUnitStamp(...records) {
   })
 }
 
+/** @param {unknown} obj @param {string} key @returns {boolean} */
+function hasNumericField(obj, key) {
+  return !!obj && typeof obj === 'object' && numeric(/** @type {Record<string, unknown>} */ (obj)[key]) !== null
+}
+
 /**
  * @param {ReturnType<typeof exerciseFor>} ex
  * @param {Entry} entry
@@ -163,9 +168,8 @@ function bodyweightConfigured(ex, entry, set, workout, opts = {}) {
   const configured = bodyweightTarget(entry)
   if (configured !== null) return configured
   const added = kgOf(set?.w, unitOf(set, entry?.target, entry, workout, opts))
-  const wRecord = workout && typeof workout === 'object' ? /** @type {Record<string, unknown>} */ (workout) : null
   const hasBodyweightContext = numeric(workout?.bw) !== null
-    || numeric(wRecord?.bodyweight) !== null
+    || hasNumericField(workout, 'bodyweight')
     || numeric(opts.bodyweightKg) !== null
     || numeric(opts.bodyweight) !== null
     || hasUnitStamp(set, entry?.target, entry, workout)
@@ -211,6 +215,9 @@ function session1RMs(workout, opts = {}) {
   return best
 }
 
+/** @param {ReturnType<typeof exerciseFor>} ex @returns {boolean} */
+const isCardioEx = ex => !!ex && 'bp' in ex && ex.bp === 'cardio'
+
 /**
  * @param {ReturnType<typeof exerciseFor>} ex
  * @param {Entry} entry
@@ -221,13 +228,13 @@ function session1RMs(workout, opts = {}) {
  * @returns {number}
  */
 function setTonnage(ex, entry, set, workout, oneRm, opts = {}) {
-  if (ex && 'bp' in ex && ex.bp === 'cardio') {
-    return Math.max(set?.min || 0, (set?.sec || 0) / 60) * CARDIO_TONNAGE_PER_MIN
+  if (isCardioEx(ex)) {
+    return Math.max(set.min || 0, (set.sec || 0) / 60) * CARDIO_TONNAGE_PER_MIN
   }
-  if (set?.sec != null && set?.r == null) {
+  if (set.sec != null && set.r == null) {
     return (set.sec / 60) * CARDIO_TONNAGE_PER_MIN
   }
-  const reps = set?.r || 1
+  const reps = set.r || 1
   const load = loadKgFor(ex, entry, set, workout, opts)
   const raw = load * reps
   if (bodyweightConfigured(ex, entry, set, workout, opts)) return raw

@@ -107,7 +107,7 @@ function addExercise(S, command) {
   const { target, note } = extractTarget(command.target)
   const defaults = defaultConfig(command.exId, target.mode)
   /** @type {Target} */
-  const entry = { id: command.exId, ...defaults, ...target }
+  const entry = { id: command.exId, ...defaults, ...target, rowId: uid() }
   if (note) entry.notes = note
   r.ex ??= []
   r.ex.push(entry)
@@ -171,6 +171,7 @@ function replaceExercise(S, command) {
   if (oldEntry?.sg != null && target.sg === undefined) {
     next.sg = oldEntry.sg
   }
+  next.rowId = oldEntry?.rowId || uid()
 
   r.ex[idx] = next
   cleanupSg(r.ex)

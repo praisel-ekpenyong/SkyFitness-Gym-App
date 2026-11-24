@@ -47,8 +47,6 @@ const HISTORICAL = new Set([
 // Checks the standards name before the file exists. Delete the entry when the file lands.
 const PLANNED = new Set([
   'CODING_STANDARDS.md: frontend/src/lib/profile/profile-keys.test.js',
-  'CODING_STANDARDS.md: frontend/react-doctor-floor.json',
-  'CODING_STANDARDS.md: frontend/scripts/check-react-doctor-floor.mjs',
   'docs/DRAFT_GUARD.md: frontend/src/lib/profile/profile-keys.test.js',
 ])
 

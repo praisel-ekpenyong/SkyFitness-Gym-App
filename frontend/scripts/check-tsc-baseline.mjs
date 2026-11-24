@@ -72,7 +72,7 @@ function compare(actual, recorded) {
 // Each recorded entry at min(recorded, real), 0s dropped, keys sorted for stable diffs.
 function lowerBaseline(actual, recorded) {
   const next = {}
-  for (const path of Object.keys(recorded).sort()) {
+  for (const path of Object.keys(recorded).toSorted()) {
     const count = Math.min(recorded[path], actual[path] ?? 0)
     if (count > 0) next[path] = count
   }
@@ -92,10 +92,10 @@ const problems = compare(actual, recorded)
 
 for (const p of problems) {
   if (p.kind === 'stale') {
-    console.error(`${p.path}: tsc baseline is stale, it records ${p.allowed} errors but there are ${p.count}. Run npm run typecheck:baseline to lower it.`)
+    process.stderr.write(`${p.path}: tsc baseline is stale, it records ${p.allowed} errors but there are ${p.count}. Run npm run typecheck:baseline to lower it.\n`)
     continue
   }
-  console.error(`${p.path}: has ${p.count} tsc errors, the baseline allows ${p.allowed}. Fix the new errors:`)
-  for (const h of hits.filter(h => h.path === p.path)) console.error(`  ${p.path}:${h.line} ${h.code}: ${h.message}`)
+  process.stderr.write(`${p.path}: has ${p.count} tsc errors, the baseline allows ${p.allowed}. Fix the new errors:\n`)
+  for (const h of hits.filter(h => h.path === p.path)) process.stderr.write(`  ${p.path}:${h.line} ${h.code}: ${h.message}\n`)
 }
 process.exit(problems.length ? 1 : 0)

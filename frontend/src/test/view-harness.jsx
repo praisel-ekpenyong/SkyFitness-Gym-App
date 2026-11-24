@@ -6,7 +6,7 @@ import Workout from '../views/Workout.jsx'
 import RestTimer from '../components/RestTimer.jsx'
 import Modals from '../components/Modals.jsx'
 import { useStore } from '../store/useStore.js'
-import { DEF } from '../lib/profile/index.js'
+import { DEF, normalizeState } from '../lib/profile/index.js'
 import { useUI } from '../store/useUI.js'
 
 const clone = value => JSON.parse(JSON.stringify(value))
@@ -41,7 +41,7 @@ export function seedActiveWorkout(entries, { cur = 0, start = Date.now() } = {})
         entries,
       }
     : null
-  useStore.setState({ S })
+  useStore.setState({ S: normalizeState(S) })
 }
 
 export function renderWorkout(entries, options) {

@@ -309,6 +309,11 @@ function timeNoProgress(sessions, start, cfg, inc) {
   })
 }
 
+/** @param {Entry | null | undefined} entry @param {Partial<Target>} target @param {number} fallbackCount @returns {number} */
+function plannedSetCount(entry, target, fallbackCount) {
+  return positive(entry?.plan?.sets) ?? positive(target.sets) ?? fallbackCount
+}
+
 /**
  * Read a logged Entry into a normalized progression reading.
  * @param {Entry | null | undefined} entry
@@ -323,7 +328,7 @@ export function readSession(entry, fallback, workout = null, targetUnit = 'kg') 
   /** @type {Workout | ActiveWorkout | null} */
   const workoutContext = typeof workout === 'string' ? { id: '', d: '', start: 0, end: 0, routineId: null, name: '', bw: null, entries: [], unit: workout } : workout
   const sets = workSets(entry)
-  const planned = positive(entry?.plan?.sets) ?? positive(target.sets) ?? sets.length
+  const planned = plannedSetCount(entry, target, sets.length)
   const judged = sets.slice(0, planned)
   const enough = sets.length >= planned
 
@@ -447,7 +452,7 @@ function loadlessPrescription({ policy, cfg, last }) {
   const hit = prescribed > 0 && last.enough && last.low >= prescribed
   if (!hit) return { policy, kind: 'hold', weight: 0, reps: Math.max(1, prescribed), ...carrySets, why: ['Bodyweight — same target again until every set is clean.'] }
   const goal = Math.max(prescribed, last.low || 0)
-  const top = (cfg.repsMax ?? 0) > 0 ? (cfg.repsMax ?? 0) : 0
+  const top = positive(cfg.repsMax) ?? 0
   if (top > 0 && goal >= top) {
     const sets = workingSets + 1
     const planReps = cfg.reps === 0 ? 1 : (cfg.reps || top)
@@ -485,10 +490,9 @@ function bouncedBack(sessions, start, load, bottom) {
  * @returns {Prescription}
  */
 function doublePrescription({ policy, cfg, inc, unit, sessions, last, deloadAt, w }) {
-  const top = Math.max(1, (cfg.reps ?? 0) > 0 ? (cfg.reps ?? 0) : (last.goal || 10))
-  const bottom = (cfg.repsMin ?? 0) > 0
-    ? Math.min(cfg.repsMin ?? 0, top)
-    : Math.max(1, top - 2)
+  const top = Math.max(1, positive(cfg.reps) ?? (last.goal || 10))
+  const cfgMin = positive(cfg.repsMin)
+  const bottom = cfgMin != null ? Math.min(cfgMin, top) : Math.max(1, top - 2)
   const step = repStep(cfg)
   const range = { top, bottom, step }
   /** @param {SessionReading} s */
@@ -588,7 +592,7 @@ export function nextPrescription(S, cfg, routine) {
   const mode = modeOf(cfg)
   const policy = policyFor(cfg, routine, mode)
   const unit = S.unit || 'kg'
-  const inc = (cfg.inc ?? 0) > 0 ? (cfg.inc ?? 0) : (mode === 'time' ? DEFAULT_SEC_INCREMENT : defaultIncrement(cfg.id ?? '', unit))
+  const inc = positive(cfg.inc) ?? (mode === 'time' ? DEFAULT_SEC_INCREMENT : defaultIncrement(cfg.id ?? '', unit))
   if (policy === 'off') return { policy, kind: 'off' }
 
   const logged = cfg.id ? sessionsFor(S, cfg.id, cfg) : []
@@ -671,20 +675,21 @@ function projectedVerdict(entry, state) {
     const base = Math.max(sessionSeconds(last, cfg), weakestPerformed(last))
     step = Math.round((prescription.sec - base) * 10) / 10
   }
-  if (prescription.kind === 'up' && mode !== 'time' && (prescription.weight ?? 0) > 0) {
+  if (prescription.kind === 'up' && mode !== 'time' && positive(prescription.weight)) {
     const working = readSession(entry, cfg, workout, unit).weight || 0
     step = Math.round(((prescription.weight ?? 0) - working) * 10) / 10
   }
   const sameLoad = prev && last && loadOf(prev, cfg.weight) === loadOf(last, cfg.weight)
   if (prescription.kind === 'hold' && sameLoad && mode === 'reps' && prescription.reps != null) {
-    const top = Math.max(1, (cfg.reps ?? 0) > 0 ? (cfg.reps ?? 0) : 10)
-    const bottom = (cfg.repsMin ?? 0) > 0 ? Math.min(cfg.repsMin ?? 0, top) : Math.max(1, top - 2)
+    const top = Math.max(1, positive(cfg.reps) ?? 10)
+    const cfgMin = positive(cfg.repsMin)
+    const bottom = cfgMin != null ? Math.min(cfgMin, top) : Math.max(1, top - 2)
     const stepRep = repStep(cfg)
     const prevAim = Math.min(top, Math.max(bottom, (prev.low || 0) + stepRep))
     if (prescription.reps > prevAim) aimDelta = prescription.reps - prevAim
   }
   if (prescription.kind === 'hold' && prev && mode === 'time' && prescription.sec != null) {
-    const inc = (cfg.inc ?? 0) > 0 ? (cfg.inc ?? 0) : DEFAULT_SEC_INCREMENT
+    const inc = positive(cfg.inc) ?? DEFAULT_SEC_INCREMENT
     const prevAim = timeAim(prev, cfg, inc)
     if (prescription.sec > prevAim) aimDelta = prescription.sec - prevAim
   }
@@ -736,6 +741,18 @@ function resolvePolicy(entry, mode, routine) {
   return policyFor(cfg, routine, mode)
 }
 
+/** @param {Entry} entry @param {Partial<Target>} target @returns {unknown} */
+function legacyTargetRepsOf(entry, target) {
+  if ('r' in target) return target.r
+  if ('reps' in entry) return entry.reps
+  return 'r' in entry ? entry.r : undefined
+}
+
+/** @param {SetRow} setRow @param {string} key @returns {unknown} */
+function legacySetField(setRow, key) {
+  return key in setRow ? /** @type {Record<string, unknown>} */ (setRow)[key] : undefined
+}
+
 /**
  * Evaluate whether a completed work set achieved a progression milestone.
  *
@@ -764,11 +781,11 @@ export function evaluateSetMilestone(entry, setIdx, context = {}) {
   if (policy === 'off') return null
 
   const workRows = entry.sets.filter(isWorkSet)
-  const plannedCount = positive(entry?.plan?.sets) ?? positive(target.sets) ?? workRows.length
+  const plannedCount = plannedSetCount(entry, target, workRows.length)
   const workIdx = workRows.indexOf(setRow)
-  const legacyTargetReps = ('r' in target ? target.r : undefined) ?? ('reps' in entry ? entry.reps : undefined) ?? ('r' in entry ? entry.r : undefined)
-  const legacySetReps = 'reps' in setRow ? setRow.reps : undefined
-  const legacySetSec = 'seconds' in setRow ? setRow.seconds : undefined
+  const legacyTargetReps = legacyTargetRepsOf(entry, target)
+  const legacySetReps = legacySetField(setRow, 'reps')
+  const legacySetSec = legacySetField(setRow, 'seconds')
 
   if (policy === 'linear') {
     const targetReps = Number(target.reps ?? legacyTargetReps ?? (entry.plan && entry.plan.reps)) || 0
@@ -888,7 +905,7 @@ export function evaluateSetMilestone(entry, setIdx, context = {}) {
     if (isAMRAP) {
       const verdict = projectedVerdict(entry, S)
       const p = verdict.prescription
-      if (p.kind === 'up' && (p.weight ?? 0) > 0 && reps >= targetReps) {
+      if (p.kind === 'up' && Number(p.weight) > 0 && reps >= targetReps) {
         const bonus = reps - targetReps
         if (bonus > 0) {
           return {
@@ -938,13 +955,13 @@ export function evaluateSetMilestone(entry, setIdx, context = {}) {
  * @returns {string} Icon identifier.
  */
 export function prescriptionIcon(kindOrPlan, options = {}) {
-  const plan = typeof kindOrPlan === 'object' && kindOrPlan !== null ? kindOrPlan : null
+  const plan = typeof kindOrPlan === 'object' && kindOrPlan ? /** @type {Partial<Prescription>} */ (kindOrPlan) : null
   const kind = plan ? plan.kind : kindOrPlan
   if (kind === 'up') return 'arrowUp'
   if (kind === 'deload') return 'info'
   if (kind === 'down') return 'arrowDown'
   if (options.workoutView) return 'lightbulb'
-  const policy = options.policy ?? (plan && 'policy' in plan ? plan.policy : undefined)
+  const policy = options.policy ?? plan?.policy
   const reps = options.reps ?? plan?.reps
   if (kind === 'first' || (kind === 'hold' && policy === 'double' && reps != null)) return 'target'
   return 'check'
@@ -960,6 +977,9 @@ export function prescriptionStyle(kindOrPlan) {
   const kind = typeof kindOrPlan === 'object' && kindOrPlan !== null ? kindOrPlan.kind : kindOrPlan
   return kind === 'up' ? 'up' : ''
 }
+
+/** @param {Entry} entry @returns {string} */
+const entryDayKey = entry => ('d' in entry && typeof entry.d === 'string' && entry.d) || todayISO()
 
 /**
  * Evaluates a single completed entry against its next prescription, returning a progression descriptor.
@@ -992,7 +1012,7 @@ export function evaluateSessionProgression(entry, state, context = {}) {
         id: 'session-entry-' + entry.id,
         // Stand-in Workout day key uses local calendar date.
         // Passing now into evaluateSessionProgression is deferred to clock audit.
-        d: ('d' in entry && typeof entry.d === 'string' ? entry.d : '') || todayISO(),
+        d: entryDayKey(entry),
         start: 0,
         end: 0,
         routineId: null,
@@ -1040,14 +1060,14 @@ export function evaluateSessionProgression(entry, state, context = {}) {
     if (p.sec != null) {
       text = t('Deload to {0}s', p.sec)
     } else if (policy === 'double' && p.reps != null) {
-      text = t('Deload to {0} {1}, back to {2} reps', fmtNum(p.weight ?? 0), unit, p.reps)
+      text = t('Deload to {0} {1}, back to {2} reps', fmtNum(Number(p.weight) || 0), unit, p.reps)
     } else if (p.weight != null) {
       text = t('Deload to {0} {1}', fmtNum(p.weight), unit)
     } else {
       text = t('Deload to reset and rebuild')
     }
   } else if (p.kind === 'down') {
-    text = t('Drop {0} {1}, back to {2} reps', p.by ?? 0, unit, p.reps ?? 0)
+    text = t('Drop {0} {1}, back to {2} reps', Number(p.by) || 0, unit, Number(p.reps) || 0)
   } else if (p.kind === 'hold') {
     if (policy === 'double' && p.reps != null) {
       const wVal = p.weight ?? oldWeight
@@ -1078,7 +1098,7 @@ export function evaluateSessionProgression(entry, state, context = {}) {
 
   return {
     id: entry.id,
-    d: (workout?.d || dummyWorkout?.d) ?? null,
+    d: workout?.d ?? dummyWorkout?.d ?? null,
     exName,
     policy,
     policyName,
@@ -1105,9 +1125,10 @@ export function evaluateSessionProgression(entry, state, context = {}) {
 export function sessionProgressionItems(workout, state) {
   if (!workout?.entries) return []
   const routine = (workout.routineId && state?.routines?.find(r => r.id === workout.routineId)) || null
-  const effectiveS = (state?.workouts || []).some(item => item.id === workout.id || item === workout)
+  const workouts = state?.workouts || []
+  const effectiveS = workouts.some(item => item.id === workout.id || item === workout)
     ? state
-    : { ...(state || {}), workouts: [...(state?.workouts || []), workout] }
+    : { ...(state || {}), workouts: [...workouts, workout] }
 
   /** @type {ProgressionDescriptor[]} */
   const items = []

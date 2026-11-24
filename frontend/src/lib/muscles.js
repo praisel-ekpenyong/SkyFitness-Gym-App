@@ -213,14 +213,19 @@ export function bodypartForMuscle(muscle) {
 /** @param {string | MuscleSource | null | undefined} exercise @returns {MuscleSource | null | undefined} */
 const asExercise = exercise => typeof exercise === 'string' ? EXIDX[exercise] : exercise
 
-/** @param {string | MuscleSource | null | undefined} exercise @returns {string | null} */
-export function primaryMuscleOf(exercise) {
+/** @param {string | MuscleSource | null | undefined} exercise @returns {CustomExercise | null} */
+function resolveMuscleSource(exercise) {
   const raw = asExercise(exercise)
   const ex = hasOwnMuscleMeta(raw) ? raw : (exerciseFor(raw) || raw)
   if (!ex || typeof ex !== 'object') return null
   const source = metadataOf(ex)
-  if (!source || typeof source !== 'object') return null
-  const s = /** @type {CustomExercise} */ (source)
+  return source && typeof source === 'object' ? /** @type {CustomExercise} */ (source) : null
+}
+
+/** @param {string | MuscleSource | null | undefined} exercise @returns {string | null} */
+export function primaryMuscleOf(exercise) {
+  const s = resolveMuscleSource(exercise)
+  if (!s) return null
   if (isCardio(s)) return 'cardio'
   const explicit = explicitGroupsOf(s)
   if (explicit && explicit.length > 0) {
@@ -246,13 +251,8 @@ export function primaryMuscleName(exercise) {
 
 /** @param {string | MuscleSource | null | undefined} exercise @returns {string[]} */
 export function secondaryMusclesOf(exercise) {
-  const raw = asExercise(exercise)
-  const ex = hasOwnMuscleMeta(raw) ? raw : (exerciseFor(raw) || raw)
-  if (!ex || typeof ex !== 'object') return []
-  const source = metadataOf(ex)
-  if (!source || typeof source !== 'object') return []
-  const s = /** @type {CustomExercise} */ (source)
-  if (isCardio(s)) return []
+  const s = resolveMuscleSource(exercise)
+  if (!s || isCardio(s)) return []
   const primary = primaryMuscleOf(s)
   const explicit = explicitGroupsOf(s)
   /** @type {string[]} */
@@ -345,32 +345,36 @@ export function matchesMuscleGroups(ex, requested) {
   return wanted.some(group => groups.has(group))
 }
 
+/** @param {MuscleSource} ex @returns {Record<string, number> | null} */
+function readMuscleSnapshot(ex) {
+  if (!('muscleWeights' in ex) || !ex.muscleWeights || typeof ex.muscleWeights !== 'object' || Array.isArray(ex.muscleWeights)) return null
+  /** @type {Record<string, number>} */
+  const snapshot = {}
+  /** @param {string} slug @param {number} weight */
+  const credit = (slug, weight) => { snapshot[slug] = Math.max(snapshot[slug] || 0, weight) }
+  Object.entries(ex.muscleWeights).forEach(([key, value]) => {
+    const weight = Number(value)
+    if (!Number.isFinite(weight) || weight <= 0) return
+    if (isPlainShoulders(key)) plainShouldersWeights(weight >= 1).forEach(([slug, w]) => credit(slug, w))
+    else if (MUSCLES.includes(key)) credit(key, weight)
+  })
+  if (!Object.keys(snapshot).length) return null
+  const isStaleBackSnapshot =
+    !('lats' in snapshot) &&
+    'bp' in ex && ex.bp === 'back' &&
+    !explicitGroupsOf(ex) &&
+    !hasExplicitMuscleMetadata(ex)
+  return isStaleBackSnapshot ? null : snapshot
+}
+
 /** @param {string | MuscleSource | null | undefined} idOrEx @returns {Record<string, number>} */
 export function musclesOf(idOrEx) {
   const ex = typeof idOrEx === 'string' ? EXIDX[idOrEx] : idOrEx
   if (!ex) return {}
   const sourceEx = hasOwnMuscleMeta(ex) ? ex : metadataOf(ex)
   if (sourceEx && sourceEx !== ex) return musclesOf(sourceEx)
-  if ('muscleWeights' in ex && ex.muscleWeights && typeof ex.muscleWeights === 'object' && !Array.isArray(ex.muscleWeights)) {
-    /** @type {Record<string, number>} */
-    const snapshot = {}
-    /** @param {string} slug @param {number} weight */
-    const credit = (slug, weight) => { snapshot[slug] = Math.max(snapshot[slug] || 0, weight) }
-    Object.entries(ex.muscleWeights).forEach(([key, value]) => {
-      const weight = Number(value)
-      if (!Number.isFinite(weight) || weight <= 0) return
-      if (isPlainShoulders(key)) plainShouldersWeights(weight >= 1).forEach(([slug, w]) => credit(slug, w))
-      else if (MUSCLES.includes(key)) credit(key, weight)
-    })
-    if (Object.keys(snapshot).length) {
-      const isStaleBackSnapshot =
-        !('lats' in snapshot) &&
-        'bp' in ex && ex.bp === 'back' &&
-        !explicitGroupsOf(ex) &&
-        !hasExplicitMuscleMetadata(ex)
-      if (!isStaleBackSnapshot) return snapshot
-    }
-  }
+  const snapshot = readMuscleSnapshot(ex)
+  if (snapshot) return snapshot
   const c = /** @type {CustomExercise} */ (ex)
   /** @type {Record<string, number>} */
   const out = {}
@@ -492,6 +496,12 @@ export function rankOf(load) {
   return { worked, missed }
 }
 
+/** @param {ReturnType<typeof exerciseFor> | Entry} ex @param {Entry} entry @returns {string} */
+function entryDisplayName(ex, entry) {
+  if (ex && 'n' in ex && ex.n) return ex.n
+  return entry.muscleSnapshot?.n || entry.n || (typeof entry.id === 'string' ? entry.id : '')
+}
+
 /**
  * @param {Workout | ActiveWorkout | null | undefined} workout
  * @returns {Array<{ slug: string, name: string, effectiveSets: number, primarySets: number, secondarySets: number, assistSets: number, compoundSets: number, exercises: string[] }>}
@@ -511,7 +521,7 @@ export function sessionMuscleDistribution(workout) {
     totalWorkSets += count
 
     const ex = exerciseFor(entry) || entry
-    const exName = ('n' in ex && ex.n) || entry?.muscleSnapshot?.n || entry?.n || (typeof entry.id === 'string' ? entry.id : '')
+    const exName = entryDisplayName(ex, entry)
 
     /** @param {string} slug */
     const getAcc = slug => {

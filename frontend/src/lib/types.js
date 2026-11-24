@@ -81,6 +81,7 @@
  * Prescribed exercise config in a Routine or frozen on an Entry as `target`.
  * @typedef {Object} Target
  * @property {string} [id] - Exercise ID (present on Routine exercises).
+ * @property {string} [rowId] - Stable UI key on Routine exercise rows.
  * @property {number} sets - Planned work set count.
  * @property {LoggingMode} [mode]
  * @property {number} [reps]
@@ -114,6 +115,7 @@
 /**
  * One logged performance row inside an Entry.
  * @typedef {Object} SetRow
+ * @property {string} [id] - Stable UI key on Active set rows.
  * @property {boolean} done
  * @property {SetPhase} [phase] - `'warmup'` on warm-up sets; absent or `'work'` on work sets.
  * @property {number} [w] - Weight in Entry/Workout/Set unit.

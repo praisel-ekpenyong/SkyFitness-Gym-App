@@ -22,11 +22,12 @@ const effortTail = s => {
 export function setLabel(id, s, cfg) {
   const c = cfg || { id }
   const mode = modeOf(c)
+  const w = Number(s.w)
   if (mode === 'cardio') return `${s.min || 0} min @ ${fmtNum(s.speed || 0)} km/h`
-  if (mode === 'time') return fmtSec(s.sec ?? 0) + ((s.w ?? 0) > 0 ? ` · ${fmtNum(s.w ?? 0)}` : '')
+  if (mode === 'time') return fmtSec(Number(s.sec) || 0) + (w > 0 ? ` · ${fmtNum(w)}` : '')
   const reps = s.r || 0
   if (isBw({ ...c, id: c.id ?? id })) {
-    const load = (s.w ?? 0) > 0 ? `${fmtSigned(s.w ?? 0)} × ` : ''
+    const load = w > 0 ? `${fmtSigned(w)} × ` : ''
     return `${load}${reps}` + effortTail(s)
   }
   return `${fmtNum(s.w || 0)}×${reps}` + effortTail(s)
