@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { normalizeWeight } from './units.js'
 import {
-  LB_TO_KG,
   currentBodyweightKg,
   deleteWeighIn,
   deltaTowardGoal,
@@ -193,9 +192,9 @@ describe('canonical-kg reading', () => {
   })
 
   it('round-trips 80 kg across units at 1-decimal policy', () => {
-    const asLb = Math.round(80 / LB_TO_KG * 10) / 10
+    const asLb = normalizeWeight(80, 'kg', 'lb')
     expect(asLb).toBe(176.4)
-    expect(Math.round(asLb * LB_TO_KG * 10) / 10).toBe(80)
+    expect(normalizeWeight(asLb, 'lb', 'kg')).toBe(80)
   })
 
   it('rounds a pound weigh-in to one decimal in kg so it agrees with logged Sets', () => {

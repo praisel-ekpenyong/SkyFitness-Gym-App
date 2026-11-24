@@ -3,6 +3,7 @@ import { parseWorkoutCSV, parseBodyweight, mergeImport, importPreview } from './
 import { best, e1rmSeries, tonnage } from './training-log.js'
 import { act } from './active-workout.js'
 import { admit } from './profile/index.js'
+import { normalizeWeight } from './units.js'
 
 const CSV = [
   'Date,Exercise,Weight,Reps,Set Type',
@@ -321,3 +322,12 @@ describe('date-only Apple Health weigh-in and CSV workout alignment', () => {
 })
 
 
+
+describe('lb weigh-in import converts like normalizeWeight', () => {
+  it('imports a lb Apple Health weigh-in to the kg value normalizeWeight returns', () => {
+    const xml = '<Record type="HKQuantityTypeIdentifierBodyMass" unit="lb" startDate="2026-01-05 08:00:00 +0000" value="176.4"/>'
+    const res = parseBodyweight(xml, { unit: 'kg' })
+    expect(res.bodyweight[0].w).toBe(normalizeWeight(176.4, 'lb', 'kg'))
+    expect(res.bodyweight[0].w).toBe(80)
+  })
+})

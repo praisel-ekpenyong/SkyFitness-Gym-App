@@ -1,5 +1,6 @@
 import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'
+import ownerSelectors from './eslint.owner-selectors.js'
 
 // oxlint is the main linter (.oxlintrc.json, ADR 0034) and owns every rule it supports:
 // its correctness category, rules-of-hooks, exhaustive-deps, no-unused-vars, no-empty.
@@ -33,4 +34,5 @@ export default [
       'react-hooks/memo-dependencies': 'error',
     },
   },
+  ...ownerSelectors,
 ]
