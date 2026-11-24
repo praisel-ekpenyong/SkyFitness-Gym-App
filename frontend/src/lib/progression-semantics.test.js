@@ -196,3 +196,13 @@ describe('hand-edited zero goals clamp to safe minimums', () => {
     expect(p.reps).toBeGreaterThanOrEqual(1)
   })
 })
+
+describe('a Set stamped in another unit from its Entry', () => {
+  it('reads the session weight from the row stamp, the Target from the Entry stamp', () => {
+    const w = { ...finishedWorkout('2026-04-01', TARGET_3X5, [work(100, 5), work(100, 5), work(100, 5)].map(s => ({ ...s, unit: 'lb' }))), unit: 'kg' }
+    w.entries[0].unit = 'kg'
+    const [session] = sessionsFor({ unit: 'kg', workouts: [w] }, LIFT, LINEAR)
+    expect(session.weight).toBe(45.4)
+    expect(session.target.weight).toBe(60)
+  })
+})

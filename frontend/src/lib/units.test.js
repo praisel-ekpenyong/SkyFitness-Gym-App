@@ -8,6 +8,8 @@ import {
   resolveSetWeight,
   targetIn,
   setIn,
+  readSet,
+  entryUnit,
   switchUnit,
   convertIncrement,
 } from './units.js'
@@ -167,6 +169,33 @@ describe('setIn: one logged row in another unit', () => {
     const kg = { w: 60, r: 5 }
     expect(setIn(cardio, 'kg', 'lb')).toBe(cardio)
     expect(setIn(kg, 'kg', 'kg')).toBe(kg)
+  })
+})
+
+describe('entryUnit: the unit an Entry is logged in', () => {
+  it('reads the Entry stamp, else the Workout stamp, else the fallback', () => {
+    expect(entryUnit({ unit: 'lb' }, { unit: 'kg' }, 'kg')).toBe('lb')
+    expect(entryUnit({}, { unit: 'lb' }, 'kg')).toBe('lb')
+    expect(entryUnit(null, null, 'kg')).toBe('kg')
+  })
+})
+
+describe('readSet: one logged row of an Entry, read in the Profile unit', () => {
+  it('converts a row stamped in a different unit from its Entry from the row stamp', () => {
+    const entry = { unit: 'kg' }
+    const workout = { unit: 'kg' }
+    expect(readSet({ w: 100, r: 5, unit: 'lb' }, entry, workout, 'kg')).toEqual({ w: 45.4, r: 5, unit: 'kg' })
+  })
+
+  it('converts an unstamped row from its Entry, then its Workout', () => {
+    expect(readSet({ w: 100, r: 5 }, { unit: 'kg' }, { unit: 'lb' }, 'lb')).toEqual({ w: 220.5, r: 5 })
+    expect(readSet({ w: 100, r: 5 }, {}, { unit: 'lb' }, 'kg')).toEqual({ w: 45.4, r: 5 })
+  })
+
+  it('agrees with resolveSetWeight on the load', () => {
+    const set = { w: 100, r: 5, unit: 'lb' }
+    const entry = { unit: 'kg' }
+    expect(readSet(set, entry, null, 'kg').w).toBe(resolveSetWeight(set, entry, null, 'kg'))
   })
 })
 

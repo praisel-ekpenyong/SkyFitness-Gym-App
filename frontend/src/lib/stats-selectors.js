@@ -2,7 +2,7 @@ import { EXDB, EXIDX } from './exercises.js'
 import { fatigueOf, strengthOf, fatigueStateOf } from './recovery.js'
 import { MUSCLES, loadOfWorkouts, loadOfRoutine, rankOf, lastTrainedByMuscle } from './muscles.js'
 import { currentBodyweightKg, weighIns } from './bodyweight.js'
-import { setIn } from './units.js'
+import { readSet } from './units.js'
 import { best1RM, e1rmSeries, loadRecords, metric } from './training-log.js'
 import {
   displayScale, scaleName, toScale, avgRir,
@@ -328,7 +328,7 @@ export function selectExerciseStats(S, exId, opts = {}) {
       t: workoutTimestamp(workout),
       d: workout?.d,
       y: round1(mx),
-      sets: rows.map(set => setIn(set, entry?.unit ?? workout?.unit ?? S?.unit, S?.unit || 'kg')),
+      sets: rows.map(set => readSet(set, entry, workout, S?.unit || 'kg')),
       target: entry?.target || null,
       record: recordIndexOf(S, workout, exId, rows, mode),
     })

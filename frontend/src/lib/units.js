@@ -27,10 +27,23 @@ export function normalizeWeight(val, fromUnit, toUnit) {
   return n
 }
 
+/**
+ * The unit an Entry is logged in: its own stamp, else the Workout's, else `fallback`.
+ * A Target and a Prescription have no Set stamp, so this is their unit. A Set's own stamp still wins, in `resolveSetWeight`.
+ *
+ * @param {Object|null} entry - The Entry.
+ * @param {Object|null} workout - The Workout.
+ * @param {string} [fallback='kg'] - Used when neither is stamped.
+ * @returns {string} The unit to read the Entry's Target and Prescription in.
+ */
+export function entryUnit(entry, workout, fallback = 'kg') {
+  return entry?.unit ?? workout?.unit ?? fallback
+}
+
 export function resolveSetWeight(set, entry = null, workout = null, targetUnit = 'kg') {
   const w = Number(set?.w)
   if (!Number.isFinite(w) || w <= 0) return 0
-  const rawUnit = set?.unit ?? entry?.unit ?? workout?.unit ?? targetUnit
+  const rawUnit = set?.unit ?? entryUnit(entry, workout, targetUnit)
   return normalizeWeight(w, rawUnit, targetUnit)
 }
 
@@ -91,6 +104,21 @@ export function setIn(set, from, to) {
   const own = set.unit ?? from
   if (sameUnit(own, to)) return set
   return { ...set, w: normalizeWeight(set.w, own, to), ...(set.unit != null ? { unit: sanitizeUnit(to) } : {}) }
+}
+
+/**
+ * One Set of an Entry, read in the Profile unit.
+ * The load uses the same cascade as `resolveSetWeight`: the Set's stamp, else `entryUnit`.
+ * A Set with no load, or already in that unit, is the stored Set.
+ *
+ * @param {Object} set - A Set.
+ * @param {Object|null} [entry] - The Entry it belongs to.
+ * @param {Object|null} [workout] - The Workout it belongs to.
+ * @param {string} [targetUnit='kg'] - The unit wanted, usually the Profile unit.
+ * @returns {Object} `set` itself when nothing changes, else a converted copy.
+ */
+export function readSet(set, entry = null, workout = null, targetUnit = 'kg') {
+  return setIn(set, entryUnit(entry, workout, targetUnit), targetUnit)
 }
 
 /**

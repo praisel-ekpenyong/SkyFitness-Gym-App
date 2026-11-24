@@ -5,7 +5,7 @@ import { EXIDX } from '../lib/exercises.js'
 import { fmtNum, fmtSigned, fmtVol, fmtDur, durPart } from '../lib/format.js'
 import { fmtDate, todayISO, MONTHS_LONG, monthKey, weekKey, isoOf } from '../lib/dates.js'
 import { setLabel } from '../lib/set-label.js'
-import { setIn } from '../lib/units.js'
+import { readSet } from '../lib/units.js'
 import { sessionBodyweight } from '../lib/bodyweight.js'
 import { isWarmupRow } from '../lib/warmup.js'
 import { isWorkSet } from '../lib/workout-sets.js'
@@ -55,7 +55,7 @@ export function WorkoutDetail({ w, close }) {
         const doneSets = (e.sets || []).filter(s => s.done)
         const warmups = doneSets.filter(isWarmupRow)
         const workSets = doneSets.filter(isWorkSet)
-        const formatSets = sets => sets.map(s => setLabel(e.id, setIn(s, e.unit ?? w.unit ?? st.unit, st.unit), e.target)).join('  ·  ')
+        const formatSets = sets => sets.map(s => setLabel(e.id, readSet(s, e, w, st.unit), e.target)).join('  ·  ')
         return (
           <div key={i} className="row ex-entry">
             {ex && <Thumb ex={ex} />}
