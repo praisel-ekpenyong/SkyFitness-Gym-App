@@ -27,12 +27,14 @@ export async function nativeSave(state) {
   await Filesystem.writeFile({ path: FILE, directory: Directory.Data, data: JSON.stringify(state), encoding: Encoding.UTF8 })
 }
 
+/**
+ * Storage sink that mirrors snapshots to the app's private file and keeps workout reminders synced; rejects only when the file write fails.
+ */
 export const nativeSink = {
   id: 'native',
   async write(state) {
-    const [saved, reminded] = await Promise.allSettled([nativeSave(state), syncReminder(state)])
+    const [saved] = await Promise.allSettled([nativeSave(state), syncReminder(state)])
     if (saved.status === 'rejected') throw saved.reason
-    if (reminded.status === 'rejected') throw reminded.reason
   },
 }
 

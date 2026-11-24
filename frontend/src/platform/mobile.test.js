@@ -116,45 +116,42 @@ describe('syncReminder', () => {
 })
 
 describe('nativeSave / nativeSink', () => {
-  it('nativeSave rejects when Filesystem.writeFile rejects', async () => {
+  async function drainNative(state, expectedFailing) {
+    __setSinksForTests([nativeSink])
+    save(state)
+    flush()
+    await vi.waitFor(() => expect(isMirrorFailing()).toBe(expectedFailing), { timeout: 200 })
+  }
+
+  it('nativeSave rejects when writing the native file fails', async () => {
     fs.writeError = new Error('disk full')
     await expect(nativeSave(profile({ on: false }))).rejects.toThrow('disk full')
   })
 
-  it('marks the mirror as failing when Filesystem.writeFile rejects and clears it on a later success', async () => {
-    __setSinksForTests([nativeSink])
+  it('reports a failing mirror when the native file write fails, and clears on a later success', async () => {
     fs.writeError = new Error('disk full')
-    save({ ...profile({ on: false }), _ts: 1 })
-    flush()
-    await vi.waitFor(() => expect(isMirrorFailing()).toBe(true), { timeout: 200 })
+    await drainNative({ ...profile({ on: false }), _ts: 1 }, true)
     expect(loadLocal()).toEqual({ ...profile({ on: false }), _ts: 1 })
 
     fs.writeError = null
-    save({ ...profile({ on: false }), _ts: 2 })
-    flush()
-    await vi.waitFor(() => expect(isMirrorFailing()).toBe(false), { timeout: 200 })
+    await drainNative({ ...profile({ on: false }), _ts: 2 }, false)
   })
 
-  it('awaits syncReminder before resolving', async () => {
+  it('schedules workout reminders before the native sink write settles', async () => {
     await nativeSink.write(profile({ on: true, time: '07:30' }))
     expect(plugin.scheduled).toHaveLength(1)
   })
 
   it('keeps the mirror healthy when reminder scheduling fails', async () => {
-    __setSinksForTests([nativeSink])
     fs.writeError = new Error('disk full')
-    save({ ...profile({ on: false }), _ts: 1 })
-    flush()
-    await vi.waitFor(() => expect(isMirrorFailing()).toBe(true), { timeout: 200 })
+    await drainNative({ ...profile({ on: false }), _ts: 1 }, true)
 
     fs.writeError = null
     plugin.scheduleError = new Error('notifications unavailable')
-    save({ ...profile({ on: true, time: '08:00' }), _ts: 2 })
-    flush()
-    await vi.waitFor(() => expect(isMirrorFailing()).toBe(false), { timeout: 200 })
+    await drainNative({ ...profile({ on: true, time: '08:00' }), _ts: 2 }, false)
   })
 
-  it('still completes syncReminder cleanly when Filesystem.writeFile rejects', async () => {
+  it('still updates workout reminders when writing the native file fails', async () => {
     fs.writeError = new Error('disk full')
     await expect(nativeSink.write(profile({ on: true, time: '07:30' }))).rejects.toThrow('disk full')
     expect(plugin.scheduled).toHaveLength(1)
