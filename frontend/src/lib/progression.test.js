@@ -1,7 +1,8 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import {
   readSession, sessionsFor, stallCount, nextPrescription, applyPrescription,
-  policyFor, defaultIncrement, POLICIES_FOR, DELOAD_AFTER, MAX_BW_SETS
+  policyFor, defaultIncrement, POLICIES_FOR, DELOAD_AFTER, MAX_BW_SETS,
+  evaluateSessionProgression
 } from './progression.js'
 import { EXDB } from './exercises.js'
 
@@ -770,5 +771,40 @@ describe('applyPrescription never touches warm-up rows (round 3)', () => {
     ]
     const out = applyPrescription(sets, { kind: 'up', weight: 62.5, reps: 5, sets: 4 })
     expect(out).toEqual(sets)
+  })
+})
+
+describe('evaluateSessionProgression stand-in workout date', () => {
+  const origTZ = process.env.TZ
+
+  afterEach(() => {
+    vi.useRealTimers()
+    if (origTZ === undefined) {
+      delete process.env.TZ
+    } else {
+      process.env.TZ = origTZ
+    }
+  })
+
+  const entry = {
+    id: LIFT,
+    target: { sets: 3, reps: 5, weight: 60, prog: 'linear' },
+    sets: [
+      { w: 60, r: 5, done: true },
+      { w: 60, r: 5, done: true },
+      { w: 60, r: 5, done: true },
+    ],
+  }
+
+  it.each([
+    { tz: 'America/Los_Angeles', time: '2026-03-10T22:00:00-08:00', expected: '2026-03-10', desc: 'near midnight in a UTC-negative zone' },
+    { tz: 'Asia/Tokyo', time: '2026-03-11T00:30:00+09:00', expected: '2026-03-11', desc: 'just after midnight in an east-of-UTC zone' },
+  ])('stamps local day key $desc', ({ tz, time, expected }) => {
+    process.env.TZ = tz
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date(time))
+
+    const item = evaluateSessionProgression(entry, { unit: 'kg', workouts: [] })
+    expect(item?.d).toBe(expected)
   })
 })
