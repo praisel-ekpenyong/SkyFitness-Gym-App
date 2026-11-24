@@ -1,0 +1,42 @@
+{
+  "src/components/TabBar.jsx": {
+    "react-hooks/static-components": {
+      "count": 5
+    }
+  },
+  "src/sheets/catalogue.jsx": {
+    "react-hooks/purity": {
+      "count": 1
+    }
+  },
+  "src/sheets/history.jsx": {
+    "react-hooks/static-components": {
+      "count": 4
+    }
+  },
+  "src/sheets/profile.jsx": {
+    "react-hooks/purity": {
+      "count": 2
+    }
+  },
+  "src/sheets/session.jsx": {
+    "react-hooks/refs": {
+      "count": 2
+    }
+  },
+  "src/views/Home.jsx": {
+    "react-hooks/purity": {
+      "count": 1
+    }
+  },
+  "src/views/Library.jsx": {
+    "react-hooks/memo-dependencies": {
+      "count": 1
+    }
+  },
+  "src/views/Settings.jsx": {
+    "react-hooks/purity": {
+      "count": 1
+    }
+  }
+}

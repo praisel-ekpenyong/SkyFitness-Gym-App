@@ -16,9 +16,10 @@ export default [
       globals: { ...globals.browser, ...globals.node, __APP_VERSION__: 'readonly' },
     },
     plugins: { 'react-hooks': reactHooks },
-    // Zero-hit compiler rules. react-hooks/todo stays off. Do not spread
-    // recommended: that also turns on rules-of-hooks, exhaustive-deps, and the
-    // four rules that still hit (static-components, purity, refs, memo-dependencies).
+    // Compiler rules at error. react-hooks/todo stays off. Do not spread
+    // recommended: that also turns on rules-of-hooks and exhaustive-deps.
+    // static-components, purity, refs, and memo-dependencies still hit; those
+    // hits are baselined in eslint-suppressions.json.
     rules: {
       'react-hooks/set-state-in-effect': 'error',
       'react-hooks/no-deriving-state-in-effects': 'error',
@@ -26,6 +27,10 @@ export default [
       'react-hooks/immutability': 'error',
       'react-hooks/preserve-manual-memoization': 'error',
       'react-hooks/globals': 'error',
+      'react-hooks/static-components': 'error',
+      'react-hooks/purity': 'error',
+      'react-hooks/refs': 'error',
+      'react-hooks/memo-dependencies': 'error',
     },
   },
 ]
