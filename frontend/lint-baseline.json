@@ -1,4 +1,7 @@
 {
+  "scripts/check-frontend-state.mjs": {
+    "eslint/no-restricted-globals": 1
+  },
   "scripts/check-lint-baseline.mjs": {
     "unicorn/no-array-sort": 2,
     "eslint/no-restricted-globals": 3

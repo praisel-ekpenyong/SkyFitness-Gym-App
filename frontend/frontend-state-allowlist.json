@@ -1,0 +1,10 @@
+{
+  "src/sheets/catalogue.jsx": {
+    "count": 12,
+    "reason": "Over the cap when rule 1 landed: the 1RM sheet, the exercise editor, the picker and the counter sheet share one file."
+  },
+  "src/views/Stats.jsx": {
+    "count": 10,
+    "reason": "Over the cap when rule 1 landed: the view's range, window and chart toggles."
+  }
+}
