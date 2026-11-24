@@ -44,11 +44,6 @@
       "count": 1
     }
   },
-  "src/lib/plans/scenarios.js": {
-    "no-restricted-syntax": {
-      "count": 1
-    }
-  },
   "src/lib/progression.js": {
     "no-restricted-syntax": {
       "count": 4

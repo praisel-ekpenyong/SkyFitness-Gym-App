@@ -34,5 +34,18 @@ export default [
       'react-hooks/memo-dependencies': 'error',
     },
   },
-  ...ownerSelectors,
+  // Local dates, never UTC (CODING_STANDARDS.md "Local dates, never UTC"). A file gets one
+  // no-restricted-syntax config, so these selectors ride in ownerSelectors with the One-owner ones.
+  ...ownerSelectors([
+    {
+      selector: "CallExpression[callee.property.name='slice'][callee.object.callee.property.name='toISOString']",
+      message: "toISOString() is UTC: build a day key with todayISO() or isoOf() from lib/dates.js.",
+    },
+    {
+      selector: "NewExpression[callee.name='Date'][arguments.length=1] > :matches(MemberExpression[property.name='d'], Identifier[name='d'])",
+      message: "new Date('YYYY-MM-DD') parses as UTC midnight: use parseDay() from lib/dates.js (local noon).",
+    },
+  ]),
+  // lib/plans/scenarios.js, the dev scenario generator, is UTC end to end on purpose.
+  { files: ['src/lib/plans/scenarios.js'], rules: { 'no-restricted-syntax': 'off' } },
 ]

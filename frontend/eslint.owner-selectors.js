@@ -23,8 +23,9 @@ const weekdaySelectors = [
 
 const rule = selectors => ({ 'no-restricted-syntax': ['error', ...selectors] })
 
-export default [
-  { files: ['**/*.{js,jsx,mjs}'], ignores: [...unitsOwner, ...datesOwner], rules: rule([...lbSelectors, ...weekdaySelectors]) },
-  { files: unitsOwner, rules: rule(weekdaySelectors) },
-  { files: datesOwner, rules: rule(lbSelectors) },
+/** @param {object[]} [everywhere] - Selectors from other tickets that apply to every file. */
+export default (everywhere = []) => [
+  { files: ['**/*.{js,jsx,mjs}'], ignores: [...unitsOwner, ...datesOwner], rules: rule([...everywhere, ...lbSelectors, ...weekdaySelectors]) },
+  { files: unitsOwner, rules: rule([...everywhere, ...weekdaySelectors]) },
+  { files: datesOwner, rules: rule([...everywhere, ...lbSelectors]) },
 ]
