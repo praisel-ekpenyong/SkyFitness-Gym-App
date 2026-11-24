@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { selectStatsOverview, selectExerciseStats } from './stats-selectors.js'
 import { best1RM } from './training-log.js'
 import { switchUnit } from './units.js'
+import { isoOf } from './dates.js'
 
 const DAY = 24 * 60 * 60 * 1000
 const NOW = Date.UTC(2026, 6, 1, 12)
@@ -10,7 +11,7 @@ const SQUAT = { id: '0043', n: 'barbell full squat', bp: 'upper legs', eq: 'barb
 const BENCH_NOT_GRADED = { id: 'lift', n: 'Cable fly', bp: 'chest', tg: 'pectorals', sm: [], eq: 'cable' }
 const catalogue = { lookup: id => (id === SQUAT.id ? SQUAT : id === BENCH_NOT_GRADED.id ? BENCH_NOT_GRADED : null) }
 
-const isoAgo = ageDays => new Date(NOW - ageDays * DAY).toISOString().slice(0, 10)
+const isoAgo = ageDays => isoOf(new Date(NOW - ageDays * DAY))
 const session = (id, ageDays, sets, extra = {}) => ({
   id: `w-${id}-${ageDays}`,
   d: isoAgo(ageDays),
