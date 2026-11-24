@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { actRoutine, routineView } from './routines.js'
+import { act } from './active-workout.js'
 import { DEFAULT_GLYPH } from './glyphs.js'
 import { t } from './i18n.js'
 import { defaultConfig } from './workout-model.js'
@@ -455,5 +456,29 @@ describe('Routine Domain Module (lib/routines.js)', () => {
       const view = routineView(null)
       expect(view).toEqual({ entries: [] })
     })
+  })
+})
+
+describe('editing a Routine during an Active workout', () => {
+  it('leaves the Active workout as it was', () => {
+    const S = {
+      unit: 'kg', restSec: 90, workouts: [], exWeights: {}, bodyweight: [], week: {}, dayPlan: {},
+      routines: [{
+        id: 'r-push', name: 'Push Day', ex: [
+          { id: '0025', sets: 3, reps: 8, weight: 60, mode: 'reps', sg: 's1', notes: 'Bench cue' },
+          { id: '0026', sets: 3, reps: 10, weight: 50, mode: 'reps', sg: 's1' },
+          { id: '0027', sets: 3, reps: 12, weight: 15, mode: 'reps' },
+        ],
+      }],
+    }
+    act(S, { type: 'begin', routineId: 'r-push', bw: 80 })
+    const before = structuredClone(S.active)
+
+    actRoutine(S, { type: 'replaceExercise', routineId: 'r-push', index: 2, target: { sets: 5, reps: 5, weight: 20, notes: 'New cue' } })
+    actRoutine(S, { type: 'removeExercise', routineId: 'r-push', index: 0 })
+    actRoutine(S, { type: 'toggleSuperset', routineId: 'r-push', index: 0 })
+    actRoutine(S, { type: 'rename', routineId: 'r-push', name: 'Pull Day' })
+
+    expect(S.active).toStrictEqual(before)
   })
 })
