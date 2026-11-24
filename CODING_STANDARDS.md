@@ -412,10 +412,10 @@ finding is a judgement call, no tooth.
    fresh `[]` or `{}` (zustand 5 compares by reference, so a new array each call
    loops the render): hoist `const EMPTY = []` or use `useShallow`.
 
-**Why:** `App.jsx` (line 43) and `views/Settings.jsx` (line 27) call `useStore()`
-bare, `components/Modals.jsx` (line 5) and `components/RestTimer.jsx` (line 10)
-call `useUI()` bare, and `views/Workout.jsx` returned a new `[]` from a selector
-when no workout was active, which looped the render (#136, fixed).
+**Why:** `App.jsx`, `views/Settings.jsx`, `components/Modals.jsx` and
+`components/RestTimer.jsx` called `useStore()` or `useUI()` bare (fixed in #114),
+and `views/Workout.jsx` returned a new `[]` from a selector when no workout was
+active, which looped the render (#136, fixed).
 **Runs:** `use-state` is checked by `frontend/scripts/check-frontend-state.mjs`,
 run from `npm test` (`check-frontend-state.test.mjs`, with a failing fixture),
 with shrink-only counts in `frontend/frontend-state-allowlist.json`:
@@ -425,11 +425,11 @@ with shrink-only counts in `frontend/frontend-state-allowlist.json`:
 
 A file at 4 passes. A new file over 4 fails, and so does an allowlist count above
 the real count or an entry at or under 4 (drop it).
-**To add:** ESLint `no-restricted-syntax` selectors
-`CallExpression[callee.name=/^use(Store|UI)$/][arguments.length=0]` (4 hits, fix
-them first) and
-`CallExpression[callee.name=/^use(Store|UI)$/] > ArrowFunctionExpression > :matches(ObjectExpression, ArrayExpression, LogicalExpression[right.type=/^(Array|Object)Expression$/])`
-(no hits since #136).
+The two subscription rules are ESLint `no-restricted-syntax` selectors in
+`frontend/eslint.config.js`, with a failing fixture per selector in
+`frontend/scripts/eslint-store-selectors.test.mjs`, at error with 0 suppressions:
+`CallExpression[callee.name=/^use(Store|UI)$/][arguments.length=0]` and
+`CallExpression[callee.name=/^use(Store|UI)$/] > ArrowFunctionExpression > :matches(ObjectExpression, ArrayExpression, LogicalExpression[right.type=/^(Array|Object)Expression$/])`.
 
 ### Derive state during render; no prop-mirroring
 
@@ -611,12 +611,13 @@ evening gets tomorrow's key. `lib/progression.js` (line 762) does exactly that.
 A day-only string parses as UTC midnight, so an unstamped Workout sorts hours
 off a stamped one: `lib/dates.js` (line 89), `lib/training-log.js` (line 182),
 `lib/import-csv.js` (lines 400 and 412).
-**To add:** ESLint `no-restricted-syntax` on
+**Runs:** ESLint `no-restricted-syntax` in `frontend/eslint.config.js` on
 `CallExpression[callee.property.name='slice'][callee.object.callee.property.name='toISOString']`
-(2 hits: fix `lib/progression.js`, allowlist the scenario file) and on
-`NewExpression[callee.name='Date'][arguments.length=1] > :matches(MemberExpression[property.name='d'], Identifier[name='d'])`
-(4 hits, fix first). `lib/dates.js` has no day parser yet; add one (noon local)
-so the fix has a home.
+and on
+`NewExpression[callee.name='Date'][arguments.length=1] > :matches(MemberExpression[property.name='d'], Identifier[name='d'])`.
+Both messages name `todayISO`, `isoOf` and `parseDay`. A `files` override exempts
+`lib/plans/scenarios.js` alone. `frontend/scripts/local-dates-lint.test.mjs` pins
+both selectors and the exemption.
 
 ### The clock is an argument in `lib/`
 

@@ -5,6 +5,28 @@ import reactHooks from 'eslint-plugin-react-hooks'
 // its correctness category, rules-of-hooks, exhaustive-deps, no-unused-vars, no-empty.
 // ESLint keeps only what oxlint cannot do: the react-hooks compiler rules and
 // no-restricted-syntax selectors. A rule runs in one tool, never two.
+// The shared no-restricted-syntax selectors. Flat config replaces a rule's options, so an override that adds a selector re-lists these.
+const SHARED_SYNTAX = [
+  // Local dates, never UTC (CODING_STANDARDS.md "Local dates, never UTC").
+  {
+    selector: "CallExpression[callee.property.name='slice'][callee.object.callee.property.name='toISOString']",
+    message: "toISOString() is UTC: build a day key with todayISO() or isoOf() from lib/dates.js.",
+  },
+  {
+    selector: "NewExpression[callee.name='Date'][arguments.length=1] > :matches(MemberExpression[property.name='d'], Identifier[name='d'])",
+    message: "new Date('YYYY-MM-DD') parses as UTC midnight: use parseDay() from lib/dates.js (local noon).",
+  },
+  // CODING_STANDARDS.md "The state caps", rule 3: subscribe to a slice; a selector returns no fresh [] or {}.
+  {
+    selector: 'CallExpression[callee.name=/^use(Store|UI)$/][arguments.length=0]',
+    message: 'Subscribe to a slice: useStore(s => s.S.unit), useStore(s => s.update).',
+  },
+  {
+    selector: 'CallExpression[callee.name=/^use(Store|UI)$/] > ArrowFunctionExpression > :matches(ObjectExpression, ArrayExpression, LogicalExpression[right.type=/^(Array|Object)Expression$/])',
+    message: 'A selector returns no fresh [] or {}: hoist a const EMPTY or use useShallow.',
+  },
+]
+
 export default [
   { ignores: ['dist/', 'android/', 'ios/', 'public/', 'coverage/'] },
   {
@@ -33,16 +55,28 @@ export default [
       'react-hooks/memo-dependencies': 'error',
     },
   },
+  // One no-restricted-syntax array: flat config replaces a rule's options, never merges them.
+  {
+    files: ['**/*.{js,jsx,mjs}'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        ...SHARED_SYNTAX,
+      ],
+    },
+  },
   {
     // lib/ takes the clock as an argument. uid() in format.js and todayISO() in dates.js own the reads.
     // oxlint bans Date.now() there (.oxlintrc.json); this selector is the part it cannot do.
     files: ['src/lib/**/*.js'],
     ignores: ['src/lib/format.js', 'src/lib/dates.js', 'src/lib/**/*.test.js'],
     rules: {
-      'no-restricted-syntax': ['error', {
+      'no-restricted-syntax': ['error', ...SHARED_SYNTAX, {
         selector: "NewExpression[callee.name='Date'][arguments.length=0]",
         message: 'lib/ takes the clock as an argument; new Date() reads it. Read the clock at the edge.',
       }],
     },
   },
+  // lib/plans/scenarios.js, the dev scenario generator, is UTC end to end on purpose.
+  { files: ['src/lib/plans/scenarios.js'], rules: { 'no-restricted-syntax': 'off' } },
 ]

@@ -24,7 +24,7 @@ import { Section, Row, SelectRow, Switch, Segmented } from '../components/ui.jsx
 export default function Settings() {
   const nav = useNavigate()
   const S = useStore(s => s.S)
-  const { update } = useStore()
+  const update = useStore(s => s.update)
   const toast = useUI(s => s.toast)
   const fileRef = useRef(null)
   const importRef = useRef(null)
