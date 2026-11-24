@@ -4,7 +4,8 @@
     "eslint",
     "react",
     "oxc",
-    "jsx-a11y"
+    "jsx-a11y",
+    "unicorn"
   ],
   "categories": {
     "correctness": "error"
@@ -127,7 +128,22 @@
       { "object": "navigator", "property": "wakeLock", "message": "navigator.wakeLock belongs to platform/wakelock.js." },
       { "object": "navigator", "property": "serviceWorker", "message": "navigator.serviceWorker belongs to platform/. useUI.js and main.jsx are allowlisted until that code moves." },
       { "object": "Math", "property": "random", "message": "Math.random belongs to uid() in lib/format.js." }
-    ]
+    ],
+    "unicorn/no-array-sort": "error",
+    "unicorn/no-array-reverse": "error",
+    "unicorn/no-await-in-promise-methods": "off",
+    "unicorn/no-empty-file": "off",
+    "unicorn/no-invalid-fetch-options": "off",
+    "unicorn/no-invalid-remove-event-listener": "off",
+    "unicorn/no-new-array": "off",
+    "unicorn/no-single-promise-in-promise-methods": "off",
+    "unicorn/no-thenable": "off",
+    "unicorn/no-unnecessary-await": "off",
+    "unicorn/no-useless-fallback-in-spread": "off",
+    "unicorn/no-useless-length-check": "off",
+    "unicorn/no-useless-spread": "off",
+    "unicorn/prefer-set-size": "off",
+    "unicorn/prefer-string-starts-ends-with": "off"
   },
   "overrides": [
     {
@@ -330,5 +346,4 @@
         ]
       }
     }
-  ]
-}
+  ]}
