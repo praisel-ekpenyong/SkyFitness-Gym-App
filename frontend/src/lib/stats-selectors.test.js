@@ -319,7 +319,7 @@ describe('body-weight log readings', () => {
     expect(over.bodyweight.latest).toEqual({ d: '2026-06-30', w: 176 })
     expect(over.bodyweight.delta30).toBe(-4)
     expect(over.bodyweight.goal).toBe(165)
-    expect(over.bodyweightKg).toBeCloseTo(79.832, 3)
+    expect(over.bodyweightKg).toBe(79.8)
   })
   it('reads Weigh-ins stamped in kg in a pounds profile, after a unit switch (ADR 0031)', () => {
     const S = { unit: 'lb', targetW: 165.3, bodyweight: [
