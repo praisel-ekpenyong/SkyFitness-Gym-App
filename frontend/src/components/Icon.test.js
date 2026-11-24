@@ -3,7 +3,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { resolve, relative } from 'node:path'
 import { ICON_NAMES } from './Icon.jsx'
 
-const SRC = resolve(__dirname, '..')
+const SRC = resolve(import.meta.dirname, '..')
 
 function namedIcons() {
   const out = []

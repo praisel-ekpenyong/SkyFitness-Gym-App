@@ -1,13 +1,11 @@
 import { mkdirSync, mkdtempSync, readdirSync, writeFileSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
 import { tmpdir } from 'node:os'
-import { resolve, dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { resolve, join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { findBrokenRefs } from './docs-paths.js'
 
-const __dirname = dirname(fileURLToPath(import.meta.url))
-const adrDir = resolve(__dirname, '..', '..', 'docs', 'adr')
+const adrDir = resolve(import.meta.dirname, '..', '..', 'docs', 'adr')
 
 describe('ADRs', () => {
   const files = readdirSync(adrDir).filter(f => f.endsWith('.md') && f !== 'README.md')
@@ -24,7 +22,7 @@ describe('ADRs', () => {
   })
 })
 
-const root = resolve(__dirname, '..', '..')
+const root = resolve(import.meta.dirname, '..', '..')
 
 // Gitignored build output and fetched media: docs name them, a clean checkout lacks them.
 const ALLOW = ['frontend/.tmp/review/', 'frontend/dist', 'frontend/dist/', 'frontend/public/media/']

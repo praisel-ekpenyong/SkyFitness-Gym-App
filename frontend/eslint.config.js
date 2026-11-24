@@ -31,6 +31,21 @@ export default [
       'react-hooks/purity': 'error',
       'react-hooks/refs': 'error',
       'react-hooks/memo-dependencies': 'error',
+      // CODING_STANDARDS.md "Modern ESM": oxlint bans the CommonJS globals; this bans shims named after them.
+      'no-restricted-syntax': ['error', {
+        selector: 'VariableDeclarator[id.name=/^(__dirname|__filename|require)$/]',
+        message: 'Do not shim CommonJS globals. Use import.meta.dirname, import.meta.filename or import.meta.url.',
+      }],
+    },
+  },
+  {
+    // oxlint ignores tests, so its CommonJS-globals ban cannot see them. ESLint bans them here.
+    files: ['**/*.test.*', '**/*.spec.*', 'src/test/**'],
+    rules: {
+      'no-restricted-globals': ['error', ...['__dirname', '__filename', 'require'].map(name => ({
+        name,
+        message: `${name} is CommonJS. Sky is ESM: use import.meta.dirname, import.meta.filename or import.meta.url.`,
+      }))],
     },
   },
 ]
