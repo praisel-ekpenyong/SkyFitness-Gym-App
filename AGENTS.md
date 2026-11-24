@@ -33,7 +33,6 @@ Single-context layout: root `GLOSSARY.md` + `docs/adr/`. See `docs/agents/domain
 
 - Create it at `.worktrees/<name>` on a branch `ticket/<name>`: `git worktree add .worktrees/<name> -b ticket/<name> main`.
 - Link the dependencies: `ln -s "$(realpath <checkout>/frontend/node_modules)" frontend/node_modules`. Link to the real folder, never through another checkout's link. On 2026-11-18, checking out a commit from before PR #54 replaced the main checkout's ignored link with the old tracked one, and every worktree linked through it broke.
-- Node is not on PATH: run `eval "$(fnm env)"` first.
 - Each worktree gets its own review port automatically (see the `run-sky` skill).
 
 ## GitHub and deploys
