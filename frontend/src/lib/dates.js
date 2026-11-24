@@ -23,13 +23,22 @@ export const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', '
 export const MONTHS_LONG = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
 /**
+ * Parses a YYYY-MM-DD day key into a local Date at midday (12:00:00) to avoid DST boundary shifts.
+ * @param {string} d - Day key in `YYYY-MM-DD` format.
+ * @returns {Date} Date instance set to local noon.
+ */
+export function parseDay(d) {
+  return d ? new Date(d + 'T12:00:00') : new Date(NaN)
+}
+
+/**
  * Renders a stored day key as the short or weekday list date the user reads.
  * @param {string} iso - Day key in `YYYY-MM-DD` form; parsed at midday to avoid DST shifts.
  * @param {boolean} long - When truthy adds the short weekday; otherwise day and month only.
  * @returns {string} Date formatted in the UI language.
  */
 export function fmtDate(iso, long) {
-  const d = new Date(iso + 'T12:00:00')
+  const d = parseDay(iso)
   return d.toLocaleDateString(dateLocale(), long ? { weekday: 'short', day: 'numeric', month: 'short' } : { day: 'numeric', month: 'short' })
 }
 
@@ -39,7 +48,7 @@ export function fmtDate(iso, long) {
  * @returns {string} `YYYY-W` week key; week runs 1-53 and may belong to the adjacent year.
  */
 export function weekKey(d) {
-  const dt = new Date(d + 'T12:00:00')
+  const dt = parseDay(d)
   const day = (dt.getDay() + 6) % 7
   dt.setDate(dt.getDate() - day + 3)
   const jan4 = new Date(dt.getFullYear(), 0, 4)
@@ -53,7 +62,7 @@ export function weekKey(d) {
  * @returns {string} That week's Monday as a `YYYY-MM-DD` day key.
  */
 export function mondayOf(d) {
-  const dt = new Date(d + 'T12:00:00')
+  const dt = parseDay(d)
   dt.setDate(dt.getDate() - ((dt.getDay() + 6) % 7))
   return isoOf(dt)
 }
@@ -86,6 +95,6 @@ export function workoutTimestamp(w) {
     if (Number.isFinite(n)) return n
   }
   if (!w?.d) return NaN
-  const t = new Date(w.d).getTime()
+  const t = parseDay(w.d).getTime()
   return Number.isFinite(t) ? t : NaN
 }

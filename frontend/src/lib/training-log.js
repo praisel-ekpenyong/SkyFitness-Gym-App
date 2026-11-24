@@ -1,7 +1,7 @@
 import { isWarmupRow } from './warmup.js'
 import { resolveSetWeight, normalizeWeight, round1, setIn, targetIn } from './units.js'
 import { estimate1RM } from './onerm.js'
-import { workoutTimestamp } from './dates.js'
+import { workoutTimestamp, parseDay } from './dates.js'
 import { doneWorkSets, metricModeForEntry, metricRowsForEntry, modeForSet, workSets } from './workout-sets.js'
 
 const indexes = new WeakMap()
@@ -179,7 +179,7 @@ export function latestWorkSetAt(S, exId) {
   const stamped = Number(workout.start ?? workout.t)
   const ts = workout.start != null || workout.t != null ? stamped : NaN
   if (Number.isFinite(ts)) return ts
-  const dated = new Date(workout.d).getTime()
+  const dated = parseDay(workout.d).getTime()
   return Number.isFinite(dated) ? dated : null
 }
 

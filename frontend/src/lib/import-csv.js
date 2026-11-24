@@ -7,6 +7,7 @@
 
 import { EXDB, EXIDX } from './exercises.js'
 import { uid } from './format.js'
+import { parseDay } from './dates.js'
 import { LB_TO_KG, mergeWeighIns, weighInsPreview } from './bodyweight.js'
 import { admit, sortWorkouts } from './profile/index.js'
 
@@ -344,9 +345,9 @@ export function parseWorkoutCSV(text, { unit = 'kg' } = {}) {
       const conv2 = ss.map(({ u, ...s }) => (s.w !== undefined ? { ...s, w: convRow({ ...s, u }) } : s))
       return { id, sets: conv2, ...(day.exNotes?.get(id) ? { notes: day.exNotes.get(id) } : {}) }
     })
-    const base = new Date(d + 'T00:00:00').getTime()
-    const start = base + (day.start ?? 18 * 3600000)
-    const end = day.end != null ? base + day.end : start
+    const midnight = new Date(parseDay(d).setHours(0, 0, 0, 0)).getTime()
+    const start = day.start != null ? midnight + day.start : parseDay(d).getTime()
+    const end = day.end != null ? midnight + day.end : start
     const w = {
       id: 'iw' + uid(), d, start, end: end > start ? end : start,
       routineId: null, name: day.name || 'Imported', entries,
@@ -397,7 +398,10 @@ export function parseBodyweight(text, { unit = 'kg' } = {}) {
       const when = parseWhen(String(rows[i][dCol] ?? ''))
       const w = num(rows[i][wCol])
       if (!when || !w) continue
-      out.set(when.d, { w, t: new Date(when.d).getTime() + (when.t ?? 0) })
+      const t = when.t != null
+        ? new Date(parseDay(when.d).setHours(0, 0, 0, 0)).getTime() + when.t
+        : parseDay(when.d).getTime()
+      out.set(when.d, { w, t })
     }
   }
 
@@ -409,7 +413,7 @@ export function parseBodyweight(text, { unit = 'kg' } = {}) {
   const dates = [...out.keys()].sort()
   return {
     kind: 'bodyweight', source: 'Apple Health',
-    bodyweight: dates.map(d => ({ d, w: conv(out.get(d).w), t: out.get(d).t || new Date(d).getTime() })),
+    bodyweight: dates.map(d => ({ d, w: conv(out.get(d).w), t: out.get(d).t || parseDay(d).getTime() })),
     fileUnit, converted, from: dates[0], to: dates[dates.length - 1],
   }
 }

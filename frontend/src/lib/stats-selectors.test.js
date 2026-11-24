@@ -315,7 +315,7 @@ describe('body-weight log readings', () => {
       { d: '2026-05-01', w: 185 }, { d: '2026-06-10', w: 180 }, { d: '2026-06-30', w: 176 },
     ] }
     const over = selectStatsOverview(S, { now: NOW, catalogue, bodyweightDays: 7 })
-    expect(over.bodyweight.points).toEqual([{ t: Date.UTC(2026, 5, 30), d: '2026-06-30', y: 176 }])
+    expect(over.bodyweight.points).toEqual([{ t: new Date('2026-06-30T12:00:00').getTime(), d: '2026-06-30', y: 176 }])
     expect(over.bodyweight.latest).toEqual({ d: '2026-06-30', w: 176 })
     expect(over.bodyweight.delta30).toBe(-4)
     expect(over.bodyweight.goal).toBe(165)

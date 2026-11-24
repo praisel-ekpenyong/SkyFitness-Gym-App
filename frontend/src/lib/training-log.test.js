@@ -495,10 +495,18 @@ describe('Training log: latest Work set time', () => {
   })
 
   it('falls back to the date and answers null when never performed', () => {
-    const S = { unit: 'kg', workouts: [{ d: '2026-11-01', entries: [lift([work(60)])] }] }
-    expect(latestWorkSetAt(S, 'bench')).toBe(new Date('2026-11-01').getTime())
-    expect(latestWorkSetAt(S, 'squat')).toBe(null)
-    expect(latestWorkSetAt({ unit: 'kg', workouts: [] }, 'bench')).toBe(null)
+    const origTZ = process.env.TZ
+    try {
+      process.env.TZ = 'America/Los_Angeles'
+      const S = { unit: 'kg', workouts: [{ d: '2026-11-01', entries: [lift([work(60)])] }] }
+      expect(latestWorkSetAt(S, 'bench')).toBe(new Date('2026-11-01T12:00:00').getTime())
+      expect(latestWorkSetAt(S, 'bench')).not.toBe(Date.UTC(2026, 10, 1, 0, 0, 0))
+      expect(latestWorkSetAt(S, 'squat')).toBe(null)
+      expect(latestWorkSetAt({ unit: 'kg', workouts: [] }, 'bench')).toBe(null)
+    } finally {
+      if (origTZ === undefined) delete process.env.TZ
+      else process.env.TZ = origTZ
+    }
   })
 
   it('breaks a same-day tie by start time', () => {
