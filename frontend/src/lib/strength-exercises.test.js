@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { strengthExerciseRowsForMuscle, primaryMuscleOf } from './strength-exercises.js'
 import { loadOfWorkouts } from './muscles.js'
 import { registerCustom } from './exercises.js'
+import { isoOf } from './dates.js'
 
 const DAY = 86400000
 const NOW = Date.UTC(2026, 7, 8, 12)
@@ -20,7 +21,7 @@ afterEach(() => registerCustom([]))
 
 function workout(dayAgo, entries) {
   const d = new Date(NOW - dayAgo * DAY)
-  const iso = d.toISOString().slice(0, 10)
+  const iso = isoOf(d)
   return { id: 'x' + iso, d: iso, start: NOW - dayAgo * DAY, unit: 'kg', entries }
 }
 

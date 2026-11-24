@@ -24,7 +24,7 @@ describe('Profile schema version', () => {
     expect(SCHEMA_VERSION).toBe(1)
     expect(UPGRADES).toHaveLength(SCHEMA_VERSION)
     expect(DEF.schemaVersion).toBe(SCHEMA_VERSION)
-    expect(normalizeState(null).schemaVersion).toBe(SCHEMA_VERSION)
+    expect(normalizeState(null, Date.now()).schemaVersion).toBe(SCHEMA_VERSION)
   })
 
   it('reads a Profile with no version as version 0', () => {
@@ -50,14 +50,14 @@ describe('Profile schema version', () => {
 
   it('never fills a missing unit stamp: only a unit switch does that (ADR 0031)', () => {
     const raw = { ...legacy(), bodyweight: [{ d: '2026-01-01', w: 80, t: 1 }] }
-    for (const out of [admit(raw), normalizeState(raw), admit(admit(raw))]) {
+    for (const out of [admit(raw), normalizeState(raw, Date.now()), admit(admit(raw))]) {
       expect(out.workouts[0]).not.toHaveProperty('unit')
       expect(out.bodyweight[0]).toEqual({ d: '2026-01-01', w: 80, t: 1 })
     }
   })
 
   it('upgrades through normalizeState too, which every way in uses', () => {
-    const out = normalizeState(legacy())
+    const out = normalizeState(legacy(), Date.now())
     expect(out.schemaVersion).toBe(SCHEMA_VERSION)
     expect(out.effort).toBe('rir')
     expect(out.workouts[0].entries[0].sets[0].phase).toBe('warmup')
@@ -66,7 +66,7 @@ describe('Profile schema version', () => {
   it('admits a Profile already at the current version as stored', () => {
     const once = admit(legacy())
     expect(admit(once)).toEqual(once)
-    expect(normalizeState(JSON.parse(JSON.stringify(once)))).toEqual(normalizeState(once))
+    expect(normalizeState(JSON.parse(JSON.stringify(once)), Date.now())).toEqual(normalizeState(once, Date.now()))
   })
 })
 
@@ -97,7 +97,7 @@ describe('a Profile from a newer Sky is never admitted', () => {
   it('admit and normalizeState refuse it', () => {
     expect(isNewerProfile(newer())).toBe(true)
     expect(() => admit(newer())).toThrow(NewerProfileError)
-    expect(() => normalizeState(newer())).toThrow(NewerProfileError)
+    expect(() => normalizeState(newer(), Date.now())).toThrow(NewerProfileError)
   })
 
   it('refuses a version it cannot read, rather than guess it is old', () => {
@@ -124,7 +124,7 @@ describe('the restore path and the schema version', () => {
   it('upgrades a version-0 backup from 0 and stamps it, as boot does', () => {
     const { clean } = sanitizeRestorePayload(legacy())
     expect(clean).not.toHaveProperty('schemaVersion')
-    const S = normalizeState(clean)
+    const S = normalizeState(clean, Date.now())
     expect(S.schemaVersion).toBe(SCHEMA_VERSION)
     expect(S.workouts[0].entries[0].sets[0]).toEqual({ w: 40, r: 5, done: true, phase: 'warmup' })
     expect(S.effort).toBe('rir')
@@ -135,6 +135,6 @@ describe('the restore path and the schema version', () => {
     const backup = admit(legacy())
     const { clean } = sanitizeRestorePayload(backup)
     expect(clean.schemaVersion).toBe(SCHEMA_VERSION)
-    expect(normalizeState(clean).workouts).toEqual(backup.workouts)
+    expect(normalizeState(clean, Date.now()).workouts).toEqual(backup.workouts)
   })
 })

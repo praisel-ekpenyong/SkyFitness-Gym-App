@@ -48,19 +48,19 @@ afterEach(() => {
 describe('legacy streakRule', () => {
   it('is no longer a default: a new or reset Profile has none', () => {
     expect(DEF).not.toHaveProperty('streakRule')
-    expect(normalizeState({})).not.toHaveProperty('streakRule')
+    expect(normalizeState({}, Date.now())).not.toHaveProperty('streakRule')
     resetProfile()
     expect(useStore.getState().S).not.toHaveProperty('streakRule')
   })
 
   it('an old Profile keeps it unchanged through a normal load, even a value the old rule picker never had', () => {
-    expect(normalizeState({ ...cloneDef(), streakRule: 'generous' }).streakRule).toBe('generous')
-    expect(normalizeState({ ...cloneDef(), streakRule: 'bogus' }).streakRule).toBe('bogus')
+    expect(normalizeState({ ...cloneDef(), streakRule: 'generous' }, Date.now()).streakRule).toBe('generous')
+    expect(normalizeState({ ...cloneDef(), streakRule: 'bogus' }, Date.now()).streakRule).toBe('bogus')
   })
 
   it('an old backup restores with it unchanged in the store and in storage, and the streak reads the same', () => {
     const workouts = ['2026-06-01', '2026-06-08', '2026-06-22'].map(trained)
-    const today = new Date(2026, 5, 24, 12)
+    const today = new Date(2026, 5, 24, 12).getTime()
     restoreFromBackup({ ...cloneDef(), workouts, routines: [] })
     const plain = streakOf(useStore.getState().S, today)
 

@@ -2,7 +2,7 @@ import { useEffect, useId, useLayoutEffect, useRef } from 'react'
 import { useUI } from '../store/useUI.js'
 
 function Sheet({ sheet, covered }) {
-  const { closeSheet } = useUI()
+  const closeSheet = useUI(s => s.closeSheet)
   const ref = useRef(null)
   const centerRef = useRef(null)
   const drag = useRef({ startY: null, delta: 0 })

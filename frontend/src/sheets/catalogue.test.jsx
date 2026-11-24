@@ -5,6 +5,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { ExerciseDetail, deleteCustomEx, ExercisePicker, CustomExForm, ExConfig, exConfigSheet } from './catalogue.jsx'
 import { useStore } from '../store/useStore.js'
 import { DEF } from '../lib/profile/index.js'
+import { isoOf } from '../lib/dates.js'
 import { useUI } from '../store/useUI.js'
 import { buttonNamed, leafTexts, pick } from '../test/sheet-host.jsx'
 
@@ -96,7 +97,7 @@ describe('ExerciseDetail sheet favorite starring', () => {
 
 describe('ExerciseDetail strength line', () => {
   const DAY = 24 * 60 * 60 * 1000
-  const isoAgo = ageDays => new Date(Date.now() - ageDays * DAY).toISOString().slice(0, 10)
+  const isoAgo = ageDays => isoOf(new Date(Date.now() - ageDays * DAY))
   const bench = { id: '0025', n: 'Bench press', bp: 'chest', tg: 'pectorals', eq: 'barbell', img: '', gif: '' }
   const cable = { id: '0001', n: '3/4 sit-up', bp: 'waist', tg: 'abs', eq: 'body weight', img: '', gif: '' }
 

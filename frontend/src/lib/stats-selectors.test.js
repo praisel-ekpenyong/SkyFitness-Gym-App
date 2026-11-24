@@ -3,6 +3,7 @@ import { selectStatsOverview, selectExerciseStats } from './stats-selectors.js'
 import { MUSCLES } from './muscles.js'
 import { STRENGTH_FLOOR } from './recovery.js'
 import { toScale } from './effort.js'
+import { isoOf } from './dates.js'
 import { switchTrainingStyle, setVolumeRange, clearVolumeRanges } from './volume-ranges.js'
 
 const DAY = 24 * 60 * 60 * 1000
@@ -15,7 +16,7 @@ const LIFT_SLUG = 'chest'
 const records = [LIFT, CARDIO, KNOWN]
 const catalogue = { lookup: id => records.find(e => e.id === id) ?? null }
 
-const isoOfTs = ts => new Date(ts).toISOString().slice(0, 10)
+const isoOfTs = ts => isoOf(new Date(ts))
 const workoutAt = (id, ageDays, sets, extra = {}) => ({
   id: `w-${id}-${ageDays}`,
   d: isoOfTs(NOW - ageDays * DAY),
