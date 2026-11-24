@@ -11,8 +11,9 @@ export const dotted = items => items.filter(Boolean).map((x, i) => <Fragment key
 // iOS decimal keypads in many locales only offer a comma, and type="number" reports "" for it (value snaps to 0).
 export function NumberField({ value, onChange, onBlur, decimal = true, nullable = false, className = '', ...rest }) {
   // The draft remembers the number it sent, so a value changed from outside drops it.
+  // '' and null both mean empty: callers may pass `v ?? ''`, and an empty draft sends null.
   const [draft, setDraft] = useState(null)
-  if (draft !== null && draft.n !== (value ?? null)) setDraft(null)
+  if (draft !== null && draft.n !== (value === '' ? null : value ?? null)) setDraft(null)
   const commit = raw => {
     let s = raw.replace(/,/g, '.').replace(/[^0-9.]/g, '')
     const i = s.indexOf('.')
