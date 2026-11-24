@@ -83,7 +83,32 @@ describe('admit', () => {
 
   it('upgrades the Active workout too', () => {
     const out = admit({ active: { id: 'a1', d: '2026-01-01', entries: [{ id: 'e', sets: [{ warmup: true, w: 20 }] }] } })
-    expect(out.active.entries[0].sets[0]).toEqual({ phase: 'warmup', w: 20 })
+    const set = out.active.entries[0].sets[0]
+    expect(set.phase).toBe('warmup')
+    expect(set.w).toBe(20)
+    expect(set.id).toEqual(expect.any(String))
+    expect(admit(out).active.entries[0].sets[0]).toEqual(set)
+  })
+
+  it('stamps missing ids on the Active session and Routine rows, and leaves finished Workouts as stored', () => {
+    const raw = {
+      active: { id: 'a1', entries: [{ id: 'e', sets: [{ w: 40, r: 5, done: false }, { id: 'keep', w: 50, r: 5, done: false }] }] },
+      routines: [{ id: 'r1', ex: [{ id: '0025', sets: 3 }, { id: '0026', sets: 2, rowId: 'row-keep' }] }],
+      workouts: [{ id: 'w1', d: '2026-01-02', start: 2, entries: [{ id: 'e', sets: [{ w: 60, r: 5, done: true }] }] }],
+    }
+    const out = admit(raw)
+    expect(out.active.entries[0].sets[0].w).toBe(40)
+    expect(out.active.entries[0].sets[0].id).toEqual(expect.any(String))
+    expect(out.active.entries[0].sets[1]).toEqual({ id: 'keep', w: 50, r: 5, done: false })
+    expect(out.routines[0].ex[0].sets).toBe(3)
+    expect(out.routines[0].ex[0].rowId).toEqual(expect.any(String))
+    expect(out.routines[0].ex[1].rowId).toBe('row-keep')
+    expect(out.workouts[0].entries[0].sets).toEqual([{ w: 60, r: 5, done: true }])
+    const again = admit(out)
+    expect(again.active.entries[0].sets[0].id).toBe(out.active.entries[0].sets[0].id)
+    expect(again.routines[0].ex[0].rowId).toBe(out.routines[0].ex[0].rowId)
+    expect(raw.active.entries[0].sets[0]).toEqual({ w: 40, r: 5, done: false })
+    expect(raw.routines[0].ex[0]).toEqual({ id: '0025', sets: 3 })
   })
 
   it('is idempotent', () => {

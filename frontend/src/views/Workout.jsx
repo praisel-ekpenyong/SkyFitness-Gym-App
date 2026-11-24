@@ -176,7 +176,7 @@ function ExerciseBlock({ entryIdx, compact, isCurrent = true, arrived = false, r
         const milestone = evaluateSetMilestone(entry, i, { state: S })
         const open = i === openRow
         const rowName = warm ? t('Warm-up set {0}', phaseNum) : t('Set {0} of {1}', phaseNum, workTotal)
-        return <div key={i}>
+        return <div key={s.id}>
           {isFirstWarmup && <div className="setph">{t('Warm-up')}</div>}
           {!warm && warmBefore && <div className="setph">{t('Working sets')}</div>}
           <div ref={open ? openRef : undefined} className={'setrow' + (s.done ? ' done' : '') + (open ? ' cur' : '') + (warm ? ' warm' : '') + (col2 ? '' : ' solo') + (col3 ? ' eff3' : '') + (timed ? ' timed' : '')}

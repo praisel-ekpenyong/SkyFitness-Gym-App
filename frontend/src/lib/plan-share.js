@@ -127,7 +127,7 @@ export function mergePlan(s, bundle, { schedule } = {}) {
       name: r.name || t('Shared routine'),
       emoji: r.emoji,
       ...(r.prog ? { prog: r.prog } : {}),
-      ex: (r.ex || []).map(e => ({ ...targetIn(e, fileUnit, unit), id: exIdMap[e.id] || e.id }))
+      ex: (r.ex || []).map(e => ({ ...targetIn(e, fileUnit, unit), id: exIdMap[e.id] || e.id, rowId: uid() }))
     })
   })
   if (schedule) {

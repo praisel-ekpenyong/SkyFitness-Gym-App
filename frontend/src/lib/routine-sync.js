@@ -3,7 +3,7 @@ import { cleanNote } from './workout-model.js'
 import { doneWorkSets } from './workout-sets.js'
 import { cleanupSg, supersetUnits } from './supersetFlow.js'
 import { EXIDX, exOr } from './exercises.js'
-import { MINUS } from './format.js'
+import { MINUS, uid } from './format.js'
 
 function toTitleCase(str) {
   if (!str) return ''
@@ -314,6 +314,6 @@ export function syncRoutineFromSession(S, routineId, syncedEx) {
   const routine = S.routines.find(r => r && r.id === routineId)
   if (!routine) return false
 
-  routine.ex = syncedEx.map(e => ({ ...e }))
+  routine.ex = syncedEx.map(e => ({ ...e, rowId: typeof e?.rowId === 'string' && e.rowId ? e.rowId : uid() }))
   return true
 }
