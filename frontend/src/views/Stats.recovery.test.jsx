@@ -4,6 +4,7 @@ import { Window } from 'happy-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { recapSheet } from '../sheets/history.jsx'
 import Stats from './Stats.jsx'
+import { isoOf } from '../lib/dates.js'
 
 const DAY = 86400000
 const HOUR = 3600000
@@ -56,7 +57,7 @@ let root
 let container
 
 function iso(timestamp) {
-  return new Date(timestamp).toISOString().slice(0, 10)
+  return isoOf(new Date(timestamp))
 }
 
 function set(done, extra = {}) {

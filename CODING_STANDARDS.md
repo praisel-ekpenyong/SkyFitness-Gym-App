@@ -611,12 +611,13 @@ evening gets tomorrow's key. `lib/progression.js` (line 762) does exactly that.
 A day-only string parses as UTC midnight, so an unstamped Workout sorts hours
 off a stamped one: `lib/dates.js` (line 89), `lib/training-log.js` (line 182),
 `lib/import-csv.js` (lines 400 and 412).
-**To add:** ESLint `no-restricted-syntax` on
+**Runs:** ESLint `no-restricted-syntax` in `frontend/eslint.config.js` on
 `CallExpression[callee.property.name='slice'][callee.object.callee.property.name='toISOString']`
-(2 hits: fix `lib/progression.js`, allowlist the scenario file) and on
-`NewExpression[callee.name='Date'][arguments.length=1] > :matches(MemberExpression[property.name='d'], Identifier[name='d'])`
-(4 hits, fix first). `lib/dates.js` has no day parser yet; add one (noon local)
-so the fix has a home.
+and on
+`NewExpression[callee.name='Date'][arguments.length=1] > :matches(MemberExpression[property.name='d'], Identifier[name='d'])`.
+Both messages name `todayISO`, `isoOf` and `parseDay`. A `files` override exempts
+`lib/plans/scenarios.js` alone. `frontend/scripts/local-dates-lint.test.mjs` pins
+both selectors and the exemption.
 
 ### The clock is an argument in `lib/`
 
