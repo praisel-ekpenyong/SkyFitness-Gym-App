@@ -14,6 +14,18 @@ const noCommonJsShim = {
   message: 'Do not shim CommonJS globals. Use import.meta.dirname, import.meta.filename or import.meta.url.',
 }
 
+// Single-owner formatting (CODING_STANDARDS.md): time is formatted only in lib/format.js and lib/dates.js.
+const noModSixty = {
+  selector: "BinaryExpression[operator='%'][right.value=60]",
+  message: 'Format durations and times through lib/format.js or lib/dates.js, not `% 60`.',
+}
+
+// One owner per derived value: the unit fallback. PROFILE_CLEAN cleans S.unit on the way in.
+const noKgFallback = {
+  selector: "LogicalExpression[right.value='kg']",
+  message: "No `|| 'kg'` fallback: S.unit is cleaned by PROFILE_CLEAN; other units go through lib/units.js (sanitizeUnit, entryUnit).",
+}
+
 export default [
   { ignores: ['dist/', 'android/', 'ios/', 'public/', 'coverage/'] },
   {
@@ -53,27 +65,19 @@ export default [
       }))],
     },
   },
-  // Single-owner formatting (CODING_STANDARDS.md): time is formatted only in
-  // lib/format.js and lib/dates.js.
+  // Owner selectors for src/. Each file gets one no-restricted-syntax list, so an owner file
+  // drops only its own selector and keeps the others.
   {
     files: ['src/**/*.{js,jsx}'],
-    ignores: ['src/lib/format.js', 'src/lib/dates.js'],
-    rules: {
-      'no-restricted-syntax': ['error', noCommonJsShim, {
-        selector: "BinaryExpression[operator='%'][right.value=60]",
-        message: 'Format durations and times through lib/format.js or lib/dates.js, not `% 60`.',
-      }],
-    },
+    ignores: ['src/lib/format.js', 'src/lib/dates.js', 'src/lib/units.js'],
+    rules: { 'no-restricted-syntax': ['error', noCommonJsShim, noModSixty, noKgFallback] },
   },
-  // One owner per derived value: the unit fallback. PROFILE_CLEAN cleans S.unit on the way in.
   {
-    files: ['src/**/*.{js,jsx}'],
-    ignores: ['src/lib/units.js'],
-    rules: {
-      'no-restricted-syntax': ['error', {
-        selector: "LogicalExpression[right.value='kg']",
-        message: "No `|| 'kg'` fallback: S.unit is cleaned by PROFILE_CLEAN; other units go through lib/units.js (sanitizeUnit, entryUnit).",
-      }],
-    },
+    files: ['src/lib/format.js', 'src/lib/dates.js'],
+    rules: { 'no-restricted-syntax': ['error', noCommonJsShim, noKgFallback] },
+  },
+  {
+    files: ['src/lib/units.js'],
+    rules: { 'no-restricted-syntax': ['error', noCommonJsShim, noModSixty] },
   },
 ]
