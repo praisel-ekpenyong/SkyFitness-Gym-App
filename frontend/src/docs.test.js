@@ -59,6 +59,8 @@ const PLANNED = new Set([
   'CODING_STANDARDS.md: frontend/scripts/check-frontend-state.mjs',
   'CODING_STANDARDS.md: frontend/frontend-state-allowlist.json',
   'CODING_STANDARDS.md: frontend/src/comments.test.js',
+  'CODING_STANDARDS.md: frontend/react-doctor-floor.json',
+  'CODING_STANDARDS.md: frontend/scripts/check-react-doctor-floor.mjs',
   'docs/DRAFT_GUARD.md: frontend/src/lib/profile/profile-keys.test.js',
   'docs/EFFECT_STANDARDS.md: frontend/src/effect-types.test.js',
   'docs/TESTING_STANDARDS.md: frontend/eslint-suppressions.json',
