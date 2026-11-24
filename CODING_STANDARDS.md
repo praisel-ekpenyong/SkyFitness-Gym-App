@@ -390,10 +390,15 @@ Exception: none.
 **Why:** in the probe on `ea9b171` the score was 54, and three of its "errors"
 (`App.jsx:55`, `components/Modals.jsx:177`, `sheets/volume.jsx:39`) were false
 positives; only the ref in `components/ui.jsx:15` was real.
-**To add:** the `React Doctor` step in `.github/workflows/test.yml`,
-`frontend/react-doctor-floor.json` (`{ "score": 54 }`, the last measured score),
-and `frontend/scripts/check-react-doctor-floor.mjs`, with a fixture that must
-fail. Confirming each finding is a judgement call, no tooth.
+**Runs:** the `React Doctor` step in `.github/workflows/test.yml` calls
+`frontend/scripts/check-react-doctor-floor.mjs` against
+`frontend/react-doctor-floor.json` (`{ "score": 57 }`), with
+`frontend/doctor.config.mjs` excluding `scripts/` and tests, disabling
+`.oxlintrc.json` adoption (already covered by `npm run lint`), and ignoring
+`react-doctor/no-json-parse-stringify-clone` and
+`react-doctor/only-export-components`. `check-react-doctor-floor.test.mjs` in
+`npm test` holds the failing fixture for a score below the floor. Confirming each
+finding is a judgement call, no tooth.
 
 ### The state caps
 
@@ -829,7 +834,7 @@ names every one:
 | tsc | nothing | `tsconfig.json`, `npm run typecheck` in the hook and CI. Ratchet: `frontend/tsc-baseline.json` |
 | oxlint type-aware (`oxlint-tsgolint`) | nothing | `no-floating-promises`, `no-misused-promises`, `only-throw-error`, `switch-exhaustiveness-check`, `no-explicit-any`, `no-non-null-assertion`, `ban-ts-comment` |
 | `frontend/scripts/check-frontend-state.mjs`, in `npm test` | The `use-state` cap, with its failing fixture. Ratchet: `frontend/frontend-state-allowlist.json` | nothing |
-| Babel and CI | `npm run test:fatigue-probe` and `npm run build` in CI | `babel-plugin-react-compiler`; the `React Doctor` CI step and its floor `frontend/react-doctor-floor.json` |
+| Babel and CI | `npm run test:fatigue-probe`, `npm run build`, and the `React Doctor` floor (`frontend/react-doctor-floor.json`, checked by `frontend/scripts/check-react-doctor-floor.mjs` with its failing fixture in `npm test`) | `babel-plugin-react-compiler` |
 
 `npm run test:fatigue-probe` stays out of `npm test` on purpose: the workflow
 says it is too slow for the unit suite.
@@ -856,5 +861,5 @@ says it is too slow for the unit suite.
 7. `babel-plugin-react-compiler`, after the ESLint compiler rules are green.
    Add `'use no memo'` (or move the import) in `App.jsx` and
    `components/BodyMap.jsx` first.
-8. React Doctor as its own CI step named `React Doctor`, with
+8. React Doctor is on as its own CI step named `React Doctor`, with
    `frontend/react-doctor-floor.json` (see its rule above).

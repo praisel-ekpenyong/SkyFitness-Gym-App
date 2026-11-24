@@ -40,3 +40,6 @@ jobs:
       # Property probe over ~108k comparisons; too slow for the unit suite, cheap here.
       - run: npm run test:fatigue-probe
         working-directory: frontend
+      - name: React Doctor
+        run: node scripts/check-react-doctor-floor.mjs
+        working-directory: frontend
