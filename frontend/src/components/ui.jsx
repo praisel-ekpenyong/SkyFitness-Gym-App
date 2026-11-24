@@ -10,16 +10,15 @@ export const dotted = items => items.filter(Boolean).map((x, i) => <Fragment key
 
 // iOS decimal keypads in many locales only offer a comma, and type="number" reports "" for it (value snaps to 0).
 export function NumberField({ value, onChange, onBlur, decimal = true, nullable = false, className = '', ...rest }) {
+  // The draft remembers the number it sent, so a value changed from outside drops it.
   const [draft, setDraft] = useState(null)
-  const committed = useRef(null)
-  if (draft !== null && (committed.current ?? null) !== (value ?? null)) { setDraft(null); committed.current = null }
+  if (draft !== null && draft.n !== (value ?? null)) setDraft(null)
   const commit = raw => {
     let s = raw.replace(/,/g, '.').replace(/[^0-9.]/g, '')
     const i = s.indexOf('.')
     if (i !== -1) s = decimal ? s.slice(0, i + 1) + s.slice(i + 1).replace(/\./g, '') : s.slice(0, i)
     const n = s === '' || s === '.' ? (nullable ? null : 0) : Math.max(0, parseFloat(s))
-    committed.current = n
-    setDraft(s)
+    setDraft({ text: s, n })
     onChange(n)
   }
   return (
@@ -27,10 +26,10 @@ export function NumberField({ value, onChange, onBlur, decimal = true, nullable 
       type="text"
       inputMode={decimal ? 'decimal' : 'numeric'}
       className={'num ' + className}
-      value={draft ?? (value ?? '')}
+      value={draft?.text ?? (value ?? '')}
       onFocus={e => e.target.select()}
       onChange={e => commit(e.target.value)}
-      onBlur={e => { setDraft(null); committed.current = null; onBlur?.(e) }}
+      onBlur={e => { setDraft(null); onBlur?.(e) }}
       {...rest}
     />
   )
