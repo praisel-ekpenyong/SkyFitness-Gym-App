@@ -79,6 +79,37 @@ describe('removing an exercise from the screen', () => {
   })
 })
 
+describe('removing a set from the ladder', () => {
+  // The middle and last warm-ups share a weight, so a reused input can keep the deleted row's draft.
+  const warm = (w, r) => ({ w, r, done: false, phase: 'warmup' })
+
+  function weightInputs() {
+    return [...view.container.querySelectorAll('input.num')].filter(el => el.getAttribute('aria-label').includes('Weight'))
+  }
+
+  function typeInto(input, text) {
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set
+    act(() => {
+      setter.call(input, text)
+      input.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+  }
+
+  it('deletes the middle set and leaves the other sets showing their own figures', () => {
+    view = renderWorkoutApp([entry('0025', [warm(40, 5), warm(80, 5), warm(80, 3)])])
+    const weights = weightInputs()
+    expect(weights.map(el => el.value)).toEqual(['40', '80', '80'])
+
+    typeInto(weights[1], '80.')
+    expect(weights[1].value).toBe('80.')
+
+    const removeMiddle = view.container.querySelectorAll('button.set-x')[1]
+    act(() => { removeMiddle.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
+
+    expect(weightInputs().map(el => el.value)).toEqual(['40', '80'])
+  })
+})
+
 describe('remove-exercise prompt strings', () => {
   const required = [
     'Remove {0}?',
