@@ -1,6 +1,16 @@
 import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'
 
+// CODING_STANDARDS.md "Configuration": read the environment only in lib/env.js.
+const importMetaEnv = {
+  selector: "MemberExpression[object.type='MetaProperty'][property.name='env']",
+  message: 'Read import.meta.env only in lib/env.js (validateEnv); use env.* instead.',
+}
+const processEnv = {
+  selector: "MemberExpression[object.name='process'][property.name='env']",
+  message: 'Read process.env only in lib/env.js (validateEnv); use env.* instead.',
+}
+
 // oxlint is the main linter (.oxlintrc.json, ADR 0034) and owns every rule it supports:
 // its correctness category, rules-of-hooks, exhaustive-deps, no-unused-vars, no-empty.
 // ESLint keeps only what oxlint cannot do: the react-hooks compiler rules and
@@ -32,5 +42,17 @@ export default [
       'react-hooks/refs': 'error',
       'react-hooks/memo-dependencies': 'error',
     },
+  },
+  {
+    files: ['src/**/*.{js,jsx,mjs}'],
+    ignores: ['src/lib/env.js', '**/*.test.{js,jsx,mjs}'],
+    rules: { 'no-restricted-syntax': ['error', importMetaEnv, processEnv] },
+  },
+  // Allowlist: Vite build flags, not configuration.
+  // useStore.js: import.meta.env.MODE turns on Immer's auto-freeze in tests only.
+  // Modals.jsx: import.meta.env.DEV throws on a bad modal call in development only.
+  {
+    files: ['src/store/useStore.js', 'src/components/Modals.jsx'],
+    rules: { 'no-restricted-syntax': ['error', processEnv] },
   },
 ]

@@ -70,12 +70,12 @@ load, and the message names the variable. Profile preferences (`restSec`,
 build flags that are not configuration, `import.meta.env.MODE` in `useStore.js`
 (Immer's test freeze) and `import.meta.env.DEV` in `components/Modals.jsx`.
 
-**Runs:** `frontend/src/lib/env.test.js` pins the defaults.
-**To add:** ESLint `no-restricted-syntax` selectors on
+**Runs:** `frontend/src/lib/env.test.js` pins the defaults. ESLint
+`no-restricted-syntax` selectors on
 `MemberExpression[object.type='MetaProperty'][property.name='env']` and on
-`process.env`, failing outside `lib/env.js`, `vite.config.js`, scripts and
-tests. The two build flags above are the allowlist, each with its reason in the
-config. No ratchet: the code is clean once those two are listed.
+`process.env` fail outside `lib/env.js`, `vite.config.js`, scripts and tests.
+The two build flags above are the allowlist, each with its reason in the
+config. No ratchet.
 
 ## Active-workout effects
 
