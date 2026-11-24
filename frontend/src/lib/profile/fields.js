@@ -4,7 +4,12 @@
 import { cleanSex } from '../sex.js'
 import { cleanBirthYear } from '../birth-year.js'
 
-/** The clean function for each optional Profile field. Keys are the stored top-level keys. */
+/** @typedef {import('../types.js').Profile} Profile */
+
+/**
+ * The clean function for each optional Profile field. Keys are the stored top-level keys.
+ * @type {{ sex: (value: unknown) => 'male' | 'female' | null, birthYear: (value: unknown, now: number) => number | null }}
+ */
 export const PROFILE_CLEAN = {
   sex: value => cleanSex(value),
   birthYear: (value, now) => cleanBirthYear(value, now),
@@ -12,10 +17,13 @@ export const PROFILE_CLEAN = {
 
 /**
  * Cleans every optional Profile field from a raw payload. Absent fields clean to null.
- * @param {Object|null} raw - Stored or restored state.
+ * @param {Profile | Record<string, unknown> | null | undefined} raw - Stored or restored state.
  * @param {number} now - Injected millisecond timestamp.
  * @returns {{sex: 'male'|'female'|null, birthYear: number|null}}
  */
 export function cleanProfileFields(raw, now) {
-  return Object.fromEntries(Object.entries(PROFILE_CLEAN).map(([key, clean]) => [key, clean(raw?.[key], now)]))
+  return {
+    sex: PROFILE_CLEAN.sex(raw?.sex),
+    birthYear: PROFILE_CLEAN.birthYear(raw?.birthYear, now),
+  }
 }

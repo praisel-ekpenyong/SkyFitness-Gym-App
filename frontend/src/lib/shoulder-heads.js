@@ -190,6 +190,9 @@ export const PRIMARY_DELT_HEAD_IDS = {
 // exercises: four shoulder rotations, and two lateral raises whose pattern
 // drops it. External rotation works the rear head alongside the cuff, and the
 // muscle map has no rotator cuff, so dropping the helper would lose that credit.
+/** @typedef {import('./types.js').CustomExercise} CustomExercise */
+
+/** @type {Record<string, string>} */
 export const ASSIST_DELT_HEAD_BY_TARGET = {
   'upper back': 'rear-delts',
   lats: 'rear-delts',
@@ -198,6 +201,7 @@ export const ASSIST_DELT_HEAD_BY_TARGET = {
 export const DEFAULT_ASSIST_DELT_HEAD = 'front-delts'
 
 // Reviewed exceptions to the target rule above.
+/** @type {Record<string, string>} */
 export const ASSIST_DELT_HEAD_IDS = {
   '0022': 'front-delts', // barbell pullover to press
   '0139': 'rear-delts', // biceps narrow pull-ups
@@ -205,18 +209,20 @@ export const ASSIST_DELT_HEAD_IDS = {
   '0232': 'rear-delts', // cable standing pulldown (with rope)
 }
 
+/** @type {Record<string, string>} */
 const HEAD_OF_ID = {}
 for (const [head, ids] of Object.entries(PRIMARY_DELT_HEAD_IDS)) ids.forEach(id => { HEAD_OF_ID[id] = head })
 
 /**
  * Rewrites a catalogue exercise's plain shoulder tags onto the heads it trains.
- * @param {Object} ex - Catalogue exercise (already curated).
- * @returns {Object} The same exercise, or a copy naming head slugs instead of plain shoulders.
+ * @param {CustomExercise} ex - Catalogue exercise (already curated).
+ * @returns {CustomExercise} The same exercise, or a copy naming head slugs instead of plain shoulders.
  */
 export function withShoulderHeads(ex) {
   const primaryHead = HEAD_OF_ID[ex.id]
-  const assistHead = ASSIST_DELT_HEAD_IDS[ex.id] || ASSIST_DELT_HEAD_BY_TARGET[ex.tg] || DEFAULT_ASSIST_DELT_HEAD
+  const assistHead = ASSIST_DELT_HEAD_IDS[ex.id] || (ex.tg ? ASSIST_DELT_HEAD_BY_TARGET[ex.tg] : undefined) || DEFAULT_ASSIST_DELT_HEAD
   // "Rear deltoids" and "rotator cuff" already name the rear head (see the muscle aliases).
+  /** @param {string | undefined} name */
   const read = name => isPlainShoulders(name) ? assistHead : name
   const names = [ex.mg, ...(Array.isArray(ex.sm) ? ex.sm : [])]
   if (!primaryHead && !names.some(n => read(n) !== n)) return ex
@@ -224,6 +230,6 @@ export function withShoulderHeads(ex) {
     ...ex,
     tg: primaryHead || ex.tg,
     mg: ex.mg == null ? ex.mg : read(ex.mg),
-    sm: Array.isArray(ex.sm) ? [...new Set(ex.sm.map(read))] : ex.sm,
+    sm: Array.isArray(ex.sm) ? [...new Set(ex.sm.map(n => read(n) ?? n))] : ex.sm,
   }
 }

@@ -3,6 +3,14 @@ import { exerciseMuscleSnapshot, bodypartForMuscle } from './muscles.js'
 import { cleanupSg } from './supersetFlow.js'
 import { uid } from './format.js'
 
+/** @typedef {import('./types.js').Profile} Profile */
+/** @typedef {import('./types.js').CustomExercise} CustomExercise */
+
+/**
+ * @param {Profile} S
+ * @param {string} id
+ * @returns {boolean}
+ */
 export function toggleFavorite(S, id) {
   const cur = S.favorites || []
   const star = !cur.includes(id)
@@ -10,6 +18,11 @@ export function toggleFavorite(S, id) {
   return star
 }
 
+/**
+ * @param {Profile} S
+ * @param {CustomExercise} ex
+ * @returns {{ ok: boolean, reason: string | null }}
+ */
 export function deleteCustomEx(S, ex) {
   if (S.active?.entries?.some(e => e.id === ex.id)) return { ok: false, reason: 'active' }
   const snapshot = exerciseMuscleSnapshot(ex)
@@ -24,6 +37,11 @@ export function deleteCustomEx(S, ex) {
   return { ok: true, reason: null }
 }
 
+/**
+ * @param {Profile} S
+ * @param {{ id?: string, n: string, tg?: string, sm?: string[], desc?: string }} draft
+ * @returns {string}
+ */
 export function upsertCustomEx(S, draft) {
   const bp = bodypartForMuscle(draft.tg)
   if (draft.id) {

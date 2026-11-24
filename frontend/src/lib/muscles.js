@@ -5,6 +5,16 @@ import { EXIDX, smOf, mgOf, isCardio, exerciseFor } from './exercises.js'
 import { workoutTimestamp } from './dates.js'
 import { DELT_HEADS, isPlainShoulders, muscleKey } from './muscle-spelling.js'
 
+/** @typedef {import('./types.js').CustomExercise} CustomExercise */
+/** @typedef {import('./types.js').Entry} Entry */
+/** @typedef {import('./types.js').MuscleSnapshot} MuscleSnapshot */
+/** @typedef {import('./types.js').Target} Target */
+/** @typedef {import('./types.js').Workout} Workout */
+/** @typedef {import('./types.js').ActiveWorkout} ActiveWorkout */
+/** @typedef {import('./types.js').Routine} Routine */
+/** @typedef {import('./types.js').SetRow} SetRow */
+/** @typedef {CustomExercise | Entry | MuscleSnapshot | Target} MuscleSource */
+
 export { DELT_HEADS, isPlainShoulders }
 
 export const MUSCLES = [
@@ -20,7 +30,7 @@ export const SHOULDERS = 'shoulders'
 
 /**
  * Expands a plain Shoulders (the filter chip, or a spelling naming no head) into the three heads.
- * @param {*} value - Muscle spelling or filter.
+ * @param {unknown} value - Muscle spelling or filter.
  * @returns {string[]|null} The heads, or null when the value is not plain Shoulders.
  */
 const shoulderHeadsOf = value => isPlainShoulders(value) ? DELT_HEADS : null
@@ -29,12 +39,14 @@ const shoulderHeadsOf = value => isPlainShoulders(value) ? DELT_HEADS : null
 // snapshots is read as front 1, side 0.4, rear 0.4 when primary and front 0.4
 // when secondary (ADR 0024).
 
+/** @param {boolean} asPrimary @returns {Array<[string, number]>} */
 const plainShouldersWeights = asPrimary => asPrimary
   ? [['front-delts', 1], ['side-delts', 0.4], ['rear-delts', 0.4]]
   : [['front-delts', 0.4]]
 
 export const INERT = ['head', 'hair', 'neck', 'hands', 'feet', 'knees', 'ankles']
 
+/** @type {Record<string, string>} */
 export const MUSCLE_NAME = {
   trapezius: 'Traps', shoulders: 'Shoulders',
   'front-delts': 'Front delts', 'side-delts': 'Side delts', 'rear-delts': 'Rear delts', chest: 'Chest', 'upper-back': 'Upper back',
@@ -51,6 +63,7 @@ export const PICKABLE_MUSCLES = [...MUSCLES, 'cardio']
 /** Library and picker filter chips: the 21 plus cardio, with a Shoulders chip before the heads. */
 export const FILTER_MUSCLES = [...MUSCLES.slice(0, 1), SHOULDERS, ...MUSCLES.slice(1), 'cardio']
 
+/** @type {Record<string, string>} */
 const MUSCLE_TO_BODYPART = {
   trapezius: 'neck',
   'front-delts': 'shoulders',
@@ -76,6 +89,7 @@ const MUSCLE_TO_BODYPART = {
   cardio: 'cardio',
 }
 
+/** @type {Record<string, string | null>} */
 const ALIAS = {
   abs: 'abs', pectorals: 'chest', biceps: 'biceps', glutes: 'gluteal', delts: 'front-delts',
   triceps: 'triceps', 'upper back': 'upper-back', lats: 'lats', calves: 'calves',
@@ -95,6 +109,7 @@ const ALIAS = {
   ankles: null, feet: null, hands: null, 'ankle stabilizers': null,
   sternocleidomastoid: null,
 }
+/** @type {Record<string, Record<string, number>>} */
 const BY_BODYPART = {
   chest: { chest: 1 },
   back: { lats: 0.50, 'upper-back': 0.35, 'lower-back': 0.15 },
@@ -109,59 +124,71 @@ const BY_BODYPART = {
 }
 const SECONDARY = 0.4
 
-const arrayOf = value => Array.isArray(value) ? value : value == null || value === '' ? [] : [value]
+/** @param {unknown} value @returns {string[]} */
+const arrayOf = value => Array.isArray(value) ? value : value == null || value === '' ? [] : [String(value)]
 
+/** @param {unknown} ex @returns {boolean} */
 const hasDirectMuscleMeta = ex => !!ex && typeof ex === 'object' && (
   ['muscleGroups', 'muscles', 'targetMuscles'].some(key => Object.prototype.hasOwnProperty.call(ex, key))
-  || [ex.tg, ex.mg, ...arrayOf(ex.sm)].some(value => value != null && value !== '')
+  || [/** @type {CustomExercise} */ (ex).tg, /** @type {CustomExercise} */ (ex).mg, ...arrayOf(/** @type {CustomExercise} */ (ex).sm)].some(value => value != null && value !== '')
 )
 
+/** @param {MuscleSource | null | undefined} ex @returns {MuscleSource | null | undefined} */
 function metadataOf(ex) {
   if (!ex || typeof ex !== 'object') return ex
-  return !hasDirectMuscleMeta(ex) && ex.muscleSnapshot && typeof ex.muscleSnapshot === 'object' && !Array.isArray(ex.muscleSnapshot)
+  return !hasDirectMuscleMeta(ex) && 'muscleSnapshot' in ex && ex.muscleSnapshot && typeof ex.muscleSnapshot === 'object' && !Array.isArray(ex.muscleSnapshot)
     ? ex.muscleSnapshot
     : ex
 }
 
+/** @param {unknown} ex @returns {boolean} */
 const hasOwnMuscleMeta = ex =>
-  hasDirectMuscleMeta(ex) || (!!ex && typeof ex === 'object' && ex.muscleWeights
+  hasDirectMuscleMeta(ex) || (!!ex && typeof ex === 'object' && 'muscleWeights' in ex && !!ex.muscleWeights
     && typeof ex.muscleWeights === 'object' && !Array.isArray(ex.muscleWeights)
     && Object.keys(ex.muscleWeights).length > 0)
 
+/**
+ * Muscle weights for an Entry, exercise, or muscle snapshot.
+ * @param {MuscleSource | null | undefined} entry
+ * @returns {Record<string, number>}
+ */
 export function muscleWeightsOf(entry) {
   const source = entry && typeof entry === 'object' ? entry : null
   if (!source) return {}
   return hasOwnMuscleMeta(source) ? musclesOf(source) : musclesOf(exerciseFor(source))
 }
 
+/** @param {unknown} ex @returns {string[] | null} */
 function explicitGroupsOf(ex) {
   if (!ex || typeof ex !== 'object') return null
   if (Object.prototype.hasOwnProperty.call(ex, 'muscleGroups')) {
-    const groups = arrayOf(ex.muscleGroups)
+    const groups = arrayOf(/** @type {CustomExercise} */ (ex).muscleGroups)
     return groups.length ? groups : null
   }
   if (Object.prototype.hasOwnProperty.call(ex, 'muscles')) {
-    const groups = arrayOf(ex.muscles)
+    const groups = arrayOf(/** @type {CustomExercise} */ (ex).muscles)
     return groups.length ? groups : null
   }
   if (Object.prototype.hasOwnProperty.call(ex, 'targetMuscles')) {
-    const groups = arrayOf(ex.targetMuscles)
+    const groups = arrayOf(/** @type {CustomExercise} */ (ex).targetMuscles)
     return groups.length ? groups : null
   }
   return null
 }
 
+/** @param {MuscleSource | null | undefined} ex @returns {boolean} */
 export function hasExplicitMuscleMetadata(ex) {
   const source = metadataOf(ex)
   if (!source || typeof source !== 'object') return false
   const groups = explicitGroupsOf(source)
   if (groups && groups.some(value => canonicalMuscle(value))) return true
-  return [source.tg, source.mg, ...arrayOf(source.sm)].some(value => canonicalMuscle(value))
+  const s = /** @type {CustomExercise} */ (source)
+  return [s.tg, s.mg, ...arrayOf(s.sm)].some(value => canonicalMuscle(value))
 }
 
 /**
  * Resolves any muscle spelling onto the slug the body map draws.
- * @param {string} value - Muscle name, alias, slug, or cardio; blank or undrawable yields null.
+ * @param {string | null | undefined} value - Muscle name, alias, slug, or cardio; blank or undrawable yields null.
  * @returns {string|null} Canonical slug such as `quadriceps`, `cardio` for the cardiovascular system, or null when unknown.
  */
 export function canonicalMuscle(value) {
@@ -171,53 +198,66 @@ export function canonicalMuscle(value) {
   return ALIAS[name] || null
 }
 
+/** @param {string | null | undefined} value @returns {string | null} */
 export function resolveMuscleSlug(value) {
   if (shoulderHeadsOf(value)) return SHOULDERS
   return canonicalMuscle(value) || muscleKey(value) || null
 }
 
+/** @param {string | null | undefined} muscle @returns {string} */
 export function bodypartForMuscle(muscle) {
   const slug = resolveMuscleSlug(muscle)
-  return MUSCLE_TO_BODYPART[slug] || (BY_BODYPART[slug] ? slug : 'chest')
+  return (slug && MUSCLE_TO_BODYPART[slug]) || (slug && BY_BODYPART[slug] ? slug : 'chest')
 }
 
+/** @param {string | MuscleSource | null | undefined} exercise @returns {MuscleSource | null | undefined} */
 const asExercise = exercise => typeof exercise === 'string' ? EXIDX[exercise] : exercise
 
+/** @param {string | MuscleSource | null | undefined} exercise @returns {string | null} */
 export function primaryMuscleOf(exercise) {
   const raw = asExercise(exercise)
   const ex = hasOwnMuscleMeta(raw) ? raw : (exerciseFor(raw) || raw)
   if (!ex || typeof ex !== 'object') return null
   const source = metadataOf(ex)
-  if (isCardio(source)) return 'cardio'
-  const explicit = explicitGroupsOf(source)
+  if (!source || typeof source !== 'object') return null
+  const s = /** @type {CustomExercise} */ (source)
+  if (isCardio(s)) return 'cardio'
+  const explicit = explicitGroupsOf(s)
   if (explicit && explicit.length > 0) {
     const first = canonicalMuscle(explicit[0])
     if (first) return first
   }
-  if (source.tg) {
-    const slug = canonicalMuscle(source.tg)
+  if (s.tg) {
+    const slug = canonicalMuscle(s.tg)
     if (slug) return slug
   }
-  const bpMuscles = Object.keys(BY_BODYPART[source.bp] || {})
+  const bpMuscles = Object.keys((s.bp && BY_BODYPART[s.bp]) || {})
   return bpMuscles[0] || null
 }
 
+/** @param {string | MuscleSource | null | undefined} exercise @returns {string} */
 export function primaryMuscleName(exercise) {
   const primary = primaryMuscleOf(exercise)
   if (primary && MUSCLE_NAME[primary]) return MUSCLE_NAME[primary]
   const ex = asExercise(exercise)
-  return (ex && (ex.tg || ex.bp)) || ''
+  const c = ex && typeof ex === 'object' ? /** @type {CustomExercise} */ (ex) : null
+  return (c && (c.tg || c.bp)) || ''
 }
 
+/** @param {string | MuscleSource | null | undefined} exercise @returns {string[]} */
 export function secondaryMusclesOf(exercise) {
   const raw = asExercise(exercise)
   const ex = hasOwnMuscleMeta(raw) ? raw : (exerciseFor(raw) || raw)
   if (!ex || typeof ex !== 'object') return []
   const source = metadataOf(ex)
-  if (isCardio(source)) return []
-  const primary = primaryMuscleOf(source)
-  const explicit = explicitGroupsOf(source)
+  if (!source || typeof source !== 'object') return []
+  const s = /** @type {CustomExercise} */ (source)
+  if (isCardio(s)) return []
+  const primary = primaryMuscleOf(s)
+  const explicit = explicitGroupsOf(s)
+  /** @type {string[]} */
   const out = []
+  /** @param {string | undefined} val */
   const add = val => {
     const slug = canonicalMuscle(val)
     if (slug && slug !== 'cardio' && slug !== primary && !out.includes(slug)) {
@@ -229,21 +269,23 @@ export function secondaryMusclesOf(exercise) {
     explicit.slice(1).forEach(add)
     return out
   }
-  const rawSm = smOf(source)
-  const hasSm = Array.isArray(source.sm) ? source.sm.length > 0 : source.sm != null
-  const hasMg = source.mg != null
-  if (source.tg || hasSm || hasMg || rawSm.length > 0) {
-    shoulderHeadsOf(source.tg)?.forEach(add)
-    if (mgOf(source)) add(mgOf(source))
+  const rawSm = smOf(s)
+  const hasSm = Array.isArray(s.sm) ? s.sm.length > 0 : s.sm != null
+  const hasMg = s.mg != null
+  if (s.tg || hasSm || hasMg || rawSm.length > 0) {
+    shoulderHeadsOf(s.tg)?.forEach(add)
+    const mg = mgOf(s)
+    if (mg) add(mg)
     rawSm.forEach(add)
     return out
   }
-  if (!source.tg && source.bp && BY_BODYPART[source.bp]) {
-    Object.keys(BY_BODYPART[source.bp]).forEach(add)
+  if (!s.tg && s.bp && BY_BODYPART[s.bp]) {
+    Object.keys(BY_BODYPART[s.bp]).forEach(add)
   }
   return out
 }
 
+/** @param {string | CustomExercise | null | undefined} idOrEx @param {string | null | undefined} filter @returns {boolean} */
 export function matchesMuscleFilter(idOrEx, filter) {
   if (!filter) return true
   const heads = shoulderHeadsOf(filter)
@@ -262,10 +304,14 @@ export function matchesMuscleFilter(idOrEx, filter) {
   return false
 }
 
+/** @param {string | CustomExercise | null | undefined} idOrEx @param {string | null | undefined} filter @returns {boolean} */
 export function isSecondaryMuscleMatch(idOrEx, filter) {
   if (!filter || filter === 'cardio' || filter === 'favorites') return false
   const heads = shoulderHeadsOf(filter)
-  if (heads) return !heads.includes(primaryMuscleOf(idOrEx)) && heads.some(head => isSecondaryMuscleMatch(idOrEx, head))
+  if (heads) {
+    const p = primaryMuscleOf(idOrEx)
+    return !(p && heads.includes(p)) && heads.some(head => isSecondaryMuscleMatch(idOrEx, head))
+  }
   const target = resolveMuscleSlug(filter)
   if (!target || target === 'cardio') return false
   const primary = primaryMuscleOf(idOrEx)
@@ -273,35 +319,42 @@ export function isSecondaryMuscleMatch(idOrEx, filter) {
   return secondaryMusclesOf(idOrEx).includes(target)
 }
 
+/** @param {MuscleSource | null | undefined} ex @returns {string[]} */
 export function muscleGroupsOf(ex) {
   const sourceEx = metadataOf(ex)
-  const explicit = explicitGroupsOf(sourceEx)
-  const source = explicit || [sourceEx?.tg, mgOf(sourceEx), ...arrayOf(smOf(sourceEx))]
+  const s = sourceEx && typeof sourceEx === 'object' ? /** @type {CustomExercise} */ (sourceEx) : null
+  const explicit = explicitGroupsOf(s)
+  const source = explicit || [s?.tg, mgOf(s), ...arrayOf(smOf(s))]
+  /** @type {string[]} */
   const out = []
   source.forEach(value => {
     const slug = canonicalMuscle(value)
     if (slug && MUSCLES.includes(slug) && !out.includes(slug)) out.push(slug)
   })
-  if (!out.length && explicit == null) Object.keys(BY_BODYPART[sourceEx?.bp] || {}).forEach(slug => { if (!out.includes(slug)) out.push(slug) })
+  if (!out.length && explicit == null) Object.keys((s?.bp && BY_BODYPART[s.bp]) || {}).forEach(slug => { if (!out.includes(slug)) out.push(slug) })
   return out
 }
 
 export const normalizeMuscleGroups = muscleGroupsOf
 
+/** @param {MuscleSource | null | undefined} ex @param {string[] | string} requested @returns {boolean} */
 export function matchesMuscleGroups(ex, requested) {
-  const wanted = arrayOf(requested).map(canonicalMuscle).filter(Boolean)
+  const wanted = arrayOf(requested).map(canonicalMuscle).filter(/** @returns {s is string} */ s => Boolean(s))
   if (!wanted.length) return true
   const groups = new Set(muscleGroupsOf(ex))
   return wanted.some(group => groups.has(group))
 }
 
+/** @param {string | MuscleSource | null | undefined} idOrEx @returns {Record<string, number>} */
 export function musclesOf(idOrEx) {
   const ex = typeof idOrEx === 'string' ? EXIDX[idOrEx] : idOrEx
   if (!ex) return {}
   const sourceEx = hasOwnMuscleMeta(ex) ? ex : metadataOf(ex)
-  if (sourceEx !== ex) return musclesOf(sourceEx)
-  if (ex.muscleWeights && typeof ex.muscleWeights === 'object' && !Array.isArray(ex.muscleWeights)) {
+  if (sourceEx && sourceEx !== ex) return musclesOf(sourceEx)
+  if ('muscleWeights' in ex && ex.muscleWeights && typeof ex.muscleWeights === 'object' && !Array.isArray(ex.muscleWeights)) {
+    /** @type {Record<string, number>} */
     const snapshot = {}
+    /** @param {string} slug @param {number} weight */
     const credit = (slug, weight) => { snapshot[slug] = Math.max(snapshot[slug] || 0, weight) }
     Object.entries(ex.muscleWeights).forEach(([key, value]) => {
       const weight = Number(value)
@@ -312,64 +365,81 @@ export function musclesOf(idOrEx) {
     if (Object.keys(snapshot).length) {
       const isStaleBackSnapshot =
         !('lats' in snapshot) &&
-        ex.bp === 'back' &&
+        'bp' in ex && ex.bp === 'back' &&
         !explicitGroupsOf(ex) &&
         !hasExplicitMuscleMetadata(ex)
       if (!isStaleBackSnapshot) return snapshot
     }
   }
+  const c = /** @type {CustomExercise} */ (ex)
+  /** @type {Record<string, number>} */
   const out = {}
+  /** @param {string | undefined} name @param {number} w */
   const add = (name, w) => {
     const slug = canonicalMuscle(name)
     if (slug && MUSCLES.includes(slug)) out[slug] = Math.max(out[slug] || 0, w)
   }
+  /** @param {string | undefined} name */
   const addPrimary = name => isPlainShoulders(name)
     ? plainShouldersWeights(true).forEach(([slug, w]) => add(slug, w))
     : add(name, 1)
-  const explicit = explicitGroupsOf(ex)
+  const explicit = explicitGroupsOf(c)
   if (explicit) explicit.forEach((m, i) => i === 0 ? addPrimary(m) : add(m, 1))
   else {
-    addPrimary(ex.tg)
-    add(mgOf(ex), SECONDARY)
-    arrayOf(smOf(ex)).forEach(m => add(m, SECONDARY))
+    addPrimary(c.tg)
+    add(mgOf(c), SECONDARY)
+    arrayOf(smOf(c)).forEach(m => add(m, SECONDARY))
   }
-  if (!Object.keys(out).length) Object.assign(out, BY_BODYPART[ex.bp] || {})
+  if (!Object.keys(out).length) Object.assign(out, (c.bp && BY_BODYPART[c.bp]) || {})
   return out
 }
 
+/** @param {MuscleSource | null | undefined} ex @returns {MuscleSnapshot & { muscleGroups?: string[] }} */
 export function exerciseMuscleSnapshot(ex) {
   if (!ex || typeof ex !== 'object') return {}
+  /** @type {MuscleSnapshot & { muscleGroups?: string[] }} */
   const out = {}
-  if (ex.n != null) out.n = ex.n
-  if (ex.bp != null) out.bp = ex.bp
+  if ('n' in ex && ex.n != null) out.n = ex.n
+  if ('bp' in ex && ex.bp != null) out.bp = ex.bp
   const weights = musclesOf(ex)
   if (Object.keys(weights).length) out.muscleWeights = { ...weights }
   if (hasExplicitMuscleMetadata(ex)) out.muscleGroups = [...muscleGroupsOf(ex)]
   return out
 }
 
+/** @param {Array<{ id?: string, ex?: MuscleSource, sets?: number }>} items @returns {Record<string, number>} */
 export function loadOf(items) {
+  /** @type {Record<string, number>} */
   const load = {}
   items.forEach(item => {
     const { sets } = item || {}
     if (!sets) return
-    const m = muscleWeightsOf(item.ex || item)
+    const m = muscleWeightsOf(item.ex || /** @type {MuscleSource} */ (item))
     for (const slug in m) load[slug] = (load[slug] || 0) + m[slug] * sets
   })
   return load
 }
 
+/**
+ * @param {Workout[] | null | undefined} workouts
+ * @param {(set: SetRow) => boolean} [pick]
+ * @returns {Record<string, number>}
+ */
 export const loadOfWorkouts = (workouts, pick) =>
   loadOf((workouts || []).flatMap(w =>
     (w.entries || []).map(e => ({ id: e.id, ex: e, sets: doneWorkSets(e).filter(s => !pick || pick(s)).length }))))
 
+/** @param {Routine | null | undefined} routine @returns {Record<string, number>} */
 export const loadOfRoutine = routine =>
   loadOf((routine?.ex || []).map(c => ({ id: c.id, ex: c, sets: c.sets || 1 })))
 
+/** @param {ActiveWorkout | null | undefined} active @returns {Record<string, number>} */
 export const loadOfActive = active =>
   loadOf((active?.entries || []).map(e => ({ id: e.id, ex: e, sets: doneWorkSets(e).length })))
 
+/** @param {Workout[] | null | undefined} workouts @returns {Record<string, number>} */
 export function lastTrainedByMuscle(workouts) {
+  /** @type {Record<string, number>} */
   const latest = {}
   for (const workout of workouts || []) {
     const timestamp = workoutTimestamp(workout)
@@ -384,8 +454,14 @@ export function lastTrainedByMuscle(workouts) {
   return latest
 }
 
+/**
+ * @param {Record<string, number>} load
+ * @param {Array<{ at: number, level: number, exclusive?: boolean }>} [thresholds]
+ * @returns {Record<string, number>}
+ */
 export function levelsOf(load, thresholds) {
   if (thresholds) {
+    /** @type {Record<string, number>} */
     const lv = {}
     MUSCLES.forEach(m => {
       const value = Number(load[m] || 0)
@@ -400,6 +476,7 @@ export function levelsOf(load, thresholds) {
   }
 
   const max = Math.max(0, ...MUSCLES.map(m => load[m] || 0))
+  /** @type {Record<string, number>} */
   const lv = {}
   MUSCLES.forEach(m => {
     const v = load[m] || 0
@@ -408,15 +485,21 @@ export function levelsOf(load, thresholds) {
   return lv
 }
 
+/** @param {Record<string, number>} load @returns {{ worked: string[], missed: string[] }} */
 export function rankOf(load) {
   const worked = MUSCLES.filter(m => (load[m] || 0) > 0).sort((a, b) => load[b] - load[a])
   const missed = MUSCLES.filter(m => !(load[m] > 0))
   return { worked, missed }
 }
 
+/**
+ * @param {Workout | ActiveWorkout | null | undefined} workout
+ * @returns {Array<{ slug: string, name: string, effectiveSets: number, primarySets: number, secondarySets: number, assistSets: number, compoundSets: number, exercises: string[] }>}
+ */
 export function sessionMuscleDistribution(workout) {
   if (!workout || !Array.isArray(workout.entries)) return []
 
+  /** @type {Record<string, { slug: string, primarySets: number, secondarySets: number, compoundSets: number, exercises: string[] }>} */
   const map = {}
   let totalWorkSets = 0
 
@@ -428,8 +511,9 @@ export function sessionMuscleDistribution(workout) {
     totalWorkSets += count
 
     const ex = exerciseFor(entry) || entry
-    const exName = ex?.n || entry?.muscleSnapshot?.n || entry?.n || (typeof entry.id === 'string' ? entry.id : '')
+    const exName = ('n' in ex && ex.n) || entry?.muscleSnapshot?.n || entry?.n || (typeof entry.id === 'string' ? entry.id : '')
 
+    /** @param {string} slug */
     const getAcc = slug => {
       if (!map[slug]) {
         map[slug] = {
@@ -443,6 +527,7 @@ export function sessionMuscleDistribution(workout) {
       return map[slug]
     }
 
+    /** @param {string} slug @param {number} count @param {boolean} [isSecondary=false] */
     const addMuscleSets = (slug, count, isSecondary = false) => {
       const canonical = canonicalMuscle(slug)
       if (!canonical || canonical === 'cardio') return

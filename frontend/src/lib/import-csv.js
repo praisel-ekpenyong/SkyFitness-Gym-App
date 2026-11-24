@@ -11,11 +11,55 @@ import { parseDay } from './dates.js'
 import { LB_TO_KG, mergeWeighIns, weighInsPreview } from './bodyweight.js'
 import { admit, sortWorkouts } from './profile/index.js'
 
+/** @typedef {import('./types.js').Profile} Profile */
+/** @typedef {import('./types.js').Workout} Workout */
+/** @typedef {import('./types.js').Entry} Entry */
+/** @typedef {import('./types.js').SetRow} SetRow */
+/** @typedef {import('./types.js').CustomExercise} CustomExercise */
+/** @typedef {import('./types.js').WeighIn} WeighIn */
+/** @typedef {import('./types.js').Unit} Unit */
+/**
+ * @typedef {{
+ *   kind: 'workouts',
+ *   source: string | null,
+ *   workouts: Workout[],
+ *   customEx: CustomExercise[],
+ *   matched: number,
+ *   matchedSets: number,
+ *   created: number,
+ *   unmatchedNames: string[],
+ *   sets: number,
+ *   skipped: number,
+ *   warmups: number,
+ *   fileUnit: Unit | '',
+ *   mixedUnits: boolean,
+ *   converted: boolean,
+ *   rpeSets: number,
+ *   rirSets: number,
+ *   from: string | null,
+ *   to: string | null,
+ *   error?: undefined,
+ * }} ParsedWorkoutsImport
+ */
+/**
+ * @typedef {{
+ *   kind: 'bodyweight',
+ *   source: string,
+ *   bodyweight: WeighIn[],
+ *   fileUnit: Unit | '',
+ *   converted: boolean,
+ *   from: string,
+ *   to: string,
+ *   error?: undefined,
+ * }} ParsedBodyweightImport
+ */
 
 /**
  * A real CSV reader: quoted fields, embedded commas and newlines, doubled quotes, BOM
  * and CRLF. Splitting on commas breaks on the first exercise named "Bench Press, Close
  * Grip" — and a whole history would import shifted by one column without ever erroring.
+ * @param {string} text
+ * @returns {string[][]}
  */
 export function parseCSV(text) {
   const rows = []
@@ -40,8 +84,10 @@ export function parseCSV(text) {
   return rows
 }
 
+/** @param {string} h @returns {string} */
 const norm = h => h.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()
 
+/** @type {Array<[string, string[]]>} */
 const COLUMNS = [
   ['exercise', ['exercise', 'exercise name', 'exercise title']],
   ['date', ['date', 'workout date']],
@@ -65,7 +111,9 @@ const COLUMNS = [
   ['note', ['exercise notes', 'exercise note', 'comment', 'comments', 'notes', 'note']],
 ]
 
+/** @param {string[]} header @returns {Record<string, number>} */
 function mapHeader(header) {
+  /** @type {Record<string, number>} */
   const map = {}
   header.forEach((h, i) => {
     const n = norm(h)
@@ -76,6 +124,7 @@ function mapHeader(header) {
   return map
 }
 
+/** @param {string[]} header @returns {string | null} */
 export function detectSource(header) {
   const h = header.map(norm)
   if (h.includes('exercise title') && h.includes('set index')) return 'Hevy'
@@ -87,6 +136,7 @@ export function detectSource(header) {
 }
 
 
+/** @type {Array<[RegExp, string]>} */
 const SYN = [
   [/\bbb\b/g, 'barbell'], [/\bdb\b/g, 'dumbbell'], [/\bkb\b/g, 'kettlebell'],
   [/\bohp\b/g, 'overhead press'], [/\bbw\b/g, 'body weight'], [/\bbodyweight\b/g, 'body weight'],
@@ -98,6 +148,7 @@ const SYN = [
 ]
 const FILLER = new Set(['the', 'a', 'with', 'and', 'v', 'variation', 'version', 'pulley', 'weighted'])
 
+/** @param {string} name @returns {string[]} */
 function wordsOf(name) {
   let k = String(name || '').toLowerCase()
     .replace(/[()[\]]/g, ' ')
@@ -106,8 +157,10 @@ function wordsOf(name) {
   SYN.forEach(([re, to]) => { k = k.replace(re, to) })
   return k.split(' ').filter(w => w && !FILLER.has(w))
 }
+/** @param {string} name @returns {string} */
 const keyOf = name => wordsOf(name).sort().join(' ')
 
+/** @type {{ exact: Map<string, string>, all: Array<{ id: string, set: Set<string>, n: number }> } | null} */
 let INDEX = null
 function buildIndex() {
   if (INDEX) return INDEX
@@ -115,12 +168,13 @@ function buildIndex() {
   EXDB.forEach(e => {
     const w = wordsOf(e.n)
     const k = w.slice().sort().join(' ')
-    if (!INDEX.exact.has(k)) INDEX.exact.set(k, e.id)
-    INDEX.all.push({ id: e.id, set: new Set(w), n: w.length })
+    if (INDEX && !INDEX.exact.has(k)) INDEX.exact.set(k, e.id)
+    INDEX?.all.push({ id: e.id, set: new Set(w), n: w.length })
   })
   return INDEX
 }
 
+/** @type {Record<string, string>} */
 const ALIAS_EX = {
   'bench press': '0025', 'barbell bench press': '0025', 'flat bench press': '0025',
   'incline bench press': '0047', 'decline bench press': '0033',
@@ -150,6 +204,7 @@ const ALIAS_EX = {
   'cable core pallof press': '0979', 'core pallof press': '0979',
 }
 
+/** @type {Map<string, string> | null} */
 let ALIAS_IDX = null
 const aliasIndex = () => {
   if (!ALIAS_IDX) {
@@ -159,6 +214,7 @@ const aliasIndex = () => {
   return ALIAS_IDX
 }
 
+/** @param {string} name @returns {string | null} */
 export function matchExercise(name) {
   const idx = buildIndex()
   const w = wordsOf(name)
@@ -169,6 +225,7 @@ export function matchExercise(name) {
   const exact = idx.exact.get(sorted)
   if (exact) return exact
   const q = new Set(w)
+  /** @type {string | null} */
   let best = null, bestExtra = Infinity, ties = 0
   for (const c of idx.all) {
     let ok = true
@@ -182,6 +239,7 @@ export function matchExercise(name) {
   return ties === 1 ? best : null
 }
 
+/** @type {Record<string, string>} */
 const CATEGORY_BP = {
   chest: 'chest', back: 'back', lats: 'back', shoulders: 'shoulders', delts: 'shoulders',
   legs: 'upper legs', quads: 'upper legs', hamstrings: 'upper legs', glutes: 'upper legs',
@@ -191,7 +249,9 @@ const CATEGORY_BP = {
 }
 
 
+/** @param {unknown} v @returns {number} */
 const num = v => { const n = parseFloat(String(v ?? '').replace(',', '.')); return isFinite(n) ? n : 0 }
+/** @param {unknown} raw @param {boolean} zeroMeansRated @returns {number | null} */
 const effortNum = (raw, zeroMeansRated) => {
   const s = String(raw ?? '').trim()
   if (!s) return null
@@ -199,9 +259,12 @@ const effortNum = (raw, zeroMeansRated) => {
   if (!isFinite(n) || n < 0 || (n === 0 && !zeroMeansRated)) return null
   return Math.min(10, Math.round(n * 100) / 100)
 }
+/** @param {number | string} n @returns {string} */
 const p2 = n => String(n).padStart(2, '0')
+/** @type {Record<string, number>} */
 const MON = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 }
 
+/** @param {string} s @returns {{ d: string, t: number | null } | null} */
 export function parseWhen(s) {
   const v = String(s || '').trim()
   let m = v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[T ](\d{1,2}):(\d{2}))?/)
@@ -219,8 +282,10 @@ export function parseWhen(s) {
   }
   return null
 }
-const hm = (h, mi) => (h === undefined ? null : (parseInt(h, 10) || 0) * 3600000 + (parseInt(mi, 10) || 0) * 60000)
+/** @param {string | undefined} h @param {string | undefined} mi @returns {number | null} */
+const hm = (h, mi) => (h === undefined ? null : (parseInt(h, 10) || 0) * 3600000 + (parseInt(mi ?? '', 10) || 0) * 60000)
 
+/** @param {unknown} v @returns {number} */
 function toMinutes(v) {
   const s = String(v ?? '').trim()
   if (!s) return 0
@@ -233,10 +298,18 @@ function toMinutes(v) {
   if (m || mm) return (m ? +m[1] * 60 : 0) + (mm ? +mm[1] : 0)
   return Math.round(num(s) * 10) / 10
 }
+/** @type {Record<string, number>} */
 const KM = { m: 0.001, km: 1, cm: 0.00001, in: 0.0000254, ft: 0.0003048, yd: 0.0009144, mi: 1.609344 }
+/** @param {unknown} v @param {string} unit @returns {number} */
 const toKm = (v, unit) => num(v) * (KM[String(unit || 'km').toLowerCase().trim()] ?? 1)
 
 
+/**
+ * Parse a FitNotes, Strong, or Hevy workout CSV export.
+ * @param {string} text
+ * @param {{ unit?: Unit }} [options]
+ * @returns {ParsedWorkoutsImport | { error: 'empty' | 'unrecognised', kind?: undefined }}
+ */
 export function parseWorkoutCSV(text, { unit = 'kg' } = {}) {
   const rows = parseCSV(text)
   if (rows.length < 2) return { error: 'empty' }
@@ -245,13 +318,18 @@ export function parseWorkoutCSV(text, { unit = 'kg' } = {}) {
   const dateCol = map.date !== undefined ? 'date' : map.startTime !== undefined ? 'startTime' : null
   if (!dateCol || map.exercise === undefined) return { error: 'unrecognised' }
 
+  /** @type {Map<string, string | null>} */
   const resolved = new Map()
+  /** @type {Map<string, { ex: Map<string, Array<SetRow & { u?: string }>>, exNotes: Map<string, string>, name: string, start: number | null, end: number | null }>} */
   const byDate = new Map()
+  /** @type {Map<string, CustomExercise>} */
   const created = new Map()
+  /** @type {Set<string>} */
   const unmatched = new Set()
   let sets = 0, skipped = 0, matched = 0, warmups = 0, rpeSets = 0, rirSets = 0
   let sawLb = false, sawKg = false
 
+  /** @param {string[]} r @param {string} f @returns {string} */
   const cell = (r, f) => (map[f] === undefined ? '' : String(r[map[f]] ?? '').trim())
 
   for (let i = 1; i < rows.length; i++) {
@@ -299,6 +377,7 @@ export function parseWorkoutCSV(text, { unit = 'kg' } = {}) {
     }
 
     const isCardio = (km > 0 || mins > 0) && !reps
+    /** @type {SetRow & { u?: string }} */
     const set = isCardio
       ? { min: mins || 0, speed: mins > 0 ? Math.round(km / (mins / 60) * 10) / 10 : 0, done: true, ...(warmup ? { phase: 'warmup' } : {}) }
       : { w, r: reps || 0, done: true, u: rowUnit, ...(warmup ? { phase: 'warmup' } : {}) }
@@ -322,35 +401,44 @@ export function parseWorkoutCSV(text, { unit = 'kg' } = {}) {
     }
     if (!day.name) day.name = cell(r, 'workoutName') || ''
     if (map.endTime !== undefined) { const e = parseWhen(cell(r, 'endTime')); if (e && e.t != null) day.end = e.t }
-    if (!day.ex.has(id)) day.ex.set(id, [])
-    day.ex.get(id).push(set)
+    let exSets = day.ex.get(id)
+    if (!exSets) day.ex.set(id, exSets = [])
+    exSets.push(set)
     sets++
   }
 
+  /** @type {Unit | ''} */
   const fileUnit = sawLb && !sawKg ? 'lb' : sawKg && !sawLb ? 'kg' : ''
   const mixedUnits = sawLb && sawKg
+  /** @param {number} x @returns {number} */
   const toKg = x => Math.round(x * LB_TO_KG * 10) / 10
+  /** @param {number} x @returns {number} */
   const toLb = x => Math.round(x / LB_TO_KG * 10) / 10
+  /** @param {{ w?: number, u?: string }} s @returns {number} */
   const convRow = s => {
     const u = s.u || fileUnit
-    if (!u || u === unit) return s.w
-    return u === 'lb' ? toKg(s.w) : toLb(s.w)
+    const w = s.w ?? 0
+    if (!u || u === unit) return w
+    return u === 'lb' ? toKg(w) : toLb(w)
   }
   const converted = (!!fileUnit && fileUnit !== unit) || mixedUnits
 
   const dates = [...byDate.keys()].sort()
   const workouts = dates.map(d => {
     const day = byDate.get(d)
-    const entries = [...day.ex.entries()].map(([id, ss]) => {
+    /** @type {Entry[]} */
+    const entries = [...(day?.ex.entries() ?? [])].map(([id, ss]) => {
       const conv2 = ss.map(({ u, ...s }) => (s.w !== undefined ? { ...s, w: convRow({ ...s, u }) } : s))
-      return { id, sets: conv2, ...(day.exNotes?.get(id) ? { notes: day.exNotes.get(id) } : {}) }
+      const note = day?.exNotes?.get(id)
+      return { id, sets: conv2, target: null, ...(note ? { notes: note } : {}) }
     })
     const midnight = new Date(parseDay(d).setHours(0, 0, 0, 0)).getTime()
-    const start = day.start != null ? midnight + day.start : parseDay(d).getTime()
-    const end = day.end != null ? midnight + day.end : start
+    const start = day?.start != null ? midnight + day.start : parseDay(d).getTime()
+    const end = day?.end != null ? midnight + day.end : start
+    /** @type {Workout} */
     const w = {
       id: 'iw' + uid(), d, start, end: end > start ? end : start,
-      routineId: null, name: day.name || 'Imported', entries,
+      routineId: null, name: day?.name || 'Imported', bw: null, entries,
     }
     return w
   })
@@ -366,9 +454,17 @@ export function parseWorkoutCSV(text, { unit = 'kg' } = {}) {
 }
 
 
+/**
+ * Parse Apple Health XML or CSV body-weight records.
+ * @param {string} text
+ * @param {{ unit?: Unit }} [options]
+ * @returns {ParsedBodyweightImport | { error: 'empty' | 'unrecognised', kind?: undefined }}
+ */
 export function parseBodyweight(text, { unit = 'kg' } = {}) {
   const s = String(text)
+  /** @type {Map<string, { w: number, t: number | null }>} */
   const out = new Map()
+  /** @type {Unit | ''} */
   let fileUnit = ''
 
   if (s.includes('HKQuantityTypeIdentifierBodyMass')) {
@@ -407,17 +503,27 @@ export function parseBodyweight(text, { unit = 'kg' } = {}) {
 
   if (!out.size) return { error: 'unrecognised' }
   const converted = !!fileUnit && fileUnit !== unit
+  /** @type {(x: number) => number} */
   const conv = converted
     ? (fileUnit === 'lb' ? x => Math.round(x * LB_TO_KG * 10) / 10 : x => Math.round(x / LB_TO_KG * 10) / 10)
     : x => Math.round(x * 10) / 10
   const dates = [...out.keys()].sort()
   return {
     kind: 'bodyweight', source: 'Apple Health',
-    bodyweight: dates.map(d => ({ d, w: conv(out.get(d).w), t: out.get(d).t || parseDay(d).getTime() })),
+    bodyweight: dates.map(d => {
+      const item = out.get(d)
+      return { d, w: conv(item?.w ?? 0), t: item?.t || parseDay(d).getTime() }
+    }),
     fileUnit, converted, from: dates[0], to: dates[dates.length - 1],
   }
 }
 
+/**
+ * Detect and parse either workout CSV or Apple Health / CSV body-weight data.
+ * @param {string} text
+ * @param {{ unit?: Unit }} [opts]
+ * @returns {ParsedWorkoutsImport | ParsedBodyweightImport | { error: 'empty' | 'unrecognised', kind?: undefined }}
+ */
 export function parseImport(text, opts) {
   const s = String(text)
   if (s.includes('HKQuantityTypeIdentifier') || /^\s*</.test(s)) return parseBodyweight(s, opts)
@@ -429,17 +535,34 @@ export function parseImport(text, opts) {
 
 
 
+/**
+ * @param {Profile} state
+ * @param {ParsedWorkoutsImport} parsed
+ * @returns {Workout[]}
+ */
 const freshWorkouts = (state, parsed) => {
   const have = new Set((state.workouts || []).map(w => w.d))
   return parsed.workouts.filter(w => !have.has(w.d))
 }
 
+/**
+ * Preview how many Workouts or Weigh-ins an import would add vs skip.
+ * @param {Profile} state
+ * @param {ParsedWorkoutsImport | ParsedBodyweightImport} parsed
+ * @returns {{ added: number, skipped: number }}
+ */
 export function importPreview(state, parsed) {
   if (parsed.kind === 'bodyweight') return weighInsPreview(state, parsed.bodyweight)
   const fresh = freshWorkouts(state, parsed)
   return { added: fresh.length, skipped: parsed.workouts.length - fresh.length }
 }
 
+/**
+ * Merge parsed Workouts or Weigh-ins into Profile `S` without overwriting existing days.
+ * @param {Profile} S
+ * @param {ParsedWorkoutsImport | ParsedBodyweightImport} parsed
+ * @returns {{ added: number, skipped: number }}
+ */
 export function mergeImport(S, parsed) {
   if (parsed.kind === 'bodyweight') return mergeWeighIns(S, parsed.bodyweight)
   const fresh = admit({ workouts: freshWorkouts(S, parsed) }).workouts

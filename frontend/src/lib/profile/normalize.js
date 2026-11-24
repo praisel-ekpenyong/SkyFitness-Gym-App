@@ -5,6 +5,10 @@ import { DEF } from './def.js'
 import { admit } from './admit.js'
 import { isRecord, cloneProfile } from './plain.js'
 
+/** @typedef {import('../types.js').Profile} Profile */
+/** @typedef {import('../types.js').ActiveWorkout} ActiveWorkout */
+
+/** @returns {Profile} */
 export function freshProfile() {
   return cloneProfile(DEF)
 }
@@ -14,9 +18,9 @@ export function freshProfile() {
  * stored schema version, defaults for absent fields, Training-log order), then known collections
  * and cleaned optional fields. `admit` sees the payload as stored, so no DEF overlay can hide a
  * missing `schemaVersion`.
- * @param {*} raw - Stored or restored Profile of any shape.
- * @param {number} now - Injected millisecond timestamp for age-dependent fields.
- * @returns {Object} A new, complete Profile; `DEF` itself is never returned.
+ * @param {unknown} raw - Stored or restored Profile of any shape.
+ * @param {number} [now] - Injected millisecond timestamp for age-dependent fields.
+ * @returns {Profile} A new, complete Profile; `DEF` itself is never returned.
  * @throws {NewerProfileError} When `raw` was saved by a newer Sky.
  */
 export function normalizeState(raw, now = Date.now()) {

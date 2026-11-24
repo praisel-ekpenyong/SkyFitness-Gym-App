@@ -1,9 +1,20 @@
+/** @typedef {import('../types.js').Workout} Workout */
+
+/**
+ * @param {Partial<Workout> | null | undefined} workout
+ * @returns {number}
+ */
 function startOf(workout) {
   const start = Number(workout?.start)
   return Number.isFinite(start) ? start : 0
 }
 
-/** The one Workout order: date, then start, then original position. */
+/**
+ * The one Workout order: date, then start, then original position.
+ * @param {Partial<Workout> | null | undefined} a
+ * @param {Partial<Workout> | null | undefined} b
+ * @returns {number}
+ */
 function compareWorkouts(a, b) {
   const da = String(a?.d ?? '')
   const db = String(b?.d ?? '')
@@ -14,8 +25,8 @@ function compareWorkouts(a, b) {
 
 /**
  * Sorts Workouts into the Training log's one order without mutating the input.
- * @param {Array|*} workouts - Finished Workouts of any shape.
- * @returns {Array} A new array ordered by date, then start, then original position.
+ * @param {Workout[] | unknown} workouts - Finished Workouts of any shape.
+ * @returns {Workout[]} A new array ordered by date, then start, then original position.
  */
 export function sortWorkouts(workouts) {
   if (!Array.isArray(workouts)) return []

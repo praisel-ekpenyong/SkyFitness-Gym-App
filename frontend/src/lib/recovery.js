@@ -5,6 +5,24 @@ import { workoutTimestamp } from './dates.js'
 import { normalizeWeight } from './units.js'
 import { FORMULAS, REP_CAP } from './onerm.js'
 
+/** @typedef {import('./types.js').Workout} Workout */
+/** @typedef {import('./types.js').ActiveWorkout} ActiveWorkout */
+/** @typedef {import('./types.js').Entry} Entry */
+/** @typedef {import('./types.js').SetRow} SetRow */
+/** @typedef {import('./types.js').Target} Target */
+/** @typedef {import('./types.js').CustomExercise} CustomExercise */
+/** @typedef {import('./types.js').Unit} Unit */
+/**
+ * @typedef {{
+ *   bodyweightKg?: number | null,
+ *   bodyweight?: number | null,
+ *   bodyweightUnit?: Unit,
+ *   unit?: Unit,
+ *   profileUnit?: Unit,
+ * }} RecoveryOpts
+ */
+/** @typedef {{ slug: string, timestamp: number, stimulus: number }} FatigueEvent */
+
 export const FATIGUE_REF_VOLUME = 2000
 export const FATIGUE_MIN_REF_FLOOR = FATIGUE_REF_VOLUME * 0.25
 export const FATIGUE_MIN_SESSIONS = 3
@@ -44,42 +62,63 @@ export function halfLifeDecay(ageMs, halfLifeMs) {
 }
 
 
+/**
+ * @template T
+ * @param {T} value
+ * @returns {Record<string, T>}
+ */
 function emptyMuscleMap(value) {
   return Object.fromEntries(MUSCLES.map(slug => [slug, value]))
 }
 
-// Recovery clamps reps at REP_CAP instead of refusing reps above REP_CAP (unlike estimate1RM),
-// so high-rep sets stay smoothly intensity-weighted rather than falling back to 1.0 raw tonnage.
+/**
+ * Recovery clamps reps at REP_CAP instead of refusing reps above REP_CAP (unlike estimate1RM),
+ * so high-rep sets stay smoothly intensity-weighted rather than falling back to 1.0 raw tonnage.
+ * @param {number} load
+ * @param {number} reps
+ * @returns {number}
+ */
 const epley1RM = (load, reps) => (reps === 1 ? load : FORMULAS.epley(load, Math.min(reps, REP_CAP)))
 
+/** @param {unknown} value @returns {number | null} */
 function numeric(value) {
   if (value === null || value === undefined || value === '' || typeof value === 'boolean') return null
   const n = Number(value)
   return Number.isFinite(n) ? n : null
 }
 
+/** @param {...unknown} records @returns {string} */
 function unitOf(...records) {
   for (const record of records) {
     if (!record || typeof record !== 'object') continue
+    const r = /** @type {Record<string, unknown>} */ (record)
     for (const key of ['unit', 'u', 'weightUnit', 'weight_unit', 'loadUnit']) {
-      if (record[key] !== undefined && record[key] !== null && String(record[key]).trim() !== '') return record[key]
+      if (r[key] !== undefined && r[key] !== null && String(r[key]).trim() !== '') return String(r[key])
     }
   }
   return 'kg'
 }
 
+/** @param {unknown} value @param {string} [unit] @returns {number} */
 function kgOf(value, unit) {
   const n = numeric(value)
   if (n === null) return 0
   return normalizeWeight(Math.max(0, n), unit, 'kg')
 }
 
+/**
+ * @param {Workout | ActiveWorkout | null | undefined} workout
+ * @param {RecoveryOpts} [opts={}]
+ * @param {string} [stampedLoadUnit]
+ * @returns {number}
+ */
 function bodyweightKgFor(workout, opts = {}, stampedLoadUnit) {
-  const stamped = numeric(workout?.bw) ?? numeric(workout?.bodyweight)
+  const wRecord = workout && typeof workout === 'object' ? /** @type {Record<string, unknown>} */ (workout) : null
+  const stamped = numeric(workout?.bw) ?? numeric(wRecord?.bodyweight)
   if (stamped !== null) {
     return kgOf(stamped, unitOf(
-      { unit: workout?.bwUnit },
-      { unit: workout?.bodyweightUnit },
+      { unit: wRecord?.bwUnit },
+      { unit: wRecord?.bodyweightUnit },
       workout,
       stampedLoadUnit && { unit: stampedLoadUnit },
       opts,
@@ -92,31 +131,55 @@ function bodyweightKgFor(workout, opts = {}, stampedLoadUnit) {
   return BODYWEIGHT_REF_LOAD
 }
 
+/** @param {Entry | null | undefined} entry @returns {boolean | null} */
 function bodyweightTarget(entry) {
   const target = entry?.target
   if (target && Object.prototype.hasOwnProperty.call(target, 'bodyweight')) return !!target.bodyweight
-  if (entry && Object.prototype.hasOwnProperty.call(entry, 'bodyweight')) return !!entry.bodyweight
+  if (entry && Object.prototype.hasOwnProperty.call(entry, 'bodyweight')) {
+    return !!(/** @type {Record<string, unknown>} */ (entry).bodyweight)
+  }
   return null
 }
 
+/** @param {...unknown} records @returns {boolean} */
 function hasUnitStamp(...records) {
-  return records.some(record => record && typeof record === 'object'
-    && ['unit', 'u', 'weightUnit', 'weight_unit', 'loadUnit'].some(key => Object.prototype.hasOwnProperty.call(record, key)
-      && record[key] !== undefined && record[key] !== null && String(record[key]).trim() !== ''))
+  return records.some(record => {
+    if (!record || typeof record !== 'object') return false
+    const r = /** @type {Record<string, unknown>} */ (record)
+    return ['unit', 'u', 'weightUnit', 'weight_unit', 'loadUnit'].some(key => Object.prototype.hasOwnProperty.call(r, key)
+      && r[key] !== undefined && r[key] !== null && String(r[key]).trim() !== '')
+  })
 }
 
+/**
+ * @param {ReturnType<typeof exerciseFor>} ex
+ * @param {Entry} entry
+ * @param {SetRow} set
+ * @param {Workout | ActiveWorkout | null | undefined} workout
+ * @param {RecoveryOpts} [opts={}]
+ * @returns {boolean}
+ */
 function bodyweightConfigured(ex, entry, set, workout, opts = {}) {
   const configured = bodyweightTarget(entry)
   if (configured !== null) return configured
   const added = kgOf(set?.w, unitOf(set, entry?.target, entry, workout, opts))
+  const wRecord = workout && typeof workout === 'object' ? /** @type {Record<string, unknown>} */ (workout) : null
   const hasBodyweightContext = numeric(workout?.bw) !== null
-    || numeric(workout?.bodyweight) !== null
+    || numeric(wRecord?.bodyweight) !== null
     || numeric(opts.bodyweightKg) !== null
     || numeric(opts.bodyweight) !== null
     || hasUnitStamp(set, entry?.target, entry, workout)
-  return ex?.eq === 'body weight' && (added === 0 || hasBodyweightContext)
+  return (ex && 'eq' in ex ? ex.eq : undefined) === 'body weight' && (added === 0 || hasBodyweightContext)
 }
 
+/**
+ * @param {ReturnType<typeof exerciseFor>} ex
+ * @param {Entry} entry
+ * @param {SetRow} set
+ * @param {Workout | ActiveWorkout | null | undefined} workout
+ * @param {RecoveryOpts} [opts={}]
+ * @returns {number}
+ */
 function loadKgFor(ex, entry, set, workout, opts = {}) {
   const setUnit = unitOf(set, entry?.target, entry, workout, opts)
   const addedKg = kgOf(set?.w, setUnit)
@@ -126,22 +189,39 @@ function loadKgFor(ex, entry, set, workout, opts = {}) {
     : addedKg
 }
 
+/**
+ * @param {Workout} workout
+ * @param {RecoveryOpts} [opts={}]
+ * @returns {Map<string, number>}
+ */
 function session1RMs(workout, opts = {}) {
+  /** @type {Map<string, number>} */
   const best = new Map()
   for (const entry of workout?.entries || []) {
     const ex = exerciseFor(entry)
     for (const set of entry.sets || []) {
       const load = loadKgFor(ex, entry, set, workout, opts)
-      if (!isPerformed(set) || !isWorkSet(set) || !(load > 0) || !(set.r > 0)) continue
-      const est = epley1RM(load, set.r)
-      if (!best.has(entry.id) || est > best.get(entry.id)) best.set(entry.id, est)
+      const reps = set.r ?? 0
+      if (!isPerformed(set) || !isWorkSet(set) || !(load > 0) || !(reps > 0)) continue
+      const est = epley1RM(load, reps)
+      const prev = best.get(entry.id)
+      if (prev === undefined || est > prev) best.set(entry.id, est)
     }
   }
   return best
 }
 
+/**
+ * @param {ReturnType<typeof exerciseFor>} ex
+ * @param {Entry} entry
+ * @param {SetRow} set
+ * @param {Workout} workout
+ * @param {number | undefined} oneRm
+ * @param {RecoveryOpts} [opts={}]
+ * @returns {number}
+ */
 function setTonnage(ex, entry, set, workout, oneRm, opts = {}) {
-  if (ex?.bp === 'cardio') {
+  if (ex && 'bp' in ex && ex.bp === 'cardio') {
     return Math.max(set?.min || 0, (set?.sec || 0) / 60) * CARDIO_TONNAGE_PER_MIN
   }
   if (set?.sec != null && set?.r == null) {
@@ -151,10 +231,15 @@ function setTonnage(ex, entry, set, workout, oneRm, opts = {}) {
   const load = loadKgFor(ex, entry, set, workout, opts)
   const raw = load * reps
   if (bodyweightConfigured(ex, entry, set, workout, opts)) return raw
-  if (!(oneRm > 0) || !(load > 0)) return raw
+  if (!oneRm || !(oneRm > 0) || !(load > 0)) return raw
   return raw * Math.min(1, load / oneRm) ** 1.5
 }
 
+/**
+ * @param {Workout} workout
+ * @param {RecoveryOpts} [opts={}]
+ * @returns {Record<string, number>}
+ */
 function sessionTonnages(workout, opts = {}) {
   const sums = emptyMuscleMap(0)
   const oneRms = session1RMs(workout, opts)
@@ -173,6 +258,12 @@ function sessionTonnages(workout, opts = {}) {
   return sums
 }
 
+/**
+ * @param {Workout[]} workouts
+ * @param {number} current
+ * @param {RecoveryOpts} [opts={}]
+ * @returns {Record<string, FatigueEvent[]>}
+ */
 function fatigueStimuli(workouts, current, opts = {}) {
   const cutoff = current - FATIGUE_SCAN_MS
   const ordered = (workouts || [])
@@ -180,6 +271,7 @@ function fatigueStimuli(workouts, current, opts = {}) {
     .filter(item => Number.isFinite(item.timestamp) && item.timestamp > cutoff)
     .sort((a, b) => a.timestamp - b.timestamp || a.index - b.index)
   const references = emptyMuscleMap(FATIGUE_REF_VOLUME)
+  /** @type {Record<string, FatigueEvent[]>} */
   const byMuscle = Object.fromEntries(MUSCLES.map(slug => [slug, []]))
 
   for (const { workout, timestamp } of ordered) {
@@ -195,6 +287,11 @@ function fatigueStimuli(workouts, current, opts = {}) {
   return byMuscle
 }
 
+/**
+ * @param {FatigueEvent[]} events
+ * @param {number} now
+ * @returns {number}
+ */
 function fatigueValue(events, now) {
   if (!events.length) return 0
   events.sort((a, b) => a.timestamp - b.timestamp)
@@ -211,6 +308,13 @@ function fatigueValue(events, now) {
   return 1 - Math.exp(-value)
 }
 
+/**
+ * Per-muscle accumulated fatigue score in `[0, 1)`.
+ * @param {Workout[]} workouts
+ * @param {number} now
+ * @param {RecoveryOpts} [opts={}]
+ * @returns {Record<string, number>}
+ */
 export function fatigueOf(workouts, now, opts = {}) {
   const current = Number(now)
   const result = emptyMuscleMap(0)
@@ -220,6 +324,13 @@ export function fatigueOf(workouts, now, opts = {}) {
   return result
 }
 
+/**
+ * Per-muscle retained strength fraction in `[0.5, 1]`.
+ * @param {Workout[]} workouts
+ * @param {number} now
+ * @param {RecoveryOpts} [opts={}]
+ * @returns {Record<string, number>}
+ */
 export function strengthOf(workouts, now, opts = {}) {
   const current = Number(now)
   const latest = lastTrainedByMuscle(workouts)
@@ -242,18 +353,34 @@ export function strengthOf(workouts, now, opts = {}) {
   return result
 }
 
+/**
+ * @param {Workout[]} workouts
+ * @param {number} now
+ * @param {RecoveryOpts} [opts={}]
+ * @returns {string[]}
+ */
 export function fatiguedMuscles(workouts, now, opts = {}) {
   return Object.entries(fatigueOf(workouts, now, opts))
     .filter(([, value]) => value > FATIGUE_THRESHOLD_FATIGUED)
     .map(([slug]) => slug)
 }
 
+/**
+ * @param {Workout[]} workouts
+ * @param {number} now
+ * @param {RecoveryOpts} [opts={}]
+ * @returns {string[]}
+ */
 export function detrainedMuscles(workouts, now, opts = {}) {
   return Object.entries(strengthOf(workouts, now, opts))
     .filter(([, value]) => value < 1)
     .map(([slug]) => slug)
 }
 
+/**
+ * @param {number | null | undefined} value
+ * @returns {'ready' | 'recovering' | 'fatigued'}
+ */
 export function fatigueStateOf(value) {
   if (value == null || !Number.isFinite(value) || value < FATIGUE_THRESHOLD_READY) {
     return FATIGUE_STATES.READY

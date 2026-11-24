@@ -1,6 +1,13 @@
 import { mergePlan } from '../plan-share.js'
 import { assignWeekday } from '../schedule.js'
 
+/** @typedef {import('../types.js').Profile} Profile */
+/** @typedef {import('../types.js').Routine} Routine */
+/** @typedef {import('../types.js').Target} Target */
+/** @typedef {import('../types.js').CustomExercise} CustomExercise */
+/** @typedef {import('../types.js').ProgressionPolicy} ProgressionPolicy */
+/** @typedef {import('../types.js').Unit} Unit */
+
 /** Each exercise sets its own Rest duration (ADR 0029), so the plan leaves the Profile's alone. */
 export const REST_COMPOUND = 180
 export const REST_ISO = 120
@@ -8,10 +15,14 @@ export const REST_ISO = 120
 const COMPOUND = 'Stop 1–2 reps short of failure.'
 const ISO = 'Take the last set to failure.'
 const firstSet = 'Plan rule: go up once set 1 reaches the top and later sets stay in range.'
+/** @param {number} n @returns {string} */
 const totalReps = n => `Plan rule: go up one step once total reps reach ${n} with no set below the range.`
 const linear = 'Add load every session while form stays clean; switch to double progression once it stalls.'
 
-/** The plan's own exercises that the catalogue has no honest equivalent for. */
+/**
+ * The plan's own exercises that the catalogue has no honest equivalent for.
+ * @type {CustomExercise[]}
+ */
 const CUSTOM = [
   { id: 'hyp-bayesian-curl', n: 'Bayesian cable curl', bp: 'upper arms', eq: 'cable', tg: 'biceps', sm: ['forearm'],
     desc: 'Face away from a low pulley, arm drawn behind the body, and curl with the shoulder extended.' },
@@ -25,18 +36,63 @@ const CUSTOM = [
     desc: 'Lat pulldown with a separate D-handle in each hand, pulling the elbows down to the sides.' },
 ]
 
-// No starting weight: a loaded exercise carries no `weight`, as a Plan file export writes it.
+/**
+ * @param {string} id
+ * @param {number} sets
+ * @param {number} bottom
+ * @param {number} top
+ * @param {ProgressionPolicy} prog
+ * @param {string} notes
+ * @param {Partial<Target>} [extra={}]
+ * @returns {Target}
+ */
 const ex = (id, sets, bottom, top, prog, notes, extra = {}) =>
   ({ id, sets, reps: top, repsMin: bottom, prog, notes, rest: REST_COMPOUND, ...extra })
+/**
+ * @param {string} id
+ * @param {number} sets
+ * @param {number} bottom
+ * @param {number} top
+ * @param {string} notes
+ * @param {Partial<Target>} [extra={}]
+ * @returns {Target}
+ */
 const perLeg = (id, sets, bottom, top, notes, extra = {}) =>
   ex(id, sets, bottom * 2, top * 2, 'double', `Reps are both legs together (${bottom}–${top} per leg). ${notes}`, { side: true, ...extra })
+/**
+ * @param {string} id
+ * @param {number} sets
+ * @param {number} bottom
+ * @param {number} top
+ * @param {string} notes
+ * @returns {Target}
+ */
 const lin = (id, sets, bottom, top, notes) =>
   ({ id, sets, reps: bottom, prog: 'linear', inc: 2.5, rest: REST_COMPOUND, notes: `${notes}${notes ? ' ' : ''}Range ${bottom}–${top}. ${COMPOUND} ${linear}` })
+/**
+ * @param {string} id
+ * @param {number} sets
+ * @param {number} bottom
+ * @param {number} top
+ * @param {string} [notes='']
+ * @param {Partial<Target>} [extra={}]
+ * @returns {Target}
+ */
 const iso = (id, sets, bottom, top, notes = '', extra = {}) =>
   ex(id, sets, bottom, top, 'double', `${notes}${notes ? ' ' : ''}${ISO} ${totalReps(Math.ceil(sets * (bottom + top) / 2))}`, { rest: REST_ISO, ...extra })
+/**
+ * @param {string} id
+ * @param {number} sets
+ * @param {number} bottom
+ * @param {number} top
+ * @param {string} [notes='']
+ * @param {Partial<Target>} [extra={}]
+ * @returns {Target}
+ */
 const comp = (id, sets, bottom, top, notes = '', extra = {}) =>
   ex(id, sets, bottom, top, 'double', `${notes}${notes ? ' ' : ''}${COMPOUND} ${firstSet}`, extra)
 
+/** @type {Routine[]} */
 const ROUTINES = [
   { id: 'upper', name: 'Upper', emoji: 'figureStrength', ex: [
     comp('0025', 2, 5, 8),
@@ -88,10 +144,10 @@ const WEEK = { 1: 'upper', 2: 'lower', 4: 'push', 5: 'pull', 6: 'legs' }
 /**
  * The 5-day hypertrophy plan as a Plan file bundle, ready for `mergePlan`.
  *
- * @returns {Object} A fresh bundle; callers may mutate it.
+ * @returns {{ sky_plan: number, name: string, unit: Unit, week: Record<string, string>, routines: Routine[], customEx: CustomExercise[] }} A fresh bundle; callers may mutate it.
  */
 export function hypertrophyPlanBundle() {
-  return structuredClone({ sky_plan: 1, name: '5-day hypertrophy', unit: 'kg', week: WEEK, routines: ROUTINES, customEx: CUSTOM })
+  return structuredClone({ sky_plan: 1, name: '5-day hypertrophy', unit: /** @type {Unit} */ ('kg'), week: WEEK, routines: ROUTINES, customEx: CUSTOM })
 }
 
 /**
@@ -99,7 +155,7 @@ export function hypertrophyPlanBundle() {
  * Wednesday, Sunday and day overrides are left as they were. The bundle is in kg; `mergePlan` converts
  * it into the Profile's unit (ADR 0031).
  *
- * @param {Object} S - Draft profile state.
+ * @param {Profile} S - Draft profile state.
  * @returns {{ routineIds: string[] }} The new routine ids in plan order.
  */
 export function applyHypertrophyPlan(S) {

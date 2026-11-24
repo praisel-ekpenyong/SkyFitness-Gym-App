@@ -4,8 +4,23 @@
 import { EXIDX, smOf } from './exercises.js'
 import { MUSCLE_NAME, canonicalMuscle, primaryMuscleOf, secondaryMusclesOf } from './muscles.js'
 
+/**
+ * @typedef {{
+ *   primary: string | null,
+ *   secondaries: string[],
+ *   primaryName: string,
+ *   rawSm: string[],
+ * }} ExerciseSearchContext
+ */
+
+/** @typedef {import('./types.js').CustomExercise & { notes?: string }} SearchableExercise */
+
 export const SEARCH_STOP_WORDS = new Set(['with', 'on', 'in', 'for', 'the', 'to', 'at', 'and', 'or', 'a', 'an'])
 
+/**
+ * @param {string | null | undefined} query
+ * @returns {string[]}
+ */
 export function tokenizeSearchQuery(query) {
   const normalized = String(query || '')
     .replace(/[^\w\s]/g, ' ')
@@ -17,6 +32,11 @@ export function tokenizeSearchQuery(query) {
   return filtered.length > 0 ? filtered : rawTokens
 }
 
+/**
+ * @param {unknown} str
+ * @param {string | null | undefined} token
+ * @returns {boolean}
+ */
 export function stringIncludesToken(str, token) {
   if (!str || !token) return false
   const s = String(str).toLowerCase()
@@ -27,6 +47,10 @@ export function stringIncludesToken(str, token) {
   return s.includes(t)
 }
 
+/**
+ * @param {SearchableExercise | null | undefined} ex
+ * @returns {ExerciseSearchContext | null}
+ */
 export function exerciseContext(ex) {
   if (!ex || typeof ex !== 'object') return null
   const primary = primaryMuscleOf(ex)
@@ -40,12 +64,13 @@ export function exerciseContext(ex) {
  * Checks whether a single token matches an exercise across any of its attributes.
  *
  * @param {string} token - Query token to match.
- * @param {Object} ex - Exercise object.
- * @param {Object} [ctx] - Precomputed exerciseContext(ex) to eliminate repeated derivations.
+ * @param {SearchableExercise | null | undefined} ex - Exercise object.
+ * @param {ExerciseSearchContext | string | null} [ctx] - Precomputed exerciseContext(ex) to eliminate repeated derivations.
  * @returns {boolean}
  */
 export function tokenMatchesExercise(token, ex, ctx) {
   if (!token || !ex) return false
+  /** @type {ExerciseSearchContext | null} */
   const context = (ctx && typeof ctx === 'object' && !Array.isArray(ctx) && 'primary' in ctx)
     ? ctx
     : (typeof ctx === 'string'
@@ -70,6 +95,11 @@ export function tokenMatchesExercise(token, ex, ctx) {
   return false
 }
 
+/**
+ * @param {string | SearchableExercise} idOrEx
+ * @param {string} query
+ * @returns {string | null}
+ */
 export function secondaryMatchForQuery(idOrEx, query) {
   const tokens = tokenizeSearchQuery(query)
   if (tokens.length === 0) return null
@@ -114,6 +144,11 @@ export function secondaryMatchForQuery(idOrEx, query) {
   return null
 }
 
+/**
+ * @param {string | SearchableExercise} idOrEx
+ * @param {string} query
+ * @returns {boolean}
+ */
 export function matchesExerciseSearch(idOrEx, query) {
   const tokens = tokenizeSearchQuery(query)
   if (tokens.length === 0) return true

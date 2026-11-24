@@ -1,5 +1,9 @@
 import { dateLocale } from './i18n-core.js'
 
+/** @typedef {import('./types.js').Workout} Workout */
+/** @typedef {import('./types.js').ActiveWorkout} ActiveWorkout */
+/** @typedef {import('./types.js').WeighIn} WeighIn */
+
 /**
  * Today's local calendar date as callers store and compare day keys.
  * @returns {string} Date in `YYYY-MM-DD` local time, zero-padded, never UTC-shifted.
@@ -52,7 +56,7 @@ export function weekKey(d) {
   const day = (dt.getDay() + 6) % 7
   dt.setDate(dt.getDate() - day + 3)
   const jan4 = new Date(dt.getFullYear(), 0, 4)
-  const week = 1 + Math.round(((dt - jan4) / 86400000 - 3 + ((jan4.getDay() + 6) % 7)) / 7)
+  const week = 1 + Math.round(((dt.getTime() - jan4.getTime()) / 86400000 - 3 + ((jan4.getDay() + 6) % 7)) / 7)
   return dt.getFullYear() + '-' + week
 }
 
@@ -69,7 +73,7 @@ export function mondayOf(d) {
 
 /**
  * Groups a day key or dated record into its calendar month bucket.
- * @param {string|Object} value - Day key string, or an object carrying a `d` day key; empty or missing input reads as empty.
+ * @param {string | Workout | ActiveWorkout | WeighIn | null | undefined} value - Day key string, or a dated record carrying a `d` day key; empty or missing input reads as empty.
  * @returns {string} `YYYY-MM` prefix, or an empty string when nothing parseable was given.
  */
 export function monthKey(value) {
@@ -85,16 +89,17 @@ export const localTZ = () => { try { return Intl.DateTimeFormat().resolvedOption
 
 /**
  * Resolves a workout or weigh-in to a single sortable millisecond timestamp.
- * @param {Object} w - Workout or body-weight record with a numeric `start`/`t`, or a `d` day key; nullish or unparseable input yields NaN.
+ * @param {Workout | ActiveWorkout | WeighIn | null | undefined} w - Workout or body-weight record with a numeric `start`/`t`, or a `d` day key; nullish or unparseable input yields NaN.
  * @returns {number} Milliseconds since epoch; NaN when no usable time is present.
  */
 export function workoutTimestamp(w) {
-  const ts = w?.start ?? w?.t
+  if (!w) return NaN
+  const ts = ('start' in w ? w.start : undefined) ?? ('t' in w ? w.t : undefined)
   if (ts != null) {
     const n = Number(ts)
     if (Number.isFinite(n)) return n
   }
-  if (!w?.d) return NaN
+  if (!w.d) return NaN
   const t = parseDay(w.d).getTime()
   return Number.isFinite(t) ? t : NaN
 }

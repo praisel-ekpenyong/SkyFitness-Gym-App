@@ -6,15 +6,24 @@ import { todayISO, DAYN } from './dates.js'
 import { t } from './i18n-core.js'
 import { sanitizeUnit, targetIn } from './units.js'
 
+/** @typedef {import('./types.js').Profile} Profile */
+/** @typedef {import('./types.js').Routine} Routine */
+/** @typedef {import('./types.js').Target} Target */
+/** @typedef {import('./types.js').CustomExercise} CustomExercise */
+/** @typedef {import('./types.js').Unit} Unit */
+
 const PLAN_FMT = 1
 const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0]
 
+/** @param {string[] | string | null | undefined} sm @returns {string[] | null} */
 function normalizeSm(sm) {
   if (sm == null || sm === '') return null
   return Array.isArray(sm) ? sm : [sm]
 }
 
+/** @param {Target} e @returns {Target} */
 function cleanEx(e) {
+  /** @type {Target} */
   const o = { id: e.id, sets: e.sets }
   const mode = modeOf(e)
   if (mode === 'cardio') {
@@ -31,16 +40,21 @@ function cleanEx(e) {
   if (e.bodyweight != null && e.bodyweight !== isBodyweightEq(e.id)) o.bodyweight = e.bodyweight
   if (e.side && mode !== 'time' && mode !== 'cardio') o.side = true
   if (e.prog) o.prog = e.prog
-  if (e.inc > 0) o.inc = e.inc
+  if (e.inc != null && e.inc > 0) o.inc = e.inc
   if (e.repsMin != null) o.repsMin = e.repsMin
   if (e.repsMax != null) o.repsMax = e.repsMax
-  if (Number.isFinite(e.rest) && e.rest > 0) o.rest = e.rest
+  if (e.rest != null && Number.isFinite(e.rest) && e.rest > 0) o.rest = e.rest
   if (e.sg) o.sg = e.sg
   const notes = cleanNote(e.notes)
   if (notes) o.notes = notes
   return o
 }
 
+/**
+ * Build a shareable Plan file bundle from `S`.
+ * @param {Profile} S
+ * @param {string} [name]
+ */
 export function buildPlanBundle(S, name) {
   const routines = (S.routines || []).map(r => ({
     id: r.id, name: r.name, emoji: r.emoji, ...(r.prog ? { prog: r.prog } : {}), ex: (r.ex || []).map(cleanEx)
@@ -61,29 +75,37 @@ export function buildPlanBundle(S, name) {
         ...(c.custom ? { custom: c.custom } : {}),
       }
     })
+  /** @type {Record<string, string>} */
   const week = {}
   WEEK_ORDER.forEach(d => { if (S.week?.[d]) week[d] = S.week[d] })
   return { sky_plan: PLAN_FMT, exported: todayISO(), name: name || '', unit: sanitizeUnit(S.unit), week, routines, customEx }
 }
 
+/**
+ * Parse and validate a shareable Plan file payload.
+ * @param {unknown} raw
+ * @returns {{ name: string, unit: Unit | null, routines: Routine[], week: Record<string, string>, customEx: CustomExercise[], dropped: number, routineCount: number, exerciseCount: number, scheduledDays: number }}
+ */
 export function parsePlan(raw) {
   const data = typeof raw === 'string' ? JSON.parse(raw) : raw
-  if (!data || !data.sky_plan || !Array.isArray(data.routines)) {
+  if (!data || typeof data !== 'object' || !data.sky_plan || !Array.isArray(data.routines)) {
     throw new Error(t('this isn’t a Sky plan file'))
   }
-  const customEx = (Array.isArray(data.customEx) ? data.customEx : []).filter(c => c && c.id)
+  /** @type {CustomExercise[]} */
+  const customEx = (Array.isArray(data.customEx) ? data.customEx : []).filter((/** @type {CustomExercise} */ c) => c && c.id)
   const known = new Set(customEx.map(c => c.id))
   let dropped = 0
-  const routines = data.routines.filter(r => r && Array.isArray(r.ex)).map(r => ({
+  /** @type {Routine[]} */
+  const routines = data.routines.filter((/** @type {Routine} */ r) => r && Array.isArray(r.ex)).map((/** @type {Routine} */ r) => ({
     ...r,
     ex: r.ex.filter(e => {
-      const ok = !!e && (known.has(e.id) || !!EXIDX[e.id])
+      const ok = !!e && !!e.id && (known.has(e.id) || !!EXIDX[e.id])
       if (!ok) dropped++
       return ok
     })
   }))
   return {
-    name: (data.name || '').trim(),
+    name: String(data.name || '').trim(),
     unit: typeof data.unit === 'string' ? sanitizeUnit(data.unit) : null,
     routines,
     week: data.week || {},
@@ -95,11 +117,19 @@ export function parsePlan(raw) {
   }
 }
 
+/**
+ * Merge a parsed Plan bundle into Profile `s`.
+ * @param {Profile} s
+ * @param {{ unit: Unit | null, routines: Routine[], week: Record<string, string>, customEx: CustomExercise[] }} bundle
+ * @param {{ schedule?: boolean }} [options]
+ * @returns {{ routines: number }}
+ */
 export function mergePlan(s, bundle, { schedule } = {}) {
   s.customEx = s.customEx || []
   // A plan's loads arrive in the importing Profile's unit; a file without a unit is taken as it is (ADR 0031).
   const unit = sanitizeUnit(s.unit)
   const fileUnit = bundle.unit || unit
+  /** @type {Record<string, string>} */
   const exIdMap = {}
   bundle.customEx.forEach(c => {
     const same = s.customEx.find(x => (x.n || '').toLowerCase() === (c.n || '').toLowerCase() && x.bp === c.bp)
@@ -118,6 +148,7 @@ export function mergePlan(s, bundle, { schedule } = {}) {
       custom: true,
     })
   })
+  /** @type {Record<string, string>} */
   const ridMap = {}
   bundle.routines.forEach(r => {
     const nid = uid()
@@ -127,7 +158,7 @@ export function mergePlan(s, bundle, { schedule } = {}) {
       name: r.name || t('Shared routine'),
       emoji: r.emoji,
       ...(r.prog ? { prog: r.prog } : {}),
-      ex: (r.ex || []).map(e => ({ ...targetIn(e, fileUnit, unit), id: exIdMap[e.id] || e.id }))
+      ex: (r.ex || []).map(e => ({ ...targetIn(e, fileUnit, unit), id: (e.id && exIdMap[e.id]) || e.id }))
     })
   })
   if (schedule) {
@@ -140,9 +171,11 @@ export function mergePlan(s, bundle, { schedule } = {}) {
 }
 
 
+/** @param {unknown} str @returns {string} */
 const esc = str => String(str == null ? '' : str)
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 
+/** @param {Target} e @param {Unit} unit @returns {string} */
 function scheme(e, unit) {
   const sets = e.sets || 1
   const mode = modeOf(e)
@@ -156,7 +189,9 @@ function scheme(e, unit) {
   return s
 }
 
+/** @param {Target[]} ex @returns {Target[][]} */
 function units(ex) {
+  /** @type {Target[][]} */
   const out = []
   ex.forEach((e, i) => {
     const prev = ex[i - 1]
@@ -166,10 +201,11 @@ function units(ex) {
   return out
 }
 
+/** @param {Routine} r @param {Unit} unit @returns {string} */
 function routineHTML(r, unit) {
   const rows = units(r.ex).map(u => {
     const items = u.map(e => {
-      const ex = EXIDX[e.id]
+      const ex = e.id ? EXIDX[e.id] : undefined
       const name = ex ? ex.n : t('Unknown exercise')
       const part = ex && ex.bp && ex.bp !== 'cardio' ? `<span class="part">${esc(ex.bp)}</span>` : ''
       return `<div class="ex"><div class="ex-n">${esc(name)}${part}</div><div class="ex-s">${esc(scheme(e, unit))}</div></div>`
@@ -185,6 +221,7 @@ function routineHTML(r, unit) {
   </section>`
 }
 
+/** @param {Profile} S @returns {string} */
 function weekHTML(S) {
   const rows = WEEK_ORDER.map(d => {
     const r = S.routines.find(x => x.id === S.week?.[d])
@@ -196,8 +233,8 @@ function weekHTML(S) {
 
 /**
  * Builds the full self-contained HTML document for the print and Save-as-PDF view.
- * @param {Object} S - Profile state with `routines`, `week`, and `unit`; routines without exercises are omitted.
- * @param {string} owner - Owner name printed in the header; falsy omits the byline.
+ * @param {Profile} S - Profile state with `routines`, `week`, and `unit`; routines without exercises are omitted.
+ * @param {string} [owner] - Owner name printed in the header; falsy omits the byline.
  * @returns {string} Complete standalone HTML page with inline styles.
  */
 export function planPrintHTML(S, owner) {

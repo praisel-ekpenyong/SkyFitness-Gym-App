@@ -1,6 +1,13 @@
 import { dateLocale, t } from './i18n-core.js'
 import { modeOf, isBw, isPerSide, sideReps } from './workout-model.js'
 
+/** @typedef {import('./types.js').Target} Target */
+/** @typedef {import('./types.js').Unit} Unit */
+
+/**
+ * @param {number} ms
+ * @returns {[string, string][]}
+ */
 export function fmtDurParts(ms) {
   const m = Math.floor(ms / 60000)
   return m >= 60 ? [[fmtNum(Math.floor(m / 60)), 'h'], [String(m % 60), 'm']] : [[fmtNum(m), ' min']]
@@ -11,7 +18,9 @@ export function fmtDurParts(ms) {
  * @returns {string} `M min` below one hour, otherwise `Hh Mm`.
  */
 export const fmtDur = ms => fmtDurParts(ms).map(p => p.join('')).join(' ')
+/** @param {number} ms */
 export const durPart = ms => (ms >= 60000 ? [fmtDur(ms)] : [])
+/** @param {number} n */
 export const fmtNum = n => (Math.round(n * 10) / 10).toLocaleString(dateLocale())
 /** Non-breaking space: a number and its unit never wrap onto separate lines. */
 export const NBSP = '\u00a0'
@@ -24,6 +33,11 @@ export const NBSP = '\u00a0'
 export const fmtVol = (v, unit) => fmtNum(v) + NBSP + unit
 
 export const MINUS = '\u2212'
+/**
+ * @param {number | null | undefined} n
+ * @param {(v: number) => string} [fmt=fmtNum]
+ * @returns {string}
+ */
 export function fmtSigned(n, fmt = fmtNum) {
   const v = Number(n) || 0
   const body = fmt(Math.abs(v))
@@ -31,8 +45,10 @@ export function fmtSigned(n, fmt = fmtNum) {
   return (v < 0 ? MINUS : '+') + body
 }
 
+/** @type {Record<string, string>} */
 const PROPER = { ez: 'EZ', bosu: 'BOSU', skierg: 'SkiErg' }
 const UNIT = /^(kg|lb|lbs|km\/h|min|s|h|m)$/
+/** @param {unknown} s */
 export function sentenceCase(s) {
   const words = String(s ?? '').split(' ')
   const fixed = words.map(w => PROPER[w.toLowerCase()] || w)
@@ -40,6 +56,7 @@ export function sentenceCase(s) {
   if (!UNIT.test(first) && first === words[0]) fixed[0] = first.charAt(0).toUpperCase() + first.slice(1)
   return fixed.join(' ')
 }
+/** @param {number} n */
 export const exCount = n => t(n === 1 ? '{0} exercise' : '{0} exercises', n)
 
 /**
@@ -50,6 +67,7 @@ export const uid = () => Date.now().toString(36) + Math.random().toString(36).sl
 
 export const ACCENTS = { lime: '#a3e635', sky: '#5cb8ff', violet: '#b79cff', pink: '#ff6fa3', teal: '#3dd6c4' }
 
+/** @param {number} n */
 const clockText = n => Math.floor(n / 60) + ':' + String(n % 60).padStart(2, '0')
 
 /**
@@ -61,11 +79,17 @@ export function fmtSec(sec) {
   return clockText(Math.max(0, Math.round(Number(sec) || 0)))
 }
 
+/** @param {number} sec */
 export function fmtElapsed(sec) {
   return clockText(Math.max(0, Math.floor(Number(sec) || 0)))
 }
 
-/** An exercise's planned target as one line, e.g. `3 × 10 · 60 kg`. */
+/**
+ * An exercise's planned target as one line, e.g. `3 × 10 · 60 kg`.
+ * @param {Target} cfg
+ * @param {Unit | string} unit
+ * @returns {string}
+ */
 export function exLine(cfg, unit) {
   const mode = modeOf(cfg)
   const n = cfg.sets || 1
