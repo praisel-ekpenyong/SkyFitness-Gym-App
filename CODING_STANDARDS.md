@@ -465,9 +465,10 @@ selector. Exception: an array built in the same function.
 
 **Why:** `lib/strength-exercises.js` (line 56) and `lib/profile/workouts.js`
 (line 24) sort in place.
-**To add:** oxlint `unicorn/no-array-sort` and `unicorn/no-array-reverse` (27
-hits in 16 files, re-measured 2026-11-24), autofixable, baseline in
-`frontend/lint-baseline.json`.
+**Runs:** oxlint `unicorn/no-array-sort` and `unicorn/no-array-reverse` at error.
+27 hits in 16 files (22 `no-array-sort` in 13 files, 5 `no-array-reverse` in
+4 files, re-measured 2026-11-24) sit in `frontend/lint-baseline.json` and may
+only fall. None were autofixed.
 
 ## Entities, actions, and interaction design
 

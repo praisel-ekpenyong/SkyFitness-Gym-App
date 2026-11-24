@@ -16,5 +16,54 @@
   },
   "src/views/RoutineEdit.jsx": {
     "react-hooks/exhaustive-deps": 2
+  },
+  "scripts/check-lint-baseline.mjs": {
+    "unicorn/no-array-sort": 2
+  },
+  "src/components/Barbell.jsx": {
+    "unicorn/no-array-reverse": 1
+  },
+  "src/components/Heatmap.jsx": {
+    "unicorn/no-array-sort": 1
+  },
+  "src/lib/effort.js": {
+    "unicorn/no-array-sort": 1
+  },
+  "src/lib/exercises.js": {
+    "unicorn/no-array-sort": 2
+  },
+  "src/lib/import-csv.js": {
+    "unicorn/no-array-sort": 7
+  },
+  "src/lib/muscles.js": {
+    "unicorn/no-array-sort": 1
+  },
+  "src/lib/profile/workouts.js": {
+    "unicorn/no-array-sort": 1
+  },
+  "src/lib/recovery.js": {
+    "unicorn/no-array-sort": 1
+  },
+  "src/lib/stats-selectors.js": {
+    "unicorn/no-array-reverse": 2,
+    "unicorn/no-array-sort": 2
+  },
+  "src/lib/streak.js": {
+    "unicorn/no-array-sort": 1
+  },
+  "src/lib/strength-exercises.js": {
+    "unicorn/no-array-sort": 1
+  },
+  "src/lib/strength-level.js": {
+    "unicorn/no-array-sort": 1
+  },
+  "src/sheets/bodyweight.jsx": {
+    "unicorn/no-array-reverse": 1
+  },
+  "src/sheets/catalogue.jsx": {
+    "unicorn/no-array-sort": 1
+  },
+  "src/views/History.jsx": {
+    "unicorn/no-array-reverse": 1
   }
 }
