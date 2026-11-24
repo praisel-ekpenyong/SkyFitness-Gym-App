@@ -3,6 +3,7 @@ import { MUSCLES, muscleWeightsOf, lastTrainedByMuscle } from './muscles.js'
 import { isWorkSet, isPerformed } from './workout-sets.js'
 import { workoutTimestamp } from './dates.js'
 import { normalizeWeight } from './units.js'
+import { FORMULAS, REP_CAP } from './onerm.js'
 
 export const FATIGUE_REF_VOLUME = 2000
 export const FATIGUE_MIN_REF_FLOOR = FATIGUE_REF_VOLUME * 0.25
@@ -47,8 +48,9 @@ function emptyMuscleMap(value) {
   return Object.fromEntries(MUSCLES.map(slug => [slug, value]))
 }
 
-const REP_CAP = 12
-const epley1RM = (load, reps) => (reps === 1 ? load : load * (1 + Math.min(reps || 1, REP_CAP) / 30))
+// Recovery clamps reps at REP_CAP instead of refusing > 12 reps (unlike estimate1RM),
+// so high-rep sets stay smoothly intensity-weighted rather than falling back to 1.0 raw tonnage.
+const epley1RM = (load, reps) => (reps === 1 ? load : FORMULAS.epley(load, Math.min(reps || 1, REP_CAP)))
 
 function numeric(value) {
   if (value === null || value === undefined || value === '' || typeof value === 'boolean') return null
