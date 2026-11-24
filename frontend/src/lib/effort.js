@@ -18,6 +18,9 @@ export function stepEffort(kind, cur, dir) {
 export const capEffort = (kind, v) =>
   (v == null || !EFFORT[kind] ? v : Math.min(EFFORT[kind].max, v))
 
+export const floorEffort = (kind, v) =>
+  (v == null || !EFFORT[kind] ? v : Math.max(EFFORT[kind].min, v))
+
 export const effortOf = S => {
   const e = S && S.effort
   return e === 'none' || EFFORT[e] ? e : 'none'

@@ -7,7 +7,7 @@ import { exOr } from '../lib/exercises.js'
 import { effectiveRoutine, hasEffectiveOverride } from '../lib/history.js'
 import { freestyleConfig, defaultConfig, modeOf, isBw, isPerSide, sideReps, repStep } from '../lib/workout-model.js'
 import { setLabel } from '../lib/set-label.js'
-import { EFFORT, effortOf, stepEffort, capEffort } from '../lib/effort.js'
+import { EFFORT, effortOf, stepEffort, capEffort, floorEffort } from '../lib/effort.js'
 import { sessionView } from '../lib/active-workout.js'
 import { best as bestOf, lastSession } from '../lib/training-log.js'
 import { fmtNum, fmtVol, fmtSec, fmtElapsed, exCount, sentenceCase } from '../lib/format.js'
@@ -113,6 +113,11 @@ function ExerciseBlock({ entryIdx, compact, isCurrent = true, arrived = false, r
     if (col.eff) return onField(i, col.f, stepEffort(col.eff, s[col.f], dir))
     onField(i, col.f, Math.max(0, Math.round(((s[col.f] || 0) + dir * col.step) * 100) / 100))
   }
+  // On blur, not on change: typing "10" passes through "1".
+  const settleEffort = (s, i, col) => {
+    const v = floorEffort(col.eff, s[col.f])
+    if (v !== s[col.f]) onField(i, col.f, v)
+  }
   const cell = (s, i, col, cls, phaseNum, warm) => {
     const phasePrefix = warm ? t('Warm-up set {0}', phaseNum) : t('Set {0}', phaseNum)
     const fieldLabel = t('{0} {1}', phasePrefix, col.hd)
@@ -121,7 +126,8 @@ function ExerciseBlock({ entryIdx, compact, isCurrent = true, arrived = false, r
         <button className="stp-dec" aria-label={t('Decrease {0}', fieldLabel)} onClick={() => bump(s, i, col, -1)}><Icon name="minus" /></button>
         <span className="val"><NumberField decimal={col.dec} nullable={col.opt} value={s[col.f] ?? ''}
           aria-label={fieldLabel} placeholder={col.opt ? '—' : undefined}
-          onChange={v => onField(i, col.f, col.eff ? capEffort(col.eff, v) : v)} /><i>{col.unit}</i></span>
+          onChange={v => onField(i, col.f, col.eff ? capEffort(col.eff, v) : v)}
+          onBlur={col.eff ? () => settleEffort(s, i, col) : undefined} /><i>{col.unit}</i></span>
         <button className="stp-inc" aria-label={t('Increase {0}', fieldLabel)} onClick={() => bump(s, i, col, 1)}><Icon name="plus" /></button>
       </div>
     )
