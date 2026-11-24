@@ -1,19 +1,13 @@
 
 import { isCardio, isBodyweightEq } from './exercises.js'
-import { isWarmupRow, ensurePlainObject } from './warmup.js'
+import { isWarmupRow } from './warmup.js'
 import { best, lastSession, lastSessionInRoutine } from './training-log.js'
 import {
-  MODES,
-  PHASES,
   normalizeMode,
-  modeForSet,
-  modeForEntry,
   isWorkSet,
   isPerformed,
   workSets,
   doneWorkSets,
-  metricRowsForEntry,
-  metricModeForEntry,
 } from './workout-sets.js'
 
 export { phaseForSet, isWarmupRow, ensurePlainObject } from './warmup.js'

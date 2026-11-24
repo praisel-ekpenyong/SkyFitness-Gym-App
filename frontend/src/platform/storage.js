@@ -1,6 +1,6 @@
 // iOS Safari evicts website data under storage pressure, so the log's only home can't be localStorage alone.
 
-import { MOBILE, nativeLoad, nativeSave } from './mobile.js'
+import { MOBILE, nativeLoad } from './mobile.js'
 
 export const LOCAL_KEY = 'gym_state_v1'
 

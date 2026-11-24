@@ -1,7 +1,7 @@
 import { describe, expect, it, afterEach } from 'vitest'
 import { EXIDX, EXDB, smOf, registerCustom } from './exercises.js'
 import { UPPER_BODY_CORRECTIONS } from './catalogue-corrections.js'
-import { matchesMuscleFilter, isSecondaryMuscleMatch, loadOfWorkouts, musclesOf, loadOf, muscleWeightsOf, lastTrainedByMuscle, primaryMuscleOf, primaryMuscleName, secondaryMusclesOf, sessionMuscleDistribution } from './muscles.js'
+import { matchesMuscleFilter, isSecondaryMuscleMatch, loadOfWorkouts, musclesOf, muscleWeightsOf, lastTrainedByMuscle, primaryMuscleOf, primaryMuscleName, secondaryMusclesOf, sessionMuscleDistribution } from './muscles.js'
 
 describe('catalogue secondary muscles', () => {
   it('maps a bench press to chest, triceps and front delts', () => {

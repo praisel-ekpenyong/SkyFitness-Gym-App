@@ -1,14 +1,13 @@
 // @vitest-environment happy-dom
-import React, { act } from 'react'
+import { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import Library from './views/Library.jsx'
-import Stats from './views/Stats.jsx'
 import { ExerciseDetail, ExercisePicker, CustomExForm } from './sheets/catalogue.jsx'
 import { useStore } from './store/useStore.js'
 import { DEF } from './lib/profile/index.js'
 import { EXIDX } from './lib/exercises.js'
-import { MUSCLES, FILTER_MUSCLES, MUSCLE_NAME, primaryMuscleOf, secondaryMusclesOf, matchesMuscleFilter, isSecondaryMuscleMatch, loadOf, loadOfWorkouts, levelsOf, rankOf } from './lib/muscles.js'
+import { MUSCLES, MUSCLE_NAME, primaryMuscleOf, secondaryMusclesOf, matchesMuscleFilter, loadOfWorkouts, levelsOf, rankOf } from './lib/muscles.js'
 import { buildPlanBundle, parsePlan, mergePlan } from './lib/plan-share.js'
 import { act as actOn } from './lib/active-workout.js'
 
@@ -313,7 +312,6 @@ describe('Ticket 05 — Stats Muscle Balance integration', () => {
     expect(rowLoad['upper-back']).toBeCloseTo(2, 5)
     expect(rowLoad.lats).toBeCloseTo(0.8, 5)
     const latLevels = levelsOf(latLoad)
-    const rowLevels = levelsOf(rowLoad)
     expect(latLevels.lats).toBe(4)
     expect(latLevels['upper-back']).toBe(2)
     expectIsolatedLatsLevels()
@@ -331,7 +329,6 @@ describe('Ticket 05 — Stats Muscle Balance integration', () => {
   })
 
   it('historic workouts reinterpret live under new split (no migration) - long-term balance reflects precise model', () => {
-    const legacyEx = { id: 'c-legacy-hist', n: 'Old Back Lift Hist', bp: 'back' }
     const histW = {
       id: 'w-hist', d: '2026-01-01', start: Date.UTC(2026, 0, 1, 10), unit: 'kg',
       entries: [{ id: 'c-legacy-hist', sets: [{ done: true, w: 50, r: 10 }, { done: true, w: 50, r: 10 }] }],

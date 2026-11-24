@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { modeOf, isTimed, defaultConfig, buildSets, freestyleConfig, isBw, isPerSide, sideReps, repStep, cascadeWeight, insertWarmupRow, removeRowAt, workSetsDone, hasWork, isExerciseDone, sessionProgress, seedForReplacement, cleanNote } from './workout-model.js'
+import { modeOf, isTimed, defaultConfig, buildSets, freestyleConfig, isBw, sideReps, repStep, cascadeWeight, insertWarmupRow, removeRowAt, workSetsDone, hasWork, isExerciseDone, sessionProgress, seedForReplacement, cleanNote } from './workout-model.js'
 import { isWorkSet, isPerformed, workSets, doneWorkSets } from './workout-sets.js'
 import { fmtSec, exLine } from './format.js'
 import { setLabel } from './set-label.js'

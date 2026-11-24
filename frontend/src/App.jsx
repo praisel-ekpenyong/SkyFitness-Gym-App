@@ -1,7 +1,6 @@
 import { lazy, Suspense, useEffect } from 'react'
 import { HashRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import { useStore } from './store/useStore.js'
-import { useUI } from './store/useUI.js'
 import { ACCENTS } from './lib/format.js'
 import { todayISO } from './lib/dates.js'
 import { t } from './lib/i18n.js'

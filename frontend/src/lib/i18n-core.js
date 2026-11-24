@@ -1,5 +1,4 @@
 
-let lang = 'en'
 let dict = {}
 let instr = null
 let version = 0
@@ -29,7 +28,6 @@ export function t(s, ...args) {
 export const instrFor = ex => (instr && instr[ex.id]) || ex.st || []
 
 export function _setLangState() {
-  lang = 'en'
   dict = {}
   instr = null
   version++

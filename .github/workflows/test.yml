@@ -27,6 +27,9 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
         working-directory: frontend
+      # Unused imports and variables, broken hook calls, literals that mean something else.
+      - run: npm run lint
+        working-directory: frontend
       - run: npm test
         working-directory: frontend
       # A broken import or bad JSX fails the build long before any test covers it.

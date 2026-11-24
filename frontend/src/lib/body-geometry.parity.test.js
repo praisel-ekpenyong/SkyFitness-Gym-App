@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import bodyPaths from './body-paths.js'
-import { MUSCLES, MUSCLE_NAME, levelsOf, INERT } from './muscles.js'
+import { MUSCLES, MUSCLE_NAME, levelsOf } from './muscles.js'
 
 describe('lats vs upper-back visual parity', () => {
   const assertIsolatedLevels = () => {
