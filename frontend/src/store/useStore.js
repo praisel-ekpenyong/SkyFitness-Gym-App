@@ -21,7 +21,7 @@ const stamp = S => ({ ...S, _ts: Date.now() })
 // flags `newerProfile`, and never writes, so the newer Profile stays on disk as it was.
 function loadState(raw = loadLocal()) {
   if (isNewerProfile(raw)) return { S: freshProfile(), newerProfile: true }
-  return { S: normalizeState(raw), newerProfile: false }
+  return { S: normalizeState(raw, Date.now()), newerProfile: false }
 }
 
 const hasData = st => !!((st.workouts || []).length || (st.routines || []).length || (st.bodyweight || []).length)
@@ -58,7 +58,7 @@ export const useStore = create((set, get) => {
     const incomingTs = Number(incoming?._ts) || 0
     const currentTs = Number(current?._ts) || 0
     if (incomingTs > currentTs) {
-      const normalized = normalizeState(incoming)
+      const normalized = normalizeState(incoming, Date.now())
       registerCustom(normalized.customEx)
       set({ S: normalized })
     }
@@ -81,7 +81,7 @@ export const useStore = create((set, get) => {
         draft._ts = Date.now()
       }))
     },
-    replaceState(S) { persist(stamp(normalizeState(S))) },
+    replaceState(S) { persist(stamp(normalizeState(S, Date.now()))) },
     // `send` is where a hold's completeHold goes; a default here would drop its open-finish.
     act(command, send) {
       let res = null
@@ -101,7 +101,7 @@ export const useStore = create((set, get) => {
         running: S,
         hasData,
         overlay: x => {
-          try { return normalizeState(x) } catch (e) {
+          try { return normalizeState(x, Date.now()) } catch (e) {
             if (!(e instanceof NewerProfileError)) throw e
             set({ newerProfile: true })
             return null

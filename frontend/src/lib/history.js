@@ -35,7 +35,7 @@ export function effectiveRoutine(S, iso) {
   return id ? (S?.routines || []).find(r => r.id === id) || null : null
 }
 
-export function trainedWeeks(S, n = 12, now = Date.now()) {
+export function trainedWeeks(S, n = 12, now) {
   if (!S?.workouts?.length) return 0
   const weeks = new Set(S.workouts.map(w => weekKey(w.d)))
   const cur = new Date(now)

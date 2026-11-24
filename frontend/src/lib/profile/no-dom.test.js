@@ -19,7 +19,7 @@ describe('lib/profile is a seam with no DOM and no store', () => {
     expect(typeof document).toBe('undefined')
     expect(typeof window).toBe('undefined')
     expect(DEF.unit).toBe('kg')
-    expect(normalizeState({ workouts: [] }).workouts).toEqual([])
+    expect(normalizeState({ workouts: [] }, Date.now()).workouts).toEqual([])
   })
 
   it('imports no store module', () => {

@@ -304,7 +304,7 @@ describe('Normal load of a Profile carrying exWeights and stamped prs', () => {
     const { normalizeState } = await import('../lib/profile/index.js')
     const legacyCache = { '0025': { w: 999, d: '2026-01-01', unit: 'kg' } }
     const w = { id: 'w1', d: '2026-01-01', start: 1, end: 2, name: 'Push', prs: ['0025'], entries: [{ id: '0025', sets: [{ w: 100, r: 5, done: true }] }] }
-    const S = normalizeState({ ...cloneDef(), exWeights: legacyCache, workouts: [w] })
+    const S = normalizeState({ ...cloneDef(), exWeights: legacyCache, workouts: [w] }, Date.now())
     expect(S.exWeights).toEqual(legacyCache)
     expect(S.workouts[0].prs).toEqual(['0025'])
   })

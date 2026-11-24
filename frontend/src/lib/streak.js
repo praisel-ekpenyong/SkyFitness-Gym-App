@@ -10,7 +10,7 @@ import { hasWorkSet } from './workout-model.js'
  * @returns {{current: number, best: number, thisWeekCounted: boolean,
  *   weeks: Object<string, {state: 'counted'|'broke'|'missed'|'open', run: number}>}}
  */
-export function streakOf(S, today = Date.now()) {
+export function streakOf(S, today) {
   const counted = new Set()
   for (const w of S?.workouts || []) {
     if (!(w.entries || []).some(hasWorkSet)) continue

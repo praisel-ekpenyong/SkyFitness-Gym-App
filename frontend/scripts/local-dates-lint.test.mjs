@@ -15,7 +15,7 @@ async function lint(code, path = 'src/lib/sample.js') {
 // ESLint loads the whole config on first use, slow on a busy machine.
 describe('local-dates selectors', { timeout: 60000 }, () => {
   it('rejects toISOString().slice for a day key and names the helpers', async () => {
-    const hits = await lint('export const k = new Date().toISOString().slice(0, 10)\n')
+    const hits = await lint('export const k = date => date.toISOString().slice(0, 10)\n')
     expect(hits).toHaveLength(1)
     expect(hits[0].message).toMatch(/todayISO/)
     expect(hits[0].message).toMatch(/isoOf/)
@@ -34,7 +34,7 @@ describe('local-dates selectors', { timeout: 60000 }, () => {
   })
 
   it('exempts only lib/plans/scenarios.js, which is UTC on purpose', async () => {
-    const code = 'export const k = new Date().toISOString().slice(0, 10)\n'
+    const code = 'export const k = date => date.toISOString().slice(0, 10)\n'
     expect(await lint(code, 'src/lib/plans/scenarios.js')).toEqual([])
     expect(await lint(code, 'src/lib/plans/other.js')).toHaveLength(1)
   })

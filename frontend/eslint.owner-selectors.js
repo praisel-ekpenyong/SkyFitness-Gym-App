@@ -1,3 +1,5 @@
+import { matchesGlob } from 'node:path'
+
 // "One owner per derived value" (CODING_STANDARDS.md): no-restricted-syntax selectors that
 // fail outside the owning module. Ratchet: eslint-suppressions.json.
 // A file gets one config object per rule, so each owner's files run the other owners' selectors.
@@ -23,9 +25,29 @@ const weekdaySelectors = [
 
 const rule = selectors => ({ 'no-restricted-syntax': ['error', ...selectors] })
 
-/** @param {object[]} [everywhere] - Selectors from other tickets that apply to every file. */
-export default (everywhere = []) => [
-  { files: ['**/*.{js,jsx,mjs}'], ignores: [...unitsOwner, ...datesOwner], rules: rule([...everywhere, ...lbSelectors, ...weekdaySelectors]) },
-  { files: unitsOwner, rules: rule([...everywhere, ...weekdaySelectors]) },
-  { files: datesOwner, rules: rule([...everywhere, ...lbSelectors]) },
+const owners = [
+  { files: unitsOwner, own: [...weekdaySelectors] },
+  { files: datesOwner, own: [...lbSelectors] },
+]
+const others = [...lbSelectors, ...weekdaySelectors]
+
+/**
+ * @param {object[]} [everywhere] - Selectors from other tickets that apply to every file.
+ * @param {{files: string[], ignores?: string[], selectors: object[]}[]} [overrides] - File groups
+ *   with extra selectors. Each also keeps the owner selectors, with the owner-file exemptions.
+ */
+export default (everywhere = [], overrides = []) => [
+  { files: ['**/*.{js,jsx,mjs}'], ignores: [...unitsOwner, ...datesOwner], rules: rule([...everywhere, ...others]) },
+  ...owners.map(o => ({ files: o.files, rules: rule([...everywhere, ...o.own]) })),
+  ...overrides.flatMap(({ files, ignores = [], selectors }) => {
+    const extra = [...everywhere, ...selectors]
+    const ownerFiles = owners.flatMap(o => o.files.filter(f => !ignores.includes(f) && files.some(g => matchesGlob(f, g))))
+    return [
+      { files, ignores: [...ignores, ...unitsOwner, ...datesOwner], rules: rule([...extra, ...others]) },
+      ...owners.flatMap(o => {
+        const own = o.files.filter(f => ownerFiles.includes(f))
+        return own.length ? [{ files: own, rules: rule([...extra, ...o.own]) }] : []
+      }),
+    ]
+  }),
 ]

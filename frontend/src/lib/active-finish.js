@@ -14,7 +14,7 @@ function planRecord(plan) {
   return out
 }
 
-export function buildCompletedWorkout(active, { end = Date.now(), unit = 'kg', snapshotFor } = {}) {
+export function buildCompletedWorkout(active, { end, unit = 'kg', snapshotFor } = {}) {
   const entries = (active?.entries || []).map(entry => {
     const completed = {
       id: entry.id,

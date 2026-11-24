@@ -19,7 +19,7 @@ export function freshProfile() {
  * @returns {Object} A new, complete Profile; `DEF` itself is never returned.
  * @throws {NewerProfileError} When `raw` was saved by a newer Sky.
  */
-export function normalizeState(raw, now = Date.now()) {
+export function normalizeState(raw, now) {
   if (!isRecord(raw)) return freshProfile()
   const S = admit(raw)
   if (!Array.isArray(S.workouts)) S.workouts = []

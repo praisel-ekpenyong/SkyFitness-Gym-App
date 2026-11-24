@@ -40,29 +40,29 @@ afterEach(() => {
 describe('a retired accent reads as lime', () => {
   it.each(RETIRED)('normalizing a Profile with accent "%s" gives lime, without touching the stored object', accent => {
     const stored = { ...cloneDef(), accent }
-    expect(normalizeState(stored).accent).toBe('lime')
+    expect(normalizeState(stored, Date.now()).accent).toBe('lime')
     expect(stored.accent).toBe(accent)
   })
 
   it.each(KEPT)('accent "%s" is kept', accent => {
-    expect(normalizeState({ ...cloneDef(), accent }).accent).toBe(accent)
+    expect(normalizeState({ ...cloneDef(), accent }, Date.now()).accent).toBe(accent)
   })
 
   it('a missing or junk accent is lime', () => {
-    expect(normalizeState({ workouts: [] }).accent).toBe('lime')
-    expect(normalizeState({ accent: 'constructor' }).accent).toBe('lime')
-    expect(normalizeState({ accent: 42 }).accent).toBe('lime')
+    expect(normalizeState({ workouts: [] }, Date.now()).accent).toBe('lime')
+    expect(normalizeState({ accent: 'constructor' }, Date.now()).accent).toBe('lime')
+    expect(normalizeState({ accent: 42 }, Date.now()).accent).toBe('lime')
   })
 
   it('seals a legacy showRir flag onto effort', () => {
     // Profiles that still carry showRir were saved before the schema version: version 0.
     const { schemaVersion, ...version0 } = cloneDef()
     const stored = { ...version0, showRir: true }
-    const S = normalizeState(stored)
+    const S = normalizeState(stored, Date.now())
     expect(S.effort).toBe('rir')
     expect(S.showRir).toBeUndefined()
     expect(stored.showRir).toBe(true)
-    expect(normalizeState({ ...version0, effort: 'rpe', showRir: true }).effort).toBe('rpe')
+    expect(normalizeState({ ...version0, effort: 'rpe', showRir: true }, Date.now()).effort).toBe('rpe')
   })
 
   it('restoring a backup that chose orange lands on lime', async () => {
