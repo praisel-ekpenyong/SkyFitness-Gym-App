@@ -142,7 +142,7 @@ const ALIAS_EX = {
   skullcrusher: '0060', 'skull crusher': '0060', 'lying triceps extension': '0061',
   lunge: '0054', lunges: '0054', 'cable crossover': '1269', 'cable cross over': '1269',
   'goblet squat': '1760', 'dumbbell goblet squat': '1760', 'kettlebell goblet squat': '0534',
-  // Reported in issue #74: these come out of Hevy under names no word-overlap can reach, so they landed as custom exercises.
+  // These used to land as custom exercises: Hevy exports them under names no word-overlap can reach.
   treadmill: '3666', 'treadmill walk': '3666', 'treadmill run': '3666',
   cycling: '2331', 'cross trainer': '2331', elliptical: '2141',
   'stationary bike': '2138', 'exercise bike': '2138', 'stepmill': '2311',
