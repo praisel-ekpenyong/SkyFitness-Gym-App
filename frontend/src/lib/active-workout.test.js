@@ -1,7 +1,7 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { tonnage } from './training-log.js'
 import { isWarmupRow } from './warmup.js'
-import { registerCustom } from './exercises.js'
+import { registerCustom, EXDB } from './exercises.js'
 import { sessionView, act } from './active-workout.js'
 
 const clone = o => JSON.parse(JSON.stringify(o))
@@ -16,6 +16,7 @@ const withActive = (entries, extra = {}) => ({
   ...blankProfile(),
   active: { id: 'a1', d: '2026-08-24', start: 1000, routineId: null, name: 'Freestyle', bw: null, unit: 'kg', cur: 0, entries, ...extra },
 })
+const BW_EXERCISE = EXDB.find(e => e.eq === 'body weight').id
 const types = res => res.effects.map(e => e.type)
 const ids = S => S.active.entries.map(e => e.id)
 const finished = (S) => act(S, { type: 'finish' }).result.workout
@@ -72,6 +73,23 @@ describe('beginning a workout', () => {
 })
 
 describe('adding an Exercise', () => {
+  afterEach(() => registerCustom([]))
+
+  it('adds a catalogue exercise and a custom exercise from the Profile', () => {
+    const customEx = [{ id: 'c-custom', n: 'Custom lift', custom: true }]
+    registerCustom(customEx)
+    const S = { ...withActive([]), customEx }
+    expect(act(S, { type: 'addExercise', exId: '0025' }).ok).toBe(true)
+    expect(act(S, { type: 'addExercise', exId: 'c-custom' }).ok).toBe(true)
+    expect(ids(S)).toEqual(['0025', 'c-custom'])
+  })
+
+  it('gives a body-weight exercise a target with no bodyweight flag that only repeats the catalogue', () => {
+    const S = withActive([])
+    const { result: entry } = act(S, { type: 'addExercise', exId: BW_EXERCISE })
+    expect(entry.target).not.toHaveProperty('bodyweight')
+  })
+
   it('seeds a Routine workout from its progression stream and a Freestyle one from history', () => {
     const S = blankProfile()
     S.routines = [{ id: 'r1', name: 'Push', ex: [{ id: '0025', sets: 3, reps: 8, weight: 50, prog: 'linear', inc: 2.5 }] }]
@@ -406,13 +424,15 @@ describe('the next Step (the Next key)', () => {
 })
 
 describe('moving around', () => {
-  it('goes to an Entry, clamped to the workout at both ends', () => {
+  it('goes to an Entry, and stays put on an index outside the workout', () => {
     const S = withActive([{ id: 'ex1' }, { id: 'ex2' }, { id: 'ex3' }])
     act(S, { type: 'goTo', entry: 2 })
     expect(S.active.cur).toBe(2)
     act(S, { type: 'goTo', entry: 10 })
     expect(S.active.cur).toBe(2)
     act(S, { type: 'goTo', entry: -5 })
+    expect(S.active.cur).toBe(2)
+    act(S, { type: 'goTo', entry: 0 })
     expect(S.active.cur).toBe(0)
   })
 })
@@ -1119,6 +1139,7 @@ const liftEntry = (id, sets, target = {}) => ({ id, target: { reps: 8, weight: 5
 
 describe('a refused command', () => {
   const live = () => withActive([liftEntry('0025', [workSet(true)]), liftEntry('0026', [workSet()])], { cur: 1 })
+  const three = () => withActive([liftEntry('0025', [workSet()]), liftEntry('0026', [workSet()]), liftEntry('0027', [workSet()])])
   const staleRef = { workout: 'a1', layout: 0, entryId: '0025', set: 9 }
 
   it.each([
@@ -1142,6 +1163,22 @@ describe('a refused command', () => {
     ['prev with no workout', blankProfile, { type: 'prev' }],
     ['startHold on a missing set', live, { type: 'startHold', entry: 0, set: 9 }],
     ['completeHold on a stale ref', live, { type: 'completeHold', ref: staleRef, elapsed: 30 }],
+    ['addExercise with no exercise id', live, { type: 'addExercise' }],
+    ['addExercise of an unknown exercise', live, { type: 'addExercise', exId: 'no-such-exercise' }],
+    ['addExercise of an id the exercise index only inherits', live, { type: 'addExercise', exId: 'constructor' }],
+    ['goTo a negative index', live, { type: 'goTo', entry: -1 }],
+    ['goTo past the end', live, { type: 'goTo', entry: 2 }],
+    ['goTo NaN', live, { type: 'goTo', entry: NaN }],
+    ['goTo a non-integer index', live, { type: 'goTo', entry: 0.5 }],
+    ['pair with a non-integer index', three, { type: 'pair', first: 'a', second: 1 }],
+    ['pair past the end', three, { type: 'pair', first: 2, second: 3 }],
+    ['pair before the start', three, { type: 'pair', first: -1, second: 0 }],
+    ['pair of non-adjacent Entries', three, { type: 'pair', first: 0, second: 2 }],
+    ['pair of an Entry with itself', three, { type: 'pair', first: 1, second: 1 }],
+    ['unpair with a non-integer index', three, { type: 'unpair', entry: 0.5 }],
+    ['unpair with a non-integer string', three, { type: 'unpair', entry: 'a' }],
+    ['unpair a negative index', three, { type: 'unpair', entry: -1 }],
+    ['unpair past the end', three, { type: 'unpair', entry: 3 }],
   ])('%s leaves the Profile unchanged and asks for no effects', (_, make, command) => {
     const S = make()
     const before = structuredClone(S)

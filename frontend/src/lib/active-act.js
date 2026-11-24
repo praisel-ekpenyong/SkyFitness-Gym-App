@@ -11,7 +11,7 @@ import { toggleActiveSet } from './active-toggle.js'
 import { completeActiveSession } from './active-finish.js'
 import { sessionView } from './session-view.js'
 import { setsDone } from './workout-model.js'
-import { exOr } from './exercises.js'
+import { exOr, isKnownExercise } from './exercises.js'
 
 const effect = (type, extra) => (extra ? { type, ...extra } : { type })
 const refused = () => ({ ok: false, effects: [] })
@@ -71,6 +71,7 @@ function completeHold(S, { ref, elapsed }) {
 }
 
 function addExercise(S, { exId, target }) {
+  if (!isKnownExercise(exId)) return refused()
   const entry = addActiveExercise(S, exId, target)
   return entry ? { ok: true, effects: [], result: entry } : refused()
 }

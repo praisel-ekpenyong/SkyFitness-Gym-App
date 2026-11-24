@@ -92,12 +92,20 @@ export function makeRow(mode, target = {}, { prev = null, warmup = false } = {})
   return { w, r, ...base }
 }
 
+/**
+ * Says whether an index points at one of a workout's or Routine's Entries.
+ * @param {Array} entries - The Entries; anything but an array has none.
+ * @param {*} idx - Candidate index; only a whole number within 0..length-1 counts.
+ * @returns {boolean} True when `entries[idx]` is an Entry slot.
+ */
+export const isEntryIndex = (entries, idx) =>
+  Array.isArray(entries) && Number.isInteger(idx) && idx >= 0 && idx < entries.length
+
 export function defaultConfig(id, mode) {
   const m = mode || modeOf({ id })
   if (m === 'cardio') return { sets: SETS_DEFAULTS.cardio, min: ROW_DEFAULTS.cardio.min, speed: ROW_DEFAULTS.cardio.speed }
-  const bw = isBodyweightEq(id) ? { bodyweight: true } : {}
-  if (m === 'time') return { sets: SETS_DEFAULTS.time, sec: ROW_DEFAULTS.time.sec, weight: ROW_DEFAULTS.time.weight, mode: 'time', ...bw }
-  return { sets: SETS_DEFAULTS.reps, reps: ROW_DEFAULTS.reps.reps, weight: ROW_DEFAULTS.reps.weight, mode: 'reps', ...bw }
+  if (m === 'time') return { sets: SETS_DEFAULTS.time, sec: ROW_DEFAULTS.time.sec, weight: ROW_DEFAULTS.time.weight, mode: 'time' }
+  return { sets: SETS_DEFAULTS.reps, reps: ROW_DEFAULTS.reps.reps, weight: ROW_DEFAULTS.reps.weight, mode: 'reps' }
 }
 
 /**
@@ -235,7 +243,7 @@ export function seedForReplacement(S, exId, routineId, setsCount) {
   const seed = {
     ...base,
     ...(last?.target || {}),
-    ...(bestWeight > 0 && !base.bodyweight ? { weight: bestWeight } : {}),
+    ...(bestWeight > 0 && !isBw({ id: exId }) ? { weight: bestWeight } : {}),
     sets: setsCount ?? base.sets,
   }
   delete seed.notes

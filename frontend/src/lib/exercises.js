@@ -126,7 +126,14 @@ export const isCardio = idOrEx => {
 export const isBodyweightEq = idOrEx =>
   (typeof idOrEx === 'string' ? EXIDX[idOrEx] : idOrEx)?.eq === 'body weight'
 
-export const exOr = id => EXIDX[id] ||
+/**
+ * Says whether an id names an exercise the index can resolve: a catalogue one or a registered custom.
+ * @param {string} id - Exercise id; anything else, or an id the index only inherits, is unknown.
+ * @returns {boolean} True exactly when `exOr(id)` returns a real exercise rather than the missing stand-in.
+ */
+export const isKnownExercise = id => typeof id === 'string' && Object.hasOwn(EXIDX, id)
+
+export const exOr = id => (isKnownExercise(id) && EXIDX[id]) ||
   { id, n: t('Unknown exercise'), bp: '', tg: '', eq: '', sm: [], st: [], missing: true }
 
 export const exerciseFor = entry => {

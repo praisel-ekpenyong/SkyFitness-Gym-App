@@ -1,4 +1,4 @@
-import { buildSets, defaultConfig, cleanNote } from './workout-model.js'
+import { buildSets, defaultConfig, cleanNote, isEntryIndex } from './workout-model.js'
 import { nextPrescription, applyPrescription } from './progression.js'
 import { uid } from './format.js'
 import { todayISO } from './dates.js'
@@ -43,9 +43,8 @@ export function createActiveSession(S, routineId, bw) {
 }
 
 export function setActiveIndex(S, idx) {
-  if (!S?.active || !Array.isArray(S.active.entries)) return false
-  const bounded = Math.max(0, Math.min(idx, S.active.entries.length - 1))
-  S.active.cur = bounded
+  if (!isEntryIndex(S?.active?.entries, idx)) return false
+  S.active.cur = idx
   return true
 }
 

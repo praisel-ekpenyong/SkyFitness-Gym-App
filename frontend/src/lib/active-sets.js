@@ -1,6 +1,6 @@
 import { modeOf, makeRow, insertWarmupRow, removeRowAt, cascadeWeight } from './workout-model.js'
 import { workSets } from './workout-sets.js'
-import { pairAdjacent, unpairSuperset } from './supersetFlow.js'
+import { pairAdjacent, unpairSuperset, canPair, canUnpair } from './supersetFlow.js'
 import { isWarmupRow } from './warmup.js'
 
 /**
@@ -75,13 +75,13 @@ export function addActiveWarmup(S, entryIdx) {
 }
 
 export function pairActiveSuperset(S, firstIdx, secondIdx) {
-  if (!S?.active?.entries) return false
+  if (!canPair(S?.active?.entries, firstIdx, secondIdx)) return false
   S.active.entries = pairAdjacent(S.active.entries, firstIdx, secondIdx)
   return true
 }
 
 export function unpairActiveSuperset(S, entryIdx) {
-  if (!S?.active?.entries) return false
+  if (!canUnpair(S?.active?.entries, entryIdx)) return false
   S.active.entries = unpairSuperset(S.active.entries, entryIdx)
   return true
 }

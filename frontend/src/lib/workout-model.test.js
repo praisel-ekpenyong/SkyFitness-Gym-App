@@ -232,10 +232,14 @@ describe('defaultConfig', () => {
     expect(defaultConfig(CARDIO)).toEqual({ sets: 1, min: 20, speed: 8 })
     expect(defaultConfig(LIFT, 'time')).toEqual({ sets: 3, sec: 45, weight: 0, mode: 'time' })
   })
-  it('seeds the bodyweight flag from the catalogue, and only when it is true', () => {
-    expect(defaultConfig(BW)).toEqual({ sets: 3, reps: 10, weight: 0, mode: 'reps', bodyweight: true })
-    expect(defaultConfig(BW, 'time')).toEqual({ sets: 3, sec: 45, weight: 0, mode: 'time', bodyweight: true })
+  it('stores no bodyweight flag that only repeats the catalogue (Default decides)', () => {
+    expect(defaultConfig(BW)).toEqual({ sets: 3, reps: 10, weight: 0, mode: 'reps' })
+    expect(defaultConfig(BW, 'time')).toEqual({ sets: 3, sec: 45, weight: 0, mode: 'time' })
     expect('bodyweight' in defaultConfig(LIFT)).toBe(false)
+  })
+  it('still reads a body-weight exercise as body weight through the catalogue', () => {
+    expect(isBw({ id: BW, ...defaultConfig(BW) })).toBe(true)
+    expect(isBw({ id: LIFT, ...defaultConfig(LIFT) })).toBe(false)
   })
 })
 
@@ -849,7 +853,8 @@ describe('seedForReplacement', () => {
       },
     }
     const res = seedForReplacement(S, BW, null, 3)
-    expect(res.bodyweight).toBe(true)
+    expect(res).not.toHaveProperty('bodyweight')
+    expect(isBw({ ...res, id: BW })).toBe(true)
     expect(res.weight).toBe(0)
   })
 

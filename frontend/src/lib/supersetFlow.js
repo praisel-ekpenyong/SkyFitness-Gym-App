@@ -1,4 +1,4 @@
-import { hasWork } from './workout-model.js'
+import { hasWork, isEntryIndex } from './workout-model.js'
 import { doneWorkSets } from './workout-sets.js'
 
 export function setProgressHighWater(entry, previous = 0) {
@@ -45,12 +45,27 @@ function freshSg(items, first, second) {
   return sg
 }
 
+/**
+ * Says whether two Entries can be paired into a superset: both exist and sit next to each other.
+ * @param {Array} items - The Entries.
+ * @param {*} first - Index of one Entry.
+ * @param {*} second - Index of the other.
+ * @returns {boolean} True exactly when `pairAdjacent(items, first, second)` would not throw.
+ */
+export const canPair = (items, first, second) =>
+  isEntryIndex(items, first) && isEntryIndex(items, second) && Math.abs(first - second) === 1
+
+/**
+ * Says whether an Entry can be taken out of its superset: it exists.
+ * @param {Array} items - The Entries.
+ * @param {*} idx - Index of the Entry.
+ * @returns {boolean} True exactly when `unpairSuperset(items, idx)` would not throw.
+ */
+export const canUnpair = (items, idx) => isEntryIndex(items, idx)
+
 export function pairAdjacent(items, first, second, groupId) {
   if (!Array.isArray(items)) throw new TypeError('Superset entries must be an array')
-  if (!Number.isInteger(first) || !Number.isInteger(second) || !items[first] || !items[second]) {
-    throw new RangeError('Superset entry indexes are invalid')
-  }
-  if (Math.abs(first - second) !== 1) throw new RangeError('Superset entries must be adjacent')
+  if (!canPair(items, first, second)) throw new RangeError('Superset entries must be two adjacent Entries')
 
   const next = items.map(e => ({ ...e }))
   const left = Math.min(first, second)
@@ -63,7 +78,7 @@ export function pairAdjacent(items, first, second, groupId) {
 
 export function unpairSuperset(items, idx) {
   if (!Array.isArray(items)) throw new TypeError('Superset entries must be an array')
-  if (!Number.isInteger(idx) || !items[idx]) throw new RangeError('Superset entry index is invalid')
+  if (!canUnpair(items, idx)) throw new RangeError('Superset entry index is invalid')
   const next = items.map(e => ({ ...e }))
   delete next[idx].sg
   next.forEach((e, i) => {
