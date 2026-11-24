@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { act, StrictMode, Suspense, startTransition, useState } from 'react'
+import { act, StrictMode, Suspense, startTransition, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { NumberField } from './ui.jsx'
@@ -10,7 +10,9 @@ let setOutside
 
 function Weight({ initial }) {
   const [value, setValue] = useState(initial)
-  setOutside = setValue
+  useEffect(() => {
+    setOutside = setValue
+  })
   return <NumberField value={value} onChange={setValue} aria-label="Weight" />
 }
 
@@ -74,8 +76,10 @@ describe('NumberField when a render is discarded', () => {
   function Page() {
     const [value, setValue] = useState(50)
     const [, setTick] = useState(0)
-    setOutside = setValue
-    rerender = () => setTick(n => n + 1)
+    useEffect(() => {
+      setOutside = setValue
+      rerender = () => setTick(n => n + 1)
+    })
     return <Suspense fallback="loading">
       <NumberField value={value} onChange={setValue} aria-label="Weight" />
       <Suspends when={value === 80} />
@@ -97,7 +101,9 @@ describe('NumberField in an optional field', () => {
   let stored
   function Effort() {
     const [value, setValue] = useState(null)
-    stored = value
+    useEffect(() => {
+      stored = value
+    })
     return <NumberField nullable value={value ?? ''} onChange={setValue} aria-label="RIR" placeholder="—" />
   }
 

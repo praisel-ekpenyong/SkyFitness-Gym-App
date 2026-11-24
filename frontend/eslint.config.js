@@ -16,6 +16,16 @@ export default [
       globals: { ...globals.browser, ...globals.node, __APP_VERSION__: 'readonly' },
     },
     plugins: { 'react-hooks': reactHooks },
-    rules: {},
+    // Zero-hit compiler rules. react-hooks/todo stays off. Do not spread
+    // recommended: that also turns on rules-of-hooks, exhaustive-deps, and the
+    // four rules that still hit (static-components, purity, refs, memo-dependencies).
+    rules: {
+      'react-hooks/set-state-in-effect': 'error',
+      'react-hooks/no-deriving-state-in-effects': 'error',
+      'react-hooks/set-state-in-render': 'error',
+      'react-hooks/immutability': 'error',
+      'react-hooks/preserve-manual-memoization': 'error',
+      'react-hooks/globals': 'error',
+    },
   },
 ]

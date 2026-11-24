@@ -18,19 +18,22 @@ in review. Each rule is an imperative that names its one legal exception, and a
 ## The tools
 
 - **oxlint** (1.95.0) is the main linter (well under 1 s, fast enough for the
-  pre-commit hook): `frontend/.oxlintrc.json`, run by `npm run lint` through its
-  ratchet in CI (`.github/workflows/test.yml`) and in the pre-commit hook
-  (`.githooks/pre-commit`). A rule oxlint supports goes in oxlint. Today it runs
-  its `correctness` category (in place of `@eslint/js` recommended, with
-  `no-unused-vars` and `no-empty` keeping ESLint's old options),
-  `react/rules-of-hooks`, `react/exhaustive-deps`, `eslint/no-throw-literal` and
-  `eslint/prefer-promise-reject-errors`, all at error, tests excluded. Its own
-  `react/*` copies of the compiler rules are off.
-- **ESLint 10** runs after oxlint in `npm run lint`: `frontend/eslint.config.js`.
-  It keeps only what oxlint cannot do: the official `eslint-plugin-react-hooks`
+  pre-commit hook): `frontend/.oxlintrc.json`. The pre-commit hook
+  (`.githooks/pre-commit`) runs its ratchet
+  (`node scripts/check-lint-baseline.mjs`). CI (`.github/workflows/test.yml`)
+  runs the same ratchet as the first half of `npm run lint`. A rule oxlint
+  supports goes in oxlint. Today it runs its `correctness` category (in place of
+  `@eslint/js` recommended, with `no-unused-vars` and `no-empty` keeping
+  ESLint's old options), `react/rules-of-hooks`, `react/exhaustive-deps`,
+  `eslint/no-throw-literal` and `eslint/prefer-promise-reject-errors`, all at
+  error, tests excluded. Its own `react/*` copies of the compiler rules are off.
+- **ESLint 10** runs after the oxlint ratchet in `npm run lint`, and only in CI:
+  `frontend/eslint.config.js`. The pre-commit hook does not call ESLint. It
+  keeps only what oxlint cannot do: the official `eslint-plugin-react-hooks`
   compiler rules, and `no-restricted-syntax` selectors (oxlint has no AST
-  selectors). Neither is on yet, so ESLint enforces no rule today. A rule runs
-  in one tool, never two.
+  selectors). Six compiler rules are on at error with 0 hits (see "Render stays
+  pure"). `react-hooks/todo` stays off. The `no-restricted-syntax` selectors are
+  not on yet. A rule runs in one tool, never two.
 - **tsc** (strict, `allowJs`, `checkJs`) joins when `frontend/tsconfig.json`
   exists. Then oxlint adds its type-aware rows through `oxlint-tsgolint`.
 - **Vitest guard tests** (`npm test`) and `frontend/scripts/check-*.mjs`
@@ -359,10 +362,11 @@ React discarded dropped the lifter's half-typed draft (#135, fixed).
 `sheets/session.jsx` (line 149) still reads a ref in render. `components/TabBar.jsx` (line 33) and `sheets/history.jsx` (line 286) use a
 component defined in render, so it remounts every render and loses state.
 `views/Home.jsx` (line 37) bakes `Date.now()` into a memo keyed on `[S]`.
-**To add:** ESLint, `eslint-plugin-react-hooks` 7.1.1 (installed). At error with
-no hits today: `react-hooks/set-state-in-effect`, `no-deriving-state-in-effects`,
-`set-state-in-render`, `immutability`, `preserve-manual-memoization`, `globals`.
-At error with `frontend/eslint-suppressions.json`: `static-components` (9 hits,
+**Runs:** ESLint, `eslint-plugin-react-hooks` 7.1.1, at error with no hits:
+`react-hooks/set-state-in-effect`, `react-hooks/no-deriving-state-in-effects`,
+`react-hooks/set-state-in-render`, `react-hooks/immutability`,
+`react-hooks/preserve-manual-memoization`, `react-hooks/globals`.
+**To add:** at error with `frontend/eslint-suppressions.json`: `static-components` (9 hits,
 2 files), `purity` (5), `refs` (2, 1 file), `memo-dependencies` (1); all counts
 re-measured 2026-11-24, `refs` after #135 with `eslint-plugin-react-hooks` 7.1.1. Then
 `babel-plugin-react-compiler` on the Vite React plugin: 91 of 98 functions compiled
@@ -425,8 +429,8 @@ an entity change, pass a `key` prop (`key={exercise.id}`) instead of writing
 synchronization effects. Exception: an editable draft seeded once from the store
 and committed on blur (`sheets/profile.jsx`).
 
-**Runs:** nothing. **To add:** `react-hooks/no-deriving-state-in-effects` and
-`set-state-in-render` above. The `key` advice is a judgement call, no tooth.
+**Runs:** `react-hooks/no-deriving-state-in-effects` and
+`react-hooks/set-state-in-render`. The `key` advice is a judgement call, no tooth.
 
 ### Effects that start a timer, listener or observer return their cleanup
 
@@ -806,8 +810,8 @@ names every one:
 | Tool | Runs today | To add |
 |---|---|---|
 | Vitest guard tests, in `npm test` | `purity.test.js`, `import-cycles.test.js`, `design-tokens.test.js`, `design-lint.test.js`, `env.test.js`, `i18n-lint.test.js`, `sheets/dialog-names.test.jsx`, `docs.test.js`, `platform/storage.test.js` (the 800ms debounce), `comments.test.js`, `effect-types.test.js`, the `warmArt` test (`App.warm-art.test.jsx`), the `flush()` test (`store/useStore.flush.test.jsx`), the save round-trip tests (`sheets/catalogue.test.jsx`, `views/RoutineEdit.test.jsx`) | `profile-keys.test.js` |
-| ESLint 10, `npm run lint` after oxlint (CI and pre-commit today) | no rule: its old rules moved to oxlint | Only the `react-hooks` compiler rules and the `no-restricted-syntax` selectors (including `vi.mock` scope). Ratchet: `frontend/eslint-suppressions.json` |
-| oxlint, `npm run lint` (CI and pre-commit) | `correctness` category, `react/rules-of-hooks`, `react/exhaustive-deps`, `no-throw-literal`, `prefer-promise-reject-errors`, all at error. Ratchet: `frontend/lint-baseline.json`, checked by `scripts/check-lint-baseline.mjs` with its failing fixture in `npm test` | `complexity`, restricted globals and properties (including `Date.now` in `lib/`), `unicorn/no-array-sort`, `unicorn/no-array-reverse`, `react/no-array-index-key`, `jsx-a11y/*`. Ratchet: `frontend/lint-baseline.json` |
+| ESLint 10, `npm run lint` after the oxlint ratchet (CI only) | `react-hooks/set-state-in-effect`, `react-hooks/no-deriving-state-in-effects`, `react-hooks/set-state-in-render`, `react-hooks/immutability`, `react-hooks/preserve-manual-memoization`, `react-hooks/globals`, all at error, 0 hits. `react-hooks/todo` stays off | `static-components`, `purity`, `refs`, `memo-dependencies` (need `frontend/eslint-suppressions.json`) and the `no-restricted-syntax` selectors (including `vi.mock` scope). Ratchet: `frontend/eslint-suppressions.json` |
+| oxlint, ratchet in the pre-commit hook and in `npm run lint` (CI) | `correctness` category, `react/rules-of-hooks`, `react/exhaustive-deps`, `no-throw-literal`, `prefer-promise-reject-errors`, all at error. Ratchet: `frontend/lint-baseline.json`, checked by `scripts/check-lint-baseline.mjs` with its failing fixture in `npm test` | `complexity`, restricted globals and properties (including `Date.now` in `lib/`), `unicorn/no-array-sort`, `unicorn/no-array-reverse`, `react/no-array-index-key`, `jsx-a11y/*`. Ratchet: `frontend/lint-baseline.json` |
 | tsc | nothing | `tsconfig.json`, `npm run typecheck` in the hook and CI. Ratchet: `frontend/tsc-baseline.json` |
 | oxlint type-aware (`oxlint-tsgolint`) | nothing | `no-floating-promises`, `no-misused-promises`, `only-throw-error`, `switch-exhaustiveness-check`, `no-explicit-any`, `no-non-null-assertion`, `ban-ts-comment` |
 | `frontend/scripts/check-frontend-state.mjs` | nothing | The `use-state` cap. Ratchet: `frontend/frontend-state-allowlist.json` |
@@ -818,15 +822,16 @@ says it is too slow for the unit suite.
 
 **Build order**, cheapest and highest value first:
 
-1. ESLint config only: the `react-hooks` compiler rules at error (0 hits), then
+1. The six zero-hit `react-hooks` compiler rules are on at error. Still to add:
    the rules that need `frontend/eslint-suppressions.json`. Fix the small real hits
    first: 4 bare store reads, 1 selector `[]`, 1 UTC day key, the `LB_TO_KG` copies.
 2. The ESLint `no-restricted-syntax` selector block with its allowlists.
 3. oxlint, `frontend/lint-baseline.json` and its script with a failing fixture,
    with `no-restricted-globals`, `no-restricted-properties` (the `Date.now`
    override for `lib/`) and `exhaustive-deps` moving out of ESLint in the same
-   change. Then split `npm run lint`: oxlint and `tsc` in the pre-commit hook,
-   ESLint (about 19 s with the compiler rules) in CI.
+   change. ESLint has left the pre-commit hook: the hook runs the oxlint
+   ratchet, and ESLint (about 19 s with the compiler rules) runs in CI.
+   `tsc` in the hook is still to add.
 4. `tsconfig.json`, `npm run typecheck` and `frontend/tsc-baseline.json`, then
    the JSDoc `@typedef`s. Then oxlint's type-aware rows.
 5. The guard tests still to add.
