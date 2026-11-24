@@ -321,13 +321,14 @@ what it follows.
 **Why:** `6972de7`: the config sheet dropped a picked rest equal to the Profile's,
 so the exercise later followed Settings when the lifter changed it. `fb53d9b`: a
 save that merged into the old entry let cleared settings survive.
-**Runs:** `frontend/src/sheets/catalogue.test.jsx` covers the Rest control
-(Default stores nothing; a pick equal to Settings is kept).
-**To add:** one round-trip test per remaining control of the config sheet and of
-the routine editor (`frontend/src/views/RoutineEdit.test.jsx`): pick, save,
-change the Setting, assert the entry; for the bodyweight switch, assert only a
-difference is stored. [`docs/architecture.md`](./docs/architecture.md) states the
-same rule.
+**Runs:** one round-trip test per saving control: pick, save, change the Setting,
+assert the entry. `frontend/src/sheets/catalogue.test.jsx` covers the config
+sheet: Rest and the progression Rule (Default stores nothing; a pick equal to
+what it follows is kept), Step (a value stepped back to the unit's is kept), the
+bodyweight switch (only a difference from the catalogue is stored), and the
+controls that follow no Setting. `frontend/src/views/RoutineEdit.test.jsx`
+covers the routine editor's Progression and its saves.
+[`docs/architecture.md`](./docs/architecture.md) states the same rule.
 
 ## Front-end state and store discipline
 

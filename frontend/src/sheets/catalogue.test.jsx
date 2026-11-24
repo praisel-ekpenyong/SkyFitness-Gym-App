@@ -1499,3 +1499,165 @@ describe('ExConfig Rest duration', () => {
     expect(cardio.mock.calls[0][0]).toMatchObject({ min: 20, rest: 120 })
   })
 })
+
+describe('ExConfig round trip: pick, save to the routine, change the Setting, read the entry', () => {
+  const bench = { id: '0025', n: 'barbell bench press', bp: 'chest', tg: 'pectorals', eq: 'barbell' }
+  const pushUp = { id: '0662', n: 'push-up', bp: 'chest', tg: 'pectorals', eq: 'body weight' }
+  const steps = { id: '3672', n: 'back and forth step', bp: 'cardio', tg: 'cardio', eq: 'body weight' }
+  const click = el => el.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  const saveBtn = () => Array.from(container.querySelectorAll('button')).find(b => b.textContent.trim() === 'Save')
+  const row = title => Array.from(container.querySelectorAll('.lrow')).find(r => r.querySelector('.lrow-t')?.textContent === title)
+  const switchOf = title => row(title).querySelector('[role="switch"]')
+  const stepper = label => Array.from(container.querySelectorAll('.stp-w')).find(w => w.querySelector('.stp-l').textContent === label)
+  const stepUp = async label => { await act(async () => { click(stepper(label).querySelector('[aria-label="Increase"]')) }) }
+  const stepDown = async label => { await act(async () => { click(stepper(label).querySelector('[aria-label="Decrease"]')) }) }
+  const entry = () => useStore.getState().S.routines[0].ex[0]
+  const routine = () => useStore.getState().S.routines[0]
+
+  let mounts = 0
+  async function openEntry(ex, stored) {
+    useStore.getState().update(s => { s.routines = [{ ...s.routines.find(r => r.id === 'r-rt'), id: 'r-rt', name: 'Push', emoji: '💪', ex: [{ id: ex.id, ...stored }] }] })
+    const onSave = cfg => useStore.getState().actRoutine({ type: 'replaceExercise', routineId: 'r-rt', index: 0, exId: ex.id, target: cfg })
+    await act(async () => { root.render(<ExConfig key={mounts++} ex={ex} existing={entry()} routine={routine()} onSave={onSave} close={vi.fn()} />) })
+  }
+  const save = async () => { await act(async () => { click(saveBtn()) }) }
+
+  async function pick(title, label) {
+    await act(async () => { click(row(title)) })
+    const sheet = useUI.getState().sheets.at(-1)
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    const sheetRoot = createRoot(host)
+    await act(async () => { sheetRoot.render(sheet.render(() => useUI.getState().closeSheet(sheet.id))) })
+    const option = Array.from(host.querySelectorAll('button.lrow')).find(o => o.querySelector('.lrow-t').textContent === label)
+    await act(async () => { click(option) })
+    await act(async () => { sheetRoot.unmount() })
+    host.remove()
+  }
+
+  describe('Bodyweight switch: stores only a difference from the catalogue', () => {
+    it('stores nothing for a body-weight exercise saved as body weight', async () => {
+      await openEntry(pushUp, { sets: 3, reps: 12, weight: 0, mode: 'reps' })
+      await save()
+      expect(entry()).not.toHaveProperty('bodyweight')
+    })
+
+    it('stores false when a body-weight exercise is switched off, and nothing once it is switched back', async () => {
+      await openEntry(pushUp, { sets: 3, reps: 12, weight: 0, mode: 'reps' })
+      await act(async () => { click(switchOf('Bodyweight')) })
+      await save()
+      expect(entry().bodyweight).toBe(false)
+
+      await openEntry(pushUp, entry())
+      await act(async () => { click(switchOf('Bodyweight')) })
+      await save()
+      expect(entry()).not.toHaveProperty('bodyweight')
+    })
+
+    it('stores true when a loaded exercise is switched on, and nothing once it is switched back', async () => {
+      await openEntry(bench, { sets: 3, reps: 8, weight: 60, mode: 'reps' })
+      await save()
+      expect(entry()).not.toHaveProperty('bodyweight')
+
+      await act(async () => { click(switchOf('Bodyweight')) })
+      await save()
+      expect(entry().bodyweight).toBe(true)
+
+      await openEntry(bench, entry())
+      await act(async () => { click(switchOf('Bodyweight')) })
+      await save()
+      expect(entry()).not.toHaveProperty('bodyweight')
+    })
+  })
+
+  describe('Progression rule: Default is "Follow the routine"', () => {
+    const follow = 'Follow the routine (Linear progression)'
+
+    it('keeps a picked rule that equals the routine\'s, so a later routine change does not move it', async () => {
+      await openEntry(bench, { sets: 3, reps: 8, weight: 60, mode: 'reps' })
+      expect(row('Rule').querySelector('.lrow-v').textContent).toBe(follow)
+      await pick('Rule', 'Linear progression')
+      await save()
+      useStore.getState().actRoutine({ type: 'setProgression', routineId: 'r-rt', prog: 'double' })
+      expect(entry().prog).toBe('linear')
+    })
+
+    it('stores nothing for Follow the routine, so the entry takes up a later routine change', async () => {
+      await openEntry(bench, { sets: 3, reps: 8, weight: 60, mode: 'reps', prog: 'greyskull' })
+      await pick('Rule', follow)
+      await save()
+      expect(entry()).not.toHaveProperty('prog')
+      useStore.getState().actRoutine({ type: 'setProgression', routineId: 'r-rt', prog: 'double' })
+      await openEntry(bench, entry())
+      expect(row('Rule').querySelector('.lrow-v').textContent).toBe('Follow the routine (Double progression)')
+    })
+  })
+
+  describe('Progression step: follows the weight unit until stepped', () => {
+    it('stores nothing untouched, so the step follows a later unit change', async () => {
+      await openEntry(bench, { sets: 3, reps: 8, weight: 60, mode: 'reps' })
+      expect(stepper('Step (kg)').querySelector('input').value).toBe('2.5')
+      await save()
+      expect(entry()).not.toHaveProperty('inc')
+      useStore.getState().update(s => { s.unit = 'lb' })
+      await openEntry(bench, entry())
+      expect(stepper('Step (lb)').querySelector('input').value).toBe('5')
+    })
+
+    it('keeps a step stepped back to the unit\'s, so a later unit change does not move it', async () => {
+      await openEntry(bench, { sets: 3, reps: 8, weight: 60, mode: 'reps' })
+      await stepUp('Step (kg)')
+      await stepDown('Step (kg)')
+      await save()
+      expect(entry().inc).toBe(2.5)
+      useStore.getState().update(s => { s.unit = 'lb' })
+      await openEntry(bench, entry())
+      expect(stepper('Step (lb)').querySelector('input').value).toBe('2.5')
+    })
+  })
+
+  describe('controls that follow no Setting store what is picked', () => {
+    it('Reps per side stores side when on and nothing when off', async () => {
+      await openEntry(bench, { sets: 3, reps: 8, weight: 20, mode: 'reps' })
+      await act(async () => { click(switchOf('Reps per side')) })
+      await save()
+      expect(entry()).toMatchObject({ side: true, reps: 8 })
+
+      await openEntry(bench, entry())
+      await act(async () => { click(switchOf('Reps per side')) })
+      await save()
+      expect(entry()).not.toHaveProperty('side')
+    })
+
+    it('Log mode stores the mode picked, the shown one included', async () => {
+      await openEntry(bench, { sets: 3, reps: 8, weight: 60 })
+      await act(async () => { click(container.querySelector('[role="radio"][aria-checked="true"]')) })
+      await save()
+      expect(entry().mode).toBe('reps')
+
+      await openEntry(bench, entry())
+      await act(async () => { click(Array.from(container.querySelectorAll('[role="radio"]')).find(b => b.textContent === 'Time')) })
+      await save()
+      expect(entry()).toMatchObject({ mode: 'time', sec: 45 })
+      expect(entry()).not.toHaveProperty('reps')
+    })
+
+    it.each([
+      ['Sets', bench, { sets: 3, reps: 8, weight: 60, mode: 'reps' }, { sets: 4 }],
+      ['Reps', bench, { sets: 3, reps: 8, weight: 60, mode: 'reps' }, { reps: 9 }],
+      ['Weight (kg)', bench, { sets: 3, reps: 8, weight: 60, mode: 'reps' }, { weight: 62.5 }],
+      ['Seconds', bench, { sets: 3, sec: 45, weight: 0, mode: 'time' }, { sec: 50 }],
+      ['Intervals', steps, { sets: 1, min: 20, speed: 8 }, { sets: 2 }],
+      ['Minutes', steps, { sets: 1, min: 20, speed: 8 }, { min: 21 }],
+      ['Speed (km/h)', steps, { sets: 1, min: 20, speed: 8 }, { speed: 8.5 }],
+      ['Added (kg)', pushUp, { sets: 3, reps: 12, weight: 0, mode: 'reps' }, { weight: 2.5 }],
+      ['Top of the range', pushUp, { sets: 3, reps: 12, weight: 0, mode: 'reps', repsMax: 15 }, { repsMax: 16 }],
+      ['Reps from', bench, { sets: 3, reps: 10, weight: 60, mode: 'reps', prog: 'double' }, { repsMin: 9 }],
+    ])('%s stores the stepped value', async (label, ex, stored, expected) => {
+      await openEntry(ex, stored)
+      await stepUp(label)
+      await save()
+      expect(entry()).toMatchObject(expected)
+    })
+  })
+})
