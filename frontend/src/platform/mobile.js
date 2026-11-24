@@ -18,20 +18,24 @@ export async function nativeLoad() {
 }
 
 /**
- * Mirrors a snapshot into the app's private file so the log survives WebView eviction.
+ * Mirrors a snapshot into the app's private file so the log survives WebView eviction, without disturbing the localStorage copy.
  * @param {Object} state - State snapshot persisted as JSON.
- * @returns {Promise<void>} Resolves once attempted; failures keep the localStorage copy and stay silent.
+ * @returns {Promise<void>} Resolves once the file write completes; rejects when the write fails so the drain can record it.
  */
 export async function nativeSave(state) {
-  try {
-    const { Filesystem, Directory, Encoding } = await import('@capacitor/filesystem')
-    await Filesystem.writeFile({ path: FILE, directory: Directory.Data, data: JSON.stringify(state), encoding: Encoding.UTF8 })
-  } catch (e) {  }
+  const { Filesystem, Directory, Encoding } = await import('@capacitor/filesystem')
+  await Filesystem.writeFile({ path: FILE, directory: Directory.Data, data: JSON.stringify(state), encoding: Encoding.UTF8 })
 }
 
+/**
+ * Storage sink that mirrors snapshots to the app's private file and keeps workout reminders synced; rejects only when the file write fails.
+ */
 export const nativeSink = {
   id: 'native',
-  write(state) { nativeSave(state); syncReminder(state) },
+  async write(state) {
+    const [saved] = await Promise.allSettled([nativeSave(state), syncReminder(state)])
+    if (saved.status === 'rejected') throw saved.reason
+  },
 }
 
 function reminderNotifications(S) {
