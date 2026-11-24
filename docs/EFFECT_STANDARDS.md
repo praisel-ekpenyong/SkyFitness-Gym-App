@@ -116,11 +116,22 @@ or the DOM. `lib/active-workout.test.js` asserts the effect list from `act`.
 `store/useStore.act.test.jsx` asserts the runner: a hold finishes through
 `send`, and `open-finish` is still on the list for the view.
 
-**To add:** `frontend/scripts/check-effects.mjs`, run from `npm test`. It
-collects every `type` string built in `lib/active-act.js` and every
-`e.type === '...'` branch in `runEffects` and in `Workout.jsx`'s `send`. A
-type in the producer with no branch fails. `open-finish` is the one type
-whose branch is the view. A type in a branch that the producer never builds
-fails too. No allowlist. The set is closed: `rest:start`, `rest:stop`,
-`hold:start`, `hold:stop`, `sound:set`, `sound:finish`, `notice`,
-`open-finish`.
+**To add:** a guard test, `frontend/src/effect-types.test.js`, in `npm test`.
+It collects every `effect('<type>')` call in `lib/active-act.js` (the
+producer) and every `e.type === '<type>'` branch in `runEffects` and in
+`Workout.jsx`'s `send`. A type in the producer with no branch fails. A branch
+the producer never builds fails too. `open-finish` is the one type whose branch
+is the view. No allowlist: the set is closed at `rest:start`, `rest:stop`,
+`hold:start`, `hold:stop`, `sound:set`, `sound:finish`, `notice` and
+`open-finish`. A fixture with a made-up producer type must fail, so the parse
+cannot rot into always-green. The same file holds the closed set of command
+types: the keys of `COMMANDS` in `active-act.js` against the list in
+[ADR 0032](./adr/0032-the-active-workout.md). In JavaScript this pair stands in for
+`typescript/switch-exhaustiveness-check`, which needs `tsconfig`.
+
+**To add:** a test that `JSON.parse(JSON.stringify(effects))` deep-equals
+`effects` for every command, which pins "payloads stay small and plain". A
+reviewer, not a tool, checks the other rules here: that a view does not decide
+the next set, that `lib/` does not catch a refusal into an empty success, and
+that a Manual rest is the only caller of `startRest` outside the runner
+(**judgement call, no tooth**).

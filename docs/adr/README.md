@@ -43,3 +43,5 @@ A replacement ADR states the decision as it stands, checked against the code, an
 | [0031](0031-the-training-log-is-the-only-reading.md) | The Training log is the only reading, in the Profile's unit | Accepted |
 | [0032](0032-the-active-workout.md) | The Active workout is one module behind `act` and `sessionView` | Accepted |
 | [0033](0033-double-progression-drops-below-the-range.md) | Double progression drops on a first set below the range | Accepted |
+| [0034](0034-oxlint-and-eslint-with-per-tool-ratchets.md) | oxlint is the main linter, ESLint keeps what oxlint cannot do, and each tool has one ratchet | Accepted |
+| [0035](0035-typescript-starts-as-checkjs-with-an-error-baseline.md) | TypeScript starts as a strict checkJs pass with a per-file error baseline | Accepted |
