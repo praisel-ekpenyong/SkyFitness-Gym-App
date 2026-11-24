@@ -44,8 +44,8 @@ export function createActiveSession(S, routineId, bw) {
 
 export function setActiveIndex(S, idx) {
   if (!S?.active || !Array.isArray(S.active.entries)) return false
-  const bounded = Math.max(0, Math.min(idx, S.active.entries.length - 1))
-  S.active.cur = bounded
+  if (!Number.isInteger(idx) || idx < 0 || idx >= S.active.entries.length) return false
+  S.active.cur = idx
   return true
 }
 

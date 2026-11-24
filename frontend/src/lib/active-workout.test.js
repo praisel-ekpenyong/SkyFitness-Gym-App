@@ -406,13 +406,15 @@ describe('the next Step (the Next key)', () => {
 })
 
 describe('moving around', () => {
-  it('goes to an Entry, clamped to the workout at both ends', () => {
+  it('goes to an Entry, and stays put on an index outside the workout', () => {
     const S = withActive([{ id: 'ex1' }, { id: 'ex2' }, { id: 'ex3' }])
     act(S, { type: 'goTo', entry: 2 })
     expect(S.active.cur).toBe(2)
     act(S, { type: 'goTo', entry: 10 })
     expect(S.active.cur).toBe(2)
     act(S, { type: 'goTo', entry: -5 })
+    expect(S.active.cur).toBe(2)
+    act(S, { type: 'goTo', entry: 0 })
     expect(S.active.cur).toBe(0)
   })
 })
@@ -1146,6 +1148,41 @@ describe('a refused command', () => {
     const S = make()
     const before = structuredClone(S)
     expect(act(S, command)).toStrictEqual({ ok: false, effects: [] })
+    expect(S).toStrictEqual(before)
+  })
+
+  it.each([
+    ['addExercise with no exercise id', { type: 'addExercise' }],
+    ['addExercise of an unknown exercise', { type: 'addExercise', exId: 'no-such-exercise' }],
+  ])('%s leaves the Profile unchanged and asks for no effects', (_, command) => {
+    const S = live()
+    const before = structuredClone(S)
+    expect(act(S, command)).toStrictEqual({ ok: false, effects: [] })
+    expect(S).toStrictEqual(before)
+  })
+})
+
+describe('adding an exercise to the Active workout', () => {
+  it('adds a catalogue exercise and a custom exercise from the Profile', () => {
+    const S = { ...withActive([]), customEx: [{ id: 'c-custom', n: 'Custom lift', custom: true }] }
+    expect(act(S, { type: 'addExercise', exId: '0025' }).ok).toBe(true)
+    expect(act(S, { type: 'addExercise', exId: 'c-custom' }).ok).toBe(true)
+    expect(ids(S)).toEqual(['0025', 'c-custom'])
+  })
+})
+
+describe('a refused goTo', () => {
+  const live = () => withActive([liftEntry('0025', [workSet(true)]), liftEntry('0026', [workSet()])], { cur: 1 })
+
+  it.each([
+    ['a negative index', -1],
+    ['an index past the end', 2],
+    ['NaN', NaN],
+    ['a non-integer index', 0.5],
+  ])('%s leaves the Profile unchanged and asks for no effects', (_, entry) => {
+    const S = live()
+    const before = structuredClone(S)
+    expect(act(S, { type: 'goTo', entry })).toStrictEqual({ ok: false, effects: [] })
     expect(S).toStrictEqual(before)
   })
 })
