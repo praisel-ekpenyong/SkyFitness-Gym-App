@@ -68,7 +68,7 @@ function compare(actual, recorded) {
 }
 
 // Each recorded entry at min(recorded, real), 0s dropped, keys sorted for stable diffs.
-function lowered(actual, recorded) {
+function lowerBaseline(actual, recorded) {
   const next = {}
   for (const path of Object.keys(recorded).sort()) {
     for (const rule of Object.keys(recorded[path]).sort()) {
@@ -85,7 +85,7 @@ let recorded = existsSync(baselineFile) ? JSON.parse(readFileSync(baselineFile, 
 const hits = lint(root)
 const actual = countHits(hits)
 if (process.argv.includes('--write')) {
-  recorded = lowered(actual, recorded)
+  recorded = lowerBaseline(actual, recorded)
   writeFileSync(baselineFile, JSON.stringify(recorded, null, 2) + '\n')
 }
 const problems = compare(actual, recorded)
