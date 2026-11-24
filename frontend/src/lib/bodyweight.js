@@ -1,6 +1,6 @@
 
 export { LB_TO_KG } from './units.js'
-import { LB_TO_KG, normalizeWeight, sanitizeUnit } from './units.js'
+import { normalizeWeight, sanitizeUnit } from './units.js'
 
 /**
  * Round a weigh-in to the stored 1-decimal policy.
@@ -131,7 +131,7 @@ export function currentBodyweightKg(S) {
   const last = latestOf(log.filter(b => Number(b?.w) > 0))
   if (!last) return null
   const w = Number(last.w)
-  return sanitizeUnit(last.unit ?? S?.unit) === 'lb' ? w * LB_TO_KG : w
+  return normalizeWeight(w, last.unit ?? S?.unit, 'kg')
 }
 
 /**
