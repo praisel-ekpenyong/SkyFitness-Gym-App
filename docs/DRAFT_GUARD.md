@@ -16,11 +16,12 @@ Completed workouts in `S.workouts` are an append-only historical log
 - **Never rewrite a completed workout.** Finished sessions are immutable.
   Estimated 1RM, best records, tonnage, and progression history are derived by
   reading the log forward, not by mutating past records
-  ([ADR 0020](./adr/0020-working-weight-is-read-from-the-log.md),
-  [ADR 0021](./adr/0021-best-and-records-are-read-from-the-training-log.md)).
+  ([ADR 0020](./adr/0020-working-weight-is-read-from-the-log.md), as amended;
+  ADR 0031 replaced ADR 0021).
 - **Unit switches never convert history in place.** When a lifter switches
   units (`kg` ↔ `lb`), past workouts retain their logged unit and are read in
-  that unit ([ADR 0028](./adr/0028-one-rule-for-kg-and-lb.md)). Unit switching
+  that unit ([ADR 0031](./adr/0031-the-training-log-is-the-only-reading.md), which
+  replaced ADR 0028). Unit switching
   is strictly refused while a workout is active.
 - **A finished Workout is not rewritten.** Custom exercises copy the muscles
   the lifter picked into `muscleSnapshot` at finish (`active-finish.js`), so a
@@ -96,7 +97,18 @@ State persistence is guarded by `platform/storage.js`
 - `platform/storage.test.js` — the IndexedDB mirror waits 800ms, and `flush()`
   drains it immediately.
 
-**To add:** a test that an edit to a Routine's exercise config while a workout
-is active leaves `S.active.entries[].target` unchanged. A test that hiding the
-document calls `flush()`. The listener is already in `useStore.js`. Neither
-test exists yet.
+**To add:**
+
+- A test that an edit to a Routine's exercise config while a workout is active
+  leaves `S.active.entries[].target` unchanged. Drive `actRoutine` with
+  `S.active` set and assert `S.active` deep-equals the copy taken before.
+- A test that hiding the document calls `flush()`. The listener is in
+  `useStore.js`.
+- `frontend/src/lib/profile/profile-keys.test.js`: every `DEF` key is cleaned,
+  structural, or on a pass-through list with a reason (see "State ingestion goes
+  through `admit`" in `CODING_STANDARDS.md`).
+- A test that a refused `act` command leaves the Profile unchanged and returns
+  `effects: []`.
+
+None of the four exists yet. They are tests, not lint: no linter sees an edit
+reach a live workout.

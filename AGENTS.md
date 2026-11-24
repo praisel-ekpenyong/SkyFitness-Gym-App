@@ -23,10 +23,6 @@ Single-context layout: root `GLOSSARY.md` + `docs/adr/`. See `docs/agents/domain
 - `frontend/src/platform/` — platform adapters and browser edges (storage dual-write, sound, wakelock, back button, nav, mobile/Capacitor file backup, print dialog).
 - Sky is a static build only — no server, no API, no backend.
 
-## Standards
-
-How to write and test code: `CODING_STANDARDS.md`. The longer reasoning for tests is `docs/TESTING_STANDARDS.md`; for Active-workout effects, `docs/EFFECT_STANDARDS.md`; for data integrity, `docs/DRAFT_GUARD.md`.
-
 ## Git worktree discipline
 
 - Implementer agents work inside their assigned worktree directory only — never the repo root or another ticket's worktree.

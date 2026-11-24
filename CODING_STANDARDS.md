@@ -9,9 +9,45 @@ with React 19, Zustand, Immer, and Vite PWA.
 
 A rule the code already breaks stays. The code is not the bar. Under each
 rule, **Runs** names the check that fails today. **To add** names a check that
-does not exist yet. An agent must not pretend a **To add** check is already in
-CI. Where today's code is over the bar, the check is a ratchet: the first run
-records the current count, and a later run may only shrink it.
+does not exist yet, with the tool and the exact rule id (or the script and its
+allowlist file). An agent must not pretend a **To add** check is already in CI.
+A rule with no tool behind it says **Judgement call, no tooth** and is decided
+in review. Each rule is an imperative that names its one legal exception, and a
+**Why** line cites the commit or `file:line` that earned it.
+
+## The tools
+
+- **oxlint** is the main linter (about 1 s, fast enough for the pre-commit
+  hook). It is not installed yet: there is no `frontend/.oxlintrc.json`.
+- **ESLint 10** already runs: `frontend/eslint.config.js`, `npm run lint`, in
+  CI (`.github/workflows/test.yml`) and in the pre-commit hook
+  (`.githooks/pre-commit`). It is on `@eslint/js` recommended plus
+  `react-hooks/rules-of-hooks` (error) and `react-hooks/exhaustive-deps`
+  (warn, so 12 warnings pass CI today). Once oxlint lands, ESLint keeps only
+  what oxlint cannot do: the official `eslint-plugin-react-hooks` compiler
+  rules, and `no-restricted-syntax` selectors (oxlint has no AST selectors).
+  A rule runs in one tool, never two.
+- **tsc** (strict, `allowJs`, `checkJs`) joins when `frontend/tsconfig.json`
+  exists. Then oxlint adds its type-aware rows through `oxlint-tsgolint`.
+- **Vitest guard tests** (`npm test`) and `frontend/scripts/check-*.mjs`
+  scripts cover what no linter can express.
+
+Where today's code is over the bar, the check is a ratchet, and each tool has
+one format. Every ratchet fails on a new hit, and fails on a stale entry (a
+recorded count above the real count), so a fix has to lower the file too.
+
+| Tool | Ratchet file | Rewritten by |
+|---|---|---|
+| ESLint | `frontend/eslint-suppressions.json` (ESLint's own, count per file per rule) | `eslint --suppress-rule <id>`, `eslint --prune-suppressions` |
+| oxlint | `frontend/lint-baseline.json` (count per file per rule) | a small script, `frontend/scripts/check-lint-baseline.mjs` |
+| Custom checks | `*-allowlist.json`, `{ "path": { "count": N, "reason": "..." } }` | by hand, with a reason |
+| tsc | `frontend/tsc-baseline.json` (error count per file) | `npm run typecheck:baseline` |
+
+Every check script has a fixture that must fail, so the check cannot rot into
+always-green. A file that is not in a baseline must be clean. A disable comment
+for a ratcheted rule is illegal. The decisions are in
+[ADR 0034](./docs/adr/0034-oxlint-and-eslint-with-per-tool-ratchets.md) and
+[ADR 0035](./docs/adr/0035-typescript-starts-as-checkjs-with-an-error-baseline.md).
 
 ## Configuration
 
@@ -21,13 +57,16 @@ Read every environment variable in `validateEnv`
 variable has its default in `validateEnv`: a missing `VITE_IMG_BASE` is
 `media/images/`. A variable with no safe default throws from `validateEnv` at
 load, and the message names the variable. Profile preferences (`restSec`,
-`sound`, `unit`) are fields on `S`, read when used.
+`sound`, `unit`) are fields on `S`, read when used. Exception: the two Vite
+build flags that are not configuration, `import.meta.env.MODE` in `useStore.js`
+(Immer's test freeze) and `import.meta.env.DEV` in `components/Modals.jsx`.
 
 **Runs:** `frontend/src/lib/env.test.js` pins the defaults.
-**To add:** a lint that fails `import.meta.env` and `process.env` outside
-`lib/env.js`. Seed the allowlist with the reads that are the edge itself:
-`lib/env.js`, `useStore.js` (`import.meta.env.MODE` for Immer's test freeze),
-and `components/Modals.jsx` (`import.meta.env.DEV`).
+**To add:** ESLint `no-restricted-syntax` selectors on
+`MemberExpression[object.type='MetaProperty'][property.name='env']` and on
+`process.env`, failing outside `lib/env.js`, `vite.config.js`, scripts and
+tests. The two build flags above are the allowlist, each with its reason in the
+config. No ratchet: the code is clean once those two are listed.
 
 ## Active-workout effects
 
@@ -56,8 +95,8 @@ throws from `runEffects`.
 code that touches `useUI`. A view sends commands and renders `sessionView`.
 
 **Runs:** `frontend/src/lib/purity.test.js`.
-Detail, the `restSec` / `sound` read, and the effect-type check to add:
-[`docs/EFFECT_STANDARDS.md`](./docs/EFFECT_STANDARDS.md).
+**To add:** the closed-set guard test `frontend/src/effect-types.test.js`.
+Detail: [`docs/EFFECT_STANDARDS.md`](./docs/EFFECT_STANDARDS.md).
 
 ## Control flow
 
@@ -66,21 +105,27 @@ Detail, the `restSec` / `sound` read, and the effect-type check to add:
 A `switch` on a union type lists every member as its own `case`, even those that
 share a branch. A `default` that quietly absorbs leftover members will also absorb
 new members added in the future without an explicit decision. Without a `default`,
-adding a member to a union forces every switch site to handle it.
+adding a member to a union forces every switch site to handle it. Exception: none.
 
-**To add:** oxlint `typescript/switch-exhaustiveness-check`, type-aware, after
-`tsconfig` exists. See "What runs, and what is still to build".
+**Judgement call, no tooth** while the code is JavaScript. The stand-in for the
+effect and command sets is the closed-set guard test above.
+**To add:** oxlint `typescript/switch-exhaustiveness-check` (type-aware, after
+`tsconfig`).
 
 ### Functions stay simple
 
 No function has a cyclomatic complexity over 15 (`complexity`, `modified`
 variant, so a whole `switch` counts once). Over the limit, split it: extract named
-pure helpers or move decision trees into domain reducers. Never use a disable
-comment to bypass the limit. Functions already over 15 live in the shared
-shrink-only `frontend/lint-baseline.json` with the other oxlint hits. They do
-not get a complexity file of their own.
+pure helpers or move decision trees into domain reducers. Exception: a function
+already over 15 sits in `frontend/lint-baseline.json`, may not grow, and leaves
+the file when it is split. A disable comment is never the way out.
 
-**To add:** the `complexity` row below.
+**Why:** 54 functions in 29 files are over the bar today. The worst is
+`evaluateSetMilestone` in `lib/progression.js` (83, line 521), then
+`evaluateSessionProgression` (74), `parseWorkoutCSV` in `lib/import-csv.js`
+(66) and `Home.jsx` (62). A function that size has branches no test reaches.
+**To add:** oxlint `complexity` (`max: 15`, `variant: 'modified'`), tests
+excluded, baseline in `frontend/lint-baseline.json`.
 
 ## Errors
 
@@ -88,11 +133,14 @@ not get a complexity file of their own.
 
 Outside command results, throw an `Error` or a subclass of `Error`. A thrown
 string or plain object has no stack trace and fails downstream `instanceof Error`
-checks. Inside command handlers (`act`), represent domain refusals via `{ ok: false }`.
-Never write an empty `catch` block (`catch (_) {}`) that silently swallows errors:
-catch the specific error you expect, or log what you drop.
+checks. Exception: inside command handlers (`act`), a domain refusal is
+`{ ok: false }`, not a throw. An empty `catch {}` is allowed where the failure is
+harmless and best effort (`eslint.config.js` sets `allowEmptyCatch` for that).
+Never use one where the swallowed failure would lose or hide lifter data.
 
-**To add:** oxlint `typescript/only-throw-error`. See "What runs, and what is still to build".
+**Why:** the rule already holds (0 thrown literals today), so the tooth is free.
+**To add:** oxlint `eslint/no-throw-literal` and `eslint/prefer-promise-reject-errors`
+at error now. After `tsconfig`, `typescript/only-throw-error` replaces them.
 
 ### Every promise is awaited, handled or marked void
 
@@ -103,24 +151,54 @@ started may still be running after the caller has moved on. Await it, or
 signal handler, a best-effort log line), write `void promise`. Do not hand an
 async function to a slot that expects a `void` callback either (an event
 listener, `forEach`), because nothing there awaits or catches what it returns.
+Exception: none.
 
-**To add:** oxlint `typescript/no-floating-promises` and
-`typescript/no-misused-promises`. Older hits go in `frontend/lint-baseline.json`
-when that checker is turned on, and the count only shrinks. The file does not
-exist yet.
+**Why:** `nativeSave` in `platform/mobile.js` swallows its errors and is called
+floating, so `isMirrorFailing()` never sees a mobile write fail.
+**To add:** oxlint `typescript/no-floating-promises` (17 hits in 11 files) and
+`typescript/no-misused-promises` (3 hits in 2 files), type-aware, after
+`tsconfig`. Older hits go in `frontend/lint-baseline.json`.
 
 ## Function signatures
 
 Optional parameters passed to functions should be scrutinized extremely
 carefully. They are a frequent source of bugs by omission. Prioritize correctness
-and explicit configuration over backward compatibility.
+and explicit configuration over backward compatibility. A reviewer asks: does a
+caller omit this today, and what does the function assume when it does?
+
+**Judgement call, no tooth.** The clock default is the one case with a tooth: see
+"The clock is an argument in `lib/`".
 
 ## Types and TypeScript migration
 
-The target is strict TypeScript. The tree is JavaScript today: `frontend/` has
-no `.ts` file and no `tsconfig`. Do not add a `.ts` file until
-`frontend/tsconfig.json` (`strict: true`) and `npm run typecheck` exist. A
-TypeScript file with nothing checking it is an unenforced rule.
+The target is strict TypeScript, reached by checking the JavaScript first. The
+tree is JavaScript today: `frontend/` has no `.ts` file and no `tsconfig`.
+
+### The checker comes first
+
+Add `frontend/tsconfig.json` with `strict: true`, `allowJs` and `checkJs` over
+all app code, and run `npm run typecheck` in the pre-commit hook and in CI
+(about 1.6 s). A probe measured 6247 errors at `strict`: 2950 in app code (`lib/`
+1652, `sheets/` 452, `views/` 388, `components/` 291, `platform/` 77, `store/` 65,
+the `src` root 25) and 3297 in tests. About three quarters are implicit `any`.
+The errors are a ratchet, not a blocker: `frontend/tsc-baseline.json` holds the
+error count per file, may only shrink, and fails on a stale entry. One command,
+`npm run typecheck:baseline`, rewrites it. A file that is not in the baseline is
+new and must be clean. Exception: none.
+
+**Why:** a type that nothing checks is an unenforced rule.
+**To add:** `frontend/tsconfig.json`, `npm run typecheck` in
+`.github/workflows/test.yml` and `.githooks/pre-commit`, and
+`frontend/tsc-baseline.json`.
+
+### Name the entities in JSDoc first
+
+The first work after the checker is JSDoc `@typedef`s for `Profile`, `Workout`,
+`Entry`, `SetRow` and the Routine exercise (`Target`). There is no `@typedef` in
+the tree today, and every `@param {Object}` is a future `any`. After that, rename
+files to `.ts` starting with `lib/`. Tests join last.
+
+**Judgement call, no tooth.** The baseline shows the work shrinking.
 
 ### Every `any` is a leak
 
@@ -135,26 +213,16 @@ An assertion (`as`, `!`) is a hidden `any`: narrow with type guards instead.
 (the platform adapter, CSV parser, or external event listener). Never let untyped
 external data flow unchecked into `frontend/src/lib/`. A helper that must cast is
 a generic whose type parameter is constrained, never a bare `<T>(v: unknown): T`.
+Exception: the edge itself.
 
-Until the type-aware rows are on, a `.js` file still follows the rule. JSDoc at
-the boundary is the stand-in, not a cast.
+Until the checker is on, a `.js` file still follows the rule. JSDoc at the
+boundary is the stand-in, not a cast.
 
-**To add:** oxlint `typescript/no-explicit-any`, `typescript/no-non-null-assertion`,
-`typescript/ban-ts-comment`, and `typescript/no-unsafe-*`, after `tsconfig`.
-Old hits go in `frontend/lint-baseline.json` and only shrink.
-
-### Migration discipline
-
-Once `typecheck` is red/green in CI:
-
-1. **`frontend/src/lib/` migrates first.** Pure domain logic has no browser
-   dependency and is the first code under `strict`.
-2. **After `lib/` is on the checker, a new file is `.ts` or `.tsx`.**
-3. **A `.js` file that has not moved yet is not loosened.** A boundary that
-   other modules call gets JSDoc for its arguments and return.
-
-**To add:** `npm run typecheck` in `.github/workflows/test.yml`, then the
-type-aware oxlint rows.
+**To add:** oxlint `typescript/no-explicit-any`, `typescript/no-non-null-assertion`
+and `typescript/ban-ts-comment`, after `tsconfig`. Keep `typescript/no-unsafe-*`
+off until the typedefs exist: today they fire thousands of times and mean
+nothing. Old hits go in `frontend/lint-baseline.json`. Branded `Kg` and `Lb`
+types, once real types exist, turn the unit mix-up into a compile error.
 
 ## Data integrity and persistence
 
@@ -169,7 +237,8 @@ sessions are never rewritten, recalculated, or mutated in place. Best records,
 e1RM, and progression history are derived by reading the log, not by updating past
 records ([ADR 0020](./docs/adr/0020-working-weight-is-read-from-the-log.md)).
 When switching units (`kg` <-> `lb`), past workouts retain their logged unit and
-are never converted in place ([ADR 0028](./docs/adr/0028-one-rule-for-kg-and-lb.md)).
+are never converted in place (ADR 0031 replaced ADR 0028's rule; the log reads
+in the Profile's unit). Exception: deleting a workout, and a Restore.
 
 ### Active workout targets are frozen at inception
 
@@ -177,7 +246,7 @@ When a workout begins, `act(S, { type: 'begin', routineId, bw })` freezes a
 deep copy of each Routine exercise into `active.entries[].target`
 ([ADR 0032](./docs/adr/0032-the-active-workout.md)). Subsequent edits or
 deletions of a Routine or custom exercise in the plan sheet cannot alter an
-in-progress workout or produce stranded writes.
+in-progress workout or produce stranded writes. Exception: none.
 
 ### State ingestion goes through `admit`
 
@@ -191,7 +260,16 @@ JSON backup restore, or CSV import — must pass through `admit` in
 - Refuses newer schema versions by throwing `NewerProfileError`.
 - Sorts workouts into canonical training-log order.
 
-Never inject raw objects directly into the store or storage.
+Never inject raw objects directly into the store or storage. Exception: none.
+
+**Runs:** `admit-defaults.test.js`, `upgrades.test.js`, `workouts.test.js` and
+`restore-keys.test.js` under `frontend/src/lib/profile/`.
+**To add:** a test that walks `Object.keys(DEF)` and fails a Profile field that
+is in none of `PROFILE_CLEAN`, a structural list, or a pass-through list with a
+reason, so a new field forces a decision about cleaning
+(`frontend/src/lib/profile/profile-keys.test.js`). Today `PROFILE_CLEAN` cleans
+two fields and `normalizeState` hand-cleans five more, and readers defend
+themselves with 18 `|| 'kg'` fallbacks.
 
 ### Dual-write persistence
 
@@ -201,6 +279,27 @@ mirrors to IndexedDB (`sky-state` database) via `platform/storage.js` on an
 Capacitor build additionally mirrors state to a native JSON file
 (`platform/mobile.js`).
 All debounced writes are immediately flushed on `visibilitychange -> hidden`.
+Exception: none.
+
+### A save follows the Default
+
+A control that offers a "Default" choice stores any other pick, even one equal to
+the current default. Only "Default" stores nothing, so the exercise keeps
+following Settings. A control with no Default choice (the bodyweight switch)
+stores only a difference from what it follows (the catalogue's bodyweight flag).
+Exception: that second kind is the only control that may drop a pick equal to
+what it follows.
+
+**Why:** `6972de7`: the config sheet dropped a picked rest equal to the Profile's,
+so the exercise later followed Settings when the lifter changed it. `fb53d9b`: a
+save that merged into the old entry let cleared settings survive.
+**Runs:** `frontend/src/sheets/catalogue.test.jsx` covers the Rest control
+(Default stores nothing; a pick equal to Settings is kept).
+**To add:** one round-trip test per remaining control of the config sheet and of
+the routine editor (`frontend/src/views/RoutineEdit.test.jsx`): pick, save,
+change the Setting, assert the entry; for the bodyweight switch, assert only a
+difference is stored. [`docs/architecture.md`](./docs/architecture.md) states the
+same rule.
 
 ## Front-end state and store discipline
 
@@ -212,33 +311,58 @@ Sky uses two dedicated stores:
 2. **Ephemeral UI state (`frontend/src/store/useUI.js`)**: Ephemeral sheets stack,
    toast queue, and countdown timers. `useUI` never imports `useStore`.
 
-### The three frontend state invariants
+### Render stays pure: the React Compiler rules
 
-These are the bar. The current UI is over it in two files. The check is a
-ratchet, not a rewrite ticket hidden in a doc.
+Write components the React Compiler can compile: read no ref and call no impure
+function (`Date.now()`, `Math.random()`) in render, define no component inside a
+component, set no state during render or synchronously in an effect, and derive
+no state from props in an effect. Exception: a component with a dynamic
+`import()` carries `'use no memo'` until the compiler handles it (`App.jsx`,
+`components/BodyMap.jsx`); `react-hooks/todo` stays off for that reason.
 
-1. **`use-state <= 4`.** Past four independent toggles, the state belongs in a
-   pure function or the store.
-2. **`effect-sets-state <= 1`.** At most one `useEffect` / `useLayoutEffect` in
-   a file calls a `useState` setter. Derive during render, or dispatch.
-3. **`whole-store == 0`.** Subscribe to a slice (`useStore(s => s.S.unit)`).
+**Why:** `components/ui.jsx` reads and writes a ref in render (NumberField, line
+15). `components/TabBar.jsx` (line 33) and `sheets/history.jsx` (line 286) use a
+component defined in render, so it remounts every render and loses state.
+`views/Home.jsx` (line 37) bakes `Date.now()` into a memo keyed on `[S]`.
+**To add:** ESLint, `eslint-plugin-react-hooks` 7.1.1 (installed). At error with
+no hits today: `react-hooks/set-state-in-effect`, `no-deriving-state-in-effects`,
+`set-state-in-render`, `immutability`, `preserve-manual-memoization`, `globals`.
+At error with `frontend/eslint-suppressions.json`: `static-components` (9 hits,
+2 components), `purity` (5), `refs` (4), `memo-dependencies` (1). Then
+`babel-plugin-react-compiler` on the Vite React plugin: 91 of 98 functions compile
+today, and the 7 refusals are the four `refs` hits, the two dynamic imports and
+the one `memo-dependencies` hit. The Babel plugin does not wait for the state
+ratchets below; the two are independent. oxlint's own `react/*` copies of these
+rules stay off.
 
-**Runs:** nothing.
-**To add:** `frontend/scripts/check-frontend-state.mjs`, run from `npm test`.
-Shrink-only counts in `frontend/frontend-state-allowlist.json`.
+### The state caps
 
-Seed `use-state` with the files already over 4:
+1. **`use-state <= 4` per file.** Past four independent toggles, the state belongs
+   in a pure function or the store. Exception: the two files already over the bar
+   (below), whose counts may only fall.
+2. **Set no state in an effect.** Covered by `react-hooks/set-state-in-effect`
+   above, not by a count.
+3. **Subscribe to a slice, never the whole store.** `useStore(s => s.S.unit)`, and
+   `useStore(s => s.update)` for an action. Exception: none. A selector returns no
+   fresh `[]` or `{}` (zustand 5 compares by reference, so a new array each call
+   loops the render): hoist `const EMPTY = []` or use `useShallow`.
 
-- `frontend/src/sheets/catalogue.jsx` — 12
-- `frontend/src/views/Stats.jsx` — 10
+**Why:** `App.jsx` (line 43) and `views/Settings.jsx` (line 27) call `useStore()`
+bare, `components/Modals.jsx` (line 5) and `components/RestTimer.jsx` (line 10)
+call `useUI()` bare, and `views/Workout.jsx` (line 223) returns a new `[]` from a
+selector when no workout is active.
+**To add:** ESLint `no-restricted-syntax` selectors
+`CallExpression[callee.name=/^use(Store|UI)$/][arguments.length=0]` (4 hits, fix
+them first) and
+`CallExpression[callee.name=/^use(Store|UI)$/] > ArrowFunctionExpression > :matches(ObjectExpression, ArrayExpression, LogicalExpression[right.type=/^(Array|Object)Expression$/])`
+(1 hit, fix first). `use-state` needs
+`frontend/scripts/check-frontend-state.mjs`, run from `npm test`, with a failing
+fixture and shrink-only counts in `frontend/frontend-state-allowlist.json`:
 
-A file at 4 passes. A new file over 4 fails. Those two counts may only fall.
+- `frontend/src/sheets/catalogue.jsx`: 12
+- `frontend/src/views/Stats.jsx`: 10
 
-`effect-sets-state`: the script's first run writes the baseline, and every run
-after that may only shrink it. Do not hand-pick the numbers.
-
-`whole-store` has no current hit. The script fails it with an empty allowlist
-on the first run.
+A file at 4 passes. A new file over 4 fails.
 
 ### Derive state during render; no prop-mirroring
 
@@ -246,7 +370,50 @@ Never copy store state or props into `useState` to sync them with `useEffect`.
 If a value can be computed from `S` or props, compute it inline during render
 (`useMemo` for expensive aggregations). When a component must reset its state on
 an entity change, pass a `key` prop (`key={exercise.id}`) instead of writing
-synchronization effects.
+synchronization effects. Exception: an editable draft seeded once from the store
+and committed on blur (`sheets/profile.jsx`).
+
+**Runs:** nothing. **To add:** `react-hooks/no-deriving-state-in-effects` and
+`set-state-in-render` above. The `key` advice is a judgement call, no tooth.
+
+### Effects that start a timer, listener or observer return their cleanup
+
+`exhaustive-deps` is a warning today, so 12 findings in 6 files pass CI. It is an
+error with a baseline: an effect names every value it reads, and a dependency
+list holds no expression such as `[!!on]` (name it first: `const active = !!on`).
+Exception: none.
+
+**Why:** `components/RestTimer.jsx` (line 15) omits `on` on purpose behind
+`[!!on]`. A stale value read in a timer was the bug in `2cc8dd5` (mute during a
+rest did not silence it) and `f6db88f` (the week streak went stale).
+**To add:** ESLint `react-hooks/exhaustive-deps` from `warn` to `error`, with the
+12 hits in `frontend/eslint-suppressions.json`.
+
+### Lists keep stable keys; interactive elements are real elements
+
+Do not use an array index as the `key` of a row that holds state or can be
+reordered or edited; give the row an id. Use a `<button>` or `<a>` for anything
+clickable, or add `role`, `tabIndex` and a key handler. Exception: a static
+display list (barbell plates, instruction steps) may key by index.
+
+**Why:** set rows in `views/Workout.jsx` (line 173) hold open and focus state
+under `key={i}`, and so do the editable Routine rows in `views/RoutineEdit.jsx`
+(line 70). Thirteen or more `div onClick` rows ship without a keyboard path.
+**To add:** oxlint `react/no-array-index-key` (18 hits in 11 files; fix the
+editable lists first) and `jsx-a11y/click-events-have-key-events`,
+`jsx-a11y/no-static-element-interactions`, `jsx-a11y/prefer-tag-over-role` and
+`jsx-a11y/no-autofocus` (57 hits in 15 files), all in `frontend/lint-baseline.json`.
+
+### Sort a copy, never the state
+
+Use `toSorted()` and `toReversed()`, or copy first (`[...a].sort()`). Immer
+freezes state, so an in-place `sort` or `reverse` on it throws or corrupts a
+selector. Exception: an array built in the same function.
+
+**Why:** `lib/strength-exercises.js` (line 56) and `lib/profile/workouts.js`
+(line 24) sort in place.
+**To add:** oxlint `unicorn/no-array-sort` and `unicorn/no-array-reverse` (25
+hits in 15 files), autofixable, baseline in `frontend/lint-baseline.json`.
 
 ## Entities, actions, and interaction design
 
@@ -259,13 +426,17 @@ badge in `sheets/catalogue.jsx`, and aggregate in `lib/stats-selectors.js` must 
 updated to take the new field into account. Drift between filters and entity
 definitions produces silently wrong results.
 
+**Judgement call, no tooth.** The finite facets (bodypart, equipment) could
+get a test that every catalogue value is a filter option, but none exists.
+
 ### Action consistency
 
-1. **Labels are verb-first Title Case without articles**: "Add Exercise",
-   "Start Workout", "Discard Workout", "Replace".
+1. **Labels are verb-first sentence case without articles**: "Add exercise",
+   "Start workout", "Discard workout", "Replace". Sentence case is
+   [`DESIGN.md`](./DESIGN.md)'s rule.
 2. **An action on the entity's own card or sheet drops its noun**: "Rename",
-   not "Rename Routine"; "Delete", not "Delete Exercise".
-3. **A toggle names what it will do**: "Mark as Done", not "Done / Not Done".
+   not "Rename routine"; "Delete", not "Delete exercise".
+3. **A toggle names what it will do**: "Mark as done", not "Done / Not done".
 4. **On a sheet, the frequent action is first and the destructive one is last.**
    Sky has no right-click menu, so there is no `open` → `edit` → `create` →
    `move` → `copy` → `danger` menu to build.
@@ -280,9 +451,10 @@ definitions produces silently wrong results.
    exercise off the workout or the routine in front of the lifter. "Copy" is
    the clipboard.
 
-**To add:** extend `frontend/src/i18n-lint.test.js`, which already walks
-user-facing strings. Fail an action label that ends in "…". A placeholder
-such as `Search…` is not an action. Fail a destructive button that is not
+Judgement calls, no tooth: 1, 2, 3, 4, 7 and 8 (wording and order).
+**To add** for 5 and 6: extend `frontend/src/i18n-lint.test.js`, which already
+walks user-facing strings. Fail an action label that ends in "…" (a placeholder
+such as `Search…` is not an action). Fail a destructive button that is not
 `variant="danger"` or `danger: true` on `confirmSheet`.
 
 ## Sheets and dialogs
@@ -299,6 +471,9 @@ Sky uses a touch-first interface. Desktop right-click menus are not used.
 3. **Mobile interaction**: Sheets must support drag-to-dismiss gestures, backdrop
    dismissal, and Escape key handling.
 
+**Runs:** `frontend/src/sheets/dialog-names.test.jsx` (rule 2, the name only).
+Rules 1 and 3 and the focus trap are judgement calls, no tooth.
+
 ## Visual and design tokens
 
 The rules live in [`DESIGN.md`](./DESIGN.md). This file does not restate them.
@@ -312,6 +487,78 @@ test's allowlist). A new colour or size that the test rejects is a change to
 
 ## Display formatting and text
 
+### One owner per derived value
+
+Each derived value is read from the function that owns it and never recomputed
+inline. A second copy drifts. Exception: none; a copy is deleted, not allowlisted.
+
+| Value | Owner |
+|---|---|
+| Day key, today, Monday-first week | `lib/dates.js` (`todayISO`, `isoOf`, `mondayOf`) |
+| kg and lb conversion, one-decimal rounding, the unit cascade | `lib/units.js` (`normalizeWeight`, `round1`, `resolveSetWeight`) |
+| Best, Records, Tonnage, last session, Estimated 1RM series | `lib/training-log.js` |
+| Estimated 1RM formula and `REP_CAP` | `lib/onerm.js` |
+| A Workout's timestamp | `workoutTimestamp` in `lib/dates.js` |
+| Durations and clock text | `lib/format.js` |
+
+**Why:** the strongest bug class in the history: `fbff6fd` (Step done),
+`b85ff0a` (set counts), `a1703bd` (body weight), `6cd4bf9` (raw catalogue),
+`24f1969` and `c4e36a8` (kind to icon), `2ce7f79` (unit), `9c89dd8` (streak). Live
+copies today: `lib/import-csv.js` and `lib/bodyweight.js` convert kg and lb
+by hand (the one in `lib/bodyweight.js` is unrounded, so a weigh-in and a logged
+Set disagree); `lib/recovery.js` re-writes Epley with a different rep cap;
+`latestWorkSetAt` in `lib/training-log.js` re-implements `workoutTimestamp`;
+`round1` is defined five times (four copies); a day is spelled seven ways
+(`DAY_MS` in two files, `86400000`, `24 * 60 * 60 * 1000`).
+**To add:** ESLint `no-restricted-syntax` selectors, each failing outside its
+owner with a message naming the owner: `Identifier[name='LB_TO_KG']` and the
+literals `2.2046` and `0.4535` (`lib/import-csv.js`, `lib/bodyweight.js`);
+`LogicalExpression[right.value='kg']` (18 hits in `lib/`); the inline
+`Math.round(x * 10) / 10` (25 hits in 12 files outside `lib/units.js`);
+`BinaryExpression[operator='%'][right.value=7]` (the `(getDay() + 6) % 7` copies
+in `components/Heatmap.jsx`, `sheets/history.jsx` and `views/Home.jsx`).
+Baseline each in `frontend/eslint-suppressions.json`, and fix the `LB_TO_KG`
+copies first because they hold real value drift. The `|| 'kg'` count falls as
+`unit` joins `PROFILE_CLEAN`. Epley and the timestamp copies are judgement
+calls, no tooth; a duplicate-code tool would be noise.
+
+### Local dates, never UTC
+
+Build a day key with `todayISO()` or `isoOf()`, and parse a day-only string with
+one helper in `lib/dates.js`. Never write `toISOString().slice(0, 10)` and never
+`new Date('YYYY-MM-DD')`. Exception: `lib/plans/scenarios.js`, the dev scenario
+generator, which is UTC end to end on purpose.
+
+**Why:** `toISOString()` is UTC, so a lifter west of Greenwich logging in the
+evening gets tomorrow's key. `lib/progression.js` (line 762) does exactly that.
+A day-only string parses as UTC midnight, so an unstamped Workout sorts hours
+off a stamped one: `lib/dates.js` (line 89), `lib/training-log.js` (line 182),
+`lib/import-csv.js` (lines 400 and 412).
+**To add:** ESLint `no-restricted-syntax` on
+`CallExpression[callee.property.name='slice'][callee.object.callee.property.name='toISOString']`
+(2 hits: fix `lib/progression.js`, allowlist the scenario file) and on
+`NewExpression[callee.name='Date'][arguments.length=1] > :matches(MemberExpression[property.name='d'], Identifier[name='d'])`
+(4 hits, fix first). `lib/dates.js` has no day parser yet; add one (noon local)
+so the fix has a home.
+
+### The clock is an argument in `lib/`
+
+`lib/` takes `now` as an argument and never reads the clock. No `Date.now()`,
+no `new Date()`, and no `now = Date.now()` default. Exception: `uid()` in
+`lib/format.js` and `todayISO()` in `lib/dates.js`.
+
+**Why:** a default hides the clock from every caller that omits it, and tests run
+on wall time without saying so. `streakOf(S, today = Date.now())` even names a
+millisecond value `today`. Eight reads sit outside the two owners: four are
+defaults (`lib/active-finish.js`, `lib/history.js`, `lib/streak.js`,
+`lib/profile/normalize.js`), the rest are in `lib/active-finish.js`,
+`lib/active-session.js`, `lib/effort.js` (a bare `Date.now()` inside a filter)
+and `lib/progression.js`.
+**To add:** ESLint `no-restricted-properties` (`Date.now`) and
+`no-restricted-syntax` (`NewExpression[callee.name='Date'][arguments.length=0]`)
+scoped to `src/lib/**` minus the two owners and tests. Fix the four defaults
+and `lib/effort.js` first; baseline the rest in `frontend/eslint-suppressions.json`.
+
 ### Single-owner formatting
 
 Formatting logic must never be duplicated across components:
@@ -324,13 +571,25 @@ Formatting logic must never be duplicated across components:
 - **Toasts**: Dispatched exclusively through `useUI().toast()` and rendered by
   `components/Toast.jsx`.
 
+Exception: the owner files themselves.
+**To add:** ESLint `no-restricted-syntax` on `BinaryExpression[operator='%'][right.value=60]`,
+failing outside `lib/format.js` and `lib/dates.js` (clean today apart from the
+owner). The rest is a judgement call, no tooth.
+
 ### Localization readiness
 
 All user-facing strings must be wrapped in `t('literal')` from
 `frontend/src/lib/i18n.js` ([ADR 0003](./docs/adr/0003-english-only.md)).
 Although Sky currently ships in English only, `t()` enables parameter
 interpolation (`{0}`) and keeps the application translation-ready without
-re-architecting string calls.
+re-architecting string calls. Exception: a dev-only error message that no
+lifter sees.
+
+**Runs:** `frontend/src/i18n-lint.test.js` walks the JSX strings of views,
+sheets and components.
+**To add:** extend it to attribute text (`aria-label`, `title`, `placeholder`,
+`alt`): three literal `aria-label`s break today, two in `views/RoutineEdit.jsx`
+and one in `components/ui.jsx`.
 
 ## Interface design
 
@@ -342,12 +601,15 @@ Avoid shallow modules: large interface with many methods that just pass through
 to thin implementation. When designing, ask: can I reduce the number of methods?
 Can I simplify the parameters? Can I hide more complexity inside?
 
+**Judgement call, no tooth.**
+
 ### Pure training logic boundary
 
 Pure training logic lives exclusively in `frontend/src/lib/` (progression, 1RM,
 recovery, catalogue search, volume). `lib/` must never import from `store/`,
 `views/`, `sheets/`, `components/`, or `platform/`. It has zero knowledge of the
-DOM or browser APIs. **Runs:** `frontend/src/lib/purity.test.js`.
+DOM or browser APIs. Exception: none.
+**Runs:** `frontend/src/lib/purity.test.js`.
 
 ### Global APIs have one owner
 
@@ -357,25 +619,31 @@ owners below are the legal ones, including the call sites that exist today.
 | API | Owner |
 |---|---|
 | `localStorage`, `indexedDB` | `frontend/src/platform/storage.js` |
-| `Audio`, `navigator.vibrate` | `frontend/src/platform/sound.js` |
+| `AudioContext`, `navigator.vibrate` | `frontend/src/platform/sound.js` |
 | `wakeLock` | `frontend/src/platform/wakelock.js` |
-| `Date.now()`, `new Date()` | `useStore.js` stamps `_ts`. `uid()` in `lib/format.js` builds ids. `lib/dates.js` owns calendar keys. Training logic takes `now` as an argument. |
+| `Notification`, `navigator.serviceWorker` | `platform/`. Today `store/useUI.js` calls both and `main.jsx` registers the worker. They are the allowlist until the notification code moves into `platform/`. |
+| `Date.now()`, `new Date()` | `useStore.js` stamps `_ts`. `uid()` in `lib/format.js` builds ids. `lib/dates.js` owns calendar keys. `lib/` never reads the clock (see above). Elsewhere the clock is read at the edge: `store/`, `platform/` and event handlers. |
 | `Math.random()` | `uid()` in `lib/format.js` |
 | `console` | `components/ErrorBoundary.jsx`, `components/Modals.jsx` |
 | `fetch` | `platform/media-warm.js`, for static media. There is no API client. |
 
 **Runs:** `purity.test.js` bans `localStorage`, `document`, `window`, and the
 other browser globals inside `lib/` only.
-**To add:** oxlint `no-restricted-globals` / `no-restricted-properties` for
-every row, failing outside the owner file. Tests that clear `localStorage`
-are the test setup, listed in the allowlist by path suffix `.test.js` and
-`.test.jsx`.
+**To add:** oxlint `eslint/no-restricted-globals` and
+`eslint/no-restricted-properties` for every row but the clock, failing outside
+the owner file (0 hits today except the two `Notification` and `serviceWorker`
+owners above, which are allowlisted with a reason). Tests that clear
+`localStorage` are test setup, listed by path suffix `.test.js` and `.test.jsx`.
 
 ### Modern ESM: no CommonJS globals
 
 Sky is pure ECMAScript (`"type": "module"`). Use `import.meta.url`,
 `import.meta.dirname`, or `import.meta.filename`. Never use CommonJS globals
 (`__dirname`, `__filename`, `require`) or create shims named after them.
+Exception: none.
+
+**To add:** oxlint `eslint/no-restricted-globals` for `__dirname`, `__filename`
+and `require`. ESLint's `globals.node` hides them today.
 
 ### Session performance: nothing starves the lifter
 
@@ -388,6 +656,7 @@ or delay rest timers and audio cues:
   (timeout 5s, or a 3s `setTimeout` when the API is missing). Do not call
   `warmArt` from a render or from a logged-set handler.
 
+The first bullet is a judgement call, no tooth.
 **Runs:** `platform/storage.test.js` holds the 800ms debounce (`DRAIN_MS`).
 **To add:** a test that the `warmArt` call in `App.jsx` sits inside
 `requestIdleCallback`.
@@ -398,70 +667,81 @@ or delay rest timers and audio cues:
 2. **Return results, don't produce side effects** — a function that returns a value is easier to test than one that mutates state.
 3. **Small surface area** — fewer methods = fewer tests needed, fewer params = simpler test setup.
 
+**Judgement call, no tooth.**
+
 ## Comments
 
 Only public interface entry points receive concise JSDoc explaining the
 contract. Implementation mechanics should be readable without comments.
-Architectural rationale and design decisions live in `docs/adr/`.
+Architectural rationale and design decisions live in `docs/adr/`. A comment names
+no ticket or issue number: the number rots, and the reason belongs in the
+comment or the ADR. Exception: none.
+
+**Why:** `1dd9352` and `add69cd` removed ticket ids from the source. Two remain,
+in `lib/import-csv.js` ("issue #74") and `lib/catalogue-corrections.js`
+("ticket 04").
+**To add:** a guard test, `frontend/src/comments.test.js`, with a regex over
+comment text in non-test source and a failing fixture. Empty allowlist: fix the
+two first. The rest of this rule is a judgement call, no tooth.
 
 ## Testing
 
 Tests verify behaviour through the public interface. Code can change entirely;
 a test should not break unless the behaviour changed. Mock at system boundaries
 only (`localStorage`, audio, the clock, the wake lock, Capacitor). Never mock
-our own modules. A test must be able to fail for a bug a lifter or a caller
-would see. If you can't name the bug, don't write the test.
+our own modules. Exception: a module in `platform/`, which is the boundary. A
+test must be able to fail for a bug a lifter or a caller would see. If you can't
+name the bug, don't write the test (a judgement call, no tooth).
+
+**To add:** an ESLint rule in the test files, scoped in
+[`docs/TESTING_STANDARDS.md`](./docs/TESTING_STANDARDS.md): fail `vi.mock` of a
+relative path that is not in `platform/`. 39 hits today, baseline in
+`frontend/eslint-suppressions.json`.
 
 Worked examples, the seam table, and the red flags:
 [`docs/TESTING_STANDARDS.md`](./docs/TESTING_STANDARDS.md).
 
+## Judgement calls with no tooth
+
+These rules stay in review. Each is named in its section above: optional
+parameters, deep modules, design for testability, "name the bug" for a test,
+label wording beyond sentence case, the order of actions on a sheet, a `catch`
+that hides a refusal in `lib/`, a change that departs from an ADR (it adds a dated
+amendment), a `switch` that names every member (until `tsconfig`), and the wording
+of an error a lifter reads. Absent versus 0 is a judgement call until `tsconfig`.
+
 ## What runs, and what is still to build
 
-Oxlint is the checker for the prose rules above. It is not installed. There is
-no `frontend/.oxlintrc.json` and no `frontend/lint-baseline.json`. Adding the
-dependency is part of building the tooth, not a sign the rule is already on.
-
-When a rule is turned on, the first run writes `frontend/lint-baseline.json`
-(count per file). A later run may only shrink a count. A new file is not in
-the baseline, so it must be clean. A suppression is illegal unless the
-baseline names it and says why.
-
-| Rule | Oxlint | Type-aware |
+| Tool | Runs today | To add |
 |---|---|---|
-| A switch names every member | `typescript/switch-exhaustiveness-check` | yes, after `tsconfig` |
-| Throw `Error`, not a string | `typescript/only-throw-error` | yes |
-| Every promise awaited, handled, or `void` | `typescript/no-floating-promises`, `typescript/no-misused-promises` | yes |
-| No `any`, no `as`, no `!` | `typescript/no-explicit-any`, `typescript/no-non-null-assertion`, `typescript/ban-ts-comment`, `typescript/no-unsafe-*` | yes |
-| Complexity ≤ 15, `modified` variant | `complexity` | no |
-| Globals stay in their owner | `no-restricted-globals`, `no-restricted-properties` | no |
+| Vitest guard tests, in `npm test` | `purity.test.js`, `import-cycles.test.js`, `design-tokens.test.js`, `design-lint.test.js`, `env.test.js`, `i18n-lint.test.js`, `sheets/dialog-names.test.jsx`, `docs.test.js`, `platform/storage.test.js` (the 800ms debounce) | `effect-types.test.js`, `comments.test.js`, `profile-keys.test.js`, the save round-trip tests, the `warmArt` test, the `flush()` test |
+| ESLint 10, `npm run lint` (CI and pre-commit today) | `rules-of-hooks` (error), `exhaustive-deps` (warn), `@eslint/js` recommended | The `react-hooks` compiler rules, `exhaustive-deps` at error, the `no-restricted-syntax` selectors, `vi.mock` scope. Ratchet: `frontend/eslint-suppressions.json` |
+| oxlint | nothing | `complexity`, `no-throw-literal`, restricted globals, `unicorn/no-array-sort`, `unicorn/no-array-reverse`, `react/no-array-index-key`, `jsx-a11y/*`. Ratchet: `frontend/lint-baseline.json` |
+| tsc | nothing | `tsconfig.json`, `npm run typecheck` in the hook and CI. Ratchet: `frontend/tsc-baseline.json` |
+| oxlint type-aware (`oxlint-tsgolint`) | nothing | `no-floating-promises`, `no-misused-promises`, `only-throw-error`, `switch-exhaustiveness-check`, `no-explicit-any`, `no-non-null-assertion`, `ban-ts-comment` |
+| `frontend/scripts/check-frontend-state.mjs` | nothing | The `use-state` cap. Ratchet: `frontend/frontend-state-allowlist.json` |
+| Babel and CI | `npm run test:fatigue-probe` and `npm run build` in CI | `babel-plugin-react-compiler`; React Doctor |
 
-**Runs, `npm test`:**
+`npm run test:fatigue-probe` stays out of `npm test` on purpose: the workflow
+says it is too slow for the unit suite.
 
-- `frontend/src/lib/purity.test.js`
-- `frontend/src/import-cycles.test.js`
-- `frontend/src/design-tokens.test.js`
-- `frontend/src/design-lint.test.js`
-- `frontend/src/lib/env.test.js`
-- `frontend/src/i18n-lint.test.js`
-- `frontend/src/platform/storage.test.js` (the 800ms debounce)
+**Build order**, cheapest and highest value first:
 
-**Runs, CI only** (`.github/workflows/test.yml`, after `npm test` and `npm run build`):
-
-- `npm run test:fatigue-probe`. It stays out of `npm test` on purpose. The
-  workflow says the probe is too slow for the unit suite.
-
-**To add, in this order:**
-
-1. `frontend/scripts/check-frontend-state.mjs` (the three UI caps) and
-   `frontend/scripts/check-effects.mjs` (every effect type has a branch).
-   Neither needs a typechecker.
-2. Oxlint with the non-type-aware rows (`complexity`, restricted globals).
-   First run writes `frontend/lint-baseline.json`. Shrink only.
-3. `tsconfig` strict and `npm run typecheck` on `lib/` first. Then the
-   type-aware oxlint rows.
-4. React Compiler, as `babel-plugin-react-compiler` on the Vite React plugin,
-   plus its lint rule failing a component the compiler refuses. Wire it only
-   after the `useState` and set-state-in-effect ratchets are already counting,
-   and the component is under those caps.
-5. React Doctor as its own CI step. It does not replace rows 1–4. A Doctor
-   finding becomes a row in this file with a named check, or it is noise.
+1. ESLint config only: the `react-hooks` compiler rules at error (0 hits), then
+   the rules that need `frontend/eslint-suppressions.json`. Fix the small real hits
+   first: 4 bare store reads, 1 selector `[]`, 1 UTC day key, the `LB_TO_KG` copies,
+   the 2 ticket ids.
+2. The `no-restricted-syntax` and `no-restricted-properties` selector block with
+   its allowlists.
+3. oxlint, `frontend/lint-baseline.json` and its script with a failing fixture.
+   Then split `npm run lint`: oxlint and `tsc` in the pre-commit hook, ESLint
+   (about 19 s with the compiler rules) in CI.
+4. `tsconfig.json`, `npm run typecheck` and `frontend/tsc-baseline.json`, then
+   the JSDoc `@typedef`s. Then oxlint's type-aware rows.
+5. The guard tests and the round-trip tests.
+6. Rename `lib/` to `.ts`, then the rest, then tests.
+7. `babel-plugin-react-compiler`, after the ESLint compiler rules are green.
+8. React Doctor as its own CI step with a score floor that only rises (54 in a
+   probe on `ea9b171`). It is not an error gate on its own. A reviewer verifies
+   each finding before it counts, and a finding that is real becomes a rule here
+   with a named check.

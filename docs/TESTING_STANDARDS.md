@@ -149,7 +149,7 @@ Fake the thing we do not own:
 
 - `localStorage`, IndexedDB, and the Capacitor filesystem, in `platform/`
   tests.
-- `Audio`, `navigator.vibrate`, the wake lock.
+- `AudioContext`, `navigator.vibrate`, the wake lock.
 - The clock, when the rule depends on "now". Pass `now` in. Don't
   `vi.setSystemTime` inside a pure function that should have taken the time
   as an argument.
@@ -180,12 +180,29 @@ before you refactor.
 ## Teeth
 
 The judgement rules ("name the bug", "one seam") are how a review rejects a
-test. One of them can be mechanical.
+test. Two of them can be mechanical.
 
 **Runs:** the seams this doc names are where the existing suite already
 asserts. `lib/active-workout.test.js` imports `act` and `sessionView` from
 `active-workout.js`, not the files under `lib/active-*`.
 
-**To add:** a test that fails `vi.mock` of a module under `frontend/src/lib/`
-or `frontend/src/store/`. Mocking `platform/sound.js`, `localStorage`, and
-Capacitor stays legal. Those are the boundary.
+**To add:** an ESLint `no-restricted-syntax` selector in test files that fails
+`vi.mock` of a relative path unless the path is inside `platform/`:
+`CallExpression[callee.object.name='vi'][callee.property.name='mock'][arguments.0.value=/^\./]`,
+with `platform/` paths and tests inside `src/platform/` allowed. Mocking
+`platform/sound.js`, `localStorage`, and Capacitor stays legal: those are the
+boundary. The rule is wider than `lib/` and `store/`: 75 relative `vi.mock`
+calls sit in 31 files today, 36 of them reach into `platform/` and 39 mock one
+of our own modules (`../store/useUI.js` in `components/Modals.test.jsx`,
+`../sheets/confirm.jsx` in `views/Settings.test.jsx`, `./def.js` in
+`lib/profile/admit-defaults.test.js`). Those 39 go in
+`frontend/eslint-suppressions.json` and only shrink. A new test that mocks its
+own module fails.
+
+**To add, with the rule in `CODING_STANDARDS.md`:** a round-trip test per saving
+control ("A save follows the Default"), a test that walks `DEF` against
+`PROFILE_CLEAN`, and the closed effect and command sets
+(`frontend/src/effect-types.test.js`).
+
+**Judgement call, no tooth:** "name the bug", the seam table, and whether a
+test is a tautology.
