@@ -16,5 +16,43 @@
   },
   "src/views/RoutineEdit.jsx": {
     "react-hooks/exhaustive-deps": 2
+  },
+  "scripts/check-lint-baseline.mjs": {
+    "eslint/no-restricted-globals": 3
+  },
+  "scripts/fatigue-monotonic-probe.mjs": {
+    "eslint/no-restricted-globals": 2
+  },
+  "scripts/review/audit.mjs": {
+    "eslint/no-restricted-globals": 8,
+    "eslint/no-restricted-properties": 1
+  },
+  "scripts/review/lib.mjs": {
+    "eslint/no-restricted-globals": 2
+  },
+  "scripts/review/offline.mjs": {
+    "eslint/no-restricted-globals": 11,
+    "eslint/no-restricted-properties": 3
+  },
+  "scripts/review/open.mjs": {
+    "eslint/no-restricted-globals": 5
+  },
+  "scripts/review/port.mjs": {
+    "eslint/no-restricted-globals": 1
+  },
+  "scripts/review/seed.mjs": {
+    "eslint/no-restricted-globals": 1
+  },
+  "scripts/review/serve.mjs": {
+    "eslint/no-restricted-globals": 1
+  },
+  "scripts/review/shots.mjs": {
+    "eslint/no-restricted-globals": 6
+  },
+  "scripts/test-deploy-preview.mjs": {
+    "eslint/no-restricted-globals": 12
+  },
+  "vite.config.js": {
+    "eslint/no-restricted-globals": 1
   }
 }

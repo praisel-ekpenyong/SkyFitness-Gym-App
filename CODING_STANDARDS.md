@@ -694,12 +694,18 @@ owners below are the legal ones, including the call sites that exist today.
 
 **Runs:** `purity.test.js` bans `localStorage`, `document`, `window`, and the
 other browser globals inside `lib/` only.
-**To add:** oxlint `eslint/no-restricted-globals` and
-`eslint/no-restricted-properties` for every row but the clock (which has its own
-tooth above), failing outside the owner file (0 hits today except the
-`Notification` and `serviceWorker` call sites above, which are allowlisted with a
-reason). Tests that clear
-`localStorage` are test setup, listed by path suffix `.test.js` and `.test.jsx`.
+**Runs:** oxlint `eslint/no-restricted-globals` and
+`eslint/no-restricted-properties` (`checkGlobalObject`, so `window.AudioContext`
+counts) for every row but the clock, failing outside the owner file. Allowlisted
+with a reason until that code moves into `platform/`: `store/useUI.js` and
+`main.jsx` (`Notification` and `navigator.serviceWorker`). Tests that clear
+`localStorage` are an overrides entry for `**/*.test.js` and `**/*.test.jsx`;
+`ignorePatterns` still skips tests. Non-owner hits in `scripts/` and
+`vite.config.js` sit in `frontend/lint-baseline.json` and may only fall: 53
+`eslint/no-restricted-globals` and 4 `eslint/no-restricted-properties`, 57 hits
+in 12 files (`console`, `localStorage` in the review scripts, and
+`navigator.serviceWorker` in `scripts/review/offline.mjs` and
+`scripts/review/audit.mjs`). No non-owner `fetch` hit remains inside `frontend/`.
 
 ### Modern ESM: no CommonJS globals
 

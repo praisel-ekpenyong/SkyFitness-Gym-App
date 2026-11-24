@@ -68,6 +68,229 @@
     "react/todo": "off",
     "react/unsupported-syntax": "off",
     "react/use-memo": "off",
-    "react/void-use-memo": "off"
-  }
+    "react/void-use-memo": "off",
+    "eslint/no-restricted-globals": [
+      "error",
+      {
+        "checkGlobalObject": true,
+        "globals": [
+          { "name": "localStorage", "message": "localStorage belongs to platform/storage.js." },
+          { "name": "indexedDB", "message": "indexedDB belongs to platform/storage.js." },
+          { "name": "AudioContext", "message": "AudioContext belongs to platform/sound.js." },
+          { "name": "Notification", "message": "Notification belongs to platform/. useUI.js and main.jsx are allowlisted until that code moves." },
+          { "name": "console", "message": "console belongs to components/ErrorBoundary.jsx and components/Modals.jsx." },
+          { "name": "fetch", "message": "fetch belongs to platform/media-warm.js." }
+        ]
+      }
+    ],
+    "eslint/no-restricted-properties": [
+      "error",
+      { "object": "navigator", "property": "vibrate", "message": "navigator.vibrate belongs to platform/sound.js." },
+      { "object": "navigator", "property": "wakeLock", "message": "navigator.wakeLock belongs to platform/wakelock.js." },
+      { "object": "navigator", "property": "serviceWorker", "message": "navigator.serviceWorker belongs to platform/. useUI.js and main.jsx are allowlisted until that code moves." },
+      { "object": "Math", "property": "random", "message": "Math.random belongs to uid() in lib/format.js." }
+    ]
+  },
+  "overrides": [
+    {
+      // storage.js owns localStorage and indexedDB. Notification and serviceWorker stay allowed because platform/ owns them. Every other name stays banned.
+      "files": ["src/platform/storage.js"],
+      "rules": {
+        "eslint/no-restricted-globals": [
+          "error",
+          {
+            "checkGlobalObject": true,
+            "globals": [
+              { "name": "AudioContext", "message": "AudioContext belongs to platform/sound.js." },
+              { "name": "console", "message": "console belongs to components/ErrorBoundary.jsx and components/Modals.jsx." },
+              { "name": "fetch", "message": "fetch belongs to platform/media-warm.js." }
+            ]
+          }
+        ],
+        "eslint/no-restricted-properties": [
+          "error",
+          { "object": "navigator", "property": "vibrate", "message": "navigator.vibrate belongs to platform/sound.js." },
+          { "object": "navigator", "property": "wakeLock", "message": "navigator.wakeLock belongs to platform/wakelock.js." },
+          { "object": "Math", "property": "random", "message": "Math.random belongs to uid() in lib/format.js." }
+        ]
+      }
+    },
+    {
+      // sound.js owns AudioContext (including window.AudioContext) and navigator.vibrate. Notification and serviceWorker stay allowed because platform/ owns them.
+      "files": ["src/platform/sound.js"],
+      "rules": {
+        "eslint/no-restricted-globals": [
+          "error",
+          {
+            "checkGlobalObject": true,
+            "globals": [
+              { "name": "localStorage", "message": "localStorage belongs to platform/storage.js." },
+              { "name": "indexedDB", "message": "indexedDB belongs to platform/storage.js." },
+              { "name": "console", "message": "console belongs to components/ErrorBoundary.jsx and components/Modals.jsx." },
+              { "name": "fetch", "message": "fetch belongs to platform/media-warm.js." }
+            ]
+          }
+        ],
+        "eslint/no-restricted-properties": [
+          "error",
+          { "object": "navigator", "property": "wakeLock", "message": "navigator.wakeLock belongs to platform/wakelock.js." },
+          { "object": "Math", "property": "random", "message": "Math.random belongs to uid() in lib/format.js." }
+        ]
+      }
+    },
+    {
+      // wakelock.js owns navigator.wakeLock. Notification and serviceWorker stay allowed because platform/ owns them.
+      "files": ["src/platform/wakelock.js"],
+      "rules": {
+        "eslint/no-restricted-globals": [
+          "error",
+          {
+            "checkGlobalObject": true,
+            "globals": [
+              { "name": "localStorage", "message": "localStorage belongs to platform/storage.js." },
+              { "name": "indexedDB", "message": "indexedDB belongs to platform/storage.js." },
+              { "name": "AudioContext", "message": "AudioContext belongs to platform/sound.js." },
+              { "name": "console", "message": "console belongs to components/ErrorBoundary.jsx and components/Modals.jsx." },
+              { "name": "fetch", "message": "fetch belongs to platform/media-warm.js." }
+            ]
+          }
+        ],
+        "eslint/no-restricted-properties": [
+          "error",
+          { "object": "navigator", "property": "vibrate", "message": "navigator.vibrate belongs to platform/sound.js." },
+          { "object": "Math", "property": "random", "message": "Math.random belongs to uid() in lib/format.js." }
+        ]
+      }
+    },
+    {
+      // media-warm.js owns fetch, and it already reads navigator.serviceWorker. Notification stays allowed because platform/ owns it.
+      "files": ["src/platform/media-warm.js"],
+      "rules": {
+        "eslint/no-restricted-globals": [
+          "error",
+          {
+            "checkGlobalObject": true,
+            "globals": [
+              { "name": "localStorage", "message": "localStorage belongs to platform/storage.js." },
+              { "name": "indexedDB", "message": "indexedDB belongs to platform/storage.js." },
+              { "name": "AudioContext", "message": "AudioContext belongs to platform/sound.js." },
+              { "name": "console", "message": "console belongs to components/ErrorBoundary.jsx and components/Modals.jsx." }
+            ]
+          }
+        ],
+        "eslint/no-restricted-properties": [
+          "error",
+          { "object": "navigator", "property": "vibrate", "message": "navigator.vibrate belongs to platform/sound.js." },
+          { "object": "navigator", "property": "wakeLock", "message": "navigator.wakeLock belongs to platform/wakelock.js." },
+          { "object": "Math", "property": "random", "message": "Math.random belongs to uid() in lib/format.js." }
+        ]
+      }
+    },
+    {
+      // The rest of platform/ owns Notification and navigator.serviceWorker. The four files above are excluded because their overrides also drop the API that file owns.
+      "files": ["src/platform/*.js"],
+      "excludeFiles": [
+        "src/platform/storage.js",
+        "src/platform/sound.js",
+        "src/platform/wakelock.js",
+        "src/platform/media-warm.js"
+      ],
+      "rules": {
+        "eslint/no-restricted-globals": [
+          "error",
+          {
+            "checkGlobalObject": true,
+            "globals": [
+              { "name": "localStorage", "message": "localStorage belongs to platform/storage.js." },
+              { "name": "indexedDB", "message": "indexedDB belongs to platform/storage.js." },
+              { "name": "AudioContext", "message": "AudioContext belongs to platform/sound.js." },
+              { "name": "console", "message": "console belongs to components/ErrorBoundary.jsx and components/Modals.jsx." },
+              { "name": "fetch", "message": "fetch belongs to platform/media-warm.js." }
+            ]
+          }
+        ],
+        "eslint/no-restricted-properties": [
+          "error",
+          { "object": "navigator", "property": "vibrate", "message": "navigator.vibrate belongs to platform/sound.js." },
+          { "object": "navigator", "property": "wakeLock", "message": "navigator.wakeLock belongs to platform/wakelock.js." },
+          { "object": "Math", "property": "random", "message": "Math.random belongs to uid() in lib/format.js." }
+        ]
+      }
+    },
+    {
+      // uid() in lib/format.js is the only Math.random call site. Every other global stays banned.
+      "files": ["src/lib/format.js"],
+      "rules": {
+        "eslint/no-restricted-properties": [
+          "error",
+          { "object": "navigator", "property": "vibrate", "message": "navigator.vibrate belongs to platform/sound.js." },
+          { "object": "navigator", "property": "wakeLock", "message": "navigator.wakeLock belongs to platform/wakelock.js." },
+          { "object": "navigator", "property": "serviceWorker", "message": "navigator.serviceWorker belongs to platform/. useUI.js and main.jsx are allowlisted until that code moves." }
+        ]
+      }
+    },
+    {
+      // ErrorBoundary.jsx and Modals.jsx own console. Every other global stays banned.
+      "files": ["src/components/ErrorBoundary.jsx", "src/components/Modals.jsx"],
+      "rules": {
+        "eslint/no-restricted-globals": [
+          "error",
+          {
+            "checkGlobalObject": true,
+            "globals": [
+              { "name": "localStorage", "message": "localStorage belongs to platform/storage.js." },
+              { "name": "indexedDB", "message": "indexedDB belongs to platform/storage.js." },
+              { "name": "AudioContext", "message": "AudioContext belongs to platform/sound.js." },
+              { "name": "Notification", "message": "Notification belongs to platform/. useUI.js and main.jsx are allowlisted until that code moves." },
+              { "name": "fetch", "message": "fetch belongs to platform/media-warm.js." }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      // useUI.js calls Notification and navigator.serviceWorker, and main.jsx registers the worker. Allowlisted until that code moves into platform/. Every other global stays banned.
+      "files": ["src/store/useUI.js", "src/main.jsx"],
+      "rules": {
+        "eslint/no-restricted-globals": [
+          "error",
+          {
+            "checkGlobalObject": true,
+            "globals": [
+              { "name": "localStorage", "message": "localStorage belongs to platform/storage.js." },
+              { "name": "indexedDB", "message": "indexedDB belongs to platform/storage.js." },
+              { "name": "AudioContext", "message": "AudioContext belongs to platform/sound.js." },
+              { "name": "console", "message": "console belongs to components/ErrorBoundary.jsx and components/Modals.jsx." },
+              { "name": "fetch", "message": "fetch belongs to platform/media-warm.js." }
+            ]
+          }
+        ],
+        "eslint/no-restricted-properties": [
+          "error",
+          { "object": "navigator", "property": "vibrate", "message": "navigator.vibrate belongs to platform/sound.js." },
+          { "object": "navigator", "property": "wakeLock", "message": "navigator.wakeLock belongs to platform/wakelock.js." },
+          { "object": "Math", "property": "random", "message": "Math.random belongs to uid() in lib/format.js." }
+        ]
+      }
+    },
+    {
+      // Tests clear localStorage in setup. ignorePatterns already skips tests; this override stays so a linted test may still clear storage and still bans every other global.
+      "files": ["**/*.test.js", "**/*.test.jsx"],
+      "rules": {
+        "eslint/no-restricted-globals": [
+          "error",
+          {
+            "checkGlobalObject": true,
+            "globals": [
+              { "name": "indexedDB", "message": "indexedDB belongs to platform/storage.js." },
+              { "name": "AudioContext", "message": "AudioContext belongs to platform/sound.js." },
+              { "name": "Notification", "message": "Notification belongs to platform/. useUI.js and main.jsx are allowlisted until that code moves." },
+              { "name": "console", "message": "console belongs to components/ErrorBoundary.jsx and components/Modals.jsx." },
+              { "name": "fetch", "message": "fetch belongs to platform/media-warm.js." }
+            ]
+          }
+        ]
+      }
+    }
+  ]
 }
