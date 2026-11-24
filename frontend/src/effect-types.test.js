@@ -108,16 +108,27 @@ const current = () => ({
 
 describe('effect types', () => {
   it('fail when the producer builds a type no branch handles', () => {
+    const tree = current()
     const producer = producedTypes("const a = [effect('rest:start'), effect('rest:pause', { sec: 5 })]")
     expect(producer).toEqual(new Set(['rest:start', 'rest:pause']))
-    expect(effectProblems({ ...current(), producer: new Set([...current().producer, ...producer]) }))
+    expect(effectProblems({ ...tree, producer: new Set([...tree.producer, ...producer]) }))
       .toContain('rest:pause: built by active-act.js, no branch handles it')
   })
 
   it('fail when a branch handles a type the producer never builds', () => {
+    const tree = current()
     const runner = branchTypes("function runEffects(effects) { for (const e of effects) if (e.type === 'rest:pause') stop() }", 'runEffects')
-    expect(effectProblems({ ...current(), runner: new Set([...current().runner, ...runner]) }))
+    expect(effectProblems({ ...tree, runner: new Set([...tree.runner, ...runner]) }))
       .toContain('rest:pause: a branch handles it, active-act.js never builds it')
+  })
+
+  it('fail when a type is handled on the wrong side of the view boundary', () => {
+    const tree = current()
+    const view = branchTypes("const send = c => { if (res.effects.some(e => e.type === 'rest:stop')) stop() }", 'send')
+    expect(effectProblems({ ...tree, view: new Set([...tree.view, ...view]) }))
+      .toContain('rest:stop: handled in the view, only open-finish belong there')
+    expect(effectProblems({ ...tree, runner: new Set([...tree.runner, 'open-finish']) }))
+      .toContain('open-finish: handled in runEffects, it belongs to the view')
   })
 
   it('are the closed set, each handled, open-finish in the view', () => {
@@ -131,6 +142,12 @@ describe('command types', () => {
     expect(commands).toEqual(new Set(['begin', 'pause']))
     expect(commandProblems(new Set([...commandTypes(read('lib/active-act.js')), ...commands]), adr()))
       .toEqual(['pause: in COMMANDS, not in ADR 0032'])
+  })
+
+  it('fail on a command ADR 0032 lists and COMMANDS lacks', () => {
+    const commands = commandTypes(read('lib/active-act.js'))
+    commands.delete('unpair')
+    expect(commandProblems(commands, adr())).toEqual(['unpair: in ADR 0032, not in COMMANDS'])
   })
 
   it('are the keys of COMMANDS and the list in ADR 0032', () => {
