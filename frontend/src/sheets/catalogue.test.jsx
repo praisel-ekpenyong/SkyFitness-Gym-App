@@ -1417,9 +1417,11 @@ describe('ExConfig notes and cues', () => {
 
 
 
+const bench = { id: '0025', n: 'barbell bench press', bp: 'chest', tg: 'pectorals', eq: 'barbell' }
+const pushUp = { id: '0662', n: 'push-up', bp: 'chest', tg: 'pectorals', eq: 'body weight' }
+const steps = { id: '3672', n: 'back and forth step', bp: 'cardio', tg: 'cardio', eq: 'body weight' }
+
 describe('ExConfig Rest duration', () => {
-  const bench = { id: '0025', n: 'barbell bench press', bp: 'chest', tg: 'pectorals', eq: 'barbell' }
-  const steps = { id: '3672', n: 'back and forth step', bp: 'cardio', tg: 'cardio', eq: 'body weight' }
   const restRow = () => Array.from(container.querySelectorAll('button.lrow')).find(b => b.querySelector('.lrow-t')?.textContent === 'Rest duration')
   const click = el => el.dispatchEvent(new MouseEvent('click', { bubbles: true }))
   const saveBtn = () => Array.from(container.querySelectorAll('button')).find(b => /^(Save|Add to routine)$/.test(b.textContent.trim()))
@@ -1502,9 +1504,6 @@ describe('ExConfig Rest duration', () => {
 })
 
 describe('ExConfig round trip: pick, save to the routine, change the Setting, read the entry', () => {
-  const bench = { id: '0025', n: 'barbell bench press', bp: 'chest', tg: 'pectorals', eq: 'barbell' }
-  const pushUp = { id: '0662', n: 'push-up', bp: 'chest', tg: 'pectorals', eq: 'body weight' }
-  const steps = { id: '3672', n: 'back and forth step', bp: 'cardio', tg: 'cardio', eq: 'body weight' }
   const click = el => el.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     const switchOf = name => container.querySelector(`[role="switch"][aria-label="${name}"]`)
   const stepperValue = label => container.querySelector(`input[aria-label="${label}"]`).value
