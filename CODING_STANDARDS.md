@@ -409,18 +409,20 @@ fail. Confirming each finding is a judgement call, no tooth.
 bare, `components/Modals.jsx` (line 5) and `components/RestTimer.jsx` (line 10)
 call `useUI()` bare, and `views/Workout.jsx` returned a new `[]` from a selector
 when no workout was active, which looped the render (#136, fixed).
-**To add:** ESLint `no-restricted-syntax` selectors
-`CallExpression[callee.name=/^use(Store|UI)$/][arguments.length=0]` (4 hits, fix
-them first) and
-`CallExpression[callee.name=/^use(Store|UI)$/] > ArrowFunctionExpression > :matches(ObjectExpression, ArrayExpression, LogicalExpression[right.type=/^(Array|Object)Expression$/])`
-(no hits since #136). `use-state` needs
-`frontend/scripts/check-frontend-state.mjs`, run from `npm test`, with a failing
-fixture and shrink-only counts in `frontend/frontend-state-allowlist.json`:
+**Runs:** `use-state` is checked by `frontend/scripts/check-frontend-state.mjs`,
+run from `npm test` (`check-frontend-state.test.mjs`, with a failing fixture),
+with shrink-only counts in `frontend/frontend-state-allowlist.json`:
 
 - `frontend/src/sheets/catalogue.jsx`: 12
 - `frontend/src/views/Stats.jsx`: 10
 
-A file at 4 passes. A new file over 4 fails.
+A file at 4 passes. A new file over 4 fails, and so does an allowlist count above
+the real count or an entry at or under 4 (drop it).
+**To add:** ESLint `no-restricted-syntax` selectors
+`CallExpression[callee.name=/^use(Store|UI)$/][arguments.length=0]` (4 hits, fix
+them first) and
+`CallExpression[callee.name=/^use(Store|UI)$/] > ArrowFunctionExpression > :matches(ObjectExpression, ArrayExpression, LogicalExpression[right.type=/^(Array|Object)Expression$/])`
+(no hits since #136).
 
 ### Derive state during render; no prop-mirroring
 
@@ -816,7 +818,7 @@ names every one:
 | oxlint, ratchet in the pre-commit hook and in `npm run lint` (CI) | `correctness` category, `react/rules-of-hooks`, `react/exhaustive-deps`, `no-throw-literal`, `prefer-promise-reject-errors`, all at error. Ratchet: `frontend/lint-baseline.json`, checked by `scripts/check-lint-baseline.mjs` with its failing fixture in `npm test` | `complexity`, restricted globals and properties (including `Date.now` in `lib/`), `unicorn/no-array-sort`, `unicorn/no-array-reverse`, `react/no-array-index-key`, `jsx-a11y/*`. Ratchet: `frontend/lint-baseline.json` |
 | tsc | nothing | `tsconfig.json`, `npm run typecheck` in the hook and CI. Ratchet: `frontend/tsc-baseline.json` |
 | oxlint type-aware (`oxlint-tsgolint`) | nothing | `no-floating-promises`, `no-misused-promises`, `only-throw-error`, `switch-exhaustiveness-check`, `no-explicit-any`, `no-non-null-assertion`, `ban-ts-comment` |
-| `frontend/scripts/check-frontend-state.mjs` | nothing | The `use-state` cap. Ratchet: `frontend/frontend-state-allowlist.json` |
+| `frontend/scripts/check-frontend-state.mjs`, in `npm test` | The `use-state` cap, with its failing fixture. Ratchet: `frontend/frontend-state-allowlist.json` | nothing |
 | Babel and CI | `npm run test:fatigue-probe` and `npm run build` in CI | `babel-plugin-react-compiler`; the `React Doctor` CI step and its floor `frontend/react-doctor-floor.json` |
 
 `npm run test:fatigue-probe` stays out of `npm test` on purpose: the workflow
