@@ -56,32 +56,32 @@ function main() {
   const score = report?.summary?.score
 
   if (typeof score !== 'number' || !Number.isFinite(score)) {
-    console.error('React Doctor did not return a numeric score (summary.score is missing or null).')
+    process.stderr.write('React Doctor did not return a numeric score (summary.score is missing or null).\n')
     process.exit(1)
   }
 
   if (score < floor) {
-    console.error(`React Doctor score ${score} is below the floor ${floor} in react-doctor-floor.json.`)
+    process.stderr.write(`React Doctor score ${score} is below the floor ${floor} in react-doctor-floor.json.\n`)
     process.exit(1)
   }
 
   if (score > floor && process.argv.includes('--write')) {
     writeFileSync(floorFile, JSON.stringify({ score }, null, 2) + '\n')
-    console.log(`React Doctor score: ${score} (raised floor from ${floor} to ${score}).`)
+    process.stdout.write(`React Doctor score: ${score} (raised floor from ${floor} to ${score}).\n`)
     return
   }
 
   if (score > floor) {
-    console.log(`React Doctor score: ${score} (floor: ${floor}). Raise react-doctor-floor.json to ${score}.`)
+    process.stdout.write(`React Doctor score: ${score} (floor: ${floor}). Raise react-doctor-floor.json to ${score}.\n`)
     return
   }
 
-  console.log(`React Doctor score: ${score} (floor: ${floor}).`)
+  process.stdout.write(`React Doctor score: ${score} (floor: ${floor}).\n`)
 }
 
 try {
   main()
 } catch (err) {
-  console.error(err instanceof Error ? err.message : String(err))
+  process.stderr.write(`${err instanceof Error ? err.message : String(err)}\n`)
   process.exit(1)
 }
