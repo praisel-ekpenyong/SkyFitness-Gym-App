@@ -128,8 +128,10 @@ the file when it is split. A disable comment is never the way out.
 `evaluateSetMilestone` in `lib/progression.js` (83, line 521), then
 `evaluateSessionProgression` (74), `parseWorkoutCSV` in `lib/import-csv.js`
 (66) and `Home.jsx` (62). A function that size has branches no test reaches.
-**To add:** oxlint `complexity` (`max: 15`, `variant: 'modified'`), tests
-excluded, baseline in `frontend/lint-baseline.json`.
+**Runs:** oxlint `eslint/complexity` at error (`max: 15`, `variant: 'modified'`),
+tests excluded. Its 55 hits in 30 files (measured 2026-11-24) sit in
+`frontend/lint-baseline.json` and may only fall. `scripts/review/audit.mjs` is
+the one past the issue's 54 functions in 29 files.
 
 ## Errors
 

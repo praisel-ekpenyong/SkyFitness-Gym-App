@@ -1,6 +1,21 @@
 {
+  "scripts/review/audit.mjs": {
+    "eslint/complexity": 1
+  },
   "src/App.jsx": {
     "react-hooks/exhaustive-deps": 2
+  },
+  "src/components/BodyMap.jsx": {
+    "eslint/complexity": 1
+  },
+  "src/components/Heatmap.jsx": {
+    "eslint/complexity": 1
+  },
+  "src/components/LineChart.jsx": {
+    "eslint/complexity": 1
+  },
+  "src/components/Media.jsx": {
+    "eslint/complexity": 1
   },
   "src/components/Modals.jsx": {
     "react-hooks/exhaustive-deps": 3
@@ -8,13 +23,88 @@
   "src/components/RestTimer.jsx": {
     "react-hooks/exhaustive-deps": 2
   },
+  "src/components/SessionMuscleDistribution.jsx": {
+    "eslint/complexity": 1
+  },
+  "src/lib/active-toggle.js": {
+    "eslint/complexity": 1
+  },
+  "src/lib/catalogue-query.js": {
+    "eslint/complexity": 2
+  },
+  "src/lib/exercise-search.js": {
+    "eslint/complexity": 2
+  },
+  "src/lib/import-csv.js": {
+    "eslint/complexity": 2
+  },
+  "src/lib/muscles.js": {
+    "eslint/complexity": 3
+  },
+  "src/lib/onerm.js": {
+    "eslint/complexity": 1
+  },
+  "src/lib/plan-share.js": {
+    "eslint/complexity": 1
+  },
+  "src/lib/plans/scenarios.js": {
+    "eslint/complexity": 1
+  },
+  "src/lib/profile/restore.js": {
+    "eslint/complexity": 1
+  },
+  "src/lib/progression.js": {
+    "eslint/complexity": 8
+  },
+  "src/lib/recovery.js": {
+    "eslint/complexity": 1
+  },
+  "src/lib/routine-sync.js": {
+    "eslint/complexity": 2
+  },
+  "src/lib/stats-selectors.js": {
+    "eslint/complexity": 4
+  },
+  "src/lib/training-log.js": {
+    "eslint/complexity": 3
+  },
+  "src/lib/units.js": {
+    "eslint/complexity": 1
+  },
+  "src/lib/workout-model.js": {
+    "eslint/complexity": 2
+  },
+  "src/platform/storage.js": {
+    "eslint/complexity": 1
+  },
+  "src/sheets/catalogue.jsx": {
+    "eslint/complexity": 4
+  },
+  "src/sheets/history.jsx": {
+    "eslint/complexity": 1
+  },
+  "src/sheets/import.jsx": {
+    "eslint/complexity": 1
+  },
   "src/sheets/session.jsx": {
     "react-hooks/exhaustive-deps": 2
+  },
+  "src/views/Home.jsx": {
+    "eslint/complexity": 1
   },
   "src/views/Library.jsx": {
     "react-hooks/exhaustive-deps": 1
   },
   "src/views/RoutineEdit.jsx": {
     "react-hooks/exhaustive-deps": 2
+  },
+  "src/views/Settings.jsx": {
+    "eslint/complexity": 1
+  },
+  "src/views/Stats.jsx": {
+    "eslint/complexity": 2
+  },
+  "src/views/Workout.jsx": {
+    "eslint/complexity": 3
   }
 }

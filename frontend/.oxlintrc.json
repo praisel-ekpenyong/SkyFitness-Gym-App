@@ -32,6 +32,7 @@
     "react/exhaustive-deps": "error",
     "eslint/no-throw-literal": "error",
     "eslint/prefer-promise-reject-errors": "error",
+    "eslint/complexity": ["error", { "max": 15, "variant": "modified" }],
     "eslint/no-unused-vars": [
       "error",
       {
