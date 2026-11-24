@@ -199,7 +199,7 @@ export function CustomExForm({ existing, prefill, onDone, close }) {
     })
     close()
     toast(existing ? t('Saved') : t('“{0}” created', trimmedName))
-    onDone && onDone(EXIDX[id])
+    if (onDone) onDone(EXIDX[id])
   }
 
   return <>
@@ -277,7 +277,7 @@ export function deleteCustomEx(ex, afterDelete) {
       update(s => { res = catalogueWrites.deleteCustomEx(s, ex) })
       if (!res.ok) { toast(t('Finish your current workout first')); return }
       toast(t('Exercise deleted'))
-      afterDelete && afterDelete()
+      if (afterDelete) afterDelete()
     }
   })
 }

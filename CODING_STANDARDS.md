@@ -17,21 +17,20 @@ in review. Each rule is an imperative that names its one legal exception, and a
 
 ## The tools
 
-- **oxlint** is the main linter (about 1 s, fast enough for the pre-commit
-  hook). A rule oxlint supports goes in oxlint, including `complexity`, the
-  restricted globals and properties, `react/rules-of-hooks`,
-  `react/exhaustive-deps` and its `correctness` category (which replaces
-  `@eslint/js` recommended). It is not installed yet: there is no
-  `frontend/.oxlintrc.json`.
-- **ESLint 10** already runs: `frontend/eslint.config.js`, `npm run lint`, in
-  CI (`.github/workflows/test.yml`) and in the pre-commit hook
-  (`.githooks/pre-commit`). Today it is on `@eslint/js` recommended plus
-  `react-hooks/rules-of-hooks` (error) and `react-hooks/exhaustive-deps`
-  (warn, so 12 warnings pass CI today). The change that adds oxlint moves those
-  rules to oxlint and removes them from ESLint. ESLint then keeps only what
-  oxlint cannot do: the official `eslint-plugin-react-hooks` compiler rules,
-  and `no-restricted-syntax` selectors (oxlint has no AST selectors). A rule
-  runs in one tool, never two.
+- **oxlint** (1.95.0) is the main linter (well under 1 s, fast enough for the
+  pre-commit hook): `frontend/.oxlintrc.json`, run by `npm run lint` through its
+  ratchet in CI (`.github/workflows/test.yml`) and in the pre-commit hook
+  (`.githooks/pre-commit`). A rule oxlint supports goes in oxlint. Today it runs
+  its `correctness` category (in place of `@eslint/js` recommended, with
+  `no-unused-vars` and `no-empty` keeping ESLint's old options),
+  `react/rules-of-hooks`, `react/exhaustive-deps`, `eslint/no-throw-literal` and
+  `eslint/prefer-promise-reject-errors`, all at error, tests excluded. Its own
+  `react/*` copies of the compiler rules are off.
+- **ESLint 10** runs after oxlint in `npm run lint`: `frontend/eslint.config.js`.
+  It keeps only what oxlint cannot do: the official `eslint-plugin-react-hooks`
+  compiler rules, and `no-restricted-syntax` selectors (oxlint has no AST
+  selectors). Neither is on yet, so ESLint enforces no rule today. A rule runs
+  in one tool, never two.
 - **tsc** (strict, `allowJs`, `checkJs`) joins when `frontend/tsconfig.json`
   exists. Then oxlint adds its type-aware rows through `oxlint-tsgolint`.
 - **Vitest guard tests** (`npm test`) and `frontend/scripts/check-*.mjs`
@@ -44,7 +43,7 @@ recorded count above the real count), so a fix has to lower the file too.
 | Tool | Ratchet file | Rewritten by |
 |---|---|---|
 | ESLint | `frontend/eslint-suppressions.json` (ESLint's own, count per file per rule) | `eslint --suppress-rule <id>`, `eslint --prune-suppressions` |
-| oxlint | `frontend/lint-baseline.json` (count per file per rule) | a small script, `frontend/scripts/check-lint-baseline.mjs` |
+| oxlint | `frontend/lint-baseline.json` (count per file per rule, rule as oxlint reports it, e.g. `react-hooks/exhaustive-deps`) | `npm run lint:baseline` (`frontend/scripts/check-lint-baseline.mjs --write`), which lowers counts and never raises one |
 | Custom checks | `*-allowlist.json`, `{ "path": { "count": N, "reason": "..." } }` | by hand, with a reason |
 | tsc | `frontend/tsc-baseline.json` (error count per file) | `npm run typecheck:baseline` |
 
@@ -140,12 +139,13 @@ Outside command results, throw an `Error` or a subclass of `Error`. A thrown
 string or plain object has no stack trace and fails downstream `instanceof Error`
 checks. Exception: inside command handlers (`act`), a domain refusal is
 `{ ok: false }`, not a throw. An empty `catch {}` is allowed where the failure is
-harmless and best effort (`eslint.config.js` sets `allowEmptyCatch` for that).
+harmless and best effort (`.oxlintrc.json` sets `allowEmptyCatch` for that).
 Never use one where the swallowed failure would lose or hide lifter data.
 
 **Why:** the rule already holds (0 thrown literals today), so the tooth is free.
-**To add:** oxlint `eslint/no-throw-literal` and `eslint/prefer-promise-reject-errors`
-at error now. After `tsconfig`, `typescript/only-throw-error` replaces them.
+**Runs:** oxlint `eslint/no-throw-literal` and `eslint/prefer-promise-reject-errors`
+at error, no baseline entry.
+**To add:** after `tsconfig`, `typescript/only-throw-error` replaces them.
 
 ### A catch hides nothing from the lifter
 
@@ -427,18 +427,15 @@ and committed on blur (`sheets/profile.jsx`).
 
 ### Effects that start a timer, listener or observer return their cleanup
 
-`exhaustive-deps` is a warning today, so 12 findings in 6 files pass CI. It is an
-error with a baseline: an effect names every value it reads, and a dependency
+`exhaustive-deps` is an error with a baseline: an effect names every value it reads, and a dependency
 list holds no expression such as `[!!on]` (name it first: `const active = !!on`).
 Exception: none.
 
 **Why:** `components/RestTimer.jsx` (line 15) omits `on` on purpose behind
 `[!!on]`. A stale value read in a timer was the bug in `2cc8dd5` (mute during a
 rest did not silence it) and `f6db88f` (the week streak went stale).
-**To add:** `exhaustive-deps` from warning to error with the 12 hits (6 files,
-re-measured 2026-11-24) in `frontend/lint-baseline.json`. It is oxlint's
-`react/exhaustive-deps`, so the change that adds oxlint also takes the rule out of
-ESLint. Until then ESLint's `react-hooks/exhaustive-deps` stays `warn`.
+**Runs:** oxlint `react/exhaustive-deps` at error. Its 12 hits (6 files,
+measured 2026-11-24) sit in `frontend/lint-baseline.json` and may only fall.
 
 ### Lists keep stable keys; interactive elements are real elements
 
@@ -806,8 +803,8 @@ names every one:
 | Tool | Runs today | To add |
 |---|---|---|
 | Vitest guard tests, in `npm test` | `purity.test.js`, `import-cycles.test.js`, `design-tokens.test.js`, `design-lint.test.js`, `env.test.js`, `i18n-lint.test.js`, `sheets/dialog-names.test.jsx`, `docs.test.js`, `platform/storage.test.js` (the 800ms debounce) | `effect-types.test.js`, `comments.test.js`, `profile-keys.test.js`, the save round-trip tests, the `warmArt` test, the `flush()` test |
-| ESLint 10, `npm run lint` (CI and pre-commit today) | `rules-of-hooks` (error), `exhaustive-deps` (warn), `@eslint/js` recommended; these move to oxlint when it lands | Only the `react-hooks` compiler rules and the `no-restricted-syntax` selectors (including `vi.mock` scope). Ratchet: `frontend/eslint-suppressions.json` |
-| oxlint | nothing | `correctness` category, `react/rules-of-hooks`, `react/exhaustive-deps` at error, `complexity`, `no-throw-literal`, `prefer-promise-reject-errors`, restricted globals and properties (including `Date.now` in `lib/`), `unicorn/no-array-sort`, `unicorn/no-array-reverse`, `react/no-array-index-key`, `jsx-a11y/*`. Ratchet: `frontend/lint-baseline.json` |
+| ESLint 10, `npm run lint` after oxlint (CI and pre-commit today) | no rule: its old rules moved to oxlint | Only the `react-hooks` compiler rules and the `no-restricted-syntax` selectors (including `vi.mock` scope). Ratchet: `frontend/eslint-suppressions.json` |
+| oxlint, `npm run lint` (CI and pre-commit) | `correctness` category, `react/rules-of-hooks`, `react/exhaustive-deps`, `no-throw-literal`, `prefer-promise-reject-errors`, all at error. Ratchet: `frontend/lint-baseline.json`, checked by `scripts/check-lint-baseline.mjs` with its failing fixture in `npm test` | `complexity`, restricted globals and properties (including `Date.now` in `lib/`), `unicorn/no-array-sort`, `unicorn/no-array-reverse`, `react/no-array-index-key`, `jsx-a11y/*`. Ratchet: `frontend/lint-baseline.json` |
 | tsc | nothing | `tsconfig.json`, `npm run typecheck` in the hook and CI. Ratchet: `frontend/tsc-baseline.json` |
 | oxlint type-aware (`oxlint-tsgolint`) | nothing | `no-floating-promises`, `no-misused-promises`, `only-throw-error`, `switch-exhaustiveness-check`, `no-explicit-any`, `no-non-null-assertion`, `ban-ts-comment` |
 | `frontend/scripts/check-frontend-state.mjs` | nothing | The `use-state` cap. Ratchet: `frontend/frontend-state-allowlist.json` |

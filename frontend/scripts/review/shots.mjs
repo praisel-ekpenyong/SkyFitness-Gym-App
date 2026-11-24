@@ -67,8 +67,8 @@ const scenes = {
     await clickT(p,/Start workout/); await p.waitForTimeout(400); await snap(p,'weighin',false)
     await clickT(p,/Save (&|and) start workout/); await p.waitForTimeout(1000); await snap(p,'workout',false); await snap(p,'workout-full')
     const chk = p.locator('[role=checkbox]'); await chk.nth(0).click(); await p.waitForTimeout(400); await snap(p,'workout-rest',false); await snap(p,'workout-rest-full')
-    await p.evaluate(()=>{ const u=[...document.querySelectorAll('#timer button')].pop(); u&&u.click() })
-    for (let i=1;i<4;i++){ await chk.nth(i).click(); await p.waitForTimeout(200) ; await p.evaluate(()=>{ const u=[...document.querySelectorAll('#timer button')].pop(); u&&u.click() }) }
+    await p.evaluate(()=>{ const u=[...document.querySelectorAll('#timer button')].pop(); if (u) u.click() })
+    for (let i=1;i<4;i++){ await chk.nth(i).click(); await p.waitForTimeout(200) ; await p.evaluate(()=>{ const u=[...document.querySelectorAll('#timer button')].pop(); if (u) u.click() }) }
     await p.waitForTimeout(400); await snap(p,'workout-unit-done',false)
     await p.locator('.wk-next').click(); await p.waitForTimeout(700); await snap(p,'workout-next',false)
     await p.goto(base+'#/home'); await p.waitForTimeout(700); await snap(p,'home-active',false)

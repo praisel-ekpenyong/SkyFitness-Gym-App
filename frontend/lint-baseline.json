@@ -1,0 +1,20 @@
+{
+  "src/App.jsx": {
+    "react-hooks/exhaustive-deps": 2
+  },
+  "src/components/Modals.jsx": {
+    "react-hooks/exhaustive-deps": 3
+  },
+  "src/components/RestTimer.jsx": {
+    "react-hooks/exhaustive-deps": 2
+  },
+  "src/sheets/session.jsx": {
+    "react-hooks/exhaustive-deps": 2
+  },
+  "src/views/Library.jsx": {
+    "react-hooks/exhaustive-deps": 1
+  },
+  "src/views/RoutineEdit.jsx": {
+    "react-hooks/exhaustive-deps": 2
+  }
+}

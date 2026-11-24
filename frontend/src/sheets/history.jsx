@@ -347,7 +347,7 @@ export function WorkoutRow({ w, onClick }) {
       tabIndex={0}
       aria-label={t('{0}, {1}, {2}', w.name, fmtDate(w.d, true), t('{0} sets', fmtNum(sum.workSets)))}
       onClick={onClick}
-      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick && onClick() } }}
+      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (onClick) onClick() } }}
     >
       <span className="lrow-i"><Icon name={glyph} /></span>
       <div className="grow">

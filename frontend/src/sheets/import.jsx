@@ -108,7 +108,7 @@ export function importFromApp(file, onDone) {
       toast(t('Nothing to import from that file')); return
     }
     ui().openSheet(close => <ImportSummary parsed={parsed} close={close} />)
-    onDone && onDone()
+    if (onDone) onDone()
   }
   rd.onerror = () => toast(t('Could not read that file'))
   rd.readAsText(file)

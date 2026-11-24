@@ -77,7 +77,7 @@ function BwSheet({ required, onDone, close }) {
       {required && (
         <>
           <div className="gap8" />
-          <Button variant="ghost" className="dim" onClick={() => { close(); onDone && onDone(null) }}>
+          <Button variant="ghost" className="dim" onClick={() => { close(); if (onDone) onDone(null) }}>
             {t('Start without weighing in')}
           </Button>
           <Button variant="ghost" className="dim" icon="reset" onClick={() => { close(); nav('/workout') }}>

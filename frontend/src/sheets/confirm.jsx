@@ -7,7 +7,7 @@ function ConfirmDialog({ title, message, confirmText, cancelText, danger, onConf
     <div className="confirm">
       {title && <h3>{title}</h3>}
       <div className="confirm-msg">{message}</div>
-      <button className={'btn ' + (danger ? 'danger' : 'primary')} onClick={() => { close(); onConfirm && onConfirm() }}>
+      <button className={'btn ' + (danger ? 'danger' : 'primary')} onClick={() => { close(); if (onConfirm) onConfirm() }}>
         {confirmText || t('Confirm')}
       </button>
       <Button variant="ghost" onClick={close}>{cancelText || t('Cancel')}</Button>
