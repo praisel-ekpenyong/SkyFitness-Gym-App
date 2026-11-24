@@ -8,12 +8,12 @@ import { afterEach, describe, expect, it } from 'vitest'
 const here = dirname(fileURLToPath(import.meta.url))
 const script = join(here, 'check-lint-baseline.mjs')
 const fixture = join(here, 'fixtures', 'lint-baseline')
-const RULE = 'eslint/no-throw-literal'
+const RULE = 'typescript/no-floating-promises'
 
 let root
 afterEach(() => rmSync(root, { recursive: true, force: true }))
 
-// A copy of the fixture (hit.js holds two no-throw-literal hits) with the given baseline.
+// A copy of the fixture (hit.js holds two no-floating-promises hits) with the given baseline.
 function project(baseline) {
   root = mkdtempSync(join(tmpdir(), 'lint-baseline-'))
   cpSync(fixture, root, { recursive: true })
