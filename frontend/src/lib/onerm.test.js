@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { estimate1RM, REP_CAP, FORMULAS } from './onerm.js'
+import { estimate1RM, epleyReps, REP_CAP, FORMULAS } from './onerm.js'
 
 describe('estimate1RM', () => {
   it('returns the load unchanged for a single rep', () => {
@@ -66,5 +66,22 @@ describe('estimate1RM', () => {
     expect(estimate1RM(100, 1, 'epley', 'kg', 'lb')).toBe(220.5)
     expect(estimate1RM(220.462, 5, 'epley', 'lb', 'kg')).toBe(116.7)
     expect(estimate1RM(100, 5, 'epley', 'kg', 'kg')).toBe(116.7)
+  })
+})
+
+describe('epleyReps', () => {
+  it('inverts the Epley formula for positive 1RM and load', () => {
+    expect(epleyReps(120, 100)).toBeCloseTo(6, 10)
+    expect(epleyReps(100, 100)).toBe(0)
+    expect(epleyReps(90, 100)).toBeCloseTo(-3, 10)
+    expect(FORMULAS.epley(75, epleyReps(110, 75))).toBeCloseTo(110, 10)
+  })
+
+  it('returns null for non-positive or non-finite inputs', () => {
+    expect(epleyReps(100, 0)).toBeNull()
+    expect(epleyReps(100, -10)).toBeNull()
+    expect(epleyReps(0, 50)).toBeNull()
+    expect(epleyReps(NaN, 50)).toBeNull()
+    expect(epleyReps(100, Infinity)).toBeNull()
   })
 })

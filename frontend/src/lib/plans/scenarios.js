@@ -4,6 +4,7 @@ import { recordWeighIn } from '../bodyweight.js'
 import { isPerSide } from '../workout-model.js'
 import { isWorkSet } from '../workout-sets.js'
 import { registerCustom } from '../exercises.js'
+import { epleyReps } from '../onerm.js'
 
 /**
  * Deterministic synthetic history for the 5-day hypertrophy plan. Everything here is made up:
@@ -35,8 +36,10 @@ const iso = ms => new Date(ms).toISOString().slice(0, 10)
 const weekday = ms => new Date(ms).getUTCDay()
 const round = v => Math.round(v * 10) / 10
 
+const ZERO_LOAD_CAPACITY = 30
+
 /** Reps a lifter can manage at a load, from Epley inverted, never below 0. */
-const capacity = (e1rm, w) => (w <= 0 ? 30 : Math.max(0, Math.floor(30 * (e1rm / w - 1))))
+const capacity = (e1rm, w) => (w <= 0 ? ZERO_LOAD_CAPACITY : Math.max(0, Math.floor(epleyReps(e1rm, w) ?? 0)))
 
 /**
  * Build a profile holding the plan and a generated Training log.

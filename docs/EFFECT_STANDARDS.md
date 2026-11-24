@@ -116,7 +116,7 @@ or the DOM. `lib/active-workout.test.js` asserts the effect list from `act`.
 `store/useStore.act.test.jsx` asserts the runner: a hold finishes through
 `send`, and `open-finish` is still on the list for the view.
 
-**To add:** a guard test, `frontend/src/effect-types.test.js`, in `npm test`.
+**Runs:** the guard test `frontend/src/effect-types.test.js`, in `npm test`.
 It collects every `effect('<type>')` call in `lib/active-act.js` (the
 producer) and every `e.type === '<type>'` branch in `runEffects` and in
 `Workout.jsx`'s `send`. A type in the producer with no branch fails. A branch

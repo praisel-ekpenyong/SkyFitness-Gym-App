@@ -205,9 +205,11 @@ own module fails.
 control ("Default decides") in `sheets/catalogue.test.jsx` and
 `views/RoutineEdit.test.jsx`.
 
-**To add, with the rule in `CODING_STANDARDS.md`:** a test that walks `DEF` against
-`PROFILE_CLEAN`, and the closed effect and command sets
+**Runs:** the closed effect and command sets
 (`frontend/src/effect-types.test.js`).
+
+**To add, with the rule in `CODING_STANDARDS.md`:** a test that walks `DEF`
+against `PROFILE_CLEAN`.
 
 **Judgement call, no tooth:** "name the bug", the seam table, and whether a
 test is a tautology.

@@ -46,7 +46,8 @@ const KNEE_DOMINANT = {
 //   1717), RDL family (its own pattern below) and 0116/1010 straight-leg
 //   deadlifts;
 // - "extension" misfires: hip and reverse-hyper extensions (0980, 0130,
-//   0228, 2286, 0593, 0675), triceps extensions (ticket 04);
+//   0228, 2286, 0593, 0675), triceps extensions (the upper-body
+//   'triceps extension' pattern owns them);
 // - calf stretches (1377, 1378, 1390, 1398, 1407, 1599) and tibialis work
 //   (1396 toe raise, 1000/0763/1394 reverse calf raises).
 export const LOWER_BODY_CORRECTIONS = [

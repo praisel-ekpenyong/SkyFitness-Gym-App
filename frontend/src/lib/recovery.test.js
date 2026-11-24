@@ -20,6 +20,7 @@ import {
 } from './recovery.js'
 import { EXDB, registerCustom } from './exercises.js'
 import { MUSCLES, musclesOf } from './muscles.js'
+import { estimate1RM } from './onerm.js'
 
 const HOUR = 60 * 60 * 1000
 const DAY = 24 * HOUR
@@ -126,6 +127,19 @@ describe('fatigueOf and strengthOf', () => {
       10,
     )
     expect(fatigueOf(highRep, NOW)[SINGLE_SLUG]).toBeGreaterThan(0.5)
+  })
+
+  it('clamps 15-rep sets at REP_CAP for intensity weighting even though estimate1RM refuses them', () => {
+    expect(estimate1RM(50, 15)).toBeNull()
+    const fifteen = [workoutAt(SINGLE.id, NOW, [{ done: true, w: 50, r: 15 }])]
+    const weighted = 750 * (5 / 7) ** 1.5
+    expect(fatigueOf(fifteen, NOW)[SINGLE_SLUG]).toBeCloseTo(
+      1 - Math.exp(-weighted / FATIGUE_REF_VOLUME),
+      10,
+    )
+    expect(fatigueOf(fifteen, NOW)[SINGLE_SLUG]).toBeLessThan(
+      1 - Math.exp(-750 / FATIGUE_REF_VOLUME),
+    )
   })
 
   it('raises starting fatigue with volume, never pins, and fades without a cliff', () => {

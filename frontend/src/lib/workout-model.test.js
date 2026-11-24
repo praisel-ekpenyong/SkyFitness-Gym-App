@@ -3,7 +3,7 @@ import { modeOf, isTimed, defaultConfig, buildSets, freestyleConfig, isBw, sideR
 import { isWorkSet, isPerformed, workSets, doneWorkSets } from './workout-sets.js'
 import { fmtSec, exLine } from './format.js'
 import { setLabel } from './set-label.js'
-import { effortOf, stepEffort, capEffort } from './effort.js'
+import { effortOf, stepEffort, capEffort, floorEffort } from './effort.js'
 import { pairAdjacent, unpairSuperset, supersetUnits } from './supersetFlow.js'
 import { EXDB } from './exercises.js'
 
@@ -174,6 +174,26 @@ describe('capEffort', () => {
     expect(capEffort('rir', null)).toBe(null)
     expect(capEffort('rpe', undefined)).toBe(undefined)
     expect(capEffort('none', 12)).toBe(12)
+  })
+})
+
+describe('floorEffort', () => {
+  it('raises a value below the bottom of the scale to the bottom', () => {
+    expect(floorEffort('rpe', 3)).toBe(6)
+    expect(floorEffort('rpe', 0.5)).toBe(6)
+  })
+
+  it('keeps a value already on the scale', () => {
+    expect(floorEffort('rpe', 6)).toBe(6)
+    expect(floorEffort('rpe', 8.5)).toBe(8.5)
+    expect(floorEffort('rir', 0)).toBe(0)
+    expect(floorEffort('rir', 2)).toBe(2)
+  })
+
+  it('passes an emptied field through untouched', () => {
+    expect(floorEffort('rpe', null)).toBe(null)
+    expect(floorEffort('rir', undefined)).toBe(undefined)
+    expect(floorEffort('none', 3)).toBe(3)
   })
 })
 
