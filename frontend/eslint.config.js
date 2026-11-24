@@ -33,4 +33,16 @@ export default [
       'react-hooks/memo-dependencies': 'error',
     },
   },
+  // Single-owner formatting (CODING_STANDARDS.md): time is formatted only in
+  // lib/format.js and lib/dates.js.
+  {
+    files: ['src/**/*.{js,jsx}'],
+    ignores: ['src/lib/format.js', 'src/lib/dates.js'],
+    rules: {
+      'no-restricted-syntax': ['error', {
+        selector: "BinaryExpression[operator='%'][right.value=60]",
+        message: 'Format durations and times through lib/format.js or lib/dates.js, not `% 60`.',
+      }],
+    },
+  },
 ]
