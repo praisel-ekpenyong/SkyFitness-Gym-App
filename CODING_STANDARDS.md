@@ -352,18 +352,19 @@ no state from props in an effect. Exception: the two files with a dynamic
 or a moved import, when the compiler lands; no file carries it today.
 `react-hooks/todo` stays off for that reason.
 
-**Why:** `components/ui.jsx` reads and writes a ref in render (NumberField, line
-15). `components/TabBar.jsx` (line 33) and `sheets/history.jsx` (line 286) use a
+**Why:** NumberField in `components/ui.jsx` wrote a ref in render, and a render
+React discarded dropped the lifter's half-typed draft (#135, fixed).
+`sheets/session.jsx` (line 149) still reads a ref in render. `components/TabBar.jsx` (line 33) and `sheets/history.jsx` (line 286) use a
 component defined in render, so it remounts every render and loses state.
 `views/Home.jsx` (line 37) bakes `Date.now()` into a memo keyed on `[S]`.
 **To add:** ESLint, `eslint-plugin-react-hooks` 7.1.1 (installed). At error with
 no hits today: `react-hooks/set-state-in-effect`, `no-deriving-state-in-effects`,
 `set-state-in-render`, `immutability`, `preserve-manual-memoization`, `globals`.
 At error with `frontend/eslint-suppressions.json`: `static-components` (9 hits,
-2 files), `purity` (5), `refs` (4), `memo-dependencies` (1); all counts
-re-measured 2026-11-24 with `eslint-plugin-react-hooks` 7.1.1. Then
-`babel-plugin-react-compiler` on the Vite React plugin: 91 of 98 functions compile
-today, and the 7 refusals are the four `refs` hits, the two dynamic imports and
+2 files), `purity` (5), `refs` (2, 1 file), `memo-dependencies` (1); all counts
+re-measured 2026-11-24, `refs` after #135 with `eslint-plugin-react-hooks` 7.1.1. Then
+`babel-plugin-react-compiler` on the Vite React plugin: 91 of 98 functions compiled
+before #135, and the 7 refusals were the four `refs` hits (two now fixed), the two dynamic imports and
 the one `memo-dependencies` hit. The Babel plugin does not wait for the state
 ratchets below; the two are independent. oxlint's own `react/*` copies of these
 rules stay off.
@@ -398,13 +399,13 @@ fail. Confirming each finding is a judgement call, no tooth.
 
 **Why:** `App.jsx` (line 43) and `views/Settings.jsx` (line 27) call `useStore()`
 bare, `components/Modals.jsx` (line 5) and `components/RestTimer.jsx` (line 10)
-call `useUI()` bare, and `views/Workout.jsx` (line 223) returns a new `[]` from a
-selector when no workout is active.
+call `useUI()` bare, and `views/Workout.jsx` returned a new `[]` from a selector
+when no workout was active, which looped the render (#136, fixed).
 **To add:** ESLint `no-restricted-syntax` selectors
 `CallExpression[callee.name=/^use(Store|UI)$/][arguments.length=0]` (4 hits, fix
 them first) and
 `CallExpression[callee.name=/^use(Store|UI)$/] > ArrowFunctionExpression > :matches(ObjectExpression, ArrayExpression, LogicalExpression[right.type=/^(Array|Object)Expression$/])`
-(1 hit, fix first). `use-state` needs
+(no hits since #136). `use-state` needs
 `frontend/scripts/check-frontend-state.mjs`, run from `npm test`, with a failing
 fixture and shrink-only counts in `frontend/frontend-state-allowlist.json`:
 

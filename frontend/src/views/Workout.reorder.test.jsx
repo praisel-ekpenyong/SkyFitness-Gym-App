@@ -200,8 +200,8 @@ describe('Reorder sheet with no active workout', () => {
       })
       expect(errors.mock.calls.map(c => String(c[0])).filter(m => /getSnapshot/.test(m))).toEqual([])
       expect(renders).toBeLessThanOrEqual(2)
-      expect(container.querySelector('h3')?.textContent).toBe('Reorder exercises')
-      expect(container.querySelectorAll('.list .item')).toHaveLength(0)
+      expect(container.querySelector('[role="heading"], h1, h2, h3')?.textContent).toBe('Reorder exercises')
+      expect(container.querySelectorAll('[role="button"]')).toHaveLength(0)
     } finally {
       act(() => root.unmount())
       container.remove()

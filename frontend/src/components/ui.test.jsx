@@ -14,7 +14,7 @@ function Weight({ initial }) {
   return <NumberField value={value} onChange={setValue} aria-label="Weight" />
 }
 
-const input = () => container.querySelector('input')
+const input = () => container.querySelector('[aria-label="Weight"]')
 
 function type(text) {
   act(() => {
