@@ -330,12 +330,17 @@ describe('RoutineEdit delete key', () => {
 
 describe('Routine rows keep their own targets', () => {
   it('keeps the middle row\'s target when that row moves down', async () => {
-    useStore.getState().update(s => {
-      s.routines[0].ex = [
-        { id: '0025', sets: 3, reps: 5, weight: 60, mode: 'reps' },
-        { id: '0025', sets: 4, reps: 8, weight: 80, mode: 'reps' },
-        { id: '0025', sets: 2, reps: 12, weight: 40, mode: 'reps' },
-      ]
+    const current = useStore.getState().S
+    useStore.getState().replaceState({
+      ...current,
+      routines: [{
+        ...current.routines[0],
+        ex: [
+          { id: '0025', sets: 3, reps: 5, weight: 60, mode: 'reps' },
+          { id: '0025', sets: 4, reps: 8, weight: 80, mode: 'reps' },
+          { id: '0025', sets: 2, reps: 12, weight: 40, mode: 'reps' },
+        ],
+      }],
     })
     await act(async () => { root.render(<RoutineEdit />) })
 

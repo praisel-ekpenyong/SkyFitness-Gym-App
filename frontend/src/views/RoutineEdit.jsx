@@ -1,5 +1,5 @@
 import { useNavigate, useParams } from 'react-router-dom'
-import { useEffect, useLayoutEffect } from 'react'
+import { useEffect } from 'react'
 import { useStore } from '../store/useStore.js'
 import { exOr } from '../lib/exercises.js'
 import { exLine } from '../lib/format.js'
@@ -24,9 +24,6 @@ export default function RoutineEdit() {
   const actRoutine = useStore(s => s.actRoutine)
   const r = S.routines.find(x => x.id === id)
   useEffect(() => { if (!r) nav('/plan') }, [!!r])
-  useLayoutEffect(() => {
-    if (r?.ex?.some(e => !e?.rowId)) actRoutine({ type: 'identifyRows', routineId: id })
-  }, [r?.ex, id, actRoutine])
   if (!r) return null
 
   const move = (i, dir) => actRoutine({ type: 'moveExercise', routineId: id, index: i, dir })

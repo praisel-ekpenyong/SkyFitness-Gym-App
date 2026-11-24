@@ -75,14 +75,6 @@ function addExercise(S, command) {
   return applied(entry)
 }
 
-function identifyRows(S, command) {
-  const r = findRoutine(S, command.routineId)
-  if (!r || !Array.isArray(r.ex)) return refused()
-  if (r.ex.every(e => e && typeof e.rowId === 'string' && e.rowId)) return applied()
-  r.ex = r.ex.map(e => (e && typeof e.rowId === 'string' && e.rowId) ? e : { ...e, rowId: uid() })
-  return applied()
-}
-
 function removeExercise(S, command) {
   const r = findRoutine(S, command.routineId)
   if (!r || !Array.isArray(r.ex)) return refused()
@@ -174,7 +166,6 @@ const COMMANDS = {
   setGlyph,
   setProgression,
   addExercise,
-  identifyRows,
   removeExercise,
   moveExercise,
   replaceExercise,

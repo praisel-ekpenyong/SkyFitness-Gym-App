@@ -155,10 +155,11 @@ describe('FinishSummary Routine Sync UI Integration', () => {
     })
 
     const routine = useStore.getState().S.routines.find(r => r.id === 'routine-push')
-    expect(routine.ex).toEqual([
+    expect(routine.ex.map(({ rowId, ...rest }) => rest)).toEqual([
       { id: '0025', sets: 4 },
       { id: '0026', sets: 3 },
     ])
+    expect(routine.ex.every(e => typeof e.rowId === 'string' && e.rowId)).toBe(true)
 
     expect(useUI.getState().toastMsg).toBe('Routine “Push Day” updated')
 

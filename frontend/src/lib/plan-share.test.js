@@ -336,10 +336,11 @@ describe('plan-share engine', () => {
     it('converts the loads into the importing Profile unit; a time step stays seconds', () => {
       const state = { unit: 'kg', routines: [], customEx: [], week: {} }
       mergePlan(state, lbPlan)
-      expect(state.routines[0].ex).toEqual([
+      expect(state.routines[0].ex.map(({ rowId, ...rest }) => rest)).toEqual([
         { id: BARBELL_BENCH, sets: 3, reps: 5, weight: 61.2, inc: 2.5 },
         { id: 'plank', sets: 3, mode: 'time', sec: 45, weight: 4.5, inc: 5 },
       ])
+      expect(state.routines[0].ex.every(e => typeof e.rowId === 'string' && e.rowId)).toBe(true)
     })
 
     it('imports a file without a unit as it is', () => {

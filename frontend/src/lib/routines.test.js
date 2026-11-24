@@ -303,7 +303,8 @@ describe('Routine Domain Module (lib/routines.js)', () => {
 
       const res = actRoutine(S, { type: 'syncFromSession', routineId: 'r-push', syncedEx })
       expect(res.ok).toBe(true)
-      expect(S.routines[0].ex).toEqual(syncedEx)
+      expect(S.routines[0].ex.map(({ rowId, ...rest }) => rest)).toEqual(syncedEx)
+      expect(S.routines[0].ex.every(e => typeof e.rowId === 'string' && e.rowId)).toBe(true)
       // Verify deep clone (independent object references)
       expect(S.routines[0].ex).not.toBe(syncedEx)
       expect(S.routines[0].ex[0]).not.toBe(syncedEx[0])

@@ -117,6 +117,7 @@
           { "name": "localStorage", "message": "localStorage belongs to platform/storage.js." },
           { "name": "indexedDB", "message": "indexedDB belongs to platform/storage.js." },
           { "name": "AudioContext", "message": "AudioContext belongs to platform/sound.js." },
+          { "name": "webkitAudioContext", "message": "webkitAudioContext belongs to platform/sound.js." },
           { "name": "Notification", "message": "Notification belongs to platform/. useUI.js and main.jsx are allowlisted until that code moves." },
           { "name": "console", "message": "console belongs to components/ErrorBoundary.jsx and components/Modals.jsx." },
           { "name": "fetch", "message": "fetch belongs to platform/media-warm.js." }
@@ -157,6 +158,7 @@
             "checkGlobalObject": true,
             "globals": [
               { "name": "AudioContext", "message": "AudioContext belongs to platform/sound.js." },
+          { "name": "webkitAudioContext", "message": "webkitAudioContext belongs to platform/sound.js." },
               { "name": "console", "message": "console belongs to components/ErrorBoundary.jsx and components/Modals.jsx." },
               { "name": "fetch", "message": "fetch belongs to platform/media-warm.js." }
             ]
@@ -171,7 +173,7 @@
       }
     },
     {
-      // sound.js owns AudioContext (including window.AudioContext) and navigator.vibrate. Notification and serviceWorker stay allowed because platform/ owns them.
+      // sound.js owns AudioContext and webkitAudioContext (including window.AudioContext and window.webkitAudioContext) and navigator.vibrate. Notification and serviceWorker stay allowed because platform/ owns them.
       "files": ["src/platform/sound.js"],
       "rules": {
         "eslint/no-restricted-globals": [
@@ -205,6 +207,7 @@
               { "name": "localStorage", "message": "localStorage belongs to platform/storage.js." },
               { "name": "indexedDB", "message": "indexedDB belongs to platform/storage.js." },
               { "name": "AudioContext", "message": "AudioContext belongs to platform/sound.js." },
+          { "name": "webkitAudioContext", "message": "webkitAudioContext belongs to platform/sound.js." },
               { "name": "console", "message": "console belongs to components/ErrorBoundary.jsx and components/Modals.jsx." },
               { "name": "fetch", "message": "fetch belongs to platform/media-warm.js." }
             ]
@@ -229,6 +232,7 @@
               { "name": "localStorage", "message": "localStorage belongs to platform/storage.js." },
               { "name": "indexedDB", "message": "indexedDB belongs to platform/storage.js." },
               { "name": "AudioContext", "message": "AudioContext belongs to platform/sound.js." },
+          { "name": "webkitAudioContext", "message": "webkitAudioContext belongs to platform/sound.js." },
               { "name": "console", "message": "console belongs to components/ErrorBoundary.jsx and components/Modals.jsx." }
             ]
           }
@@ -259,6 +263,7 @@
               { "name": "localStorage", "message": "localStorage belongs to platform/storage.js." },
               { "name": "indexedDB", "message": "indexedDB belongs to platform/storage.js." },
               { "name": "AudioContext", "message": "AudioContext belongs to platform/sound.js." },
+          { "name": "webkitAudioContext", "message": "webkitAudioContext belongs to platform/sound.js." },
               { "name": "console", "message": "console belongs to components/ErrorBoundary.jsx and components/Modals.jsx." },
               { "name": "fetch", "message": "fetch belongs to platform/media-warm.js." }
             ]
@@ -296,6 +301,7 @@
               { "name": "localStorage", "message": "localStorage belongs to platform/storage.js." },
               { "name": "indexedDB", "message": "indexedDB belongs to platform/storage.js." },
               { "name": "AudioContext", "message": "AudioContext belongs to platform/sound.js." },
+          { "name": "webkitAudioContext", "message": "webkitAudioContext belongs to platform/sound.js." },
               { "name": "Notification", "message": "Notification belongs to platform/. useUI.js and main.jsx are allowlisted until that code moves." },
               { "name": "fetch", "message": "fetch belongs to platform/media-warm.js." }
             ]
@@ -315,6 +321,7 @@
               { "name": "localStorage", "message": "localStorage belongs to platform/storage.js." },
               { "name": "indexedDB", "message": "indexedDB belongs to platform/storage.js." },
               { "name": "AudioContext", "message": "AudioContext belongs to platform/sound.js." },
+          { "name": "webkitAudioContext", "message": "webkitAudioContext belongs to platform/sound.js." },
               { "name": "console", "message": "console belongs to components/ErrorBoundary.jsx and components/Modals.jsx." },
               { "name": "fetch", "message": "fetch belongs to platform/media-warm.js." }
             ]
@@ -339,6 +346,7 @@
             "globals": [
               { "name": "indexedDB", "message": "indexedDB belongs to platform/storage.js." },
               { "name": "AudioContext", "message": "AudioContext belongs to platform/sound.js." },
+          { "name": "webkitAudioContext", "message": "webkitAudioContext belongs to platform/sound.js." },
               { "name": "Notification", "message": "Notification belongs to platform/. useUI.js and main.jsx are allowlisted until that code moves." },
               { "name": "console", "message": "console belongs to components/ErrorBoundary.jsx and components/Modals.jsx." },
               { "name": "fetch", "message": "fetch belongs to platform/media-warm.js." }

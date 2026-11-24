@@ -1,5 +1,5 @@
 
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
@@ -22,7 +22,6 @@ import Barbell, { loadsOnBar } from '../components/Barbell.jsx'
 import { Button, Check, NumberField, dotted } from '../components/ui.jsx'
 import { glyphOf } from '../lib/glyphs.js'
 import { isWarmupRow } from '../lib/workout-model.js'
-import { identifyActiveSets } from '../lib/active-sets.js'
 import { evaluateSetMilestone, prescriptionIcon, prescriptionStyle } from '../lib/progression.js'
 import { primaryMuscleName } from '../lib/muscles.js'
 
@@ -66,9 +65,6 @@ function ExerciseBlock({ entryIdx, compact, isCurrent = true, arrived = false, r
   const working = useUI(s => s.work)
   const holding = useUI(s => !!s.work)
   const entry = S.active.entries[entryIdx]
-  useLayoutEffect(() => {
-    if (entry?.sets?.some(s => !s?.id)) useStore.getState().update(s => { identifyActiveSets(s, entryIdx) })
-  }, [entry?.sets, entryIdx])
   const ex = exOr(entry.id)
   const mode = modeOf({ ...(entry.target || {}), id: entry.id })
   const cardio = mode === 'cardio'

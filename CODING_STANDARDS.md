@@ -449,10 +449,10 @@ reordered or edited; give the row an id. Use a `<button>` or `<a>` for anything
 clickable, or add `role`, `tabIndex` and a key handler. Exception: a static
 display list (barbell plates, instruction steps) may key by index.
 
-**Why:** set rows in `views/Workout.jsx` (line 173) hold open and focus state
-under `key={i}`, and so do the editable Routine rows in `views/RoutineEdit.jsx`
-(line 70). Clickable `div` rows ship without a keyboard path; the a11y hit list
-is the count.
+**Why:** Editable set rows in `views/Workout.jsx` (line 179) key on `s.id`, and
+editable Routine rows in `views/RoutineEdit.jsx` (line 70) key on `rowId`, so a
+row keeps what the lifter typed when the list shifts. Clickable `div` rows ship
+without a keyboard path; the a11y hit list is the count.
 **Runs:** oxlint `react/no-array-index-key` at error. Its 16 hits (10 files,
 re-measured 2026-11-24) sit in `frontend/lint-baseline.json` and may only fall.
 **Runs:** oxlint `jsx-a11y/click-events-have-key-events`,
@@ -688,7 +688,7 @@ owners below are the legal ones, including the call sites that exist today.
 | API | Owner |
 |---|---|
 | `localStorage`, `indexedDB` | `frontend/src/platform/storage.js` |
-| `AudioContext`, `navigator.vibrate` | `frontend/src/platform/sound.js` |
+| `AudioContext`, `webkitAudioContext`, `navigator.vibrate` | `frontend/src/platform/sound.js` |
 | `wakeLock` | `frontend/src/platform/wakelock.js` |
 | `Notification`, `navigator.serviceWorker` | `platform/`. Today `store/useUI.js` calls both (`Notification`, and `navigator.serviceWorker.getRegistration`) and `main.jsx` registers the worker. They are the allowlist until that code moves into `platform/`. `platform/media-warm.js` already reads `navigator.serviceWorker`. |
 | `Date.now()`, `new Date()` | See "The clock is an argument in `lib/`". `useStore.js` stamps `_ts`. |
@@ -700,7 +700,7 @@ owners below are the legal ones, including the call sites that exist today.
 other browser globals inside `lib/` only.
 **Runs:** oxlint `eslint/no-restricted-globals` and
 `eslint/no-restricted-properties` (`checkGlobalObject`, so `window.AudioContext`
-counts) for every row but the clock, failing outside the owner file. Allowlisted
+and `window.webkitAudioContext` count) for every row but the clock, failing outside the owner file. Allowlisted
 with a reason until that code moves into `platform/`: `store/useUI.js` and
 `main.jsx` (`Notification` and `navigator.serviceWorker`). Tests that clear
 `localStorage` are an overrides entry for `**/*.test.js` and `**/*.test.jsx`;
@@ -817,7 +817,7 @@ names every one:
 |---|---|---|
 | Vitest guard tests, in `npm test` | `purity.test.js`, `import-cycles.test.js`, `design-tokens.test.js`, `design-lint.test.js`, `env.test.js`, `i18n-lint.test.js`, `sheets/dialog-names.test.jsx`, `docs.test.js`, `platform/storage.test.js` (the 800ms debounce), `comments.test.js`, `effect-types.test.js`, the `warmArt` test (`App.warm-art.test.jsx`), the `flush()` test (`store/useStore.flush.test.jsx`), the save round-trip tests (`sheets/catalogue.test.jsx`, `views/RoutineEdit.test.jsx`) | `profile-keys.test.js` |
 | ESLint 10, `npm run lint` after oxlint (CI and pre-commit today) | no rule: its old rules moved to oxlint | Only the `react-hooks` compiler rules and the `no-restricted-syntax` selectors (including `vi.mock` scope). Ratchet: `frontend/eslint-suppressions.json` |
-| oxlint, `npm run lint` (CI and pre-commit) | `correctness` category, `react/rules-of-hooks`, `react/exhaustive-deps`, `no-throw-literal`, `prefer-promise-reject-errors`, all at error. Ratchet: `frontend/lint-baseline.json`, checked by `scripts/check-lint-baseline.mjs` with its failing fixture in `npm test` | `complexity`, restricted globals and properties (including `Date.now` in `lib/`), `unicorn/no-array-sort`, `unicorn/no-array-reverse`, `react/no-array-index-key`, `jsx-a11y/*`. Ratchet: `frontend/lint-baseline.json` |
+| oxlint, `npm run lint` (CI and pre-commit) | `correctness` category, `react/rules-of-hooks`, `react/exhaustive-deps`, `no-throw-literal`, `prefer-promise-reject-errors`, `complexity`, restricted globals and properties (except `Date.now` in `lib/`), `unicorn/no-array-sort`, `unicorn/no-array-reverse`, `react/no-array-index-key`, `jsx-a11y/click-events-have-key-events`, `jsx-a11y/no-static-element-interactions`, `jsx-a11y/prefer-tag-over-role`, `jsx-a11y/no-autofocus`, all at error. Ratchet: `frontend/lint-baseline.json`, checked by `scripts/check-lint-baseline.mjs` with its failing fixture in `npm test` | `Date.now` in `lib/` (the clock). Ratchet when it lands: `frontend/lint-baseline.json` |
 | tsc | nothing | `tsconfig.json`, `npm run typecheck` in the hook and CI. Ratchet: `frontend/tsc-baseline.json` |
 | oxlint type-aware (`oxlint-tsgolint`) | nothing | `no-floating-promises`, `no-misused-promises`, `only-throw-error`, `switch-exhaustiveness-check`, `no-explicit-any`, `no-non-null-assertion`, `ban-ts-comment` |
 | `frontend/scripts/check-frontend-state.mjs` | nothing | The `use-state` cap. Ratchet: `frontend/frontend-state-allowlist.json` |
@@ -832,11 +832,14 @@ says it is too slow for the unit suite.
    the rules that need `frontend/eslint-suppressions.json`. Fix the small real hits
    first: 4 bare store reads, 1 selector `[]`, 1 UTC day key, the `LB_TO_KG` copies.
 2. The ESLint `no-restricted-syntax` selector block with its allowlists.
-3. oxlint, `frontend/lint-baseline.json` and its script with a failing fixture,
-   with `no-restricted-globals`, `no-restricted-properties` (the `Date.now`
-   override for `lib/`) and `exhaustive-deps` moving out of ESLint in the same
-   change. Then split `npm run lint`: oxlint and `tsc` in the pre-commit hook,
-   ESLint (about 19 s with the compiler rules) in CI.
+3. oxlint, `frontend/lint-baseline.json` and its failing fixture already run
+   `complexity`, restricted globals and properties, `exhaustive-deps`,
+   `unicorn/no-array-sort`, `unicorn/no-array-reverse`, `react/no-array-index-key`
+   and the `jsx-a11y` rules named under "Lists keep stable keys". What this step
+   still adds is the `Date.now` override for `lib/`, then the split of `npm run lint`
+   so the pre-commit hook runs oxlint and CI keeps ESLint (about 19 s with the
+   compiler rules). `tsc` stays in step 4, with type-aware oxlint. The `use-state`
+   cap stays in its own row.
 4. `tsconfig.json`, `npm run typecheck` and `frontend/tsc-baseline.json`, then
    the JSDoc `@typedef`s. Then oxlint's type-aware rows.
 5. The guard tests still to add.
