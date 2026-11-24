@@ -38,8 +38,6 @@ const HISTORICAL = new Set([
   'docs/adr/0027-admit-is-the-single-way-a-profile-comes-in.md: lib/storage.js',
   // Superseded by 0032; that ADR deleted this file.
   'docs/adr/0006-active-workout-lifecycle.md: lib/finish-workout.js',
-  // Superseded by 0032; written as file:line, which is not a path.
-  'docs/adr/0006-active-workout-lifecycle.md: lib/import-csv.js:536',
   // Superseded by 0031; written as file::function, which is not a path.
   'docs/adr/0019-read-time-unit-normalization-across-history.md: lib/progression.js::sessionsFor',
   // Superseded by 0031; written as file::function, which is not a path.
@@ -71,20 +69,29 @@ describe('docs paths', () => {
   it('flag a missing link or path as file:line and ignore fenced code', () => {
     const dir = mkdtempSync(join(tmpdir(), 'docs-'))
     mkdirSync(join(dir, 'frontend/src/lib'), { recursive: true })
+    mkdirSync(join(dir, 'frontend/src/sheets'), { recursive: true })
     mkdirSync(join(dir, 'docs'))
     writeFileSync(join(dir, 'frontend/src/lib/real.js'), '')
+    writeFileSync(join(dir, 'frontend/src/sheets/volume.jsx'), '')
     writeFileSync(join(dir, 'docs/other.md'), '')
     const doc = join(dir, 'docs/a.md')
     writeFileSync(doc, [
       'Good: [x](other.md#top), `lib/real.js`, `frontend/src/lib/real.js`, `src/lib/real.js`.',
       'Bad link: [y](gone.md)',
       'Bad path: `lib/gone.js`',
+      'Line suffix: `sheets/volume.jsx:39`, `lib/real.js:12-14`.',
+      'Bad folder: `views/gone.jsx`, `views/volume.jsx:39`',
       'External: [z](https://example.com/docs/x.md)',
       '```',
       'git diff docs/ignored.md  `lib/ignored.js`',
       '```',
     ].join('\n'))
-    expect(findBrokenRefs([doc], dir)).toEqual(['docs/a.md:2: gone.md', 'docs/a.md:3: lib/gone.js'])
+    expect(findBrokenRefs([doc], dir)).toEqual([
+      'docs/a.md:2: gone.md',
+      'docs/a.md:3: lib/gone.js',
+      'docs/a.md:5: views/gone.jsx',
+      'docs/a.md:5: views/volume.jsx',
+    ])
   })
 
   it('point at files that exist in the repo markdown docs', () => {

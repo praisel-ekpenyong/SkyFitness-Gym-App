@@ -3,7 +3,10 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 
-const PREFIXES = /^(frontend|src|lib|platform|docs|scripts|\.claude)\//
+// Folders under frontend/src/, which docs name without the frontend/src/ in front.
+const SRC_DIRS = 'lib|platform|views|sheets|components|store|styles'
+const PREFIXES = new RegExp(`^(frontend|src|docs|scripts|\\.claude|${SRC_DIRS})/`)
+const IN_SRC = new RegExp(`^(${SRC_DIRS})/`)
 
 // Fenced code blocks show commands and diffs, not paths to keep true.
 export function proseLines(text) {
@@ -28,7 +31,8 @@ export function extractRefs(line) {
     if (t && !/^[a-z][a-z0-9+.-]*:/i.test(t) && !t.startsWith('/')) refs.push({ kind: 'link', target: decodeURI(t) })
   }
   for (const m of line.matchAll(/`([^`\s]+)`/g)) {
-    const t = m[1].replace(/[.,:;]+$/, '').split('#')[0]
+    // A trailing :line or :line-line names a place in the file, not part of its path.
+    const t = m[1].replace(/[.,:;]+$/, '').split('#')[0].replace(/:\d+(-\d+)?$/, '')
     if (PREFIXES.test(t) && !/[*<>{}$]/.test(t)) refs.push({ kind: 'path', target: t })
   }
   return refs
@@ -38,7 +42,7 @@ export function extractRefs(line) {
 function candidates(ref, fileDir, root) {
   if (ref.kind === 'link') return [resolve(fileDir, ref.target)]
   const t = ref.target
-  if (/^(lib|platform)\//.test(t)) return [resolve(root, 'frontend/src', t)]
+  if (IN_SRC.test(t)) return [resolve(root, 'frontend/src', t)]
   if (t.startsWith('src/')) return [resolve(root, 'frontend', t)]
   return [resolve(root, t), resolve(root, 'frontend', t)]
 }
