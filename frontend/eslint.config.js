@@ -1,5 +1,6 @@
 import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'
+import ownerSelectors from './eslint.owner-selectors.js'
 
 // oxlint is the main linter (.oxlintrc.json, ADR 0034) and owns every rule it supports:
 // its correctness category, rules-of-hooks, exhaustive-deps, no-unused-vars, no-empty.
@@ -33,33 +34,27 @@ export default [
       'react-hooks/memo-dependencies': 'error',
     },
   },
-  // One no-restricted-syntax array: flat config replaces a rule's options, never merges them.
-  {
-    files: ['**/*.{js,jsx,mjs}'],
-    rules: {
-      'no-restricted-syntax': [
-        'error',
-        // Local dates, never UTC (CODING_STANDARDS.md "Local dates, never UTC").
-        {
-          selector: "CallExpression[callee.property.name='slice'][callee.object.callee.property.name='toISOString']",
-          message: "toISOString() is UTC: build a day key with todayISO() or isoOf() from lib/dates.js.",
-        },
-        {
-          selector: "NewExpression[callee.name='Date'][arguments.length=1] > :matches(MemberExpression[property.name='d'], Identifier[name='d'])",
-          message: "new Date('YYYY-MM-DD') parses as UTC midnight: use parseDay() from lib/dates.js (local noon).",
-        },
-        // CODING_STANDARDS.md "The state caps", rule 3: subscribe to a slice; a selector returns no fresh [] or {}.
-        {
-          selector: 'CallExpression[callee.name=/^use(Store|UI)$/][arguments.length=0]',
-          message: 'Subscribe to a slice: useStore(s => s.S.unit), useStore(s => s.update).',
-        },
-        {
-          selector: 'CallExpression[callee.name=/^use(Store|UI)$/] > ArrowFunctionExpression > :matches(ObjectExpression, ArrayExpression, LogicalExpression[right.type=/^(Array|Object)Expression$/])',
-          message: 'A selector returns no fresh [] or {}: hoist a const EMPTY or use useShallow.',
-        },
-      ],
+  // A file gets one no-restricted-syntax config, so every ticket's selectors ride in
+  // ownerSelectors with the One-owner ones: local dates (CODING_STANDARDS.md "Local dates,
+  // never UTC") and the store-selector rules ("The state caps", rule 3).
+  ...ownerSelectors([
+    {
+      selector: "CallExpression[callee.property.name='slice'][callee.object.callee.property.name='toISOString']",
+      message: "toISOString() is UTC: build a day key with todayISO() or isoOf() from lib/dates.js.",
     },
-  },
+    {
+      selector: "NewExpression[callee.name='Date'][arguments.length=1] > :matches(MemberExpression[property.name='d'], Identifier[name='d'])",
+      message: "new Date('YYYY-MM-DD') parses as UTC midnight: use parseDay() from lib/dates.js (local noon).",
+    },
+    {
+      selector: 'CallExpression[callee.name=/^use(Store|UI)$/][arguments.length=0]',
+      message: 'Subscribe to a slice: useStore(s => s.S.unit), useStore(s => s.update).',
+    },
+    {
+      selector: 'CallExpression[callee.name=/^use(Store|UI)$/] > ArrowFunctionExpression > :matches(ObjectExpression, ArrayExpression, LogicalExpression[right.type=/^(Array|Object)Expression$/])',
+      message: 'A selector returns no fresh [] or {}: hoist a const EMPTY or use useShallow.',
+    },
+  ]),
   // lib/plans/scenarios.js, the dev scenario generator, is UTC end to end on purpose.
   { files: ['src/lib/plans/scenarios.js'], rules: { 'no-restricted-syntax': 'off' } },
 ]
