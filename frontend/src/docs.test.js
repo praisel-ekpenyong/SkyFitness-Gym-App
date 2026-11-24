@@ -46,6 +46,17 @@ const HISTORICAL = new Set([
   'docs/adr/0019-read-time-unit-normalization-across-history.md: lib/stats-selectors.js::selectExerciseStats',
 ])
 
+// Checks the standards name before the file exists. Delete the entry when the file lands.
+const PLANNED = new Set([
+  'CODING_STANDARDS.md: frontend/lint-baseline.json',
+  'CODING_STANDARDS.md: frontend/tsconfig.json',
+  'CODING_STANDARDS.md: frontend/scripts/check-frontend-state.mjs',
+  'CODING_STANDARDS.md: frontend/frontend-state-allowlist.json',
+  'CODING_STANDARDS.md: frontend/.oxlintrc.json',
+  'CODING_STANDARDS.md: frontend/scripts/check-effects.mjs',
+  'docs/EFFECT_STANDARDS.md: frontend/scripts/check-effects.mjs',
+])
+
 describe('docs paths', () => {
   it('flag a missing link or path as file:line and ignore fenced code', () => {
     const dir = mkdtempSync(join(tmpdir(), 'docs-'))
@@ -72,8 +83,9 @@ describe('docs paths', () => {
       .map(f => resolve(root, f))
     const broken = findBrokenRefs(files, root, ALLOW)
     const withoutLine = b => b.replace(/:\d+: /, ': ')
-    expect(broken.filter(b => !HISTORICAL.has(withoutLine(b)))).toEqual([])
-    expect([...HISTORICAL].filter(h => !broken.some(b => withoutLine(b) === h))).toEqual([])
+    const excused = new Set([...HISTORICAL, ...PLANNED])
+    expect(broken.filter(b => !excused.has(withoutLine(b)))).toEqual([])
+    expect([...excused].filter(h => !broken.some(b => withoutLine(b) === h))).toEqual([])
   })
 })
 
