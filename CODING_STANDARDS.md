@@ -654,9 +654,9 @@ Formatting logic must never be duplicated across components:
   `components/Toast.jsx`.
 
 Exception: the owner files themselves.
-**To add:** ESLint `no-restricted-syntax` on `BinaryExpression[operator='%'][right.value=60]`,
-failing outside `lib/format.js` and `lib/dates.js` (clean today apart from the
-owner). The rest is a judgement call, no tooth.
+**Runs:** ESLint `no-restricted-syntax` on `BinaryExpression[operator='%'][right.value=60]`,
+failing outside `lib/format.js` and `lib/dates.js`, 0 suppressions. The rest is a
+judgement call, no tooth.
 
 ### Localization readiness
 
