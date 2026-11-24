@@ -107,10 +107,10 @@ describe('Routine Domain Module (lib/routines.js)', () => {
   })
 
   describe('actRoutine: addExercise', () => {
-    it('initializes target using defaultConfig(exId) if target is not provided and appends to routine.ex', () => {
+    it('seeds a target-less exercise with defaultConfig(exId) and appends it to routine.ex', () => {
       const res = actRoutine(S, { type: 'addExercise', routineId: 'r-push', exId: '0001' })
       expect(res.ok).toBe(true)
-      const expected = { id: '0001', ...defaultConfig('0001') }
+      const expected = { id: '0001', sets: 3, reps: 10, weight: 0, mode: 'reps' }
       expect(S.routines[0].ex).toHaveLength(4)
       expect(S.routines[0].ex[3]).toEqual(expected)
       expect(res.result).toEqual(expected)
@@ -124,13 +124,14 @@ describe('Routine Domain Module (lib/routines.js)', () => {
         target: { sets: 5, reps: 5, weight: 100 },
       })
       expect(res.ok).toBe(true)
-      expect(S.routines[0].ex[3]).toEqual({
-        id: '0001',
-        ...defaultConfig('0001'),
-        sets: 5,
-        reps: 5,
-        weight: 100,
-      })
+      expect(S.routines[0].ex[3]).toEqual({ id: '0001', sets: 5, reps: 5, weight: 100, mode: 'reps' })
+    })
+
+    it('stores no bodyweight flag that only repeats the catalogue\'s (Default decides)', () => {
+      actRoutine(S, { type: 'addExercise', routineId: 'r-push', exId: '0001', target: { sets: 3, reps: 15 } })
+      expect(S.routines[0].ex[3]).not.toHaveProperty('bodyweight')
+      actRoutine(S, { type: 'addExercise', routineId: 'r-push', exId: '0001', target: { sets: 3, reps: 15, bodyweight: false } })
+      expect(S.routines[0].ex[4].bodyweight).toBe(false)
     })
 
     it('sanitizes notes via cleanNote, stripping whitespace or deleting empty notes', () => {

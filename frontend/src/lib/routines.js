@@ -63,11 +63,18 @@ function extractTarget(target = {}) {
   return { target: t, note }
 }
 
+// A stored bodyweight flag says the entry disagrees with the catalogue
+// ("Default decides"), so the seed leaves out the one that agrees.
+function seedOf(exId, mode) {
+  const { bodyweight: _agrees, ...seed } = defaultConfig(exId, mode)
+  return seed
+}
+
 function addExercise(S, command) {
   const r = findRoutine(S, command.routineId)
   if (!r || !command.exId) return refused()
   const { target, note } = extractTarget(command.target)
-  const defaults = defaultConfig(command.exId, target.mode)
+  const defaults = seedOf(command.exId, target.mode)
   const entry = { id: command.exId, ...defaults, ...target }
   if (note) entry.notes = note
   r.ex ??= []
@@ -122,7 +129,7 @@ function replaceExercise(S, command) {
   const oldEntry = r.ex[idx]
   const { target, note } = extractTarget(command.target)
   delete target.id
-  const defaults = defaultConfig(exId, target.mode)
+  const defaults = seedOf(exId, target.mode)
   const next = { id: exId, ...defaults, ...target }
   if (note) next.notes = note
 

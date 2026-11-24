@@ -174,7 +174,7 @@ describe('RoutineEdit exercise replacement', () => {
     })
 
     const saved = useStore.getState().S.routines.find(x => x.id === 'r-test-1').ex[0]
-    expect(saved).toEqual({ id: '0001', sg: 'sg-0-1', sets: 3, mode: 'reps', reps: 10, weight: 20, bodyweight: true })
+    expect(saved).toEqual({ id: '0001', sg: 'sg-0-1', sets: 3, mode: 'reps', reps: 10, weight: 20 })
   })
 
   it('replaces a non-superset exercise without adding an sg property', async () => {
@@ -374,5 +374,41 @@ describe('RoutineEdit metadata changes', () => {
 
     const r = useStore.getState().S.routines.find(x => x.id === 'r-test-1')
     expect(r.name).toBe('Chest & Triceps')
+  })
+})
+
+describe('RoutineEdit round trip: pick, save, read the routine', () => {
+  const routine = () => useStore.getState().S.routines.find(x => x.id === 'r-test-1')
+
+  it('Progression stores the rule picked, the one shown when the routine has none included', async () => {
+    await act(async () => { root.render(<RoutineEdit />) })
+    const progRow = [...container.querySelectorAll('.lrow')].find(r => r.querySelector('.lrow-t')?.textContent === 'Progression')
+    expect(progRow.querySelector('.lrow-v').textContent).toBe('Linear progression')
+    expect(routine()).not.toHaveProperty('prog')
+
+    await act(async () => { progRow.click() })
+    const sheet = useUI.getState().sheets.at(-1)
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    const sheetRoot = createRoot(host)
+    await act(async () => { sheetRoot.render(sheet.render(() => useUI.getState().closeSheet(sheet.id))) })
+    const option = [...host.querySelectorAll('button.lrow')].find(o => o.querySelector('.lrow-t').textContent === 'Linear progression')
+    await act(async () => { option.click() })
+    await act(async () => { sheetRoot.unmount() })
+    host.remove()
+
+    expect(routine().prog).toBe('linear')
+  })
+
+  it('Add exercise stores no bodyweight flag for a body-weight exercise the sheet saved as body weight', async () => {
+    await act(async () => { root.render(<RoutineEdit />) })
+    const add = [...container.querySelectorAll('button')].find(b => b.textContent === 'Add exercise')
+    await act(async () => { add.click() })
+    const pushUp = { id: '0662', n: 'push-up', bp: 'chest', tg: 'pectorals', eq: 'body weight' }
+    await act(async () => { mocks.exercisePicker.mock.calls[0][0](pushUp) })
+    const [, { onSave }] = mocks.exConfigSheet.mock.calls[0]
+    await act(async () => { onSave({ sets: 3, mode: 'reps', reps: 12, weight: 0 }) })
+
+    expect(routine().ex[3]).toEqual({ id: '0662', sets: 3, mode: 'reps', reps: 12, weight: 0 })
   })
 })
