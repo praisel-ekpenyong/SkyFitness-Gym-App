@@ -111,7 +111,7 @@ describe('Routine Domain Module (lib/routines.js)', () => {
     it('seeds a target-less exercise with defaultConfig(exId) and appends it to routine.ex', () => {
       const res = actRoutine(S, { type: 'addExercise', routineId: 'r-push', exId: '0001' })
       expect(res.ok).toBe(true)
-      const expected = { id: '0001', sets: 3, reps: 10, weight: 0, mode: 'reps' }
+      const expected = { id: '0001', sets: 3, reps: 10, weight: 0, mode: 'reps', rowId: expect.any(String) }
       expect(S.routines[0].ex).toHaveLength(4)
       expect(S.routines[0].ex[3]).toEqual(expected)
       expect(res.result).toEqual(expected)
@@ -125,7 +125,7 @@ describe('Routine Domain Module (lib/routines.js)', () => {
         target: { sets: 5, reps: 5, weight: 100 },
       })
       expect(res.ok).toBe(true)
-      expect(S.routines[0].ex[3]).toEqual({ id: '0001', sets: 5, reps: 5, weight: 100, mode: 'reps' })
+      expect(S.routines[0].ex[3]).toEqual({ id: '0001', sets: 5, reps: 5, weight: 100, mode: 'reps', rowId: expect.any(String) })
     })
 
     it('stores no bodyweight flag that only repeats the catalogue\'s (Default decides)', () => {
@@ -351,6 +351,7 @@ describe('Routine Domain Module (lib/routines.js)', () => {
       S.routines[0].ex[1].sg = 'sg-a'
       S.routines[0].ex[0].side = true
       S.routines[0].ex[0].rest = 150
+      S.routines[0].ex[0].rowId = 'row-bench'
 
       const res = actRoutine(S, {
         type: 'replaceExercise',
@@ -368,6 +369,7 @@ describe('Routine Domain Module (lib/routines.js)', () => {
         weight: 65,
         sg: 'sg-a',
         notes: 'New cue',
+        rowId: 'row-bench',
       })
     })
 

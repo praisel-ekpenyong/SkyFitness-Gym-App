@@ -30,6 +30,7 @@
   "rules": {
     "react/rules-of-hooks": "error",
     "react/exhaustive-deps": "error",
+    "react/no-array-index-key": "error",
     "eslint/no-throw-literal": "error",
     "eslint/prefer-promise-reject-errors": "error",
     "eslint/no-unused-vars": [

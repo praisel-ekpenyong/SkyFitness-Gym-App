@@ -68,11 +68,19 @@ function addExercise(S, command) {
   if (!r || !command.exId) return refused()
   const { target, note } = extractTarget(command.target)
   const defaults = defaultConfig(command.exId, target.mode)
-  const entry = { id: command.exId, ...defaults, ...target }
+  const entry = { id: command.exId, ...defaults, ...target, rowId: uid() }
   if (note) entry.notes = note
   r.ex ??= []
   r.ex.push(entry)
   return applied(entry)
+}
+
+function identifyRows(S, command) {
+  const r = findRoutine(S, command.routineId)
+  if (!r || !Array.isArray(r.ex)) return refused()
+  if (r.ex.every(e => e && typeof e.rowId === 'string' && e.rowId)) return applied()
+  r.ex = r.ex.map(e => (e && typeof e.rowId === 'string' && e.rowId) ? e : { ...e, rowId: uid() })
+  return applied()
 }
 
 function removeExercise(S, command) {
@@ -129,6 +137,7 @@ function replaceExercise(S, command) {
   if (oldEntry?.sg != null && target.sg === undefined) {
     next.sg = oldEntry.sg
   }
+  next.rowId = oldEntry?.rowId || uid()
 
   r.ex[idx] = next
   cleanupSg(r.ex)
@@ -165,6 +174,7 @@ const COMMANDS = {
   setGlyph,
   setProgression,
   addExercise,
+  identifyRows,
   removeExercise,
   moveExercise,
   replaceExercise,

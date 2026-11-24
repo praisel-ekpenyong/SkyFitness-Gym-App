@@ -1,5 +1,5 @@
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
@@ -22,6 +22,7 @@ import Barbell, { loadsOnBar } from '../components/Barbell.jsx'
 import { Button, Check, NumberField, dotted } from '../components/ui.jsx'
 import { glyphOf } from '../lib/glyphs.js'
 import { isWarmupRow } from '../lib/workout-model.js'
+import { identifyActiveSets } from '../lib/active-sets.js'
 import { evaluateSetMilestone, prescriptionIcon, prescriptionStyle } from '../lib/progression.js'
 import { primaryMuscleName } from '../lib/muscles.js'
 
@@ -65,6 +66,9 @@ function ExerciseBlock({ entryIdx, compact, isCurrent = true, arrived = false, r
   const working = useUI(s => s.work)
   const holding = useUI(s => !!s.work)
   const entry = S.active.entries[entryIdx]
+  useLayoutEffect(() => {
+    if (entry?.sets?.some(s => !s?.id)) useStore.getState().update(s => { identifyActiveSets(s, entryIdx) })
+  }, [entry?.sets, entryIdx])
   const ex = exOr(entry.id)
   const mode = modeOf({ ...(entry.target || {}), id: entry.id })
   const cardio = mode === 'cardio'
@@ -176,7 +180,7 @@ function ExerciseBlock({ entryIdx, compact, isCurrent = true, arrived = false, r
         const milestone = evaluateSetMilestone(entry, i, { state: S })
         const open = i === openRow
         const rowName = warm ? t('Warm-up set {0}', phaseNum) : t('Set {0} of {1}', phaseNum, workTotal)
-        return <div key={i}>
+        return <div key={s.id}>
           {isFirstWarmup && <div className="setph">{t('Warm-up')}</div>}
           {!warm && warmBefore && <div className="setph">{t('Working sets')}</div>}
           <div ref={open ? openRef : undefined} className={'setrow' + (s.done ? ' done' : '') + (open ? ' cur' : '') + (warm ? ' warm' : '') + (col2 ? '' : ' solo') + (col3 ? ' eff3' : '') + (timed ? ' timed' : '')}

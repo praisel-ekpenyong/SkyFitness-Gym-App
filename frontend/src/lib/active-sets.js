@@ -2,6 +2,18 @@ import { modeOf, makeRow, insertWarmupRow, removeRowAt, cascadeWeight } from './
 import { workSets } from './workout-sets.js'
 import { pairAdjacent, unpairSuperset, canPair, canUnpair } from './supersetFlow.js'
 import { isWarmupRow } from './warmup.js'
+import { uid } from './format.js'
+
+/**
+ * Gives a set row an id when it has none. Old backups and in-progress sessions
+ * loaded before set rows carried one keep every other field (ADR 0027).
+ * @param {Object} set - A set row.
+ * @returns {Object} The same row when it already has an id, otherwise a copy with one.
+ */
+export function withSetId(set) {
+  if (set && typeof set.id === 'string' && set.id) return set
+  return { ...set, id: uid() }
+}
 
 /**
  * Pins the set a timed hold was started on, by meaning rather than position.
@@ -49,7 +61,20 @@ export function addActiveSet(S, entryIdx) {
   if (!entry) return false
   const l = entry.sets[entry.sets.length - 1] || null
   const m = modeOf({ ...(entry.target || {}), id: entry.id })
-  entry.sets.push(makeRow(m, entry.target || {}, { prev: l }))
+  entry.sets.push(withSetId(makeRow(m, entry.target || {}, { prev: l })))
+  return true
+}
+
+/**
+ * Stamps an id on every set row of one Active entry that lacks one.
+ * Does not touch finished Workouts. No-op when every row already has an id.
+ * @returns {boolean} True when a row gained an id.
+ */
+export function identifyActiveSets(S, entryIdx) {
+  const entry = S?.active?.entries?.[entryIdx]
+  if (!entry || !Array.isArray(entry.sets)) return false
+  if (entry.sets.every(s => s && typeof s.id === 'string' && s.id)) return false
+  entry.sets = entry.sets.map(withSetId)
   return true
 }
 
@@ -70,7 +95,7 @@ export function addActiveWarmup(S, entryIdx) {
   const entry = S?.active?.entries?.[entryIdx]
   if (!entry) return false
   const m = modeOf({ ...(entry.target || {}), id: entry.id })
-  entry.sets = insertWarmupRow(entry.sets, m, entry.target || {})
+  entry.sets = insertWarmupRow(entry.sets, m, entry.target || {}).map(withSetId)
   return true
 }
 

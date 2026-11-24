@@ -9,12 +9,40 @@
     "react-hooks/exhaustive-deps": 2
   },
   "src/sheets/session.jsx": {
-    "react-hooks/exhaustive-deps": 2
+    "react-hooks/exhaustive-deps": 2,
+    "react/no-array-index-key": 2
   },
   "src/views/Library.jsx": {
     "react-hooks/exhaustive-deps": 1
   },
   "src/views/RoutineEdit.jsx": {
     "react-hooks/exhaustive-deps": 2
+  },
+  "src/components/Barbell.jsx": {
+    "react/no-array-index-key": 1
+  },
+  "src/components/BodyMap.jsx": {
+    "react/no-array-index-key": 2
+  },
+  "src/components/LineChart.jsx": {
+    "react/no-array-index-key": 2
+  },
+  "src/components/ui.jsx": {
+    "react/no-array-index-key": 1
+  },
+  "src/sheets/catalogue.jsx": {
+    "react/no-array-index-key": 2
+  },
+  "src/sheets/history.jsx": {
+    "react/no-array-index-key": 2
+  },
+  "src/views/Home.jsx": {
+    "react/no-array-index-key": 1
+  },
+  "src/views/Stats.jsx": {
+    "react/no-array-index-key": 2
+  },
+  "src/views/Workout.jsx": {
+    "react/no-array-index-key": 1
   }
 }

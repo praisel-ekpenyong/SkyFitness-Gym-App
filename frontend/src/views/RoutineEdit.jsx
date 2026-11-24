@@ -1,5 +1,5 @@
 import { useNavigate, useParams } from 'react-router-dom'
-import { useEffect } from 'react'
+import { useEffect, useLayoutEffect } from 'react'
 import { useStore } from '../store/useStore.js'
 import { exOr } from '../lib/exercises.js'
 import { exLine } from '../lib/format.js'
@@ -24,6 +24,9 @@ export default function RoutineEdit() {
   const actRoutine = useStore(s => s.actRoutine)
   const r = S.routines.find(x => x.id === id)
   useEffect(() => { if (!r) nav('/plan') }, [!!r])
+  useLayoutEffect(() => {
+    if (r?.ex?.some(e => !e?.rowId)) actRoutine({ type: 'identifyRows', routineId: id })
+  }, [r?.ex, id, actRoutine])
   if (!r) return null
 
   const move = (i, dir) => actRoutine({ type: 'moveExercise', routineId: id, index: i, dir })
@@ -67,7 +70,7 @@ export default function RoutineEdit() {
 
     {view.entries.length ? <div className="list">{view.entries.map((item, i) => {
       const ex = exOr(item.id)
-      return <div key={i}>
+      return <div key={item.rowId}>
         {item.isFirstInSuperset && <div className="ss-label"><Icon name="link" />{t('Superset')}</div>}
         <div className={'item rt-ex' + (item.inSuperset ? ' in-ss' : '')} onClick={() => {
           exConfigSheet(ex, {
