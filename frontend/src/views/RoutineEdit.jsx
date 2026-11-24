@@ -99,8 +99,8 @@ export default function RoutineEdit() {
           </div>
           <div className="rt-tools">
             {i > 0 && <button className={'rt-link' + (item.isLinkedPrev ? ' on-ss' : '')} aria-label={t('Superset with exercise above')} aria-pressed={item.isLinkedPrev} onClick={ev => { ev.stopPropagation(); toggleLink(i) }}><Icon name="link" /><span>{t('Superset with above')}</span></button>}
-            <button className="iconbtn bare" aria-label="Move up" onClick={ev => { ev.stopPropagation(); move(i, -1) }}><Icon name="chevronUp" /></button>
-            <button className="iconbtn bare" aria-label="Move down" onClick={ev => { ev.stopPropagation(); move(i, 1) }}><Icon name="chevronDown" /></button>
+            <button className="iconbtn bare" aria-label={t('Move up')} onClick={ev => { ev.stopPropagation(); move(i, -1) }}><Icon name="chevronUp" /></button>
+            <button className="iconbtn bare" aria-label={t('Move down')} onClick={ev => { ev.stopPropagation(); move(i, 1) }}><Icon name="chevronDown" /></button>
           </div>
         </div>
       </div>

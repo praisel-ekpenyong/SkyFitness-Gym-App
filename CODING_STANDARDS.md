@@ -651,10 +651,8 @@ re-architecting string calls. Exception: a dev-only error message that no
 lifter sees.
 
 **Runs:** `frontend/src/i18n-lint.test.js` walks the JSX strings of views,
-sheets and components.
-**To add:** extend it to attribute text (`aria-label`, `title`, `placeholder`,
-`alt`): three literal `aria-label`s break today, two in `views/RoutineEdit.jsx`
-and one in `components/ui.jsx`.
+sheets and components, and their attribute text (`aria-label`, `title`,
+`placeholder`, `alt`): a literal word there fails.
 
 ## Interface design
 

@@ -14,6 +14,9 @@
 // Machine strings with no space (routes '/plan/r/' + id, keys id + ':' + n, ISO dates
 // d + 'T12:00:00', file names 'sky-backup-' + day + '.json') are not prose and pass.
 // What it does not see: text joined by JSX itself ({a} · {b}) and arrays joined with .join(' · ').
+//
+// Attribute text: aria-label, title, placeholder and alt are read or heard by the lifter, so a
+// literal word in one (aria-label="Clear", or a 'Slider' fallback) fails too: wrap it in t().
 import { readdirSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -88,6 +91,42 @@ function leaksIn(file, code = readFileSync(join(SRC, file), 'utf8')) {
   return out
 }
 
+const TEXT_ATTR = /^(aria-label|title|placeholder|alt)$/
+
+/**
+ * Every aria-label, title, placeholder or alt in `code` (from `file`) that holds literal text
+ * outside t(): a quoted value, or a string or template literal anywhere in its expression. Text
+ * with no letter ("1990", an empty alt) is not words and passes, and so are object literals
+ * (formatter options) and property keys (rest['aria-label']).
+ */
+function literalAttrsIn(file, code = readFileSync(join(SRC, file), 'utf8')) {
+  const ast = parseAst(code, { lang: 'jsx' })
+  const lineOf = pos => code.slice(0, pos).split('\n').length
+  const hasWord = s => /\p{L}/u.test(s)
+  const literalText = node => {
+    if (!node || typeof node !== 'object') return false
+    if (node.type === 'CallExpression' && node.callee.type === 'Identifier' && node.callee.name === 't') return false
+    if (node.type === 'ObjectExpression') return false
+    if (node.type === 'MemberExpression') return literalText(node.object)
+    if (node.type === 'Literal' && typeof node.value === 'string') return hasWord(node.value)
+    if (node.type === 'TemplateLiteral' && node.quasis.some(q => hasWord(q.value.cooked))) return true
+    return Object.values(node).some(v => (Array.isArray(v) ? v : [v]).some(c => c && typeof c.type === 'string' && literalText(c)))
+  }
+  const out = []
+  const visit = node => {
+    if (node.type === 'JSXAttribute' && typeof node.name.name === 'string' && TEXT_ATTR.test(node.name.name) && literalText(node.value)) {
+      out.push({ file, line: lineOf(node.start), text: code.slice(node.start, node.end).replace(/\s+/g, ' ') })
+    }
+    for (const value of Object.values(node)) {
+      for (const child of Array.isArray(value) ? value : [value]) {
+        if (child && typeof child === 'object' && typeof child.type === 'string') visit(child)
+      }
+    }
+  }
+  visit(ast)
+  return out
+}
+
 describe('lifter-facing text is built inside t()', () => {
   const found = sourceFiles().flatMap(f => leaksIn(f))
   const allowed = leak => ALLOW.some(a => a.file === leak.file && leak.text.includes(a.text))
@@ -116,6 +155,30 @@ describe('lifter-facing text is built inside t()', () => {
       'nav(\'/plan/r/\' + id)',
       'const name = \'sky-backup-\' + day + \'.json\'',
       'const label = t(\'{0} sets\', done + \' of \' + total)',
+    ].join('\n'))).toEqual([])
+  })
+})
+
+describe('attribute text a lifter reads or hears goes through t()', () => {
+  it('no view, sheet or component writes aria-label, title, placeholder or alt text as a literal', () => {
+    const bad = sourceFiles().flatMap(f => literalAttrsIn(f)).map(l => `${l.file}:${l.line}: ${l.text.slice(0, 120)}`)
+    expect(bad, `Attribute text written outside t(). Wrap it: aria-label={t('Move up')}.\n${bad.join('\n')}`).toEqual([])
+  })
+
+  // A check on the rule itself, so a parser change cannot silently empty the guard.
+  it('catches a literal aria-label, title, placeholder or alt, and passes t(), numbers and empty alt', () => {
+    const hits = code => literalAttrsIn('fixture.jsx', code).map(l => l.text)
+    expect(hits('const a = <b aria-label="x" />')).toEqual(['aria-label="x"'])
+    expect(hits('const a = <b title={\'Clear\'} />')).toHaveLength(1)
+    expect(hits('const a = <input placeholder={`Search`} />')).toHaveLength(1)
+    expect(hits('const a = <img alt={on ? \'Front\' : t(\'Back\')} />')).toHaveLength(1)
+    expect(hits('const a = <b aria-label={rest[\'aria-label\'] || \'Slider\'} />')).toHaveLength(1)
+    expect(hits([
+      'const a = <b aria-label={t(\'Move up\')} title={t(\'{0} sets\', n)} />',
+      'const b = <input placeholder="1990" />',
+      'const c = <img alt="" />',
+      'const d = <b className="row" data-x="label" />',
+      'const e = <b aria-label={d.toLocaleDateString(dateLocale(), { weekday: \'long\' })} title={rest[\'aria-label\'] || t(\'Slider\')} />',
     ].join('\n'))).toEqual([])
   })
 })
