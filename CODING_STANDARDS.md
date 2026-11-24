@@ -377,7 +377,7 @@ it is real. A confirmed finding becomes a rule in this file with a named check.
 Exception: none.
 
 **Why:** in the probe on `ea9b171` the score was 54, and three of its "errors"
-(`App.jsx:55`, `components/Modals.jsx:177`, `views/volume.jsx:39`) were false
+(`App.jsx:55`, `components/Modals.jsx:177`, `sheets/volume.jsx:39`) were false
 positives; only the ref in `components/ui.jsx:15` was real.
 **To add:** the `React Doctor` step in `.github/workflows/test.yml`,
 `frontend/react-doctor-floor.json` (`{ "score": 54 }`, the last measured score),
