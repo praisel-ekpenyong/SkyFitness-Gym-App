@@ -1,8 +1,10 @@
 // @vitest-environment happy-dom
-import { act } from 'react'
+import { act, Profiler } from 'react'
+import { createRoot } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
+import { ReorderExercisesSheet } from './Workout.jsx'
 import { entry, resetViewTestState, renderWorkoutApp, cleanupViewTest } from '../test/view-harness.jsx'
 
 vi.mock('../platform/sound.js', () => ({
@@ -180,5 +182,30 @@ describe('Workout exercise reorder sheet interaction', () => {
 
     expect(useStore.getState().S.active.cur).toBe(1)
     expect(useUI.getState().sheets).toHaveLength(0)
+  })
+})
+
+describe('Reorder sheet with no active workout', () => {
+  // A stale sheet can outlive finish/discard; its selector must return a cached value, not a fresh [].
+  it('renders an empty list without a getSnapshot warning or a render loop', () => {
+    expect(useStore.getState().S.active).toBeFalsy()
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const container = document.createElement('div')
+    document.body.appendChild(container)
+    const root = createRoot(container)
+    let renders = 0
+    try {
+      act(() => {
+        root.render(<Profiler id="sheet" onRender={() => { renders++ }}><ReorderExercisesSheet close={() => {}} /></Profiler>)
+      })
+      expect(errors.mock.calls.map(c => String(c[0])).filter(m => /getSnapshot/.test(m))).toEqual([])
+      expect(renders).toBeLessThanOrEqual(2)
+      expect(container.querySelector('h3')?.textContent).toBe('Reorder exercises')
+      expect(container.querySelectorAll('.list .item')).toHaveLength(0)
+    } finally {
+      act(() => root.unmount())
+      container.remove()
+      errors.mockRestore()
+    }
   })
 })

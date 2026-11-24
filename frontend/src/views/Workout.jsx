@@ -218,9 +218,11 @@ function removeActiveExercise(idx) {
   send({ type: 'removeExercise', entry: idx })
 }
 
+const NO_ENTRIES = []
+
 /** Bottom sheet listing active workout entries for sequential reordering and fast navigation. */
 export function ReorderExercisesSheet({ close }) {
-  const entries = useStore(s => s.S.active?.entries || [])
+  const entries = useStore(s => s.S.active?.entries ?? NO_ENTRIES)
   const view = sessionView({ entries })
   const supersets = view.steps.filter(s => s.entries.length > 1).map(s => s.entries)
   const supersetFirst = new Set(supersets.map(s => s[0]))
