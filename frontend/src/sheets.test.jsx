@@ -348,6 +348,33 @@ describe('WorkoutRow', () => {
 })
 
 describe('WorkoutDetail', () => {
+  it('reads a Set stamped in another unit from its Entry in the Profile unit', async () => {
+    const workout = {
+      id: 'w-lb-row',
+      name: 'Push Day',
+      d: '2026-03-01',
+      unit: 'kg',
+      start: 1000,
+      end: 4000,
+      entries: [{
+        id: '0025',
+        unit: 'kg',
+        sets: [{ w: 100, r: 5, done: true, unit: 'lb' }],
+      }],
+    }
+
+    await act(async () => {
+      workoutDetailSheet(workout)
+    })
+    const sheet = useUI.getState().sheets.at(-1)
+    expect(sheet).toBeTruthy()
+    await act(async () => {
+      root.render(sheet.render(vi.fn()))
+    })
+
+    expect(container.querySelector('.ss')?.textContent).toBe('45.4×5')
+  })
+
   it('renders exercise notes beneath completed sets when present', async () => {
     const workout = {
       id: 'w-1',

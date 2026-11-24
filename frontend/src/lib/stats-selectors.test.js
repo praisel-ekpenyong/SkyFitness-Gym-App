@@ -739,3 +739,12 @@ describe('training styles and range edits', () => {
     expect(selectStatsOverview(S, { now: NOW, catalogue }).weeklyVolume.muscles.chest).toMatchObject({ range: [14, 26], edited: false })
   })
 })
+
+describe('a Set stamped in another unit from its Entry', () => {
+  it('reads the row from its own stamp in the exercise points', () => {
+    const S = { unit: 'kg', workouts: [workoutAt(LIFT.id, 2, [doneSet(100, 5, { unit: 'lb' })], { unit: 'kg' })] }
+    S.workouts[0].entries[0].unit = 'kg'
+    const [point] = selectExerciseStats(S, LIFT.id, { now: NOW, catalogue }).points
+    expect(point.sets[0].w).toBe(45.4)
+  })
+})

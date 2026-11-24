@@ -1,7 +1,7 @@
 import { EXIDX } from './exercises.js'
 import { isWarmupRow, modeOf, repStep, makeRow, isBw, defaultConfig } from './workout-model.js'
 import { isWorkSet, isPerformed, workSets, doneWorkSets, modeForSet } from './workout-sets.js'
-import { resolveSetWeight, normalizeWeight, targetIn } from './units.js'
+import { resolveSetWeight, normalizeWeight, targetIn, entryUnit } from './units.js'
 import { fmtNum, fmtSigned } from './format.js'
 import { t } from './i18n.js'
 
@@ -227,7 +227,7 @@ export function sessionsFor(S, exId, fallback) {
   ;(S?.workouts || []).forEach(w => {
     const entry = (w.entries || []).find(e => e.id === exId)
     if (workSets(entry).length) {
-      const from = entry.unit ?? w.unit ?? targetUnit
+      const from = entryUnit(entry, w, targetUnit)
       out.push({
         d: w.d,
         ...readSession(entry, fallback, w, targetUnit),
