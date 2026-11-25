@@ -22,6 +22,9 @@ export default {
       'react-doctor/no-json-parse-stringify-clone',
       // Shared component modules intentionally export helpers and constants alongside components.
       'react-doctor/only-export-components',
+      // These React Compiler rules are already enforced by the ESLint suppression ratchet.
+      'react-hooks-js/static-components',
+      'react-hooks-js/purity',
     ],
   },
 }
