@@ -401,7 +401,10 @@ positives; only the ref in `components/ui.jsx:15` was real.
 `frontend/doctor.config.mjs` excluding `scripts/` and tests, disabling
 `.oxlintrc.json` adoption (already covered by `npm run lint`), and ignoring
 `react-doctor/no-json-parse-stringify-clone` and
-`react-doctor/only-export-components`. `check-react-doctor-floor.test.mjs` in
+`react-doctor/only-export-components`. The `react-hooks-js/static-components` and
+`react-hooks-js/purity` hits are baselined in `frontend/eslint-suppressions.json`
+and ratcheted by `npm run lint`; React Doctor cannot see that baseline, so it
+ignores them too once the Babel plugin is on. `check-react-doctor-floor.test.mjs` in
 `npm test` holds the failing fixture for a score below the floor. Confirming each
 finding is a judgement call, no tooth.
 
