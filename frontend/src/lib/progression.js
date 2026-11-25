@@ -1,7 +1,7 @@
 import { EXIDX } from './exercises.js'
 import { isWarmupRow, modeOf, repStep, makeRow, isBw, defaultConfig } from './workout-model.js'
 import { isWorkSet, isPerformed, workSets, doneWorkSets, modeForSet } from './workout-sets.js'
-import { resolveSetWeight, normalizeWeight, targetIn, entryUnit } from './units.js'
+import { resolveSetWeight, normalizeWeight, targetIn, entryUnit, round1 } from './units.js'
 import { fmtNum, fmtSigned } from './format.js'
 import { t } from './i18n.js'
 import { assertClock, isoOf, nowMs } from './dates.js'
@@ -123,8 +123,6 @@ export function policyFor(cfg, routine, mode) {
   return allowed.includes(pick) ? pick : 'off'
 }
 
-/** @param {number} v @returns {number} */
-const round1 = v => Math.round(v * 10) / 10
 /** @param {number} v @returns {number} */
 const round2 = v => Math.round(v * 100) / 100
 /** @param {number} v @param {number} step @returns {number} */
@@ -329,12 +327,12 @@ function plannedSetCount(entry, target, fallbackCount) {
 /**
  * Read a logged Entry into a normalized progression reading.
  * @param {Entry | null | undefined} entry
- * @param {Partial<Target> | null | undefined} [fallback]
- * @param {Workout | ActiveWorkout | Unit | null} [workout=null]
- * @param {Unit} [targetUnit='kg']
+ * @param {Partial<Target> | null | undefined} fallback
+ * @param {Workout | ActiveWorkout | Unit | null} workout
+ * @param {Unit} targetUnit
  * @returns {SessionReading}
  */
-export function readSession(entry, fallback, workout = null, targetUnit = 'kg') {
+export function readSession(entry, fallback, workout, targetUnit) {
   const target = (entry && entry.target) || fallback || {}
   const mode = modeOf({ ...target, id: entry?.id })
   /** @type {Workout | ActiveWorkout | null} */
@@ -390,7 +388,7 @@ function planIn(plan, from, to) {
  * Read every logged session of `exId` from the Profile's Training log in the Profile's unit.
  * @param {Partial<Profile> | null | undefined} S
  * @param {string} exId
- * @param {Partial<Target> | null | undefined} [fallback]
+ * @param {Partial<Target> | null | undefined} fallback
  * @returns {SessionReading[]}
  */
 export function sessionsFor(S, exId, fallback) {
@@ -923,7 +921,7 @@ export function evaluateSetMilestone(entry, setIdx, context = {}) {
         return unlockedCue(verdict, { reps, targetReps })
       }
       if (p.kind === 'up' && reps >= targetReps) return unlockedCue(verdict, { reps, targetReps })
-      if (reps >= targetReps && readSession(entry, verdict.cfg).ok) {
+      if (reps >= targetReps && readSession(entry, verdict.cfg, null, verdict.unit).ok) {
         return {
           kind: 'hit',
           label: t('{0}/{1} reps', reps, targetReps),
@@ -1029,10 +1027,10 @@ export function evaluateSessionProgression(entry, state, context = {}) {
 
   const cfg = { ...defaultConfig(entry.id), ...(entry.target || {}), id: entry.id }
   const p = nextPrescription(effectiveS || {}, cfg, routine)
-  const judged = readSession(entry, cfg)
+  const unit = state?.unit || workout?.unit || 'kg'
+  const judged = readSession(entry, cfg, null, unit)
   const ex = EXIDX[entry.id] || { n: entry.id }
   const exName = ex.n || entry.id
-  const unit = state?.unit || workout?.unit || 'kg'
   const policy = p.policy || policyFor(cfg, routine)
   const policyName = POLICY_NAME[policy] || policy
 

@@ -16,7 +16,7 @@ describe('clock arguments fail loudly', () => {
     effortSummary: now => effortSummary(S, 7, now),
     effortWeeks: now => effortWeeks(S, 7, now),
     effortHistogram: now => effortHistogram(S, 7, now),
-    buildCompletedWorkout: end => buildCompletedWorkout({ entries: [] }, { end }),
+    buildCompletedWorkout: end => buildCompletedWorkout({ entries: [] }, { end, unit: 'kg' }),
   }
   for (const [name, call] of Object.entries(cases)) {
     it(`${name} throws a TypeError on a non-finite clock`, () => {

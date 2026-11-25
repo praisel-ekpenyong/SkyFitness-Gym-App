@@ -339,3 +339,17 @@ describe('lb weigh-in import converts like normalizeWeight', () => {
     expect(set.w).toBe(80)
   })
 })
+
+describe('CSV import rejects a calendar date that does not exist', () => {
+  it('skips a row dated 31 February instead of filing it under March', () => {
+    const csv = [
+      'Date,Exercise,Weight,Reps',
+      '2026-02-31,Bench Press,80,5',
+      '2026-03-02,Bench Press,80,5',
+    ].join('\n')
+    const parsed = parseWorkoutCSV(csv)
+    const days = (parsed.workouts || []).map(w => w.d)
+    expect(days).toEqual(['2026-03-02'])
+    expect(parsed.skipped).toBe(1)
+  })
+})

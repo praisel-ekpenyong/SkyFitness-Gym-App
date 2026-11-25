@@ -1,6 +1,8 @@
 import { t } from '../lib/i18n-core.js'
 import { MOBILE as ENV_MOBILE } from '../lib/env.js'
 
+/** @typedef {import('../lib/types.js').Profile} Profile */
+
 export const MOBILE = ENV_MOBILE
 
 const FILE = 'sky-state.json'
@@ -19,7 +21,7 @@ export async function nativeLoad() {
 
 /**
  * Mirrors a snapshot into the app's private file so the log survives WebView eviction, without disturbing the localStorage copy.
- * @param {Object} state - State snapshot persisted as JSON.
+ * @param {Profile} state - State snapshot persisted as JSON.
  * @returns {Promise<void>} Resolves once the file write completes; rejects when the write fails so the drain can record it.
  */
 export async function nativeSave(state) {
@@ -62,7 +64,7 @@ export function __resetReminderForTests() {
 /**
  * Schedules the weekly workout-day reminders on native builds. Web builds never call it: the Capacitor
  * web plugin cannot schedule a repeating notification and would show every one of them at once.
- * @param {Object} S - The Profile.
+ * @param {Profile} S - The Profile.
  * @param {boolean} [interactive=false] - True when the lifter just switched the reminder on, so permission may be asked.
  * @returns {Promise<boolean>} False when permission is missing or scheduling failed.
  */

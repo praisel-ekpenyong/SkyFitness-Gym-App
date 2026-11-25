@@ -24,11 +24,6 @@
       "count": 1
     }
   },
-  "src/lib/bodyweight.js": {
-    "no-restricted-syntax": {
-      "count": 1
-    }
-  },
   "src/lib/effort.js": {
     "no-restricted-syntax": {
       "count": 1
@@ -66,17 +61,12 @@
   },
   "src/lib/progression.js": {
     "no-restricted-syntax": {
-      "count": 9
+      "count": 8
     }
   },
   "src/lib/stats-selectors.js": {
     "no-restricted-syntax": {
-      "count": 3
-    }
-  },
-  "src/lib/strength-exercises.js": {
-    "no-restricted-syntax": {
-      "count": 1
+      "count": 2
     }
   },
   "src/lib/strength-exercises.test.js": {

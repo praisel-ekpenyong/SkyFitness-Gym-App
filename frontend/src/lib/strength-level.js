@@ -1,6 +1,6 @@
 
 import { e1rmByWorkout, latestWorkSetAt } from './training-log.js'
-import { workoutTimestamp } from './dates.js'
+import { workoutTimestamp, DAY_MS } from './dates.js'
 import { weighIns as weighInsInUnit, sessionBodyweight } from './bodyweight.js'
 import { cleanSex } from './sex.js'
 import { ageCoefficientOf } from './birth-year.js'
@@ -13,7 +13,6 @@ import { ageCoefficientOf } from './birth-year.js'
 /** @typedef {{ level: string | null, ratio: number }} LevelReading */
 /** @typedef {{ key: string, name: string, everTrained: boolean, trainedLately: boolean, current: LevelReading | null, peak: LevelReading | null, next: { level: string, weight: number } | null }} LiftReading */
 
-const DAY_MS = 24 * 60 * 60 * 1000
 const CURRENT_WEEKS = 12
 const WEIGH_IN_DAYS = 30
 

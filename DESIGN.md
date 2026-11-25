@@ -217,7 +217,7 @@ clock is the largest size there is. Labels are sentence case and untracked.
 | Row stack | `.list` / `.item` | Rows on a 3px gap |
 | Grouped list | `.sect-b` / `.lrow` | Settings and pickers; plain grey icons, never in a tinted square |
 | Buttons | `.btn` + `.primary` `.go` `.live` `.plain` `.ghost` `.danger` `.sm` `.xs` | `.go` is the one coloured key; `.live` is the running workout |
-| Delete routine | `.btn.ghost.rt-delete` | A red text key (`--red-text`, no fill) on the Routine screen, with 24px clear above it. The confirm dialog stays |
+| Routine delete | `.btn.ghost.rt-delete` | A red text key (`--red-text`, no fill) on the Routine screen, with 24px clear above it, labelled "Delete" (Action consistency rule 2; amended 2026-11-25, was "Delete routine"). The confirm dialog stays |
 | Long routine name | `.home-hero-body` / `.rt-card` + `.name-stacked-phone` `-tablet` `-desktop` | The name over the full width, the map below it, on each layout where no size step fits the longest word beside the map; `fitName` and `stackClasses` (`lib/name-fit.js`) decide, and each rule holds only inside its layout's media range (`NAME_MEDIA`) |
 | Starter card | `StarterCard` (`.home-hero.welcome`) | One component: Home's first-run hero and Plan with no Routines ("Load starter plan" / "Build my own plan"; each screen passes its own "Build my own plan" action) |
 | Discard workout | `.btn.ghost.wk-discard` | A red text key (`--red-text`, no fill) in the workout footer. Like `.rt-delete`, it names `.btn.ghost` so it outranks the ghost's grey |

@@ -24,6 +24,8 @@ import { exercisePicker, exConfigSheet } from './catalogue.jsx'
 
 /** @typedef {import('../lib/types.js').Routine} Routine */
 /** @typedef {import('../lib/types.js').Entry} Entry */
+/** @typedef {import('../lib/types.js').Workout} Workout */
+/** @typedef {import('../lib/active-finish.js').RoutineSync} RoutineSync */
 
 const S = () => useStore.getState().S
 const ui = () => useUI.getState()
@@ -140,10 +142,10 @@ const SYNC_LABEL = {
 /**
  * Finish summary; shows duration, volume, Records, and trained muscles.
  *
- * @param {Object} w Finished workout.
+ * @param {Workout} w Finished workout.
  * @param {Array} prs Exercise ids that made a Record.
  * @param {Array} e1prs New estimated-1RM records.
- * @param {Object|null} routineSync Routine sync descriptor if originating from a routine with changes.
+ * @param {RoutineSync | null} routineSync Routine sync descriptor if originating from a routine with changes.
  * @param {Function} close Closes the sheet.
  */
 export function FinishSummary({ w, prs, e1prs = [], routineSync = null, close }) {

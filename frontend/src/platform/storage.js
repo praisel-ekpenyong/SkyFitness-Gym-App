@@ -1,6 +1,9 @@
 // iOS Safari evicts website data under storage pressure, so the log's only home can't be localStorage alone.
 
 import { MOBILE, nativeLoad } from './mobile.js'
+import { DAY_MS } from '../lib/dates.js'
+
+/** @typedef {import('../lib/types.js').Profile} Profile */
 
 export const LOCAL_KEY = 'gym_state_v1'
 
@@ -52,7 +55,7 @@ export async function idbLoad() {
 
 /**
  * Writes a snapshot to the IndexedDB mirror without disturbing the localStorage copy.
- * @param {Object} snapshot - Stamped state snapshot to mirror.
+ * @param {Profile} snapshot - Stamped state snapshot to mirror.
  * @returns {Promise<void>} Resolves once the mirror write completes; rejects when the write fails so the drain can record it.
  */
 export async function idbSave(snapshot) {
@@ -203,7 +206,7 @@ export function persistOnFirstKeep(subscribe, manager, hasKeptMore) {
   })
 }
 
-export const BACKUP_NAG_MS = 14 * 24 * 60 * 60 * 1000
+export const BACKUP_NAG_MS = 14 * DAY_MS
 
 /**
  * Tells callers whether the backup reminder should show now.

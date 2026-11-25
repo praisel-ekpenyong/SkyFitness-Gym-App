@@ -22,6 +22,10 @@ import { strengthLevelOf } from '../lib/strength-level.js'
 import { ExerciseStrengthLine } from '../components/StrengthLine.jsx'
 import { confirmSheet } from './confirm.jsx'
 
+/** @typedef {import('../lib/types.js').CustomExercise} CustomExercise */
+/** @typedef {import('../lib/types.js').Target} Target */
+/** @typedef {import('../lib/types.js').Routine} Routine */
+
 const S = () => useStore.getState().S
 const update = (...a) => useStore.getState().update(...a)
 const ui = () => useUI.getState()
@@ -57,7 +61,7 @@ function OneRM({ ex }) {
 /**
  * Exercise-detail sheet; Add opens the routine picker and Edit opens the custom form.
  *
- * @param {Object} ex Dataset exercise.
+ * @param {CustomExercise} ex Dataset exercise.
  * @param {Function} close Closes the sheet.
  */
 export function ExerciseDetail({ ex, close }) {
@@ -246,13 +250,13 @@ export function CustomExForm({ existing, prefill, onDone, close }) {
       value={desc} onChange={e => setDesc(e.target.value)} />
     <div className="gap16" />
     <Button variant="primary" onClick={save}>{existing ? t('Save') : t('Create exercise')}</Button>
-    {existing && <><div className="gap8" /><Button variant="danger" icon="trash" onClick={() => { close(); deleteCustomEx(existing) }}>{t('Delete exercise')}</Button></>}
+    {existing && <><div className="gap8" /><Button variant="danger" icon="trash" onClick={() => { close(); deleteCustomEx(existing) }}>{t('Delete')}</Button></>}
   </>
 }
 /**
  * Opens the custom-exercise form; saving creates or updates the exercise.
  *
- * @param {Object} existing Exercise being edited, if any.
+ * @param {CustomExercise | null | undefined} existing Exercise being edited, if any.
  * @param {Function} onDone Called with the saved exercise.
  * @param {string} prefill Initial name for a new exercise.
  */
@@ -260,7 +264,7 @@ export const customExSheet = (existing, onDone, prefill) => ui().openSheet(close
 /**
  * Confirms then deletes a custom exercise from routines and catalogue.
  *
- * @param {Object} ex Custom exercise to delete.
+ * @param {CustomExercise} ex Custom exercise to delete.
  * @param {Function} afterDelete Runs after deletion.
  */
 export function deleteCustomEx(ex, afterDelete) {
@@ -510,16 +514,20 @@ export function ExConfig({ ex, existing, onSave, onDelete, close, routine, initi
   </>
 }
 /**
+ * Options for `exConfigSheet`.
+ * @typedef {Object} ExConfigOptions
+ * @property {Target} [existing] - The Routine Entry being edited; omit for a new one.
+ * @property {Function} [onSave] - Called with the chosen configuration.
+ * @property {Function} [onDelete] - Shows a Remove action when given.
+ * @property {Routine} [routine] - The Routine the Entry belongs to, for its progression policy.
+ * @property {Partial<Target>} [initial] - Seed values for a new Entry.
+ * @property {Function} [onReplace] - Shows a Replace action when given.
+ * @property {string} [actionLabel] - Overrides the save button's label.
+ */
+/**
  * Opens the exercise configuration sheet.
- * @param {Object} ex - The exercise being configured.
- * @param {Object} [options]
- * @param {Object} [options.existing] - The Routine Entry being edited; omit for a new one.
- * @param {Function} [options.onSave] - Called with the chosen configuration.
- * @param {Function} [options.onDelete] - Shows a Remove action when given.
- * @param {Object} [options.routine] - The Routine the Entry belongs to, for its progression policy.
- * @param {Object} [options.initial] - Seed values for a new Entry.
- * @param {Function} [options.onReplace] - Shows a Replace action when given.
- * @param {string} [options.actionLabel] - Overrides the save button's label.
+ * @param {CustomExercise} ex - The exercise being configured.
+ * @param {ExConfigOptions} [options]
  */
 export const exConfigSheet = (ex, { existing, onSave, onDelete, routine, initial, onReplace, actionLabel } = {}) => ui().openSheet(close => <ExConfig ex={ex} existing={existing} initial={initial} onSave={onSave} onDelete={onDelete} routine={routine} onReplace={onReplace} actionLabel={actionLabel} close={close} />)
 

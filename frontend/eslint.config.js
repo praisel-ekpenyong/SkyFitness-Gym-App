@@ -58,6 +58,10 @@ const UTC_SYNTAX = [
     message: "new Date('YYYY-MM-DD') parses as UTC midnight: use parseDay() from lib/dates.js (local noon).",
   },
 ]
+const DAY_KEY_SYNTAX = [{
+  selector: "CallExpression[callee.property.name='padStart'][arguments.0.value=2][arguments.1.value='0']",
+  message: 'Build a day key with todayISO() or isoOf(), and a month key with monthKey(), from lib/dates.js; never pad by hand.',
+}]
 const STORE_SYNTAX = [
   {
     selector: 'CallExpression[callee.name=/^use(Store|UI)$/][arguments.length=0]',
@@ -87,6 +91,7 @@ const restrictedSyntax = [
   { selectors: [noCommonJsShim] },
   { selectors: UTC_SYNTAX, exempt: ['src/lib/plans/scenarios.js'] },
   { selectors: STORE_SYNTAX },
+  { selectors: DAY_KEY_SYNTAX, files: [SRC], exempt: ['src/lib/dates.js', 'src/lib/format.js', ...TESTS] },
   { selectors: LB_SYNTAX, exempt: ['src/lib/units.js', 'src/lib/units.test.js'] },
   { selectors: WEEKDAY_SYNTAX, exempt: ['src/lib/dates.js', 'src/lib/dates.test.js'] },
   { selectors: CLOCK_SYNTAX, files: ['src/lib/**/*.js'], exempt: ['src/lib/format.js', 'src/lib/dates.js', ...TESTS] },
@@ -135,6 +140,8 @@ function restrictedSyntaxBlocks() {
 
 export default [
   { ignores: ['dist/', 'android/', 'ios/', 'public/', 'coverage/'] },
+  // A disable comment never hides a hit (ADR 0034): inline config is off, and `npm run lint` fails on the warning it leaves.
+  { linterOptions: { noInlineConfig: true } },
   {
     files: [SOURCE],
     languageOptions: {

@@ -1,7 +1,7 @@
 import { isWarmupRow } from './warmup.js'
 import { resolveSetWeight, normalizeWeight, round1, setIn, targetIn } from './units.js'
 import { estimate1RM } from './onerm.js'
-import { workoutTimestamp, parseDay } from './dates.js'
+import { workoutTimestamp } from './dates.js'
 import { doneWorkSets, metricModeForEntry, metricRowsForEntry, modeForSet, workSets } from './workout-sets.js'
 
 /** @typedef {import('./types.js').Profile} Profile */
@@ -261,11 +261,8 @@ export function latestWorkSetAt(S, exId) {
   if (!workouts || !exId) return null
   const workout = sessionIndexFor(workouts).get(exId)?.latest
   if (!workout) return null
-  const stamped = Number(workout.start ?? workout.t)
-  const ts = workout.start != null || workout.t != null ? stamped : NaN
-  if (Number.isFinite(ts)) return ts
-  const dated = parseDay(workout.d).getTime()
-  return Number.isFinite(dated) ? dated : null
+  const ts = workoutTimestamp(workout)
+  return Number.isFinite(ts) ? ts : null
 }
 
 /**

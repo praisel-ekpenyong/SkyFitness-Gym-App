@@ -113,6 +113,6 @@ export default function RoutineEdit() {
         actRoutine({ type: 'delete', routineId: id })
         nav('/plan')
       }
-    })}>{t('Delete routine')}</Button>
+    })}>{t('Delete')}</Button>
   </div>
 }

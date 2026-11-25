@@ -8,7 +8,7 @@
     "build": "vite build",
     "build:mobile": "VITE_MOBILE=1 vite build && cap sync",
     "preview": "vite preview",
-    "lint": "node scripts/check-lint-baseline.mjs && eslint .",
+    "lint": "node scripts/check-lint-baseline.mjs && eslint . --max-warnings 0",
     "lint:baseline": "node scripts/check-lint-baseline.mjs --write",
     "typecheck": "node scripts/check-tsc-baseline.mjs",
     "typecheck:baseline": "node scripts/check-tsc-baseline.mjs --write",

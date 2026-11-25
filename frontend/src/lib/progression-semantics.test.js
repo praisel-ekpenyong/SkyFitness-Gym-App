@@ -89,7 +89,7 @@ describe('unticked Warm-up sets never count as a Miss', () => {
     const s = readSession({
       id: LIFT, target: TARGET_3X5,
       sets: [warmupUnticked(20, 8), work(60, 5), work(60, 5), work(60, 5)]
-    })
+    }, null, null, 'kg')
     expect(s.ok).toBe(true)
   })
 })
@@ -100,7 +100,7 @@ describe('bonus Work sets never flip a Hit to a Miss', () => {
   ])
 
   it('judges only the first N planned Work sets, so the Hit stands', () => {
-    expect(readSession(cleanPlusBonus.workouts[0].entries[0]).ok).toBe(true)
+    expect(readSession(cleanPlusBonus.workouts[0].entries[0], null, null, 'kg').ok).toBe(true)
   })
 
   it('advances the Prescription from the planned work with a visible Hit outcome', () => {

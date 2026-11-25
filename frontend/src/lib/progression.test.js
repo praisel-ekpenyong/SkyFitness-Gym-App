@@ -25,7 +25,7 @@ const hist = (id, rows, target) => ({
 describe('readSession', () => {
   const T = { sets: 3, reps: 5 }
   it('counts a session where every set made its reps as a hit', () => {
-    const s = readSession({ id: LIFT, target: T, sets: [{ w: 60, r: 5, done: true }, { w: 60, r: 5, done: true }, { w: 60, r: 6, done: true }] })
+    const s = readSession({ id: LIFT, target: T, sets: [{ w: 60, r: 5, done: true }, { w: 60, r: 5, done: true }, { w: 60, r: 6, done: true }] }, null, null, 'kg')
     expect(s.ok).toBe(true)
     expect(s.weight).toBe(60)
     expect(s.amrap).toBe(6)
@@ -33,29 +33,29 @@ describe('readSession', () => {
   })
 
   it('counts short reps as a miss even when the set was checked off', () => {
-    expect(readSession({ id: LIFT, target: T, sets: [{ w: 60, r: 5, done: true }, { w: 60, r: 5, done: true }, { w: 60, r: 3, done: true }] }).ok).toBe(false)
+    expect(readSession({ id: LIFT, target: T, sets: [{ w: 60, r: 5, done: true }, { w: 60, r: 5, done: true }, { w: 60, r: 3, done: true }] }, null, null, 'kg').ok).toBe(false)
   })
 
   it('counts an unchecked set as a miss — it was not performed', () => {
-    const s = readSession({ id: LIFT, target: T, sets: [{ w: 60, r: 5, done: true }, { w: 60, r: 5, done: true }, { w: 60, r: 0, done: false }] })
+    const s = readSession({ id: LIFT, target: T, sets: [{ w: 60, r: 5, done: true }, { w: 60, r: 5, done: true }, { w: 60, r: 0, done: false }] }, null, null, 'kg')
     expect(s.ok).toBe(false)
     expect(s.weight).toBe(60)
   })
 
   it('counts fewer sets than prescribed as a miss', () => {
-    expect(readSession({ id: LIFT, target: T, sets: [{ w: 60, r: 5, done: true }, { w: 60, r: 5, done: true }] }).ok).toBe(false)
+    expect(readSession({ id: LIFT, target: T, sets: [{ w: 60, r: 5, done: true }, { w: 60, r: 5, done: true }] }, null, null, 'kg').ok).toBe(false)
   })
 
   it('refuses to call a session a hit when nothing was prescribed', () => {
-    expect(readSession({ id: LIFT, target: {}, sets: [{ w: 60, r: 5, done: true }] }).ok).toBe(false)
+    expect(readSession({ id: LIFT, target: {}, sets: [{ w: 60, r: 5, done: true }] }, null, null, 'kg').ok).toBe(false)
   })
 
   it('reads a timed session by the hold, not by reps', () => {
-    const s = readSession({ id: LIFT, target: { sets: 2, sec: 45, mode: 'time' }, sets: [{ sec: 45, w: 0, done: true }, { sec: 50, w: 0, done: true }] })
+    const s = readSession({ id: LIFT, target: { sets: 2, sec: 45, mode: 'time' }, sets: [{ sec: 45, w: 0, done: true }, { sec: 50, w: 0, done: true }] }, null, null, 'kg')
     expect(s.mode).toBe('time')
     expect(s.ok).toBe(true)
     expect(s.best).toBe(50)
-    expect(readSession({ id: LIFT, target: { sets: 2, sec: 45, mode: 'time' }, sets: [{ sec: 45, done: true }, { sec: 30, done: true }] }).ok).toBe(false)
+    expect(readSession({ id: LIFT, target: { sets: 2, sec: 45, mode: 'time' }, sets: [{ sec: 45, done: true }, { sec: 30, done: true }] }, null, null, 'kg').ok).toBe(false)
   })
 
   it('normalizes set weight against target unit (ADR 0031)', () => {
@@ -710,7 +710,7 @@ describe('warm-up rows in session reads (round 3)', () => {
       { w: 20, r: 8, done: true, phase: 'warmup' },
       { w: 60, r: 5, done: true },
       { w: 60, r: 6, done: true },
-    ] })
+    ] }, null, null, 'kg')
     expect(s.count).toBe(2)
     expect(s.low).toBe(5)
     expect(s.reps).toEqual([5, 6])
@@ -722,7 +722,7 @@ describe('warm-up rows in session reads (round 3)', () => {
       { sec: 45, done: true, phase: 'warmup' },
       { sec: 45, done: true },
       { sec: 30, done: true },
-    ] })
+    ] }, null, null, 'kg')
     expect(s.held).toEqual([45, 30])
     expect(s.ok).toBe(false)
   })
@@ -731,7 +731,7 @@ describe('warm-up rows in session reads (round 3)', () => {
     const s = readSession({ id: LIFT, target: { sets: 1, reps: 5 }, sets: [
       { phase: 'warmup', w: 120, r: 20, done: true },
       { phase: 'work', w: 60, r: 5, done: true },
-    ] })
+    ] }, null, null, 'kg')
     expect(s.count).toBe(1)
     expect(s.weight).toBe(60)
     expect(s.low).toBe(5)

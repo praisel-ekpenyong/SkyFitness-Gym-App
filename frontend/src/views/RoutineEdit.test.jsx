@@ -310,7 +310,7 @@ describe('RoutineEdit delete key', () => {
     mocks.confirmSheet.mockReset()
     await act(async () => { root.render(<RoutineEdit />) })
 
-    const del = [...container.querySelectorAll('button')].find(b => b.textContent === 'Delete routine')
+    const del = [...container.querySelectorAll('button')].find(b => b.textContent === 'Delete')
     expect(del.classList.contains('rt-delete')).toBe(true)
     expect(del.classList.contains('ghost')).toBe(true)
     expect(del.classList.contains('danger')).toBe(false)
