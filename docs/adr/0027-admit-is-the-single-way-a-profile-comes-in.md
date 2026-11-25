@@ -20,6 +20,7 @@ Old data shapes (a `warmup: true` flag, a missing `phase`) are handled by reader
    (CSV import is superseded by the 2026-11-25 amendment below.)
 3. `admit` upgrades old **shapes** only, for example `warmup: true` to `phase: 'warmup'`. It never rewrites
    **values**: units stay converted at read time (ADR 0031), and `topW` and `asked` stay as stored (ADR 0020).
+   _(The unit half of this line is superseded by the 2026-11-25 amendment below.)_
    Reader branches made dead by an upgrade are removed.
 
 ## Consequences
@@ -83,3 +84,11 @@ Profile to get canonical log order.
 2. `admit` throws on a non-record payload instead of passing it through, so a bad blob fails at the boundary
    instead of masquerading as a Profile. `normalizeState` keeps its own `isRecord` guard, so a missing or corrupt
    `gym_state_v1` still yields a fresh Profile at every ingestion edge.
+
+### Amendment 2026-11-25: `admit` sanitizes the stored unit
+
+A bad stored unit must not survive the boundary: `admit({ unit: 'lbs' })` has to yield a valid unit, not rely on
+every reader to repair it. `admit` now runs the stored `unit` through `sanitizeUnit` from `lib/units.js` just
+after defaults, so `lbs`, ` LB ` and unknown values become `lb` or `kg` at the entrance. This supersedes the
+"never rewrites values: units stay converted at read time" half of Decision 3 for the unit field only. Shape
+upgrades, `topW`, `asked` and read-time conversion of logged workout weights are unchanged.
