@@ -4,7 +4,8 @@ import { createRoot } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
-import { ReorderExercisesSheet } from './Workout.jsx'
+import { exOr } from '../lib/exercises.js'
+import { ReorderExercisesSheet } from '../sheets/edit-workout.jsx'
 import { entry, resetViewTestState, renderWorkoutApp, cleanupViewTest } from '../test/view-harness.jsx'
 
 vi.mock('../platform/sound.js', () => ({
@@ -27,6 +28,11 @@ function inEditSheet(label, exact = false) {
     if (edit) act(() => { edit.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
   }
   return find()
+}
+
+/** The reorder sheet's control that jumps to an exercise, found by its accessible name. */
+function jumpButton(exId) {
+  return [...document.querySelectorAll('.list button')].find(b => b.getAttribute('aria-label') === exOr(exId).n)
 }
 
 function reorderButton() {
@@ -131,9 +137,8 @@ describe('Workout exercise reorder sheet interaction', () => {
     expect(useStore.getState().S.active.cur).toBe(0)
 
     click(reorderButton())
-    const items = [...document.querySelectorAll('.list .item')]
 
-    click(items[2])
+    click(jumpButton('0116'))
 
     expect(useStore.getState().S.active.cur).toBe(2)
 
@@ -169,19 +174,13 @@ describe('Workout exercise reorder sheet interaction', () => {
     expect(useUI.getState().sheets).toHaveLength(0)
   })
 
-  it('jumps to exercise and closes sheet on Enter keyboard event', () => {
+  it('makes each exercise row a native button named for the exercise, so Enter and Space reach it', () => {
     view = renderWorkoutApp([entry('0025'), entry('0043')])
     click(reorderButton())
 
-    const items = [...document.querySelectorAll('.list .item')]
-    expect(items[1].getAttribute('aria-label')).toBeTruthy()
-
-    act(() => {
-      items[1].dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
-    })
-
-    expect(useStore.getState().S.active.cur).toBe(1)
-    expect(useUI.getState().sheets).toHaveLength(0)
+    const jump = jumpButton('0043')
+    expect(jump.tagName).toBe('BUTTON')
+    expect(jump.closest('.list .item')).toBe(document.querySelectorAll('.list .item')[1])
   })
 })
 
@@ -232,7 +231,7 @@ describe('Reorder sheet with no active workout', () => {
       expect(errors.mock.calls.map(c => String(c[0])).filter(m => /getSnapshot/.test(m))).toEqual([])
       expect(renders).toBeLessThanOrEqual(2)
       expect(container.querySelector('[role="heading"], h1, h2, h3')?.textContent).toBe('Reorder exercises')
-      expect(container.querySelectorAll('[role="button"]')).toHaveLength(0)
+      expect(container.querySelectorAll('.list .item')).toHaveLength(0)
     } finally {
       act(() => root.unmount())
       container.remove()

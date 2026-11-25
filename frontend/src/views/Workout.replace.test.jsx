@@ -385,10 +385,11 @@ describe('replace-exercise prompt strings', () => {
   const strings = {
     ...import.meta.glob('./Workout.jsx', { eager: true, query: '?raw', import: 'default' }),
     ...import.meta.glob('../sheets/session.jsx', { eager: true, query: '?raw', import: 'default' }),
+    ...import.meta.glob('../sheets/edit-workout.jsx', { eager: true, query: '?raw', import: 'default' }),
   }
 
   it('keeps every replace-flow string in the source that renders it', () => {
-    expect(Object.keys(strings)).toHaveLength(2)
+    expect(Object.keys(strings)).toHaveLength(3)
     const src = Object.values(strings).join('\n')
     required.forEach(key => {
       const esc = key.replace(/[{}?]/g, '\\$&')
