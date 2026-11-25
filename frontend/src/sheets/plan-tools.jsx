@@ -1,6 +1,5 @@
 import { useRef, useState } from 'react'
 import { useStore } from '../store/useStore.js'
-import { useUI } from '../store/useUI.js'
 import { applyStarterPlan } from '../lib/starter.js'
 import { applyHypertrophyPlan } from '../lib/plans/hypertrophy-5day.js'
 import { buildPlanBundle, parsePlan, mergePlan } from '../lib/plan-share.js'
@@ -11,10 +10,7 @@ import { todayISO } from '../lib/dates.js'
 import { nav } from '../platform/nav.js'
 import { Button, Switch } from '../components/ui.jsx'
 import { t } from '../lib/i18n.js'
-
-const update = (...a) => useStore.getState().update(...a)
-const ui = () => useUI.getState()
-const toast = m => ui().toast(m)
+import { update, ui, toast } from './store-helpers.js'
 
 /**
  * Load the built-in Push/Pull/Legs starter plan into the store.

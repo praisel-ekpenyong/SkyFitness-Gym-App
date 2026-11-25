@@ -1,14 +1,9 @@
 import { useState } from 'react'
-import { useStore, sanitizeDisplayName } from '../store/useStore.js'
+import { sanitizeDisplayName } from '../store/useStore.js'
 import { cleanBirthYear } from '../lib/birth-year.js'
-import { useUI } from '../store/useUI.js'
 import { Button } from '../components/ui.jsx'
 import { t } from '../lib/i18n.js'
-
-const S = () => useStore.getState().S
-const update = (...a) => useStore.getState().update(...a)
-const ui = () => useUI.getState()
-const toast = m => ui().toast(m)
+import { S, update, ui, toast } from './store-helpers.js'
 
 function DisplayNameSheet({ close }) {
   const st = S()

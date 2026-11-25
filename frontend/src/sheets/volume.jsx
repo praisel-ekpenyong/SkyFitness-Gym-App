@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { useStore } from '../store/useStore.js'
-import { useUI } from '../store/useUI.js'
 import { t } from '../lib/i18n.js'
 import { Button, Segmented, Stepper, Section, Row } from '../components/ui.jsx'
 import { MUSCLE_NAME } from '../lib/muscles.js'
@@ -9,9 +8,7 @@ import {
   lowPinned, setVolumeRange, clearVolumeRanges, switchTrainingStyle, trainingStyleName,
 } from '../lib/volume-ranges.js'
 import { confirmSheet } from './confirm.jsx'
-
-const update = (...a) => useStore.getState().update(...a)
-const ui = () => useUI.getState()
+import { update, ui } from './store-helpers.js'
 
 /**
  * One muscle's volume range on top of the training style. A pinned muscle offers only its high end.

@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { useStore } from '../store/useStore.js'
-import { useUI } from '../store/useUI.js'
 import { EXIDX } from '../lib/exercises.js'
 import { fmtNum, fmtSigned, fmtVol, fmtDur, durPart } from '../lib/format.js'
 import { fmtDate, todayISO, MONTHS_LONG, monthKey, weekKey, isoOf } from '../lib/dates.js'
@@ -26,12 +25,9 @@ import { SessionMuscleDistribution } from '../components/SessionMuscleDistributi
 import { t } from '../lib/i18n.js'
 import { confirmSheet } from './confirm.jsx'
 import { dayOverrideSheet } from './schedule.jsx'
+import { update, ui, toast } from './store-helpers.js'
 
 /** @typedef {import('../lib/types.js').Workout} Workout */
-
-const update = (...a) => useStore.getState().update(...a)
-const ui = () => useUI.getState()
-const toast = m => ui().toast(m)
 
 /**
  * Completed-workout detail sheet body with per-exercise set labels and delete.

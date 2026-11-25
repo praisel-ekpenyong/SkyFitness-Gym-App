@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { useStore } from '../store/useStore.js'
-import { useUI } from '../store/useUI.js'
 import { fmtNum, fmtSigned, fmtVol } from '../lib/format.js'
 import { fmtDate, todayISO } from '../lib/dates.js'
 import { recordWeighIn, deleteWeighIn, latestWeighIn, weighIns } from '../lib/bodyweight.js'
@@ -9,11 +8,7 @@ import { nav } from '../platform/nav.js'
 import Icon from '../components/Icon.jsx'
 import { Button, NumberField } from '../components/ui.jsx'
 import { confirmSheet } from './confirm.jsx'
-
-const S = () => useStore.getState().S
-const update = (...a) => useStore.getState().update(...a)
-const ui = () => useUI.getState()
-const toast = m => ui().toast(m)
+import { S, update, ui, toast } from './store-helpers.js'
 
 const W_LO = 1
 const W_STEP = 0.1
