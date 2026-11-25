@@ -46,7 +46,7 @@ beforeEach(() => {
     },
   ]
   st.exWeights = {
-    '0004': { w: 65 },
+    '0028': { w: 65 },
   }
   st.workouts = [
     {
@@ -54,7 +54,7 @@ beforeEach(() => {
       routineId: 'r-test-1',
       entries: [
         {
-          id: '0004',
+          id: '0028',
           target: { sets: 3, reps: 8, weight: 65, mode: 'reps' },
           sets: [{ w: 65, r: 8, done: true }],
         },
@@ -120,14 +120,14 @@ describe('RoutineEdit exercise replacement', () => {
     const pickerCallback = mocks.exercisePicker.mock.calls[0][0]
     expect(typeof pickerCallback).toBe('function')
 
-    const newEx = { id: '0004', n: 'Replacement Lift', bp: 'chest', tg: 'chest', eq: 'barbell' }
+    const newEx = { id: '0028', n: 'Replacement Lift', bp: 'chest', tg: 'chest', eq: 'barbell' }
     await act(async () => {
       pickerCallback(newEx)
     })
 
     expect(mocks.exConfigSheet).toHaveBeenCalledTimes(2)
     const [replEx, { existing: replExisting, onSave: replOnSave, initial: replInitial }] = mocks.exConfigSheet.mock.calls[1]
-    expect(replEx.id).toBe('0004')
+    expect(replEx.id).toBe('0028')
     expect(replExisting).toBeUndefined()
     expect(replInitial).toMatchObject({
       sets: 4,
@@ -141,7 +141,7 @@ describe('RoutineEdit exercise replacement', () => {
     const updatedRoutine = useStore.getState().S.routines.find(x => x.id === 'r-test-1')
     expect(updatedRoutine.ex.length).toBe(3)
     expect(updatedRoutine.ex[0]).toEqual({
-      id: '0004',
+      id: '0028',
       sg: 'sg-0-1',
       sets: 4,
       reps: 8,
@@ -193,7 +193,7 @@ describe('RoutineEdit exercise replacement', () => {
     })
 
     const pickerCallback = mocks.exercisePicker.mock.calls[0][0]
-    const newEx = { id: '0005', n: 'Another Lift', bp: 'back', tg: 'lats', eq: 'cable' }
+    const newEx = { id: '0029', n: 'Another Lift', bp: 'back', tg: 'lats', eq: 'cable' }
     await act(async () => {
       pickerCallback(newEx)
     })
@@ -208,7 +208,7 @@ describe('RoutineEdit exercise replacement', () => {
     const updatedRoutine = useStore.getState().S.routines.find(x => x.id === 'r-test-1')
     expect(updatedRoutine.ex.length).toBe(3)
     expect(updatedRoutine.ex[2]).toEqual({
-      id: '0005',
+      id: '0029',
       sets: 3,
       reps: 10,
       weight: 40,
@@ -286,7 +286,7 @@ describe('RoutineEdit exercise notes display and replacement', () => {
     })
 
     const pickerCallback = mocks.exercisePicker.mock.calls[0][0]
-    const newEx = { id: '0004', n: 'New Exercise', bp: 'chest', tg: 'chest', eq: 'barbell' }
+    const newEx = { id: '0028', n: 'New Exercise', bp: 'chest', tg: 'chest', eq: 'barbell' }
     await act(async () => {
       pickerCallback(newEx)
     })
@@ -300,7 +300,7 @@ describe('RoutineEdit exercise notes display and replacement', () => {
     })
 
     const updatedRoutine = useStore.getState().S.routines.find(x => x.id === 'r-test-1')
-    expect(updatedRoutine.ex[0].id).toBe('0004')
+    expect(updatedRoutine.ex[0].id).toBe('0028')
     expect(updatedRoutine.ex[0].notes).toBeUndefined()
   })
 })
