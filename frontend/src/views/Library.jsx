@@ -32,7 +32,7 @@ export default function Library() {
     equipment: eq,
     searchAttribution: !isFavFilter,
     ownFirst: true,
-  }), [S.customEx, S.favorites, S.routines, S.workouts, scope, q, eq])
+  }), [S, scope, q, eq, isFavFilter])
   return <div className="page">
     <div className="hdr"><div><h1>{t('Exercises')}</h1><div className="sub">{t('{0} exercises with animations', fmtNum(EXDB.length))}</div></div></div>
     <SearchField

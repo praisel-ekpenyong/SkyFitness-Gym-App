@@ -37,6 +37,11 @@ function applyPrefs(theme, accent) {
   if (meta) meta.content = de.dataset.theme === 'light' ? '#f3f3f0' : '#0a0a09'
 }
 
+// Kept out of Shell: the React Compiler cannot compile a dynamic import().
+const warmExerciseArt = () => import('./platform/media-warm.js')
+  .then(m => m.warmArt(m.exercisesToWarm(useStore.getState().S, todayISO())))
+  .catch(() => {})
+
 function Shell() {
   const navigate = useNavigate()
   const loc = useLocation()
@@ -57,9 +62,7 @@ function Shell() {
   }, [!!S.active])
   useEffect(() => {
     if (!ready) return
-    const go = () => import('./platform/media-warm.js')
-      .then(m => m.warmArt(m.exercisesToWarm(useStore.getState().S, todayISO())))
-      .catch(() => {})
+    const go = warmExerciseArt
     const h = window.requestIdleCallback ? window.requestIdleCallback(go, { timeout: 5000 }) : setTimeout(go, 3000)
     return () => (window.cancelIdleCallback ? window.cancelIdleCallback(h) : clearTimeout(h))
   }, [ready])

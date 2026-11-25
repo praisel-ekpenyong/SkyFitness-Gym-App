@@ -95,21 +95,11 @@
       "count": 2
     }
   },
-  "src/sheets/session.jsx": {
-    "react-hooks/refs": {
-      "count": 2
-    }
-  },
   "src/views/Home.jsx": {
     "no-restricted-syntax": {
       "count": 1
     },
     "react-hooks/purity": {
-      "count": 1
-    }
-  },
-  "src/views/Library.jsx": {
-    "react-hooks/memo-dependencies": {
       "count": 1
     }
   },

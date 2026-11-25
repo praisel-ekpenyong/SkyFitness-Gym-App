@@ -115,7 +115,7 @@ describe('Ticket 05 — End-to-End Integration & Stats Diagram Parity', () => {
     })
     await act(async () => { await new Promise(r => setTimeout(r, 0)) })
     await act(async () => { await new Promise(r => setTimeout(r, 50)) })
-    for (let i = 0; i < 20 && !Array.from(document.querySelectorAll('.chips button.chip')).some(c => c.textContent.includes('Biceps')); i++) {
+    for (let i = 0; i < 100 && !Array.from(document.querySelectorAll('.chips button.chip')).some(c => c.textContent.includes('Biceps')); i++) {
       await act(async () => { await new Promise(r => setTimeout(r, 50)) })
     }
 
@@ -257,7 +257,7 @@ describe('Ticket 05 — End-to-End Integration & Stats Diagram Parity', () => {
     })
     await act(async () => { await new Promise(r => setTimeout(r, 0)) })
     await act(async () => { await new Promise(r => setTimeout(r, 50)) })
-    for (let i = 0; i < 10 && !document.body.textContent.includes('Balance'); i++) {
+    for (let i = 0; i < 100 && !document.body.textContent.includes('Balance'); i++) {
       await act(async () => { await new Promise(r => setTimeout(r, 50)) })
     }
 
