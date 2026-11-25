@@ -209,6 +209,7 @@ export function CustomExForm({ existing, prefill, onDone, close }) {
         <button
           key={m}
           className={'chip nocap' + (primary === m ? ' on' : '')}
+          aria-pressed={primary === m}
           onClick={() => selectPrimary(m)}
         >
           {sentenceCase(t(MUSCLE_NAME[m] || m))}
@@ -230,6 +231,7 @@ export function CustomExForm({ existing, prefill, onDone, close }) {
               <button
                 key={m}
                 className={'chip nocap' + (on ? ' on' : '')}
+                aria-pressed={on}
                 onClick={() => toggleSecondary(m)}
               >
                 {sentenceCase(t(MUSCLE_NAME[m] || m))}
@@ -241,7 +243,7 @@ export function CustomExForm({ existing, prefill, onDone, close }) {
     ) : null}
 
     <div className="gap12" />
-    <textarea className="input" rows={4} maxLength={1000} placeholder={t('Description (optional) — setup, cues, anything you want to remember')}
+    <textarea className="input" rows={4} maxLength={1000} aria-label={t('Description')} placeholder={t('Description (optional) — setup, cues, anything you want to remember')}
       value={desc} onChange={e => setDesc(e.target.value)} />
     <div className="gap16" />
     <Button variant="primary" onClick={save}>{existing ? t('Save') : t('Create exercise')}</Button>
@@ -308,14 +310,14 @@ export function ExercisePicker({ onPick }) {
       onClear={() => { setQ(''); setShown(50) }}
     />
     <div className="chips picker-chips">
-      {(favCount > 0 || filter === 'favorites') && <button className={'chip chip-i' + (filter === 'favorites' ? ' on' : '')} onClick={() => { setFilter('favorites'); setEq(''); setShown(50) }}><Icon name="starFill" />{t('Favorites')} ({fmtNum(favCount)})</button>}
-      {(chosenCount > 0 || filter === '★') && <button className={'chip chip-i' + (filter === '★' ? ' on' : '')} onClick={() => { setFilter('★'); setEq(''); setShown(50) }}><Icon name="check" />{t('Chosen')} ({fmtNum(chosenCount)})</button>}
-      <button className={'chip nocap' + (!filter ? ' on' : '')} onClick={() => { setFilter(''); setEq(''); setShown(50) }}>{t('All')}</button>
-      {FILTER_MUSCLES.map(m => <button key={m} className={'chip nocap' + (filter === m ? ' on' : '')} onClick={() => { setFilter(m); setEq(''); setShown(50) }}>{sentenceCase(t(MUSCLE_NAME[m] || m))}</button>)}
+      {(favCount > 0 || filter === 'favorites') && <button className={'chip chip-i' + (filter === 'favorites' ? ' on' : '')} aria-pressed={filter === 'favorites'} onClick={() => { setFilter('favorites'); setEq(''); setShown(50) }}><Icon name="starFill" />{t('Favorites')} ({fmtNum(favCount)})</button>}
+      {(chosenCount > 0 || filter === '★') && <button className={'chip chip-i' + (filter === '★' ? ' on' : '')} aria-pressed={filter === '★'} onClick={() => { setFilter('★'); setEq(''); setShown(50) }}><Icon name="check" />{t('Chosen')} ({fmtNum(chosenCount)})</button>}
+      <button className={'chip nocap' + (!filter ? ' on' : '')} aria-pressed={!filter} onClick={() => { setFilter(''); setEq(''); setShown(50) }}>{t('All')}</button>
+      {FILTER_MUSCLES.map(m => <button key={m} className={'chip nocap' + (filter === m ? ' on' : '')} aria-pressed={filter === m} onClick={() => { setFilter(m); setEq(''); setShown(50) }}>{sentenceCase(t(MUSCLE_NAME[m] || m))}</button>)}
     </div>
     {eqOpts.length > 1 && <div className="chips picker-chips">
-      <button className={'chip nocap' + (!eqOn ? ' on' : '')} onClick={() => { setEq(''); setShown(50) }}>{t('Any equipment')}</button>
-      {eqOpts.map(x => <button key={x} className={'chip nocap' + (eqOn === x ? ' on' : '')} onClick={() => { setEq(x); setShown(50) }}>{sentenceCase(t(x))}</button>)}
+      <button className={'chip nocap' + (!eqOn ? ' on' : '')} aria-pressed={!eqOn} onClick={() => { setEq(''); setShown(50) }}>{t('Any equipment')}</button>
+      {eqOpts.map(x => <button key={x} className={'chip nocap' + (eqOn === x ? ' on' : '')} aria-pressed={eqOn === x} onClick={() => { setEq(x); setShown(50) }}>{sentenceCase(t(x))}</button>)}
     </div>}
     <div className="list">
       {filter !== '★' && <div className="item" role="button" tabIndex={0} onClick={() => customExSheet(null, ex => onPick(ex), q.trim())}

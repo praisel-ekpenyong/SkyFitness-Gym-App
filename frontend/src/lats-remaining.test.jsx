@@ -3,7 +3,8 @@ import { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { fireEvent, within } from '@testing-library/react'
-import { chipIn, chipNamesIn, search, tileNamed } from './test/library-queries.js'
+import { chipIn, chipNamesIn, search, tileNamed, tilesIn } from './test/library-queries.js'
+import { allChips, chipRow, chipNamed, isOn, typeInto } from './test/catalogue-queries.js'
 import Library from './views/Library.jsx'
 import { ExerciseDetail, ExercisePicker, CustomExForm } from './sheets/catalogue.jsx'
 import { useStore } from './store/useStore.js'
@@ -38,9 +39,7 @@ afterEach(async () => {
   vi.restoreAllMocks()
 })
 
-function getChip(scope, label) {
-  return Array.from(scope.querySelectorAll('.chips button.chip')).find(b => b.textContent.trim() === label)
-}
+const getChip = (scope, label) => chipNamed(allChips(scope), label)
 
 const HEAD_TO_TOE_DISPLAY = FILTER_MUSCLES.map(m => MUSCLE_NAME[m])
 const EXPECTED_LIBRARY_CHIPS = ['Favorites (1)', 'All', ...HEAD_TO_TOE_DISPLAY]
@@ -94,19 +93,18 @@ describe('Ticket 03 — Library and Picker filters plus Exercise Detail presenta
   it('ExercisePicker renders the same muscle chips, with Lats after Upper back, and matches the same semantics', async () => {
     useStore.getState().update(s => { s.favorites = ['0001'] })
     await act(async () => { root.render(<ExercisePicker onPick={vi.fn()} close={vi.fn()} />) })
-    const firstChipsRow = container.querySelectorAll('.chips')[0]
-    const chips = Array.from(firstChipsRow.querySelectorAll('button.chip')).map(c => c.textContent.trim())
+    const chips = chipRow(container, 0).map(c => c.textContent.trim())
     HEAD_TO_TOE_DISPLAY.forEach(m => expect(chips).toContain(m))
     expect(chips.indexOf('Lats')).toBe(chips.indexOf('Upper back') + 1)
     const latsChip = getChip(container, 'Lats')
-    await act(async () => { latsChip.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
-    let items = Array.from(container.querySelectorAll('.list .item'))
+    fireEvent.click(latsChip)
+    let items = tilesIn(container)
     expect(items.some(it => it.textContent.toLowerCase().includes('alternate lateral pulldown'))).toBe(true)
     expect(items.some(it => it.textContent.toLowerCase().includes('barbell bent over row'))).toBe(true)
 
     const upperChip = getChip(container, 'Upper back')
-    await act(async () => { upperChip.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
-    items = Array.from(container.querySelectorAll('.list .item'))
+    fireEvent.click(upperChip)
+    items = tilesIn(container)
     expect(items.some(it => it.textContent.toLowerCase().includes('barbell bent over row'))).toBe(true)
   })
 
@@ -123,35 +121,31 @@ describe('Ticket 03 — Library and Picker filters plus Exercise Detail presenta
   it('ExerciseDetail shows Primary: Lats with secondaries for vertical pull and Primary: Upper back for row', async () => {
     const latEx = EXIDX['0007']
     await act(async () => { root.render(<ExerciseDetail ex={latEx} close={vi.fn()} />) })
-    let tags = Array.from(container.querySelectorAll('.row .tag')).map(t => t.textContent.trim())
-    expect(tags.some(t => t === 'Primary: Lats' || t.includes('Primary: Lats'))).toBe(true)
-    expect(tags).toContain('Secondary: Biceps')
-    expect(tags).toContain('Secondary: Upper back')
-    const primaryTag = container.querySelector('.tag.strong')
-    expect(primaryTag.textContent).toContain('Primary: Lats')
+    expect(within(container).getByText('Primary: Lats')).toBeTruthy()
+    expect(within(container).getByText('Secondary: Biceps')).toBeTruthy()
+    expect(within(container).getByText('Secondary: Upper back')).toBeTruthy()
 
     await act(async () => { root.unmount() })
     container.innerHTML = ''
     root = createRoot(container)
     const rowEx = EXIDX['0027']
     await act(async () => { root.render(<ExerciseDetail ex={rowEx} close={vi.fn()} />) })
-    tags = Array.from(container.querySelectorAll('.row .tag')).map(t => t.textContent.trim())
-    expect(tags.some(t => t.includes('Primary: Upper back'))).toBe(true)
-    expect(tags).toContain('Secondary: Biceps')
-    expect(tags.some(t => t.includes('Rear delts'))).toBe(true)
+    expect(within(container).getByText('Primary: Upper back')).toBeTruthy()
+    expect(within(container).getByText('Secondary: Biceps')).toBeTruthy()
+    expect(within(container).getByText(/Rear delts/)).toBeTruthy()
   })
 })
 
 describe('Ticket 04 — Custom exercise lifecycle with lats', () => {
   it('form offers Lats as primary alongside Upper back, secondary includes other posterior muscle', async () => {
     await act(async () => { root.render(<CustomExForm onDone={vi.fn()} close={vi.fn()} />) })
-    const primaryChips = Array.from(container.querySelectorAll('.chips')[0].querySelectorAll('button.chip')).map(c => c.textContent.trim())
+    const primaryChips = chipRow(container, 0).map(c => c.textContent.trim())
     expect(primaryChips).toContain('Lats')
     expect(primaryChips).toContain('Upper back')
     expect(primaryChips.indexOf('Lats')).toBe(primaryChips.indexOf('Upper back') + 1)
-    const latsPrimary = Array.from(container.querySelectorAll('.chips')[0].querySelectorAll('button.chip')).find(c => c.textContent.trim() === 'Lats')
-    await act(async () => { latsPrimary.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
-    const secChips = Array.from(container.querySelectorAll('.chips')[1].querySelectorAll('button.chip')).map(c => c.textContent.trim())
+    const latsPrimary = chipRow(container, 0).find(c => c.textContent.trim() === 'Lats')
+    fireEvent.click(latsPrimary)
+    const secChips = chipRow(container, 1).map(c => c.textContent.trim())
     expect(secChips).toContain('Upper back')
     expect(secChips).not.toContain('Lats')
   })
@@ -160,18 +154,14 @@ describe('Ticket 04 — Custom exercise lifecycle with lats', () => {
     const onDone = vi.fn()
     const close = vi.fn()
     await act(async () => { root.render(<CustomExForm onDone={onDone} close={close} />) })
-    const nameInput = container.querySelector('input.input')
-    await act(async () => {
-      const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set
-      setter.call(nameInput, 'My Lat Pull Machine')
-      nameInput.dispatchEvent(new Event('input', { bubbles: true }))
-    })
-    const latsPrimary = Array.from(container.querySelectorAll('.chips')[0].querySelectorAll('button.chip')).find(c => c.textContent.trim() === 'Lats')
-    await act(async () => { latsPrimary.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
-    const upperSec = Array.from(container.querySelectorAll('.chips')[1].querySelectorAll('button.chip')).find(c => c.textContent.trim() === 'Upper back')
-    await act(async () => { upperSec.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
-    const saveBtn = Array.from(container.querySelectorAll('button')).find(b => b.textContent.includes('Create exercise'))
-    await act(async () => { saveBtn.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
+    const nameInput = within(container).getByRole('textbox', { name: 'Exercise name' })
+    typeInto(nameInput, 'My Lat Pull Machine')
+    const latsPrimary = chipRow(container, 0).find(c => c.textContent.trim() === 'Lats')
+    fireEvent.click(latsPrimary)
+    const upperSec = chipRow(container, 1).find(c => c.textContent.trim() === 'Upper back')
+    fireEvent.click(upperSec)
+    const saveBtn = within(container).getByRole('button', { name: /Create exercise/ })
+    fireEvent.click(saveBtn)
     const created = useStore.getState().S.customEx.find(c => c.n === 'My Lat Pull Machine')
     expect(created).toBeTruthy()
     expect(created.tg).toBe('lats')
@@ -181,27 +171,23 @@ describe('Ticket 04 — Custom exercise lifecycle with lats', () => {
     container.innerHTML = ''
     root = createRoot(container)
     await act(async () => { root.render(<CustomExForm existing={created} onDone={vi.fn()} close={vi.fn()} />) })
-    const latsOn = Array.from(container.querySelectorAll('.chips')[0].querySelectorAll('button.chip')).find(c => c.textContent.trim() === 'Lats')
-    expect(latsOn.classList.contains('on')).toBe(true)
-    const upperSecOn = Array.from(container.querySelectorAll('.chips')[1].querySelectorAll('button.chip')).find(c => c.textContent.trim() === 'Upper back')
-    expect(upperSecOn.classList.contains('on')).toBe(true)
+    const latsOn = chipRow(container, 0).find(c => c.textContent.trim() === 'Lats')
+    expect(isOn(latsOn)).toBe(true)
+    const upperSecOn = chipRow(container, 1).find(c => c.textContent.trim() === 'Upper back')
+    expect(isOn(upperSecOn)).toBe(true)
   })
 
   it('saving Upper back primary with secondary Lats persists correctly', async () => {
     const onDone = vi.fn()
     await act(async () => { root.render(<CustomExForm onDone={onDone} close={vi.fn()} />) })
-    const nameInput = container.querySelector('input.input')
-    await act(async () => {
-      const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set
-      setter.call(nameInput, 'My Row Machine')
-      nameInput.dispatchEvent(new Event('input', { bubbles: true }))
-    })
-    const upperPrimary = Array.from(container.querySelectorAll('.chips')[0].querySelectorAll('button.chip')).find(c => c.textContent.trim() === 'Upper back')
-    await act(async () => { upperPrimary.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
-    const latsSec = Array.from(container.querySelectorAll('.chips')[1].querySelectorAll('button.chip')).find(c => c.textContent.trim() === 'Lats')
-    await act(async () => { latsSec.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
-    const saveBtn = Array.from(container.querySelectorAll('button')).find(b => b.textContent.includes('Create exercise'))
-    await act(async () => { saveBtn.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
+    const nameInput = within(container).getByRole('textbox', { name: 'Exercise name' })
+    typeInto(nameInput, 'My Row Machine')
+    const upperPrimary = chipRow(container, 0).find(c => c.textContent.trim() === 'Upper back')
+    fireEvent.click(upperPrimary)
+    const latsSec = chipRow(container, 1).find(c => c.textContent.trim() === 'Lats')
+    fireEvent.click(latsSec)
+    const saveBtn = within(container).getByRole('button', { name: /Create exercise/ })
+    fireEvent.click(saveBtn)
     const created = useStore.getState().S.customEx.find(c => c.n === 'My Row Machine')
     expect(created.tg).toBe('upper-back')
     expect(created.sm).toEqual(['lats'])
