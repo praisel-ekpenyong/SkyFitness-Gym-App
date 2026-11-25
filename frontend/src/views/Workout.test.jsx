@@ -1,38 +1,13 @@
 // @vitest-environment happy-dom
-import React, { act } from 'react'
-import { createRoot } from 'react-dom/client'
-import { parseHTML } from 'linkedom'
+import { act } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import Workout from './Workout.jsx'
-import { ExerciseNoteSheet } from '../sheets/session.jsx'
 import { useStore } from '../store/useStore.js'
-import { normalizeState } from '../lib/profile/index.js'
+import { useUI } from '../store/useUI.js'
+import { resetViewTestState, renderWorkoutApp, cleanupViewTest } from '../test/view-harness.jsx'
 
-const mocks = vi.hoisted(() => ({
-  workoutCompleteSheet: vi.fn(),
-  exerciseNoteSheet: vi.fn(),
-}))
+globalThis.IS_REACT_ACT_ENVIRONMENT = true
 
-vi.mock('react-router-dom', () => ({ useNavigate: () => () => {} }))
-vi.mock('../sheets/session.jsx', async importOriginal => ({
-  ExerciseNoteSheet: (await importOriginal()).ExerciseNoteSheet,
-  startFlow: vi.fn(),
-  finishWorkout: vi.fn(),
-  workoutCompleteSheet: mocks.workoutCompleteSheet,
-  exerciseNoteSheet: mocks.exerciseNoteSheet,
-  replaceActiveExerciseFlow: vi.fn(),
-}))
-vi.mock('../sheets/catalogue.jsx', () => ({
-  exercisePicker: vi.fn(),
-  exConfigSheet: vi.fn(),
-  exerciseDetailSheet: vi.fn(),
-}))
-vi.mock('../sheets/confirm.jsx', () => ({ confirmSheet: vi.fn() }))
-vi.mock('../components/Media.jsx', () => ({ default: () => null }))
-
-let dom
-let root
-let container
+let view
 
 function exercise(id, sets, extra = {}) {
   return {
@@ -43,51 +18,35 @@ function exercise(id, sets, extra = {}) {
   }
 }
 
-function workout(entries, cur = 0) {
-  return {
-    unit: 'kg', restSec: 90, sound: false, effort: 'none', gifSize: 'full',
-    workouts: [], exWeights: {}, routines: [],
-    active: { id: 'active', name: 'Test workout', start: Date.now(), cur, entries },
-  }
-}
+const click = el => act(() => { el.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
+const press = (el, key) => act(() => { el.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true })) })
+const byLabel = label => view.container.querySelector(`button[aria-label="${label}"]`)
+const noteButton = name => [...view.container.querySelectorAll('[role="dialog"] button')].find(b => b.textContent.includes(name))
+const openSheets = () => useUI.getState().sheets
+const activeEntry = () => useStore.getState().S.active.entries[0]
 
-function installDom() {
-  const parsed = parseHTML('<!doctype html><html><body><div id="root"></div></body></html>')
-  dom = parsed.window
-  globalThis.window = dom
-  globalThis.document = dom.document
-  Object.defineProperty(globalThis, 'navigator', { configurable: true, value: dom.navigator })
-  for (const key of ['HTMLElement', 'Node', 'Element', 'Event', 'Blob']) globalThis[key] = dom[key]
-  globalThis.IS_REACT_ACT_ENVIRONMENT = true
-  container = document.getElementById('root')
-  root = createRoot(container)
-}
-
-async function mount(entries, cur = 0) {
-  useStore.setState({ S: normalizeState(workout(entries, cur), Date.now()) })
-  installDom()
-  await act(async () => { root.render(React.createElement(Workout)) })
-}
-
-async function unmount() {
-  if (!root) return
-  await act(async () => { root.unmount() })
-  root = null
-  container = null
-  dom = null
+function typeInto(textarea, value) {
+  const setValue = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set
+  act(() => {
+    setValue.call(textarea, value)
+    textarea.dispatchEvent(new Event('input', { bubbles: true }))
+  })
 }
 
 beforeEach(() => {
-  vi.clearAllMocks()
+  vi.useFakeTimers()
+  resetViewTestState()
+  view = null
 })
 
-afterEach(async () => {
-  await unmount()
+afterEach(() => {
+  cleanupViewTest(view)
+  view = null
 })
 
 describe('header and finish button share one progress reading', () => {
-  it('an unticked warm-up neither stalls the button nor fakes an unchecked set', async () => {
-    await mount([{
+  it('an unticked warm-up neither stalls the button nor fakes an unchecked set', () => {
+    view = renderWorkoutApp([{
       id: '0025',
       target: { mode: 'reps', reps: 5, weight: 100, bodyweight: false },
       sets: [
@@ -97,36 +56,36 @@ describe('header and finish button share one progress reading', () => {
       ],
     }])
 
-    expect(container.querySelector('.hdr .sub')?.textContent).toContain('2/2 sets')
+    expect(view.container.querySelector('.hdr .sub')?.textContent).toContain('2/2 sets')
 
-    const finish = container.querySelector('.wk-hdr button[aria-label="Finish"]')
+    const finish = view.container.querySelector('.wk-hdr button[aria-label="Finish"]')
     expect(finish).toBeTruthy()
     expect(finish.classList.contains('done')).toBe(true)
     expect(finish.classList.contains('go')).toBe(false)
 
-    await act(async () => { finish.dispatchEvent(new dom.Event('click', { bubbles: true })) })
-    const { finishWorkout } = await import('../sheets/session.jsx')
-    expect(finishWorkout).toHaveBeenCalledOnce()
+    click(finish)
+    expect(useStore.getState().S.active).toBeFalsy()
+    expect(useStore.getState().S.workouts).toHaveLength(1)
   })
 })
 
 describe('workout screen hierarchy', () => {
-  it('carries progress in the segments and the header count, with no "Exercise N / M" line', async () => {
-    await mount([exercise('0025', [false, false]), exercise('0047', [false])])
+  it('carries progress in the segments and the header count, with no "Exercise N / M" line', () => {
+    view = renderWorkoutApp([exercise('0025', [false, false]), exercise('0047', [false])])
 
-    expect(container.textContent).not.toMatch(/Exercise \d+ \/ \d+/)
-    const segs = [...container.querySelectorAll('.lad-s')]
+    expect(view.container.textContent).not.toMatch(/Exercise \d+ \/ \d+/)
+    const segs = [...view.container.querySelectorAll('.lad-s')]
     expect(segs.length).toBe(2)
     expect(segs[0].getAttribute('aria-label')).toMatch(/^Go to /)
     expect(segs[0].getAttribute('aria-current')).toBe('step')
-    expect(container.querySelector('.hdr .sub')?.textContent).toContain('0/3 sets')
+    expect(view.container.querySelector('.hdr .sub')?.textContent).toContain('0/3 sets')
   })
 
-  it('draws Note, Replace and Details as small keys with an icon and a word', async () => {
-    await mount([exercise('0025', [false])])
+  it('draws Note, Replace and Details as small keys with an icon and a word', () => {
+    view = renderWorkoutApp([exercise('0025', [false])])
 
     for (const [name, word] of [['Add note', 'Note'], ['Replace exercise', 'Replace'], ['Details', 'Details']]) {
-      const key = container.querySelector(`button[aria-label="${name}"]`)
+      const key = byLabel(name)
       expect(key, name).toBeTruthy()
       expect(key.classList.contains('btn'), name).toBe(true)
       expect(key.classList.contains('xs'), name).toBe(true)
@@ -135,140 +94,84 @@ describe('workout screen hierarchy', () => {
     }
   })
 
-  it('offers Finish once, in the header, neutral while sets remain; the footer keeps Discard only', async () => {
-    await mount([exercise('0025', [true, false]), exercise('0047', [false])])
+  it('offers Finish once, in the header, neutral while sets remain; the footer keeps Discard only', () => {
+    view = renderWorkoutApp([exercise('0025', [true, false]), exercise('0047', [false])])
 
-    const finishes = [...container.querySelectorAll('button')].filter(b => /finish/i.test(b.getAttribute('aria-label') || b.textContent))
+    const finishes = [...view.container.querySelectorAll('button')].filter(b => /finish/i.test(b.getAttribute('aria-label') || b.textContent))
     expect(finishes.length).toBe(1)
     expect(finishes[0].closest('.wk-hdr')).toBeTruthy()
     expect(finishes[0].classList.contains('done')).toBe(false)
     expect(finishes[0].classList.contains('go')).toBe(false)
-    expect(container.textContent).not.toContain('Finish workout early')
-    expect(container.querySelector('button.wk-discard')?.textContent).toBe('Discard workout')
-    expect(container.querySelector('button.wk-discard')?.hasAttribute('aria-label')).toBe(false)
+    expect(view.container.textContent).not.toContain('Finish workout early')
+    expect(view.container.querySelector('button.wk-discard')?.textContent).toBe('Discard workout')
+    expect(view.container.querySelector('button.wk-discard')?.hasAttribute('aria-label')).toBe(false)
   })
 })
 
 describe('Workout exercise notes and note sheet', () => {
-  it('renders note callout above set table when entry.notes is present', async () => {
-    await mount([exercise('0025', [false], { notes: 'Seat height 5, pin 8' })])
+  it('renders note callout above set table when entry.notes is present', () => {
+    view = renderWorkoutApp([exercise('0025', [false], { notes: 'Seat height 5, pin 8' })])
 
-    const callout = container.querySelector('.exnote')
+    const callout = view.container.querySelector('.exnote')
     expect(callout).not.toBeNull()
     expect(callout.textContent).toContain('Seat height 5, pin 8')
     expect(callout.getAttribute('role')).toBe('button')
     expect(callout.getAttribute('aria-label')).toBe('Edit note')
-
-    const headerBtn = container.querySelector('button[aria-label="Add note"]')
-    expect(headerBtn).toBeNull()
+    expect(byLabel('Add note')).toBeNull()
   })
 
-  it('renders a labelled add note button in header when entry.notes is empty, without note callout', async () => {
-    await mount([exercise('0025', [false])])
+  it('renders a labelled add note button in header when entry.notes is empty, without note callout', () => {
+    view = renderWorkoutApp([exercise('0025', [false])])
 
-    expect(container.querySelector('.exnote')).toBeNull()
-
-    const headerBtn = container.querySelector('button[aria-label="Add note"]')
-    expect(headerBtn).not.toBeNull()
-    expect(headerBtn.textContent).toBe('Note')
+    expect(view.container.querySelector('.exnote')).toBeNull()
+    expect(byLabel('Add note')?.textContent).toBe('Note')
   })
 
-  it('tapping note callout opens exerciseNoteSheet', async () => {
-    await mount([exercise('0025', [false], { notes: 'Focus on chest squeeze' })])
+  it('tapping the note callout, or pressing Enter or Space on it, opens the note sheet for that exercise', () => {
+    view = renderWorkoutApp([exercise('0025', [false], { notes: 'Focus on chest squeeze' })])
+    const callout = view.container.querySelector('.exnote')
 
-    const callout = container.querySelector('.exnote')
-    await act(async () => {
-      callout.dispatchEvent(new dom.Event('click', { bubbles: true }))
-    })
-    expect(mocks.exerciseNoteSheet).toHaveBeenCalledWith(0)
-
-    mocks.exerciseNoteSheet.mockClear()
-
-    const enterEv = new dom.Event('keydown', { bubbles: true })
-    enterEv.key = 'Enter'
-    await act(async () => {
-      callout.dispatchEvent(enterEv)
-    })
-    expect(mocks.exerciseNoteSheet).toHaveBeenCalledWith(0)
-
-    mocks.exerciseNoteSheet.mockClear()
-
-    const spaceEv = new dom.Event('keydown', { bubbles: true })
-    spaceEv.key = ' '
-    await act(async () => {
-      callout.dispatchEvent(spaceEv)
-    })
-    expect(mocks.exerciseNoteSheet).toHaveBeenCalledWith(0)
+    for (const open of [() => click(callout), () => press(callout, 'Enter'), () => press(callout, ' ')]) {
+      expect(openSheets()).toHaveLength(0)
+      open()
+      expect(openSheets()).toHaveLength(1)
+      expect(view.container.querySelector('[role="dialog"] h3')?.textContent).toContain('Note ·')
+      expect(view.container.querySelector('[role="dialog"] textarea').value).toBe('Focus on chest squeeze')
+      act(() => useUI.getState().closeSheet(openSheets()[0].id))
+    }
   })
 
-  it('tapping header note button when note is empty opens exerciseNoteSheet', async () => {
-    await mount([exercise('0025', [false])])
+  it('tapping the header note button when the note is empty opens an empty note sheet', () => {
+    view = renderWorkoutApp([exercise('0025', [false])])
 
-    const headerBtn = container.querySelector('button[aria-label="Add note"]')
-    await act(async () => {
-      headerBtn.dispatchEvent(new dom.Event('click', { bubbles: true }))
-    })
-    expect(mocks.exerciseNoteSheet).toHaveBeenCalledWith(0)
+    click(byLabel('Add note'))
+    expect(view.container.querySelector('[role="dialog"] h3')?.textContent).toContain('Note ·')
+    expect(view.container.querySelector('[role="dialog"] textarea').value).toBe('')
   })
 
-  it('ExerciseNoteSheet edits and saves note, updating active entry in store', async () => {
-    await mount([exercise('0025', [false], { notes: 'Old cue' })])
-    const close = vi.fn()
+  it('the note sheet edits and saves the note onto the active entry, then closes', () => {
+    view = renderWorkoutApp([exercise('0025', [false], { notes: 'Old cue' })])
+    click(view.container.querySelector('.exnote'))
 
-    await act(async () => {
-      root.render(React.createElement(ExerciseNoteSheet, { entryIdx: 0, close }))
-    })
-
-    expect(container.querySelector('h3')?.textContent).toContain('Note ·')
-
-    const textarea = container.querySelector('textarea')
-    expect(textarea).not.toBeNull()
-    expect(textarea.value).toBe('Old cue')
+    const textarea = view.container.querySelector('[role="dialog"] textarea')
     expect(textarea.getAttribute('aria-label')).toBe('Exercise note')
     expect(textarea.getAttribute('placeholder')).toBe('Notes, cues, or machine setup…')
-    expect(textarea.getAttribute('maxLength') || textarea.getAttribute('maxlength')).toBe('500')
+    expect(textarea.getAttribute('maxlength')).toBe('500')
 
-    await act(async () => {
-      const reactPropsKey = Object.keys(textarea).find(k => k.startsWith('__reactProps$'))
-      if (reactPropsKey && textarea[reactPropsKey]?.onChange) {
-        textarea[reactPropsKey].onChange({ target: { value: 'Seat height 6, pin 9' } })
-      } else {
-        textarea.value = 'Seat height 6, pin 9'
-        textarea.dispatchEvent(new dom.Event('input', { bubbles: true }))
-        textarea.dispatchEvent(new dom.Event('change', { bubbles: true }))
-      }
-    })
+    typeInto(textarea, 'Seat height 6, pin 9')
+    expect(view.container.querySelector('[role="dialog"]').textContent).toContain('20/500')
 
-    expect(container.textContent).toContain('20/500')
-
-    const saveBtn = Array.from(container.querySelectorAll('button')).find(b => b.textContent.includes('Save note'))
-    expect(saveBtn).not.toBeNull()
-    await act(async () => {
-      saveBtn.dispatchEvent(new dom.Event('click', { bubbles: true }))
-    })
-
-    expect(useStore.getState().S.active.entries[0].notes).toBe('Seat height 6, pin 9')
-    expect(close).toHaveBeenCalledOnce()
+    click(noteButton('Save note'))
+    expect(activeEntry().notes).toBe('Seat height 6, pin 9')
+    expect(openSheets()).toHaveLength(0)
   })
 
-  it('ExerciseNoteSheet clears note, removing it from active entry in store', async () => {
-    await mount([exercise('0025', [false], { notes: 'Temporary cue to clear' })])
-    const close = vi.fn()
+  it('the note sheet clears the note off the active entry, then closes', () => {
+    view = renderWorkoutApp([exercise('0025', [false], { notes: 'Temporary cue to clear' })])
+    click(view.container.querySelector('.exnote'))
 
-    await act(async () => {
-      root.render(React.createElement(ExerciseNoteSheet, { entryIdx: 0, close }))
-    })
-
-    const clearBtn = Array.from(container.querySelectorAll('button')).find(b => b.textContent.includes('Clear note'))
-    expect(clearBtn).not.toBeNull()
-
-    await act(async () => {
-      clearBtn.dispatchEvent(new dom.Event('click', { bubbles: true }))
-    })
-
-    expect(useStore.getState().S.active.entries[0].notes).toBeUndefined()
-    expect(close).toHaveBeenCalledOnce()
+    click(noteButton('Clear note'))
+    expect(activeEntry().notes).toBeUndefined()
+    expect(openSheets()).toHaveLength(0)
   })
-
 })
-
