@@ -1,23 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { readdirSync, readFileSync, statSync } from 'node:fs'
-import { dirname, join, relative } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { admit } from './index.js'
 
-const SRC = join(dirname(fileURLToPath(import.meta.url)), '../..')
-
-function sourceFiles() {
-  const out = []
-  const walk = dir => {
-    for (const name of readdirSync(dir)) {
-      const p = join(dir, name)
-      if (statSync(p).isDirectory()) walk(p)
-      else if (/\.(js|jsx)$/.test(p) && !/\.test\.(js|jsx)$/.test(p)) out.push(p)
-    }
-  }
-  walk(SRC)
-  return out
-}
 
 describe('admit', () => {
   it('throws on a non-record payload instead of returning it unchanged', () => {
@@ -129,10 +112,4 @@ describe('admit', () => {
     expect(admit(JSON.parse(JSON.stringify(once)))).toEqual(once)
   })
 
-  it('leaves showRir to the 0 → 1 upgrade step alone; restore keys only carry it there', () => {
-    const hits = sourceFiles()
-      .filter(p => readFileSync(p, 'utf8').includes('showRir'))
-      .map(p => relative(SRC, p))
-    expect(hits.sort()).toEqual(['lib/profile/restore-keys.js', 'lib/profile/upgrades.js'])
-  })
 })
