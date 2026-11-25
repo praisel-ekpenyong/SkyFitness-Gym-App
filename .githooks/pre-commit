@@ -1,4 +1,25 @@
 #!/bin/sh
+# The full suite runs in CI (.github/workflows/test.yml). On commit: the lint
+# and type ratchets, the tests the staged files reach by import, and every test
+# that reads files from disk, which no import graph reaches. Parallel
+# worktrees each running the full suite starve the slow App tests into timeouts.
 
 cd frontend || exit 1
-node scripts/check-lint-baseline.mjs && npm run typecheck && npm test
+node scripts/check-lint-baseline.mjs && npm run typecheck || exit 1
+
+staged=$(git diff --cached --name-only --diff-filter=ACMR | sed 's|^|../|')
+[ -n "$staged" ] || exit 0
+
+case "$staged" in
+  *frontend/package.json*|*frontend/package-lock.json*|*frontend/vite.config.*)
+    exec npm test ;;
+esac
+
+reads_disk="readFileSync|readdirSync|ls-files|from '(node:)?fs'|globSync|import\.meta\.glob"
+# A test can read disk through a shared helper in src/test/ (design-css.js).
+helpers=$(grep -lE "$reads_disk" src/test/* | sed 's|.*/||; s|\.[^.]*$||' | paste -sd'|')
+[ -n "$helpers" ] && reads_disk="$reads_disk|test/($helpers)"
+disk_tests=$(grep -rlE "$reads_disk" src scripts ../scripts --include='*.test.*')
+
+# shellcheck disable=SC2086
+exec npx vitest related --run --passWithNoTests $staged $disk_tests

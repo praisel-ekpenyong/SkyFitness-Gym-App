@@ -13,7 +13,7 @@ of breath, so on the screens read from the bench the number is the largest thing
 
 ## The tests are the rules
 
-This file explains the rules; two tests hold them, and `npm test` (the pre-commit hook) runs both.
+This file explains the rules; two tests hold them, and `npm test` and the pre-commit hook run both.
 Each failure names the rule it breaks and the section of this file to read.
 
 - **G1, `frontend/src/design-tokens.test.js`** reads `styles/tokens.css` the way the browser

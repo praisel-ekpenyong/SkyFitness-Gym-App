@@ -143,7 +143,7 @@ Red flags:
   hand-built argument, when `act` itself is where the rule lives. Test `act`.
   Leave the view test for the wiring.
 - A test that runs `git` without `cwd` set to the repo root. The pre-commit
-  hook (`.githooks/pre-commit`) runs `npm test` from `frontend/` with
+  hook (`.githooks/pre-commit`) runs Vitest from `frontend/` with
   `GIT_DIR` set, so git takes the working directory as the top and
   `git ls-files` prints paths from the root. The test passes alone and fails
   on commit. `docs.test.js` and `comments.test.js` show the fix.
