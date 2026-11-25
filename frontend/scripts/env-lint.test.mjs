@@ -10,9 +10,20 @@ async function lint(code, path) {
   return r.messages.filter(m => m.ruleId === 'no-restricted-syntax')
 }
 
+async function globals(code, path) {
+  const [r] = await eslint.lintText(code, { filePath: join(root, path) })
+  return r.messages.filter(m => m.ruleId === 'no-restricted-globals')
+}
+
 describe('environment selectors', { timeout: 60000 }, () => {
   it('fail an environment read in an ordinary src file', async () => {
     expect(await lint('export const a = import.meta.env.MODE\nexport const b = process.env.X\n', 'src/views/Fixture.jsx')).toHaveLength(2)
+  })
+
+  it('fail a bare __dirname global, not just a shim declaration', async () => {
+    const hits = await globals('export const d = __dirname\n', 'src/views/Fixture.test.jsx')
+    expect(hits).toHaveLength(1)
+    expect(hits[0].message).toMatch(/__dirname is CommonJS/)
   })
 
   it.each([

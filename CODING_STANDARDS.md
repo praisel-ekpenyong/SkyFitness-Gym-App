@@ -24,8 +24,8 @@ in review. Each rule is an imperative that names its one legal exception, and a
   runs the same ratchet as the first half of `npm run lint`. A rule oxlint
   supports goes in oxlint. Today it runs its `correctness` category (in place of
   `@eslint/js` recommended, with `no-unused-vars` and `no-empty` keeping
-  ESLint's old options), `react/rules-of-hooks`, `react/exhaustive-deps` and the
-  type-aware `typescript/*` rows (see "What runs"), all at error, tests
+  ESLint's old options — see the 2026-11-25 carve-out below), `react/rules-of-hooks`,
+  `react/exhaustive-deps` and the type-aware `typescript/*` rows (see "What runs"), all at error, tests
   excluded. The ratchet runs oxlint with `--type-aware` against
   `frontend/tsconfig.json` through `oxlint-tsgolint` (pinned at 7.0.2008, the
   version oxlint 1.95.0 asks for). The `typescript` plugin brings its own
@@ -43,12 +43,15 @@ in review. Each rule is an imperative that names its one legal exception, and a
   `react-hooks/todo` stays off. The `no-restricted-syntax` selectors run from
   one table in `frontend/eslint.config.js`, with their hits baselined in the same
   suppressions file. A rule runs in one tool, never two.
+
 - **tsc** (strict, `allowJs`, `checkJs`, `frontend/tsconfig.json`) runs in the
   pre-commit hook and in CI (`npm run typecheck`, ratcheted by
   `frontend/tsc-baseline.json` via `frontend/scripts/check-tsc-baseline.mjs`).
   oxlint's type-aware rows run against the same `tsconfig.json`.
 - **Vitest guard tests** (`npm test`) and `frontend/scripts/check-*.mjs`
   scripts cover what no linter can express.
+
+**Amendment 2026-11-25 (`eslint/no-unused-vars` carve-out, closing the count gap from issue #102).** The historical line "recount `no-unused-vars` under `correctness` and baseline the 24 probe hits" is **superseded** and must not be followed. `frontend/.oxlintrc.json` keeps ESLint's old options for the rule (`args: none`, `caughtErrors: none`, `ignoreRestSiblings: true`), so the configured rule reports 0 hits and has no entry in `frontend/lint-baseline.json`. Do not seed 24 entries by hand: a recorded count above the configured rule's real count is stale, and every ratchet fails on a stale entry ([ADR 0034 amendment 2026-11-25](./docs/adr/0034-oxlint-and-eslint-with-per-tool-ratchets.md)).
 
 Where today's code is over the bar, the check is a ratchet, and each tool has
 one format. Every ratchet fails on a new hit, and fails on a stale entry (a
@@ -312,6 +315,7 @@ or JSON backup restore — must pass through `admit` in
 - Runs ordered schema upgrade migrations (`UPGRADES`).
 - Refuses newer schema versions by throwing `NewerProfileError`.
 - Sorts workouts into canonical training-log order.
+- Sanitizes the stored `unit` to `kg` or `lb` at the boundary, so no reader sees an invalid unit.
 - Throws on a non-record payload instead of returning it as a Profile.
 
 Never inject raw objects directly into the store or storage. Exception: a CSV
@@ -865,7 +869,7 @@ names every one:
 |---|---|---|
 | Vitest guard tests, in `npm test` | `purity.test.js`, `import-cycles.test.js`, `design-tokens.test.js`, `design-lint.test.js`, `env.test.js`, `i18n-lint.test.js`, `sheets/dialog-names.test.jsx`, `docs.test.js`, `platform/storage.test.js` (the 800ms debounce), `comments.test.js`, `effect-types.test.js`, the `warmArt` test (`App.warm-art.test.jsx`), the `flush()` test (`store/useStore.flush.test.jsx`), the save round-trip tests (`sheets/catalogue.test.jsx`, `views/RoutineEdit.test.jsx`), `lib/profile/profile-keys.test.js` | |
 | ESLint 10, `npm run lint` after the oxlint ratchet (CI only) | `react-hooks/set-state-in-effect`, `react-hooks/no-deriving-state-in-effects`, `react-hooks/set-state-in-render`, `react-hooks/immutability`, `react-hooks/preserve-manual-memoization`, `react-hooks/globals`, all at error, 0 hits. `static-components` (9 hits, 2 files) and `purity` (5), at error with `frontend/eslint-suppressions.json`. `react-hooks/todo` stays off. `no-restricted-syntax` selectors, one table in `frontend/eslint.config.js`: One-owner (`LB_TO_KG` and the `2.2046` and `0.4535` literals at 0 suppressions, inline `Math.round(x * 10) / 10`, `(getDay() + 6) % 7`, `\|\| 'kg'`), `% 60`, local dates, store selectors, the `lib/` clock, `import.meta.env` and `process.env`, the CommonJS shim, and `vi.mock` scope in tests. Ratchet: `frontend/eslint-suppressions.json` | nothing |
-| oxlint, ratchet in the pre-commit hook and in `npm run lint` (CI) | `correctness` category, `react/rules-of-hooks`, `react/exhaustive-deps`, `no-throw-literal`, `prefer-promise-reject-errors`, `complexity`, restricted globals and properties (including `Date.now` in `lib/`), `unicorn/no-array-sort`, `unicorn/no-array-reverse`, `react/no-array-index-key`, `jsx-a11y/click-events-have-key-events`, `jsx-a11y/no-static-element-interactions`, `jsx-a11y/prefer-tag-over-role`, `jsx-a11y/no-autofocus`, all at error. Ratchet: `frontend/lint-baseline.json`, checked by `scripts/check-lint-baseline.mjs` with its failing fixture in `npm test` | nothing |
+| oxlint, ratchet in the pre-commit hook and in `npm run lint` (CI) | `correctness` category (with the dated `no-unused-vars` carve-out: 0 hits, no baseline entry; the old "baseline the 24 probe hits" line is superseded — see the amendment above), `react/rules-of-hooks`, `react/exhaustive-deps`, `no-throw-literal`, `prefer-promise-reject-errors`, `complexity`, restricted globals and properties (including `Date.now` in `lib/`), `unicorn/no-array-sort`, `unicorn/no-array-reverse`, `react/no-array-index-key`, `jsx-a11y/click-events-have-key-events`, `jsx-a11y/no-static-element-interactions`, `jsx-a11y/prefer-tag-over-role`, `jsx-a11y/no-autofocus`, all at error. Ratchet: `frontend/lint-baseline.json`, checked by `scripts/check-lint-baseline.mjs` with its failing fixture in `npm test` | nothing |
 | tsc | `frontend/tsconfig.json` (`strict`, `allowJs`, `checkJs` over app code), `npm run typecheck` in the hook and CI. Ratchet: `frontend/tsc-baseline.json`, checked by `frontend/scripts/check-tsc-baseline.mjs` with its failing fixture in `npm test` | tests joining `tsconfig.json` (last) |
 | oxlint type-aware (`oxlint-tsgolint` 7.0.2008, `--type-aware` in the same ratchet) | `typescript/no-floating-promises` (15 hits, 10 files) and `no-misused-promises` (12 hits, 11 files) at error with `frontend/lint-baseline.json`; `only-throw-error`, `switch-exhaustiveness-check`, `no-explicit-any`, `no-non-null-assertion`, `ban-ts-comment` at error, 0 hits. Failing fixture: `check-lint-baseline.test.mjs` with a floating promise | `no-unsafe-*`, `no-unnecessary-condition` and branded `Kg` / `Lb` types (deferred until typedefs exist) |
 | `frontend/scripts/check-frontend-state.mjs`, in `npm test` | The `use-state` cap, with its failing fixture. Ratchet: `frontend/frontend-state-allowlist.json` | nothing |

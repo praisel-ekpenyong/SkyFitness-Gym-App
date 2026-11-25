@@ -34,4 +34,15 @@ describe('owner selectors', () => {
   it('does not hit a plain modulo 7', async () => {
     expect(await messages('const r = padded.length % 7\n', 'src/views/Fixture.jsx')).toEqual([])
   })
+
+  it('fails a % 60 duration in a view, naming both owners', async () => {
+    const hits = await messages('export const s = seconds % 60\n', 'src/views/Fixture.jsx')
+    expect(hits).toHaveLength(1)
+    expect(hits[0]).toContain('lib/format.js')
+    expect(hits[0]).toContain('lib/dates.js')
+  })
+
+  it.each(['src/lib/format.js', 'src/lib/dates.js'])('allows a % 60 duration in %s', async path => {
+    expect(await messages('export const s = seconds % 60\n', path)).toEqual([])
+  })
 })

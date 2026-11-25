@@ -1,4 +1,5 @@
 import { uid } from '../format.js'
+import { sanitizeUnit } from '../units.js'
 import { DEF } from './def.js'
 import { isRecord, cloneProfile } from './plain.js'
 import { sortWorkouts } from './workouts.js'
@@ -80,7 +81,8 @@ function stampProfileRows(S) {
  * steps from the stored schema version (absent is version 0), fills absent fields from `DEF` at
  * any depth, stamps a missing id on each Active set row and a missing rowId on each Routine row,
  * stamps the current version and puts Workouts in Training-log order.
- * Values are never rewritten: units, `topW` and `asked` stay as stored (ADR 0031, ADR 0020).
+ * Values are never rewritten except the stored unit, which is sanitized to a valid unit at the
+ * boundary so every reader sees one; `topW` and `asked` stay as stored (ADR 0031, ADR 0020).
  * Finished Workouts in the log stay as stored.
  * @overload
  * @param {Record<string, unknown>} raw - A Profile record from boot, another tab, a Restore or a CSV import.
@@ -98,6 +100,7 @@ export function admit(raw) {
   if (from > SCHEMA_VERSION) throw new NewerProfileError(raw.schemaVersion)
   /** @type {Record<string, unknown>} */
   const S = { ...fillDefaults(upgrade(raw, from), DEF), schemaVersion: SCHEMA_VERSION }
+  S.unit = sanitizeUnit(S.unit)
   if (Array.isArray(S.workouts)) S.workouts = sortWorkouts(S.workouts)
   if (isRecord(S.active)) S.active = structuredClone(S.active)
   if (Array.isArray(S.routines)) S.routines = structuredClone(S.routines)
