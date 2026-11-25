@@ -1,9 +1,12 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { actRoutine, routineView } from './routines.js'
+import { registerCustom } from './exercises.js'
 import { act } from './active-workout.js'
 import { DEFAULT_GLYPH } from './glyphs.js'
 import { t } from './i18n.js'
 import { defaultConfig } from './workout-model.js'
+
+const customLift = { id: 'c-custom', n: 'Custom lift', custom: true }
 
 describe('Routine Domain Module (lib/routines.js)', () => {
   let S
@@ -27,6 +30,7 @@ describe('Routine Domain Module (lib/routines.js)', () => {
       dayPlan: { '2026-11-20': 'r-push' },
     }
   })
+  afterEach(() => registerCustom([]))
 
   describe('actRoutine: create', () => {
     it('creates a routine with unique ID, default localized name, default emoji, empty ex array and appends to S.routines', () => {
@@ -170,6 +174,13 @@ describe('Routine Domain Module (lib/routines.js)', () => {
       expect(actRoutine(S, { type: 'addExercise', routineId: 'r-unknown', exId: '0001' }).ok).toBe(false)
       expect(actRoutine(S, { type: 'addExercise', routineId: 'r-push', exId: null }).ok).toBe(false)
     })
+
+    it('adds a registered custom exercise', () => {
+      registerCustom([customLift])
+      const res = actRoutine(S, { type: 'addExercise', routineId: 'r-push', exId: 'c-custom' })
+      expect(res.ok).toBe(true)
+      expect(S.routines[0].ex[3].id).toBe('c-custom')
+    })
   })
 
   describe('actRoutine: removeExercise', () => {
@@ -234,12 +245,12 @@ describe('Routine Domain Module (lib/routines.js)', () => {
         type: 'replaceExercise',
         routineId: 'r-push',
         index: 0,
-        exId: '0004',
+        exId: '0028',
         target: { sets: 4, reps: 6, weight: 80 },
       })
 
       expect(res.ok).toBe(true)
-      expect(S.routines[0].ex[0].id).toBe('0004')
+      expect(S.routines[0].ex[0].id).toBe('0028')
       expect(S.routines[0].ex[0].sets).toBe(4)
       expect(S.routines[0].ex[0].reps).toBe(6)
       expect(S.routines[0].ex[0].weight).toBe(80)
@@ -255,16 +266,16 @@ describe('Routine Domain Module (lib/routines.js)', () => {
         type: 'replaceExercise',
         routineId: 'r-push',
         index: 0,
-        exId: '0004',
+        exId: '0028',
         target: { notes: '  incline angle 30  ' },
       })
       expect(S.routines[0].ex[0].notes).toBe('incline angle 30')
     })
 
     it('returns { ok: false } for invalid index or unknown routine', () => {
-      expect(actRoutine(S, { type: 'replaceExercise', routineId: 'r-push', index: -1, exId: '0004' }).ok).toBe(false)
-      expect(actRoutine(S, { type: 'replaceExercise', routineId: 'r-push', index: 10, exId: '0004' }).ok).toBe(false)
-      expect(actRoutine(S, { type: 'replaceExercise', routineId: 'r-unknown', index: 0, exId: '0004' }).ok).toBe(false)
+      expect(actRoutine(S, { type: 'replaceExercise', routineId: 'r-push', index: -1, exId: '0028' }).ok).toBe(false)
+      expect(actRoutine(S, { type: 'replaceExercise', routineId: 'r-push', index: 10, exId: '0028' }).ok).toBe(false)
+      expect(actRoutine(S, { type: 'replaceExercise', routineId: 'r-unknown', index: 0, exId: '0028' }).ok).toBe(false)
     })
   })
 
@@ -403,6 +414,41 @@ describe('Routine Domain Module (lib/routines.js)', () => {
     it('returns { ok: false } when exId is missing and existing entry has no id', () => {
       S.routines[0].ex[0] = {}
       expect(actRoutine(S, { type: 'replaceExercise', routineId: 'r-push', index: 0 }).ok).toBe(false)
+    })
+
+    it('replaces with a registered custom exercise', () => {
+      registerCustom([customLift])
+      const res = actRoutine(S, { type: 'replaceExercise', routineId: 'r-push', index: 0, exId: 'c-custom' })
+      expect(res.ok).toBe(true)
+      expect(S.routines[0].ex[0].id).toBe('c-custom')
+    })
+
+    it('keeps an unknown current exercise when replace omits the id', () => {
+      S.routines[0].ex[0] = { id: 'deleted-custom', sets: 3, reps: 8, weight: 60, mode: 'reps' }
+      const res = actRoutine(S, {
+        type: 'replaceExercise',
+        routineId: 'r-push',
+        index: 0,
+        target: { sets: 5, weight: 70 },
+      })
+      expect(res.ok).toBe(true)
+      expect(S.routines[0].ex[0].id).toBe('deleted-custom')
+      expect(S.routines[0].ex[0].sets).toBe(5)
+      expect(S.routines[0].ex[0].weight).toBe(70)
+    })
+  })
+
+  describe('a refused command', () => {
+    it.each([
+      ['addExercise with no id', { type: 'addExercise', routineId: 'r-push' }],
+      ['addExercise with an unknown id', { type: 'addExercise', routineId: 'r-push', exId: 'no-such-exercise' }],
+      ['addExercise with an id the index only inherits', { type: 'addExercise', routineId: 'r-push', exId: 'constructor' }],
+      ['replaceExercise with an unknown id', { type: 'replaceExercise', routineId: 'r-push', index: 0, exId: 'no-such-exercise' }],
+      ['replaceExercise with an id the index only inherits', { type: 'replaceExercise', routineId: 'r-push', index: 0, exId: 'constructor' }],
+    ])('%s leaves the Routine unchanged', (_, command) => {
+      const before = structuredClone(S)
+      expect(actRoutine(S, command)).toStrictEqual({ ok: false })
+      expect(S).toStrictEqual(before)
     })
   })
 
