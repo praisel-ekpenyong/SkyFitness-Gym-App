@@ -4,14 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { exOr } from '../lib/exercises.js'
 import { entry, resetViewTestState, renderWorkoutApp, cleanupViewTest } from '../test/view-harness.jsx'
 
-vi.mock('../platform/sound.js', () => ({
-  beep: vi.fn(),
-  vibrate: vi.fn(),
-  playSetComplete: vi.fn(),
-  playTimerWarning: vi.fn(),
-  playTimerComplete: vi.fn(),
-  playWorkoutComplete: vi.fn(),
-}))
+vi.mock('../platform/sound.js', async orig => (await import('../test/platform-mocks.js')).mockSound(await orig()))
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true
 

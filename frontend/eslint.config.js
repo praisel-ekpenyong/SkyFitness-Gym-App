@@ -92,6 +92,14 @@ const noOwnModuleMock = {
   selector: "CallExpression[callee.object.name='vi'][callee.property.name='mock'][arguments.0.value=/^\\.(?!.*platform\\x2F)/]",
   message: 'Do not vi.mock our own modules; mock only the boundary (platform/, localStorage, Capacitor).',
 }
+const noTestSnapshots = {
+  selector: 'CallExpression[callee.property.name=/^toMatch(Inline)?Snapshot$/]',
+  message: 'Do not use snapshot tests (TESTING_STANDARDS.md); assert observable behaviour instead.',
+}
+const noActiveInternalImports = {
+  selector: ':matches(ImportDeclaration, ImportExpression)[source.value=/^\\..*active-(act|finish|session|sets|toggle)(\\.js)?$/]',
+  message: 'Import act and sessionView from lib/active-workout.js, not lib/active-* internals (ADR 0023, TESTING_STANDARDS.md).',
+}
 
 const TESTS = ['**/*.test.*', '**/*.spec.*', 'src/test/**']
 const SOURCE = '**/*.{js,jsx,mjs}'
@@ -112,7 +120,7 @@ const restrictedSyntax = [
   { selectors: [importMetaEnvExcept('MODE')], files: ['src/store/useStore.js'] },
   { selectors: [importMetaEnvExcept('DEV')], files: ['src/components/Modals.jsx'] },
   { selectors: [processEnv], files: [SRC], exempt: ['src/lib/env.js', ...TESTS] },
-  { selectors: [noOwnModuleMock], files: TESTS },
+  { selectors: [noOwnModuleMock, noTestSnapshots, noActiveInternalImports], files: TESTS },
 ]
 
 // Flat config gives a file the options of the last block that sets a rule, so overlapping

@@ -5,7 +5,8 @@ import {
 } from './effort.js'
 import { isoOf } from './dates.js'
 
-const daysAgo = n => { const d = new Date(); d.setDate(d.getDate() - n); return d }
+const NOW = new Date(2026, 6, 15, 12).getTime()
+const daysAgo = n => { const d = new Date(NOW); d.setDate(d.getDate() - n); return d }
 const W = (n, sets) => {
   const d = daysAgo(n)
   return { id: 'w' + n, d: isoOf(d), start: +d, entries: [{ id: '0025', sets: sets.map(s => ({ w: 60, r: 8, done: true, ...s })) }] }
@@ -79,34 +80,34 @@ describe('effortSummary', () => {
   )
 
   it('counts rated sets against every finished set, not against itself', () => {
-    const r = effortSummary(st, 0, Date.now())
+    const r = effortSummary(st, 0, NOW)
     expect(r.done).toBe(8)
     expect(r.rated).toBe(7)
   })
 
   it('leaves unrated sets out of the average instead of reading them as failure', () => {
-    const r = effortSummary(S(W(2, [{ rir: 4 }, {}, {}, {}, {}, {}])), 0, Date.now())
+    const r = effortSummary(S(W(2, [{ rir: 4 }, {}, {}, {}, {}, {}])), 0, NOW)
     expect(r.rated).toBe(1)
     expect(r.avg).toBe(null)
   })
 
   it('waits for a real sample before reporting a number', () => {
     const few = S(W(2, new Array(MIN_RATED - 1).fill({ rir: 2 })))
-    expect(effortSummary(few, 0, Date.now()).avg).toBe(null)
+    expect(effortSummary(few, 0, NOW).avg).toBe(null)
     const enough = S(W(2, new Array(MIN_RATED).fill({ rir: 2 })))
-    expect(effortSummary(enough, 0, Date.now()).avg).toBe(2)
+    expect(effortSummary(enough, 0, NOW).avg).toBe(2)
   })
 
   it('counts the sets taken close to failure', () => {
-    const r = effortSummary(st, 0, Date.now())
+    const r = effortSummary(st, 0, NOW)
     expect(r.hard).toBe(4)
     expect(r.hardPct).toBeCloseTo(4 / 7)
   })
 
   it('honours the window', () => {
-    const r = effortSummary(st, 7, Date.now())
+    const r = effortSummary(st, 7, NOW)
     expect(r.rated).toBe(5)
-    expect(effortSummary(st, 3, Date.now()).rated).toBe(3)
+    expect(effortSummary(st, 3, NOW).rated).toBe(3)
   })
 
   it('measures the window from the clock it is given, not the wall clock', () => {
@@ -117,7 +118,7 @@ describe('effortSummary', () => {
   })
 
   it('survives a profile with no training at all', () => {
-    expect(effortSummary({ workouts: [] }, 30, Date.now())).toEqual({ done: 0, rated: 0, hard: 0, avg: null, hardPct: null })
+    expect(effortSummary({ workouts: [] }, 30, NOW)).toEqual({ done: 0, rated: 0, hard: 0, avg: null, hardPct: null })
   })
 
   it('uses the phase to separate warm-up rows', () => {
@@ -125,7 +126,7 @@ describe('effortSummary', () => {
       { rir: 0, phase: 'warmup' },
       { rir: 1, phase: 'work' },
       { rir: 2 }, { rir: 2 }, { rir: 2 }, { rir: 2 },
-    ])), 0, Date.now())
+    ])), 0, NOW)
     expect(summary.done).toBe(5)
     expect(summary.rated).toBe(5)
     expect(summary.hard).toBe(5)
@@ -147,7 +148,7 @@ describe('hasEffort', () => {
 
 describe('effortWeeks', () => {
   it('averages per calendar week and carries the week volume alongside', () => {
-    const pts = effortWeeks(S(W(1, [{ rir: 1 }, { rir: 3 }, {}])), 0, Date.now())
+    const pts = effortWeeks(S(W(1, [{ rir: 1 }, { rir: 3 }, {}])), 0, NOW)
     expect(pts).toHaveLength(1)
     expect(pts[0].rir).toBe(2)
     expect(pts[0].n).toBe(2)
@@ -155,11 +156,11 @@ describe('effortWeeks', () => {
   })
 
   it('drops a week that rests on a single tap', () => {
-    expect(effortWeeks(S(W(1, [{ rir: 1 }])), 0, Date.now())).toEqual([])
+    expect(effortWeeks(S(W(1, [{ rir: 1 }])), 0, NOW)).toEqual([])
   })
 
   it('comes back oldest first, whatever order the workouts arrived in', () => {
-    const pts = effortWeeks(S(W(2, [{ rir: 1 }, { rir: 1 }]), W(30, [{ rir: 3 }, { rir: 3 }])), 0, Date.now())
+    const pts = effortWeeks(S(W(2, [{ rir: 1 }, { rir: 1 }]), W(30, [{ rir: 3 }, { rir: 3 }])), 0, NOW)
     expect(pts.map(p => p.rir)).toEqual([3, 1])
     expect(pts[0].t).toBeLessThan(pts[1].t)
   })
@@ -167,14 +168,14 @@ describe('effortWeeks', () => {
 
 describe('effortHistogram', () => {
   it('bins by whole steps and collapses the far end into a tail', () => {
-    const h = effortHistogram(S(W(2, [{ rir: 0 }, { rir: 1.5 }, { rir: 4 }, { rir: 7 }])), 0, Date.now())
+    const h = effortHistogram(S(W(2, [{ rir: 0 }, { rir: 1.5 }, { rir: 4 }, { rir: 7 }])), 0, NOW)
     expect(h.map(b => b.n)).toEqual([1, 1, 0, 0, 2])
     expect(h[4].tail).toBe(true)
     expect(h[0].pct).toBe(0.25)
   })
 
   it('is all zeroes, not NaN, when nothing is rated', () => {
-    const h = effortHistogram(S(W(2, [{}])), 0, Date.now())
+    const h = effortHistogram(S(W(2, [{}])), 0, NOW)
     expect(h.every(b => b.n === 0 && b.pct === 0)).toBe(true)
   })
 })
