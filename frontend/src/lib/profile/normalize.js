@@ -1,3 +1,4 @@
+import { assertClock } from '../dates.js'
 import { cleanProfileFields } from './fields.js'
 import { DEF } from './def.js'
 import { admit } from './admit.js'
@@ -16,8 +17,10 @@ export function freshProfile() {
  * @param {number} now - Injected millisecond timestamp for age-dependent fields.
  * @returns {Object} A new, complete Profile; `DEF` itself is never returned.
  * @throws {NewerProfileError} When `raw` was saved by a newer Sky.
+ * @throws {TypeError} When `now` is not a finite number.
  */
-export function normalizeState(raw, now = Date.now()) {
+export function normalizeState(raw, now) {
+  assertClock(now)
   if (!isRecord(raw)) return freshProfile()
   const S = admit(raw)
   if (!Array.isArray(S.workouts)) S.workouts = []

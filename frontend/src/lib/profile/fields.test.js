@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { normalizeState, SCHEMA_VERSION } from './index.js'
 
 // normalizeState runs admit, then PROFILE_CLEAN: the way every Profile comes in.
-const comeIn = unit => normalizeState({ schemaVersion: SCHEMA_VERSION, unit }).unit
+const NOW = new Date(2026, 0, 15, 12).getTime()
+const comeIn = unit => normalizeState({ schemaVersion: SCHEMA_VERSION, unit }, NOW).unit
 
 describe('a stored unit is cleaned once on the way in', () => {
   it('reads lbs as lb', () => {

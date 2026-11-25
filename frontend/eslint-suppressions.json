@@ -1,4 +1,14 @@
 {
+  "scripts/review/lib.mjs": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/components/Heatmap.jsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
   "src/components/Modals.test.jsx": {
     "no-restricted-syntax": {
       "count": 1
@@ -19,6 +29,36 @@
       "count": 1
     }
   },
+  "src/lib/bodyweight.js": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/lib/effort.js": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/lib/format.js": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/lib/import-csv.js": {
+    "no-restricted-syntax": {
+      "count": 4
+    }
+  },
+  "src/lib/muscles.js": {
+    "no-restricted-syntax": {
+      "count": 3
+    }
+  },
+  "src/lib/onerm.js": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
   "src/lib/plan-share.js": {
     "no-restricted-syntax": {
       "count": 1
@@ -31,22 +71,37 @@
   },
   "src/lib/progression.js": {
     "no-restricted-syntax": {
-      "count": 5
+      "count": 9
     }
   },
   "src/lib/stats-selectors.js": {
     "no-restricted-syntax": {
-      "count": 2
+      "count": 3
+    }
+  },
+  "src/lib/strength-exercises.js": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/lib/strength-exercises.test.js": {
+    "no-restricted-syntax": {
+      "count": 1
     }
   },
   "src/lib/strength-level.js": {
     "no-restricted-syntax": {
-      "count": 1
+      "count": 2
     }
   },
   "src/lib/training-log.js": {
     "no-restricted-syntax": {
       "count": 7
+    }
+  },
+  "src/sheets/bodyweight.jsx": {
+    "no-restricted-syntax": {
+      "count": 1
     }
   },
   "src/sheets/catalogue.jsx": {
@@ -57,6 +112,12 @@
   "src/sheets/history.jsx": {
     "react-hooks/static-components": {
       "count": 4
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    },
+    "react-hooks/purity": {
+      "count": 1
     }
   },
   "src/sheets/profile.jsx": {
@@ -70,6 +131,9 @@
     }
   },
   "src/views/Home.jsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    },
     "react-hooks/purity": {
       "count": 1
     }

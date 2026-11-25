@@ -43,16 +43,33 @@ export function fmtDate(iso, long) {
 }
 
 /**
+ * Monday-first weekday index of a date: Monday 0 ... Sunday 6.
+ * @param {Date} d - Local date.
+ * @returns {number} 0-6, Monday first.
+ */
+export const mondayIndexOf = d => (d.getDay() + 6) % 7
+
+/**
+ * Fails loudly when a clock argument is not a millisecond timestamp, so a forgotten or misplaced `now` never reads as NaN dates.
+ * @param {*} now - The value received as the clock.
+ * @param {string} name - Parameter name, for the message.
+ * @throws {TypeError} When `now` is not a finite number.
+ */
+export function assertClock(now, name = 'now') {
+  if (!Number.isFinite(now)) throw new TypeError(`${name} must be a finite millisecond timestamp, got ${String(now)}`)
+}
+
+/**
  * Groups a day key into its ISO calendar week bucket for weekly totals.
  * @param {string} d - Day key in `YYYY-MM-DD` form.
  * @returns {string} `YYYY-W` week key; week runs 1-53 and may belong to the adjacent year.
  */
 export function weekKey(d) {
   const dt = parseDay(d)
-  const day = (dt.getDay() + 6) % 7
+  const day = mondayIndexOf(dt)
   dt.setDate(dt.getDate() - day + 3)
   const jan4 = new Date(dt.getFullYear(), 0, 4)
-  const week = 1 + Math.round(((dt - jan4) / 86400000 - 3 + ((jan4.getDay() + 6) % 7)) / 7)
+  const week = 1 + Math.round(((dt - jan4) / 86400000 - 3 + mondayIndexOf(jan4)) / 7)
   return dt.getFullYear() + '-' + week
 }
 
@@ -63,7 +80,7 @@ export function weekKey(d) {
  */
 export function mondayOf(d) {
   const dt = parseDay(d)
-  dt.setDate(dt.getDate() - ((dt.getDay() + 6) % 7))
+  dt.setDate(dt.getDate() - mondayIndexOf(dt))
   return isoOf(dt)
 }
 

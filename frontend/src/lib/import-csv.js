@@ -8,7 +8,8 @@
 import { EXDB, EXIDX } from './exercises.js'
 import { uid } from './format.js'
 import { parseDay } from './dates.js'
-import { LB_TO_KG, mergeWeighIns, weighInsPreview } from './bodyweight.js'
+import { mergeWeighIns, weighInsPreview } from './bodyweight.js'
+import { normalizeWeight, round1 } from './units.js'
 import { admit, sortWorkouts } from './profile/index.js'
 
 
@@ -329,8 +330,8 @@ export function parseWorkoutCSV(text, { unit = 'kg' } = {}) {
 
   const fileUnit = sawLb && !sawKg ? 'lb' : sawKg && !sawLb ? 'kg' : ''
   const mixedUnits = sawLb && sawKg
-  const toKg = x => Math.round(x * LB_TO_KG * 10) / 10
-  const toLb = x => Math.round(x / LB_TO_KG * 10) / 10
+  const toKg = x => normalizeWeight(x, 'lb', 'kg')
+  const toLb = x => normalizeWeight(x, 'kg', 'lb')
   const convRow = s => {
     const u = s.u || fileUnit
     if (!u || u === unit) return s.w
@@ -408,8 +409,8 @@ export function parseBodyweight(text, { unit = 'kg' } = {}) {
   if (!out.size) return { error: 'unrecognised' }
   const converted = !!fileUnit && fileUnit !== unit
   const conv = converted
-    ? (fileUnit === 'lb' ? x => Math.round(x * LB_TO_KG * 10) / 10 : x => Math.round(x / LB_TO_KG * 10) / 10)
-    : x => Math.round(x * 10) / 10
+    ? x => normalizeWeight(x, fileUnit, unit)
+    : round1
   const dates = [...out.keys()].sort()
   return {
     kind: 'bodyweight', source: 'Apple Health',

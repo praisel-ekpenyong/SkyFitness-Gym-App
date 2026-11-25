@@ -1,3 +1,4 @@
+import { assertClock } from './dates.js'
 import { isPerformed } from './workout-sets.js'
 import { loadRecords, e1rmRecords } from './training-log.js'
 import { EXIDX } from './exercises.js'
@@ -14,7 +15,8 @@ function planRecord(plan) {
   return out
 }
 
-export function buildCompletedWorkout(active, { end = Date.now(), unit = 'kg', snapshotFor } = {}) {
+export function buildCompletedWorkout(active, { end, unit = 'kg', snapshotFor } = {}) {
+  assertClock(end, 'end')
   const entries = (active?.entries || []).map(entry => {
     const completed = {
       id: entry.id,

@@ -84,8 +84,8 @@ describe('trainedWeeks', () => {
   it('counts weeks with a workout in the window; a gap lowers the count instead of resetting it', () => {
     const now = new Date('2026-01-04T12:00:00').getTime()
     const s = { workouts: [{ d: '2026-01-04' }, { d: '2026-01-01' }, { d: '2025-12-15' }, { d: '2025-01-01' }] }
-    expect(trainedWeeks(s, 12, now)).toBe(2)
-    expect(trainedWeeks(s, 1, now)).toBe(1)
-    expect(trainedWeeks({ workouts: [] }, 12, now)).toBe(0)
+    expect(trainedWeeks(s, now, 12)).toBe(2)
+    expect(trainedWeeks(s, now, 1)).toBe(1)
+    expect(trainedWeeks({ workouts: [] }, now, 12)).toBe(0)
   })
 })

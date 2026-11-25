@@ -1,4 +1,4 @@
-import { weekKey, isoOf, mondayOf } from './dates.js'
+import { weekKey, isoOf, mondayOf, assertClock } from './dates.js'
 import { hasWorkSet } from './workout-model.js'
 
 /**
@@ -6,17 +6,19 @@ import { hasWorkSet } from './workout-model.js'
  * A week counts when it holds a Workout with a performed Work set. The current week stays open
  * until it ends; any earlier week without one breaks the streak.
  * @param {object} S - Profile with `workouts`.
- * @param {Date|number} today - The clock: a Date or epoch milliseconds.
+ * @param {number} now - The clock: epoch milliseconds.
+ * @throws {TypeError} When `now` is not a finite number.
  * @returns {{current: number, best: number, thisWeekCounted: boolean,
  *   weeks: Object<string, {state: 'counted'|'broke'|'missed'|'open', run: number}>}}
  */
-export function streakOf(S, today = Date.now()) {
+export function streakOf(S, now) {
+  assertClock(now)
   const counted = new Set()
   for (const w of S?.workouts || []) {
     if (!(w.entries || []).some(hasWorkSet)) continue
     counted.add(mondayOf(w.d))
   }
-  const currentMonday = mondayOf(isoOf(new Date(today)))
+  const currentMonday = mondayOf(isoOf(new Date(now)))
   const weeks = {}
   let current = 0
   let best = 0

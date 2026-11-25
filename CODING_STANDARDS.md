@@ -412,10 +412,10 @@ finding is a judgement call, no tooth.
    fresh `[]` or `{}` (zustand 5 compares by reference, so a new array each call
    loops the render): hoist `const EMPTY = []` or use `useShallow`.
 
-**Why:** `App.jsx` (line 43) and `views/Settings.jsx` (line 27) call `useStore()`
-bare, `components/Modals.jsx` (line 5) and `components/RestTimer.jsx` (line 10)
-call `useUI()` bare, and `views/Workout.jsx` returned a new `[]` from a selector
-when no workout was active, which looped the render (#136, fixed).
+**Why:** `App.jsx`, `views/Settings.jsx`, `components/Modals.jsx` and
+`components/RestTimer.jsx` called `useStore()` or `useUI()` bare (fixed in #114),
+and `views/Workout.jsx` returned a new `[]` from a selector when no workout was
+active, which looped the render (#136, fixed).
 **Runs:** `use-state` is checked by `frontend/scripts/check-frontend-state.mjs`,
 run from `npm test` (`check-frontend-state.test.mjs`, with a failing fixture),
 with shrink-only counts in `frontend/frontend-state-allowlist.json`:
@@ -425,11 +425,11 @@ with shrink-only counts in `frontend/frontend-state-allowlist.json`:
 
 A file at 4 passes. A new file over 4 fails, and so does an allowlist count above
 the real count or an entry at or under 4 (drop it).
-**To add:** ESLint `no-restricted-syntax` selectors
-`CallExpression[callee.name=/^use(Store|UI)$/][arguments.length=0]` (4 hits, fix
-them first) and
-`CallExpression[callee.name=/^use(Store|UI)$/] > ArrowFunctionExpression > :matches(ObjectExpression, ArrayExpression, LogicalExpression[right.type=/^(Array|Object)Expression$/])`
-(no hits since #136).
+The two subscription rules are ESLint `no-restricted-syntax` selectors in
+`frontend/eslint.config.js`, with a failing fixture per selector in
+`frontend/scripts/eslint-store-selectors.test.mjs`, at error with 0 suppressions:
+`CallExpression[callee.name=/^use(Store|UI)$/][arguments.length=0]` and
+`CallExpression[callee.name=/^use(Store|UI)$/] > ArrowFunctionExpression > :matches(ObjectExpression, ArrayExpression, LogicalExpression[right.type=/^(Array|Object)Expression$/])`.
 
 ### Derive state during render; no prop-mirroring
 
@@ -523,10 +523,21 @@ get a test that every catalogue value is a filter option, but none exists.
    the clipboard.
 
 Judgement calls, no tooth: 1, 2, 3, 4, 7 and 8 (wording and order).
-**To add** for 5 and 6: extend `frontend/src/i18n-lint.test.js`, which already
-walks user-facing strings. Fail an action label that ends in "…" (a placeholder
-such as `Search…` is not an action). Fail a destructive button that is not
-`variant="danger"` or `danger: true` on `confirmSheet`.
+**Runs** for 5 and 6: `frontend/src/i18n-lint.test.js` reads the label of every
+text button, menu row and `confirmSheet` confirm and cancel. It fails a label
+that ends in "…" or "..." (a placeholder such as `Search…` is not an action),
+the cancel label included. It fails a destructive label (Delete, Discard, Reset,
+Erase, Wipe, Clear all, Clear everything, or Remove except "Remove set") that is
+not `<Button variant="danger">`, a `danger` class on `<Button>` or `<button>`,
+`Row`'s `danger` prop, or `danger: true` on `confirmSheet`; a cancel label is
+not checked for this. A key whose click does nothing but open a `danger: true`
+confirm also passes: the onClick is that `confirmSheet` call, or a function
+whose whole body is that call, declared once in the file. A conditional that
+can reach another path fails, and so does a name declared twice. The red text
+keys Delete routine and Discard workout (see `DESIGN.md`) work this way.
+"Remove set" takes a set off the running workout and acts at once; a bare
+"Clear" empties a field.
+Hits at the start: 0 for rule 5, 0 for rule 6.
 
 ## Sheets and dialogs
 
@@ -611,12 +622,13 @@ evening gets tomorrow's key. `lib/progression.js` (line 762) does exactly that.
 A day-only string parses as UTC midnight, so an unstamped Workout sorts hours
 off a stamped one: `lib/dates.js` (line 89), `lib/training-log.js` (line 182),
 `lib/import-csv.js` (lines 400 and 412).
-**To add:** ESLint `no-restricted-syntax` on
+**Runs:** ESLint `no-restricted-syntax` in `frontend/eslint.config.js` on
 `CallExpression[callee.property.name='slice'][callee.object.callee.property.name='toISOString']`
-(2 hits: fix `lib/progression.js`, allowlist the scenario file) and on
-`NewExpression[callee.name='Date'][arguments.length=1] > :matches(MemberExpression[property.name='d'], Identifier[name='d'])`
-(4 hits, fix first). `lib/dates.js` has no day parser yet; add one (noon local)
-so the fix has a home.
+and on
+`NewExpression[callee.name='Date'][arguments.length=1] > :matches(MemberExpression[property.name='d'], Identifier[name='d'])`.
+Both messages name `todayISO`, `isoOf` and `parseDay`. A `files` override exempts
+`lib/plans/scenarios.js` alone. `frontend/scripts/local-dates-lint.test.mjs` pins
+both selectors and the exemption.
 
 ### The clock is an argument in `lib/`
 
@@ -628,18 +640,18 @@ the rule is stated; the other sections point here.
 
 **Why:** a default hides the clock from every caller that omits it, and tests run
 on wall time without saying so. `streakOf(S, today = Date.now())` even names a
-millisecond value `today`. Eight reads sit outside the two owners: four are
+millisecond value `today`. Seven reads sat outside the two owners: four were
 defaults (`lib/active-finish.js`, `lib/history.js`, `lib/streak.js`,
-`lib/profile/normalize.js`), the rest are in `lib/active-finish.js`,
-`lib/active-session.js`, `lib/effort.js` (a bare `Date.now()` inside a filter)
-and `lib/progression.js`.
-**To add:** oxlint `eslint/no-restricted-properties` (`Date.now`), in an
+`lib/profile/normalize.js`), one a bare `Date.now()` inside a filter
+(`lib/effort.js`). Those five are fixed: the caller passes `now`. Two remain in
+`lib/active-finish.js` and `lib/active-session.js`, baselined.
+**Runs:** oxlint `eslint/no-restricted-properties` (`Date.now`), in an
 `overrides` block for `src/lib/**` with the two owner files and tests excluded,
 and ESLint `no-restricted-syntax`
 (`NewExpression[callee.name='Date'][arguments.length=0]`) scoped the same way.
-Fix the four defaults and `lib/effort.js` first; baseline the rest in
-`frontend/lint-baseline.json` (oxlint) and `frontend/eslint-suppressions.json`
-(ESLint).
+The two remaining `Date.now()` reads are in `frontend/lint-baseline.json`
+(oxlint, one each); `frontend/eslint-suppressions.json` holds none, because no
+`new Date()` read sits outside the owners.
 
 ### Single-owner formatting
 
@@ -668,10 +680,8 @@ re-architecting string calls. Exception: a dev-only error message that no
 lifter sees.
 
 **Runs:** `frontend/src/i18n-lint.test.js` walks the JSX strings of views,
-sheets and components.
-**To add:** extend it to attribute text (`aria-label`, `title`, `placeholder`,
-`alt`): three literal `aria-label`s break today, two in `views/RoutineEdit.jsx`
-and one in `components/ui.jsx`.
+sheets and components, and their attribute text (`aria-label`, `title`,
+`placeholder`, `alt`): a literal word there fails.
 
 ## Interface design
 
@@ -824,8 +834,8 @@ names every one:
 | Tool | Runs today | To add |
 |---|---|---|
 | Vitest guard tests, in `npm test` | `purity.test.js`, `import-cycles.test.js`, `design-tokens.test.js`, `design-lint.test.js`, `env.test.js`, `i18n-lint.test.js`, `sheets/dialog-names.test.jsx`, `docs.test.js`, `platform/storage.test.js` (the 800ms debounce), `comments.test.js`, `effect-types.test.js`, the `warmArt` test (`App.warm-art.test.jsx`), the `flush()` test (`store/useStore.flush.test.jsx`), the save round-trip tests (`sheets/catalogue.test.jsx`, `views/RoutineEdit.test.jsx`), `lib/profile/profile-keys.test.js` | |
-| ESLint 10, `npm run lint` after the oxlint ratchet (CI only) | `react-hooks/set-state-in-effect`, `react-hooks/no-deriving-state-in-effects`, `react-hooks/set-state-in-render`, `react-hooks/immutability`, `react-hooks/preserve-manual-memoization`, `react-hooks/globals`, all at error, 0 hits. `static-components` (9 hits, 2 files), `purity` (5), `refs` (2, 1 file), `memo-dependencies` (1), at error with `frontend/eslint-suppressions.json`. `react-hooks/todo` stays off | the `no-restricted-syntax` selectors (including `vi.mock` scope). Ratchet: `frontend/eslint-suppressions.json` |
-| oxlint, ratchet in the pre-commit hook and in `npm run lint` (CI) | `correctness` category, `react/rules-of-hooks`, `react/exhaustive-deps`, `no-throw-literal`, `prefer-promise-reject-errors`, `complexity`, restricted globals and properties (except `Date.now` in `lib/`), `unicorn/no-array-sort`, `unicorn/no-array-reverse`, `react/no-array-index-key`, `jsx-a11y/click-events-have-key-events`, `jsx-a11y/no-static-element-interactions`, `jsx-a11y/prefer-tag-over-role`, `jsx-a11y/no-autofocus`, all at error. Ratchet: `frontend/lint-baseline.json`, checked by `scripts/check-lint-baseline.mjs` with its failing fixture in `npm test` | `Date.now` in `lib/` (the clock). Ratchet when it lands: `frontend/lint-baseline.json` |
+| ESLint 10, `npm run lint` after the oxlint ratchet (CI only) | `react-hooks/set-state-in-effect`, `react-hooks/no-deriving-state-in-effects`, `react-hooks/set-state-in-render`, `react-hooks/immutability`, `react-hooks/preserve-manual-memoization`, `react-hooks/globals`, all at error, 0 hits. `static-components` (9 hits, 2 files), `purity` (5), `refs` (2, 1 file), `memo-dependencies` (1), at error with `frontend/eslint-suppressions.json`. `react-hooks/todo` stays off. `no-restricted-syntax` One-owner selectors (`LB_TO_KG` and the `2.2046` and `0.4535` literals at 0 suppressions, inline `Math.round(x * 10) / 10`, `(getDay() + 6) % 7`), in `frontend/eslint.config.js` | the remaining `no-restricted-syntax` selectors (including `vi.mock` scope). Ratchet: `frontend/eslint-suppressions.json` |
+| oxlint, ratchet in the pre-commit hook and in `npm run lint` (CI) | `correctness` category, `react/rules-of-hooks`, `react/exhaustive-deps`, `no-throw-literal`, `prefer-promise-reject-errors`, `complexity`, restricted globals and properties (including `Date.now` in `lib/`), `unicorn/no-array-sort`, `unicorn/no-array-reverse`, `react/no-array-index-key`, `jsx-a11y/click-events-have-key-events`, `jsx-a11y/no-static-element-interactions`, `jsx-a11y/prefer-tag-over-role`, `jsx-a11y/no-autofocus`, all at error. Ratchet: `frontend/lint-baseline.json`, checked by `scripts/check-lint-baseline.mjs` with its failing fixture in `npm test` | nothing |
 | tsc | nothing | `tsconfig.json`, `npm run typecheck` in the hook and CI. Ratchet: `frontend/tsc-baseline.json` |
 | oxlint type-aware (`oxlint-tsgolint`) | nothing | `no-floating-promises`, `no-misused-promises`, `only-throw-error`, `switch-exhaustiveness-check`, `no-explicit-any`, `no-non-null-assertion`, `ban-ts-comment` |
 | `frontend/scripts/check-frontend-state.mjs`, in `npm test` | The `use-state` cap, with its failing fixture. Ratchet: `frontend/frontend-state-allowlist.json` | nothing |

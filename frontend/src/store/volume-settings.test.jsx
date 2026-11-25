@@ -104,9 +104,9 @@ describe('volume settings travel with the Profile', () => {
     expect(r.trapezius).toEqual({ range: null, edited: false })
     expect(r.calves).toEqual({ range: [5, 9], edited: true })
 
-    const S = normalizeState({ ...cloneDef(), ...junk })
+    const S = normalizeState({ ...cloneDef(), ...junk }, Date.now())
     expect(S.trainingStyle).toBe('standard')
     expect(S.volumeRanges).toEqual({ calves: [5, 9] })
-    expect(normalizeState({ ...cloneDef(), volumeRanges: 'nope' }).volumeRanges).toEqual({})
+    expect(normalizeState({ ...cloneDef(), volumeRanges: 'nope' }, Date.now()).volumeRanges).toEqual({})
   })
 })
