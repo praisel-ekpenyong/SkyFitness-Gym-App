@@ -93,7 +93,7 @@ const noOwnModuleMock = {
   message: 'Do not vi.mock our own modules; mock only the boundary (platform/, localStorage, Capacitor).',
 }
 const noTestSnapshots = {
-  selector: 'CallExpression[callee.property.name=/^toMatch(Inline)?Snapshot$/]',
+  selector: 'CallExpression[callee.property.name=/^(toMatch(Inline|File)?|toThrowErrorMatching(Inline)?)Snapshot$/]',
   message: 'Do not use snapshot tests (TESTING_STANDARDS.md); assert observable behaviour instead.',
 }
 const noActiveInternalImports = {

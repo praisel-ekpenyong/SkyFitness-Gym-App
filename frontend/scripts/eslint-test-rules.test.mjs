@@ -15,6 +15,9 @@ describe('test guardrail selectors', { timeout: 30000 }, () => {
   it.each([
     ['toMatchSnapshot', "expect(view).toMatchSnapshot()\n"],
     ['toMatchInlineSnapshot', "expect(view).toMatchInlineSnapshot(`'x'`)\n"],
+    ['toMatchFileSnapshot', "await expect(view).toMatchFileSnapshot('out.txt')\n"],
+    ['toThrowErrorMatchingSnapshot', "expect(() => run()).toThrowErrorMatchingSnapshot()\n"],
+    ['toThrowErrorMatchingInlineSnapshot', "expect(() => run()).toThrowErrorMatchingInlineSnapshot(`'err'`)\n"],
     ['static import of active-finish.js', "import { buildCompletedWorkout } from './active-finish.js'\n"],
     ['static import of active-act.js', "import { act } from '../lib/active-act.js'\n"],
     ['dynamic import of active-session.js', "const m = await import('./active-session.js')\n"],
