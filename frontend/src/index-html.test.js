@@ -26,7 +26,7 @@ function offOriginRefs(html) {
 
 describe('index.html', () => {
   it('loads every script, style and icon from its own origin, with no inline script', () => {
-    const html = fs.readFileSync(path.resolve(__dirname, '../index.html'), 'utf-8')
+    const html = fs.readFileSync(path.resolve(import.meta.dirname, '../index.html'), 'utf-8')
     expect(offOriginRefs(html)).toEqual([])
   })
 

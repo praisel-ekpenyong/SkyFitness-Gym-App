@@ -1,6 +1,4 @@
-import { ACCENTS } from '../format.js'
 import { assertClock } from '../dates.js'
-import { trainingStyleOf, cleanVolumeRanges } from '../volume-ranges.js'
 import { cleanProfileFields } from './fields.js'
 import { DEF } from './def.js'
 import { admit } from './admit.js'
@@ -37,10 +35,7 @@ export function normalizeState(raw, now) {
   S.week = isRecord(S.week) ? { ...S.week } : {}
   S.dayPlan = isRecord(S.dayPlan) ? { ...S.dayPlan } : {}
   S.reminder = isRecord(S.reminder) ? { ...S.reminder } : cloneProfile(DEF.reminder)
-  S.trainingStyle = trainingStyleOf(S)
-  S.volumeRanges = cleanVolumeRanges(S.volumeRanges)
   Object.assign(S, cleanProfileFields(S, now))
-  S.accent = typeof S.accent === 'string' && Object.hasOwn(ACCENTS, S.accent) ? S.accent : DEF.accent
   const a = S.active
   S.active = isRecord(a) && Array.isArray(a.entries) ? a : null
   return S

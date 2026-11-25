@@ -1,13 +1,11 @@
 import { mkdirSync, mkdtempSync, readdirSync, writeFileSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
 import { tmpdir } from 'node:os'
-import { resolve, dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { resolve, join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { findBrokenRefs } from './docs-paths.js'
 
-const __dirname = dirname(fileURLToPath(import.meta.url))
-const adrDir = resolve(__dirname, '..', '..', 'docs', 'adr')
+const adrDir = resolve(import.meta.dirname, '..', '..', 'docs', 'adr')
 
 describe('ADRs', () => {
   const files = readdirSync(adrDir).filter(f => f.endsWith('.md') && f !== 'README.md')
@@ -24,7 +22,7 @@ describe('ADRs', () => {
   })
 })
 
-const root = resolve(__dirname, '..', '..')
+const root = resolve(import.meta.dirname, '..', '..')
 
 // Gitignored build output and fetched media: docs name them, a clean checkout lacks them.
 const ALLOW = ['frontend/.tmp/review/', 'frontend/dist', 'frontend/dist/', 'frontend/public/media/']
@@ -42,12 +40,6 @@ const HISTORICAL = new Set([
   'docs/adr/0019-read-time-unit-normalization-across-history.md: lib/progression.js::sessionsFor',
   // Superseded by 0031; written as file::function, which is not a path.
   'docs/adr/0019-read-time-unit-normalization-across-history.md: lib/stats-selectors.js::selectExerciseStats',
-])
-
-// Checks the standards name before the file exists. Delete the entry when the file lands.
-const PLANNED = new Set([
-  'CODING_STANDARDS.md: frontend/src/lib/profile/profile-keys.test.js',
-  'docs/DRAFT_GUARD.md: frontend/src/lib/profile/profile-keys.test.js',
 ])
 
 describe('docs paths', () => {
@@ -85,9 +77,8 @@ describe('docs paths', () => {
       .map(f => resolve(root, f))
     const broken = findBrokenRefs(files, root, ALLOW)
     const withoutLine = b => b.replace(/:\d+: /, ': ')
-    const excused = new Set([...HISTORICAL, ...PLANNED])
+    const excused = new Set(HISTORICAL)
     expect(broken.filter(b => !excused.has(withoutLine(b)))).toEqual([])
     expect([...excused].filter(h => !broken.some(b => withoutLine(b) === h))).toEqual([])
   })
 })
-

@@ -47,7 +47,7 @@ export const RANGED_MUSCLES = Object.keys(STYLE_RANGES[DEFAULT_STYLE])
  */
 export const lowPinned = slug => slug === 'front-delts'
 
-/** Training styles in display order. */
+/** @type {TrainingStyle[]} Training styles in display order. */
 export const TRAINING_STYLES = ['low', 'standard', 'high']
 
 /** @type {Record<TrainingStyle, string>} */
@@ -62,12 +62,12 @@ export const trainingStyleName = style => t(STYLE_NAME[style] || STYLE_NAME[DEFA
 
 /**
  * The profile's training style; absent or unknown reads as Standard.
- * @param {Profile | null | undefined} S - Profile.
+ * @param {{trainingStyle?: unknown} | null | undefined} S - Stored profile training style.
  * @returns {TrainingStyle}
  */
 export function trainingStyleOf(S) {
   const style = S?.trainingStyle
-  return style && TRAINING_STYLES.includes(style) ? style : DEFAULT_STYLE
+  return TRAINING_STYLES.find(candidate => candidate === style) || DEFAULT_STYLE
 }
 
 /** Highest number either end of an edited volume range may take. */
