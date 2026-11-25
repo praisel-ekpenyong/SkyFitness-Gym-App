@@ -3,6 +3,7 @@ import { useStore } from '../store/useStore.js'
 import { t } from '../lib/i18n.js'
 import Icon from './Icon.jsx'
 import { Button } from './ui.jsx'
+import { confirmSheet } from '../sheets/confirm.jsx'
 
 export default class ErrorBoundary extends Component {
   constructor(props) { super(props); this.state = { failed: false } }
@@ -22,10 +23,16 @@ export default class ErrorBoundary extends Component {
         <Button variant="primary" icon="reset" onClick={() => location.reload()}>{t('Reload Sky')}</Button>
         {active && <>
           <div className="gap8" />
-          <Button variant="danger" icon="trash" onClick={() => {
-            useStore.getState().update(s => { s.active = null })
-            location.reload()
-          }}>{t('Discard the running workout')}</Button>
+          <Button variant="danger" icon="trash" onClick={() => confirmSheet({
+            title: t('Discard workout?'),
+            message: t('The sets you logged in this session will be lost.'),
+            confirmText: t('Discard'),
+            danger: true,
+            onConfirm: () => {
+              useStore.getState().act({ type: 'discard' })
+              location.reload()
+            },
+          })}>{t('Discard the running workout')}</Button>
         </>}
       </div>
     )

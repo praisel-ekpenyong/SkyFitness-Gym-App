@@ -1671,3 +1671,38 @@ describe('ExConfig round trip: pick, save to the routine, change the Setting, re
     })
   })
 })
+
+describe('Remove from routine confirms', () => {
+  const sampleEx = { id: '0001', n: '3/4 sit-up', bp: 'waist', tg: 'abs', eq: 'body weight' }
+
+  it('leaves the routine in place until the danger confirm, then removes and closes', async () => {
+    const onDelete = vi.fn()
+    const close = vi.fn()
+    await act(async () => {
+      root.render(<ExConfig ex={sampleEx} existing={{ id: '0001', sets: 3, reps: 10 }} onSave={vi.fn()} onDelete={onDelete} close={close} />)
+    })
+
+    const remove = [...container.querySelectorAll('button')].find(b => b.textContent === 'Remove from routine')
+    await act(async () => { remove.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
+    expect(onDelete).not.toHaveBeenCalled()
+    expect(close).not.toHaveBeenCalled()
+
+    const confirm = useUI.getState().sheets.at(-1)
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    const confirmRoot = createRoot(host)
+    await act(async () => { confirmRoot.render(confirm.render(vi.fn())) })
+    expect(host.textContent).toContain('Remove 3/4 sit-up?')
+    expect(host.textContent).toContain('This removes the exercise from the routine.')
+    const cancel = [...host.querySelectorAll('button')].find(b => b.textContent === 'Cancel')
+    await act(async () => { cancel.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
+    expect(onDelete).not.toHaveBeenCalled()
+
+    const ok = [...host.querySelectorAll('button')].find(b => b.textContent === 'Remove')
+    await act(async () => { ok.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
+    expect(close).toHaveBeenCalledOnce()
+    expect(onDelete).toHaveBeenCalledOnce()
+    await act(async () => { confirmRoot.unmount() })
+    host.remove()
+  })
+})

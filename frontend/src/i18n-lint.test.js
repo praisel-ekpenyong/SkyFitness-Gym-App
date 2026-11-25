@@ -181,23 +181,24 @@ describe('attribute text a lifter reads or hears goes through t()', () => {
 })
 
 // Action consistency rules 5 and 6 (CODING_STANDARDS.md). An action is a text button (<Button>,
-// <button className="btn …">), a menu row (<Row title onClick>, <button className="lrow …">) or
-// the confirm and cancel labels of a confirmSheet. Its label is the t() text, JSX text or string it
-// shows. A placeholder or icon-only button (iconbtn) is not an action label here.
+// <button className="btn …">), a menu row (<Row title onClick>, <button className="lrow …">),
+// an icon button (<button className="iconbtn">, label from aria-label) or the confirm and cancel
+// labels of a confirmSheet. Its label is the t() text, JSX text or string it shows.
 // - Rule 5: no action label, the confirm sheet's cancel label included, ends in "…" or "...". The
 //   confirm sheet is what asks.
 // - Rule 6: a destructive label (Delete, Discard, Reset, Erase, Wipe, Clear all, Clear everything,
-//   or Remove but not Remove set) is danger: <Button variant="danger">, a danger class on <Button>
-//   or <button>, Row's danger prop, or danger: true on confirmSheet. A cancel label is not checked.
-//   A key whose click does nothing but open a danger: true confirmSheet is danger too: the onClick
-//   is that confirmSheet call (inline, or the whole body of a function), or the name of a function
-//   that does only that, declared once in the file. A name declared twice (shadowed by a parameter,
-//   or reused) is not followed, so it fails. DESIGN.md draws Delete routine and Discard workout as
-//   red text keys (.rt-delete, .wk-discard) with no fill, and the confirm sheet carries the danger.
-//   "Remove set" is not destructive: it takes a set off the running workout at once, and "Add set"
-//   sits beside it. A bare "Clear" empties a field or a selection and is not destructive either.
+//   or Remove, but not "Remove set" or "Remove from favorites") is danger and confirms.
+//   Danger is <Button variant="danger">, a danger class, Row's danger prop, or danger: true on
+//   confirmSheet. A cancel label is not checked. The click confirms when it opens that danger
+//   confirm before it changes anything: the onClick is that call, a same-file function that ends
+//   in it (an early return or close() may come first), a sheet chooser whose own clicks do, or
+//   the prop those clicks forward to. A name declared twice is not followed, so it fails. undo()
+//   as the click's only action acts at once and needs no danger mark. "Remove set" takes a set
+//   off the running workout at once. "Remove from favorites" is the favourite toggle. A bare
+//   "Clear" empties a field.
 const ELLIPSIS = /(…|\.\.\.)$/
-const DESTRUCTIVE = /^(Delete|Discard|Reset|Erase|Wipe)\b|^Clear (all|everything)\b|^Remove\b(?! set\b)/
+const DESTRUCTIVE = /^(Delete|Discard|Reset|Erase|Wipe)\b|^Clear (all|everything)\b|^Remove\b(?! set\b| from favorites\b)/
+const HARMLESS_CALL = /^(close|toast|t|fmtDate|fmtNum|fmtVol|fmtSigned|exOr)$/
 
 /** The label text under `node`: t() first arguments, JSX text and string literals, never attributes. */
 function labelTexts(node) {
@@ -270,35 +271,165 @@ function namedHandlers(ast) {
   return new Map([...functions].filter(([name]) => declarations.get(name) === 1))
 }
 
-/** What calling `fn` does when that is one expression: an expression body, or a block of one statement. */
-function soleEffect(fn) {
-  if (fn.body.type !== 'BlockStatement') return fn.body
-  if (fn.body.body.length !== 1) return null
-  const [only] = fn.body.body
-  if (only.type === 'ExpressionStatement') return only.expression
-  return only.type === 'ReturnStatement' ? only.argument : null
+const callName = n => n?.type === 'Identifier' ? n.name : n?.type === 'MemberExpression' && n.property?.type === 'Identifier' ? n.property.name : ''
+const isNamedCall = (n, name) => n?.type === 'CallExpression' && callName(n.callee) === name
+const isUndoNode = n => n?.type === 'Identifier' && n.name === 'undo' || isNamedCall(n, 'undo')
+const isDangerConfirmCall = n => isConfirmSheetCall(n) && confirmOptions(n.arguments[0]).every(o => o && isDangerOptions(o))
+const isHarmlessCall = n => n?.type === 'CallExpression' && HARMLESS_CALL.test(callName(n.callee))
+
+/** Whether `node` ends in a return, so an early bail cannot fall through into the confirm. */
+function returns(node) {
+  if (!node) return false
+  if (node.type === 'ReturnStatement') return true
+  if (node.type === 'BlockStatement') return returns(node.body.at(-1))
+  return false
 }
 
-/** Whether clicking `handler` (an onClick expression) does nothing but open a confirmSheet that is danger: true on every branch. */
-function opensOnlyDangerConfirm(handler, handlers) {
-  const fn = handler?.type === 'Identifier' ? handlers.get(handler.name) : handler
-  if (!isFunction(fn)) return false
-  const effect = soleEffect(fn)
-  return isConfirmSheetCall(effect) && confirmOptions(effect.arguments[0]).every(isDangerOptions)
+/** A statement that may sit in front of the confirm: a bare binding, close(), toast(), or an if that returns. */
+function harmlessLead(stmt) {
+  if (stmt.type === 'VariableDeclaration') return !hasEffectCall(stmt)
+  if (stmt.type === 'ExpressionStatement') return isNamedCall(stmt.expression, 'close') || isNamedCall(stmt.expression, 'toast')
+  if (stmt.type === 'IfStatement' && !stmt.alternate && returns(stmt.consequent)) return true
+  return false
+}
+
+/** Whether `node` contains a call other than close, toast, t() or a formatter. */
+function hasEffectCall(node) {
+  let found = false
+  const walk = n => {
+    if (!n || found || n.type === 'FunctionExpression' || n.type === 'ArrowFunctionExpression') return
+    if (n.type === 'CallExpression' && !isHarmlessCall(n)) found = true
+    children(n).forEach(walk)
+  }
+  walk(node)
+  return found
+}
+
+/**
+ * `fn => () => { close(); fn() }`: the click closes a sheet and forwards to the argument.
+ * Returns that parameter name, or null when `fn` is any other function.
+ */
+function forwardedParam(fn) {
+  if (!isFunction(fn) || fn.params.length !== 1 || fn.params[0].type !== 'Identifier') return null
+  const param = fn.params[0].name
+  const inner = fn.body.type === 'BlockStatement' ? null : fn.body
+  if (!isFunction(inner) || inner.body.type !== 'BlockStatement' || inner.body.body.length !== 2) return null
+  const [lead, tail] = inner.body.body
+  if (!isNamedCall(lead.expression, 'close') || !isNamedCall(tail.expression, param)) return null
+  return param
+}
+
+/**
+ * Whether `node` opens a danger confirm before it changes anything.
+ * `seen` stops a name that calls itself. A prop name follows the JSX attribute that passes it.
+ */
+function confirms(node, handlers, ast, seen) {
+  if (!node) return false
+  if (isUndoNode(node)) return true
+  if (node.type === 'Identifier') {
+    const fn = handlers.get(node.name)
+    if (!fn) return propForwards(node.name, handlers, ast, seen)
+    if (seen.has(node.name)) return false
+    seen.add(node.name)
+    const ok = functionConfirms(fn, handlers, ast, seen)
+    seen.delete(node.name)
+    return ok
+  }
+  if (isFunction(node)) return functionConfirms(node, handlers, ast, seen)
+  if (node.type === 'CallExpression') return callConfirms(node, handlers, ast, seen)
+  if (node.type === 'ConditionalExpression') return confirms(node.consequent, handlers, ast, seen) && confirms(node.alternate, handlers, ast, seen)
+  return false
+}
+
+/** Whether this call is a danger confirm, a chooser whose clicks confirm, or a same-file function that does. */
+function callConfirms(node, handlers, ast, seen) {
+  if (isDangerConfirmCall(node) || isUndoNode(node)) return true
+  if (chooserConfirms(node, handlers, ast, seen)) return true
+  if (node.callee.type !== 'Identifier') return false
+  const fn = handlers.get(node.callee.name)
+  if (!fn) return false
+  const param = forwardedParam(fn)
+  if (param) return node.arguments.length > 0 && confirms(node.arguments[0], handlers, ast, seen)
+  if (seen.has(node.callee.name)) return false
+  seen.add(node.callee.name)
+  const ok = functionConfirms(fn, handlers, ast, seen)
+  seen.delete(node.callee.name)
+  return ok
+}
+
+/** An openSheet whose every onClick confirms. The chooser itself is not the destructive write. */
+function chooserConfirms(node, handlers, ast, seen) {
+  if (callName(node.callee) !== 'openSheet' || !node.arguments[0]) return false
+  const clicks = []
+  const walk = n => {
+    if (!n || typeof n.type !== 'string') return
+    if (n.type === 'JSXAttribute' && n.name?.name === 'onClick' && n.value?.type === 'JSXExpressionContainer') clicks.push(n.value.expression)
+    else children(n).forEach(walk)
+  }
+  walk(node.arguments[0])
+  return clicks.length > 0 && clicks.every(click => confirms(click, handlers, ast, seen))
+}
+
+/** Whether `fn`'s body confirms: an expression, or harmless leads and then one confirming statement. */
+function functionConfirms(fn, handlers, ast, seen) {
+  if (fn.body.type !== 'BlockStatement') return confirms(fn.body, handlers, ast, seen)
+  return listConfirms(fn.body.body, handlers, ast, seen)
+}
+
+/** Statements confirm when each one before the last is a harmless lead and the last confirms. */
+function listConfirms(stmts, handlers, ast, seen) {
+  if (!stmts?.length || !stmts.slice(0, -1).every(harmlessLead)) return false
+  return stmtConfirms(stmts.at(-1), handlers, ast, seen)
+}
+
+/** One statement confirms: a confirming expression, a return of one, or an if whose two branches do. */
+function stmtConfirms(stmt, handlers, ast, seen) {
+  if (!stmt) return false
+  if (stmt.type === 'ExpressionStatement') return confirms(stmt.expression, handlers, ast, seen)
+  if (stmt.type === 'ReturnStatement') return confirms(stmt.argument, handlers, ast, seen)
+  if (stmt.type === 'BlockStatement') return listConfirms(stmt.body, handlers, ast, seen)
+  if (stmt.type === 'IfStatement' && stmt.alternate) return stmtConfirms(stmt.consequent, handlers, ast, seen) && stmtConfirms(stmt.alternate, handlers, ast, seen)
+  return false
+}
+
+/**
+ * A prop the click names (`onRemove`) confirms when every attribute that passes it does.
+ * No such attribute fails closed.
+ */
+function propForwards(name, handlers, ast, seen) {
+  const key = `prop:${name}`
+  if (seen.has(key)) return false
+  seen.add(key)
+  let found = false
+  let ok = true
+  const walk = n => {
+    if (!n || typeof n.type !== 'string') return
+    if (n.type === 'JSXAttribute' && n.name?.name === name && n.value?.type === 'JSXExpressionContainer') {
+      found = true
+      ok = ok && confirms(n.value.expression, handlers, ast, seen)
+      return
+    }
+    children(n).forEach(walk)
+  }
+  walk(ast)
+  seen.delete(key)
+  return found && ok
 }
 
 /**
  * The action a JSX element is, or null: `labels` it shows (rules 5 and 6), `cancelLabels`
- * (rule 5 only) and whether it is `markedDanger` for rule 6.
+ * (rule 5 only), whether it is `markedDanger`, and whether its click `confirms` before writing.
  */
-function elementAction(node, handlers) {
+function elementAction(node, handlers, ast) {
   const el = node.openingElement
   const tag = el.name.type === 'JSXIdentifier' ? el.name.name : ''
   const cls = literalAttr(el, 'className').split(/\s+/)
-  const dangerKey = () => cls.includes('danger') || opensOnlyDangerConfirm(attrOf(el, 'onClick')?.value?.expression, handlers)
-  if (tag === 'Button') return { labels: node.children.flatMap(labelTexts), cancelLabels: [], markedDanger: literalAttr(el, 'variant') === 'danger' || dangerKey() }
-  if (tag === 'button' && (cls.includes('btn') || cls.includes('lrow'))) return { labels: node.children.flatMap(labelTexts), cancelLabels: [], markedDanger: dangerKey() }
-  if (tag === 'Row' && attrOf(el, 'onClick')) return { labels: labelTexts(attrOf(el, 'title')?.value), cancelLabels: [], markedDanger: !!attrOf(el, 'danger') || dangerKey() }
+  const confirmed = confirms(attrOf(el, 'onClick')?.value?.expression, handlers, ast, new Set())
+  const marked = cls.includes('danger') || confirmed
+  if (tag === 'Button') return { labels: node.children.flatMap(labelTexts), cancelLabels: [], markedDanger: literalAttr(el, 'variant') === 'danger' || marked, confirms: confirmed }
+  if (tag === 'button' && cls.includes('iconbtn')) return { labels: labelTexts(attrOf(el, 'aria-label')?.value), cancelLabels: [], markedDanger: marked, confirms: confirmed }
+  if (tag === 'button' && (cls.includes('btn') || cls.includes('lrow'))) return { labels: node.children.flatMap(labelTexts), cancelLabels: [], markedDanger: marked, confirms: confirmed }
+  if (tag === 'Row' && attrOf(el, 'onClick')) return { labels: labelTexts(attrOf(el, 'title')?.value), cancelLabels: [], markedDanger: !!attrOf(el, 'danger') || confirmed, confirms: confirmed }
   return null
 }
 
@@ -307,13 +438,16 @@ const confirmAction = options => ({
   labels: labelTexts(propOf(options, 'confirmText')?.value),
   cancelLabels: labelTexts(propOf(options, 'cancelText')?.value),
   markedDanger: isDangerOptions(options),
+  confirms: true,
 })
 
-/** The rule 5 ('ellipsis') and rule 6 ('danger') hits of one `action` found at `node`. */
+/** The rule 5 ('ellipsis') and rule 6 ('danger', 'confirm') hits of one `action` found at `node`. */
 function actionRuleHits(file, code, node, action) {
   const out = []
   if ([...action.labels, ...action.cancelLabels].some(s => ELLIPSIS.test(s))) out.push({ ...hitAt(file, code, node), rule: 'ellipsis' })
-  if (!action.markedDanger && action.labels.some(s => DESTRUCTIVE.test(s))) out.push({ ...hitAt(file, code, node), rule: 'danger' })
+  const destructive = action.labels.some(s => DESTRUCTIVE.test(s))
+  if (!action.markedDanger && destructive) out.push({ ...hitAt(file, code, node), rule: 'danger' })
+  if (destructive && !action.confirms) out.push({ ...hitAt(file, code, node), rule: 'confirm' })
   return out
 }
 
@@ -323,7 +457,7 @@ function actionHitsIn(file, source) {
   const handlers = namedHandlers(ast)
   const out = []
   const visit = node => {
-    const action = node.type === 'JSXElement' ? elementAction(node, handlers) : null
+    const action = node.type === 'JSXElement' ? elementAction(node, handlers, ast) : null
     if (action) out.push(...actionRuleHits(file, code, node, action))
     if (isConfirmSheetCall(node)) {
       for (const options of confirmOptions(node.arguments[0])) if (options) out.push(...actionRuleHits(file, code, options, confirmAction(options)))
@@ -337,13 +471,13 @@ function actionHitsIn(file, source) {
 describe('action labels follow Action consistency rules 5 and 6', () => {
   it('no view, sheet or component ends an action label in an ellipsis or leaves a destructive action plain', () => {
     const bad = sourceFiles().flatMap(f => actionHitsIn(f)).map(h => `${h.file}:${h.line}: [${h.rule}] ${h.text.slice(0, 120)}`)
-    expect(bad, `Rule 5: drop the "…" from an action label (the confirm sheet asks). Rule 6: a destructive action is variant="danger" (danger: true on confirmSheet).\n${bad.join('\n')}`).toEqual([])
+    expect(bad, `Rule 5: drop the "…" from an action label (the confirm sheet asks). Rule 6: a destructive action is variant="danger" and opens confirmSheet({ danger: true }) before it changes anything. undo() may act at once.\n${bad.join('\n')}`).toEqual([])
   })
 
   // A check on the rules themselves, so a parser change cannot silently empty the guard.
   it('fails an action label that ends in an ellipsis, and passes a placeholder', () => {
     const hits = code => actionHitsIn('fixture.jsx', code).map(h => h.rule)
-    expect(hits('const a = <Button variant="danger" onClick={go}>{t(\'Delete workout…\')}</Button>')).toEqual(['ellipsis'])
+    expect(hits('const a = <Button variant="danger" onClick={go}>{t(\'Delete workout…\')}</Button>')).toEqual(['ellipsis', 'confirm'])
     expect(hits('const a = <button className="lrow tap"><span>{t(\'Rename...\')}</span></button>')).toEqual(['ellipsis'])
     expect(hits('confirmSheet({ title: t(\'Sure?\'), confirmText: t(\'Finish…\') })')).toEqual(['ellipsis'])
     expect(hits('confirmSheet({ confirmText: t(\'Delete\'), cancelText: t(\'Keep editing…\'), danger: true })')).toEqual(['ellipsis'])
@@ -356,34 +490,43 @@ describe('action labels follow Action consistency rules 5 and 6', () => {
 
   it('fails a destructive button or confirm that is not danger, and passes the danger ones', () => {
     const hits = code => actionHitsIn('fixture.jsx', code).map(h => h.rule)
-    expect(hits('const a = <Button variant="ghost" onClick={go}>{t(\'Delete routine\')}</Button>')).toEqual(['danger'])
-    expect(hits('const a = <button className="btn ghost" onClick={go}>{t(\'Discard workout\')}</button>')).toEqual(['danger'])
-    expect(hits('const a = <Row title={t(\'Reset everything\')} onClick={go} />')).toEqual(['danger'])
+    expect(hits('const a = <Button variant="ghost" onClick={go}>{t(\'Delete routine\')}</Button>')).toEqual(['danger', 'confirm'])
+    expect(hits('const a = <button className="btn ghost" onClick={go}>{t(\'Discard workout\')}</button>')).toEqual(['danger', 'confirm'])
+    expect(hits('const a = <Row title={t(\'Reset everything\')} onClick={go} />')).toEqual(['danger', 'confirm'])
     expect(hits('confirmSheet({ title: t(\'Delete?\'), confirmText: t(\'Delete\'), onConfirm: go })')).toEqual(['danger'])
-    expect(hits('const a = <Button variant="ghost" onClick={() => confirmSheet({ confirmText: t(\'Delete\') })}>{t(\'Delete routine\')}</Button>')).toEqual(['danger', 'danger'])
-    expect(hits('const a = <Button onClick={go}>{t(\'Clear everything\')}</Button>')).toEqual(['danger'])
+    expect(hits('const a = <Button variant="ghost" onClick={() => confirmSheet({ confirmText: t(\'Delete\') })}>{t(\'Delete routine\')}</Button>')).toEqual(['danger', 'confirm', 'danger'])
+    expect(hits('const a = <Button onClick={go}>{t(\'Clear everything\')}</Button>')).toEqual(['danger', 'confirm'])
     // The key passes only when its click does nothing but open a danger confirm.
-    expect(hits('const a = <Button variant="ghost" onClick={() => x ? confirmSheet({ confirmText: t(\'Delete\'), danger: true }) : destroy()}>{t(\'Delete routine\')}</Button>')).toEqual(['danger'])
-    expect(hits('const a = <Button variant="ghost" onClick={() => { confirmSheet({ confirmText: t(\'Delete\'), danger: true }); destroy() }}>{t(\'Delete routine\')}</Button>')).toEqual(['danger'])
+    expect(hits('const a = <Button variant="ghost" onClick={() => x ? confirmSheet({ confirmText: t(\'Delete\'), danger: true }) : destroy()}>{t(\'Delete routine\')}</Button>')).toEqual(['danger', 'confirm'])
+    expect(hits('const a = <Button variant="ghost" onClick={() => { confirmSheet({ confirmText: t(\'Delete\'), danger: true }); destroy() }}>{t(\'Delete routine\')}</Button>')).toEqual(['danger', 'confirm'])
     expect(hits([
       'const discard = () => confirmSheet({ confirmText: t(\'Discard\'), danger: true })',
       'function Key({ discard }) { return <button className="btn ghost" onClick={discard}>{t(\'Discard workout\')}</button> }',
-    ].join('\n'))).toEqual(['danger'])
+    ].join('\n'))).toEqual(['danger', 'confirm'])
     expect(hits([
-      'const a = <Button variant="danger" icon="trash" onClick={go}>{t(\'Delete workout\')}</Button>',
-      'const b = <button className="lrow tap danger" onClick={go}><span>{t(\'Remove exercise\')}</span></button>',
-      'const c = <Row icon="trash" title={t(\'Reset everything\')} danger onClick={go} />',
       'confirmSheet(x ? { confirmText: t(\'Discard\'), danger: true } : { confirmText: t(\'Finish anyway\') })',
       'const d = <Button variant="ghost" onClick={go}>{t(\'Clear\')}</Button>',
       'const e = <Button variant="ghost" onClick={go}>{t(\'Remove set\')}</Button>',
-      'const f = <button className="iconbtn bare" aria-label={t(\'Delete entry for {0}\', d)} onClick={go} />',
+      'const fav = <button className="iconbtn bare" aria-label={t(\'Remove from favorites\')} onClick={go} />',
       'const g = <Button variant="ghost" onClick={() => confirmSheet({ confirmText: t(\'Delete\'), danger: true })}>{t(\'Delete routine\')}</Button>',
       'const discard = () => confirmSheet({ confirmText: t(\'Discard\'), danger: true })',
       'const h = <button className="btn ghost wk-discard" onClick={discard}>{t(\'Discard workout\')}</button>',
       'function wipe() { return confirmSheet({ confirmText: t(\'Wipe\'), danger: true }) }',
       'const i = <Button variant="ghost" onClick={wipe}>{t(\'Wipe data\')}</Button>',
-      'const j = <Button variant="ghost" className="rt-delete danger" onClick={go}>{t(\'Delete routine\')}</Button>',
+      'const undoBtn = <Button variant="ghost" onClick={() => undo()}>{t(\'Delete workout\')}</Button>',
+      'function deleteCustomEx(ex) { if (active) { toast(t(\'Finish\')); return } confirmSheet({ confirmText: t(\'Delete\'), danger: true, onConfirm: go }) }',
+      'const del = <Button variant="danger" onClick={() => deleteCustomEx(ex)}>{t(\'Delete\')}</Button>',
+      'const delEx = <Button variant="danger" onClick={() => { close(); deleteCustomEx(ex) }}>{t(\'Delete exercise\')}</Button>',
       'confirmSheet({ confirmText: t(\'Finish\'), cancelText: t(\'Discard\') })',
     ].join('\n'))).toEqual([])
+  })
+
+  it('fails a destructive action that acts at once, including an icon button, and passes a danger confirm or undo()', () => {
+    const hits = code => actionHitsIn('fixture.jsx', code).map(h => h.rule)
+    expect(hits('const a = <Button variant="danger" onClick={go}>{t(\'Remove goal\')}</Button>')).toEqual(['confirm'])
+    expect(hits('const a = <button className="iconbtn bare" aria-label={t(\'Delete entry for {0}\', d)} onClick={go} />')).toEqual(['danger', 'confirm'])
+    expect(hits('const a = <Button variant="ghost" className="rt-delete danger" onClick={go}>{t(\'Delete routine\')}</Button>')).toEqual(['confirm'])
+    expect(hits('const a = <button className="iconbtn bare" aria-label={t(\'Delete entry for {0}\', d)} onClick={() => confirmSheet({ confirmText: t(\'Delete\'), danger: true })} />')).toEqual([])
+    expect(hits('const a = <Button onClick={undo}>{t(\'Discard workout\')}</Button>')).toEqual([])
   })
 })

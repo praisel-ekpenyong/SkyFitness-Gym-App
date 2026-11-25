@@ -4,7 +4,7 @@ import { createRoot } from 'react-dom/client'
 import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest'
 import { RecapSheet, workoutDetailSheet, WorkoutRow } from './sheets/history.jsx'
 import { finishWorkout } from './sheets/session.jsx'
-import { bwSheet } from './sheets/bodyweight.jsx'
+import { bwSheet, goalSheet } from './sheets/bodyweight.jsx'
 import { useStore } from './store/useStore.js'
 import { DEF } from './lib/profile/index.js'
 import { useUI } from './store/useUI.js'
@@ -539,6 +539,56 @@ describe('WorkoutDetail', () => {
     expect(chestButton?.getAttribute('aria-label')).toBe('Chest, 2.0 effective sets')
     const calvesButton = distContainer?.querySelector('.bodymap [role="button"][aria-label*="Calves"]')
     expect(calvesButton?.getAttribute('aria-label')).toBe('Calves, not trained')
+  })
+})
+
+describe('destructive confirms', () => {
+  const click = async el => { await act(async () => { el.dispatchEvent(new MouseEvent('click', { bubbles: true })) }) }
+  const show = async sheet => { await act(async () => { root.render(sheet.render(vi.fn())) }) }
+  const button = name => [...container.querySelectorAll('button')].find(b => b.textContent === name || b.getAttribute('aria-label') === name)
+
+  it('deletes a weigh-in only after confirm, and leaves the log sheet open', async () => {
+    useStore.getState().update(s => { s.unit = 'kg'; s.bodyweight = [{ d: '2026-01-01', w: 80, t: 1 }, { d: '2026-01-02', w: 81, t: 2 }] })
+    bwSheet()
+    const log = useUI.getState().sheets.at(-1)
+    const closeLog = vi.fn()
+    await act(async () => { root.render(log.render(closeLog)) })
+
+    const del = [...container.querySelectorAll('button')].find(b => b.getAttribute('aria-label')?.startsWith('Delete entry for '))
+    await click(del)
+    expect(useStore.getState().S.bodyweight).toHaveLength(2)
+
+    const confirm = useUI.getState().sheets.at(-1)
+    await show(confirm)
+    expect(container.textContent).toContain(`${del.getAttribute('aria-label')}?`)
+    expect(container.querySelector('.confirm-msg').textContent).toBe('')
+    await click(button('Cancel'))
+    expect(useStore.getState().S.bodyweight).toHaveLength(2)
+
+    await click(button('Delete'))
+    expect(useStore.getState().S.bodyweight).toHaveLength(1)
+    expect(closeLog).not.toHaveBeenCalled()
+  })
+
+  it('clears the goal only after confirm, then toasts and closes', async () => {
+    useStore.getState().update(s => { s.unit = 'kg'; s.targetW = 75; s.bodyweight = [{ d: '2026-01-01', w: 80, t: 1 }] })
+    goalSheet()
+    const goal = useUI.getState().sheets.at(-1)
+    const closeGoal = vi.fn()
+    await act(async () => { root.render(goal.render(closeGoal)) })
+
+    await click(button('Remove goal'))
+    expect(useStore.getState().S.targetW).toBe(75)
+    expect(closeGoal).not.toHaveBeenCalled()
+
+    const confirm = useUI.getState().sheets.at(-1)
+    await show(confirm)
+    expect(container.textContent).toContain('Remove goal?')
+    expect(container.querySelector('.confirm-msg').textContent).toBe('')
+    await click(button('Remove'))
+    expect(useStore.getState().S.targetW).toBeNull()
+    expect(useUI.getState().toastMsg).toBe('Goal removed')
+    expect(closeGoal).toHaveBeenCalledOnce()
   })
 })
 

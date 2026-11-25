@@ -8,6 +8,7 @@ import { t } from '../lib/i18n.js'
 import { nav } from '../platform/nav.js'
 import Icon from '../components/Icon.jsx'
 import { Button, NumberField } from '../components/ui.jsx'
+import { confirmSheet } from './confirm.jsx'
 
 const S = () => useStore.getState().S
 const update = (...a) => useStore.getState().update(...a)
@@ -94,7 +95,12 @@ function BwSheet({ required, onDone, close }) {
                 <span className="small muted">{fmtDate(b.d, true)}</span>
                 <span className="row">
                   <b>{fmtNum(b.w)} <span className="u">{unit}</span></b>
-                  <button className="iconbtn bare" onClick={() => delEntry(b.d)} aria-label={t('Delete entry for {0}', fmtDate(b.d, true))}>
+                  <button className="iconbtn bare" aria-label={t('Delete entry for {0}', fmtDate(b.d, true))} onClick={() => confirmSheet({
+                    title: t('Delete entry for {0}?', fmtDate(b.d, true)),
+                    confirmText: t('Delete'),
+                    danger: true,
+                    onConfirm: () => delEntry(b.d),
+                  })}>
                     <Icon name="trash" />
                   </button>
                 </span>
@@ -143,7 +149,12 @@ function GoalSheet({ close }) {
       {st.targetW && (
         <>
           <div className="gap8" />
-          <Button variant="danger" onClick={() => { update(s => { s.targetW = null }); close(); toast(t('Goal removed')) }}>
+          <Button variant="danger" onClick={() => confirmSheet({
+            title: t('Remove goal?'),
+            confirmText: t('Remove'),
+            danger: true,
+            onConfirm: () => { update(s => { s.targetW = null }); close(); toast(t('Goal removed')) },
+          })}>
             {t('Remove goal')}
           </Button>
         </>
