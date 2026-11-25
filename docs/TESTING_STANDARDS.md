@@ -192,7 +192,7 @@ before you refactor.
 ## Teeth
 
 The judgement rules ("name the bug", "one seam") are how a review rejects a
-test. Two of them can be mechanical.
+test. Several of them are mechanical.
 
 **Runs:** the seams this doc names are where the existing suite already
 asserts. `lib/active-workout.test.js` imports `act` and `sessionView` from
@@ -206,8 +206,10 @@ until `act` accepts `now`.
 
 **Runs:** ESLint `no-restricted-syntax` (`noTestSnapshots` in
 `frontend/eslint.config.js`, fixture in
-`frontend/scripts/eslint-test-rules.test.mjs`) fails `toMatchSnapshot()` and
-`toMatchInlineSnapshot()` in tests (0 hits).
+`frontend/scripts/eslint-test-rules.test.mjs`) fails Vitest snapshot matchers
+(`toMatchSnapshot`, `toMatchInlineSnapshot`, `toMatchFileSnapshot`,
+`toThrowErrorMatchingSnapshot`, `toThrowErrorMatchingInlineSnapshot`) in tests
+(0 hits).
 
 **Runs:** ESLint `no-restricted-syntax` in test files (`noOwnModuleMock` in
 `frontend/eslint.config.js`) fails `vi.mock` of a relative path unless the path

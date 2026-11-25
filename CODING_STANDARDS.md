@@ -868,8 +868,8 @@ name the bug, don't write the test (a judgement call, no tooth).
 `frontend/scripts/eslint-store-selectors.test.mjs` and
 `frontend/scripts/eslint-test-rules.test.mjs`), scoped in
 [`docs/TESTING_STANDARDS.md`](./docs/TESTING_STANDARDS.md):
-- `noOwnModuleMock` fails `vi.mock` of a relative path that is not in `platform/` (38 hits in 11 files, 2026-11-25, baselined in `frontend/eslint-suppressions.json`).
-- `noTestSnapshots` fails `toMatchSnapshot()` and `toMatchInlineSnapshot()` (0 hits).
+- `noOwnModuleMock` fails `vi.mock` of a relative path that is not in `platform/` (30 hits in 9 files, 2026-11-25, baselined in `frontend/eslint-suppressions.json`).
+- `noTestSnapshots` fails Vitest snapshot matchers (`toMatchSnapshot`, `toMatchInlineSnapshot`, `toMatchFileSnapshot`, `toThrowErrorMatchingSnapshot`, `toThrowErrorMatchingInlineSnapshot`; 0 hits).
 - `noActiveInternalImports` fails test imports from `lib/active-*` (`active-act.js`, `active-finish.js`, `active-session.js`, `active-sets.js`, `active-toggle.js`) outside `lib/active-workout.js` (1 hit in `frontend/src/lib/clock-args.test.js`, baselined in `frontend/eslint-suppressions.json`).
 
 Worked examples, the seam table, and the red flags:
