@@ -423,10 +423,10 @@ describe('RoutineEdit round trip: pick, save, read the routine', () => {
   it('Icon stores the glyph picked, the one shown included', async () => {
     await act(async () => { root.render(<RoutineEdit />) })
 
-    await pick(container, 'Pick an icon', 'arm')
+    await pick(container, 'Pick an icon', 'Arm')
     expect(routine().emoji).toBe('arm')
 
-    await pick(container, 'Pick an icon', 'dumbbell')
+    await pick(container, 'Pick an icon', 'Dumbbell')
     expect(routine().emoji).toBe('dumbbell')
   })
 

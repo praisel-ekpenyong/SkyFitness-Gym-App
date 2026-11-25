@@ -18,7 +18,6 @@ export function parseColor(input) {
   let m = s.match(/^rgba?\((.*)\)$/)
   if (m) {
     const { parts, alpha } = split(m[1])
-    if (parts.length === 4) parts.push(parts.pop())
     let a = alpha
     if (parts.length === 4) { a = num(parts[3], 1); parts.length = 3 }
     if (parts.length !== 3) bad()

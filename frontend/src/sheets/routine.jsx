@@ -1,4 +1,4 @@
-import { glyphOf, GLYPH_GROUPS } from '../lib/glyphs.js'
+import { glyphOf, GLYPH_GROUPS, GLYPH_LABELS } from '../lib/glyphs.js'
 import Icon, { ICON_NAMES } from '../components/Icon.jsx'
 import { t } from '../lib/i18n.js'
 import { ui } from './store-helpers.js'
@@ -17,7 +17,7 @@ export const glyphPicker = (current, onPick) => {
                 key={n}
                 className={'glyph-cell' + (n === cur ? ' on' : '')}
                 onClick={() => { close(); onPick(n) }}
-                aria-label={n}
+                aria-label={t(GLYPH_LABELS[n] || n)}
               >
                 <Icon name={n} />
               </button>

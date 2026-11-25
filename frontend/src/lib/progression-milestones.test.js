@@ -8,6 +8,8 @@ import {
   nextPrescription
 } from './progression.js'
 
+const NOW = Date.parse('2026-06-15T12:00:00Z')
+
 describe('evaluateSetMilestone', () => {
   describe('Linear progression', () => {
     it('returns a hit milestone descriptor when a work set meets target reps', () => {
@@ -534,7 +536,7 @@ describe('evaluateSetMilestone', () => {
       const entry = { id: 'dumbbell-curl', target, sets: [12, 12, 12].map(r => ({ r, w: 40, done: true })) }
       const state = { unit: 'kg', workouts }
       expect(evaluateSetMilestone(entry, 2, { state })).toEqual({ kind: 'hit', label: '12/12 reps', reps: 12, targetReps: 12 })
-      expect(evaluateSessionProgression(entry, state).text).toBe('Aim for 12 reps at 40 kg')
+      expect(evaluateSessionProgression(entry, state, { now: NOW }).text).toBe('Aim for 12 reps at 40 kg')
     })
 
     it('badges the per-side rep step when that aim moved', () => {
@@ -873,7 +875,7 @@ describe('evaluateSessionProgression and sessionProgressionItems', () => {
         { w: 60, r: 5, done: true }
       ]
     }
-    const item = evaluateSessionProgression(entry, baseState)
+    const item = evaluateSessionProgression(entry, baseState, { now: NOW })
     expect(item).not.toBeNull()
     expect(item.id).toBe('0025')
     expect(item.policy).toBe('linear')
@@ -896,7 +898,7 @@ describe('evaluateSessionProgression and sessionProgressionItems', () => {
         { w: 80, r: 5, done: true }
       ]
     }
-    const item = evaluateSessionProgression(entry, baseState)
+    const item = evaluateSessionProgression(entry, baseState, { now: NOW })
     expect(item.label).toBe('60 kg → 62.5 kg (+2.5 kg)')
   })
 
@@ -910,7 +912,7 @@ describe('evaluateSessionProgression and sessionProgressionItems', () => {
         { w: 24, r: 9, done: true }
       ]
     }
-    const item = evaluateSessionProgression(entry, baseState)
+    const item = evaluateSessionProgression(entry, baseState, { now: NOW })
     expect(item).not.toBeNull()
     expect(item.policy).toBe('double')
     expect(item.kind).toBe('hold')
@@ -929,7 +931,7 @@ describe('evaluateSessionProgression and sessionProgressionItems', () => {
         { w: 0, r: 10, done: true }
       ]
     }
-    const item = evaluateSessionProgression(entry, baseState)
+    const item = evaluateSessionProgression(entry, baseState, { now: NOW })
     expect(item).not.toBeNull()
     expect(item.kind).toBe('up')
     expect(item.kind === 'up').toBe(true)
@@ -949,7 +951,7 @@ describe('evaluateSessionProgression and sessionProgressionItems', () => {
         { w: 0, r: 15, done: true }
       ]
     }
-    const item = evaluateSessionProgression(entry, baseState)
+    const item = evaluateSessionProgression(entry, baseState, { now: NOW })
     expect(item).not.toBeNull()
     expect(item.kind).toBe('up')
     expect(item.kind === 'up').toBe(true)
@@ -968,7 +970,7 @@ describe('evaluateSessionProgression and sessionProgressionItems', () => {
         { w: 0, r: 9, done: true }
       ]
     }
-    const item = evaluateSessionProgression(entry, baseState)
+    const item = evaluateSessionProgression(entry, baseState, { now: NOW })
     expect(item).not.toBeNull()
     expect(item.kind).toBe('hold')
     expect(item.kind === 'up').toBe(false)
@@ -985,7 +987,7 @@ describe('evaluateSessionProgression and sessionProgressionItems', () => {
         { sec: 45, done: true }
       ]
     }
-    const item = evaluateSessionProgression(entry, baseState)
+    const item = evaluateSessionProgression(entry, baseState, { now: NOW })
     expect(item).not.toBeNull()
     expect(item.kind).toBe('up')
     expect(item.kind === 'up').toBe(true)
@@ -1011,7 +1013,7 @@ describe('evaluateSessionProgression and sessionProgressionItems', () => {
       target: { sets: 3, reps: 5, weight: 100, prog: 'linear' },
       sets: [{ w: 100, r: 3, done: true }]
     }
-    const item = evaluateSessionProgression(entry, state)
+    const item = evaluateSessionProgression(entry, state, { now: NOW })
     expect(item).not.toBeNull()
     expect(item.kind).toBe('deload')
     expect(item.kind === 'up').toBe(false)
@@ -1037,7 +1039,7 @@ describe('evaluateSessionProgression and sessionProgressionItems', () => {
       target: { sets: 3, reps: 12, repsMin: 8, weight: 40, prog: 'double', inc: 2.5 },
       sets: [{ w: 40, r: 9, done: true }, { w: 40, r: 9, done: true }, { w: 40, r: 9, done: true }]
     }
-    const item = evaluateSessionProgression(entry, state)
+    const item = evaluateSessionProgression(entry, state, { now: NOW })
     expect(item).not.toBeNull()
     expect(item.kind).toBe('deload')
     expect(item.label).toBe('Deload to 35 kg, back to 8 reps')
@@ -1061,7 +1063,7 @@ describe('evaluateSessionProgression and sessionProgressionItems', () => {
       target: { sets: 3, reps: 12, repsMin: 8, weight: 4, prog: 'double', inc: 2.5 },
       sets: [{ w: 4, r: 9, done: true }, { w: 4, r: 9, done: true }, { w: 4, r: 9, done: true }]
     }
-    const item = evaluateSessionProgression(entry, state)
+    const item = evaluateSessionProgression(entry, state, { now: NOW })
     expect(item).not.toBeNull()
     expect(item.kind).toBe('deload')
     expect(item.label).toBe('Deload to 2.5 kg, back to 8 reps')
@@ -1085,7 +1087,7 @@ describe('evaluateSessionProgression and sessionProgressionItems', () => {
       target: { sets: 3, sec: 60, prog: 'time', inc: 5, mode: 'time' },
       sets: [{ sec: 50, done: true }, { sec: 50, done: true }, { sec: 50, done: true }]
     }
-    const item = evaluateSessionProgression(entry, state)
+    const item = evaluateSessionProgression(entry, state, { now: NOW })
     expect(item).not.toBeNull()
     expect(item.kind).toBe('deload')
     expect(item.label).toBe('Deload to 45s')
@@ -1097,7 +1099,7 @@ describe('evaluateSessionProgression and sessionProgressionItems', () => {
       target: { sets: 3, reps: 12, repsMin: 8, weight: 24, prog: 'double', inc: 2 },
       sets: [{ w: 24, r: 6, done: true }, { w: 24, r: 6, done: true }, { w: 24, r: 5, done: true }]
     }
-    const item = evaluateSessionProgression(entry, baseState)
+    const item = evaluateSessionProgression(entry, baseState, { now: NOW })
     expect(item.kind).toBe('down')
     expect(item.kind === 'up').toBe(false)
     expect(item.iconName).toBe('arrowDown')
@@ -1110,7 +1112,7 @@ describe('evaluateSessionProgression and sessionProgressionItems', () => {
       target: { sets: 3, reps: 12, repsMin: 8, weight: 4, prog: 'double', inc: 2.5 },
       sets: [{ w: 4, r: 6, done: true }, { w: 4, r: 6, done: true }, { w: 4, r: 6, done: true }]
     }
-    const item = evaluateSessionProgression(entry, baseState)
+    const item = evaluateSessionProgression(entry, baseState, { now: NOW })
     expect(item.weight).toBe(2.5)
     expect(item.label).toBe('Drop 1.5 kg, back to 8 reps')
   })
@@ -1121,7 +1123,7 @@ describe('evaluateSessionProgression and sessionProgressionItems', () => {
       target: { sets: 3, reps: 12, repsMin: 8, weight: 24, prog: 'double', inc: 1.25 },
       sets: [{ w: 24, r: 6, done: true }, { w: 24, r: 6, done: true }, { w: 24, r: 5, done: true }]
     }
-    expect(evaluateSessionProgression(entry, baseState).label).toBe('Drop 1.25 kg, back to 8 reps')
+    expect(evaluateSessionProgression(entry, baseState, { now: NOW }).label).toBe('Drop 1.25 kg, back to 8 reps')
   })
 
   it('names the Drop in lb when the history was logged in kg', () => {
@@ -1130,7 +1132,7 @@ describe('evaluateSessionProgression and sessionProgressionItems', () => {
       target: { sets: 3, reps: 12, repsMin: 8, weight: 110, prog: 'double', inc: 5 },
       sets: [{ w: 50, r: 6, done: true, unit: 'kg' }, { w: 50, r: 6, done: true, unit: 'kg' }, { w: 50, r: 5, done: true, unit: 'kg' }]
     }
-    const item = evaluateSessionProgression(entry, { ...baseState, unit: 'lb' })
+    const item = evaluateSessionProgression(entry, { ...baseState, unit: 'lb' }, { now: NOW })
     expect(item.kind).toBe('down')
     expect(item.label).toBe('Drop 5 lb, back to 8 reps')
   })
@@ -1141,7 +1143,7 @@ describe('evaluateSessionProgression and sessionProgressionItems', () => {
       target: { sets: 3, reps: 5, weight: 60, prog: 'linear' },
       sets: [{ w: 60, r: 4, done: true }]
     }
-    const item = evaluateSessionProgression(entry, baseState)
+    const item = evaluateSessionProgression(entry, baseState, { now: NOW })
     expect(item).not.toBeNull()
     expect(item.kind).toBe('hold')
     expect(item.kind === 'up').toBe(false)
@@ -1157,7 +1159,7 @@ describe('evaluateSessionProgression and sessionProgressionItems', () => {
         { w: 60, r: 5, done: false }
       ]
     }
-    expect(evaluateSessionProgression(entry, baseState)).toBeNull()
+    expect(evaluateSessionProgression(entry, baseState, { now: NOW })).toBeNull()
   })
 
   it('sessionProgressionItems maps all trained exercises in a completed workout', () => {
@@ -1193,7 +1195,7 @@ describe('evaluateSessionProgression and sessionProgressionItems', () => {
       ]
     }
 
-    const items = sessionProgressionItems(workout, baseState)
+    const items = sessionProgressionItems(workout, baseState, NOW)
     expect(items.length).toBe(2)
     expect(items[0].id).toBe('0025')
     expect(items[0].label).toBe('60 kg → 62.5 kg (+2.5 kg)')

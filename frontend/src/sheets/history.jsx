@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useStore } from '../store/useStore.js'
 import { EXIDX } from '../lib/exercises.js'
 import { fmtNum, fmtSigned, fmtVol, fmtDur, durPart } from '../lib/format.js'
-import { fmtDate, todayISO, MONTHS_LONG, monthKey, weekKey, isoOf } from '../lib/dates.js'
+import { fmtDate, todayISO, MONTHS_LONG, monthKey, weekKey, isoOf, parseDay } from '../lib/dates.js'
 import { setLabel } from '../lib/set-label.js'
 import { readSet } from '../lib/units.js'
 import { sessionBodyweight } from '../lib/bodyweight.js'
@@ -126,7 +126,7 @@ export const workoutDetailSheet = w => ui().openSheet(close => <WorkoutDetail w=
 
 export function Calendar({ start, close }) {
   const st = useStore(s => s.S)
-  const [cur, setCur] = useState(() => { const d = start ? new Date(start) : new Date(); d.setDate(1); return d })
+  const [cur, setCur] = useState(() => { const d = start ? parseDay(start) : new Date(); d.setDate(1); return d })
   const [sel, setSel] = useState(null)
   const goMonth = d => { setCur(d); setSel(null) }
   const streak = streakOf(st, Date.now())

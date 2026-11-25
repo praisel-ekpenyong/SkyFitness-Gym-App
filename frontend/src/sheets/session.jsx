@@ -149,7 +149,7 @@ export function FinishSummary({ w, prs, e1prs = [], routineSync = null, close })
   const st = useStore(s => s.S)
   const [syncChecked, setSyncChecked] = useState(false)
   const [selectedMuscle, setSelectedMuscle] = useState(null)
-  const progressionItems = sessionProgressionItems(w, st)
+  const progressionItems = sessionProgressionItems(w, st, w.start)
   const load = loadOfWorkouts([w])
   const sum = workoutSummary(st, w)
   const warmUps = sum.warmups

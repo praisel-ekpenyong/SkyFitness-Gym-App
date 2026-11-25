@@ -39,7 +39,7 @@ function DisplayNameSheet({ close }) {
       <div className="small dim char-count">{v.trim().length}/24</div>
       <div className="gap16" />
       <Button variant="primary" onClick={save} disabled={!canSave}>{t('Save')}</Button>
-      {canClear && <><div className="gap8" /><Button variant="ghost" onClick={clear}>{t('Clear name')}</Button></>}
+      {canClear && <><div className="gap8" /><Button variant="ghost" onClick={clear}>{t('Clear')}</Button></>}
     </>
   )
 }

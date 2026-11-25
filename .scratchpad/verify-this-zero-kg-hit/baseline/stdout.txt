@@ -1,1 +1,0 @@
-{"hit":{"kind":"up","weight":22.5},"none":{"kind":"hold","weight":20}}
