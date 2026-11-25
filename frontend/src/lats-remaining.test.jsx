@@ -7,7 +7,7 @@ import { ExerciseDetail, ExercisePicker, CustomExForm } from './sheets/catalogue
 import { useStore } from './store/useStore.js'
 import { DEF } from './lib/profile/index.js'
 import { EXIDX } from './lib/exercises.js'
-import { MUSCLES, primaryMuscleOf, secondaryMusclesOf, matchesMuscleFilter, loadOfWorkouts, levelsOf, rankOf } from './lib/muscles.js'
+import { MUSCLES, FILTER_MUSCLES, MUSCLE_NAME, primaryMuscleOf, secondaryMusclesOf, matchesMuscleFilter, loadOfWorkouts, levelsOf, rankOf } from './lib/muscles.js'
 import { buildPlanBundle, parsePlan, mergePlan } from './lib/plan-share.js'
 import { act as actOn } from './lib/active-workout.js'
 
@@ -50,7 +50,7 @@ function getChip(scope, label) {
   return Array.from(scope.querySelectorAll('.chips button.chip')).find(b => b.textContent.trim() === label)
 }
 
-const HEAD_TO_TOE_DISPLAY = ['Traps', 'Shoulders', 'Front delts', 'Side delts', 'Rear delts', 'Chest', 'Upper back', 'Lats', 'Serratus', 'Biceps', 'Triceps', 'Forearms', 'Abs', 'Obliques', 'Lower back', 'Glutes', 'Quads', 'Hamstrings', 'Adductors', 'Hip flexors', 'Calves', 'Shins', 'Cardio']
+const HEAD_TO_TOE_DISPLAY = FILTER_MUSCLES.map(m => MUSCLE_NAME[m])
 const EXPECTED_LIBRARY_CHIPS = ['Favorites (1)', 'All', ...HEAD_TO_TOE_DISPLAY]
 
 function expectIsolatedLatsLevels() {
@@ -63,7 +63,7 @@ function expectIsolatedLatsLevels() {
 }
 
 describe('Ticket 03 — Library and Picker filters plus Exercise Detail presentation', () => {
-  it('Library renders 21 muscle chips plus Shoulders and Cardio in head-to-toe order with Lats after Upper back; Favorites/All preserved', async () => {
+  it('Library renders a chip for every filter muscle in taxonomy order with Lats after Upper back; Favorites/All preserved', async () => {
     useStore.getState().update(s => { s.favorites = ['0001'] })
     await act(async () => { root.render(<Library />) })
     const firstChipsRow = container.querySelectorAll('.chips')[0]
@@ -118,7 +118,7 @@ describe('Ticket 03 — Library and Picker filters plus Exercise Detail presenta
     expect(customUnderLats.querySelector('.ss .tag').textContent).toContain('Secondary: Lats')
   })
 
-  it('ExercisePicker renders identical 19+cardio chips in same order and matches same semantics', async () => {
+  it('ExercisePicker renders the same muscle chips, with Lats after Upper back, and matches the same semantics', async () => {
     useStore.getState().update(s => { s.favorites = ['0001'] })
     await act(async () => { root.render(<ExercisePicker onPick={vi.fn()} close={vi.fn()} />) })
     const firstChipsRow = container.querySelectorAll('.chips')[0]
