@@ -1,8 +1,11 @@
 import { normalizeWeight } from './units.js'
 
+/** @typedef {import('./types.js').Unit} Unit */
+
 export const REP_CAP = 12
 const EPLEY_DIVISOR = 30
 
+/** @type {Record<'epley' | 'brzycki' | 'lombardi', (w: number, r: number) => number>} */
 export const FORMULAS = {
   epley: (w, r) => w * (1 + r / EPLEY_DIVISOR),
   brzycki: (w, r) => w * 36 / (37 - r),
@@ -24,6 +27,15 @@ export function epleyReps(e1rm, w) {
   return EPLEY_DIVISOR * (max / weight - 1)
 }
 
+/**
+ * Estimate 1RM from a submaximal set weight and rep count.
+ * @param {number | string | null | undefined} w
+ * @param {number | string | null | undefined} r
+ * @param {'epley' | 'brzycki' | 'lombardi'} [formula=DEFAULT_FORMULA]
+ * @param {Unit | null} [setUnit=null]
+ * @param {Unit | null} [targetUnit=null]
+ * @returns {number | null}
+ */
 export function estimate1RM(w, r, formula = DEFAULT_FORMULA, setUnit = null, targetUnit = null) {
   let weight = Number(w)
   const reps = Number(r)

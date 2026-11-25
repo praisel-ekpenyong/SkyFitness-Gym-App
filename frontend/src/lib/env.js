@@ -1,19 +1,38 @@
 
+/**
+ * @param {unknown} value
+ * @param {string} fallback
+ * @returns {string}
+ */
 function withSlash(value, fallback) {
   const s = String(value ?? '').trim()
   if (!s) return fallback
   return s.replace(/\/?$/, '/')
 }
 
+/**
+ * @param {unknown} value
+ * @returns {string | undefined}
+ */
 function nonEmpty(value) {
   const s = String(value ?? '').trim()
   return s ? s : undefined
 }
 
 /**
+ * @typedef {{
+ *   mobile: boolean,
+ *   imgBase: string,
+ *   gifBase: string,
+ *   baseUrl: string,
+ *   seedPlan: string | undefined,
+ * }} ValidatedEnv
+ */
+
+/**
  * Normalizes one raw environment object into the validated settings every reader shares.
- * @param {Object} raw - Raw key-value map from the build and process environment; defaults to empty.
- * @returns {Object} Validated mobile, media-base, base-URL, and dev seed-plan fields with defaults applied.
+ * @param {Record<string, unknown>} [raw={}] - Raw key-value map from the build and process environment; defaults to empty.
+ * @returns {ValidatedEnv} Validated mobile, media-base, base-URL, and dev seed-plan fields with defaults applied.
  */
 export function validateEnv(raw = {}) {
   const mobile = raw.VITE_MOBILE === '1'

@@ -6,16 +6,45 @@ import { DEFAULT_GLYPH } from './glyphs.js'
 import { t } from './i18n.js'
 import { syncRoutineFromSession } from './routine-sync.js'
 
+/** @typedef {import('./types.js').Profile} Profile */
+/** @typedef {import('./types.js').Routine} Routine */
+/** @typedef {import('./types.js').Target} Target */
+/** @typedef {import('./types.js').ProgressionPolicy} ProgressionPolicy */
+/**
+ * @typedef {{
+ *   type: string,
+ *   id?: string,
+ *   routineId?: string,
+ *   name?: string,
+ *   emoji?: string,
+ *   prog?: ProgressionPolicy,
+ *   exId?: string,
+ *   target?: Partial<Target>,
+ *   index?: number,
+ *   dir?: number,
+ *   syncedEx?: Target[],
+ * }} RoutineCommand
+ */
+
+/** @returns {{ ok: false }} */
 const refused = () => ({ ok: false })
+/** @template T @param {T} [result] @returns {{ ok: true, result?: T }} */
 const applied = result => (result !== undefined ? { ok: true, result } : { ok: true })
 
+/**
+ * @param {Profile} S
+ * @param {string | undefined} id
+ * @returns {Routine | null}
+ */
 function findRoutine(S, id) {
   if (!S || !Array.isArray(S.routines) || !id) return null
   return S.routines.find(r => r && r.id === id) ?? null
 }
 
+/** @param {Profile} S @param {RoutineCommand} command */
 function create(S, command) {
   if (!S || !Array.isArray(S.routines)) return refused()
+  /** @type {Routine} */
   const routine = {
     id: command.id || uid(),
     name: command.name || t('New routine'),
@@ -26,6 +55,7 @@ function create(S, command) {
   return applied(routine)
 }
 
+/** @param {Profile} S @param {RoutineCommand} command */
 function deleteRoutine(S, command) {
   if (!S || !Array.isArray(S.routines) || !command.routineId) return refused()
   const idx = S.routines.findIndex(r => r && r.id === command.routineId)
@@ -35,20 +65,23 @@ function deleteRoutine(S, command) {
   return applied()
 }
 
+/** @param {Profile} S @param {RoutineCommand} command */
 function rename(S, command) {
   const r = findRoutine(S, command.routineId)
   if (!r) return refused()
-  r.name = command.name
+  r.name = command.name ?? ''
   return applied()
 }
 
+/** @param {Profile} S @param {RoutineCommand} command */
 function setGlyph(S, command) {
   const r = findRoutine(S, command.routineId)
   if (!r) return refused()
-  r.emoji = command.emoji
+  r.emoji = command.emoji ?? ''
   return applied()
 }
 
+/** @param {Profile} S @param {RoutineCommand} command */
 function setProgression(S, command) {
   const r = findRoutine(S, command.routineId)
   if (!r) return refused()
@@ -56,6 +89,10 @@ function setProgression(S, command) {
   return applied()
 }
 
+/**
+ * @param {Partial<Target>} [target={}]
+ * @returns {{ target: Partial<Target>, note: string | undefined }}
+ */
 function extractTarget(target = {}) {
   const t = { ...(target || {}) }
   const note = cleanNote(t.notes)
@@ -63,11 +100,13 @@ function extractTarget(target = {}) {
   return { target: t, note }
 }
 
+/** @param {Profile} S @param {RoutineCommand} command */
 function addExercise(S, command) {
   const r = findRoutine(S, command.routineId)
   if (!r || !command.exId) return refused()
   const { target, note } = extractTarget(command.target)
   const defaults = defaultConfig(command.exId, target.mode)
+  /** @type {Target} */
   const entry = { id: command.exId, ...defaults, ...target, rowId: uid() }
   if (note) entry.notes = note
   r.ex ??= []
@@ -75,6 +114,7 @@ function addExercise(S, command) {
   return applied(entry)
 }
 
+/** @param {Profile} S @param {RoutineCommand} command */
 function removeExercise(S, command) {
   const r = findRoutine(S, command.routineId)
   if (!r || !Array.isArray(r.ex)) return refused()
@@ -85,6 +125,7 @@ function removeExercise(S, command) {
   return applied()
 }
 
+/** @param {Profile} S @param {RoutineCommand} command */
 function moveExercise(S, command) {
   const r = findRoutine(S, command.routineId)
   if (!r || !Array.isArray(r.ex)) return refused()
@@ -106,9 +147,9 @@ function moveExercise(S, command) {
  * Passing the same `exId` or omitting it performs an in-place configuration update
  * (updating targets and notes over the exercise's default seed, and preserving `sg`).
  *
- * @param {Object} S Store state.
- * @param {Object} command Replace command payload `{ routineId, index, exId?, target? }`.
- * @returns {Object} Result `{ ok: boolean, result?: Object }`.
+ * @param {Profile} S Store state.
+ * @param {RoutineCommand} command Replace command payload `{ routineId, index, exId?, target? }`.
+ * @returns {{ ok: boolean, result?: Target }} Result `{ ok: boolean, result?: Target }`.
  */
 function replaceExercise(S, command) {
   const r = findRoutine(S, command.routineId)
@@ -123,6 +164,7 @@ function replaceExercise(S, command) {
   const { target, note } = extractTarget(command.target)
   delete target.id
   const defaults = defaultConfig(exId, target.mode)
+  /** @type {Target} */
   const next = { id: exId, ...defaults, ...target }
   if (note) next.notes = note
 
@@ -136,6 +178,7 @@ function replaceExercise(S, command) {
   return applied(next)
 }
 
+/** @param {Profile} S @param {RoutineCommand} command */
 function toggleSuperset(S, command) {
   const r = findRoutine(S, command.routineId)
   if (!r || !Array.isArray(r.ex)) return refused()
@@ -155,10 +198,12 @@ function toggleSuperset(S, command) {
   return applied()
 }
 
+/** @param {Profile} S @param {RoutineCommand} command */
 function syncFromSession(S, command) {
-  return syncRoutineFromSession(S, command.routineId, command.syncedEx) ? applied() : refused()
+  return command.routineId && command.syncedEx && syncRoutineFromSession(S, command.routineId, command.syncedEx) ? applied() : refused()
 }
 
+/** @type {Record<string, (S: Profile, command: RoutineCommand) => { ok: boolean, result?: unknown }>} */
 const COMMANDS = {
   create,
   delete: deleteRoutine,
@@ -173,12 +218,21 @@ const COMMANDS = {
   syncFromSession,
 }
 
+/**
+ * Execute a Routine command against Profile `S`.
+ * @param {Profile} S
+ * @param {RoutineCommand} command
+ */
 export function actRoutine(S, command) {
   const run = COMMANDS[command?.type]
   if (!run) throw new Error(`Unknown Routine command: ${command?.type}`)
   return run(S, command)
 }
 
+/**
+ * Read model for a Routine's exercises with superset grouping and note flags.
+ * @param {Routine | null | undefined} routine
+ */
 export function routineView(routine) {
   const ex = Array.isArray(routine?.ex) ? routine.ex : []
   const units = supersetUnits(ex)

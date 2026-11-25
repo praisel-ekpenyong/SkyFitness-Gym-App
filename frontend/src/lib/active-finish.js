@@ -6,18 +6,40 @@ import { exerciseMuscleSnapshot } from './muscles.js'
 import { diffRoutineWithSession } from './routine-sync.js'
 import { sortWorkouts } from './profile/index.js'
 
+/** @typedef {import('./types.js').Profile} Profile */
+/** @typedef {import('./types.js').Workout} Workout */
+/** @typedef {import('./types.js').ActiveWorkout} ActiveWorkout */
+/** @typedef {import('./types.js').Entry} Entry */
+/** @typedef {import('./types.js').Unit} Unit */
+/** @typedef {import('./types.js').Prescription} Prescription */
+/** @typedef {import('./types.js').PrescriptionRecord} PrescriptionRecord */
+/** @typedef {import('./types.js').MuscleSnapshot} MuscleSnapshot */
+
+/**
+ * @param {Prescription | PrescriptionRecord | null | undefined} plan
+ * @returns {PrescriptionRecord | null}
+ */
 function planRecord(plan) {
   if (!plan || typeof plan !== 'object') return null
+  /** @type {PrescriptionRecord} */
   const out = { kind: plan.kind }
-  for (const key of ['weight', 'reps', 'sec', 'sets']) {
+  for (const key of /** @type {const} */ (['weight', 'reps', 'sec', 'sets'])) {
     if (plan[key] != null) out[key] = plan[key]
   }
   return out
 }
 
-export function buildCompletedWorkout(active, { end, unit = 'kg', snapshotFor } = {}) {
+/**
+ * Freeze an ActiveWorkout into a finished Workout record.
+ * @param {ActiveWorkout} active
+ * @param {{ end: number, unit?: Unit, snapshotFor?: (entry: Entry) => MuscleSnapshot | null }} options - `end` is the clock: epoch milliseconds.
+ * @returns {Workout}
+ * @throws {TypeError} When `end` is not a finite number.
+ */
+export function buildCompletedWorkout(active, { end, unit = 'kg', snapshotFor }) {
   assertClock(end, 'end')
   const entries = (active?.entries || []).map(entry => {
+    /** @type {Entry} */
     const completed = {
       id: entry.id,
       sets: entry.sets,
@@ -50,6 +72,11 @@ export function buildCompletedWorkout(active, { end, unit = 'kg', snapshotFor } 
   }
 }
 
+/**
+ * Finish `S.active`, append the completed Workout to `S.workouts`, and return records and routine diff.
+ * @param {Profile} S
+ * @returns {{ workout: Workout, prs: string[], e1prs: Array<{ id: string, est: number, w: number, r: number, prev: number }>, routineSync: (ReturnType<typeof diffRoutineWithSession> & { routineId: string, routineName: string }) | null } | null}
+ */
 export function completeActiveSession(S) {
   const A = S.active
   if (!A) return null

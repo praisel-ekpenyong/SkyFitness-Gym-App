@@ -7,6 +7,7 @@ export const GLYPH_GROUPS = [
   { key: 'Recovery',  items: ['stretch', 'moon', 'heart', 'flame', 'bolt'] },
 ]
 
+/** @type {Record<string, string>} */
 const LEGACY = {
   '💪': 'arm', '🦾': 'arm', '🫸': 'figureStrength', '🫷': 'pullup',
   '🏋️': 'dumbbell', '🏋': 'dumbbell', '🏋️‍♀️': 'dumbbell',
@@ -32,5 +33,5 @@ export function glyphOf(v, iconNames = []) {
   if (iconNames.includes(v)) return v
   if (LEGACY[v]) return LEGACY[v]
   const base = [...v].filter(c => c !== '️' && c !== '‍')[0]
-  return LEGACY[base] || DEFAULT_GLYPH
+  return (base && LEGACY[base]) || DEFAULT_GLYPH
 }

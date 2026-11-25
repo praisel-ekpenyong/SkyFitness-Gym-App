@@ -143,11 +143,12 @@ export const LOWER_BODY_CORRECTIONS = [
 
 /**
  * Flattens pattern lists into the id-keyed overlay the catalogue index reads.
- * @param {Object[]} patterns - Pattern entries with `ids` and curation fields.
- * @returns {Object} Map of catalogue id to `{ tg?, smAdd?, smRemove? }`.
+ * @param {Array<{ pattern: string, ids: string[], tg?: string, smAdd?: string[], smRemove?: string[] }>} patterns - Pattern entries with `ids` and curation fields.
+ * @returns {Record<string, { tg?: string, smAdd?: string[], smRemove?: string[] }>} Map of catalogue id to `{ tg?, smAdd?, smRemove? }`.
  * @throws {Error} When one catalogue id appears in two patterns.
  */
 export function curationsByIdOf(patterns) {
+  /** @type {Record<string, { tg?: string, smAdd?: string[], smRemove?: string[] }>} */
   const out = {}
   for (const { ids, pattern, ...curation } of patterns) {
     for (const id of ids) {

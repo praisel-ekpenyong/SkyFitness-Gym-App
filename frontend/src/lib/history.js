@@ -1,12 +1,27 @@
 
 import { weekKey, isoOf, assertClock } from './dates.js'
 
+/** @typedef {import('./types.js').Profile} Profile */
+/** @typedef {import('./types.js').Routine} Routine */
+
+/**
+ * Remove a workout by ID from `S.workouts`.
+ * @param {Profile} S
+ * @param {string} id
+ * @returns {boolean}
+ */
 export function deleteWorkout(S, id) {
   const before = (S.workouts || []).length
   S.workouts = (S.workouts || []).filter(w => w.id !== id)
   return S.workouts.length !== before
 }
 
+/**
+ * Resolve the Routine ID scheduled for `iso`, applying Day override before Week schedule.
+ * @param {Profile | null | undefined} S
+ * @param {string} iso
+ * @returns {string | null}
+ */
 export function effectiveRoutineId(S, iso) {
   const ov = S?.dayPlan?.[iso]
   if (ov === 'rest') return null
@@ -16,6 +31,12 @@ export function effectiveRoutineId(S, iso) {
   return id === 'rest' ? null : id
 }
 
+/**
+ * Whether `iso` has a valid Day override (`'rest'` or an existing Routine ID).
+ * @param {Profile | null | undefined} S
+ * @param {string} iso
+ * @returns {boolean}
+ */
 export function hasEffectiveOverride(S, iso) {
   const ov = S?.dayPlan?.[iso]
   if (ov === undefined) return false
@@ -26,9 +47,9 @@ export function hasEffectiveOverride(S, iso) {
 /**
  * Retrieve the full routine object scheduled for a specific date.
  *
- * @param {Object} S - Application state atom.
+ * @param {Profile | null | undefined} S - Application state atom.
  * @param {string} iso - Calendar date string in 'YYYY-MM-DD' format.
- * @returns {Object|null} Routine definition object, or null for rest/unscheduled days.
+ * @returns {Routine | null} Routine definition object, or null for rest/unscheduled days.
  */
 export function effectiveRoutine(S, iso) {
   const id = effectiveRoutineId(S, iso)
@@ -37,7 +58,7 @@ export function effectiveRoutine(S, iso) {
 
 /**
  * Counts how many of the last `n` weeks hold a workout.
- * @param {Object} S - Profile with `workouts`.
+ * @param {Profile | null | undefined} S - Profile with `workouts`.
  * @param {number} now - The clock: epoch milliseconds.
  * @param {number} [n] - Weeks to look back, the current one included.
  * @returns {number} Trained weeks, 0..n.

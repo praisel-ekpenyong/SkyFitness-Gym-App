@@ -1,4 +1,5 @@
 // CSS cannot measure a word, so the width of each capital is kept here, measured in the built app (Archivo, display role: 800 weight, 62% stretch, uppercase), in em.
+/** @type {Record<string, number>} */
 const EM = {
   A: .502, B: .484, C: .507, D: .505, E: .454, F: .397, G: .534, H: .506, I: .245, J: .428, K: .503, L: .413, M: .679,
   N: .51, O: .545, P: .474, Q: .545, R: .5, S: .456, T: .46, U: .497, V: .475, W: .705, X: .489, Y: .482, Z: .465,
@@ -8,6 +9,7 @@ const DIGIT = .431
 const OTHER = .7
 const MARGIN = 1.02
 
+/** @param {string} word */
 export function wordEm(word) {
   let em = 0
   for (const ch of word.toUpperCase()) {
@@ -23,6 +25,10 @@ export const NAME_MEDIA = {
   desktop: '(min-width: 1000px)',
 }
 
+/** @typedef {{ column: number, full: number, px: number[] }} NameBreakpoint */
+/** @typedef {{ steps: string[], longName?: number, at: Record<string, NameBreakpoint> & { phone: NameBreakpoint } }} NameLayout */
+
+/** @type {{ hero: NameLayout, card: NameLayout }} */
 export const NAME_LAYOUTS = {
   hero: {
     steps: ['poster', 's', 'xs', 'xxs'], longName: 20,
@@ -42,11 +48,17 @@ export const NAME_LAYOUTS = {
   },
 }
 
+/**
+ * @param {string} name
+ * @param {NameLayout} layout
+ * @returns {{ step: string, stacked: string[] }}
+ */
 export function fitName(name, layout) {
   const text = String(name || '').trim()
   const longest = Math.max(0, ...text.split(/\s+/).map(wordEm))
   const first = layout.longName != null && text.length > layout.longName && layout.steps.length > 1 ? 1 : 0
   const phone = layout.at.phone
+  /** @param {number} width */
   const fits = width => {
     for (let i = first; i < layout.steps.length; i++) if (longest * phone.px[i] <= width) return i
     return -1
@@ -58,4 +70,5 @@ export function fitName(name, layout) {
   return { step: layout.steps[i], stacked }
 }
 
+/** @param {{ stacked: string[] }} fit */
 export const stackClasses = fit => fit.stacked.map(k => ' name-stacked-' + k).join('')

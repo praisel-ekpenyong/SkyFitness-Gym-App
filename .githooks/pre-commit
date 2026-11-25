@@ -5,6 +5,6 @@
 # Skip once, knowingly: git commit --no-verify
 
 cd frontend || exit 1
-# oxlint through its ratchet (lint-baseline.json). ESLint stays in CI
-# (`npm run lint`): the compiler rules take about 19 s.
-node scripts/check-lint-baseline.mjs && npm test
+# oxlint and tsc through their ratchets (lint-baseline.json, tsc-baseline.json).
+# ESLint stays in CI (`npm run lint`): the compiler rules take about 19 s.
+node scripts/check-lint-baseline.mjs && npm run typecheck && npm test

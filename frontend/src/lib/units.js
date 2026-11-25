@@ -1,4 +1,12 @@
 
+/** @typedef {import('./types.js').Unit} Unit */
+/** @typedef {import('./types.js').Profile} Profile */
+/** @typedef {import('./types.js').Workout} Workout */
+/** @typedef {import('./types.js').ActiveWorkout} ActiveWorkout */
+/** @typedef {import('./types.js').Entry} Entry */
+/** @typedef {import('./types.js').SetRow} SetRow */
+/** @typedef {import('./types.js').Target} Target */
+
 export const LB_TO_KG = 0.45359237
 
 /**
@@ -9,6 +17,11 @@ export const LB_TO_KG = 0.45359237
  */
 export const round1 = w => Math.round(Number(w) * 10) / 10
 
+/**
+ * Normalize a unit string to `'kg'` or `'lb'`.
+ * @param {unknown} unit
+ * @returns {Unit}
+ */
 export function sanitizeUnit(unit) {
   if (!unit || typeof unit !== 'string') return 'kg'
   const u = unit.trim().toLowerCase()
@@ -16,6 +29,13 @@ export function sanitizeUnit(unit) {
   return 'kg'
 }
 
+/**
+ * Convert a weight between units, rounded to 1 decimal place.
+ * @param {unknown} val
+ * @param {unknown} fromUnit
+ * @param {unknown} toUnit
+ * @returns {number}
+ */
 export function normalizeWeight(val, fromUnit, toUnit) {
   const n = Number(val)
   if (!Number.isFinite(n) || n === 0) return 0
@@ -31,15 +51,23 @@ export function normalizeWeight(val, fromUnit, toUnit) {
  * The unit an Entry is logged in: its own stamp, else the Workout's, else `fallback`.
  * A Target and a Prescription have no Set stamp, so this is their unit. A Set's own stamp still wins, in `resolveSetWeight`.
  *
- * @param {Object|null} entry - The Entry.
- * @param {Object|null} workout - The Workout.
- * @param {string} [fallback='kg'] - Used when neither is stamped.
- * @returns {string} The unit to read the Entry's Target and Prescription in.
+ * @param {Entry | null | undefined} entry - The Entry.
+ * @param {Workout | ActiveWorkout | null | undefined} workout - The Workout.
+ * @param {Unit} [fallback='kg'] - Used when neither is stamped.
+ * @returns {Unit} The unit to read the Entry's Target and Prescription in.
  */
 export function entryUnit(entry, workout, fallback = 'kg') {
   return entry?.unit ?? workout?.unit ?? fallback
 }
 
+/**
+ * Resolve a Set's weight into `targetUnit` using the Set -> Entry -> Workout -> targetUnit cascade.
+ * @param {SetRow | null | undefined} set
+ * @param {Entry | null} [entry=null]
+ * @param {Workout | ActiveWorkout | null} [workout=null]
+ * @param {Unit} [targetUnit='kg']
+ * @returns {number}
+ */
 export function resolveSetWeight(set, entry = null, workout = null, targetUnit = 'kg') {
   const w = Number(set?.w)
   if (!Number.isFinite(w) || w <= 0) return 0
@@ -55,8 +83,8 @@ const PLATE_STEP = { kg: 1.25, lb: 2.5 }
  * never below one step. The only place `inc` is converted; a time-mode `inc` (seconds) never comes here.
  *
  * @param {number} inc - The Increment in `from`.
- * @param {string} from - The unit it is in.
- * @param {string} to - The unit wanted.
+ * @param {Unit | string} from - The unit it is in.
+ * @param {Unit | string} to - The unit wanted.
  * @returns {number} The Increment in `to`; `inc` itself when the units match or it is not a load.
  */
 export function convertIncrement(inc, from, to) {
@@ -66,25 +94,48 @@ export function convertIncrement(inc, from, to) {
   return Math.max(1, Math.round(exact / step)) * step
 }
 
+/** @param {unknown} a @param {unknown} b @returns {boolean} */
 const sameUnit = (a, b) => sanitizeUnit(a) === sanitizeUnit(b)
+/** @param {unknown} v @returns {boolean} */
 const isLoad = v => Number.isFinite(Number(v)) && Number(v) !== 0
 
-/** The load fields of a Target that change between two units: `weight` (exact), and `inc` (snapped to a plate step) unless the Mode is time (seconds). */
+/**
+ * The load fields of a Target that change between two units: `weight` (exact), and `inc` (snapped to a plate step) unless the Mode is time (seconds).
+ * @param {Partial<Target> | null | undefined} cfg
+ * @param {Unit | string} from
+ * @param {Unit | string} to
+ * @returns {Partial<Target>}
+ */
 function targetPatch(cfg, from, to) {
+  /** @type {Partial<Target>} */
   const patch = {}
   if (!cfg || sameUnit(from, to)) return patch
-  if (isLoad(cfg.weight)) patch.weight = normalizeWeight(cfg.weight, from, to)
-  if (cfg.mode !== 'time' && isLoad(cfg.inc)) patch.inc = convertIncrement(cfg.inc, from, to)
+  if (isLoad(cfg.weight) && cfg.weight != null) patch.weight = normalizeWeight(cfg.weight, from, to)
+  if (cfg.mode !== 'time' && isLoad(cfg.inc) && cfg.inc != null) patch.inc = convertIncrement(cfg.inc, from, to)
   return patch
 }
 
 /**
  * A Target (ExCfg) with its loads in another unit (ADR 0031).
  *
- * @param {Object|null} cfg - Routine exercise config or a frozen Entry target.
- * @param {string} from - The unit its loads are in.
- * @param {string} to - The unit wanted.
- * @returns {Object|null} `cfg` itself when nothing changes, else a converted copy.
+ * @overload
+ * @param {Target} cfg - Routine exercise config.
+ * @param {Unit | string} from - The unit its loads are in.
+ * @param {Unit | string} to - The unit wanted.
+ * @returns {Target} `cfg` itself when nothing changes, else a converted copy.
+ */
+/**
+ * @overload
+ * @param {Partial<Target> | null} cfg - Routine exercise config or a frozen Entry target.
+ * @param {Unit | string} from - The unit its loads are in.
+ * @param {Unit | string} to - The unit wanted.
+ * @returns {Partial<Target> | null} `cfg` itself when nothing changes, else a converted copy.
+ */
+/**
+ * @param {Partial<Target> | null | undefined} cfg
+ * @param {Unit | string} from
+ * @param {Unit | string} to
+ * @returns {Partial<Target> | null | undefined}
  */
 export function targetIn(cfg, from, to) {
   const patch = targetPatch(cfg, from, to)
@@ -94,10 +145,10 @@ export function targetIn(cfg, from, to) {
 /**
  * One logged row with its load in another unit. A row's own `unit` stamp wins over `from`.
  *
- * @param {Object} set - A Set row.
- * @param {string} from - The unit of its Entry or Workout.
- * @param {string} to - The unit wanted.
- * @returns {Object} `set` itself when nothing changes, else a converted copy.
+ * @param {SetRow} set - A Set row.
+ * @param {Unit | string} from - The unit of its Entry or Workout.
+ * @param {Unit | string} to - The unit wanted.
+ * @returns {SetRow} `set` itself when nothing changes, else a converted copy.
  */
 export function setIn(set, from, to) {
   if (!set || !isLoad(set.w)) return set
@@ -111,11 +162,11 @@ export function setIn(set, from, to) {
  * The load uses the same cascade as `resolveSetWeight`: the Set's stamp, else `entryUnit`.
  * A Set with no load, or already in that unit, is the stored Set.
  *
- * @param {Object} set - A Set.
- * @param {Object|null} [entry] - The Entry it belongs to.
- * @param {Object|null} [workout] - The Workout it belongs to.
- * @param {string} [targetUnit='kg'] - The unit wanted, usually the Profile unit.
- * @returns {Object} `set` itself when nothing changes, else a converted copy.
+ * @param {SetRow} set - A Set.
+ * @param {Entry | null} [entry=null] - The Entry it belongs to.
+ * @param {Workout | ActiveWorkout | null} [workout=null] - The Workout it belongs to.
+ * @param {Unit} [targetUnit='kg'] - The unit wanted, usually the Profile unit.
+ * @returns {SetRow} `set` itself when nothing changes, else a converted copy.
  */
 export function readSet(set, entry = null, workout = null, targetUnit = 'kg') {
   return setIn(set, entryUnit(entry, workout, targetUnit), targetUnit)
@@ -127,8 +178,8 @@ export function readSet(set, entry = null, workout = null, targetUnit = 'kg') {
  * Weigh-in without a unit stamp is stamped with the outgoing unit, so it keeps reading as it did.
  * Refused while a workout is active, because the Active workout is read in `S.unit`.
  *
- * @param {Object} S - Profile (or immer draft); mutated.
- * @param {string} unit - The unit to switch to.
+ * @param {Profile} S - Profile (or immer draft); mutated.
+ * @param {Unit | string} unit - The unit to switch to.
  * @returns {boolean} True when the Profile switched.
  */
 export function switchUnit(S, unit) {

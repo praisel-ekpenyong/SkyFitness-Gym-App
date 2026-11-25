@@ -1,8 +1,10 @@
 import { planPrintHTML } from '../lib/plan-share.js'
 
+/** @typedef {import('../lib/types.js').Profile} Profile */
+
 /**
  * Renders the plan into a hidden frame and opens the browser print dialog there.
- * @param {Object} S - Profile state to print.
+ * @param {Profile} S - Profile state to print.
  * @param {string} owner - Owner name printed in the header.
  * @returns {void} Nothing; removes the frame after printing and never navigates the page.
  */
