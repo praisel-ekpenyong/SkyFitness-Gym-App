@@ -141,18 +141,22 @@ function restrictedSyntaxBlocks() {
   const globs = patterns.filter(p => /[*?[{]/.test(p))
   const lists = patterns.filter(p => !globs.includes(p)).map(listOf)
   for (let bits = 0; bits < 2 ** globs.length; bits++) {
-    lists.push(selectorsWhere(p => (bits >> globs.indexOf(p)) & 1))
+    lists.push(selectorsWhere(p => globs.includes(p) && (bits >> globs.indexOf(p)) & 1))
   }
-  // ESLint also asks a matcher about folders: only a source file gets a key.
+  const blocks = new Map(lists.map(list => [keyOf(list), list]))
+  // ESLint also asks a matcher about folders: only a source file gets a key. A file whose list
+  // has no block would lose every selector, so it fails the lint run instead.
   const fileKeys = new Map()
   const fileKey = filePath => {
     if (!fileKeys.has(filePath)) {
       const rel = relative(import.meta.dirname, filePath).split(sep).join('/')
-      fileKeys.set(filePath, matchesGlob(rel, SOURCE) ? keyOf(listOf(rel)) : null)
+      const key = matchesGlob(rel, SOURCE) ? keyOf(listOf(rel)) : null
+      if (key !== null && !blocks.has(key)) throw new Error(`eslint.config.js: no no-restricted-syntax block for ${rel}`)
+      fileKeys.set(filePath, key)
     }
     return fileKeys.get(filePath)
   }
-  return [...new Map(lists.map(list => [keyOf(list), list]))].map(([key, list]) => ({
+  return [...blocks].map(([key, list]) => ({
     files: [filePath => fileKey(filePath) === key],
     rules: { 'no-restricted-syntax': ['error', ...list] },
   }))

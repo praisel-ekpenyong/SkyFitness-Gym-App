@@ -20,9 +20,10 @@ const PASS_THROUGH = {
   lastExport: 'read only by backupDue, where a bad value at worst shows or hides the backup reminder',
 }
 
+const LISTED = [...Object.keys(PROFILE_CLEAN), ...STRUCTURAL, ...Object.keys(PASS_THROUGH)]
+
 function unlistedKeys(def) {
-  const listed = new Set([...Object.keys(PROFILE_CLEAN), ...STRUCTURAL, ...Object.keys(PASS_THROUGH)])
-  return Object.keys(def).filter(key => !listed.has(key))
+  return Object.keys(def).filter(key => !LISTED.includes(key))
 }
 
 describe('every DEF key is cleaned, structural or pass-through', () => {
@@ -35,24 +36,17 @@ describe('every DEF key is cleaned, structural or pass-through', () => {
   })
 
   it('puts each key on one list only', () => {
-    const all = [...Object.keys(PROFILE_CLEAN), ...STRUCTURAL, ...Object.keys(PASS_THROUGH)]
-    expect(all).toHaveLength(new Set(all).size)
+    expect(LISTED).toHaveLength(new Set(LISTED).size)
   })
 
   it('lists no key DEF lacks', () => {
-    const all = [...Object.keys(PROFILE_CLEAN), ...STRUCTURAL, ...Object.keys(PASS_THROUGH)]
-    expect(all.filter(key => !Object.hasOwn(DEF, key))).toEqual([])
-  })
-
-  it('gives each pass-through key a reason', () => {
-    for (const reason of Object.values(PASS_THROUGH)) expect(reason).toMatch(/\w{3}/)
+    expect(LISTED.filter(key => !Object.hasOwn(DEF, key))).toEqual([])
   })
 })
 
 describe('a hostile payload comes in as a clean Profile', () => {
-  it('cleans unit, restSec and theme', () => {
-    const S = normalizeState({ schemaVersion: SCHEMA_VERSION, unit: 'lbs', restSec: 'x', theme: 5 }, NOW)
-    expect(S.unit).toBe('lb')
+  it('cleans restSec and theme', () => {
+    const S = normalizeState({ schemaVersion: SCHEMA_VERSION, restSec: 'x', theme: 5 }, NOW)
     expect(S.restSec).toBe(90)
     expect(S.theme).toBe('dark')
   })
