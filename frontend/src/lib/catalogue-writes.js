@@ -1,6 +1,6 @@
 
-import { exerciseMuscleSnapshot, bodypartForMuscle } from './muscles.js'
-import { cleanupSg } from './supersetFlow.js'
+import { bodypartForMuscle } from './muscles.js'
+import { actRoutine } from './routines.js'
 import { uid } from './format.js'
 
 /** @typedef {import('./types.js').Profile} Profile */
@@ -25,14 +25,11 @@ export function toggleFavorite(S, id) {
  */
 export function deleteCustomEx(S, ex) {
   if (S.active?.entries?.some(e => e.id === ex.id)) return { ok: false, reason: 'active' }
-  const snapshot = exerciseMuscleSnapshot(ex)
   ;(S.workouts || []).forEach(w => (w.entries || []).forEach(e => {
-    if (e.id !== ex.id) return
-    e.n = ex.n
-    if (!e.muscleSnapshot || !Object.keys(e.muscleSnapshot).length) e.muscleSnapshot = snapshot
+    if (e.id === ex.id && !e.muscleSnapshot?.n && !e.n) e.n = ex.n
   }))
   S.customEx = (S.customEx || []).filter(x => x.id !== ex.id)
-  ;(S.routines || []).forEach(r => { r.ex = r.ex.filter(e => e.id !== ex.id); cleanupSg(r.ex) })
+  actRoutine(S, { type: 'purgeExercise', exId: ex.id })
   S.favorites = (S.favorites || []).filter(id => id !== ex.id)
   return { ok: true, reason: null }
 }

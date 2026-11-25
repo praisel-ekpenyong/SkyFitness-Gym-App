@@ -16,7 +16,7 @@ import { dayStatus } from '../lib/schedule.js'
 import { monthRecap } from '../lib/recap.js'
 import { streakOf } from '../lib/streak.js'
 import { weekExplanation, markLabel, markIcon } from '../lib/streak-explain.js'
-import { loadOfWorkouts, MUSCLE_NAME } from '../lib/muscles.js'
+import { loadOfWorkouts, MUSCLE_NAME, entryName } from '../lib/muscles.js'
 import { glyphOf } from '../lib/glyphs.js'
 import { Thumb } from '../components/Media.jsx'
 import Icon, { ICON_NAMES } from '../components/Icon.jsx'
@@ -61,7 +61,7 @@ export function WorkoutDetail({ w, close }) {
             {ex && <Thumb ex={ex} />}
             <div className="grow">
               <div className="tt capitalize">
-                {ex ? ex.n : (e.n || e.id)} {recordIds.includes(e.id) && <span className="pr"><Icon name="trophy" />{t('Record')}</span>}
+                {entryName(e)} {recordIds.includes(e.id) && <span className="pr"><Icon name="trophy" />{t('Record')}</span>}
               </div>
               {warmups.length > 0 && (
                 <div className="ss-warm">

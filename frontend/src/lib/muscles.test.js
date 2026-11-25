@@ -1,7 +1,7 @@
 import { describe, expect, it, afterEach } from 'vitest'
 import { EXIDX, EXDB, smOf, registerCustom } from './exercises.js'
 import { UPPER_BODY_CORRECTIONS } from './catalogue-corrections.js'
-import { matchesMuscleFilter, isSecondaryMuscleMatch, loadOfWorkouts, musclesOf, muscleWeightsOf, lastTrainedByMuscle, primaryMuscleOf, primaryMuscleName, secondaryMusclesOf, sessionMuscleDistribution } from './muscles.js'
+import { matchesMuscleFilter, isSecondaryMuscleMatch, loadOfWorkouts, musclesOf, muscleWeightsOf, lastTrainedByMuscle, primaryMuscleOf, primaryMuscleName, secondaryMusclesOf, sessionMuscleDistribution, entryName } from './muscles.js'
 
 describe('catalogue secondary muscles', () => {
   it('maps a bench press to chest, triceps and front delts', () => {
@@ -801,5 +801,27 @@ describe('primaryMuscleName', () => {
 
   it('falls back to the dataset spelling for an exercise that maps to no drawable muscle', () => {
     expect(primaryMuscleName({ id: 'c-odd', n: 'Jaw clench', tg: 'jaw' })).toBe('jaw')
+  })
+})
+
+describe('entryName', () => {
+  afterEach(() => registerCustom([]))
+
+  it('reads the frozen name before the live custom exercise, so a rename does not rewrite history', () => {
+    registerCustom([{ id: 'c-fly', n: 'Renamed fly', custom: true }])
+    expect(entryName({ id: 'c-fly', n: 'Own name', muscleSnapshot: { n: 'Cable fly' } })).toBe('Cable fly')
+  })
+
+  it('reads the Entry\'s own name when nothing is frozen', () => {
+    registerCustom([{ id: 'c-fly', n: 'Renamed fly', custom: true }])
+    expect(entryName({ id: 'c-fly', n: 'Fly as logged' })).toBe('Fly as logged')
+  })
+
+  it('reads a built-in exercise from the Catalogue, which carries no frozen name', () => {
+    expect(entryName({ id: '0025' })).toBe(EXIDX['0025'].n)
+  })
+
+  it('falls back to the id when the exercise is gone and nothing names it', () => {
+    expect(entryName({ id: 'c-gone' })).toBe('c-gone')
   })
 })

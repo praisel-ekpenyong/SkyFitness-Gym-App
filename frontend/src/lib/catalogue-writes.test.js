@@ -49,17 +49,34 @@ describe('toggleFavorite', () => {
 })
 
 describe('deleteCustomEx — the delete cascade', () => {
-  it('stamps the display name into every matching history entry and snapshots muscles once', () => {
+  it('leaves a finished Workout\'s name and muscles as trained when a renamed exercise is deleted', () => {
     const S = baseState()
-    const res = deleteCustomEx(S, custom())
+    const trained = { id: 'ex-fly', sets: [{ w: 5, r: 10, done: true }], muscleSnapshot: { n: 'Cable fly', bp: 'chest', muscleWeights: { chest: 1 } } }
+    S.workouts.push({ d: '2026-01-11', entries: [trained] })
+    const before = structuredClone(trained)
+
+    const res = deleteCustomEx(S, { ...custom(), n: 'Renamed fly', tg: 'lats' })
 
     expect(res).toEqual({ ok: true, reason: null })
-    const first = S.workouts[0].entries.find(e => e.id === 'ex-fly')
-    expect(first.n).toBe('Homemade fly')
-    expect(Object.keys(first.muscleSnapshot)).toEqual(expect.arrayContaining(['n', 'bp', 'muscleWeights']))
-    const second = S.workouts[1].entries[0]
-    expect(second.n).toBe('Homemade fly')
-    expect(second.muscleSnapshot).toEqual({ n: 'keep me' })
+    expect(S.workouts[2].entries[0]).toEqual(before)
+    expect(S.workouts[1].entries[0]).toEqual({ id: 'ex-fly', sets: [{ w: 5, r: 10, done: true }], n: 'old stale name', muscleSnapshot: { n: 'keep me' } })
+  })
+
+  it('gives an Entry with no name of any kind the exercise\'s name, and no muscle snapshot', () => {
+    const S = baseState()
+    deleteCustomEx(S, custom())
+
+    const unnamed = S.workouts[0].entries.find(e => e.id === 'ex-fly')
+    expect(unnamed.n).toBe('Homemade fly')
+    expect(unnamed).not.toHaveProperty('muscleSnapshot')
+  })
+
+  it('keeps an Entry\'s own name when it has no frozen name', () => {
+    const S = baseState()
+    S.workouts[0].entries[1].n = 'Fly as logged'
+    deleteCustomEx(S, custom())
+
+    expect(S.workouts[0].entries[1].n).toBe('Fly as logged')
   })
 
   it('sweeps the exercise out of customEx, each routine and favorites, and leaves the legacy exWeights alone', () => {

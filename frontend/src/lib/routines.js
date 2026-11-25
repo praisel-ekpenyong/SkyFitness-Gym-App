@@ -163,6 +163,13 @@ function removeExercise(S, command) {
 }
 
 /** @param {Profile} S @param {RoutineCommand} command */
+function purgeExercise(S, command) {
+  if (!command.exId) return refused()
+  ;(S?.routines || []).forEach(r => { r.ex = (r.ex || []).filter(e => e.id !== command.exId); cleanupSg(r.ex) })
+  return applied()
+}
+
+/** @param {Profile} S @param {RoutineCommand} command */
 function moveExercise(S, command) {
   const r = findRoutine(S, command.routineId)
   if (!r || !Array.isArray(r.ex)) return refused()
@@ -268,6 +275,7 @@ const COMMANDS = {
   replaceExercise,
   toggleSuperset,
   syncFromSession,
+  purgeExercise,
 }
 
 /**

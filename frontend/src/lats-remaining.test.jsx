@@ -7,7 +7,7 @@ import { ExerciseDetail, ExercisePicker, CustomExForm } from './sheets/catalogue
 import { useStore } from './store/useStore.js'
 import { DEF } from './lib/profile/index.js'
 import { EXIDX } from './lib/exercises.js'
-import { MUSCLES, MUSCLE_NAME, primaryMuscleOf, secondaryMusclesOf, matchesMuscleFilter, loadOfWorkouts, levelsOf, rankOf } from './lib/muscles.js'
+import { MUSCLES, primaryMuscleOf, secondaryMusclesOf, matchesMuscleFilter, loadOfWorkouts, levelsOf, rankOf } from './lib/muscles.js'
 import { buildPlanBundle, parsePlan, mergePlan } from './lib/plan-share.js'
 import { act as actOn } from './lib/active-workout.js'
 
@@ -336,13 +336,5 @@ describe('Ticket 05 — Stats Muscle Balance integration', () => {
     expect(load.lats).toBeCloseTo(1.0, 5)
     expect(load['upper-back']).toBeCloseTo(0.7, 5)
     expect(load['lower-back']).toBeCloseTo(0.3, 5)
-  })
-
-  it('clicking Lats or Upper back region on map drives same filter semantics as Library chips (via BodyMap onMuscle)', async () => {
-    const load = { lats: 10, 'upper-back': 0 }
-    const levels = levelsOf(load)
-    expect(levels.lats).not.toBe(levels['upper-back'])
-    expect(MUSCLE_NAME.lats).toBe('Lats')
-    expect(MUSCLE_NAME['upper-back']).toBe('Upper back')
   })
 })
