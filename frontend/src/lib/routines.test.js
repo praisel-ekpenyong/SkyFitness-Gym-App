@@ -201,6 +201,35 @@ describe('Routine Domain Module (lib/routines.js)', () => {
     })
   })
 
+  describe('actRoutine: purgeExercise', () => {
+    it('removes the exercise from every Routine and unpairs the partner it leaves alone', () => {
+      S.routines[0].ex[1].sg = 'ss-1'
+      S.routines[0].ex[2].sg = 'ss-1'
+      S.routines.push({ id: 'r-pull', name: 'Pull', emoji: DEFAULT_GLYPH, ex: [{ id: '0027' }, { id: '0047' }, { id: '0027' }] })
+
+      const res = actRoutine(S, { type: 'purgeExercise', exId: '0027' })
+
+      expect(res.ok).toBe(true)
+      expect(S.routines[0].ex.map(e => e.id)).toEqual(['0025', '0026'])
+      expect(S.routines[0].ex[1].sg).toBeUndefined()
+      expect(S.routines[1].ex.map(e => e.id)).toEqual(['0047'])
+    })
+
+    it('keeps a superset paired when two partners stay adjacent', () => {
+      S.routines[0].ex.forEach(e => { e.sg = 'ss-3' })
+
+      actRoutine(S, { type: 'purgeExercise', exId: '0026' })
+
+      expect(S.routines[0].ex.map(e => [e.id, e.sg])).toEqual([['0025', 'ss-3'], ['0027', 'ss-3']])
+    })
+
+    it('refuses without an exercise id and changes nothing', () => {
+      const before = JSON.stringify(S)
+      expect(actRoutine(S, { type: 'purgeExercise' }).ok).toBe(false)
+      expect(JSON.stringify(S)).toBe(before)
+    })
+  })
+
   describe('actRoutine: moveExercise', () => {
     it('checks bounds, swaps entries, and calls cleanupSg(routine.ex)', () => {
       S.routines[0].ex[0].sg = 'sg-0-1'
