@@ -252,10 +252,9 @@
   },
   "src/views/Workout.jsx": {
     "eslint/complexity": 3,
-    "jsx-a11y/click-events-have-key-events": 4,
-    "jsx-a11y/no-static-element-interactions": 4,
-    "jsx-a11y/prefer-tag-over-role": 5,
-    "react/no-array-index-key": 1,
+    "jsx-a11y/click-events-have-key-events": 3,
+    "jsx-a11y/no-static-element-interactions": 3,
+    "jsx-a11y/prefer-tag-over-role": 4,
     "typescript/no-floating-promises": 1,
     "typescript/no-misused-promises": 1
   },

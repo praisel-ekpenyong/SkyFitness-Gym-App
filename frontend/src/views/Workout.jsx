@@ -13,10 +13,11 @@ import { best as bestOf, lastSession } from '../lib/training-log.js'
 import { fmtNum, fmtVol, fmtSec, fmtElapsed, exCount, sentenceCase } from '../lib/format.js'
 import { fmtDate, todayISO, DAYN } from '../lib/dates.js'
 import { t } from '../lib/i18n.js'
-import Media, { Thumb } from '../components/Media.jsx'
+import Media from '../components/Media.jsx'
 import { startFlow, finishWorkout, workoutCompleteSheet, exerciseNoteSheet, replaceActiveExerciseFlow } from '../sheets/session.jsx'
 import { exercisePicker, exConfigSheet, exerciseDetailSheet } from '../sheets/catalogue.jsx'
 import { confirmSheet } from '../sheets/confirm.jsx'
+import { ReorderExercisesSheet, EditWorkoutSheet } from '../sheets/edit-workout.jsx'
 import Icon, { ICON_NAMES } from '../components/Icon.jsx'
 import Barbell, { loadsOnBar } from '../components/Barbell.jsx'
 import { Button, Check, NumberField, dotted } from '../components/ui.jsx'
@@ -221,88 +222,6 @@ function removeActiveExercise(idx) {
   send({ type: 'removeExercise', entry: idx })
 }
 
-const NO_ENTRIES = []
-
-/** Bottom sheet listing active workout entries for sequential reordering and fast navigation. */
-export function ReorderExercisesSheet({ close }) {
-  const entries = useStore(s => s.S.active?.entries ?? NO_ENTRIES)
-  const view = sessionView({ entries })
-  const supersets = view.steps.filter(s => s.entries.length > 1).map(s => s.entries)
-  const supersetFirst = new Set(supersets.map(s => s[0]))
-  const inSuperset = new Set(supersets.flat())
-
-  const move = (idx, dir) => {
-    send({ type: 'moveExercise', entry: idx, dir })
-  }
-  const select = idx => {
-    send({ type: 'goTo', entry: idx })
-    close()
-  }
-
-  return <div>
-    <div className="row between">
-      <h3 className="flush">{t('Reorder exercises')}</h3>
-      <button className="iconbtn" onClick={close} aria-label={t('Close')}><Icon name="xmark" /></button>
-    </div>
-    <div className="sheet-sub">{t('Move exercises up or down, or tap to jump.')}</div>
-    <div className="list">
-      {entries.map((entry, idx) => {
-        const ex = exOr(entry.id)
-        const { done, total } = view.entryProgress[idx]
-        return <div key={idx}>
-          {supersetFirst.has(idx) && <div className="ss-label"><Icon name="link" />{t('Superset')}</div>}
-          <div className={'item' + (inSuperset.has(idx) ? ' in-ss' : '')} role="button" tabIndex={0} aria-label={ex.n}
-            onClick={() => select(idx)}
-            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); select(idx) } }}>
-            <Thumb ex={ex} />
-            <div className="grow">
-              <div className="tt capitalize">{ex.n}</div>
-              <div className="ss">{total ? t('{0} sets', done + '/' + total) : ''}</div>
-            </div>
-            <div className="item-move" onClick={e => e.stopPropagation()}>
-              <button className="iconbtn" aria-label={t('Move {0} up', ex.n)} disabled={idx === 0} onClick={() => move(idx, -1)}>
-                <Icon name="chevronUp" />
-              </button>
-              <button className="iconbtn" aria-label={t('Move {0} down', ex.n)} disabled={idx === entries.length - 1} onClick={() => move(idx, 1)}>
-                <Icon name="chevronDown" />
-              </button>
-            </div>
-          </div>
-        </div>
-      })}
-    </div>
-  </div>
-}
-
-export function EditWorkoutSheet({ close, name, count, onReorder, onReplace, onPairPrev, onPairNext, onRemove }) {
-  const holding = useUI(s => !!s.work)
-  const run = fn => () => { close(); fn() }
-  return <div>
-    <div className="row between">
-      <h3 className="flush">{t('Edit workout')}</h3>
-      <button className="iconbtn" onClick={close} aria-label={t('Close')}><Icon name="xmark" /></button>
-    </div>
-    <div className="sheet-sub capitalize">{name}</div>
-    <div className="sect-b">
-      <button className="lrow tap" disabled={holding || count < 2} onClick={run(onReorder)}>
-        <span className="lrow-i"><Icon name="list" /></span><span className="lrow-m"><span className="lrow-t">{t('Reorder exercises')}</span></span>
-      </button>
-      <button className="lrow tap" disabled={holding} onClick={run(onReplace)}>
-        <span className="lrow-i"><Icon name="shuffle" /></span><span className="lrow-m"><span className="lrow-t">{t('Replace exercise')}</span></span>
-      </button>
-      {onPairPrev && <button className="lrow tap" onClick={run(onPairPrev)}>
-        <span className="lrow-i"><Icon name="link" /></span><span className="lrow-m"><span className="lrow-t">{t('Make superset with previous')}</span></span>
-      </button>}
-      {onPairNext && <button className="lrow tap" onClick={run(onPairNext)}>
-        <span className="lrow-i"><Icon name="link" /></span><span className="lrow-m"><span className="lrow-t">{t('Make superset with next')}</span></span>
-      </button>}
-      <button className="lrow tap danger" disabled={holding} onClick={run(onRemove)}>
-        <span className="lrow-i"><Icon name="trash" /></span><span className="lrow-m"><span className="lrow-t">{t('Remove exercise')}</span></span>
-      </button>
-    </div>
-  </div>
-}
-
 function NextLabel({ name }) {
   const [before, after = ''] = t('Next: {0}').split('{0}')
   return <span>{before}<span className="capitalize">{name}</span>{after}</span>
@@ -393,7 +312,7 @@ function ActiveWorkout() {
   }
 
   const reorderExerciseSheet = () => {
-    useUI.getState().openSheet(close => <ReorderExercisesSheet close={close} />)
+    useUI.getState().openSheet(close => <ReorderExercisesSheet close={close} send={send} />)
   }
 
   const editWorkoutSheet = () => {

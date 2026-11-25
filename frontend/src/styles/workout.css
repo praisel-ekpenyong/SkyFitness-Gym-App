@@ -163,6 +163,7 @@
 .wk-nav > :only-child { grid-column: 1 / -1 }
 .btn.ghost.wk-discard { color: var(--red-text); margin-top: 4px; font-size: var(--fs-small) }
 .item-move { display: flex; gap: 2px; flex: none; align-items: center }
+.item-jump { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; align-self: stretch; text-align: left }
 
 .start-today { padding-bottom: var(--pad) }
 .start-today h2 { margin-bottom: 8px; font-size: var(--fs-meta); font-weight: 600 }

@@ -578,7 +578,9 @@ by `variant="danger"` or a trash icon (`icon="trash"` or a nested
 click changes anything before a `danger: true` confirm, even if its label is
 harmless. Both signals can fail the same button. A click passes when it is that
 confirm, a same-file function that ends in one (an early return or `close()` may
-come first), a sheet chooser whose own clicks confirm, or `undo()` alone. A
+come first), a sheet chooser whose own clicks confirm, a prop callback every
+passer of which confirms (in the same file, or where another file imports the
+component and passes the prop), or `undo()` alone. A
 conditional that can reach another path fails, and so does a name declared
 twice. Actions the check cannot prove are in a fixed exemption list keyed by
 file and source text, each with a reason naming the file that confirms; an

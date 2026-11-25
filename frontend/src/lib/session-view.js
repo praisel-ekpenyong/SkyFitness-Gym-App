@@ -11,7 +11,7 @@ const setsOf = e => (Array.isArray(e?.sets) ? e.sets : [])
 
 /**
  * The one read model of an Active workout: its Steps, the cursor and Session progress.
- * @param {ActiveWorkout | null | undefined} active - The Active workout.
+ * @param {Pick<ActiveWorkout, 'entries'> & Partial<Pick<ActiveWorkout, 'cur'>> | null | undefined} active - The Active workout, or just its entries.
  */
 export function sessionView(active) {
   const entries = Array.isArray(active?.entries) ? active.entries : []
