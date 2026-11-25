@@ -45,6 +45,7 @@ view, the store, and the lib function.
 |---|---|
 | Training rules, prescriptions, history | The pure function in `lib/`, Profile in, value out |
 | Changing the Active workout | `act(S, command)` and `sessionView` |
+| Changing a Routine | `actRoutine(S, command)` and `routineView` in `lib/routines.js` |
 | What a command asks the UI to do | The `effects` array on `act`'s result |
 | A Profile entering the app | `admit` |
 | Stats, catalogue search | `selectStatsOverview` / `queryCatalogue` |
@@ -212,8 +213,9 @@ until `act` accepts `now`.
 (0 hits).
 
 **Runs:** ESLint `no-restricted-syntax` in test files (`noOwnModuleMock` in
-`frontend/eslint.config.js`) fails `vi.mock` of a relative path unless the path
-is inside `platform/`:
+`frontend/eslint.config.js`, pinned with `vi.mock('./x.js')` in
+`frontend/scripts/env-lint.test.mjs`) fails `vi.mock` of a relative path unless
+the path is inside `platform/`:
 `CallExpression[callee.object.name='vi'][callee.property.name='mock'][arguments.0.value=/^\.(?!.*platform\x2F)/]`
 (`\x2F` is a slash: an esquery regex cannot contain one). The lookahead lets
 any path through `platform/` pass, so the exemption is in the selector, not in
@@ -221,7 +223,7 @@ prose. Mocking
 `platform/sound.js`, `localStorage`, and Capacitor stays legal: those are the
 boundary. The rule is wider than `lib/` and `store/`: 30 calls in 9 files
 (2026-11-25; 39 when the rule was scoped on 2026-11-24) mock one of our own
-modules (`../store/useUI.js` in `components/Modals.test.jsx`,
+modules (`../components/BodyMap.jsx` in `views/Plan.test.jsx`,
 `../sheets/confirm.jsx` in `views/Settings.test.jsx`, `./def.js` in
 `lib/profile/admit-defaults.test.js`). Those 30 are baselined in
 `frontend/eslint-suppressions.json` and only shrink. A new test that mocks its
