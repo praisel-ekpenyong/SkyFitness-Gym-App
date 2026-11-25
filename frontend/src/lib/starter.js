@@ -1,5 +1,5 @@
-import { uid } from './format.js'
 import { assignWeekday } from './schedule.js'
+import { actRoutine } from './routines.js'
 
 /** @typedef {import('./types.js').Profile} Profile */
 /** @typedef {import('./types.js').Routine} Routine */
@@ -11,9 +11,9 @@ const SPEC = [
   ['Leg Day', 'legs', [['0043', 4, 8], ['0085', 3, 10], ['0739', 3, 12], ['0585', 3, 12], ['0586', 3, 12], ['0605', 4, 15]]]
 ]
 
-/** @returns {Routine[]} */
+/** @returns {Partial<Routine>[]} The starter Routines as `import` takes them. */
 export const starterRoutines = () =>
-  SPEC.map(([name, emoji, list]) => ({ id: uid(), name, emoji, ex: list.map(([id, sets, reps]) => ({ id, sets, reps, weight: 0 })) }))
+  SPEC.map(([name, emoji, list]) => ({ name, emoji, ex: list.map(([id, sets, reps]) => ({ id, sets, reps, weight: 0 })) }))
 
 /**
  * @param {Profile} S
@@ -21,10 +21,9 @@ export const starterRoutines = () =>
  */
 export function applyStarterPlan(S) {
   S.routines ??= []
-  const [push, pull, legs] = starterRoutines()
-  S.routines.push(push, pull, legs)
-  assignWeekday(S, 1, push.id)
-  assignWeekday(S, 3, pull.id)
-  assignWeekday(S, 5, legs.id)
-  return [push.id, pull.id, legs.id]
+  const [push, pull, legs] = starterRoutines().map(routine => actRoutine(S, { type: 'import', routine }).result?.id ?? '')
+  assignWeekday(S, 1, push)
+  assignWeekday(S, 3, pull)
+  assignWeekday(S, 5, legs)
+  return [push, pull, legs]
 }

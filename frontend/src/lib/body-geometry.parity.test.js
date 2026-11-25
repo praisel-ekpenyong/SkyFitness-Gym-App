@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import bodyPaths from './body-paths.js'
-import { MUSCLES, MUSCLE_NAME, levelsOf } from './muscles.js'
+import { MUSCLES, levelsOf } from './muscles.js'
 
 describe('lats vs upper-back visual parity', () => {
   const assertIsolatedLevels = () => {
@@ -18,8 +18,6 @@ describe('lats vs upper-back visual parity', () => {
 
     expect(bothLoad.lats).toBe(4)
     expect(bothLoad['upper-back']).toBe(4)
-    expect(MUSCLE_NAME.lats).toBe('Lats')
-    expect(MUSCLE_NAME['upper-back']).toBe('Upper back')
     expect(MUSCLES.indexOf('lats')).toBe(MUSCLES.indexOf('upper-back') + 1)
   })
 

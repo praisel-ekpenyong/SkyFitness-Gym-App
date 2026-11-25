@@ -3,7 +3,7 @@ import { cleanNote } from './workout-model.js'
 import { doneWorkSets } from './workout-sets.js'
 import { cleanupSg, supersetUnits } from './supersetFlow.js'
 import { EXIDX, exOr } from './exercises.js'
-import { MINUS, uid } from './format.js'
+import { uid } from './format.js'
 
 /** @typedef {import('./types.js').Profile} Profile */
 /** @typedef {import('./types.js').Routine} Routine */
@@ -11,6 +11,17 @@ import { MINUS, uid } from './format.js'
 /** @typedef {import('./types.js').Entry} Entry */
 /** @typedef {import('./types.js').ActiveWorkout} ActiveWorkout */
 /** @typedef {import('./types.js').Workout} Workout */
+
+/**
+ * One difference between a Routine and the session that came from it, as data: the UI turns
+ * each kind into a label. `ids` are the exercise ids involved, in display order (`replaced` is
+ * old then new). `from` and `to` are the planned and performed set counts of a `sets` change.
+ * @typedef {Object} SyncChange
+ * @property {'replaced' | 'reordered' | 'superset' | 'unlinkedSuperset' | 'added' | 'removed' | 'sets' | 'noteUpdated' | 'noteRemoved'} kind
+ * @property {string[]} ids
+ * @property {number} [from]
+ * @property {number} [to]
+ */
 
 /** @param {string | undefined} str @returns {string} */
 function toTitleCase(str) {
@@ -108,28 +119,13 @@ export function detectStructuralChanges(routineExercises, sessionEntries) {
     if (!matchedAdded.has(id)) additions.push(id)
   }
 
-  /** @type {string[]} */
-  const changes = []
-
-  for (const rep of replacements) {
-    const oldName = exerciseDisplayName(rep.from, routineExercises.find(e => e.id === rep.from))
-    const newName = exerciseDisplayName(rep.to, sessionEntries.find(e => e.id === rep.to))
-    changes.push(`⇄ Replaced ${oldName} → ${newName}`)
-  }
-
-  for (const id of additions) {
-    const name = exerciseDisplayName(id, sessionEntries.find(e => e.id === id))
-    changes.push(`+ ${name}`)
-  }
-
-  for (const id of removals) {
-    const name = exerciseDisplayName(id, routineExercises.find(e => e.id === id))
-    changes.push(`${MINUS} ${name}`)
-  }
-
-  if (isReordered) {
-    changes.push('⇅ Reordered')
-  }
+  /** @type {SyncChange[]} */
+  const changes = [
+    ...replacements.map(rep => ({ kind: /** @type {const} */ ('replaced'), ids: [rep.from, rep.to] })),
+    ...additions.map(id => ({ kind: /** @type {const} */ ('added'), ids: [id] })),
+    ...removals.map(id => ({ kind: /** @type {const} */ ('removed'), ids: [id] })),
+  ]
+  if (isReordered) changes.push({ kind: 'reordered', ids: [] })
 
   return {
     replacements,
@@ -144,14 +140,12 @@ export function detectStructuralChanges(routineExercises, sessionEntries) {
  * Detect superset pairings added or unlinked between a Routine and an ActiveWorkout.
  * @param {Target[]} routineExercises
  * @param {Target[]} syncedExercises
- * @param {Entry[]} sessionEntries
  * @param {Array<{ from: string, to: string }>} replacements
- * @returns {string[]}
+ * @returns {SyncChange[]}
  */
 export function detectSupersetChanges(
   routineExercises,
   syncedExercises,
-  sessionEntries,
   replacements
 ) {
   const repMap = new Map(replacements.map(r => [r.from, r.to]))
@@ -169,22 +163,16 @@ export function detectSupersetChanges(
   const routineKeys = new Set(routineSupersets.map(keyOf))
   const sessionKeys = new Set(sessionSupersets.map(keyOf))
 
-  /** @type {string[]} */
+  /** @type {SyncChange[]} */
   const changes = []
 
-  for (let i = 0; i < sessionSupersets.length; i++) {
-    const key = keyOf(sessionSupersets[i])
-    if (!routineKeys.has(key)) {
-      const names = sessionSupersets[i].map(id => exerciseDisplayName(id, sessionEntries.find(e => e.id === id)))
-      changes.push(`Superset: ${names.join(' + ')}`)
-    }
+  for (const ids of sessionSupersets) {
+    if (!routineKeys.has(keyOf(ids))) changes.push({ kind: 'superset', ids })
   }
 
   for (let i = 0; i < routineSupersets.length; i++) {
-    const key = keyOf(routineSupersets[i])
-    if (!sessionKeys.has(key)) {
-      const names = routineUnits[i].map(idx => exerciseDisplayName(routineExercises[idx].id ?? '', routineExercises[idx]))
-      changes.push(`Unlinked superset: ${names.join(' + ')}`)
+    if (!sessionKeys.has(keyOf(routineSupersets[i]))) {
+      changes.push({ kind: 'unlinkedSuperset', ids: routineUnits[i].map(idx => routineExercises[idx].id ?? '') })
     }
   }
 
@@ -195,7 +183,7 @@ export function detectSupersetChanges(
  * Compute the Routine sync diff and projected `ex` list from an ActiveWorkout.
  * @param {Routine | null | undefined} routine
  * @param {ActiveWorkout | Workout | null | undefined} activeSession
- * @returns {{ hasDiff: boolean, changes: string[], syncedEx: Target[] }}
+ * @returns {{ hasDiff: boolean, changes: SyncChange[], syncedEx: Target[] }}
  */
 export function diffRoutineWithSession(routine, activeSession) {
   if (
@@ -262,11 +250,10 @@ export function diffRoutineWithSession(routine, activeSession) {
   const supersetChanges = detectSupersetChanges(
     routineExercises,
     syncedEx,
-    sessionEntries,
     replacements
   )
 
-  /** @type {string[]} */
+  /** @type {SyncChange[]} */
   const setCountChanges = []
   const matchedRoutineIndicesForSets = new Set()
   for (let sIdx = 0; sIdx < sessionEntries.length; sIdx++) {
@@ -292,12 +279,11 @@ export function diffRoutineWithSession(routine, activeSession) {
 
     const doneCount = doneWorkSets(entry).length
     if (doneCount > 0 && doneCount !== orig.sets) {
-      const name = exerciseDisplayName(entry.id, entry)
-      setCountChanges.push(`${name}: ${orig.sets} → ${doneCount} sets`)
+      setCountChanges.push({ kind: 'sets', ids: [entry.id], from: orig.sets, to: doneCount })
     }
   }
 
-  /** @type {string[]} */
+  /** @type {SyncChange[]} */
   const noteChanges = []
   const matchedRoutineIndicesForNotes = new Set()
   for (let sIdx = 0; sIdx < sessionEntries.length; sIdx++) {
@@ -325,12 +311,7 @@ export function diffRoutineWithSession(routine, activeSession) {
     const origNote = cleanNote(orig.notes)
 
     if (sessionNote !== origNote) {
-      const name = exerciseDisplayName(entry.id, entry)
-      if (sessionNote) {
-        noteChanges.push(`${name}: note updated`)
-      } else {
-        noteChanges.push(`${name}: note removed`)
-      }
+      noteChanges.push({ kind: sessionNote ? 'noteUpdated' : 'noteRemoved', ids: [entry.id] })
     }
   }
 

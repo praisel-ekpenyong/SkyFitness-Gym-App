@@ -24,6 +24,7 @@ import { isKnownExercise } from './exercises.js'
  *   index?: number,
  *   dir?: number,
  *   syncedEx?: Target[],
+ *   routine?: Partial<Routine>,
  * }} RoutineCommand
  */
 
@@ -51,6 +52,29 @@ function create(S, command) {
     name: command.name || t('New routine'),
     emoji: command.emoji || DEFAULT_GLYPH,
     ex: [],
+  }
+  S.routines.push(routine)
+  return applied(routine)
+}
+
+/**
+ * Adds a whole Routine (a shared plan's or the starter plan's) under a fresh id,
+ * building every row through `routineRow`. Exercise ids and units are the
+ * caller's to settle first.
+ * @param {Profile} S @param {RoutineCommand} command
+ */
+function importRoutine(S, command) {
+  if (!S || !Array.isArray(S.routines)) return refused()
+  const src = command.routine || {}
+  const ex = (Array.isArray(src.ex) ? src.ex : []).map(e => routineRow(e.id ?? '', e))
+  cleanupSg(ex)
+  /** @type {Routine} */
+  const routine = {
+    id: uid(),
+    name: src.name || t('New routine'),
+    emoji: src.emoji || DEFAULT_GLYPH,
+    ...(src.prog ? { prog: src.prog } : {}),
+    ex,
   }
   S.routines.push(routine)
   return applied(routine)
@@ -101,16 +125,27 @@ function extractTarget(target = {}) {
   return { target: t, note }
 }
 
+/**
+ * Builds one Routine row: the exercise's Mode defaults under the given target,
+ * a clean note and a fresh rowId.
+ * @param {string} exId
+ * @param {Partial<Target>} [rawTarget]
+ * @returns {Target}
+ */
+function routineRow(exId, rawTarget) {
+  const { target, note } = extractTarget(rawTarget)
+  /** @type {Target} */
+  const entry = { ...defaultConfig(exId, target.mode), ...target, id: exId, rowId: uid() }
+  if (note) entry.notes = note
+  return entry
+}
+
 /** @param {Profile} S @param {RoutineCommand} command */
 function addExercise(S, command) {
   const r = findRoutine(S, command.routineId)
   const exId = command.exId || ''
   if (!r || !isKnownExercise(exId)) return refused()
-  const { target, note } = extractTarget(command.target)
-  const defaults = defaultConfig(exId, target.mode)
-  /** @type {Target} */
-  const entry = { id: exId, ...defaults, ...target, rowId: uid() }
-  if (note) entry.notes = note
+  const entry = routineRow(exId, command.target)
   r.ex ??= []
   r.ex.push(entry)
   return applied(entry)
@@ -124,6 +159,13 @@ function removeExercise(S, command) {
   if (typeof idx !== 'number' || idx < 0 || idx >= r.ex.length) return refused()
   r.ex.splice(idx, 1)
   cleanupSg(r.ex)
+  return applied()
+}
+
+/** @param {Profile} S @param {RoutineCommand} command */
+function purgeExercise(S, command) {
+  if (!command.exId) return refused()
+  ;(S?.routines || []).forEach(r => { r.ex = (r.ex || []).filter(e => e.id !== command.exId); cleanupSg(r.ex) })
   return applied()
 }
 
@@ -219,9 +261,10 @@ function syncFromSession(S, command) {
   return command.routineId && command.syncedEx && syncRoutineFromSession(S, command.routineId, command.syncedEx) ? applied() : refused()
 }
 
-/** @type {Record<string, (S: Profile, command: RoutineCommand) => { ok: boolean, result?: unknown }>} */
+/** @type {Record<string, (S: Profile, command: RoutineCommand) => { ok: boolean, result?: Routine | Target }>} */
 const COMMANDS = {
   create,
+  import: importRoutine,
   delete: deleteRoutine,
   rename,
   setGlyph,
@@ -232,6 +275,7 @@ const COMMANDS = {
   replaceExercise,
   toggleSuperset,
   syncFromSession,
+  purgeExercise,
 }
 
 /**
