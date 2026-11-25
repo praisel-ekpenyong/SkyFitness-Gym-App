@@ -44,13 +44,13 @@ export default function Library() {
       onClear={() => { setQ(''); setShown(40) }}
     />
     <div className="chips lib-chips">
-      {favs.length > 0 && <button className={'chip chip-i' + (activeFilter === 'favorites' ? ' on' : '')} onClick={() => { setFilter('favorites'); setEq(''); setShown(40) }}><Icon name="starFill" />{t('Favorites')} ({fmtNum(favs.length)})</button>}
-      <button className={'chip nocap' + (!activeFilter ? ' on' : '')} onClick={() => { setFilter(''); setEq(''); setShown(40) }}>{t('All')}</button>
-      {FILTER_MUSCLES.map(m => <button key={m} className={'chip nocap' + (activeFilter === m ? ' on' : '')} onClick={() => { setFilter(m); setEq(''); setShown(40) }}>{sentenceCase(t(MUSCLE_NAME[m] || m))}</button>)}
+      {favs.length > 0 && <button className={'chip chip-i' + (activeFilter === 'favorites' ? ' on' : '')} aria-pressed={activeFilter === 'favorites'} onClick={() => { setFilter('favorites'); setEq(''); setShown(40) }}><Icon name="starFill" />{t('Favorites')} ({fmtNum(favs.length)})</button>}
+      <button className={'chip nocap' + (!activeFilter ? ' on' : '')} aria-pressed={!activeFilter} onClick={() => { setFilter(''); setEq(''); setShown(40) }}>{t('All')}</button>
+      {FILTER_MUSCLES.map(m => <button key={m} className={'chip nocap' + (activeFilter === m ? ' on' : '')} aria-pressed={activeFilter === m} onClick={() => { setFilter(m); setEq(''); setShown(40) }}>{sentenceCase(t(MUSCLE_NAME[m] || m))}</button>)}
     </div>
     {eqOpts.length > 1 && <div className="chips lib-chips">
-      <button className={'chip nocap' + (!eqOn ? ' on' : '')} onClick={() => { setEq(''); setShown(40) }}>{t('Any equipment')}</button>
-      {eqOpts.map(x => <button key={x} className={'chip nocap' + (eqOn === x ? ' on' : '')} onClick={() => { setEq(x); setShown(40) }}>{sentenceCase(t(x))}</button>)}
+      <button className={'chip nocap' + (!eqOn ? ' on' : '')} aria-pressed={!eqOn} onClick={() => { setEq(''); setShown(40) }}>{t('Any equipment')}</button>
+      {eqOpts.map(x => <button key={x} className={'chip nocap' + (eqOn === x ? ' on' : '')} aria-pressed={eqOn === x} onClick={() => { setEq(x); setShown(40) }}>{sentenceCase(t(x))}</button>)}
     </div>}
     <div className="list ex-grid">
       <div className="item ex-create" role="button" tabIndex={0} onClick={() => customExSheet(null, ex => exerciseDetailSheet(ex), q.trim())}
