@@ -53,9 +53,11 @@ mutates or corrupts a session that is already in flight.
 ## 3. The `admit` pipeline: The single entrance for state
 
 Every Profile entering the application — at boot, via multi-tab storage sync,
-JSON backup restore, or CSV import — must pass through `admit` in
+or JSON backup restore — must pass through `admit` in
 `frontend/src/lib/profile/admit.js`
-([ADR 0027](./adr/0027-admit-is-the-single-way-a-profile-comes-in.md)).
+([ADR 0027](./adr/0027-admit-is-the-single-way-a-profile-comes-in.md)). It throws
+on a non-record payload; `normalizeState` keeps its own guard so a missing or
+corrupt `gym_state_v1` still yields a fresh Profile.
 
 - **Fills missing fields from `DEF` across all depths.** A new setting or
   collection introduced in a newer code version is filled automatically without
@@ -69,7 +71,10 @@ JSON backup restore, or CSV import — must pass through `admit` in
   then original order.
 
 Never bypass `admit` by writing raw parsed JSON directly into `useStore` or
-`localStorage`.
+`localStorage`. A CSV import is different: `mergeImport` adds parsed Workouts
+to the already-admitted Profile and orders them with `sortWorkouts`, not
+`admit`
+([ADR 0027 amendment 2026-11-25](./adr/0027-admit-is-the-single-way-a-profile-comes-in.md)).
 
 ## 4. Dual-write persistence
 
@@ -91,6 +96,10 @@ State persistence is guarded by `platform/storage.js`
   does not.
 - `lib/profile/admit-defaults.test.js` — absent fields fill from `DEF`, and a
   stored value is kept.
+- `lib/profile/admit.test.js` — a non-record payload throws instead of passing
+  through.
+- `lib/profile/normalize.test.js` — a missing or corrupt saved blob yields a
+  fresh Profile, not a crash.
 - `lib/profile/upgrades.test.js` — a newer Profile throws `NewerProfileError`.
 - `lib/profile/workouts.test.js` — `sortWorkouts` is date, then `start`, then
   original position. `admit` calls it.

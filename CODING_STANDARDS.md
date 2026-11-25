@@ -304,7 +304,7 @@ in-progress workout or produce stranded writes. Exception: none.
 ### State ingestion goes through `admit`
 
 Every Profile entering the application — at boot, via multi-tab storage sync,
-JSON backup restore, or CSV import — must pass through `admit` in
+or JSON backup restore — must pass through `admit` in
 `frontend/src/lib/profile/admit.js`
 ([ADR 0027](./docs/adr/0027-admit-is-the-single-way-a-profile-comes-in.md)).
 `admit`:
@@ -312,8 +312,13 @@ JSON backup restore, or CSV import — must pass through `admit` in
 - Runs ordered schema upgrade migrations (`UPGRADES`).
 - Refuses newer schema versions by throwing `NewerProfileError`.
 - Sorts workouts into canonical training-log order.
+- Throws on a non-record payload instead of returning it as a Profile.
 
-Never inject raw objects directly into the store or storage. Exception: none.
+Never inject raw objects directly into the store or storage. Exception: a CSV
+import does not admit a Profile — `mergeImport` adds parsed Workouts to the
+Profile the store already admitted and orders them with `sortWorkouts`
+(issue #139, ADR 0027 amendment 2026-11-25). No raw Profile crosses the
+boundary there, so there is nothing to default, upgrade or refuse.
 
 **Runs:** `admit-defaults.test.js`, `upgrades.test.js`, `workouts.test.js`,
 `restore-keys.test.js` and `profile-keys.test.js` under
