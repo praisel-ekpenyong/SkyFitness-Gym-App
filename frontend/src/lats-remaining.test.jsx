@@ -2,6 +2,8 @@
 import { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { fireEvent, within } from '@testing-library/react'
+import { chipIn, chipNamesIn, search, tileNamed } from './test/library-queries.js'
 import Library from './views/Library.jsx'
 import { ExerciseDetail, ExercisePicker, CustomExForm } from './sheets/catalogue.jsx'
 import { useStore } from './store/useStore.js'
@@ -56,56 +58,37 @@ describe('Ticket 03 — Library and Picker filters plus Exercise Detail presenta
   it('Library renders a chip for every filter muscle in taxonomy order with Lats after Upper back; Favorites/All preserved', async () => {
     useStore.getState().update(s => { s.favorites = ['0001'] })
     await act(async () => { root.render(<Library />) })
-    const firstChipsRow = container.querySelectorAll('.chips')[0]
-    const chips = Array.from(firstChipsRow.querySelectorAll('button.chip')).map(c => c.textContent.trim())
-    expect(chips).toEqual(EXPECTED_LIBRARY_CHIPS)
+    const chips = chipNamesIn(container)
+    expect(chips.slice(0, EXPECTED_LIBRARY_CHIPS.length)).toEqual(EXPECTED_LIBRARY_CHIPS)
     expect(chips.indexOf('Lats')).toBe(chips.indexOf('Upper back') + 1)
     expect(chips.indexOf('Serratus')).toBe(chips.indexOf('Lats') + 1)
   })
 
   it('clicking Lats shows primary lat exercises and secondary contributors; clicking Upper back shows disjoint primary set', async () => {
     await act(async () => { root.render(<Library />) })
-    const latsChip = getChip(container, 'Lats')
-    expect(latsChip).toBeTruthy()
-    await act(async () => { latsChip.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
-    const latsItems = Array.from(container.querySelectorAll('.list .item'))
-    const latPulldown = latsItems.find(it => it.textContent.toLowerCase().includes('alternate lateral pulldown'))
-    expect(latPulldown).toBeTruthy()
-    const rowItemUnderLats = latsItems.find(it => it.textContent.toLowerCase().includes('barbell bent over row'))
-    expect(rowItemUnderLats).toBeTruthy()
+    fireEvent.click(chipIn(container, 'Lats'))
+    expect(tileNamed(container, 'alternate lateral pulldown')).toBeTruthy()
+    expect(tileNamed(container, 'barbell bent over row')).toBeTruthy()
 
-    const upperChip = getChip(container, 'Upper back')
-    expect(upperChip).toBeTruthy()
-    await act(async () => { upperChip.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
-    const upperItems = Array.from(container.querySelectorAll('.list .item'))
-    const rowItem = upperItems.find(it => it.textContent.toLowerCase().includes('barbell bent over row'))
-    expect(rowItem).toBeTruthy()
-    const latUnderUpper = upperItems.find(it => it.textContent.toLowerCase().includes('alternate lateral pulldown'))
-    expect(latUnderUpper).toBeTruthy()
-    expect(latUnderUpper.querySelector('.ss .tag')?.textContent).toContain('Secondary: Upper back')
-    await act(async () => { latsChip.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
-    const latsItems2 = Array.from(container.querySelectorAll('.list .item'))
-    const latItemAgain = latsItems2.find(it => it.textContent.toLowerCase().includes('alternate lateral pulldown'))
-    expect(latItemAgain.querySelector('.ss .tag')).toBeNull()
+    fireEvent.click(chipIn(container, 'Upper back'))
+    expect(tileNamed(container, 'barbell bent over row')).toBeTruthy()
+    const latUnderUpper = tileNamed(container, 'alternate lateral pulldown')
+    expect(within(latUnderUpper).getByText(/Secondary: Upper back/)).toBeTruthy()
+
+    fireEvent.click(chipIn(container, 'Lats'))
+    expect(within(tileNamed(container, 'alternate lateral pulldown')).queryByText(/Secondary:/)).toBeNull()
   })
 
   it('crossover compounds display inline Secondary: Lats or Secondary: Upper back badges', async () => {
     await act(async () => { root.render(<Library />) })
-    const upperChip = getChip(container, 'Upper back')
-    await act(async () => { upperChip.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
-    let items = Array.from(container.querySelectorAll('.list .item'))
-    let latUnderUpper = items.find(it => it.textContent.toLowerCase().includes('alternate lateral pulldown'))
-    expect(latUnderUpper.querySelector('.ss .tag').textContent).toContain('Secondary: Upper back')
+    fireEvent.click(chipIn(container, 'Upper back'))
+    expect(within(tileNamed(container, 'alternate lateral pulldown')).getByText(/Secondary: Upper back/)).toBeTruthy()
 
     const custom = { id: 'c-test-latsec', n: 'Custom Row to Lats', bp: 'back', tg: 'upper-back', sm: ['lats'], eq: 'custom', custom: true }
     useStore.getState().update(s => { s.customEx.push(custom) })
     await act(async () => { root.render(<Library />) })
-    const latsChip = getChip(container, 'Lats')
-    await act(async () => { latsChip.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
-    items = Array.from(container.querySelectorAll('.list .item'))
-    const customUnderLats = items.find(it => it.textContent.includes('Custom Row to Lats'))
-    expect(customUnderLats).toBeTruthy()
-    expect(customUnderLats.querySelector('.ss .tag').textContent).toContain('Secondary: Lats')
+    fireEvent.click(chipIn(container, 'Lats'))
+    expect(within(tileNamed(container, 'Custom Row to Lats')).getByText(/Secondary: Lats/)).toBeTruthy()
   })
 
   it('ExercisePicker renders the same muscle chips, with Lats after Upper back, and matches the same semantics', async () => {
@@ -129,23 +112,12 @@ describe('Ticket 03 — Library and Picker filters plus Exercise Detail presenta
 
   it('text search for lats/latissimus matches canonical lats group and rhomboids matches upper-back via alias-aware search', async () => {
     await act(async () => { root.render(<Library />) })
-    const searchInput = container.querySelector('input.input')
-    const doSearch = async (q) => {
-      await act(async () => {
-        const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set
-        nativeSetter.call(searchInput, q)
-        searchInput.dispatchEvent(new Event('input', { bubbles: true }))
-      })
-    }
-    await doSearch('lats')
-    let items = Array.from(container.querySelectorAll('.list .item'))
-    expect(items.some(it => it.textContent.toLowerCase().includes('alternate lateral pulldown'))).toBe(true)
-    await doSearch('rhomboids')
-    items = Array.from(container.querySelectorAll('.list .item'))
-    expect(items.some(it => it.textContent.toLowerCase().includes('barbell bent over row'))).toBe(true)
-    await doSearch('latissimus')
-    items = Array.from(container.querySelectorAll('.list .item'))
-    expect(items.some(it => it.textContent.toLowerCase().includes('alternate lateral pulldown'))).toBe(true)
+    search(container, 'lats')
+    expect(tileNamed(container, 'alternate lateral pulldown')).toBeTruthy()
+    search(container, 'rhomboids')
+    expect(tileNamed(container, 'barbell bent over row')).toBeTruthy()
+    search(container, 'latissimus')
+    expect(tileNamed(container, 'alternate lateral pulldown')).toBeTruthy()
   })
 
   it('ExerciseDetail shows Primary: Lats with secondaries for vertical pull and Primary: Upper back for row', async () => {
@@ -245,16 +217,10 @@ describe('Ticket 04 — Custom exercise lifecycle with lats', () => {
     expect(matchesMuscleFilter('c-legacy-back', 'upper-back')).toBe(true)
     expect(matchesMuscleFilter('c-legacy-back', 'lower-back')).toBe(true)
     await act(async () => { root.render(<Library />) })
-    let latsChip = getChip(container, 'Lats')
-    await act(async () => { latsChip.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
-    let items = Array.from(container.querySelectorAll('.list .item'))
-    expect(items.some(it => it.textContent.includes('Old Back Lift'))).toBe(true)
-    let upperChip = getChip(container, 'Upper back')
-    await act(async () => { upperChip.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
-    items = Array.from(container.querySelectorAll('.list .item'))
-    const legacyUnderUpper = items.find(it => it.textContent.includes('Old Back Lift'))
-    expect(legacyUnderUpper).toBeTruthy()
-    expect(legacyUnderUpper.querySelector('.ss .tag')?.textContent).toContain('Secondary: Upper back')
+    fireEvent.click(chipIn(container, 'Lats'))
+    expect(tileNamed(container, 'Old Back Lift')).toBeTruthy()
+    fireEvent.click(chipIn(container, 'Upper back'))
+    expect(within(tileNamed(container, 'Old Back Lift')).getByText(/Secondary: Upper back/)).toBeTruthy()
   })
 
   it('full profile export preserves tg/sm with lats; plan import accepts lats slug and derives bp', async () => {

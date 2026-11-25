@@ -5,7 +5,10 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import Library from './Library.jsx'
 import { useStore } from '../store/useStore.js'
 import { DEF } from '../lib/profile/index.js'
+import { useUI } from '../store/useUI.js'
 import { FILTER_MUSCLES, MUSCLE_NAME } from '../lib/muscles.js'
+import { fireEvent, within } from '@testing-library/react'
+import { chipIn, chipNamesIn, search, tileNamed, tilesIn } from '../test/library-queries.js'
 
 let container
 let root
@@ -14,6 +17,7 @@ beforeEach(() => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true
   localStorage.clear()
   useStore.getState().replaceState(JSON.parse(JSON.stringify(DEF)))
+  useUI.setState({ sheets: [] })
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
@@ -27,68 +31,39 @@ afterEach(async () => {
   vi.restoreAllMocks()
 })
 
+const screen = () => within(container)
+const star = tile => within(tile).getByRole('button', { name: /favorites$/ })
+const render = async () => { await act(async () => { root.render(<Library />) }) }
+
 describe('Library view smoke tests', () => {
   it('renders exercise list with thumbnails and filters by body part', async () => {
-    await act(async () => {
-      root.render(<Library />)
-    })
+    await render()
 
-    const hdr = container.querySelector('.hdr h1')
-    expect(hdr?.textContent).toBe('Exercises')
+    expect(screen().getByRole('heading', { name: 'Exercises' })).toBeTruthy()
+    expect(tilesIn(container)).toHaveLength(40)
 
-    const items = container.querySelectorAll('.list .item')
-    expect(items.length).toBe(41)
-
-    const firstThumb = container.querySelector('.list .item img.thumb')
-    expect(firstThumb).toBeTruthy()
+    const firstThumb = container.querySelector('img')
     expect(firstThumb.getAttribute('src')).toMatch(/^media\/images\/.+\.jpg$/)
-
-    await act(async () => {
-      firstThumb.dispatchEvent(new Event('error'))
-    })
+    await act(async () => { firstThumb.dispatchEvent(new Event('error')) })
     expect(firstThumb.getAttribute('src')).toMatch(/^https:\/\/cdn\.jsdelivr\.net\/.+\.jpg$/)
 
-    const chestChip = Array.from(container.querySelectorAll('.chips button.chip'))
-      .find(b => b.textContent.toLowerCase().includes('chest'))
-    expect(chestChip).toBeTruthy()
-
-    await act(async () => {
-      chestChip.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
-
-    const filteredItems = container.querySelectorAll('.list .item')
-    expect(filteredItems.length).toBeGreaterThan(1)
+    fireEvent.click(chipIn(container, 'Chest'))
+    expect(chipIn(container, 'Chest').getAttribute('aria-pressed')).toBe('true')
+    expect(tilesIn(container).length).toBeGreaterThan(0)
   })
 
   it('searches exercises by keyword, updates list, and clears via clear button', async () => {
-    await act(async () => {
-      root.render(<Library />)
-    })
+    await render()
+    const box = screen().getByRole('textbox', { name: 'Search exercises' })
+    expect(screen().queryByRole('button', { name: 'Clear' })).toBeNull()
 
-    const searchInput = container.querySelector('input.input')
-    expect(searchInput).toBeTruthy()
+    expect(tileNamed(container, 'bench press')).toBeUndefined()
+    search(container, 'bench press')
+    expect(tileNamed(container, 'bench press')).toBeTruthy()
 
-    expect(container.querySelector('.searchf button.clear')).toBeNull()
-
-    await act(async () => {
-      const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set
-      nativeSetter.call(searchInput, 'bench press')
-      searchInput.dispatchEvent(new Event('input', { bubbles: true }))
-      searchInput.dispatchEvent(new Event('change', { bubbles: true }))
-    })
-
-    const items = container.querySelectorAll('.list .item')
-    expect(items.length).toBeGreaterThan(1)
-
-    const clearBtn = container.querySelector('.searchf button.clear')
-    expect(clearBtn).toBeTruthy()
-
-    await act(async () => {
-      clearBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
-
-    expect(searchInput.value).toBe('')
-    expect(container.querySelectorAll('.list .item').length).toBe(41)
+    fireEvent.click(screen().getByRole('button', { name: 'Clear' }))
+    expect(box.value).toBe('')
+    expect(tilesIn(container)).toHaveLength(40)
   })
 
   it('initializes favorites as an empty array in DEF schema', () => {
@@ -97,186 +72,81 @@ describe('Library view smoke tests', () => {
     expect(Array.isArray(useStore.getState().S.favorites)).toBe(true)
   })
 
-  it('renders an in-row star button before Plan and toggles favorite state without opening detail sheet', async () => {
-    await act(async () => {
-      root.render(<Library />)
-    })
+  it('puts a star before Plan in each row and toggles favorite state without opening the detail sheet', async () => {
+    await render()
 
-    const items = container.querySelectorAll('.list .item')
-    const firstExRow = items[1]
-    expect(firstExRow).toBeTruthy()
-
-    const starBtn = firstExRow.querySelector('button.iconbtn')
-    const planBtn = Array.from(firstExRow.querySelectorAll('button')).find(b => b.textContent.includes('Plan'))
-    expect(starBtn).toBeTruthy()
-    expect(planBtn).toBeTruthy()
+    const [row] = tilesIn(container)
+    const starBtn = star(row)
+    const planBtn = within(row).getByRole('button', { name: 'Plan' })
     expect(starBtn.compareDocumentPosition(planBtn) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
 
     expect(starBtn.getAttribute('aria-label')).toBe('Add to favorites')
-    expect(starBtn.classList.contains('on-ss')).toBe(false)
     expect(useStore.getState().S.favorites).toEqual([])
 
-    await act(async () => {
-      starBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
-
-    const favs = useStore.getState().S.favorites
-    expect(favs.length).toBe(1)
+    fireEvent.click(starBtn)
+    expect(useStore.getState().S.favorites).toHaveLength(1)
     expect(starBtn.getAttribute('aria-label')).toBe('Remove from favorites')
-    expect(starBtn.classList.contains('on-ss')).toBe(true)
+    expect(useUI.getState().sheets).toHaveLength(0)
 
-    await act(async () => {
-      starBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    fireEvent.click(starBtn)
     expect(useStore.getState().S.favorites).toEqual([])
     expect(starBtn.getAttribute('aria-label')).toBe('Add to favorites')
-    expect(starBtn.classList.contains('on-ss')).toBe(false)
   })
 
   it('dynamically shows Favorites chip when favorites exist and filters list', async () => {
-    const testFavs = ['0001', '0002']
-    useStore.getState().update(s => { s.favorites = [...testFavs] })
+    useStore.getState().update(s => { s.favorites = ['0001', '0002'] })
+    await render()
 
-    await act(async () => {
-      root.render(<Library />)
-    })
+    expect(chipNamesIn(container)[0]).toBe('Favorites (2)')
+    fireEvent.click(chipIn(container, 'Favorites (2)'))
+    expect(chipIn(container, 'Favorites (2)').getAttribute('aria-pressed')).toBe('true')
+    expect(tilesIn(container)).toHaveLength(2)
 
-    const chipButtons = Array.from(container.querySelectorAll('.chips button.chip'))
-    const favChip = chipButtons.find(b => b.textContent.includes('Favorites'))
-    expect(favChip).toBeTruthy()
-    expect(favChip.textContent).toContain('Favorites (2)')
-    expect(chipButtons[0]).toBe(favChip)
+    search(container, 'sit-up')
+    expect(tilesIn(container)).toHaveLength(1)
 
-    await act(async () => {
-      favChip.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
-    expect(favChip.classList.contains('on')).toBe(true)
-
-    const items = container.querySelectorAll('.list .item')
-    expect(items.length).toBe(3)
-
-    const searchInput = container.querySelector('input.input')
-    await act(async () => {
-      const nativeSetter = Object.getOwnPropertyDescriptor(globalThis.HTMLInputElement.prototype, 'value').set
-      nativeSetter.call(searchInput, 'sit-up')
-      searchInput.dispatchEvent(new Event('input', { bubbles: true }))
-    })
-
-    const refinedItems = container.querySelectorAll('.list .item')
-    expect(refinedItems.length).toBe(2)
-
-    await act(async () => {
-      useStore.getState().update(s => { s.favorites = [] })
-    })
-    const updatedChipButtons = Array.from(container.querySelectorAll('.chips button.chip'))
-    const hiddenFavChip = updatedChipButtons.find(b => b.textContent.includes('Favorites'))
-    expect(hiddenFavChip).toBeUndefined()
+    await act(async () => { useStore.getState().update(s => { s.favorites = [] }) })
+    expect(chipNamesIn(container).some(name => name.startsWith('Favorites'))).toBe(false)
   })
 
   it('gracefully falls back to All when the last favorite is unstarred while on the Favorites filter', async () => {
     useStore.getState().update(s => { s.favorites = ['0001'] })
+    await render()
 
-    await act(async () => {
-      root.render(<Library />)
-    })
+    fireEvent.click(chipIn(container, 'Favorites (1)'))
+    expect(tilesIn(container)).toHaveLength(1)
 
-    const favChip = Array.from(container.querySelectorAll('.chips button.chip'))
-      .find(b => b.textContent.includes('Favorites'))
-    expect(favChip).toBeTruthy()
-
-    await act(async () => {
-      favChip.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
-
-    expect(container.querySelectorAll('.list .item').length).toBe(2)
-
-    const favRow = container.querySelectorAll('.list .item')[1]
-    const starBtn = favRow.querySelector('button.iconbtn')
-    expect(starBtn).toBeTruthy()
-
-    await act(async () => {
-      starBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
-
+    fireEvent.click(star(tilesIn(container)[0]))
     expect(useStore.getState().S.favorites).toEqual([])
-
-    const allChip = Array.from(container.querySelectorAll('.chips button.chip'))
-      .find(b => b.textContent.trim() === 'All')
-    expect(allChip?.classList.contains('on')).toBe(true)
-    expect(container.querySelectorAll('.list .item').length).toBe(41)
+    expect(chipIn(container, 'All').getAttribute('aria-pressed')).toBe('true')
+    expect(tilesIn(container)).toHaveLength(40)
   })
 
   it('renders All, then a chip for every filter muscle in taxonomy order', async () => {
-    await act(async () => {
-      root.render(<Library />)
-    })
-
-    const firstChipsRow = container.querySelectorAll('.chips')[0]
-    const chips = Array.from(firstChipsRow.querySelectorAll('button.chip')).map(c => c.textContent.trim())
-    expect(chips).toEqual(['All', ...FILTER_MUSCLES.map(m => MUSCLE_NAME[m])])
+    await render()
+    expect(chipNamesIn(container).slice(0, FILTER_MUSCLES.length + 1)).toEqual(['All', ...FILTER_MUSCLES.map(m => MUSCLE_NAME[m])])
   })
 
   it('surfaces secondary compound movements with inline secondary badges when a muscle filter is selected', async () => {
-    await act(async () => {
-      root.render(<Library />)
-    })
+    await render()
+    fireEvent.click(chipIn(container, 'Triceps'))
 
-    const tricepsChip = Array.from(container.querySelectorAll('.chips button.chip'))
-      .find(b => b.textContent.trim() === 'Triceps')
-    expect(tricepsChip).toBeTruthy()
-
-    await act(async () => {
-      tricepsChip.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
-
-    const items = Array.from(container.querySelectorAll('.list .item'))
-    const benchItem = items.find(it => it.textContent.toLowerCase().includes('bench press'))
-    expect(benchItem).toBeTruthy()
-
-    const secondaryBadge = benchItem.querySelector('.ss .tag')
-    expect(secondaryBadge).toBeTruthy()
-    expect(secondaryBadge.textContent).toContain('Secondary: Triceps')
-
-    const primaryTricepItem = items.find(it => it.textContent.toLowerCase().includes('pushdown') || it.textContent.toLowerCase().includes('triceps dip') || it.textContent.toLowerCase().includes('triceps'))
-    if (primaryTricepItem && !primaryTricepItem.textContent.toLowerCase().includes('bench press')) {
-      const isSec = primaryTricepItem.querySelector('.ss .tag')
-      if (primaryTricepItem.textContent.toLowerCase().includes('triceps ·')) {
-        expect(isSec).toBeNull()
-      }
-    }
+    const bench = tileNamed(container, 'bench press')
+    expect(within(bench).getByText(/Secondary: Triceps/)).toBeTruthy()
   })
 
   it('searches exercises matching primary and secondary muscle names', async () => {
-    await act(async () => {
-      root.render(<Library />)
-    })
+    await render()
+    search(container, 'triceps')
 
-    const searchInput = container.querySelector('input.input')
-    await act(async () => {
-      const nativeSetter = Object.getOwnPropertyDescriptor(globalThis.HTMLInputElement.prototype, 'value').set
-      nativeSetter.call(searchInput, 'triceps')
-      searchInput.dispatchEvent(new Event('input', { bubbles: true }))
-    })
+    expect(tilesIn(container).length).toBeGreaterThan(5)
+    expect(tilesIn(container).some(tile => /pushdown|extension/i.test(tile.getAttribute('aria-label')))).toBe(true)
 
-    const items = Array.from(container.querySelectorAll('.list .item'))
-    expect(items.length).toBeGreaterThan(5)
-    const names = items.map(it => it.textContent.toLowerCase())
-    expect(names.some(n => n.includes('pushdown') || n.includes('extension'))).toBe(true)
+    const showMore = screen().queryByRole('button', { name: 'Show more' })
+    if (showMore) fireEvent.click(showMore)
 
-    const showMore = Array.from(container.querySelectorAll('button')).find(b => b.textContent.includes('Show more'))
-    if (showMore) {
-      await act(async () => {
-        showMore.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-      })
-    }
-
-    const allItems = Array.from(container.querySelectorAll('.list .item'))
-    const benchItem = allItems.find(it => it.textContent.toLowerCase().includes('bench press'))
-    expect(benchItem).toBeTruthy()
-    expect(benchItem.querySelector('.ss .tag')?.textContent).toContain('Secondary: Triceps')
-    expect(benchItem.querySelector('.ss')?.textContent.toLowerCase()).toContain('chest')
+    const bench = tileNamed(container, 'bench press')
+    expect(within(bench).getByText(/Secondary: Triceps/)).toBeTruthy()
+    expect(bench.textContent.toLowerCase()).toContain('chest')
   })
 })
-
-
-
