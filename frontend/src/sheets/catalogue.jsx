@@ -503,7 +503,13 @@ export function ExConfig({ ex, existing, onSave, onDelete, close, routine, initi
     <Button variant="primary" onClick={save}>{actionLabel || (existing ? t('Save') : t('Add to routine'))}</Button>
     {onReplace && existing && <><div className="gap8" /><Button icon="shuffle" onClick={() => { close(); onReplace() }}>{t('Replace exercise')}</Button></>}
     {ex.custom && <><div className="gap8" /><Button icon="pencil" onClick={() => { close(); customExSheet(ex) }}>{t('Edit or delete this exercise')}</Button></>}
-    {onDelete && <><div className="gap8" /><Button variant="danger" onClick={() => { close(); onDelete() }}>{t('Remove from routine')}</Button></>}
+    {onDelete && <><div className="gap8" /><Button variant="danger" onClick={() => confirmSheet({
+      title: t('Remove {0}?', ex.n),
+      message: t('This removes the exercise from the routine.'),
+      confirmText: t('Remove'),
+      danger: true,
+      onConfirm: () => { close(); onDelete() },
+    })}>{t('Remove from routine')}</Button></>}
   </>
 }
 /**

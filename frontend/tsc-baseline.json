@@ -2,7 +2,7 @@
   "src/App.jsx": 8,
   "src/components/Barbell.jsx": 3,
   "src/components/BodyMap.jsx": 23,
-  "src/components/ErrorBoundary.jsx": 6,
+  "src/components/ErrorBoundary.jsx": 5,
   "src/components/Heatmap.jsx": 14,
   "src/components/Icon.jsx": 10,
   "src/components/LineChart.jsx": 40,
