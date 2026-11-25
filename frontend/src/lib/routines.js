@@ -5,6 +5,7 @@ import { uid } from './format.js'
 import { DEFAULT_GLYPH } from './glyphs.js'
 import { t } from './i18n.js'
 import { syncRoutineFromSession } from './routine-sync.js'
+import { isKnownExercise } from './exercises.js'
 
 /** @typedef {import('./types.js').Profile} Profile */
 /** @typedef {import('./types.js').Routine} Routine */
@@ -103,11 +104,12 @@ function extractTarget(target = {}) {
 /** @param {Profile} S @param {RoutineCommand} command */
 function addExercise(S, command) {
   const r = findRoutine(S, command.routineId)
-  if (!r || !command.exId) return refused()
+  const exId = command.exId || ''
+  if (!r || !isKnownExercise(exId)) return refused()
   const { target, note } = extractTarget(command.target)
-  const defaults = defaultConfig(command.exId, target.mode)
+  const defaults = defaultConfig(exId, target.mode)
   /** @type {Target} */
-  const entry = { id: command.exId, ...defaults, ...target, rowId: uid() }
+  const entry = { id: exId, ...defaults, ...target, rowId: uid() }
   if (note) entry.notes = note
   r.ex ??= []
   r.ex.push(entry)
@@ -142,10 +144,24 @@ function moveExercise(S, command) {
 }
 
 /**
+ * Resolves the id a replace writes. An explicit id must be known; omitting it
+ * keeps the current entry's id, including when that exercise left the index.
+ * @param {string | undefined} requested
+ * @param {string | undefined} current
+ * @returns {string | null} The id to write, or null when the request is invalid.
+ */
+function replaceableExId(requested, current) {
+  if (!requested) return current ?? null
+  return isKnownExercise(requested) ? requested : null
+}
+
+/**
  * Replaces an exercise at the specified index or updates its configuration in-place.
  *
  * Passing the same `exId` or omitting it performs an in-place configuration update
  * (updating targets and notes over the exercise's default seed, and preserving `sg`).
+ * An explicit `exId` must name a known exercise; omitting it keeps the entry's
+ * current id even when that exercise is no longer in the index.
  *
  * @param {Profile} S Store state.
  * @param {RoutineCommand} command Replace command payload `{ routineId, index, exId?, target? }`.
@@ -157,7 +173,7 @@ function replaceExercise(S, command) {
   const idx = command.index
   if (typeof idx !== 'number' || idx < 0 || idx >= r.ex.length) return refused()
 
-  const exId = command.exId || r.ex[idx]?.id
+  const exId = replaceableExId(command.exId, r.ex[idx]?.id)
   if (!exId) return refused()
 
   const oldEntry = r.ex[idx]
