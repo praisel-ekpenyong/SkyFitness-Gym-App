@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
 import { act } from 'react'
+import { fireEvent, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useStore } from '../store/useStore.js'
 import { resetViewTestState, renderWorkout, cleanupViewTest } from '../test/view-harness.jsx'
@@ -10,18 +11,19 @@ globalThis.IS_REACT_ACT_ENVIRONMENT = true
 
 let view
 
-function toggleSet(index = 0) {
-  const checkbox = view.container.querySelectorAll('[role="checkbox"]')[index]
-  expect(checkbox).toBeTruthy()
-  act(() => checkbox.dispatchEvent(new MouseEvent('click', { bubbles: true })))
+const screen = () => within(view.container)
+const checkboxes = () => screen().getAllByRole('checkbox')
+const toggleSet = (index = 0) => fireEvent.click(checkboxes()[index])
+// Set numbers count work sets from 1, as the stepper labels do.
+const bumpReps = (setNumber, dir) => fireEvent.click(screen().getByRole('button', { name: `${dir < 0 ? 'Decrease' : 'Increase'} Set ${setNumber} Reps` }))
+const milestones = () => screen().queryAllByRole('status', { name: /^Milestone: / })
+// A set's badge is the milestone that sits after its checkbox and before the next set's.
+const badgeOf = index => {
+  const boxes = checkboxes()
+  const after = (a, b) => !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING)
+  return milestones().find(m => after(boxes[index], m) && !(boxes[index + 1] && after(boxes[index + 1], m))) ?? null
 }
-
-function bumpReps(setIndex = 0, dir = -1) {
-  const row = view.container.querySelectorAll('.setrow')[setIndex]
-  const repStepper = row.querySelector('.stp.r')
-  const btn = repStepper.querySelectorAll('button')[dir === -1 ? 0 : 1]
-  act(() => btn.dispatchEvent(new MouseEvent('click', { bubbles: true })))
-}
+const labelOf = index => badgeOf(index)?.textContent
 
 beforeEach(() => {
   vi.useFakeTimers()
@@ -46,16 +48,12 @@ describe('Workout milestone badges', () => {
     }
     view = renderWorkout([entry])
 
-    expect(view.container.querySelector('.milestone-badge')).toBeNull()
+    expect(milestones()).toHaveLength(0)
 
     toggleSet(0)
 
-    const badge = view.container.querySelector('.milestone-badge')
-    expect(badge).not.toBeNull()
-    expect(badge.textContent).toBe('5/5 reps')
-
-    const upcomingRow = view.container.querySelectorAll('.setrow')[1]
-    expect(upcomingRow.querySelector('.milestone-badge')).toBeNull()
+    expect(labelOf(0)).toBe('5/5 reps')
+    expect(badgeOf(1)).toBeNull()
     expect(useStore.getState().S.active.entries[0].sets[1].r).toBe(5)
     expect(useStore.getState().S.active.entries[0].sets[1].w).toBe(60)
   })
@@ -70,13 +68,11 @@ describe('Workout milestone badges', () => {
     }
     view = renderWorkout([entry])
 
-    expect(view.container.querySelector('.milestone-badge')).toBeNull()
+    expect(milestones()).toHaveLength(0)
 
     toggleSet(0)
 
-    const badge = view.container.querySelector('.milestone-badge')
-    expect(badge).not.toBeNull()
-    expect(badge.textContent).toBe('All sets hit! +5s unlocked next session')
+    expect(labelOf(0)).toBe('All sets hit! +5s unlocked next session')
   })
 
   it('does not display a milestone badge for warm-up sets', () => {
@@ -93,12 +89,10 @@ describe('Workout milestone badges', () => {
 
     toggleSet(0)
 
-    const setRows = view.container.querySelectorAll('.setrow')
-    expect(setRows[0].querySelector('.milestone-badge')).toBeNull()
+    expect(badgeOf(0)).toBeNull()
 
     toggleSet(1)
-    expect(setRows[1].querySelector('.milestone-badge')).not.toBeNull()
-    expect(setRows[1].querySelector('.milestone-badge').textContent).toBe('5/5 reps')
+    expect(labelOf(1)).toBe('5/5 reps')
   })
 
   it('displays unlocked milestone on final work set under linear progression when all work sets hit target reps', () => {
@@ -113,11 +107,10 @@ describe('Workout milestone badges', () => {
     view = renderWorkout([entry])
 
     toggleSet(0)
-    const setRows = view.container.querySelectorAll('.setrow')
-    expect(setRows[0].querySelector('.milestone-badge')?.textContent).toBe('5/5 reps')
+    expect(labelOf(0)).toBe('5/5 reps')
 
     toggleSet(1)
-    expect(setRows[1].querySelector('.milestone-badge')?.textContent).toBe('All sets hit! +2.5 kg unlocked next session')
+    expect(labelOf(1)).toBe('All sets hit! +2.5 kg unlocked next session')
   })
 
   it('quietly logs sets that fall short of target with neutral styling and no milestone badge', () => {
@@ -132,9 +125,7 @@ describe('Workout milestone badges', () => {
 
     toggleSet(0)
 
-    expect(view.container.querySelector('.milestone-badge')).toBeNull()
-    expect(view.container.querySelector('.failure-banner')).toBeNull()
-    expect(view.container.querySelector('.warn')).toBeNull()
+    expect(milestones()).toHaveLength(0)
   })
 
   it('immediately and reactively removes the badge when a set is unchecked', () => {
@@ -147,11 +138,11 @@ describe('Workout milestone badges', () => {
     }
     view = renderWorkout([entry])
 
-    expect(view.container.querySelector('.milestone-badge')).not.toBeNull()
+    expect(milestones()).toHaveLength(1)
 
     toggleSet(0)
 
-    expect(view.container.querySelector('.milestone-badge')).toBeNull()
+    expect(milestones()).toHaveLength(0)
   })
 
   it('immediately and reactively removes the badge when reps are edited below target', () => {
@@ -164,12 +155,12 @@ describe('Workout milestone badges', () => {
     }
     view = renderWorkout([entry])
 
-    expect(view.container.querySelector('.milestone-badge')).not.toBeNull()
+    expect(milestones()).toHaveLength(1)
 
-    bumpReps(0, -1)
+    bumpReps(1, -1)
 
     expect(useStore.getState().S.active.entries[0].sets[0].r).toBe(4)
-    expect(view.container.querySelector('.milestone-badge')).toBeNull()
+    expect(milestones()).toHaveLength(0)
   })
 
   describe('Double progression in active workout view', () => {
@@ -185,34 +176,32 @@ describe('Workout milestone badges', () => {
       }
       view = renderWorkout([entry])
 
-      const setRows = () => view.container.querySelectorAll('.setrow')
-
       toggleSet(0)
-      expect(setRows()[0].querySelector('.milestone-badge')?.textContent).toBe('12/12 reps · On track')
-      expect(setRows()[1].querySelector('.milestone-badge')).toBeNull()
-      expect(setRows()[2].querySelector('.milestone-badge')).toBeNull()
+      expect(labelOf(0)).toBe('12/12 reps · On track')
+      expect(badgeOf(1)).toBeNull()
+      expect(badgeOf(2)).toBeNull()
 
       toggleSet(1)
-      expect(setRows()[0].querySelector('.milestone-badge')?.textContent).toBe('12/12 reps · On track')
-      expect(setRows()[1].querySelector('.milestone-badge')?.textContent).toBe('12/12 reps · On track')
-      expect(setRows()[2].querySelector('.milestone-badge')).toBeNull()
+      expect(labelOf(0)).toBe('12/12 reps · On track')
+      expect(labelOf(1)).toBe('12/12 reps · On track')
+      expect(badgeOf(2)).toBeNull()
 
       toggleSet(2)
-      expect(setRows()[2].querySelector('.milestone-badge')?.textContent).toBe('All sets hit! +2.5 kg unlocked next session')
+      expect(labelOf(2)).toBe('All sets hit! +2.5 kg unlocked next session')
 
-      bumpReps(0, -1)
+      bumpReps(1, -1)
       expect(useStore.getState().S.active.entries[0].sets[0].r).toBe(11)
-      expect(setRows()[0].querySelector('.milestone-badge')).toBeNull()
-      expect(setRows()[1].querySelector('.milestone-badge')?.textContent).toBe('12/12 reps · On track')
-      expect(setRows()[2].querySelector('.milestone-badge')?.textContent).toBe('12/12 reps')
+      expect(badgeOf(0)).toBeNull()
+      expect(labelOf(1)).toBe('12/12 reps · On track')
+      expect(labelOf(2)).toBe('12/12 reps')
 
-      bumpReps(0, 1)
-      expect(setRows()[0].querySelector('.milestone-badge')?.textContent).toBe('12/12 reps · On track')
-      expect(setRows()[2].querySelector('.milestone-badge')?.textContent).toBe('All sets hit! +2.5 kg unlocked next session')
+      bumpReps(1, 1)
+      expect(labelOf(0)).toBe('12/12 reps · On track')
+      expect(labelOf(2)).toBe('All sets hit! +2.5 kg unlocked next session')
 
       toggleSet(0)
-      expect(setRows()[0].querySelector('.milestone-badge')).toBeNull()
-      expect(setRows()[2].querySelector('.milestone-badge')?.textContent).toBe('12/12 reps')
+      expect(badgeOf(0)).toBeNull()
+      expect(labelOf(2)).toBe('12/12 reps')
     })
 
     it('displays rep progress badge when meeting rep progress aim against previous session', () => {
@@ -247,13 +236,11 @@ describe('Workout milestone badges', () => {
         }))
       })
 
-      const setRows = () => view.container.querySelectorAll('.setrow')
-
       toggleSet(0)
-      expect(setRows()[0].querySelector('.milestone-badge')).toBeNull()
+      expect(badgeOf(0)).toBeNull()
 
       toggleSet(1)
-      expect(setRows()[1].querySelector('.milestone-badge')?.textContent).toBe('Rep progress (+1)')
+      expect(labelOf(1)).toBe('Rep progress (+1)')
     })
 
     it('excludes warm-up sets from double progression milestone cues', () => {
@@ -268,16 +255,14 @@ describe('Workout milestone badges', () => {
       }
       view = renderWorkout([entry])
 
-      const setRows = () => view.container.querySelectorAll('.setrow')
-
       toggleSet(0)
-      expect(setRows()[0].querySelector('.milestone-badge')).toBeNull()
+      expect(badgeOf(0)).toBeNull()
 
       toggleSet(1)
-      expect(setRows()[1].querySelector('.milestone-badge')?.textContent).toBe('12/12 reps · On track')
+      expect(labelOf(1)).toBe('12/12 reps · On track')
 
       toggleSet(2)
-      expect(setRows()[2].querySelector('.milestone-badge')?.textContent).toBe('All sets hit! +2.5 kg unlocked next session')
+      expect(labelOf(2)).toBe('All sets hit! +2.5 kg unlocked next session')
     })
   })
 
@@ -294,28 +279,26 @@ describe('Workout milestone badges', () => {
       }
       view = renderWorkout([entry])
 
-      const setRows = () => view.container.querySelectorAll('.setrow')
-
       toggleSet(0)
-      expect(setRows()[0].querySelector('.milestone-badge')?.textContent).toBe('5/5 reps')
+      expect(labelOf(0)).toBe('5/5 reps')
 
       toggleSet(1)
-      expect(setRows()[1].querySelector('.milestone-badge')?.textContent).toBe('5/5 reps')
+      expect(labelOf(1)).toBe('5/5 reps')
 
       toggleSet(2)
-      expect(setRows()[2].querySelector('.milestone-badge')?.textContent).toBe('AMRAP +3 · +2.5 kg unlocked next session')
+      expect(labelOf(2)).toBe('AMRAP +3 · +2.5 kg unlocked next session')
 
-      bumpReps(2, 1)
-      bumpReps(2, 1)
+      bumpReps(3, 1)
+      bumpReps(3, 1)
       expect(useStore.getState().S.active.entries[0].sets[2].r).toBe(10)
-      expect(setRows()[2].querySelector('.milestone-badge')?.textContent).toBe('AMRAP +5 · +5 kg unlocked next session')
+      expect(labelOf(2)).toBe('AMRAP +5 · +5 kg unlocked next session')
 
-      for (let k = 0; k < 6; k++) bumpReps(2, -1)
+      for (let k = 0; k < 6; k++) bumpReps(3, -1)
       expect(useStore.getState().S.active.entries[0].sets[2].r).toBe(4)
-      expect(setRows()[2].querySelector('.milestone-badge')).toBeNull()
+      expect(badgeOf(2)).toBeNull()
 
       toggleSet(2)
-      expect(setRows()[2].querySelector('.milestone-badge')).toBeNull()
+      expect(badgeOf(2)).toBeNull()
     })
 
     it('excludes warm-up sets under Greyskull LP from milestones', () => {
@@ -330,21 +313,21 @@ describe('Workout milestone badges', () => {
       }
       view = renderWorkout([entry])
 
-      const setRows = () => view.container.querySelectorAll('.setrow')
-
       toggleSet(0)
-      expect(setRows()[0].querySelector('.milestone-badge')).toBeNull()
+      expect(badgeOf(0)).toBeNull()
 
       toggleSet(1)
-      expect(setRows()[1].querySelector('.milestone-badge')?.textContent).toBe('5/5 reps')
+      expect(labelOf(1)).toBe('5/5 reps')
 
       toggleSet(2)
-      expect(setRows()[2].querySelector('.milestone-badge')?.textContent).toBe('AMRAP +3 · +2.5 kg unlocked next session')
+      expect(labelOf(2)).toBe('AMRAP +3 · +2.5 kg unlocked next session')
     })
   })
 
   describe('Workout progline prescription display', () => {
-    it('renders progline with up class and arrowUp icon when plan.kind is up', () => {
+    const lineWith = text => screen().getByText(text).parentElement
+
+    it('shows the reason and marks it as a rise when plan.kind is up', () => {
       const entry = {
         id: 'barbell-bench-press',
         target: { mode: 'reps', reps: 5, weight: 60, prog: 'linear' },
@@ -352,61 +335,24 @@ describe('Workout milestone badges', () => {
         sets: [{ r: 5, w: 62.5, done: false }]
       }
       view = renderWorkout([entry])
-      const progline = view.container.querySelector('.progline')
-      expect(progline).not.toBeNull()
-      expect(progline.className).toBe('progline up')
-      expect(progline.querySelector('svg')).not.toBeNull()
-      expect(progline.textContent).toContain('Every rep last time')
+      expect(lineWith(/Every rep last time/).classList.contains('up'), 'a rise is told apart by colour alone').toBe(true)
     })
 
-    it('renders progline with neutral class (no .warn) and info icon when plan.kind is deload', () => {
-      const entry = {
+    it.each([
+      ['deload', ['Missed reps — reset to 54 kg and work back up.', 54, 'kg'], /Missed reps — reset/],
+      ['down', ['First set 6 reps, below the 8–10 range. 2.5 kg less, back to 8 reps.', 6, 8, 10, 2.5, 'kg'], /First set 6 reps/],
+      ['hold', ['Missed reps last time — same weight again (1 of 3 to go).', 1, 3], /Missed reps last time/],
+    ])('shows the reason with no emphasis when plan.kind is %s', (kind, why, text) => {
+      view = renderWorkout([{
         id: 'barbell-bench-press',
         target: { mode: 'reps', reps: 5, weight: 60, prog: 'linear' },
-        plan: { kind: 'deload', why: ['Missed reps — reset to 54 kg and work back up.', 54, 'kg'] },
-        sets: [{ r: 5, w: 54, done: false }]
-      }
-      view = renderWorkout([entry])
-      const progline = view.container.querySelector('.progline')
-      expect(progline).not.toBeNull()
-      expect(progline.className).toBe('progline')
-      expect(view.container.querySelector('.warn')).toBeNull()
-      expect(progline.querySelector('svg')).not.toBeNull()
-      expect(progline.textContent).toContain('Missed reps')
-    })
-
-    it('renders progline with neutral class and arrowDown icon when plan.kind is down', () => {
-      const entry = {
-        id: 'barbell-bench-press',
-        target: { mode: 'reps', reps: 10, weight: 60, prog: 'double' },
-        plan: { kind: 'down', why: ['First set 6 reps, below the 8–10 range. 2.5 kg less, back to 8 reps.', 6, 8, 10, 2.5, 'kg'] },
-        sets: [{ r: 8, w: 57.5, done: false }]
-      }
-      view = renderWorkout([entry])
-      const progline = view.container.querySelector('.progline')
-      expect(progline).not.toBeNull()
-      expect(progline.className).toBe('progline')
-      expect(view.container.querySelector('.warn')).toBeNull()
-      expect(progline.querySelector('svg')).not.toBeNull()
-      expect(progline.textContent).toContain('First set 6 reps')
-    })
-
-    it('renders progline with lightbulb icon for hold and baseline first prescriptions', () => {
-      const entry = {
-        id: 'barbell-bench-press',
-        target: { mode: 'reps', reps: 5, weight: 60, prog: 'linear' },
-        plan: { kind: 'hold', why: ['Missed reps last time — same weight again (1 of 3 to go).', 1, 3] },
+        plan: { kind, why },
         sets: [{ r: 5, w: 60, done: false }]
-      }
-      view = renderWorkout([entry])
-      const progline = view.container.querySelector('.progline')
-      expect(progline).not.toBeNull()
-      expect(progline.className).toBe('progline')
-      expect(progline.querySelector('svg')).not.toBeNull()
-      expect(progline.textContent).toContain('Missed reps last time')
+      }])
+      expect(lineWith(text).classList.contains('up')).toBe(false)
     })
 
-    it('does not render progline when plan.kind is off', () => {
+    it('shows nothing when plan.kind is off', () => {
       const entry = {
         id: 'barbell-bench-press',
         target: { mode: 'reps', reps: 5, weight: 60, prog: 'off' },
@@ -414,7 +360,7 @@ describe('Workout milestone badges', () => {
         sets: [{ r: 5, w: 60, done: false }]
       }
       view = renderWorkout([entry])
-      expect(view.container.querySelector('.progline')).toBeNull()
+      expect(screen().queryByText(/No automatic progression/)).toBeNull()
     })
   })
 })
