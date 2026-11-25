@@ -2,13 +2,11 @@ import { best1RM, latestWorkSetAt } from './training-log.js'
 import { STRENGTH_FULL_MS, STRENGTH_HALF_LIFE_MS, STRENGTH_FLOOR, halfLifeDecay } from './recovery.js'
 import { muscleWeightsOf } from './muscles.js'
 import { EXIDX } from './exercises.js'
+import { round1 } from './units.js'
 
 /** @typedef {import('./types.js').Profile} Profile */
 /** @typedef {import('./types.js').Entry} Entry */
 /** @typedef {import('./muscles.js').MuscleSource} MuscleSource */
-
-/** @param {number} value */
-const round1 = value => Math.round(value * 10) / 10
 
 /** @param {number} ageMs */
 function strengthFromAge(ageMs) {

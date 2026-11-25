@@ -1,6 +1,6 @@
 
 import { EXIDX, isBodyweightEq } from './exercises.js'
-import { modeOf, isBw, isPerSide, sideReps, cleanNote } from './workout-model.js'
+import { modeOf, isBw, isPerSide, sideReps, cleanNote, ownRest } from './workout-model.js'
 import { uid, fmtNum, fmtSigned, exCount, fmtSec } from './format.js'
 import { todayISO, DAYN } from './dates.js'
 import { t } from './i18n-core.js'
@@ -44,7 +44,8 @@ function cleanEx(e) {
   if (e.inc != null && e.inc > 0) o.inc = e.inc
   if (e.repsMin != null) o.repsMin = e.repsMin
   if (e.repsMax != null) o.repsMax = e.repsMax
-  if (e.rest != null && Number.isFinite(e.rest) && e.rest > 0) o.rest = e.rest
+  const rest = ownRest(e)
+  if (rest != null) o.rest = rest
   if (e.sg) o.sg = e.sg
   const notes = cleanNote(e.notes)
   if (notes) o.notes = notes

@@ -1,7 +1,7 @@
 import { spawnSync } from 'node:child_process'
-import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
-import { dirname, join, relative, resolve, sep } from 'node:path'
+import { dirname, join, matchesGlob, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const frontend = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -29,6 +29,30 @@ function lint(root) {
       message: d.message,
     }
   })
+}
+
+const SOURCE = /\.(?:[cm]?js|jsx|[cm]?ts|tsx)$/
+const SKIP = new Set(['node_modules', '.git'])
+// A disable comment for either tool: oxlint honours `eslint-disable` too.
+const DISABLE = /(?:\/\/|\/\*)\s*(?:eslint|oxlint)-(?:disable|enable)/
+
+function sourceFiles(root, ignored, dir = root) {
+  return readdirSync(dir, { withFileTypes: true }).flatMap(d => {
+    const full = join(dir, d.name)
+    const rel = relative(root, full).split(sep).join('/')
+    if (SKIP.has(d.name) || ignored(rel) || ignored(rel + '/')) return []
+    if (d.isDirectory()) return sourceFiles(root, ignored, full)
+    return SOURCE.test(d.name) ? [rel] : []
+  })
+}
+
+function disableComments(root) {
+  // .oxlintrc.json allows whole-line `//` comments.
+  const rc = JSON.parse(readFileSync(join(root, '.oxlintrc.json'), 'utf8').replace(/^\s*\/\/.*$/gm, ''))
+  const patterns = rc.ignorePatterns ?? []
+  const ignored = rel => patterns.some(p => matchesGlob(rel, p))
+  return sourceFiles(root, ignored).flatMap(path =>
+    readFileSync(join(root, path), 'utf8').split('\n').flatMap((text, i) => (DISABLE.test(text) ? [{ kind: 'disable', path, line: i + 1 }] : [])))
 }
 
 function countHits(hits) {
@@ -77,11 +101,16 @@ if (process.argv.includes('--write')) {
   recorded = lowerBaseline(actual, recorded)
   writeFileSync(baselineFile, JSON.stringify(recorded, null, 2) + '\n')
 }
-const problems = compare(actual, recorded)
+const problems = [...compare(actual, recorded), ...disableComments(root)]
+
+/** @param {{ kind: string, path: string, rule?: string, count?: number, allowed?: number, line?: number }} p */
+const lineFor = p => (p.kind === 'stale'
+  ? `${p.path}: ${p.rule} is stale, the baseline records ${p.allowed} hits but there are ${p.count}. Run npm run lint:baseline to lower it.`
+  : `${p.path}:${p.line}: a disable comment is not allowed (ADR 0034). Fix the hit, or let the baseline hold it.`)
 
 for (const p of problems) {
-  if (p.kind === 'stale') {
-    console.error(`${p.path}: ${p.rule} is stale, the baseline records ${p.allowed} hits but there are ${p.count}. Run npm run lint:baseline to lower it.`)
+  if (p.kind !== 'new') {
+    console.error(lineFor(p))
     continue
   }
   console.error(`${p.path}: ${p.rule} has ${p.count} hits, the baseline allows ${p.allowed}. Fix the new hits:`)

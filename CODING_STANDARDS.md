@@ -66,7 +66,11 @@ recorded count above the real count), so a fix has to lower the file too.
 
 Every check script has a fixture that must fail, so the check cannot rot into
 always-green. A file that is not in a baseline must be clean. A disable comment
-for a ratcheted rule is illegal. The decisions are in
+is illegal, for any rule: ESLint sets `linterOptions.noInlineConfig`, so the
+comment hides nothing and `npm run lint` (`--max-warnings 0`) fails on the
+warning it leaves (fixture: `frontend/scripts/eslint-inline-config.test.mjs`);
+`check-lint-baseline.mjs` fails any `oxlint-disable` or `eslint-disable` comment
+in a file oxlint lints (fixture: `check-lint-baseline.test.mjs`). The decisions are in
 [ADR 0034](./docs/adr/0034-oxlint-and-eslint-with-per-tool-ratchets.md) and
 [ADR 0035](./docs/adr/0035-typescript-starts-as-checkjs-with-an-error-baseline.md).
 
@@ -238,9 +242,11 @@ new and must be clean. Exception: none.
 ### Name the entities in JSDoc first
 
 The first work after the checker is JSDoc `@typedef`s for `Profile`, `Workout`,
-`Entry`, `SetRow` and the Routine exercise (`Target`). There is no `@typedef` in
-the tree today, and every `@param {Object}` is a future `any`. After that, rename
-files to `.ts` starting with `lib/`. Tests join last.
+`Entry`, `SetRow` and the Routine exercise (`Target`). They are in
+`frontend/src/lib/types.js`, and app code imports them by name (253 `@typedef`
+lines in 60 non-test files, counted 2026-11-25). No `@param {Object}` is left in
+non-test code: a parameter names its type. After that, rename files to `.ts`
+starting with `lib/`. Tests join last.
 
 **Judgement call, no tooth.** The baseline shows the work shrinking.
 
@@ -398,7 +404,7 @@ component defined in render, so it remounts every render and loses state.
 `react-hooks/set-state-in-render`, `react-hooks/immutability`,
 `react-hooks/preserve-manual-memoization`, `react-hooks/globals`. At error with
 `frontend/eslint-suppressions.json`: `static-components` (9 hits, 2 files) and
-`purity` (5); `refs` and `memo-dependencies` have no hits left (#122). Counts
+`purity` (6 hits, 5 files); `refs` and `memo-dependencies` have no hits left (#122). Counts
 re-measured 2026-11-25 with `eslint-plugin-react-hooks` 7.1.1.
 **Runs:** `babel-plugin-react-compiler` through `@rolldown/plugin-babel` and
 `reactCompilerPreset` in `frontend/vite.config.js`, so `vite build` and Vitest
@@ -543,9 +549,12 @@ get a test that every catalogue value is a filter option, but none exists.
 4. **On a sheet, the frequent action is first and the destructive one is last.**
    Sky has no right-click menu, so there is no `open` → `edit` → `create` →
    `move` → `copy` → `danger` menu to build.
-5. **A confirm is a sheet, not an ellipsis in the label.** "Delete workout",
+5. **A confirm is a sheet, not an ellipsis in the label.** "Delete",
    "Discard workout", and "Remove exercise" name the action. The confirm sheet
-   is what asks. Do not append "…" to those labels.
+   is what asks. Do not append "…" to those labels. _Amended 2026-11-25: the
+   example was "Delete workout", which broke rule 2 on the Workout's own
+   sheet. The Workout, Routine and custom-exercise sheets now say "Delete", and
+   clearing the body-weight goal says "Delete goal"._
 6. **Destructive is `danger` and confirms.** Undoable actions act at once.
 7. **Hide what never applies; disable what cannot run yet.** Omit an action
    that never applies in this state; disable one that is temporarily blocked.
@@ -576,7 +585,7 @@ file and source text, each with a reason naming the file that confirms; an
 entry that no longer matches an action fails too. ErrorBoundary's discard is
 the one inline exception: its local two-step confirm (first tap relabels,
 second discards) runs because the shared sheet host may be part of the crashed
-tree. The red text keys Delete routine and Discard workout (see `DESIGN.md`)
+tree. The red text keys Delete (on the Routine screen) and Discard workout (see `DESIGN.md`)
 work this way. "Remove set" takes a set off the running workout and acts at
 once; "Remove from favorites" is the favorites toggle; a bare "Clear" empties
 a field.
@@ -619,7 +628,7 @@ inline. A second copy drifts. Exception: none; a copy is deleted, not allowliste
 
 | Value | Owner |
 |---|---|
-| Day key, today, Monday-first week | `lib/dates.js` (`todayISO`, `isoOf`, `mondayOf`) |
+| Day key, month key, today, Monday-first week, the length of a day | `lib/dates.js` (`todayISO`, `isoOf`, `monthKey`, `mondayOf`, `DAY_MS`) |
 | kg and lb conversion, one-decimal rounding, the unit cascade | `lib/units.js` (`normalizeWeight`, `round1`, `resolveSetWeight`) |
 | Best, Records, Tonnage, last session, Estimated 1RM series | `lib/training-log.js` |
 | Estimated 1RM formula and `REP_CAP` | `lib/onerm.js` |
@@ -628,13 +637,11 @@ inline. A second copy drifts. Exception: none; a copy is deleted, not allowliste
 
 **Why:** the strongest bug class in the history: `fbff6fd` (Step done),
 `b85ff0a` (set counts), `a1703bd` (body weight), `6cd4bf9` (raw catalogue),
-`24f1969` and `c4e36a8` (kind to icon), `2ce7f79` (unit), `9c89dd8` (streak). Live
-copies today: `lib/import-csv.js` and `lib/bodyweight.js` convert kg and lb
-by hand (the one in `lib/bodyweight.js` is unrounded, so a weigh-in and a logged
-Set disagree); `lib/recovery.js` re-writes Epley with a different rep cap;
-`latestWorkSetAt` in `lib/training-log.js` re-implements `workoutTimestamp`;
-`round1` is defined five times (four copies); a day is spelled seven ways
-(`DAY_MS` in two files, `86400000`, `24 * 60 * 60 * 1000`).
+`24f1969` and `c4e36a8` (kind to icon), `2ce7f79` (unit), `9c89dd8` (streak). The
+review on 2026-11-25 found `latestWorkSetAt` re-implementing `workoutTimestamp`,
+four copies of `round1` and the length of a day spelled seven ways; all three
+now import the owner. Still live: `lib/recovery.js` re-writes Epley with a
+different rep cap.
 **Runs:** ESLint `no-restricted-syntax` selectors in `frontend/eslint.config.js`,
 each failing outside its owner with a message naming the owner:
 `Identifier[name='LB_TO_KG']` and the literals `2.2046` and `0.4535` (0 hits; the
@@ -642,7 +649,8 @@ copies in `lib/import-csv.js` and `lib/bodyweight.js` are fixed);
 `LogicalExpression[right.value='kg']` (18 hits in 7 files, exempt in `lib/units.js`); the inline
 `Math.round(x * 10) / 10`, selector
 `BinaryExpression[operator='/'][right.value=10][left.callee.object.name='Math'][left.callee.property.name='round'][left.arguments.0.operator='*'][left.arguments.0.right.value=10]`
-(21 hits in 13 files outside `lib/units.js`);
+(16 hits in 9 files outside `lib/units.js`, re-measured 2026-11-25 after the
+`round1` copies were deleted);
 `(getDay() + 6) % 7`, selector
 `BinaryExpression[operator='%'][right.value=7][left.type='BinaryExpression'][left.operator='+'][left.right.value=6][left.left.callee.property.name='getDay']`
 (3 hits outside `lib/dates.js`: `components/Heatmap.jsx`, `sheets/history.jsx`
@@ -670,8 +678,11 @@ off a stamped one: `lib/dates.js` (line 89), `lib/training-log.js` (line 182),
 and on
 `NewExpression[callee.name='Date'][arguments.length=1] > :matches(MemberExpression[property.name='d'], Identifier[name='d'])`.
 Both messages name `todayISO`, `isoOf` and `parseDay`. A `files` override exempts
-`lib/plans/scenarios.js` alone. `frontend/scripts/local-dates-lint.test.mjs` pins
-both selectors and the exemption.
+`lib/plans/scenarios.js` alone. A hand-padded day or month key fails too:
+`CallExpression[callee.property.name='padStart'][arguments.0.value=2][arguments.1.value='0']`
+in `src/`, exempt in `lib/dates.js`, `lib/format.js` (clock text) and tests, 0
+suppressions. `frontend/scripts/local-dates-lint.test.mjs` pins the selectors and
+the exemptions.
 
 ### The clock is an argument in `lib/`
 
@@ -877,7 +888,7 @@ names every one:
 | Tool | Runs today | To add |
 |---|---|---|
 | Vitest guard tests, in `npm test` | `purity.test.js`, `import-cycles.test.js`, `design-tokens.test.js`, `design-lint.test.js`, `env.test.js`, `i18n-lint.test.js`, `sheets/dialog-names.test.jsx`, `docs.test.js`, `platform/storage.test.js` (the 800ms debounce), `comments.test.js`, `effect-types.test.js`, the `warmArt` test (`App.warm-art.test.jsx`), the `flush()` test (`store/useStore.flush.test.jsx`), the save round-trip tests (`sheets/catalogue.test.jsx`, `views/RoutineEdit.test.jsx`), `lib/profile/profile-keys.test.js` | |
-| ESLint 10, `npm run lint` after the oxlint ratchet (CI only) | `react-hooks/set-state-in-effect`, `react-hooks/no-deriving-state-in-effects`, `react-hooks/set-state-in-render`, `react-hooks/immutability`, `react-hooks/preserve-manual-memoization`, `react-hooks/globals`, all at error, 0 hits. `static-components` (9 hits, 2 files) and `purity` (5), at error with `frontend/eslint-suppressions.json`. `react-hooks/todo` stays off. `no-restricted-syntax` selectors, one table in `frontend/eslint.config.js`: One-owner (`LB_TO_KG` and the `2.2046` and `0.4535` literals at 0 suppressions, inline `Math.round(x * 10) / 10`, `(getDay() + 6) % 7`, `\|\| 'kg'`), `% 60`, local dates, store selectors, the `lib/` clock, `import.meta.env` and `process.env`, the CommonJS shim, and `vi.mock` scope in tests. Ratchet: `frontend/eslint-suppressions.json` | nothing |
+| ESLint 10, `npm run lint` after the oxlint ratchet (CI only) | `react-hooks/set-state-in-effect`, `react-hooks/no-deriving-state-in-effects`, `react-hooks/set-state-in-render`, `react-hooks/immutability`, `react-hooks/preserve-manual-memoization`, `react-hooks/globals`, all at error, 0 hits. `static-components` (9 hits, 2 files) and `purity` (6 hits, 5 files), at error with `frontend/eslint-suppressions.json`. `react-hooks/todo` stays off. `no-restricted-syntax` selectors, one table in `frontend/eslint.config.js`: One-owner (`LB_TO_KG` and the `2.2046` and `0.4535` literals at 0 suppressions, inline `Math.round(x * 10) / 10`, `(getDay() + 6) % 7`, `\|\| 'kg'`), `% 60`, local dates (including hand-padded day keys), store selectors, the `lib/` clock, `import.meta.env` and `process.env`, the CommonJS shim, and `vi.mock` scope in tests. `noInlineConfig`, with `--max-warnings 0`, so no disable comment hides a hit. Ratchet: `frontend/eslint-suppressions.json` | nothing |
 | oxlint, ratchet in the pre-commit hook and in `npm run lint` (CI) | `correctness` category (with the dated `no-unused-vars` carve-out: 0 hits, no baseline entry; the old "baseline the 24 probe hits" line is superseded — see the amendment above), `react/rules-of-hooks`, `react/exhaustive-deps`, `no-throw-literal`, `prefer-promise-reject-errors`, `complexity`, restricted globals and properties (including `Date.now` in `lib/`), `unicorn/no-array-sort`, `unicorn/no-array-reverse`, `react/no-array-index-key`, `jsx-a11y/click-events-have-key-events`, `jsx-a11y/no-static-element-interactions`, `jsx-a11y/prefer-tag-over-role`, `jsx-a11y/no-autofocus`, all at error. Ratchet: `frontend/lint-baseline.json`, checked by `scripts/check-lint-baseline.mjs` with its failing fixture in `npm test` | nothing |
 | tsc | `frontend/tsconfig.json` (`strict`, `allowJs`, `checkJs` over app code), `npm run typecheck` in the hook and CI. Ratchet: `frontend/tsc-baseline.json`, checked by `frontend/scripts/check-tsc-baseline.mjs` with its failing fixture in `npm test` | tests joining `tsconfig.json` (last) |
 | oxlint type-aware (`oxlint-tsgolint` 7.0.2008, `--type-aware` in the same ratchet) | `typescript/no-floating-promises` (15 hits, 10 files) and `no-misused-promises` (12 hits, 11 files) at error with `frontend/lint-baseline.json`; `only-throw-error`, `switch-exhaustiveness-check`, `no-explicit-any`, `no-non-null-assertion`, `ban-ts-comment` at error, 0 hits. Failing fixture: `check-lint-baseline.test.mjs` with a floating promise | `no-unsafe-*`, `no-unnecessary-condition` and branded `Kg` / `Lb` types (deferred until typedefs exist) |

@@ -35,3 +35,10 @@ Issue #102 asked for the plain-`correctness` `no-unused-vars` count — 24 hits 
 2. Seeding 24 entries by hand would record hits the configured rule does not report. Because every ratchet fails on a stale entry (a recorded count above the real count), the first run would fail and the shrink-only ratchet would never settle. The ratchet is unchanged for every other rule.
 
 This supersedes the "a tooth the code already fails needs a ratchet" line in Context for this one rule, and the matching recount-and-baseline line in issue #102.
+
+## Amendment 2026-11-25: the disable-comment ban covers every rule, and has a check
+
+The Decision said a disable comment for a ratcheted rule is illegal, but nothing checked it. The ban now covers every disable comment, for any rule, in both tools:
+
+1. `frontend/eslint.config.js` sets `linterOptions.noInlineConfig`, so an `eslint-disable` or inline rule comment hides nothing, and `npm run lint` runs ESLint with `--max-warnings 0`, so the warning ESLint leaves for the comment fails the lint. Fixture: `frontend/scripts/eslint-inline-config.test.mjs`.
+2. `frontend/scripts/check-lint-baseline.mjs` fails any `oxlint-disable` or `eslint-disable` comment (oxlint honours both) in a file oxlint lints. Fixture: `frontend/scripts/check-lint-baseline.test.mjs`.

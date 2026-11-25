@@ -1,4 +1,4 @@
-import { weekKey, mondayOf, workoutTimestamp, assertClock } from './dates.js'
+import { weekKey, mondayOf, workoutTimestamp, assertClock, DAY_MS } from './dates.js'
 import { doneWorkSets } from './workout-sets.js'
 
 /** @typedef {import('./types.js').Profile} Profile */
@@ -82,7 +82,7 @@ function eachDoneSet(S, fn) {
 
 /** @param {Workout} w @param {number | undefined} days @param {number} now @returns {boolean} */
 const inWindow = (w, days, now) =>
-  !days || workoutTimestamp(w) > now - days * 86400000
+  !days || workoutTimestamp(w) > now - days * DAY_MS
 
 /**
  * Average the rated effort of a set list in RIR units.

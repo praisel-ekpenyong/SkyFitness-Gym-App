@@ -1,6 +1,6 @@
 import { loadRecords, e1rmRecords } from './training-log.js'
 import { summarizeWorkouts } from './workout-summary.js'
-import { monthKey } from './dates.js'
+import { isoOf, monthKey } from './dates.js'
 
 /** @typedef {import('./types.js').Profile} Profile */
 /** @typedef {import('./types.js').Workout} Workout */
@@ -19,9 +19,7 @@ export function prevMonthKey(yearMonth) {
   const y = Number(yStr)
   const m = Number(mStr)
   if (!Number.isFinite(y) || !Number.isFinite(m) || m < 1 || m > 12) return ''
-  const d = new Date(Date.UTC(y, m - 1, 1))
-  d.setUTCMonth(d.getUTCMonth() - 1)
-  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`
+  return monthKey(isoOf(new Date(y, m - 2, 1)))
 }
 
 /**

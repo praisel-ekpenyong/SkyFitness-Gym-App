@@ -27,6 +27,8 @@ import { t } from '../lib/i18n.js'
 import { confirmSheet } from './confirm.jsx'
 import { dayOverrideSheet } from './schedule.jsx'
 
+/** @typedef {import('../lib/types.js').Workout} Workout */
+
 const update = (...a) => useStore.getState().update(...a)
 const ui = () => useUI.getState()
 const toast = m => ui().toast(m)
@@ -34,7 +36,7 @@ const toast = m => ui().toast(m)
 /**
  * Completed-workout detail sheet body with per-exercise set labels and delete.
  *
- * @param {Object} w - Completed workout entity from `S.workouts`.
+ * @param {Workout} w - Completed workout entity from `S.workouts`.
  * @param {Function} close - Sheet closer.
  */
 export function WorkoutDetail({ w, close }) {
@@ -119,7 +121,7 @@ export function WorkoutDetail({ w, close }) {
           },
         })}
       >
-        {t('Delete workout')}
+        {t('Delete')}
       </Button>
     </>
   )
@@ -137,12 +139,12 @@ export function Calendar({ start, close }) {
   st.workouts.forEach(w => (byDay[w.d] = byDay[w.d] || []).push(w))
   const startOffset = (new Date(y, mo, 1).getDay() + 6) % 7
   const daysIn = new Date(y, mo + 1, 0).getDate()
-  const monthWs = st.workouts.filter(w => w.d.startsWith(y + '-' + String(mo + 1).padStart(2, '0')))
+  const monthWs = st.workouts.filter(w => w.d.startsWith(monthKey(isoOf(cur))))
   const month = summarizeWorkouts(st, monthWs)
   const cells = []
   for (let i = 0; i < startOffset; i++) cells.push(<div key={'e' + i} />)
   for (let d = 1; d <= daysIn; d++) {
-    const iso = y + '-' + String(mo + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0')
+    const iso = isoOf(new Date(y, mo, d))
     const ws = byDay[iso], effId = effectiveRoutineId(st, iso), ovr = hasEffectiveOverride(st, iso)
     const dotCls = dayStatus({ trained: ws, effId, ovr })
     cells.push(
@@ -237,7 +239,7 @@ export function RecapSheet({ start, close }) {
     return d
   })
   const y = cur.getFullYear(), mo = cur.getMonth()
-  const ym = y + '-' + String(mo + 1).padStart(2, '0')
+  const ym = monthKey(isoOf(cur))
   const isCurrent = ym === monthKey(todayISO())
   const rec = monthRecap(st, ym)
   const viewedEmpty = rec.workouts === 0

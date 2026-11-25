@@ -114,7 +114,7 @@ function BwSheet({ required, onDone, close }) {
 /**
  * Opens the body-weight sheet; saving logs today's weigh-in.
  *
- * @param {Object} opts Sheet options.
+ * @param {{ required?: boolean, onDone?: (bw: number) => void }} [opts] Sheet options.
  */
 export function bwSheet(opts = {}) {
   const h = ui().openSheet(close => <BwSheet {...opts} close={close} />, { locked: !!opts.required })
@@ -147,12 +147,12 @@ function GoalSheet({ close }) {
         <>
           <div className="gap8" />
           <Button variant="danger" onClick={() => confirmSheet({
-            title: t('Remove goal?'),
-            confirmText: t('Remove'),
+            title: t('Delete goal?'),
+            confirmText: t('Delete'),
             danger: true,
-            onConfirm: () => { update(s => { s.targetW = null }); close(); toast(t('Goal removed')) },
+            onConfirm: () => { update(s => { s.targetW = null }); close(); toast(t('Goal deleted')) },
           })}>
-            {t('Remove goal')}
+            {t('Delete goal')}
           </Button>
         </>
       )}

@@ -670,18 +670,18 @@ describe('finishing a workout', () => {
     expect(w).toEqual({
       id: 'active-1', d: '2026-08-08', start: 1000, end: w.end, routineId: 'routine-1', name: 'Push', bw: 80,
       unit: 'kg',
-      entries: [{ id: '0025', sets: [{ done: true, w: 60, r: 8 }], topW: 60, target: { sets: 1, reps: 8 } }],
+      entries: [{ id: '0025', sets: [{ done: true, w: 60, r: 8 }], target: { sets: 1, reps: 8 } }],
     })
     expect(typeof w.end).toBe('number')
   })
 
-  it('writes no topW for a new Entry, and keeps one a resumed Entry carries', () => {
+  it('writes no topW, even for a resumed Entry that carries one', () => {
     const w = finished(withActive([
       { id: 'new', sets: [{ done: true, w: 60, r: 8 }] },
       { id: 'legacy', sets: [{ done: true, w: 60, r: 8 }], topW: 65 },
     ]))
     expect('topW' in w.entries[0]).toBe(false)
-    expect(w.entries[1].topW).toBe(65)
+    expect('topW' in w.entries[1]).toBe(false)
   })
 
   it('keeps a muscle snapshot of a custom exercise, and none of a catalogue one', () => {

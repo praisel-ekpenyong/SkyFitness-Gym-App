@@ -7,7 +7,7 @@
 
 import { EXDB, EXIDX } from './exercises.js'
 import { uid } from './format.js'
-import { parseDay } from './dates.js'
+import { isoOf, parseDay } from './dates.js'
 import { mergeWeighIns, weighInsPreview } from './bodyweight.js'
 import { normalizeWeight, round1 } from './units.js'
 import { sortWorkouts } from './profile/index.js'
@@ -259,8 +259,16 @@ const effortNum = (raw, zeroMeansRated) => {
   if (!isFinite(n) || n < 0 || (n === 0 && !zeroMeansRated)) return null
   return Math.min(10, Math.round(n * 100) / 100)
 }
-/** @param {number | string} n @returns {string} */
-const p2 = n => String(n).padStart(2, '0')
+/**
+ * A day key for a calendar date, or null when the date does not exist (31 February).
+ * @param {number | string} y @param {number | string} m @param {number | string} d @returns {string | null}
+ */
+const dayKey = (y, m, d) => {
+  const date = new Date(+y, +m - 1, +d)
+  return date.getMonth() === +m - 1 && date.getDate() === +d ? isoOf(date) : null
+}
+/** @param {string | null} d @param {number | null} t */
+const dayAndTime = (d, t) => (d ? { d, t } : null)
 /** @type {Record<string, number>} */
 const MON = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 }
 
@@ -268,17 +276,17 @@ const MON = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, se
 export function parseWhen(s) {
   const v = String(s || '').trim()
   let m = v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[T ](\d{1,2}):(\d{2}))?/)
-  if (m) return { d: `${m[1]}-${p2(m[2])}-${p2(m[3])}`, t: hm(m[4], m[5]) }
+  if (m) return dayAndTime(dayKey(m[1], m[2], m[3]), hm(m[4], m[5]))
   m = v.match(/^(\d{1,2})\s+([A-Za-z]{3})[a-z]*\.?\s+(\d{4})(?:,?\s+(\d{1,2}):(\d{2}))?/)
-  if (m && MON[m[2].toLowerCase()]) return { d: `${m[3]}-${p2(MON[m[2].toLowerCase()])}-${p2(m[1])}`, t: hm(m[4], m[5]) }
+  if (m && MON[m[2].toLowerCase()]) return dayAndTime(dayKey(m[3], MON[m[2].toLowerCase()], m[1]), hm(m[4], m[5]))
   m = v.match(/^([A-Za-z]{3})[a-z]*\.?\s+(\d{1,2}),?\s+(\d{4})(?:,?\s+(\d{1,2}):(\d{2}))?/)
-  if (m && MON[m[1].toLowerCase()]) return { d: `${m[3]}-${p2(MON[m[1].toLowerCase()])}-${p2(m[2])}`, t: hm(m[4], m[5]) }
+  if (m && MON[m[1].toLowerCase()]) return dayAndTime(dayKey(m[3], MON[m[1].toLowerCase()], m[2]), hm(m[4], m[5]))
   m = v.match(/^(\d{1,2})[/.](\d{1,2})[/.](\d{4})(?:[, ]+(\d{1,2}):(\d{2}))?/)
   if (m) {
     const [, a, b, y] = m
     const day = +a > 12 ? a : +b > 12 ? b : a
     const mon = day === a ? b : a
-    return { d: `${y}-${p2(mon)}-${p2(day)}`, t: hm(m[4], m[5]) }
+    return dayAndTime(dayKey(y, mon, day), hm(m[4], m[5]))
   }
   return null
 }

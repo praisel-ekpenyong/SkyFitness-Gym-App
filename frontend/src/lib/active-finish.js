@@ -14,6 +14,7 @@ import { sortWorkouts } from './profile/index.js'
 /** @typedef {import('./types.js').Prescription} Prescription */
 /** @typedef {import('./types.js').PrescriptionRecord} PrescriptionRecord */
 /** @typedef {import('./types.js').MuscleSnapshot} MuscleSnapshot */
+/** @typedef {ReturnType<typeof diffRoutineWithSession> & { routineId: string, routineName: string }} RoutineSync */
 
 /**
  * @param {Prescription | PrescriptionRecord | null | undefined} plan
@@ -32,11 +33,11 @@ function planRecord(plan) {
 /**
  * Freeze an ActiveWorkout into a finished Workout record.
  * @param {ActiveWorkout} active
- * @param {{ end: number, unit?: Unit, snapshotFor?: (entry: Entry) => MuscleSnapshot | null }} options - `end` is the clock: epoch milliseconds.
+ * @param {{ end: number, unit: Unit, snapshotFor?: (entry: Entry) => MuscleSnapshot | null }} options - `end` is the clock: epoch milliseconds.
  * @returns {Workout}
  * @throws {TypeError} When `end` is not a finite number.
  */
-export function buildCompletedWorkout(active, { end, unit = 'kg', snapshotFor }) {
+export function buildCompletedWorkout(active, { end, unit, snapshotFor }) {
   assertClock(end, 'end')
   const entries = (active?.entries || []).map(entry => {
     /** @type {Entry} */
@@ -45,7 +46,6 @@ export function buildCompletedWorkout(active, { end, unit = 'kg', snapshotFor })
       sets: entry.sets,
       target: entry.target || null,
     }
-    if (entry.topW) completed.topW = entry.topW
     const note = typeof entry.notes === 'string' ? entry.notes.trim() : undefined
     if (note) {
       completed.notes = note.slice(0, 500)
@@ -75,7 +75,7 @@ export function buildCompletedWorkout(active, { end, unit = 'kg', snapshotFor })
 /**
  * Finish `S.active`, append the completed Workout to `S.workouts`, and return records and routine diff.
  * @param {Profile} S
- * @returns {{ workout: Workout, prs: string[], e1prs: Array<{ id: string, est: number, w: number, r: number, prev: number }>, routineSync: (ReturnType<typeof diffRoutineWithSession> & { routineId: string, routineName: string }) | null } | null}
+ * @returns {{ workout: Workout, prs: string[], e1prs: Array<{ id: string, est: number, w: number, r: number, prev: number }>, routineSync: RoutineSync | null } | null}
  */
 export function completeActiveSession(S) {
   const A = S.active

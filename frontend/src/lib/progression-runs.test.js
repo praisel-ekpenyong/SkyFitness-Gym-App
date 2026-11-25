@@ -207,7 +207,7 @@ describe('double progression runs', () => {
   })
 
   it('keeps readSession.ok as "reached the Target top"', () => {
-    const s = readSession(session({ rows: rowsOf(40, 11) }).entries[0])
+    const s = readSession(session({ rows: rowsOf(40, 11) }).entries[0], null, null, 'kg')
     expect(s.ok).toBe(false)
     expect(s.low).toBe(11)
     expect(stallCount([s])).toBe(1)

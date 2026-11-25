@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process'
-import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -74,6 +74,36 @@ describe('check-lint-baseline', () => {
       project({})
       expect(check('--write').code).toBe(1)
       expect(baseline()).toEqual({})
+    })
+  })
+
+  describe('disable comments', () => {
+    const passing = { 'hit.js': { [RULE]: 2 } }
+    const comment = kind => `// ${kind}-disable-next-line ${RULE}\n`
+
+    it.each(['oxlint', 'eslint'])('fails a %s disable comment, even with the baseline exact', kind => {
+      project(passing)
+      writeFileSync(join(root, 'quiet.js'), `${comment(kind)}export const x = 1\n`)
+      const r = check()
+      expect(r.code).toBe(1)
+      expect(r.out).toContain('quiet.js:1')
+      expect(r.out).toContain('disable comment')
+    })
+
+    it('fails a block disable comment for the whole file', () => {
+      project(passing)
+      writeFileSync(join(root, 'quiet.js'), '/* oxlint-disable */\nexport const x = 1\n')
+      expect(check().code).toBe(1)
+    })
+
+    it('ignores the words in a string or a file oxlint ignores', () => {
+      project(passing)
+      writeFileSync(join(root, 'words.js'), "export const s = 'oxlint-disable'\n")
+      const rc = JSON.parse(readFileSync(join(root, '.oxlintrc.json'), 'utf8'))
+      writeFileSync(join(root, '.oxlintrc.json'), JSON.stringify({ ...rc, ignorePatterns: ['skip/**'] }))
+      mkdirSync(join(root, 'skip'))
+      writeFileSync(join(root, 'skip', 'quiet.js'), `${comment('oxlint')}export const x = 1\n`)
+      expect(check().code).toBe(0)
     })
   })
 })

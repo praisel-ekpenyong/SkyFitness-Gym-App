@@ -2,7 +2,7 @@ import { EXDB, EXIDX } from './exercises.js'
 import { fatigueOf, strengthOf, fatigueStateOf } from './recovery.js'
 import { MUSCLES, loadOfWorkouts, loadOfRoutine, rankOf, lastTrainedByMuscle } from './muscles.js'
 import { currentBodyweightKg, weighIns } from './bodyweight.js'
-import { readSet } from './units.js'
+import { readSet, round1 } from './units.js'
 import { best1RM, e1rmSeries, loadRecords, metric } from './training-log.js'
 import {
   displayScale, scaleName, toScale, avgRir,
@@ -10,7 +10,7 @@ import {
 } from './effort.js'
 import { modeOf } from './workout-model.js'
 import { isPerformed, isWorkSet, metricRowsForEntry, metricModeForEntry } from './workout-sets.js'
-import { workoutTimestamp, isoOf, weekKey, monthKey } from './dates.js'
+import { workoutTimestamp, isoOf, weekKey, monthKey, DAY_MS } from './dates.js'
 import { trainedWeeks, effectiveRoutine } from './history.js'
 import { streakOf } from './streak.js'
 import { strengthExerciseRowsForMuscle } from './strength-exercises.js'
@@ -30,15 +30,10 @@ import { strengthLevelsOf, strengthLevelOf } from './strength-level.js'
 /** @typedef {import('./types.js').LoggingMode} LoggingMode */
 /** @typedef {{ lookup: (id: string) => CustomExercise | null }} StatsCatalogue */
 
-const DAY_MS = 24 * 60 * 60 * 1000
-
 /** @type {Record<string, CustomExercise>} */
 const builtInIndex = Object.fromEntries(EXDB.map(ex => [ex.id, EXIDX[ex.id]]))
 /** @type {StatsCatalogue} */
 export const defaultCatalogue = { lookup: id => builtInIndex[id] ?? null }
-
-/** @param {number} value @returns {number} */
-const round1 = value => Math.round(value * 10) / 10
 
 /** @param {string} fn @param {unknown} now @returns {number} */
 function requireNow(fn, now) {

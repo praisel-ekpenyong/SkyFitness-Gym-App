@@ -14,8 +14,8 @@ Introduce an opt-in **Routine sync** seam evaluated at session completion on the
    - Preserves structural changes: added exercises, removed exercises, in-place replacements, reordered entries, and superset groupings (`sg`).
    - Updates target set count to match performed work sets (`doneWorkSets(entry).length`).
    - Retains planned target set counts (`target.sets`) for unperformed or skipped exercises (zero performed sets), preventing single-session skips from deleting exercises from permanent routines.
-   - Preserves exercise configuration (`mode`, `reps`, `sec`, `min`, `speed`, `prog`) while intentionally omitting session loads/weights, allowing the progression engine and historical records (`exWeights`) to govern working weights.
-2. **Review & Store Seam**: `FinishSummary` displays an opt-in toggle switch (default: OFF) with a compact change summary directly above the primary dismissal button ("Nice!"). Tapping "Nice!" commits the updated exercise array to `S.routines` via a single store action `syncRoutineFromSession(routineId, syncedEx)` and emits a confirmation toast. If dismissed with the toggle off, the routine remains untouched.
+   - Preserves exercise configuration (`mode`, `reps`, `sec`, `min`, `speed`, `prog`) while intentionally omitting session loads/weights, allowing the progression engine and the Training log (Best, per [0031](0031-the-training-log-is-the-only-reading.md)) to govern working weights.
+2. **Review & Store Seam**: `FinishSummary` displays an opt-in toggle switch (default: OFF) with a compact change summary directly above the primary dismissal button ("Nice!"). Tapping "Nice!" commits the updated exercise array to `S.routines` through the `actRoutine` command `syncFromSession` (per [0030](0030-routine-domain-behind-act-routine.md)) and emits a confirmation toast. If dismissed with the toggle off, the routine remains untouched.
 3. **Scope Bounds**: Freestyle sessions (`routineId == null`) and sessions with zero detected changes omit the toggle entirely.
 
 ## Consequences

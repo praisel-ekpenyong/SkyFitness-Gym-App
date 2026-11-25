@@ -49,7 +49,7 @@ export function RangeEditSheet({ slug, close }) {
       ? t('Whole numbers from 0 to {0}. The low end stays at 0: pressing covers front delts.', RANGE_MAX)
       : t('Whole numbers from 0 to {0}, with the low end no higher than the high end.', RANGE_MAX)}</div>
     <Button variant="primary" onClick={save} disabled={!valid}>{t('Save')}</Button>
-    {edited && <><div className="gap8" /><Button variant="ghost" onClick={useStyle}>{t('Use the style’s range')}</Button></>}
+    {edited && <><div className="gap8" /><Button variant="ghost" onClick={useStyle}>{t('Use style range')}</Button></>}
   </>
 }
 

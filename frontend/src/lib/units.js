@@ -53,22 +53,22 @@ export function normalizeWeight(val, fromUnit, toUnit) {
  *
  * @param {Entry | null | undefined} entry - The Entry.
  * @param {Workout | ActiveWorkout | null | undefined} workout - The Workout.
- * @param {Unit} [fallback='kg'] - Used when neither is stamped.
+ * @param {Unit} fallback - Used when neither is stamped.
  * @returns {Unit} The unit to read the Entry's Target and Prescription in.
  */
-export function entryUnit(entry, workout, fallback = 'kg') {
+export function entryUnit(entry, workout, fallback) {
   return entry?.unit ?? workout?.unit ?? fallback
 }
 
 /**
  * Resolve a Set's weight into `targetUnit` using the Set -> Entry -> Workout -> targetUnit cascade.
  * @param {SetRow | null | undefined} set
- * @param {Entry | null} [entry=null]
- * @param {Workout | ActiveWorkout | null} [workout=null]
- * @param {Unit} [targetUnit='kg']
+ * @param {Entry | null | undefined} entry
+ * @param {Workout | ActiveWorkout | null | undefined} workout
+ * @param {Unit} targetUnit
  * @returns {number}
  */
-export function resolveSetWeight(set, entry = null, workout = null, targetUnit = 'kg') {
+export function resolveSetWeight(set, entry, workout, targetUnit) {
   const w = Number(set?.w)
   if (!Number.isFinite(w) || w <= 0) return 0
   const rawUnit = set?.unit ?? entryUnit(entry, workout, targetUnit)
@@ -163,12 +163,12 @@ export function setIn(set, from, to) {
  * A Set with no load, or already in that unit, is the stored Set.
  *
  * @param {SetRow} set - A Set.
- * @param {Entry | null} [entry=null] - The Entry it belongs to.
- * @param {Workout | ActiveWorkout | null} [workout=null] - The Workout it belongs to.
- * @param {Unit} [targetUnit='kg'] - The unit wanted, usually the Profile unit.
+ * @param {Entry | null | undefined} entry - The Entry it belongs to.
+ * @param {Workout | ActiveWorkout | null | undefined} workout - The Workout it belongs to.
+ * @param {Unit} targetUnit - The unit wanted, usually the Profile unit.
  * @returns {SetRow} `set` itself when nothing changes, else a converted copy.
  */
-export function readSet(set, entry = null, workout = null, targetUnit = 'kg') {
+export function readSet(set, entry, workout, targetUnit) {
   return setIn(set, entryUnit(entry, workout, targetUnit), targetUnit)
 }
 

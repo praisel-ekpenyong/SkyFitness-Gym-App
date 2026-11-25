@@ -7,6 +7,7 @@ import { registerCustom } from '../exercises.js'
 import { epleyReps } from '../onerm.js'
 import { freshProfile } from '../profile/index.js'
 import { round1 } from '../units.js'
+import { DAY_MS } from '../dates.js'
 
 /** @typedef {import('../types.js').Profile} Profile */
 /** @typedef {import('../types.js').Routine} Routine */
@@ -31,7 +32,6 @@ import { round1 } from '../units.js'
  * so each Entry carries the Prescription the engine actually made.
  */
 
-const DAY_MS = 86400000
 const BODYWEIGHT = 75
 
 /**
@@ -83,17 +83,22 @@ function mustAct(S, command, d) {
 }
 
 /**
- * Build a profile holding the plan and a generated Training log.
- *
- * @param {Object} [opts]
- * @param {string} [opts.start='2026-09-07'] - A Monday; the first training day.
- * @param {number} [opts.weeks=8] - Weeks to generate.
- * @param {(ctx: { d: string, week: number, routineId: string, routine: Routine | undefined }) => ScenarioDayHook | null} [opts.day] - Per-day hook. Return null to skip the day, or
+ * Options for `generateHistory`.
+ * @typedef {Object} HistoryOptions
+ * @property {string} [start='2026-09-07'] - A Monday; the first training day.
+ * @property {number} [weeks=8] - Weeks to generate.
+ * @property {(ctx: { d: string, week: number, routineId: string, routine: Routine | undefined }) => ScenarioDayHook | null} [day] - Per-day hook. Return null to skip the day, or
  *   `{ setsFactor, strength, only, ceiling, gain }` to change it: `setsFactor` scales planned sets
  *   (min 1), `dropSets` removes that many sets per exercise (min 2 left), `strength` scales e1RM
  *   for the day, `only` keeps the first N exercises, `ceiling` caps load and `gain` overrides
  *   weekly gain, both keyed by catalogue id or custom exercise name.
- * @param {Record<string, LifterSeed>} [opts.lifter] - Overrides for the made-up lifter, keyed like `ceiling`.
+ * @property {Record<string, LifterSeed>} [lifter] - Overrides for the made-up lifter, keyed like `ceiling`.
+ */
+
+/**
+ * Build a profile holding the plan and a generated Training log.
+ *
+ * @param {HistoryOptions} [opts]
  * @returns {Profile} Profile state with routines, week, customEx, workouts and bodyweight.
  */
 export function generateHistory({ start = '2026-09-07', weeks = 8, day = () => ({}), lifter = {} } = {}) {

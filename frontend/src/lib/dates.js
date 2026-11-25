@@ -29,6 +29,9 @@ export const nowMs = () => Date.now()
 export const isoOf = d =>
   d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')
 
+/** The length of a day in milliseconds. */
+export const DAY_MS = 86400000
+
 export const DAYN = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 export const DAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
 export const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -81,7 +84,7 @@ export function weekKey(d) {
   const day = mondayIndexOf(dt)
   dt.setDate(dt.getDate() - day + 3)
   const jan4 = new Date(dt.getFullYear(), 0, 4)
-  const week = 1 + Math.round(((dt.getTime() - jan4.getTime()) / 86400000 - 3 + mondayIndexOf(jan4)) / 7)
+  const week = 1 + Math.round(((dt.getTime() - jan4.getTime()) / DAY_MS - 3 + mondayIndexOf(jan4)) / 7)
   return dt.getFullYear() + '-' + week
 }
 

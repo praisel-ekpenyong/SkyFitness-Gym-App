@@ -109,11 +109,11 @@ describe('units module', () => {
     })
 
     it('handles non-numeric and null set safely', () => {
-      expect(resolveSetWeight(null)).toBe(0)
-      expect(resolveSetWeight({})).toBe(0)
-      expect(resolveSetWeight({ w: null })).toBe(0)
-      expect(resolveSetWeight({ w: undefined })).toBe(0)
-      expect(resolveSetWeight({ w: NaN })).toBe(0)
+      expect(resolveSetWeight(null, null, null, 'kg')).toBe(0)
+      expect(resolveSetWeight({}, null, null, 'kg')).toBe(0)
+      expect(resolveSetWeight({ w: null }, null, null, 'kg')).toBe(0)
+      expect(resolveSetWeight({ w: undefined }, null, null, 'kg')).toBe(0)
+      expect(resolveSetWeight({ w: NaN }, null, null, 'kg')).toBe(0)
     })
   })
 })

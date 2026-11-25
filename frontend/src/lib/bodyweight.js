@@ -1,19 +1,11 @@
 
-import { normalizeWeight, sanitizeUnit } from './units.js'
+import { normalizeWeight, round1, sanitizeUnit } from './units.js'
 
 /** @typedef {import('./types.js').Profile} Profile */
 /** @typedef {import('./types.js').WeighIn} WeighIn */
 /** @typedef {import('./types.js').Workout} Workout */
 /** @typedef {import('./types.js').ActiveWorkout} ActiveWorkout */
 /** @typedef {import('./types.js').Unit} Unit */
-
-/**
- * Round a weigh-in to the stored 1-decimal policy.
- *
- * @param {number} w - Raw weight in the profile unit.
- * @returns {number} Weight rounded to one decimal.
- */
-export const round1 = w => Math.round(w * 10) / 10
 
 /** @param {WeighIn} a @param {WeighIn} b @returns {number} */
 const byDay = (a, b) => (a.d < b.d ? -1 : a.d > b.d ? 1 : 0)

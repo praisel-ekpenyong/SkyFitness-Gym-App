@@ -1,7 +1,7 @@
 import { exerciseFor } from './exercises.js'
 import { MUSCLES, muscleWeightsOf, lastTrainedByMuscle } from './muscles.js'
 import { isWorkSet, isPerformed } from './workout-sets.js'
-import { workoutTimestamp } from './dates.js'
+import { workoutTimestamp, DAY_MS } from './dates.js'
 import { normalizeWeight } from './units.js'
 import { FORMULAS, REP_CAP } from './onerm.js'
 
@@ -26,7 +26,7 @@ import { FORMULAS, REP_CAP } from './onerm.js'
 export const FATIGUE_REF_VOLUME = 2000
 export const FATIGUE_MIN_REF_FLOOR = FATIGUE_REF_VOLUME * 0.25
 export const FATIGUE_MIN_SESSIONS = 3
-export const FATIGUE_SCAN_MS = 30 * 24 * 60 * 60 * 1000
+export const FATIGUE_SCAN_MS = 30 * DAY_MS
 export const BODYWEIGHT_REF_LOAD = 75
 export const CARDIO_TONNAGE_PER_MIN = 50
 

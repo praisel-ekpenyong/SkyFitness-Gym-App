@@ -514,7 +514,7 @@ describe('WorkoutDetail', () => {
     expect(distContainer).toBeTruthy()
 
     const entry = container.querySelector('.ex-entry')
-    const del = [...container.querySelectorAll('button')].find(b => b.textContent === 'Delete workout')
+    const del = [...container.querySelectorAll('button')].find(b => b.textContent === 'Delete')
     expect(entry.compareDocumentPosition(distContainer) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     expect(distContainer.compareDocumentPosition(del) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
 
@@ -573,17 +573,17 @@ describe('destructive confirms', () => {
     const closeGoal = vi.fn()
     await act(async () => { root.render(goal.render(closeGoal)) })
 
-    await click(button('Remove goal'))
+    await click(button('Delete goal'))
     expect(useStore.getState().S.targetW).toBe(75)
     expect(closeGoal).not.toHaveBeenCalled()
 
     const confirm = useUI.getState().sheets.at(-1)
     await show(confirm)
-    expect(container.textContent).toContain('Remove goal?')
-    expect(container.textContent).toBe(`Remove goal?${button('Remove').textContent}${button('Cancel').textContent}`)
-    await click(button('Remove'))
+    expect(container.textContent).toContain('Delete goal?')
+    expect(container.textContent).toBe(`Delete goal?${button('Delete').textContent}${button('Cancel').textContent}`)
+    await click(button('Delete'))
     expect(useStore.getState().S.targetW).toBeNull()
-    expect(useUI.getState().toastMsg).toBe('Goal removed')
+    expect(useUI.getState().toastMsg).toBe('Goal deleted')
     expect(closeGoal).toHaveBeenCalledOnce()
   })
 })

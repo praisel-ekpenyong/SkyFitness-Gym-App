@@ -31,6 +31,21 @@ describe('local-dates selectors', { timeout: 60000 }, () => {
     expect(await lint("import { parseDay } from './dates.js'\nexport const t = d => parseDay(d)\nexport const u = new Date(2020, 0, 1)\n")).toEqual([])
   })
 
+  it('rejects a day or month key padded by hand and names the helpers', async () => {
+    const day = await lint("export const k = (y, m, d) => y + '-' + String(m).padStart(2, '0') + '-' + String(d).padStart(2, '0')\n", 'src/sheets/sample.jsx')
+    const month = await lint("export const k = (y, m) => `${y}-${String(m).padStart(2, '0')}`\n")
+    expect(day).toHaveLength(2)
+    expect(month).toHaveLength(1)
+    expect(month[0].message).toMatch(/isoOf/)
+    expect(month[0].message).toMatch(/monthKey/)
+  })
+
+  it('allows the padding inside the owners lib/dates.js and lib/format.js', async () => {
+    const code = "export const k = n => String(n).padStart(2, '0')\n"
+    expect(await lint(code, 'src/lib/dates.js')).toEqual([])
+    expect(await lint(code, 'src/lib/format.js')).toEqual([])
+  })
+
   it('exempts only lib/plans/scenarios.js, which is UTC on purpose', async () => {
     const code = 'export const k = date => date.toISOString().slice(0, 10)\n'
     expect(await lint(code, 'src/lib/plans/scenarios.js')).toEqual([])
