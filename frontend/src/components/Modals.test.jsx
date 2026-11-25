@@ -9,8 +9,6 @@ import { useUI } from '../store/useUI.js'
 let dom
 let root
 let container
-let historyMock
-let locationMock
 
 function sheet(id, { locked = false, label = 'Test sheet', render = () => React.createElement('div') } = {}) {
   return { id, locked, label, kind: 'sheet', render }
@@ -26,10 +24,9 @@ function installDom() {
   for (const key of ['HTMLElement', 'Node', 'Element', 'Event', 'MutationObserver']) globalThis[key] = dom[key]
   globalThis.IS_REACT_ACT_ENVIRONMENT = true
 
-  locationMock = { href: 'https://sky.test/#/workout' }
-  historyMock = { pushState: vi.fn(), go: vi.fn() }
-  Object.defineProperty(globalThis, 'location', { configurable: true, value: locationMock })
-  Object.defineProperty(globalThis, 'history', { configurable: true, value: historyMock })
+  // Sheet history is tested against a real stack in Modals.history.test.jsx; these tests need only inert stand-ins.
+  Object.defineProperty(globalThis, 'location', { configurable: true, value: { href: 'https://sky.test/#/workout' } })
+  Object.defineProperty(globalThis, 'history', { configurable: true, value: { pushState() {}, go() {} } })
 
   container = document.getElementById('root')
   root = createRoot(container)
@@ -37,10 +34,6 @@ function installDom() {
 
 async function setSheets(sheets) {
   await act(async () => { useUI.setState({ sheets }) })
-}
-
-async function popstate() {
-  await act(async () => { window.dispatchEvent(new dom.Event('popstate')) })
 }
 
 function mouse(target, type, clientY) {
@@ -64,67 +57,6 @@ afterEach(async () => {
   container = null
   dom = null
   vi.restoreAllMocks()
-})
-
-describe('Modals sheet history accounting', () => {
-  it('does not rewind a real page after back spends a locked FinishSummary entry', async () => {
-    const confirm = sheet('confirm')
-    const summary = sheet('summary', { locked: true })
-
-    await setSheets([confirm])
-    expect(historyMock.pushState).toHaveBeenCalledTimes(1)
-
-    await setSheets([summary])
-    await popstate()
-    expect(useUI.getState().sheets).toEqual([summary])
-
-    await act(async () => { useUI.getState().closeSheet('summary') })
-    expect(historyMock.go).not.toHaveBeenCalled()
-  })
-
-  it('pushes and rewinds the exact number of entries for batched sheets', async () => {
-    await setSheets([sheet('one'), sheet('two')])
-    expect(historyMock.pushState).toHaveBeenCalledTimes(2)
-
-    await setSheets([])
-    expect(historyMock.go).toHaveBeenCalledTimes(1)
-    expect(historyMock.go).toHaveBeenCalledWith(-2)
-  })
-
-  it('closes stacked sheets one entry at a time on back', async () => {
-    await setSheets([sheet('one'), sheet('two')])
-    await popstate()
-
-    expect(useUI.getState().sheets.map(item => item.id)).toEqual(['one'])
-    expect(historyMock.pushState).toHaveBeenCalledTimes(2)
-
-    await popstate()
-    expect(useUI.getState().sheets).toEqual([])
-    expect(historyMock.go).not.toHaveBeenCalled()
-  })
-
-  it('closes an unlocked sheet on back without rewinding its already-spent entry', async () => {
-    await setSheets([sheet('open')])
-    await popstate()
-
-    expect(useUI.getState().sheets).toEqual([])
-    expect(historyMock.go).not.toHaveBeenCalled()
-  })
-
-  it('accounts for a moved-on entry even when popstate has no current sheet', async () => {
-    await setSheets([sheet('navigating')])
-    locationMock.href = 'https://sky.test/#/home'
-    await setSheets([])
-    expect(historyMock.go).not.toHaveBeenCalled()
-
-    await popstate()
-
-    const locked = sheet('locked', { locked: true })
-    await setSheets([locked])
-    await popstate()
-    await setSheets([])
-    expect(historyMock.go).not.toHaveBeenCalled()
-  })
 })
 
 describe('Modals mouse dragging', () => {

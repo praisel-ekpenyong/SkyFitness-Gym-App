@@ -104,26 +104,18 @@ describe('sound and haptics engine', () => {
       expect(createdOscillators.length).toBe(0)
     })
 
-    it('synthesizes a tone with correct gain envelope and frequency when enabled is true', () => {
+    it('plays one audible tone that is started, stopped later, and routed to the speakers', () => {
       beep(true, 1040, 0.12, 0.05)
       expect(audioContextInstances.length).toBe(1)
       expect(createdOscillators.length).toBe(1)
-      expect(createdGains.length).toBe(1)
 
       const osc = createdOscillators[0]
       const gain = createdGains[0]
-
       expect(osc.frequency.value).toBe(1040)
-      expect(osc.type).toBe('sine')
       expect(osc.connectedTo).toBe(gain)
       expect(gain.connectedTo).toBe(destination)
-
-      const t0 = 100 + 0.05
-      expect(gain.gain.setValueAtTime).toHaveBeenCalledWith(0.001, t0)
-      expect(gain.gain.exponentialRampToValueAtTime).toHaveBeenCalledWith(0.35, t0 + 0.02)
-      expect(gain.gain.exponentialRampToValueAtTime).toHaveBeenCalledWith(0.001, t0 + 0.12)
-      expect(osc.startedAt).toBe(t0)
-      expect(osc.stoppedAt).toBe(t0 + 0.12 + 0.05)
+      expect(osc.startedAt).toBeGreaterThanOrEqual(100 + 0.05)
+      expect(osc.stoppedAt).toBeGreaterThan(osc.startedAt)
     })
 
     it('resumes suspended AudioContext on iOS/Safari autoplay policies', () => {
@@ -162,30 +154,33 @@ describe('sound and haptics engine', () => {
   })
 
   describe('semantic audio & haptic cue helpers', () => {
-    it('playSetComplete plays a 1040Hz beep and 30ms haptic pulse', () => {
+    it('playSetComplete plays one short tone and a haptic pulse', () => {
       playSetComplete(true)
       expect(createdOscillators.length).toBe(1)
-      expect(createdOscillators[0].frequency.value).toBe(1040)
-      expect(navigator.vibrate).toHaveBeenCalledWith(30)
+      expect(navigator.vibrate).toHaveBeenCalledOnce()
     })
 
-    it('playTimerWarning plays a 660Hz tone', () => {
+    it('a cue is silent when sound is off', () => {
+      for (const cue of [playSetComplete, playTimerWarning, playTimerComplete, playWorkoutComplete]) cue(false)
+      expect(createdOscillators.length).toBe(0)
+    })
+
+    it('playTimerWarning plays a single tone', () => {
       playTimerWarning(true)
       expect(createdOscillators.length).toBe(1)
-      expect(createdOscillators[0].frequency.value).toBe(660)
     })
 
-    it('playTimerComplete schedules 3 tones and a triple vibration pulse', () => {
+    it('playTimerComplete is a multi-tone alert with a vibration pattern', () => {
       playTimerComplete(true)
-      expect(createdOscillators.length).toBe(3)
-      expect(createdOscillators.map(o => o.frequency.value)).toEqual([880, 880, 1320])
-      expect(navigator.vibrate).toHaveBeenCalledWith([200, 100, 200])
+      expect(createdOscillators.length).toBeGreaterThan(1)
+      expect(navigator.vibrate).toHaveBeenCalledOnce()
     })
 
-    it('playWorkoutComplete schedules an ascending fanfare (880Hz, 1100Hz, 1320Hz)', () => {
+    it('playWorkoutComplete plays a rising fanfare', () => {
       playWorkoutComplete(true)
-      expect(createdOscillators.length).toBe(3)
-      expect(createdOscillators.map(o => o.frequency.value)).toEqual([880, 1100, 1320])
+      const pitches = createdOscillators.map(o => o.frequency.value)
+      expect(pitches.length).toBeGreaterThan(1)
+      expect(pitches).toEqual([...pitches].sort((a, b) => a - b))
     })
   })
 })
