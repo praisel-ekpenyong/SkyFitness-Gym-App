@@ -10,13 +10,21 @@ import {
   doneWorkSets,
 } from './workout-sets.js'
 
+/** @typedef {import('./types.js').Profile} Profile */
+/** @typedef {import('./types.js').Workout} Workout */
+/** @typedef {import('./types.js').ActiveWorkout} ActiveWorkout */
+/** @typedef {import('./types.js').Entry} Entry */
+/** @typedef {import('./types.js').SetRow} SetRow */
+/** @typedef {import('./types.js').Target} Target */
+/** @typedef {import('./types.js').LoggingMode} LoggingMode */
+
 export { phaseForSet, isWarmupRow, ensurePlainObject } from './warmup.js'
 
 /**
  * Resolve the logging mode for an exercise config.
  *
- * @param {Object|null|undefined} cfg - Exercise config with optional mode and id; nullish reads as reps unless catalogued otherwise.
- * @returns {string} Explicit mode when valid, else 'cardio' for cardio exercises, else 'reps'.
+ * @param {Partial<Target> | null | undefined} cfg - Exercise config with optional mode and id; nullish reads as reps unless catalogued otherwise.
+ * @returns {LoggingMode} Explicit mode when valid, else 'cardio' for cardio exercises, else 'reps'.
  */
 export function modeOf(cfg) {
   const m = cfg && cfg.mode
@@ -26,7 +34,7 @@ export function modeOf(cfg) {
 /**
  * Report whether an exercise config logs timed holds.
  *
- * @param {Object|null|undefined} cfg - Exercise config passed to modeOf.
+ * @param {Partial<Target> | null | undefined} cfg - Exercise config passed to modeOf.
  * @returns {boolean} True when the resolved mode is 'time'.
  */
 export const isTimed = cfg => modeOf(cfg) === 'time'
@@ -34,28 +42,28 @@ export const isTimed = cfg => modeOf(cfg) === 'time'
 /**
  * Report whether an exercise is logged as bodyweight work.
  *
- * @param {Object|null|undefined} cfg - Exercise config with optional bodyweight flag and id.
+ * @param {Partial<Target> | null | undefined} cfg - Exercise config with optional bodyweight flag and id.
  * @returns {boolean} Explicit bodyweight flag when present, else the catalogue bodyweight default.
  */
 export const isBw = cfg => (cfg && cfg.bodyweight != null ? !!cfg.bodyweight : isBodyweightEq(cfg && cfg.id))
 /**
  * Report whether an exercise is logged per side.
  *
- * @param {Object|null|undefined} cfg - Exercise config with optional side flag; nullish yields false.
+ * @param {Partial<Target> | null | undefined} cfg - Exercise config with optional side flag; nullish yields false.
  * @returns {boolean} True only when cfg.side is truthy.
  */
 export const isPerSide = cfg => !!(cfg && cfg.side)
 /**
  * Convert a logged total into per-side reps for unilateral work.
  *
- * @param {number} reps - Logged total reps across both sides; nullish counts as 0.
+ * @param {number | null | undefined} reps - Logged total reps across both sides; nullish counts as 0.
  * @returns {number} Half the total, preserving .5 for odd totals.
  */
 export const sideReps = reps => (reps || 0) / 2
 /**
  * Return the rep stepper increment that keeps unilateral totals splittable.
  *
- * @param {Object|null|undefined} cfg - Exercise config with optional side flag.
+ * @param {Partial<Target> | null | undefined} cfg - Exercise config with optional side flag.
  * @returns {number} 2 for per-side exercises, else 1.
  */
 export const repStep = cfg => (isPerSide(cfg) ? 2 : 1)
@@ -70,12 +78,21 @@ export const SETS_DEFAULTS = Object.freeze({ cardio: 1, time: 3, reps: 3 })
 export const REST_CHOICES = Object.freeze([60, 90, 120, 150, 180])
 /**
  * An exercise's own Rest duration in seconds, or null when it follows the Profile's (ADR 0029).
- * @param {Object} cfg - A Target (`ExCfg`).
+ * @param {Partial<Target> | null | undefined} cfg - A Target (`ExCfg`).
+ * @returns {number | null}
  */
-export const ownRest = cfg => (Number.isFinite(cfg?.rest) && cfg.rest > 0 ? cfg.rest : null)
+export const ownRest = cfg => (cfg?.rest != null && Number.isFinite(cfg.rest) && cfg.rest > 0 ? cfg.rest : null)
 
+/**
+ * Create a new SetRow seeded from `prev` or `target` defaults.
+ * @param {LoggingMode | string} mode
+ * @param {Partial<Target>} [target={}]
+ * @param {{ prev?: Partial<SetRow> | null, warmup?: boolean }} [options]
+ * @returns {SetRow}
+ */
 export function makeRow(mode, target = {}, { prev = null, warmup = false } = {}) {
   const m = normalizeMode(mode, 'reps')
+  /** @type {SetRow} */
   const base = warmup ? { done: false, phase: 'warmup' } : { done: false }
   if (m === 'cardio') {
     const min = prev?.min ?? target.min ?? ROW_DEFAULTS.cardio.min
@@ -94,13 +111,19 @@ export function makeRow(mode, target = {}, { prev = null, warmup = false } = {})
 
 /**
  * Says whether an index points at one of a workout's or Routine's Entries.
- * @param {Array} entries - The Entries; anything but an array has none.
- * @param {*} idx - Candidate index; only a whole number within 0..length-1 counts.
+ * @param {Array<Entry | Target> | null | undefined} entries - The Entries; anything but an array has none.
+ * @param {unknown} idx - Candidate index; only a whole number within 0..length-1 counts.
  * @returns {boolean} True when `entries[idx]` is an Entry slot.
  */
 export const isEntryIndex = (entries, idx) =>
-  Array.isArray(entries) && Number.isInteger(idx) && idx >= 0 && idx < entries.length
+  Array.isArray(entries) && typeof idx === 'number' && Number.isInteger(idx) && idx >= 0 && idx < entries.length
 
+/**
+ * Default Target configuration for an exercise id and optional mode.
+ * @param {string} id
+ * @param {LoggingMode} [mode]
+ * @returns {Target}
+ */
 export function defaultConfig(id, mode) {
   const m = mode || modeOf({ id })
   if (m === 'cardio') return { sets: SETS_DEFAULTS.cardio, min: ROW_DEFAULTS.cardio.min, speed: ROW_DEFAULTS.cardio.speed }
@@ -111,9 +134,9 @@ export function defaultConfig(id, mode) {
 /**
  * Build a freestyle entry config seeded from the exercise's last logged target.
  *
- * @param {Object} S - App state holding the workouts history.
- * @param {Object} cfg - Fresh exercise config providing defaults and id.
- * @returns {Object} Copy of cfg overlaid with the last target, keeping cfg.id and at least one set.
+ * @param {Profile} S - App state holding the workouts history.
+ * @param {Target} cfg - Fresh exercise config providing defaults and id.
+ * @returns {Target} Copy of cfg overlaid with the last target, keeping cfg.id and at least one set.
  */
 export function freestyleConfig(S, cfg) {
   const last = lastSession(S, cfg.id)
@@ -126,6 +149,13 @@ export function freestyleConfig(S, cfg) {
   }
 }
 
+/**
+ * Build initial SetRows for an Entry based on history and Target config.
+ * @param {Profile} S
+ * @param {Target} cfg
+ * @param {{ routineId?: string | null, preferLast?: boolean, seedWeightOnly?: boolean }} [options]
+ * @returns {SetRow[]}
+ */
 export function buildSets(S, cfg, options = {}) {
   const routineId = options.routineId || null
   const last = lastSessionInRoutine(S, cfg.id, routineId)
@@ -134,7 +164,9 @@ export function buildSets(S, cfg, options = {}) {
   const preferLast = !!options.preferLast
   const seedWeightOnly = !!options.seedWeightOnly
   const useExWeights = !routineId
+  /** @type {SetRow[]} */
   const sets = []
+  /** @param {number} i @returns {SetRow | null} */
   const prevAt = i => (last ? (last.sets[i] || last.sets[last.sets.length - 1]) : null)
 
   if (mode === 'cardio') {
@@ -147,7 +179,7 @@ export function buildSets(S, cfg, options = {}) {
   if (mode === 'time') {
     for (let i = 0; i < n; i++) {
       const prev = prevAt(i)
-      const usable = prev && prev.sec > 0 ? prev : null
+      const usable = prev && (prev.sec ?? 0) > 0 ? prev : null
       const carried = seedWeightOnly && usable ? { w: usable.w } : usable
       sets.push(makeRow('time', cfg, { prev: carried }))
     }
@@ -156,7 +188,7 @@ export function buildSets(S, cfg, options = {}) {
   const bestWeight = useExWeights ? best(S, cfg.id) : 0
   for (let i = 0; i < n; i++) {
     const prev = prevAt(i)
-    const usable = prev && prev.r > 0 ? prev : null
+    const usable = prev && (prev.r ?? 0) > 0 ? prev : null
     const w = preferLast && usable ? usable.w : (bestWeight > 0 ? bestWeight : (usable ? usable.w : cfg.weight))
     const r = seedWeightOnly ? cfg.reps : (usable ? usable.r : cfg.reps)
     const row = makeRow('reps', { ...cfg, reps: r, weight: w }, { prev: null })
@@ -165,7 +197,7 @@ export function buildSets(S, cfg, options = {}) {
   return sets
 }
 
-
+/** @param {Entry | null | undefined} entry @returns {boolean} */
 export const hasWorkSet = entry => doneWorkSets(entry).length > 0
 
 /**
@@ -173,7 +205,7 @@ export const hasWorkSet = entry => doneWorkSets(entry).length > 0
  * Not a metric: lifter-facing set counts read Work sets through the Workout summary (`workout-summary.js`).
  * The Active workout uses this to ask whether anything at all was performed.
  *
- * @param {Object|null|undefined} w - Workout with an entries array of set rows; nullish yields 0.
+ * @param {Workout | ActiveWorkout | null | undefined} w - Workout with an entries array of set rows; nullish yields 0.
  * @returns {number} Number of performed sets (truthy `done`), including warm-ups.
  */
 export function setsDone(w) {
@@ -182,6 +214,13 @@ export function setsDone(w) {
   return n
 }
 
+/**
+ * Propagate weight from `from` to subsequent unchecked sets of the same phase.
+ * @param {SetRow[]} rows
+ * @param {number} from
+ * @param {number | null | undefined} value
+ * @returns {SetRow[]}
+ */
 export function cascadeWeight(rows, from, value) {
   const warm = isWarmupRow(rows[from])
   const next = rows.slice()
@@ -195,6 +234,13 @@ export function cascadeWeight(rows, from, value) {
   return next
 }
 
+/**
+ * Insert a warm-up row just before the first work row.
+ * @param {SetRow[]} rows
+ * @param {LoggingMode | string} mode
+ * @param {Partial<Target>} [target={}]
+ * @returns {SetRow[]}
+ */
 export function insertWarmupRow(rows, mode, target = {}) {
   const firstWork = rows.findIndex(isWorkSet)
   const at = firstWork === -1 ? rows.length : firstWork
@@ -205,6 +251,12 @@ export function insertWarmupRow(rows, mode, target = {}) {
   return next
 }
 
+/**
+ * Remove the row at index `i`, keeping at least one row.
+ * @param {SetRow[]} rows
+ * @param {number} i
+ * @returns {SetRow[]}
+ */
 export function removeRowAt(rows, i) {
   if (rows.length <= 1) return rows.slice()
   const next = rows.slice()
@@ -212,20 +264,28 @@ export function removeRowAt(rows, i) {
   return next
 }
 
+/** @param {{ entries?: Entry[] } | null | undefined} w @returns {number} */
 export function workSetsDone(w) {
   return (w?.entries || []).reduce((n, e) => n + doneWorkSets(e).length, 0)
 }
 
+/**
+ * @param {Entry | Entry[] | null | undefined} entryOrEntries
+ * @param {number | null} [idx]
+ * @returns {boolean}
+ */
 export const hasWork = (entryOrEntries, idx) => {
-  const entry = idx == null ? entryOrEntries : entryOrEntries?.[idx]
+  const entry = Array.isArray(entryOrEntries) ? (idx == null ? undefined : entryOrEntries[idx]) : entryOrEntries
   return workSets(entry).some(set => !isPerformed(set))
 }
 
+/** @param {Entry | null | undefined} entry @returns {boolean} */
 export function isExerciseDone(entry) {
   if (!entry || !Array.isArray(entry.sets)) return false
   return !hasWork(entry)
 }
 
+/** @param {{ entries?: Entry[] } | null | undefined} A */
 export function sessionProgress(A) {
   const entries = A?.entries || []
   const total = entries.reduce((n, e) => n + workSets(e).length, 0)
@@ -235,7 +295,14 @@ export function sessionProgress(A) {
   return { done, total, remaining: total - done, exDone, exTotal, allDone: exTotal > 0 && exDone === exTotal }
 }
 
-
+/**
+ * Build a Target seed when replacing an exercise in a Routine or ActiveWorkout.
+ * @param {Profile} S
+ * @param {string} exId
+ * @param {string | null | undefined} routineId
+ * @param {number | null | undefined} [setsCount]
+ * @returns {Target}
+ */
 export function seedForReplacement(S, exId, routineId, setsCount) {
   const base = defaultConfig(exId)
   const last = lastSessionInRoutine(S, exId, routineId) || lastSession(S, exId)
@@ -250,6 +317,11 @@ export function seedForReplacement(S, exId, routineId, setsCount) {
   return seed
 }
 
+/**
+ * Trim and bound an exercise note to 500 characters, returning undefined when blank.
+ * @param {unknown} value
+ * @returns {string | undefined}
+ */
 export function cleanNote(value) {
   if (typeof value !== 'string') return undefined
   const trimmed = value.trim()

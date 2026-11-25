@@ -3,10 +3,17 @@ import { isWorkSet, doneWorkSets } from './workout-sets.js'
 import { setProgressHighWater, supersetFlowStep } from './supersetFlow.js'
 import { stepOf } from './session-view.js'
 
+/** @typedef {import('./types.js').Profile} Profile */
+/** @typedef {import('./types.js').Entry} Entry */
+
 /**
  * The rest after a set in a Step: the longest Rest duration among its Entries, an Entry
  * without its own counting as the Profile's (ADR 0029). Null when no Entry has its own,
  * so the effect runner applies the Profile's.
+ * @param {Profile} S
+ * @param {Entry[]} entries
+ * @param {number[]} stepEntries
+ * @returns {number | null}
  */
 function stepRest(S, entries, stepEntries) {
   const own = stepEntries.map(i => ownRest(entries[i]?.target))
@@ -15,10 +22,16 @@ function stepRest(S, entries, stepEntries) {
   return Math.max(...own.map(sec => sec ?? profile))
 }
 
+/**
+ * Toggle a Set's `done` flag and compute navigation, rest timer, and completion notice.
+ * @param {Profile} S
+ * @param {number} entryIdx
+ * @param {number} setIdx
+ */
 export function toggleActiveSet(S, entryIdx, setIdx) {
   const A = S?.active
   const entry = A?.entries?.[entryIdx]
-  if (!entry || !entry.sets?.[setIdx]) return null
+  if (!A || !entry || !entry.sets?.[setIdx]) return null
 
   const set = entry.sets[setIdx]
   const preFlipDone = doneWorkSets(entry).length

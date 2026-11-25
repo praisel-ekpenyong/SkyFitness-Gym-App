@@ -24,9 +24,15 @@ in review. Each rule is an imperative that names its one legal exception, and a
   runs the same ratchet as the first half of `npm run lint`. A rule oxlint
   supports goes in oxlint. Today it runs its `correctness` category (in place of
   `@eslint/js` recommended, with `no-unused-vars` and `no-empty` keeping
-  ESLint's old options), `react/rules-of-hooks`, `react/exhaustive-deps`,
-  `eslint/no-throw-literal` and `eslint/prefer-promise-reject-errors`, all at
-  error, tests excluded. Its own `react/*` copies of the compiler rules are off.
+  ESLint's old options), `react/rules-of-hooks`, `react/exhaustive-deps` and the
+  type-aware `typescript/*` rows (see "What runs"), all at error, tests
+  excluded. The ratchet runs oxlint with `--type-aware` against
+  `frontend/tsconfig.json` through `oxlint-tsgolint` (pinned at 7.0.2008, the
+  version oxlint 1.95.0 asks for). The `typescript` plugin brings its own
+  `correctness` rules; those not named in this document are listed as `off` in
+  `.oxlintrc.json` (oxlint's categories are global, so they are switched off one
+  by one), so only the rows below are rules. Its own `react/*` copies of the
+  compiler rules are off too.
 - **ESLint 10** runs after the oxlint ratchet in `npm run lint`, and only in CI:
   `frontend/eslint.config.js`. The pre-commit hook does not call ESLint. It
   keeps only what oxlint cannot do: the official `eslint-plugin-react-hooks`
@@ -37,8 +43,10 @@ in review. Each rule is an imperative that names its one legal exception, and a
   `react-hooks/todo` stays off. The `no-restricted-syntax` selectors run from
   one table in `frontend/eslint.config.js`, with their hits baselined in the same
   suppressions file. A rule runs in one tool, never two.
-- **tsc** (strict, `allowJs`, `checkJs`) joins when `frontend/tsconfig.json`
-  exists. Then oxlint adds its type-aware rows through `oxlint-tsgolint`.
+- **tsc** (strict, `allowJs`, `checkJs`, `frontend/tsconfig.json`) runs in the
+  pre-commit hook and in CI (`npm run typecheck`, ratcheted by
+  `frontend/tsc-baseline.json` via `frontend/scripts/check-tsc-baseline.mjs`).
+  oxlint's type-aware rows run against the same `tsconfig.json`.
 - **Vitest guard tests** (`npm test`) and `frontend/scripts/check-*.mjs`
   scripts cover what no linter can express.
 
@@ -119,10 +127,10 @@ share a branch. A `default` that quietly absorbs leftover members will also abso
 new members added in the future without an explicit decision. Without a `default`,
 adding a member to a union forces every switch site to handle it. Exception: none.
 
-**Judgement call, no tooth** while the code is JavaScript. The stand-in for the
-effect and command sets is the closed-set guard test above.
-**To add:** oxlint `typescript/switch-exhaustiveness-check` (type-aware, after
-`tsconfig`).
+**Runs:** oxlint `typescript/switch-exhaustiveness-check` at error (type-aware,
+0 hits, no baseline entry). While the code is JavaScript few switches have a
+union type for it to check; the stand-in for the effect and command sets is the
+closed-set guard test above.
 
 ### Functions stay simple
 
@@ -153,9 +161,11 @@ harmless and best effort (`.oxlintrc.json` sets `allowEmptyCatch` for that).
 Never use one where the swallowed failure would lose or hide lifter data.
 
 **Why:** the rule already holds (0 thrown literals today), so the tooth is free.
-**Runs:** oxlint `eslint/no-throw-literal` and `eslint/prefer-promise-reject-errors`
-at error, no baseline entry.
-**To add:** after `tsconfig`, `typescript/only-throw-error` replaces them.
+**Runs:** oxlint `typescript/only-throw-error` at error (type-aware, 0 hits, no
+baseline entry). It replaced `eslint/no-throw-literal`, which is removed: it
+also catches a thrown value that is not typed as an `Error`. It does not cover
+`Promise.reject(nonError)`, which `eslint/prefer-promise-reject-errors` used to
+catch; `typescript/prefer-promise-reject-errors` is a possible later row.
 
 ### A catch hides nothing from the lifter
 
@@ -178,13 +188,16 @@ async function to a slot that expects a `void` callback either (an event
 listener, `forEach`), because nothing there awaits or catches what it returns.
 Exception: none.
 
-**Why:** `nativeSave` in `platform/mobile.js` swallows its errors and is called
-floating, so `isMirrorFailing()` never sees a mobile write fail.
-**To add:** oxlint `typescript/no-floating-promises` (17 hits in 11 files) and
-`typescript/no-misused-promises` (2 hits in 2 files), type-aware, after
-`tsconfig` (measured 2026-11-24 with oxlint 1.95.0, `oxlint-tsgolint` and a
-throwaway tsconfig, app code only). Older hits go in
-`frontend/lint-baseline.json`.
+**Why:** a floating promise drops its rejection, so a failed write never
+reaches the code that records it (`isMirrorFailing()` for the mobile file
+mirror). `nativeSave` in `platform/mobile.js` is not a hit: it rejects on a
+failed write and `nativeSink` awaits it.
+**Runs:** oxlint `typescript/no-floating-promises` (15 hits in 10 files) and
+`typescript/no-misused-promises` (12 hits in 11 files), type-aware, at error
+(counts measured 2026-11-25 with oxlint 1.95.0, `oxlint-tsgolint` 7.0.2008 and
+`frontend/tsconfig.json`, app code and `scripts/`). The old hits are in
+`frontend/lint-baseline.json`, and a new one fails
+`npm run lint`.
 
 ## Function signatures
 
@@ -199,13 +212,13 @@ caller omit this today, and what does the function assume when it does?
 ## Types and TypeScript migration
 
 The target is strict TypeScript, reached by checking the JavaScript first. The
-tree is JavaScript today: `frontend/` has no `.ts` file and no `tsconfig`.
+tree is JavaScript today (`frontend/` has no `.ts` file yet), checked by
+`frontend/tsconfig.json`.
 
 ### The checker comes first
 
-Add `frontend/tsconfig.json` with `strict: true`, `allowJs` and `checkJs` over
-all app code, and run `npm run typecheck` in the pre-commit hook and in CI
-(about 1.6 s). A probe measured 6247 errors at `strict`: 2950 in app code (`lib/`
+`frontend/tsconfig.json` runs with `strict: true`, `allowJs` and `checkJs` over
+all app code, and `npm run typecheck` runs in the pre-commit hook and in CI. A probe measured 6247 errors at `strict`: 2950 in app code (`lib/`
 1652, `sheets/` 452, `views/` 388, `components/` 291, `platform/` 77, `store/` 65,
 the `src` root 25) and 3297 in tests. About three quarters are implicit `any`.
 The errors are a ratchet, not a blocker: `frontend/tsc-baseline.json` holds the
@@ -214,8 +227,9 @@ error count per file, may only shrink, and fails on a stale entry. One command,
 new and must be clean. Exception: none.
 
 **Why:** a type that nothing checks is an unenforced rule.
-**To add:** `frontend/tsconfig.json`, `npm run typecheck` in
-`.github/workflows/test.yml` and `.githooks/pre-commit`, and
+**Runs:** `frontend/tsconfig.json`, `npm run typecheck`
+(`frontend/scripts/check-tsc-baseline.mjs`, with its failing fixture in
+`npm test`) in `.github/workflows/test.yml` and `.githooks/pre-commit`, and
 `frontend/tsc-baseline.json`.
 
 ### Name the entities in JSDoc first
@@ -245,16 +259,17 @@ Exception: the edge itself.
 Until the checker is on, a `.js` file still follows the rule. JSDoc at the
 boundary is the stand-in, not a cast.
 
-**To add:** oxlint `typescript/no-explicit-any`, `typescript/no-non-null-assertion`
-and `typescript/ban-ts-comment`, after `tsconfig`. Old hits go
-in `frontend/lint-baseline.json`. Branded `Kg` and `Lb` types, once real types
-exist, turn the unit mix-up into a compile error.
+**Runs:** oxlint `typescript/no-explicit-any`, `typescript/no-non-null-assertion`
+and `typescript/ban-ts-comment` at error, 0 hits each today (the JSDoc
+`{any}` in `platform/storage.js` is a comment, not a TypeScript node), so no
+baseline entry. A new hit is fixed, never baselined.
 
-**Deferred until real types exist, not rules now:** `typescript/no-unsafe-*`
-and `typescript/no-unnecessary-condition` (117 hits in the probe on `ea9b171`).
-Today they fire hundreds to thousands of times and mean nothing, because
-every value is an implicit `any`. Each becomes a rule, with a baseline, once
-the typedefs above are in.
+**Deferred, not rules now:** `typescript/no-unsafe-*` and
+`typescript/no-unnecessary-condition` (117 hits in the probe on `ea9b171`).
+Today they fire hundreds to thousands of times and mean nothing, because every
+value is an implicit `any`. Each becomes a rule, with a baseline, once the
+typedefs above are in. Branded `Kg` and `Lb` types are deferred too: once real
+types exist they turn the unit mix-up into a compile error.
 
 ### Absent is not 0
 
@@ -844,8 +859,8 @@ names every one:
 | Vitest guard tests, in `npm test` | `purity.test.js`, `import-cycles.test.js`, `design-tokens.test.js`, `design-lint.test.js`, `env.test.js`, `i18n-lint.test.js`, `sheets/dialog-names.test.jsx`, `docs.test.js`, `platform/storage.test.js` (the 800ms debounce), `comments.test.js`, `effect-types.test.js`, the `warmArt` test (`App.warm-art.test.jsx`), the `flush()` test (`store/useStore.flush.test.jsx`), the save round-trip tests (`sheets/catalogue.test.jsx`, `views/RoutineEdit.test.jsx`), `lib/profile/profile-keys.test.js` | |
 | ESLint 10, `npm run lint` after the oxlint ratchet (CI only) | `react-hooks/set-state-in-effect`, `react-hooks/no-deriving-state-in-effects`, `react-hooks/set-state-in-render`, `react-hooks/immutability`, `react-hooks/preserve-manual-memoization`, `react-hooks/globals`, all at error, 0 hits. `static-components` (9 hits, 2 files) and `purity` (5), at error with `frontend/eslint-suppressions.json`. `react-hooks/todo` stays off. `no-restricted-syntax` selectors, one table in `frontend/eslint.config.js`: One-owner (`LB_TO_KG` and the `2.2046` and `0.4535` literals at 0 suppressions, inline `Math.round(x * 10) / 10`, `(getDay() + 6) % 7`, `\|\| 'kg'`), `% 60`, local dates, store selectors, the `lib/` clock, `import.meta.env` and `process.env`, the CommonJS shim, and `vi.mock` scope in tests. Ratchet: `frontend/eslint-suppressions.json` | nothing |
 | oxlint, ratchet in the pre-commit hook and in `npm run lint` (CI) | `correctness` category, `react/rules-of-hooks`, `react/exhaustive-deps`, `no-throw-literal`, `prefer-promise-reject-errors`, `complexity`, restricted globals and properties (including `Date.now` in `lib/`), `unicorn/no-array-sort`, `unicorn/no-array-reverse`, `react/no-array-index-key`, `jsx-a11y/click-events-have-key-events`, `jsx-a11y/no-static-element-interactions`, `jsx-a11y/prefer-tag-over-role`, `jsx-a11y/no-autofocus`, all at error. Ratchet: `frontend/lint-baseline.json`, checked by `scripts/check-lint-baseline.mjs` with its failing fixture in `npm test` | nothing |
-| tsc | nothing | `tsconfig.json`, `npm run typecheck` in the hook and CI. Ratchet: `frontend/tsc-baseline.json` |
-| oxlint type-aware (`oxlint-tsgolint`) | nothing | `no-floating-promises`, `no-misused-promises`, `only-throw-error`, `switch-exhaustiveness-check`, `no-explicit-any`, `no-non-null-assertion`, `ban-ts-comment` |
+| tsc | `frontend/tsconfig.json` (`strict`, `allowJs`, `checkJs` over app code), `npm run typecheck` in the hook and CI. Ratchet: `frontend/tsc-baseline.json`, checked by `frontend/scripts/check-tsc-baseline.mjs` with its failing fixture in `npm test` | tests joining `tsconfig.json` (last) |
+| oxlint type-aware (`oxlint-tsgolint` 7.0.2008, `--type-aware` in the same ratchet) | `typescript/no-floating-promises` (15 hits, 10 files) and `no-misused-promises` (12 hits, 11 files) at error with `frontend/lint-baseline.json`; `only-throw-error`, `switch-exhaustiveness-check`, `no-explicit-any`, `no-non-null-assertion`, `ban-ts-comment` at error, 0 hits. Failing fixture: `check-lint-baseline.test.mjs` with a floating promise | `no-unsafe-*`, `no-unnecessary-condition` and branded `Kg` / `Lb` types (deferred until typedefs exist) |
 | `frontend/scripts/check-frontend-state.mjs`, in `npm test` | The `use-state` cap, with its failing fixture. Ratchet: `frontend/frontend-state-allowlist.json` | nothing |
 | Babel and CI | `babel-plugin-react-compiler` (done, #122), `npm run test:fatigue-probe`, `npm run build`, and the `React Doctor` floor (`frontend/react-doctor-floor.json`, checked by `frontend/scripts/check-react-doctor-floor.mjs` with its failing fixture in `npm test`) | |
 
@@ -863,12 +878,11 @@ says it is too slow for the unit suite.
    `complexity`, restricted globals and properties, `exhaustive-deps`,
    `unicorn/no-array-sort`, `unicorn/no-array-reverse`, `react/no-array-index-key`
    and the `jsx-a11y` rules named under "Lists keep stable keys". What this step
-   still adds is the `Date.now` override for `lib/`. ESLint has left the
+   adds, the `Date.now` override for `lib/`, is on too. ESLint has left the
    pre-commit hook: the hook runs the oxlint ratchet, and ESLint (about 19 s
-   with the compiler rules) runs in CI. `tsc` stays in step 4, with type-aware
-   oxlint. The `use-state` cap stays in its own row.
-4. `tsconfig.json`, `npm run typecheck` and `frontend/tsc-baseline.json`, then
-   the JSDoc `@typedef`s. Then oxlint's type-aware rows.
+   with the compiler rules) runs in CI. The `use-state` cap stays in its own row.
+4. `tsconfig.json`, `npm run typecheck` and `frontend/tsc-baseline.json` run in
+   the hook and CI; the JSDoc `@typedef`s are in and oxlint's type-aware rows are on.
 5. The guard tests still to add.
 6. Rename `lib/` to `.ts`, then the rest, then tests.
 7. `babel-plugin-react-compiler` (done, #122).

@@ -5,6 +5,14 @@ import { cleanupSg, supersetUnits } from './supersetFlow.js'
 import { EXIDX, exOr } from './exercises.js'
 import { MINUS, uid } from './format.js'
 
+/** @typedef {import('./types.js').Profile} Profile */
+/** @typedef {import('./types.js').Routine} Routine */
+/** @typedef {import('./types.js').Target} Target */
+/** @typedef {import('./types.js').Entry} Entry */
+/** @typedef {import('./types.js').ActiveWorkout} ActiveWorkout */
+/** @typedef {import('./types.js').Workout} Workout */
+
+/** @param {string | undefined} str @returns {string} */
 function toTitleCase(str) {
   if (!str) return ''
   return String(str)
@@ -13,11 +21,17 @@ function toTitleCase(str) {
     .join(' ')
 }
 
+/**
+ * Resolve a title-cased display name for an exercise ID or Target/Entry item.
+ * @param {string} id
+ * @param {Entry | Target | Partial<Entry> | Partial<Target> | null} [item={}]
+ * @returns {string}
+ */
 export function exerciseDisplayName(id, item = {}) {
-  if (item?.name) return toTitleCase(item.name)
-  if (item?.n) return toTitleCase(item.n)
-  if (item?.target?.name) return toTitleCase(item.target.name)
-  if (item?.target?.n) return toTitleCase(item.target.n)
+  if (item && 'name' in item && item.name) return toTitleCase(item.name)
+  if (item && 'n' in item && item.n) return toTitleCase(item.n)
+  if (item && 'target' in item && item.target?.name) return toTitleCase(item.target.name)
+  if (item && 'target' in item && item.target?.n) return toTitleCase(item.target.n)
   const ex = EXIDX[id]
   if (ex?.n) return toTitleCase(ex.n)
   if (ex?.name) return toTitleCase(ex.name)
@@ -28,8 +42,13 @@ export function exerciseDisplayName(id, item = {}) {
   return fallback?.n ? toTitleCase(fallback.n) : id
 }
 
+/**
+ * Detect replacements, additions, removals, and reorderings between a Routine and an ActiveWorkout.
+ * @param {Target[]} routineExercises
+ * @param {Entry[]} sessionEntries
+ */
 export function detectStructuralChanges(routineExercises, sessionEntries) {
-  const rIds = routineExercises.map(e => e.id)
+  const rIds = routineExercises.map(e => e.id ?? '')
   const sIds = sessionEntries.map(e => e.id)
 
   const trulyRemoved = rIds.filter(id => !sIds.includes(id))
@@ -39,13 +58,17 @@ export function detectStructuralChanges(routineExercises, sessionEntries) {
   const commonS = sIds.filter(id => rIds.includes(id))
   const isReordered = commonR.some((id, idx) => id !== commonS[idx])
 
+  /** @type {Array<{ from: string, to: string }>} */
   const replacements = []
+  /** @type {string[]} */
   const additions = []
+  /** @type {string[]} */
   const removals = []
 
   const matchedRemoved = new Set()
   const matchedAdded = new Set()
 
+  /** @param {string[]} rSlice @param {string[]} sSlice */
   function pairSegments(rSlice, sSlice) {
     const rSeg = rSlice.filter(id => trulyRemoved.includes(id) && !matchedRemoved.has(id))
     const sSeg = sSlice.filter(id => trulyAdded.includes(id) && !matchedAdded.has(id))
@@ -85,6 +108,7 @@ export function detectStructuralChanges(routineExercises, sessionEntries) {
     if (!matchedAdded.has(id)) additions.push(id)
   }
 
+  /** @type {string[]} */
   const changes = []
 
   for (const rep of replacements) {
@@ -116,6 +140,14 @@ export function detectStructuralChanges(routineExercises, sessionEntries) {
   }
 }
 
+/**
+ * Detect superset pairings added or unlinked between a Routine and an ActiveWorkout.
+ * @param {Target[]} routineExercises
+ * @param {Target[]} syncedExercises
+ * @param {Entry[]} sessionEntries
+ * @param {Array<{ from: string, to: string }>} replacements
+ * @returns {string[]}
+ */
 export function detectSupersetChanges(
   routineExercises,
   syncedExercises,
@@ -127,15 +159,17 @@ export function detectSupersetChanges(
   const sessionUnits = supersetUnits(syncedExercises).filter(u => u.length >= 2)
 
   const routineSupersets = routineUnits.map(u => u.map(idx => {
-    const origId = routineExercises[idx].id
+    const origId = routineExercises[idx].id ?? ''
     return repMap.get(origId) || origId
   }))
-  const sessionSupersets = sessionUnits.map(u => u.map(idx => syncedExercises[idx].id))
+  const sessionSupersets = sessionUnits.map(u => u.map(idx => syncedExercises[idx].id ?? ''))
 
+  /** @param {string[]} ids */
   const keyOf = ids => ids.join('+')
   const routineKeys = new Set(routineSupersets.map(keyOf))
   const sessionKeys = new Set(sessionSupersets.map(keyOf))
 
+  /** @type {string[]} */
   const changes = []
 
   for (let i = 0; i < sessionSupersets.length; i++) {
@@ -149,7 +183,7 @@ export function detectSupersetChanges(
   for (let i = 0; i < routineSupersets.length; i++) {
     const key = keyOf(routineSupersets[i])
     if (!sessionKeys.has(key)) {
-      const names = routineUnits[i].map(idx => exerciseDisplayName(routineExercises[idx].id, routineExercises[idx]))
+      const names = routineUnits[i].map(idx => exerciseDisplayName(routineExercises[idx].id ?? '', routineExercises[idx]))
       changes.push(`Unlinked superset: ${names.join(' + ')}`)
     }
   }
@@ -157,6 +191,12 @@ export function detectSupersetChanges(
   return changes
 }
 
+/**
+ * Compute the Routine sync diff and projected `ex` list from an ActiveWorkout.
+ * @param {Routine | null | undefined} routine
+ * @param {ActiveWorkout | Workout | null | undefined} activeSession
+ * @returns {{ hasDiff: boolean, changes: string[], syncedEx: Target[] }}
+ */
 export function diffRoutineWithSession(routine, activeSession) {
   if (
     !routine ||
@@ -185,6 +225,7 @@ export function diffRoutineWithSession(routine, activeSession) {
     const doneCount = doneWorkSets(entry).length
     const sets = doneCount > 0 ? doneCount : (target.sets || 3)
 
+    /** @type {Target} */
     const projected = {
       ...target,
       id: entry.id,
@@ -225,6 +266,7 @@ export function diffRoutineWithSession(routine, activeSession) {
     replacements
   )
 
+  /** @type {string[]} */
   const setCountChanges = []
   const matchedRoutineIndicesForSets = new Set()
   for (let sIdx = 0; sIdx < sessionEntries.length; sIdx++) {
@@ -255,6 +297,7 @@ export function diffRoutineWithSession(routine, activeSession) {
     }
   }
 
+  /** @type {string[]} */
   const noteChanges = []
   const matchedRoutineIndicesForNotes = new Set()
   for (let sIdx = 0; sIdx < sessionEntries.length; sIdx++) {
@@ -307,6 +350,13 @@ export function diffRoutineWithSession(routine, activeSession) {
   }
 }
 
+/**
+ * Replace `routine.ex` with `syncedEx`.
+ * @param {Profile} S
+ * @param {string} routineId
+ * @param {Target[]} syncedEx
+ * @returns {boolean}
+ */
 export function syncRoutineFromSession(S, routineId, syncedEx) {
   if (!S || !Array.isArray(S.routines) || !routineId || !Array.isArray(syncedEx)) {
     return false

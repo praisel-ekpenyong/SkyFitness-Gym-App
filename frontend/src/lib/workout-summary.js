@@ -1,9 +1,14 @@
 import { setsDone, workSetsDone } from './workout-model.js'
 import { tonnage } from './training-log.js'
 
+/** @typedef {import('./types.js').Profile} Profile */
+/** @typedef {import('./types.js').Workout} Workout */
+
 /**
  * How long a finished Workout took, or null when that is unknown.
  * Unknown means the start or end is missing or not a number, or the end is not after the start.
+ * @param {Workout | null | undefined} w
+ * @returns {number | null}
  */
 function durationOf(w) {
   const start = Number(w?.start)
@@ -13,8 +18,8 @@ function durationOf(w) {
 
 /**
  * The Workout summary of one Workout: what every surface shows as its sets, time and Tonnage.
- * @param {Object} S - Profile state; its unit decides how loads are read.
- * @param {Object} w - A finished Workout.
+ * @param {Profile} S - Profile state; its unit decides how loads are read.
+ * @param {Workout} w - A finished Workout.
  * @returns {{workSets: number, warmups: number, durationMs: number|null, tonnage: number}}
  *   Performed Work sets, performed Warm-up sets, duration (null when unknown) and Tonnage.
  */
@@ -25,8 +30,8 @@ export function workoutSummary(S, w) {
 
 /**
  * The Workout summary of a span of Workouts. Unknown durations are skipped, never read as zero.
- * @param {Object} S - Profile state.
- * @param {Object[]} workouts - Finished Workouts, in any order.
+ * @param {Profile} S - Profile state.
+ * @param {Workout[]} workouts - Finished Workouts, in any order.
  * @returns {{workouts: number, workSets: number, durationMs: number, tonnage: number}}
  */
 export function summarizeWorkouts(S, workouts) {

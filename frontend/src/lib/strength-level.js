@@ -14,6 +14,14 @@ import { weighIns as weighInsInUnit, sessionBodyweight } from './bodyweight.js'
 import { cleanSex } from './sex.js'
 import { ageCoefficientOf } from './birth-year.js'
 
+/** @typedef {import('./types.js').Profile} Profile */
+/** @typedef {import('./types.js').Workout} Workout */
+/** @typedef {import('./types.js').WeighIn} WeighIn */
+/** @typedef {import('./types.js').Unit} Unit */
+/** @typedef {{ key: string, name: string, ids: string[], male: number[], female: number[] }} StrengthStandard */
+/** @typedef {{ level: string | null, ratio: number }} LevelReading */
+/** @typedef {{ key: string, name: string, everTrained: boolean, trainedLately: boolean, current: LevelReading | null, peak: LevelReading | null, next: { level: string, weight: number } | null }} LiftReading */
+
 const DAY_MS = 24 * 60 * 60 * 1000
 const CURRENT_WEEKS = 12
 const WEIGH_IN_DAYS = 30
@@ -24,8 +32,12 @@ export const LEVELS = ['Beginner', 'Novice', 'Intermediate', 'Advanced', 'Elite'
 /** The reasons a reading shows no levels. Shared by the lib and the Stats views. */
 export const STRENGTH_REASON = Object.freeze({ sex: 'sex', weighIn: 'weighIn' })
 
-/** How many of the five steps a level fills, Beginner 1 through Elite 5; 0 for no level. */
-export const levelStepOf = level => LEVELS.indexOf(level) + 1
+/**
+ * How many of the five steps a level fills, Beginner 1 through Elite 5; 0 for no level.
+ * @param {string | null | undefined} level
+ * @returns {number}
+ */
+export const levelStepOf = level => (level ? LEVELS.indexOf(level) + 1 : 0)
 
 /** Smallest loadable total step per unit: the smallest plate pair (1.25 kg, 2.5 lb per side). */
 const LOAD_STEP = { kg: 2.5, lb: 5 }
@@ -33,6 +45,7 @@ const LOAD_STEP = { kg: 2.5, lb: 5 }
 /**
  * Strength Level's approximate body-weight multiples, [Beginner, Novice, Intermediate, Advanced, Elite].
  * Credited to Strength Level (strengthlevel.com) in the card footer. Data only.
+ * @type {StrengthStandard[]}
  */
 export const STRENGTH_STANDARDS = [
   { key: 'squat', name: 'Squat', ids: ['0043', '1461', '1462', '1436'], male: [0.75, 1.25, 1.5, 2.25, 2.75], female: [0.5, 0.75, 1.25, 1.5, 2] },
@@ -48,16 +61,23 @@ export const STRENGTH_STANDARDS = [
 
 const LIFT_BY_ID = new Map(STRENGTH_STANDARDS.flatMap(lift => lift.ids.map(id => [id, lift])))
 
+/** @param {unknown} value @returns {number | null} */
 const positiveOf = value => {
   const n = Number(value)
   return Number.isFinite(n) && n > 0 ? n : null
 }
 
+/** @param {number} value @returns {number} */
 const round2 = value => Math.round(value * 100) / 100
 
+/** @param {Profile | null | undefined} S @returns {Unit} */
 const profileUnit = S => S?.unit || 'kg'
 
-/** Body-weight log entries with a usable weight, oldest first, in the Profile unit. */
+/**
+ * Body-weight log entries with a usable weight, oldest first, in the Profile unit.
+ * @param {Profile | null | undefined} S
+ * @returns {WeighIn[]}
+ */
 function weighInsOf(S) {
   return weighInsInUnit(S)
     .filter(b => b && positiveOf(b.w) !== null && Number.isFinite(workoutTimestamp(b)))
@@ -68,25 +88,38 @@ function weighInsOf(S) {
 /**
  * The most recent Weigh-in in the Profile unit, from the Body-weight log or a workout's own,
  * or null when there is none.
+ * @param {Profile | null | undefined} S
+ * @param {WeighIn[]} logged
+ * @returns {number | null}
  */
 function latestWeighInOf(S, logged) {
+  /** @type {{ ts: number, w: number } | null} */
   let latest = null
-  const consider = (ts, w) => { if (latest === null || ts > latest.ts) latest = { ts, w } }
-  for (const b of logged) consider(workoutTimestamp(b), Number(b.w))
+  for (const b of logged) {
+    const ts = workoutTimestamp(b)
+    if (latest === null || ts > latest.ts) latest = { ts, w: Number(b.w) }
+  }
   for (const workout of S?.workouts || []) {
     const own = sessionBodyweight(S, workout)
     const ts = workoutTimestamp(workout)
-    if (own !== null && Number.isFinite(ts)) consider(ts, own)
+    if (own !== null && Number.isFinite(ts) && (latest === null || ts > latest.ts)) latest = { ts, w: own }
   }
   return latest ? latest.w : null
 }
 
-/** The body weight a workout was lifted at, in the Profile unit, or null when none is within reach. */
+/**
+ * The body weight a workout was lifted at, in the Profile unit, or null when none is within reach.
+ * @param {Profile | null | undefined} S
+ * @param {Workout} workout
+ * @param {WeighIn[]} logged
+ * @returns {number | null}
+ */
 function bodyweightThen(S, workout, logged) {
   const own = sessionBodyweight(S, workout)
   if (own !== null) return own
   const ts = workoutTimestamp(workout)
   if (!Number.isFinite(ts)) return null
+  /** @type {WeighIn | null} */
   let best = null
   let bestGap = Infinity
   for (const b of logged) {
@@ -96,10 +129,20 @@ function bodyweightThen(S, workout, logged) {
   return best ? Number(best.w) : null
 }
 
-/** Index of the highest threshold the ratio reaches, or -1 when it is below Beginner. */
+/**
+ * Index of the highest threshold the ratio reaches, or -1 when it is below Beginner.
+ * @param {number} ratio
+ * @param {number[]} thresholds
+ * @returns {number}
+ */
 const levelIndexOf = (ratio, thresholds) => thresholds.reduce((n, t) => (ratio >= t ? n + 1 : n), 0) - 1
 
-/** Round a weight up to the next loadable step in the Profile unit. */
+/**
+ * Round a weight up to the next loadable step in the Profile unit.
+ * @param {number} weight
+ * @param {Unit} unit
+ * @returns {number}
+ */
 function roundUpToStep(weight, unit) {
   const step = LOAD_STEP[unit] || LOAD_STEP.kg
   const steps = Math.ceil(Number((weight / step).toFixed(6)))
@@ -109,8 +152,14 @@ function roundUpToStep(weight, unit) {
 /**
  * Every workout with an Estimated 1RM of this lift in the Training log and a body weight then:
  * its greatest estimate divided by that body weight, and whether it falls in the current window.
+ * @param {Profile | null | undefined} S
+ * @param {StrengthStandard} lift
+ * @param {WeighIn[]} weighIns
+ * @param {number} windowStart
+ * @returns {Array<{ recent: boolean, ratio: number }>}
  */
 function liftRatiosOf(S, lift, weighIns, windowStart) {
+  /** @type {Map<Workout, { workout: Workout, t: number, y: number }>} */
   const byWorkout = new Map()
   for (const id of lift.ids) {
     for (const point of e1rmByWorkout(S, id)) {
@@ -127,8 +176,14 @@ function liftRatiosOf(S, lift, weighIns, windowStart) {
   return ratios
 }
 
-/** When the lift was last trained: its latest performed Work set time in the Training log, or null. */
+/**
+ * When the lift was last trained: its latest performed Work set time in the Training log, or null.
+ * @param {Profile | null | undefined} S
+ * @param {StrengthStandard} lift
+ * @returns {number | null}
+ */
 function lastTrainedAt(S, lift) {
+  /** @type {number | null} */
   let last = null
   for (const id of lift.ids) {
     const at = latestWorkSetAt(S, id)
@@ -137,12 +192,23 @@ function lastTrainedAt(S, lift) {
   return last
 }
 
-/** The highest value in a list, or null when the list is empty. */
-const maxRatio = ratios => ratios.reduce((m, r) => (m === null || r > m ? r : m), null)
+/**
+ * The highest value in a list, or null when the list is empty.
+ * @param {number[]} ratios
+ * @returns {number | null}
+ */
+const maxRatio = ratios => ratios.reduce((/** @type {number | null} */ m, r) => (m === null || r > m ? r : m), null)
 
 /**
  * One lift's reading. Levels are null when the Profile cannot grade (no sex, no body weight).
  * everTrained is true when any workout trained the lift, even one with no body weight to grade it.
+ * @param {Profile | null | undefined} S
+ * @param {StrengthStandard} lift
+ * @param {number | null} latestWeight
+ * @param {WeighIn[]} weighIns
+ * @param {number} now
+ * @param {boolean} graded
+ * @returns {LiftReading}
  */
 function readLift(S, lift, latestWeight, weighIns, now, graded) {
   const windowStart = now - CURRENT_WEEKS * 7 * DAY_MS
@@ -153,10 +219,12 @@ function readLift(S, lift, latestWeight, weighIns, now, graded) {
     everTrained: lastAt !== null,
     trainedLately: lastAt !== null && lastAt > windowStart,
   }
-  if (!graded) return { ...identity, current: null, peak: null, next: null }
+  const sex = cleanSex(S?.sex)
+  if (!graded || !sex) return { ...identity, current: null, peak: null, next: null }
 
-  const coefficient = ageCoefficientOf(S.birthYear, now)
-  const thresholds = lift[cleanSex(S.sex)].map(t => t / coefficient)
+  const coefficient = ageCoefficientOf(S?.birthYear ?? null, now)
+  const thresholds = lift[sex].map(t => t / coefficient)
+  /** @param {number} ratio @returns {LevelReading} */
   const levelReadingOf = ratio => ({ level: LEVELS[levelIndexOf(ratio, thresholds)] ?? null, ratio: round2(ratio) })
 
   const ratios = liftRatiosOf(S, lift, weighIns, windowStart)
@@ -165,8 +233,9 @@ function readLift(S, lift, latestWeight, weighIns, now, graded) {
   const peak = peakRatio == null ? null : levelReadingOf(peakRatio)
   const current = currentRatio == null ? null : levelReadingOf(currentRatio)
 
+  /** @type {{ level: string, weight: number } | null} */
   let next = null
-  if (current && latestWeight !== null) {
+  if (current && currentRatio !== null && latestWeight !== null) {
     const nextIndex = levelIndexOf(currentRatio, thresholds) + 1
     if (nextIndex < LEVELS.length) {
       next = { level: LEVELS[nextIndex], weight: roundUpToStep(thresholds[nextIndex] * latestWeight, profileUnit(S)) }
@@ -178,9 +247,9 @@ function readLift(S, lift, latestWeight, weighIns, now, graded) {
 /**
  * Strength levels for every graded lift, read from the Profile and its history.
  *
- * @param {Object} S - Application state.
+ * @param {Profile | null | undefined} S - Application state.
  * @param {number} now - Injected millisecond timestamp.
- * @returns {{reason: null|'sex'|'weighIn', lifts: Array}} reason says why no levels can show.
+ * @returns {{reason: null|'sex'|'weighIn', lifts: LiftReading[]}} reason says why no levels can show.
  */
 export function strengthLevelsOf(S, now) {
   const sex = cleanSex(S?.sex)
@@ -197,14 +266,15 @@ export function strengthLevelsOf(S, now) {
 /**
  * The strength reading for one exercise, when it is one of the graded lifts.
  *
- * @param {Object} S - Application state.
+ * @param {Profile | null | undefined} S - Application state.
  * @param {string} exId - Catalogue exercise id.
  * @param {number} now - Injected millisecond timestamp.
- * @returns {Object|null} The reason plus that lift's reading, or null for an ungraded exercise.
+ * @returns {(LiftReading & { reason: null | 'sex' | 'weighIn' }) | null} The reason plus that lift's reading, or null for an ungraded exercise.
  */
 export function strengthLevelOf(S, exId, now) {
   const lift = LIFT_BY_ID.get(exId)
   if (!lift) return null
   const { reason, lifts } = strengthLevelsOf(S, now)
-  return { reason, ...lifts.find(l => l.key === lift.key) }
+  const found = lifts.find(l => l.key === lift.key)
+  return found ? { reason, ...found } : null
 }

@@ -99,6 +99,9 @@ export const workoutCompleteSheet = () => ui().openSheet(close => <WorkoutComple
 export const getProgressionItems = sessionProgressionItems
 
 
+/**
+ * @returns {[(el: HTMLElement | null) => void, boolean]}
+ */
 function useFigureFit() {
   const [tight, setTight] = useState(false)
   // A new callback identity when `tight` flips makes React re-run it, so a resize reset re-measures.

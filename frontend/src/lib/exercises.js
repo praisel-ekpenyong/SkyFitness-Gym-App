@@ -5,28 +5,36 @@ import { withShoulderHeads } from './shoulder-heads.js'
 import { muscleKey } from './muscle-spelling.js'
 import { LOWER_BODY_CORRECTIONS, UPPER_BODY_CORRECTIONS, curationsByIdOf } from './catalogue-corrections.js'
 
+/** @typedef {import('./types.js').CustomExercise} CustomExercise */
+/** @typedef {import('./types.js').Profile} Profile */
+/** @typedef {import('./types.js').Entry} Entry */
+
 export { EXDB }
 
-/** Reviewed catalogue curations by id (ADR 0012, ADR 0025); see catalogue-corrections.js. */
+/**
+ * Reviewed catalogue curations by id (ADR 0012, ADR 0025); see catalogue-corrections.js.
+ * @type {Record<string, { tg?: string, smAdd?: string[], smRemove?: string[] }>}
+ */
 export const CATALOGUE_CURATIONS = curationsByIdOf([...LOWER_BODY_CORRECTIONS, ...UPPER_BODY_CORRECTIONS])
 
-const removedBy = ex => new Set((CATALOGUE_CURATIONS[ex?.id]?.smRemove || []).map(muscleKey))
+/** @param {CustomExercise | null | undefined} ex */
+const removedBy = ex => new Set((CATALOGUE_CURATIONS[ex?.id ?? '']?.smRemove || []).map(muscleKey))
 
 /**
  * Lists an exercise's secondary muscles with the catalogue curation applied.
- * @param {Object} ex - Catalogue or custom exercise; nullish yields an empty list.
+ * @param {CustomExercise | null | undefined} ex - Catalogue or custom exercise; nullish yields an empty list.
  * @returns {string[]} Catalogue `sm` plus curated additions, minus curated removals.
  */
 export const smOf = ex => {
   const base = Array.isArray(ex?.sm) ? ex.sm : (ex?.sm ? [ex.sm] : [])
   const removed = removedBy(ex)
-  return [...new Set([...base, ...(CATALOGUE_CURATIONS[ex?.id]?.smAdd || [])])]
+  return [...new Set([...base, ...(CATALOGUE_CURATIONS[ex?.id ?? '']?.smAdd || [])])]
     .filter(m => !removed.has(muscleKey(m)))
 }
 
 /**
  * Reads an exercise's catalogue main-group muscle, dropped when a curation removes it.
- * @param {Object} ex - Catalogue or custom exercise.
+ * @param {CustomExercise | null | undefined} ex - Catalogue or custom exercise.
  * @returns {string|undefined} The `mg` muscle, or undefined when absent or removed.
  */
 export const mgOf = ex => (ex?.mg && !removedBy(ex).has(muscleKey(ex.mg)) ? ex.mg : undefined)
@@ -34,11 +42,12 @@ export const mgOf = ex => (ex?.mg && !removedBy(ex).has(muscleKey(ex.mg)) ? ex.m
 /**
  * Repairs a garbled degree sign in a pinned catalogue name. Upstream spells "45°" as "45в°" in a few
  * names (UTF-8 read as Windows-1251); the dataset file itself stays untouched (ADR 0012).
- * @param {Object} e - Catalogue exercise.
- * @returns {Object} The same exercise, or a copy with the name repaired.
+ * @param {CustomExercise} e - Catalogue exercise.
+ * @returns {CustomExercise} The same exercise, or a copy with the name repaired.
  */
 const withRepairedName = e => (e.n?.includes('в°') ? { ...e, n: e.n.replaceAll('в°', '°') } : e)
 
+/** @type {Record<string, CustomExercise>} */
 export const EXIDX = {}
 EXDB.map(withRepairedName).forEach(e => {
   const curation = CATALOGUE_CURATIONS[e.id]
@@ -53,16 +62,23 @@ EXDB.map(withRepairedName).forEach(e => {
 })
 export const BODYPARTS = [...new Set(EXDB.map(e => e.bp))].sort()
 
+/**
+ * Distinct equipment tags in `list`, ordered by descending frequency then alphabetically.
+ * @param {CustomExercise[]} list
+ * @returns {string[]}
+ */
 export function equipmentOf(list) {
+  /** @type {Record<string, number>} */
   const c = {}
   list.forEach(e => { if (e.eq) c[e.eq] = (c[e.eq] || 0) + 1 })
   return Object.keys(c).sort((a, b) => c[b] - c[a] || String(a).localeCompare(String(b)))
 }
 
+/** @type {string[]} */
 let customIds = []
 /**
  * Points id lookups at the user's current custom exercises for every caller.
- * @param {Object[]} list - Custom exercises to expose; nullish or empty clears the previous set.
+ * @param {CustomExercise[] | null | undefined} list - Custom exercises to expose; nullish or empty clears the previous set.
  * @returns {void} Nothing; removes ids that are no longer listed and adds the new ones as a side effect.
  */
 export function registerCustom(list) {
@@ -70,6 +86,7 @@ export function registerCustom(list) {
   customIds = (list || []).map(e => e.id)
   ;(list || []).forEach(e => { EXIDX[e.id] = e })
 }
+/** @param {Pick<Profile, 'customEx'> | null | undefined} st @returns {CustomExercise[]} */
 export const allExercises = st => [...(st?.customEx || []), ...EXDB.map(e => EXIDX[e.id])]
 
 import { PINNED_DATASET_COMMIT, CDN_IMG_BASE, CDN_GIF_BASE } from './media-cdn.js'
@@ -78,34 +95,33 @@ export { PINNED_DATASET_COMMIT, CDN_IMG_BASE, CDN_GIF_BASE }
 
 /**
  * Resolves the bundled still-image URL the cards show by default.
- * @param {Object} ex - Exercise with an `img` file name; nullish or imageless yields an empty string.
+ * @param {CustomExercise | null | undefined} ex - Exercise with an `img` file name; nullish or imageless yields an empty string.
  * @returns {string} Local image path, or an empty string when there is nothing to show.
  */
 export const imgSrc = ex => (ex?.img ? IMG_BASE + ex.img : '')
 /**
  * Resolves the bundled clip URL played while a demo runs.
- * @param {Object} ex - Exercise with a `gif` file name; nullish or clipless yields an empty string.
+ * @param {CustomExercise | null | undefined} ex - Exercise with a `gif` file name; nullish or clipless yields an empty string.
  * @returns {string} Local clip path, or an empty string when there is nothing to play.
  */
 export const gifSrc = ex => (ex?.gif ? GIF_BASE + ex.gif : '')
 /**
  * Resolves the pinned CDN still-image URL used when the bundled file is missing.
- * @param {Object} ex - Exercise with an `img` file name; nullish or imageless yields an empty string.
+ * @param {CustomExercise | null | undefined} ex - Exercise with an `img` file name; nullish or imageless yields an empty string.
  * @returns {string} CDN image URL, or an empty string when there is nothing to show.
  */
 export const cdnImgSrc = ex => (ex?.img ? CDN_IMG_BASE + ex.img : '')
 /**
  * Resolves the pinned CDN clip URL used when the bundled file is missing.
- * @param {Object} ex - Exercise with a `gif` file name; nullish or clipless yields an empty string.
+ * @param {CustomExercise | null | undefined} ex - Exercise with a `gif` file name; nullish or clipless yields an empty string.
  * @returns {string} CDN clip URL, or an empty string when there is nothing to play.
  */
 export const cdnGifSrc = ex => (ex?.gif ? CDN_GIF_BASE + ex.gif : '')
 
 /**
  * Picks the one media URL a card or demo should load for an exercise.
- * @param {Object} ex - Exercise with `img`/`gif` file names; nullish yields an empty string.
- * @param {boolean} playing - When true selects the motion clip instead of the still image.
- * @param {boolean} fallback - When true selects the pinned CDN copy instead of the bundled file.
+ * @param {CustomExercise | null | undefined} ex - Exercise with `img`/`gif` file names; nullish yields an empty string.
+ * @param {{ playing?: boolean, fallback?: boolean }} [options]
  * @returns {string} Chosen URL, or an empty string when the exercise carries no matching file.
  */
 export const mediaSrc = (ex, { playing = false, fallback = false } = {}) => {
@@ -115,6 +131,7 @@ export const mediaSrc = (ex, { playing = false, fallback = false } = {}) => {
   return fallback ? cdnImgSrc(ex) : imgSrc(ex)
 }
 
+/** @param {string | CustomExercise | null | undefined} idOrEx @returns {boolean} */
 export const isCardio = idOrEx => {
   const ex = typeof idOrEx === 'string' ? EXIDX[idOrEx] : idOrEx
   if (!ex) return false
@@ -123,22 +140,35 @@ export const isCardio = idOrEx => {
   return tg === 'cardio' || tg === 'cardiovascular system'
 }
 
+/** @param {string | CustomExercise | null | undefined} idOrEx @returns {boolean} */
 export const isBodyweightEq = idOrEx =>
   (typeof idOrEx === 'string' ? EXIDX[idOrEx] : idOrEx)?.eq === 'body weight'
 
 /**
  * Says whether an id names an exercise the index can resolve: a catalogue one or a registered custom.
- * @param {string} id - Exercise id; anything else, or an id the index only inherits, is unknown.
+ * @param {unknown} id - Exercise id; anything else, or an id the index only inherits, is unknown.
  * @returns {boolean} True exactly when `exOr(id)` returns a real exercise rather than the missing stand-in.
  */
 export const isKnownExercise = id => typeof id === 'string' && Object.hasOwn(EXIDX, id)
 
+/**
+ * Look up an exercise by id, returning the Unknown exercise placeholder when missing.
+ * @param {string} id
+ * @returns {CustomExercise}
+ */
 export const exOr = id => (isKnownExercise(id) && EXIDX[id]) ||
   { id, n: t('Unknown exercise'), bp: '', tg: '', eq: '', sm: [], st: [], missing: true }
 
+/** @typedef {import('./types.js').Target} Target */
+
+/**
+ * Resolve the exercise descriptor for an Entry or exercise-like object.
+ * @param {Entry | Partial<Entry> | CustomExercise | Target | null | undefined} entry
+ * @returns {CustomExercise | Partial<Entry> | Target | null}
+ */
 export const exerciseFor = entry => {
   const source = entry && typeof entry === 'object' ? entry : null
   if (!source) return null
-  const embedded = source.exercise
-  return EXIDX[source.id] || (embedded && typeof embedded === 'object' ? embedded : source)
+  const embedded = 'exercise' in source ? source.exercise : undefined
+  return (source.id ? EXIDX[source.id] : undefined) || (embedded && typeof embedded === 'object' ? embedded : source)
 }

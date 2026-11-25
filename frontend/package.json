@@ -10,6 +10,8 @@
     "preview": "vite preview",
     "lint": "node scripts/check-lint-baseline.mjs && eslint .",
     "lint:baseline": "node scripts/check-lint-baseline.mjs --write",
+    "typecheck": "node scripts/check-tsc-baseline.mjs",
+    "typecheck:baseline": "node scripts/check-tsc-baseline.mjs --write",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:fatigue-probe": "node scripts/fatigue-monotonic-probe.mjs",
@@ -46,6 +48,8 @@
     "@capacitor/ios": "^7.6.8",
     "@playwright/test": "^1.62.1",
     "@rolldown/plugin-babel": "^0.3.1",
+    "@types/react": "^19.3.1",
+    "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.1",
     "babel-plugin-react-compiler": "^1.0.0",
     "eslint": "^10.15.0",
@@ -54,6 +58,8 @@
     "happy-dom": "^21.0.4",
     "linkedom": "^0.18.13",
     "oxlint": "1.95.0",
+    "oxlint-tsgolint": "7.0.2008",
+    "typescript": "^7.0.2",
     "vite": "^8.2.2",
     "vitest": "^4.1.11"
   }

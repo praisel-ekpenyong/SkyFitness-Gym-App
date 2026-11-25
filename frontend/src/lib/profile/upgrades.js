@@ -1,22 +1,35 @@
 // The Profile's schema version and the ordered steps that bring an older Profile up to it (ADR 0027).
 // A step changes shapes only, never values. Adding one raises SCHEMA_VERSION by one.
 
-import { EFFORT } from '../effort.js'
 import { isRecord } from './plain.js'
 
+/** @typedef {import('../types.js').EffortScale} EffortScale */
+
+/**
+ * @param {Record<string, unknown>} raw
+ * @returns {EffortScale}
+ */
 function sealEffort(raw) {
   const e = raw.effort
-  if (e === 'none' || EFFORT[e]) return e
+  if (e === 'none' || e === 'rir' || e === 'rpe') return e
   return raw.showRir ? 'rir' : 'none'
 }
 
-// Old rows carried `warmup: true`; the Profile now stores the phase shape only.
+/**
+ * Old rows carried `warmup: true`; the Profile now stores the phase shape only.
+ * @param {unknown} set
+ * @returns {unknown}
+ */
 function upgradeSet(set) {
   if (!isRecord(set) || set.warmup !== true) return set
   const { warmup, ...rest } = set
   return rest.phase == null || rest.phase === '' ? { ...rest, phase: 'warmup' } : rest
 }
 
+/**
+ * @param {unknown} sets
+ * @returns {unknown}
+ */
 function upgradeSets(sets) {
   if (!Array.isArray(sets)) return sets
   let changed = false
@@ -28,6 +41,10 @@ function upgradeSets(sets) {
   return changed ? upgraded : sets
 }
 
+/**
+ * @param {unknown} entries
+ * @returns {unknown}
+ */
 function upgradeEntries(entries) {
   if (!Array.isArray(entries)) return entries
   let changed = false
@@ -41,14 +58,23 @@ function upgradeEntries(entries) {
   return changed ? upgraded : entries
 }
 
+/**
+ * @param {unknown} workout
+ * @returns {unknown}
+ */
 function upgradeWorkout(workout) {
   if (!isRecord(workout)) return workout
   const entries = upgradeEntries(workout.entries)
   return entries === workout.entries ? workout : { ...workout, entries }
 }
 
-/** 0 → 1: every Profile saved before the schema version. `showRir` becomes `effort`; `warmup: true` becomes `phase: 'warmup'`. */
+/**
+ * 0 → 1: every Profile saved before the schema version. `showRir` becomes `effort`; `warmup: true` becomes `phase: 'warmup'`.
+ * @param {Record<string, unknown>} raw
+ * @returns {Record<string, unknown>}
+ */
 function fromVersion0(raw) {
+  /** @type {Record<string, unknown>} */
   const next = { ...raw, effort: sealEffort(raw) }
   delete next.showRir
   if (Array.isArray(raw.workouts)) next.workouts = raw.workouts.map(upgradeWorkout)
@@ -64,18 +90,18 @@ export const SCHEMA_VERSION = UPGRADES.length
 
 /**
  * The schema version a stored Profile was written at.
- * @param {Object} raw - A stored or restored Profile.
+ * @param {Record<string, unknown> | null | undefined} raw - A stored or restored Profile.
  * @returns {number} 0 when absent; Infinity when present but not a whole number of at least 0.
  */
 export function schemaVersionOf(raw) {
   const v = raw?.schemaVersion
   if (v === undefined) return 0
-  return Number.isInteger(v) && v >= 0 ? v : Infinity
+  return typeof v === 'number' && Number.isInteger(v) && v >= 0 ? v : Infinity
 }
 
 /**
  * Tells whether a Profile was written by a newer Sky than this one, or carries a version it cannot read.
- * @param {*} raw - A stored or restored payload.
+ * @param {unknown} raw - A stored or restored payload.
  * @returns {boolean} True when admitting it would read shapes this build does not know.
  */
 export function isNewerProfile(raw) {
@@ -84,6 +110,7 @@ export function isNewerProfile(raw) {
 
 /** Thrown by `admit` for a Profile from a newer Sky: it is refused, never admitted. */
 export class NewerProfileError extends Error {
+  /** @param {unknown} version */
   constructor(version) {
     super('this Profile was saved by a newer version of Sky')
     this.name = 'NewerProfileError'
@@ -93,10 +120,10 @@ export class NewerProfileError extends Error {
 
 /**
  * Runs the upgrade steps a Profile has not yet taken, in order.
- * @param {Object} raw - A Profile at version `from`.
+ * @param {Record<string, unknown>} raw - A Profile at version `from`.
  * @param {number} from - Its stored schema version.
- * @param {Function[]} steps - The ordered steps; `UPGRADES` unless a test passes its own.
- * @returns {Object} The Profile at version `steps.length`; `raw` itself when no step runs.
+ * @param {Array<(raw: Record<string, unknown>) => Record<string, unknown>>} [steps] - The ordered steps; `UPGRADES` unless a test passes its own.
+ * @returns {Record<string, unknown>} The Profile at version `steps.length`; `raw` itself when no step runs.
  */
 export function upgrade(raw, from, steps = UPGRADES) {
   let S = raw

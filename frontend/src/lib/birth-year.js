@@ -11,7 +11,7 @@ const MASTERS = [[40, 1.00], [45, 1.06], [50, 1.13], [55, 1.21], [60, 1.30], [65
  */
 export function cleanBirthYear(value, now) {
   const year = new Date(now).getFullYear()
-  return Number.isInteger(value) && value >= 1000 && value <= 9999 && value <= year ? value : null
+  return typeof value === 'number' && Number.isInteger(value) && value >= 1000 && value <= 9999 && value <= year ? value : null
 }
 
 /**

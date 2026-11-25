@@ -14,6 +14,17 @@ import {
   tokenMatchesExercise,
 } from './exercise-search.js'
 
+/** @typedef {import('./types.js').Profile} Profile */
+/** @typedef {import('./types.js').Workout} Workout */
+/** @typedef {import('./types.js').CustomExercise} CustomExercise */
+
+/**
+ * Score how well an exercise matches search tokens.
+ * @param {CustomExercise | null | undefined} exercise
+ * @param {string[] | string} tokens
+ * @param {string} [rawQuery='']
+ * @returns {number}
+ */
 export function scoreExerciseMatch(exercise, tokens, rawQuery = '') {
   if (!exercise) return 0
   const tokenList = [...new Set(Array.isArray(tokens) ? tokens : tokenizeSearchQuery(tokens))]
@@ -48,8 +59,12 @@ export function scoreExerciseMatch(exercise, tokens, rawQuery = '') {
   return (matchedTokenCount * 100) + exactPhraseBonus + (titleMatchCount * 10)
 }
 
-
+/**
+ * Query and rank exercises for the Library and exercise picker.
+ * @param {{ profile?: Profile | null, scope?: { kind: string, muscle?: string }, search?: string, equipment?: string, searchAttribution?: boolean, ownFirst?: boolean }} [options]
+ */
 export function queryCatalogue({ profile, scope = { kind: 'all' }, search = '', equipment = '', searchAttribution = true, ownFirst = false } = {}) {
+  /** @type {Partial<Profile>} */
   const safeProfile = profile && typeof profile === 'object' ? profile : {}
   const favoriteList = Array.isArray(safeProfile.favorites) ? safeProfile.favorites : []
   const favoriteIds = new Set(favoriteList)
@@ -69,6 +84,7 @@ export function queryCatalogue({ profile, scope = { kind: 'all' }, search = '', 
     )
 
   if (searchTokens.length > 0) {
+    /** @type {Map<string, number>} */
     const scores = new Map()
     for (const ex of matching) {
       scores.set(ex.id, scoreExerciseMatch(ex, searchTokens, search))
@@ -86,6 +102,7 @@ export function queryCatalogue({ profile, scope = { kind: 'all' }, search = '', 
   } else if (kind === 'chosen') {
     matching.sort((a, b) => compareChosenUsage(a, b, usage))
   } else if (ownFirst) {
+    /** @param {CustomExercise} ex */
     const rank = ex => (favoriteIds.has(ex.id) ? 1e6 : 0) + (usage[ex.id] || 0)
     matching.sort((a, b) => (rank(b) - rank(a)) || ((catalogueOrder.get(a.id) || 0) - (catalogueOrder.get(b.id) || 0)))
   }
@@ -114,6 +131,12 @@ export function queryCatalogue({ profile, scope = { kind: 'all' }, search = '', 
   }
 }
 
+/**
+ * @param {CustomExercise} a
+ * @param {CustomExercise} b
+ * @param {Record<string, number>} usage
+ * @returns {number}
+ */
 function compareChosenUsage(a, b, usage) {
   const usageDiff = (usage[b.id] || 0) - (usage[a.id] || 0)
   if (usageDiff !== 0) return usageDiff
@@ -122,8 +145,10 @@ function compareChosenUsage(a, b, usage) {
 
 // Workout usage is cached per Workouts array, so typing in the picker does not
 // re-walk the log; Routines are few and counted on every call.
+/** @type {WeakMap<Workout[], Record<string, number>>} */
 const workoutUsageCache = new WeakMap()
 
+/** @param {Workout[]} workouts @returns {Record<string, number>} */
 function workoutUsage(workouts) {
   let usage = workoutUsageCache.get(workouts)
   if (usage) return usage
@@ -138,13 +163,14 @@ function workoutUsage(workouts) {
   return usage
 }
 
+/** @param {Partial<Profile>} profile @returns {Record<string, number>} */
 function usageMap(profile) {
   const workouts = Array.isArray(profile.workouts) ? profile.workouts : []
   const usage = { ...workoutUsage(workouts) }
   const routines = Array.isArray(profile.routines) ? profile.routines : []
   routines.forEach(routine => {
     ;(Array.isArray(routine?.ex) ? routine.ex : []).forEach(entry => {
-      usage[entry.id] = (usage[entry.id] || 0) + 1
+      if (entry.id) usage[entry.id] = (usage[entry.id] || 0) + 1
     })
   })
   return usage

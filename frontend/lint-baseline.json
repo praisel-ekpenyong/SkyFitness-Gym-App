@@ -3,21 +3,52 @@
     "eslint/no-restricted-globals": 1
   },
   "scripts/check-lint-baseline.mjs": {
-    "unicorn/no-array-sort": 2,
-    "eslint/no-restricted-globals": 3
+    "eslint/no-restricted-globals": 3,
+    "unicorn/no-array-sort": 2
+  },
+  "scripts/fatigue-monotonic-probe.mjs": {
+    "eslint/no-restricted-globals": 2
   },
   "scripts/review/audit.mjs": {
     "eslint/complexity": 1,
     "eslint/no-restricted-globals": 8,
     "eslint/no-restricted-properties": 1
   },
+  "scripts/review/lib.mjs": {
+    "eslint/no-restricted-globals": 2
+  },
+  "scripts/review/offline.mjs": {
+    "eslint/no-restricted-globals": 11,
+    "eslint/no-restricted-properties": 3
+  },
+  "scripts/review/open.mjs": {
+    "eslint/no-restricted-globals": 5
+  },
+  "scripts/review/port.mjs": {
+    "eslint/no-restricted-globals": 1
+  },
+  "scripts/review/seed.mjs": {
+    "eslint/no-restricted-globals": 1
+  },
+  "scripts/review/serve.mjs": {
+    "eslint/no-restricted-globals": 1,
+    "typescript/no-misused-promises": 1
+  },
+  "scripts/review/shots.mjs": {
+    "eslint/no-restricted-globals": 6
+  },
+  "scripts/test-deploy-preview.mjs": {
+    "eslint/no-restricted-globals": 12
+  },
   "src/App.jsx": {
-    "react-hooks/exhaustive-deps": 2
+    "react-hooks/exhaustive-deps": 2,
+    "typescript/no-floating-promises": 2,
+    "typescript/no-misused-promises": 1
   },
   "src/components/Barbell.jsx": {
     "jsx-a11y/prefer-tag-over-role": 1,
-    "unicorn/no-array-reverse": 1,
-    "react/no-array-index-key": 1
+    "react/no-array-index-key": 1,
+    "unicorn/no-array-reverse": 1
   },
   "src/components/BodyMap.jsx": {
     "eslint/complexity": 1,
@@ -38,8 +69,8 @@
     "jsx-a11y/prefer-tag-over-role": 1
   },
   "src/components/Modals.jsx": {
-    "react-hooks/exhaustive-deps": 3,
-    "jsx-a11y/no-static-element-interactions": 3
+    "jsx-a11y/no-static-element-interactions": 3,
+    "react-hooks/exhaustive-deps": 3
   },
   "src/components/OfflineBadge.jsx": {
     "jsx-a11y/prefer-tag-over-role": 1
@@ -50,6 +81,10 @@
   "src/components/SessionMuscleDistribution.jsx": {
     "eslint/complexity": 1,
     "jsx-a11y/no-static-element-interactions": 1
+  },
+  "src/components/TabBar.jsx": {
+    "typescript/no-floating-promises": 1,
+    "typescript/no-misused-promises": 1
   },
   "src/components/ui.jsx": {
     "jsx-a11y/prefer-tag-over-role": 3,
@@ -81,7 +116,7 @@
     "unicorn/no-array-sort": 7
   },
   "src/lib/muscles.js": {
-    "eslint/complexity": 3,
+    "eslint/complexity": 1,
     "unicorn/no-array-sort": 1
   },
   "src/lib/onerm.js": {
@@ -100,10 +135,9 @@
     "unicorn/no-array-sort": 1
   },
   "src/lib/progression.js": {
-    "eslint/complexity": 8
+    "eslint/complexity": 7
   },
   "src/lib/recovery.js": {
-    "eslint/complexity": 1,
     "unicorn/no-array-sort": 1
   },
   "src/lib/routine-sync.js": {
@@ -132,8 +166,15 @@
   "src/lib/workout-model.js": {
     "eslint/complexity": 2
   },
+  "src/main.jsx": {
+    "typescript/no-misused-promises": 1
+  },
   "src/platform/storage.js": {
-    "eslint/complexity": 1
+    "eslint/complexity": 1,
+    "typescript/no-floating-promises": 1
+  },
+  "src/platform/wakelock.js": {
+    "typescript/no-floating-promises": 2
   },
   "src/sheets/bodyweight.jsx": {
     "unicorn/no-array-reverse": 1
@@ -143,8 +184,8 @@
     "jsx-a11y/click-events-have-key-events": 2,
     "jsx-a11y/no-static-element-interactions": 2,
     "jsx-a11y/prefer-tag-over-role": 2,
-    "unicorn/no-array-sort": 1,
-    "react/no-array-index-key": 2
+    "react/no-array-index-key": 2,
+    "unicorn/no-array-sort": 1
   },
   "src/sheets/history.jsx": {
     "eslint/complexity": 1,
@@ -162,70 +203,61 @@
     "jsx-a11y/no-static-element-interactions": 5
   },
   "src/sheets/session.jsx": {
-    "react-hooks/exhaustive-deps": 2,
     "jsx-a11y/no-autofocus": 1,
     "jsx-a11y/prefer-tag-over-role": 2,
+    "react-hooks/exhaustive-deps": 2,
     "react/no-array-index-key": 2
   },
+  "src/store/useStore.js": {
+    "typescript/no-floating-promises": 1
+  },
+  "src/store/useUI.js": {
+    "typescript/no-floating-promises": 3
+  },
   "src/views/History.jsx": {
+    "typescript/no-misused-promises": 1,
     "unicorn/no-array-reverse": 1
   },
   "src/views/Home.jsx": {
     "eslint/complexity": 1,
     "jsx-a11y/prefer-tag-over-role": 1,
-    "react/no-array-index-key": 1
+    "react/no-array-index-key": 1,
+    "typescript/no-misused-promises": 1
   },
   "src/views/Library.jsx": {
     "jsx-a11y/prefer-tag-over-role": 2
   },
+  "src/views/Plan.jsx": {
+    "typescript/no-floating-promises": 1,
+    "typescript/no-misused-promises": 1
+  },
   "src/views/RoutineEdit.jsx": {
-    "react-hooks/exhaustive-deps": 2,
     "jsx-a11y/click-events-have-key-events": 1,
-    "jsx-a11y/no-static-element-interactions": 1
+    "jsx-a11y/no-static-element-interactions": 1,
+    "react-hooks/exhaustive-deps": 2,
+    "typescript/no-floating-promises": 2,
+    "typescript/no-misused-promises": 1
   },
   "src/views/Settings.jsx": {
     "eslint/complexity": 1,
-    "jsx-a11y/prefer-tag-over-role": 1
+    "jsx-a11y/prefer-tag-over-role": 1,
+    "typescript/no-floating-promises": 1,
+    "typescript/no-misused-promises": 1
   },
   "src/views/Stats.jsx": {
     "eslint/complexity": 2,
     "jsx-a11y/prefer-tag-over-role": 4,
-    "react/no-array-index-key": 2
+    "react/no-array-index-key": 2,
+    "typescript/no-misused-promises": 2
   },
   "src/views/Workout.jsx": {
     "eslint/complexity": 3,
     "jsx-a11y/click-events-have-key-events": 4,
     "jsx-a11y/no-static-element-interactions": 4,
     "jsx-a11y/prefer-tag-over-role": 5,
-    "react/no-array-index-key": 1
-  },
-  "scripts/fatigue-monotonic-probe.mjs": {
-    "eslint/no-restricted-globals": 2
-  },
-  "scripts/review/lib.mjs": {
-    "eslint/no-restricted-globals": 2
-  },
-  "scripts/review/offline.mjs": {
-    "eslint/no-restricted-globals": 11,
-    "eslint/no-restricted-properties": 3
-  },
-  "scripts/review/open.mjs": {
-    "eslint/no-restricted-globals": 5
-  },
-  "scripts/review/port.mjs": {
-    "eslint/no-restricted-globals": 1
-  },
-  "scripts/review/seed.mjs": {
-    "eslint/no-restricted-globals": 1
-  },
-  "scripts/review/serve.mjs": {
-    "eslint/no-restricted-globals": 1
-  },
-  "scripts/review/shots.mjs": {
-    "eslint/no-restricted-globals": 6
-  },
-  "scripts/test-deploy-preview.mjs": {
-    "eslint/no-restricted-globals": 12
+    "react/no-array-index-key": 1,
+    "typescript/no-floating-promises": 1,
+    "typescript/no-misused-promises": 1
   },
   "vite.config.js": {
     "eslint/no-restricted-globals": 1

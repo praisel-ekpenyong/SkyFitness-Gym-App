@@ -1,4 +1,5 @@
-// The oxlint ratchet (ADR 0034). Runs oxlint, counts hits per file per rule, and
+// The oxlint ratchet (ADR 0034). Runs oxlint type-aware (oxlint-tsgolint, against
+// <root>/tsconfig.json, ADR 0035), counts hits per file per rule, and
 // compares them with lint-baseline.json ({ "<path>": { "<rule>": <count> } }).
 // Fails on a hit the baseline does not cover, and on a stale entry (a recorded
 // count above the real count), so a fix also lowers the file. A file not in the baseline must be clean.
@@ -25,7 +26,7 @@ function option(name) {
 const ruleName = code => code.replace(/^([^(]+)\((.+)\)$/, '$1/$2')
 
 function lint(root) {
-  const r = spawnSync(process.execPath, [oxlintBin, '--format', 'json', '-c', join(root, '.oxlintrc.json'), '.'], { cwd: root, encoding: 'utf8' })
+  const r = spawnSync(process.execPath, [oxlintBin, '--type-aware', '--format', 'json', '-c', join(root, '.oxlintrc.json'), '.'], { cwd: root, encoding: 'utf8' })
   let report
   try { report = JSON.parse(r.stdout) } catch {
     throw new Error(`oxlint did not report JSON (exit ${r.status}):\n${r.stderr || r.stdout}`)

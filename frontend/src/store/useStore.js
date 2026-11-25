@@ -16,6 +16,7 @@ import { runEffects } from './effects.js'
 setAutoFreeze(import.meta.env.MODE === 'test')
 
 // The one place the store reads the clock for normalizeState (lib/ takes it as an argument).
+/** @param {unknown} raw */
 const normalizeAtEdge = raw => normalizeState(raw, Date.now())
 
 const stamp = S => ({ ...S, _ts: Date.now() })

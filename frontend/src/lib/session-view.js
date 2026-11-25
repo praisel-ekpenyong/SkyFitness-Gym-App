@@ -2,11 +2,16 @@ import { supersetUnits } from './supersetFlow.js'
 import { sessionProgress, isWarmupRow } from './workout-model.js'
 import { workSets, doneWorkSets, isPerformed } from './workout-sets.js'
 
+/** @typedef {import('./types.js').ActiveWorkout} ActiveWorkout */
+/** @typedef {import('./types.js').Entry} Entry */
+/** @typedef {import('./types.js').SetRow} SetRow */
+
+/** @param {Entry | null | undefined} e @returns {SetRow[]} */
 const setsOf = e => (Array.isArray(e?.sets) ? e.sets : [])
 
 /**
  * The one read model of an Active workout: its Steps, the cursor and Session progress.
- * @param {Object|null} active - The Active workout.
+ * @param {ActiveWorkout | null | undefined} active - The Active workout.
  */
 export function sessionView(active) {
   const entries = Array.isArray(active?.entries) ? active.entries : []
@@ -22,7 +27,10 @@ export function sessionView(active) {
   return { steps, cur, stepIdx, step, nextStep, canPrev, canNext, progress, entryProgress, hasPerformed, finishGate: finishGate(entries, progress) }
 }
 
-/** A Step is done when it has Work sets and every one is performed; warm-ups never decide it. */
+/**
+ * A Step is done when it has Work sets and every one is performed; warm-ups never decide it.
+ * @param {Entry[]} entries
+ */
 function readSteps(entries) {
   const entryProgress = entries.map(e => ({ done: doneWorkSets(e).length, total: workSets(e).length }))
   const units = supersetUnits(entries)
@@ -36,12 +44,19 @@ function readSteps(entries) {
 
 /**
  * The Step holding one Entry, read by the same rule as sessionView. Internal to the Active workout.
+ * @param {Entry[] | null | undefined} entries
+ * @param {number} entryIdx
  * @returns {{entries: number[], done: number, total: number, isDone: boolean, isLast: boolean}|null}
  */
 export function stepOf(entries, entryIdx) {
   return readSteps(Array.isArray(entries) ? entries : []).steps.find(s => s.entries.includes(entryIdx)) ?? null
 }
 
+/**
+ * @param {Entry[]} entries
+ * @param {{ done: number, remaining: number }} progress
+ * @returns {'warmups-only' | 'empty' | 'early' | 'complete'}
+ */
 function finishGate(entries, progress) {
   if (!progress.done) {
     const warmupLogged = entries.some(e => setsOf(e).some(s => isPerformed(s) && isWarmupRow(s)))

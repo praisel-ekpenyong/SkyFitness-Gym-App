@@ -2,10 +2,15 @@ import { loadRecords, e1rmRecords } from './training-log.js'
 import { summarizeWorkouts } from './workout-summary.js'
 import { monthKey } from './dates.js'
 
+/** @typedef {import('./types.js').Profile} Profile */
+/** @typedef {import('./types.js').Workout} Workout */
+/** @typedef {import('./types.js').ActiveWorkout} ActiveWorkout */
+/** @typedef {import('./types.js').WeighIn} WeighIn */
+
 /**
  * Step a calendar month key back by one month.
  *
- * @param {string|Object} yearMonth - 'YYYY-MM' string or workout-like object carrying d.
+ * @param {string | Workout | ActiveWorkout | WeighIn | null | undefined} yearMonth - 'YYYY-MM' string or dated record carrying `d`.
  * @returns {string} Previous month as 'YYYY-MM', or '' when the input is not a valid month.
  */
 export function prevMonthKey(yearMonth) {
@@ -19,9 +24,21 @@ export function prevMonthKey(yearMonth) {
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`
 }
 
+/**
+ * @typedef {{ id: string, est: number, w: number, r: number, prev: number, d: string, t: number }} MonthE1RMRecord
+ * @typedef {{ vol: number, sets: number, workouts: number, durationMs: number, prs: string[], e1prs: MonthE1RMRecord[] }} MonthMetrics
+ */
+
+/**
+ * @param {Profile} S
+ * @param {Workout[]} workouts
+ * @returns {MonthMetrics}
+ */
 function metricsFor(S, workouts) {
   const sum = summarizeWorkouts(S, workouts)
+  /** @type {string[]} */
   const prs = []
+  /** @type {MonthE1RMRecord[]} */
   const e1prs = []
 
   for (const w of workouts || []) {
@@ -41,9 +58,9 @@ function metricsFor(S, workouts) {
 
 /**
  * Pure monthly recap.
- * @param {Object} S - Profile; its `workouts` are read and `unit` is the unit of the volume and of the Records
+ * @param {Profile} S - Profile; its `workouts` are read and `unit` is the unit of the volume and of the Records
  * @param {string} yearMonth - 'YYYY-MM'
- * @returns {{ vol:number, sets:number, workouts:number, durationMs:number, prs:string[], e1prs:Array, prev:Object, deltas:Object }}
+ * @returns {{ vol: number, sets: number, workouts: number, durationMs: number, prs: string[], e1prs: MonthE1RMRecord[], prev: MonthMetrics, deltas: Record<'vol' | 'sets' | 'workouts' | 'durationMs', number | null> }}
  */
 export function monthRecap(S, yearMonth) {
   const workouts = S?.workouts || []
@@ -69,8 +86,9 @@ export function monthRecap(S, yearMonth) {
   const viewedEmpty = cur.workouts === 0
   const prevEmpty = prev.workouts === 0
 
-  const deltas = {}
-  for (const k of ['vol', 'sets', 'workouts', 'durationMs']) {
+  /** @type {Record<'vol' | 'sets' | 'workouts' | 'durationMs', number | null>} */
+  const deltas = { vol: null, sets: null, workouts: null, durationMs: null }
+  for (const k of /** @type {const} */ (['vol', 'sets', 'workouts', 'durationMs'])) {
     const c = cur[k]
     const p = prev[k]
     if (viewedEmpty) {

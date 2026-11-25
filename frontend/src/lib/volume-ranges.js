@@ -3,9 +3,16 @@
 
 import { t } from './i18n.js'
 
+/** @typedef {import('./types.js').TrainingStyle} TrainingStyle */
+/** @typedef {import('./types.js').Profile} Profile */
+
+/** @type {TrainingStyle} */
 export const DEFAULT_STYLE = 'standard'
 
-/** [low, high] effective sets per week for the 13 ranged muscles. Front delts start at 0: pressing covers them. */
+/**
+ * [low, high] effective sets per week for the 13 ranged muscles. Front delts start at 0: pressing covers them.
+ * @type {Record<TrainingStyle, Record<string, [number, number]>>}
+ */
 export const STYLE_RANGES = {
   low: {
     chest: [4, 10], lats: [4, 10], 'upper-back': [3, 8],
@@ -40,32 +47,34 @@ export const RANGED_MUSCLES = Object.keys(STYLE_RANGES[DEFAULT_STYLE])
  */
 export const lowPinned = slug => slug === 'front-delts'
 
-/** Training styles in display order. */
+/** @type {TrainingStyle[]} Training styles in display order. */
 export const TRAINING_STYLES = ['low', 'standard', 'high']
 
+/** @type {Record<TrainingStyle, string>} */
 const STYLE_NAME = { low: 'Low volume', standard: 'Standard', high: 'High volume' }
 
 /**
  * Lifter-facing name of a training style.
- * @param {string} style - Training style.
+ * @param {TrainingStyle} style - Training style.
  * @returns {string}
  */
 export const trainingStyleName = style => t(STYLE_NAME[style] || STYLE_NAME[DEFAULT_STYLE])
 
 /**
  * The profile's training style; absent or unknown reads as Standard.
- * @param {object} S - Profile.
- * @returns {'low'|'standard'|'high'}
+ * @param {{trainingStyle?: unknown} | null | undefined} S - Stored profile training style.
+ * @returns {TrainingStyle}
  */
 export function trainingStyleOf(S) {
   const style = S?.trainingStyle
-  return TRAINING_STYLES.includes(style) ? style : DEFAULT_STYLE
+  return TRAINING_STYLES.find(candidate => candidate === style) || DEFAULT_STYLE
 }
 
 /** Highest number either end of an edited volume range may take. */
 export const RANGE_MAX = 40
 
-const isWhole = n => Number.isInteger(n) && n >= 0 && n <= RANGE_MAX
+/** @param {unknown} n @returns {n is number} */
+const isWhole = n => typeof n === 'number' && Number.isInteger(n) && n >= 0 && n <= RANGE_MAX
 
 /**
  * A stored per-muscle edit, or null when it is not a usable range for a ranged muscle.
@@ -83,7 +92,7 @@ export function validRangeEdit(slug, value) {
 
 /**
  * The volume range that applies to one muscle for this profile: the style's, or a valid edit on top.
- * @param {object} S - Profile.
+ * @param {Profile | null | undefined} S - Profile.
  * @param {string} slug - Muscle slug.
  * @returns {{range: [number, number]|null, edited: boolean}} Range, or null for a count-only muscle.
  */
@@ -97,13 +106,15 @@ export function volumeRangeOf(S, slug) {
 /**
  * The usable per-muscle edits of a stored value; anything invalid is dropped.
  * @param {*} value - Stored `volumeRanges`.
- * @returns {Object<string, [number, number]>}
+ * @returns {Record<string, [number, number]>}
  */
 export function cleanVolumeRanges(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
+  /** @type {Record<string, [number, number]>} */
   const out = {}
+  const record = /** @type {Record<string, unknown>} */ (value)
   for (const slug of RANGED_MUSCLES) {
-    const edit = validRangeEdit(slug, value[slug])
+    const edit = validRangeEdit(slug, record[slug])
     if (edit) out[slug] = edit
   }
   return out
@@ -112,7 +123,7 @@ export function cleanVolumeRanges(value) {
 /**
  * Edits one muscle's range on top of the style; a range equal to the style's removes the edit.
  * Mutates the profile (use inside a store update).
- * @param {object} S - Profile.
+ * @param {Profile} S - Profile.
  * @param {string} slug - Ranged muscle slug.
  * @param {[number, number]} range - Whole numbers, 0 ≤ low ≤ high ≤ 40; anything else is ignored.
  */
@@ -128,7 +139,7 @@ export function setVolumeRange(S, slug, range) {
 
 /**
  * Back to the style's ranges: clears every per-muscle edit. Mutates the profile.
- * @param {object} S - Profile.
+ * @param {Profile} S - Profile.
  */
 export function clearVolumeRanges(S) {
   S.volumeRanges = {}
@@ -136,8 +147,8 @@ export function clearVolumeRanges(S) {
 
 /**
  * Switches the training style and clears every edit. Mutates the profile.
- * @param {object} S - Profile.
- * @param {'low'|'standard'|'high'} style - Unknown values are ignored.
+ * @param {Profile} S - Profile.
+ * @param {TrainingStyle} style - Unknown values are ignored.
  */
 export function switchTrainingStyle(S, style) {
   if (!TRAINING_STYLES.includes(style)) return
@@ -147,7 +158,7 @@ export function switchTrainingStyle(S, style) {
 
 /**
  * Whether any stored edit is in force.
- * @param {object} S - Profile.
+ * @param {Profile | null | undefined} S - Profile.
  * @returns {boolean}
  */
 export function hasRangeEdits(S) {

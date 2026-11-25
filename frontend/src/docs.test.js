@@ -42,14 +42,6 @@ const HISTORICAL = new Set([
   'docs/adr/0019-read-time-unit-normalization-across-history.md: lib/stats-selectors.js::selectExerciseStats',
 ])
 
-// Checks the standards name before the file exists. Delete the entry when the file lands.
-const PLANNED = new Set([
-  'CODING_STANDARDS.md: frontend/tsconfig.json',
-  'CODING_STANDARDS.md: frontend/tsc-baseline.json',
-  'docs/adr/0035-typescript-starts-as-checkjs-with-an-error-baseline.md: frontend/tsconfig.json',
-  'docs/adr/0035-typescript-starts-as-checkjs-with-an-error-baseline.md: frontend/tsc-baseline.json',
-])
-
 describe('docs paths', () => {
   it('flag a missing link or path as file:line and ignore fenced code', () => {
     const dir = mkdtempSync(join(tmpdir(), 'docs-'))
@@ -85,9 +77,8 @@ describe('docs paths', () => {
       .map(f => resolve(root, f))
     const broken = findBrokenRefs(files, root, ALLOW)
     const withoutLine = b => b.replace(/:\d+: /, ': ')
-    const excused = new Set([...HISTORICAL, ...PLANNED])
+    const excused = new Set(HISTORICAL)
     expect(broken.filter(b => !excused.has(withoutLine(b)))).toEqual([])
     expect([...excused].filter(h => !broken.some(b => withoutLine(b) === h))).toEqual([])
   })
 })
-

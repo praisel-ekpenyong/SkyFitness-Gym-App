@@ -5,7 +5,25 @@ import { isPerSide } from '../workout-model.js'
 import { isWorkSet } from '../workout-sets.js'
 import { registerCustom } from '../exercises.js'
 import { epleyReps } from '../onerm.js'
+import { freshProfile } from '../profile/index.js'
 import { round1 } from '../units.js'
+
+/** @typedef {import('../types.js').Profile} Profile */
+/** @typedef {import('../types.js').Routine} Routine */
+/** @typedef {import('../types.js').Entry} Entry */
+/** @typedef {import('../types.js').Workout} Workout */
+/** @typedef {import('../active-act.js').ActiveCommand} ActiveCommand */
+/** @typedef {{ w: number, e1rm: number, bw?: boolean }} LifterSeed */
+/**
+ * @typedef {{
+ *   setsFactor?: number,
+ *   dropSets?: number,
+ *   strength?: number,
+ *   only?: number,
+ *   ceiling?: Record<string, number>,
+ *   gain?: Record<string, number>,
+ * }} ScenarioDayHook
+ */
 
 /**
  * Deterministic synthetic history for the 5-day hypertrophy plan. Everything here is made up:
@@ -16,7 +34,10 @@ import { round1 } from '../units.js'
 const DAY_MS = 86400000
 const BODYWEIGHT = 75
 
-/** A made-up intermediate lifter: starting load and estimated 1RM per exercise. Customs are by name. */
+/**
+ * A made-up intermediate lifter: starting load and estimated 1RM per exercise. Customs are by name.
+ * @type {Record<string, LifterSeed>}
+ */
 const LIFTER = {
   '0025': { w: 70, e1rm: 90 }, '0652': { w: 2.5, e1rm: 20, bw: true }, '0238': { w: 20, e1rm: 34 },
   '0179': { w: 15, e1rm: 26 }, '0861': { w: 70, e1rm: 100 }, '0178': { w: 10, e1rm: 17 },
@@ -33,28 +54,27 @@ const LIFTER = {
 /** Weekly e1RM gain as a fraction; small and steady, like a trained upper body. */
 const WEEKLY_GAIN = 0.01
 
+/** @param {number} ms @returns {string} */
 const iso = ms => new Date(ms).toISOString().slice(0, 10)
+/** @param {number} ms @returns {number} */
 const weekday = ms => new Date(ms).getUTCDay()
+/** @type {(v: number) => number} */
 const round = round1
 
 const ZERO_LOAD_CAPACITY = 30
 
-/** Reps a lifter can manage at a load, from Epley inverted, never below 0. */
+/**
+ * Reps a lifter can manage at a load, from Epley inverted, never below 0.
+ * @param {number} e1rm
+ * @param {number} w
+ * @returns {number}
+ */
 const capacity = (e1rm, w) => (w <= 0 ? ZERO_LOAD_CAPACITY : Math.max(0, Math.floor(epleyReps(e1rm, w) ?? 0)))
 
 /**
- * Build a profile holding the plan and a generated Training log.
- *
- * @param {Object} opts
- * @param {string} [opts.start='2026-09-07'] - A Monday; the first training day.
- * @param {number} [opts.weeks=8] - Weeks to generate.
- * @param {(ctx: Object) => Object|null} [opts.day] - Per-day hook. Return null to skip the day, or
- *   `{ setsFactor, strength, only, ceiling, gain }` to change it: `setsFactor` scales planned sets
- *   (min 1), `dropSets` removes that many sets per exercise (min 2 left), `strength` scales e1RM
- *   for the day, `only` keeps the first N exercises, `ceiling` caps load and `gain` overrides
- *   weekly gain, both keyed by catalogue id or custom exercise name.
- * @param {Object} [opts.lifter] - Overrides for the made-up lifter, keyed like `ceiling`.
- * @returns {Object} Profile state with routines, week, customEx, workouts and bodyweight.
+ * @param {Profile} S
+ * @param {ActiveCommand} command
+ * @param {string} d
  */
 function mustAct(S, command, d) {
   const res = act(S, command)
@@ -62,13 +82,38 @@ function mustAct(S, command, d) {
   return res
 }
 
+/**
+ * Build a profile holding the plan and a generated Training log.
+ *
+ * @param {Object} [opts]
+ * @param {string} [opts.start='2026-09-07'] - A Monday; the first training day.
+ * @param {number} [opts.weeks=8] - Weeks to generate.
+ * @param {(ctx: { d: string, week: number, routineId: string, routine: Routine | undefined }) => ScenarioDayHook | null} [opts.day] - Per-day hook. Return null to skip the day, or
+ *   `{ setsFactor, strength, only, ceiling, gain }` to change it: `setsFactor` scales planned sets
+ *   (min 1), `dropSets` removes that many sets per exercise (min 2 left), `strength` scales e1RM
+ *   for the day, `only` keeps the first N exercises, `ceiling` caps load and `gain` overrides
+ *   weekly gain, both keyed by catalogue id or custom exercise name.
+ * @param {Record<string, LifterSeed>} [opts.lifter] - Overrides for the made-up lifter, keyed like `ceiling`.
+ * @returns {Profile} Profile state with routines, week, customEx, workouts and bodyweight.
+ */
 export function generateHistory({ start = '2026-09-07', weeks = 8, day = () => ({}), lifter = {} } = {}) {
-  const S = { unit: 'kg', restSec: 90, routines: [], week: {}, dayPlan: {}, customEx: [], workouts: [], bodyweight: [] }
+  const S = freshProfile()
   applyHypertrophyPlan(S)
   registerCustom(S.customEx)
+  /** @param {string} id @returns {string | undefined} */
   const nameOf = id => S.customEx.find(c => c.id === id)?.n
-  const byKey = (map, id) => map[id] ?? map[nameOf(id)]
-  const profile = id => byKey(lifter, id) || byKey(LIFTER, id)
+  /**
+   * @template T
+   * @param {Record<string, T>} map
+   * @param {string} id
+   * @returns {T | undefined}
+   */
+  const byKey = (map, id) => {
+    const n = nameOf(id)
+    return map[id] ?? (n ? map[n] : undefined)
+  }
+  /** @param {string} id @returns {LifterSeed} */
+  const profile = id => byKey(lifter, id) || byKey(LIFTER, id) || { w: 20, e1rm: 30 }
   const t0 = Date.parse(`${start}T00:00:00Z`)
   let n = 0
 
@@ -85,6 +130,7 @@ export function generateHistory({ start = '2026-09-07', weeks = 8, day = () => (
 
     mustAct(S, { type: 'begin', routineId }, d)
     const A = S.active
+    if (!A) continue
     Object.assign(A, { id: `w${++n}`, d, start: ms + 18 * 3600000 })
     if (only != null) A.entries = A.entries.slice(0, only)
     A.entries.forEach(entry => {
@@ -95,31 +141,40 @@ export function generateHistory({ start = '2026-09-07', weeks = 8, day = () => (
       const e1rm = p.e1rm * (1 + rate * week) * strength
       const cap = byKey(ceiling, entry.id) ?? Infinity
       const side = isPerSide(entry.target) ? 2 : 1
-      const top = entry.target.reps
-      const linear = entry.target.prog === 'linear'
+      const top = entry.target?.reps ?? 10
+      const linear = entry.target?.prog === 'linear'
       let kept = 0
       entry.sets = entry.sets.filter(s => !isWorkSet(s) || kept++ < keep).map((s, k) => {
         if (!isWorkSet(s)) return s
-        const w = Math.min(cap, s.w > 0 ? s.w : p.w)
+        const w = Math.min(cap, (s.w ?? 0) > 0 ? (s.w ?? 0) : p.w)
         const load = p.bw ? w + BODYWEIGHT : w
         const max = p.bw ? (e1rm + BODYWEIGHT) : e1rm
         const fresh = capacity(max, load) - k
-        const asked = Math.round((linear ? s.r : top) / side)
+        const asked = Math.round((linear ? (s.r ?? 0) : top) / side)
         const perSide = Math.max(1, Math.min(asked, fresh - 1))
         return { ...s, w, r: perSide * side, done: true, rir: Math.max(0, fresh - perSide) }
       })
     })
-    mustAct(S, { type: 'finish' }, d).result.workout.end = ms + 19 * 3600000
+    const res = mustAct(S, { type: 'finish' }, d)
+    const finished = /** @type {{ workout: Workout } | undefined} */ (res.result)
+    if (finished) finished.workout.end = ms + 19 * 3600000
   }
   return S
 }
 
-/** Every logged Entry for one exercise in one Routine, oldest first. */
+/**
+ * Every logged Entry for one exercise in one Routine, oldest first.
+ * @param {Profile} S
+ * @param {string} routineName
+ * @param {string} exIdOrName
+ * @param {number} [nth=0]
+ * @returns {Entry[]}
+ */
 export function entriesOf(S, routineName, exIdOrName, nth = 0) {
   const routine = S.routines.find(r => r.name === routineName)
   const id = S.customEx.find(c => c.n === exIdOrName)?.id || exIdOrName
   return S.workouts
-    .filter(w => w.routineId === routine.id)
+    .filter(w => routine && w.routineId === routine.id)
     .map(w => w.entries.filter(e => e.id === id)[nth])
     .filter(Boolean)
 }

@@ -31,6 +31,10 @@ jobs:
       # fails), then ESLint. Unused variables, broken hook calls, thrown non-Errors.
       - run: npm run lint
         working-directory: frontend
+      # strict checkJs through its ratchet (frontend/tsc-baseline.json: a new error or a
+      # stale entry fails).
+      - run: npm run typecheck
+        working-directory: frontend
       - run: npm test
         working-directory: frontend
       # A broken import or bad JSX fails the build long before any test covers it.
