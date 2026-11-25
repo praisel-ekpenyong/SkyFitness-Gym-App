@@ -85,20 +85,15 @@ function stampProfileRows(S) {
  * @overload
  * @param {Record<string, unknown>} raw - A Profile record from boot, another tab, a Restore or a CSV import.
  * @returns {Profile} A new Profile at `SCHEMA_VERSION`.
- */
-/**
- * Non-record payloads currently pass through unchanged.
- * @overload
- * @param {unknown} raw - A payload from boot, another tab, a Restore or a CSV import.
- * @returns {unknown} A new Profile at `SCHEMA_VERSION`, or `raw` unchanged if not a plain record.
  * @throws {NewerProfileError} When `raw` was saved by a newer Sky; it is refused, never admitted.
+ * @throws {Error} When `raw` is not a plain Profile record.
  */
 /**
  * @param {unknown} raw
  * @returns {unknown}
  */
 export function admit(raw) {
-  if (!isRecord(raw)) return raw
+  if (!isRecord(raw)) throw new Error('admit expects a Profile record')
   const from = schemaVersionOf(raw)
   if (from > SCHEMA_VERSION) throw new NewerProfileError(raw.schemaVersion)
   /** @type {Record<string, unknown>} */

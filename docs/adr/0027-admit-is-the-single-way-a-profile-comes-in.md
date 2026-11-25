@@ -17,6 +17,7 @@ Old data shapes (a `warmup: true` flag, a missing `phase`) are handled by reader
 1. `lib/profile/` holds `DEF`, `normalizeState`, `admit`, the restore keys (derived from `DEF`) and the one Workout
    order: date, then `start`, then original position. It needs no DOM and no store.
 2. Every way in calls `admit`: boot, cross-tab sync, restore and CSV import. Finishing a Workout uses the same order.
+   (CSV import is superseded by the 2026-11-25 amendment below.)
 3. `admit` upgrades old **shapes** only, for example `warmup: true` to `phase: 'warmup'`. It never rewrites
    **values**: units stay converted at read time (ADR 0031), and `topW` and `asked` stay as stored (ADR 0020).
    Reader branches made dead by an upgrade are removed.
@@ -59,7 +60,7 @@ existing Profiles.
    - While `newerProfile` is set, the app shows only a notice and a Reload button. The newer Profile stays on disk
      as it was.
    - CSV import builds new Workouts and passes them to `admit` without a version, so they are upgraded from 0 and
-     never refused.
+     never refused. _Superseded by the 2026-11-25 amendment below._
 
 ### Consequences of the amendment
 
@@ -68,3 +69,17 @@ existing Profiles.
   writing an older shape over the Profile. The lifter reloads, and the newer Sky reads it again.
 - A version is raised only for a shape change that needs a step. A new field, top-level or nested, needs only a
   default in `DEF`.
+
+### Amendment 2026-11-25: CSV import orders Workouts with `sortWorkouts`
+
+Issue #139 found `mergeImport` calling `admit({ workouts })` only to sort new Workouts. No Profile enters there:
+the store's Profile is already admitted, and the parsed rows are freshly built Workouts already in the current
+`phase` shape, so `admit` had no defaults, upgrade step or version check to do. It manufactured a throwaway
+Profile to get canonical log order.
+
+1. `mergeImport` (`lib/import-csv.js`) calls `sortWorkouts` directly on the fresh Workouts. This supersedes the
+   CSV-import half of Decision 2 and the matching line in the 2026-11-18 amendment. Boot, cross-tab sync and
+   restore still call `admit`, unchanged.
+2. `admit` throws on a non-record payload instead of passing it through, so a bad blob fails at the boundary
+   instead of masquerading as a Profile. `normalizeState` keeps its own `isRecord` guard, so a missing or corrupt
+   `gym_state_v1` still yields a fresh Profile at every ingestion edge.
