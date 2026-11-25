@@ -62,8 +62,7 @@ function Shell() {
   }, [!!S.active])
   useEffect(() => {
     if (!ready) return
-    const go = warmExerciseArt
-    const h = window.requestIdleCallback ? window.requestIdleCallback(go, { timeout: 5000 }) : setTimeout(go, 3000)
+    const h = window.requestIdleCallback ? window.requestIdleCallback(warmExerciseArt, { timeout: 5000 }) : setTimeout(warmExerciseArt, 3000)
     return () => (window.cancelIdleCallback ? window.cancelIdleCallback(h) : clearTimeout(h))
   }, [ready])
   const focused = !!S.active && loc.pathname === '/workout'

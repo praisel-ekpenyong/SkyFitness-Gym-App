@@ -381,7 +381,6 @@ wait for the state ratchets below; the two are independent. oxlint's own
 out of a closure, so guard one that can run on a null (`g?.front` in
 `components/BodyMap.jsx`).
 
-
 ### React Doctor: a score floor that only rises
 
 The `React Doctor` CI step fails when the score falls below the number in
@@ -872,7 +871,5 @@ says it is too slow for the unit suite.
 5. The guard tests still to add.
 6. Rename `lib/` to `.ts`, then the rest, then tests.
 7. `babel-plugin-react-compiler` (done, #122).
-   Add `'use no memo'` (or move the import) in `App.jsx` and
-   `components/BodyMap.jsx` first.
 8. React Doctor is on as its own CI step named `React Doctor`, with
    `frontend/react-doctor-floor.json` (see its rule above).
