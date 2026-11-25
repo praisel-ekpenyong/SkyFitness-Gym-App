@@ -1,16 +1,11 @@
 import { useStore } from '../store/useStore.js'
-import { useUI } from '../store/useUI.js'
 import { parseImport, mergeImport, importPreview } from '../lib/import-csv.js'
 import { effortOf } from '../lib/effort.js'
 import { fmtNum } from '../lib/format.js'
 import { fmtDate } from '../lib/dates.js'
 import { Button } from '../components/ui.jsx'
 import { t } from '../lib/i18n.js'
-
-const S = () => useStore.getState().S
-const update = (...a) => useStore.getState().update(...a)
-const ui = () => useUI.getState()
-const toast = m => ui().toast(m)
+import { S, update, ui, toast } from './store-helpers.js'
 
 export function ImportSummary({ parsed, close }) {
   const st = useStore(s => s.S)

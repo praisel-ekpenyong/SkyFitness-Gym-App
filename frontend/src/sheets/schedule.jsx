@@ -1,5 +1,4 @@
 import { useStore } from '../store/useStore.js'
-import { useUI } from '../store/useUI.js'
 import { effectiveRoutineId } from '../lib/history.js'
 import { setDayOverride, assignWeekday } from '../lib/schedule.js'
 import { exCount } from '../lib/format.js'
@@ -7,10 +6,7 @@ import { fmtDate, DAYN } from '../lib/dates.js'
 import { glyphOf } from '../lib/glyphs.js'
 import Icon, { ICON_NAMES } from '../components/Icon.jsx'
 import { t } from '../lib/i18n.js'
-
-const update = (...a) => useStore.getState().update(...a)
-const ui = () => useUI.getState()
-const toast = m => ui().toast(m)
+import { update, ui, toast } from './store-helpers.js'
 
 function DayOverride({ iso, close }) {
   const st = useStore(s => s.S)

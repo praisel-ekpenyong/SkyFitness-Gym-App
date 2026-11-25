@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { useStore } from '../store/useStore.js'
-import { useUI } from '../store/useUI.js'
 import { EXIDX, isCardio, isBodyweightEq, allExercises } from '../lib/exercises.js'
 import { fmtNum, fmtVol, exCount, sentenceCase } from '../lib/format.js'
 import { fmtDate } from '../lib/dates.js'
@@ -21,15 +20,11 @@ import { policyFor, defaultIncrement, POLICIES_FOR, POLICY_NAME, POLICY_DESC, MA
 import { strengthLevelOf } from '../lib/strength-level.js'
 import { ExerciseStrengthLine } from '../components/StrengthLine.jsx'
 import { confirmSheet } from './confirm.jsx'
+import { S, update, ui, toast } from './store-helpers.js'
 
 /** @typedef {import('../lib/types.js').CustomExercise} CustomExercise */
 /** @typedef {import('../lib/types.js').Target} Target */
 /** @typedef {import('../lib/types.js').Routine} Routine */
-
-const S = () => useStore.getState().S
-const update = (...a) => useStore.getState().update(...a)
-const ui = () => useUI.getState()
-const toast = m => ui().toast(m)
 
 function OneRM({ ex }) {
   const st = useStore(s => s.S)

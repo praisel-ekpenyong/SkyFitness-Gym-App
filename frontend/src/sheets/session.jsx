@@ -21,15 +21,12 @@ import { loadOfWorkouts, MUSCLE_NAME } from '../lib/muscles.js'
 import { confirmSheet } from './confirm.jsx'
 import { bwSheet } from './bodyweight.jsx'
 import { exercisePicker, exConfigSheet } from './catalogue.jsx'
+import { S, ui, toast } from './store-helpers.js'
 
 /** @typedef {import('../lib/types.js').Routine} Routine */
 /** @typedef {import('../lib/types.js').Entry} Entry */
 /** @typedef {import('../lib/types.js').Workout} Workout */
 /** @typedef {import('../lib/active-finish.js').RoutineSync} RoutineSync */
-
-const S = () => useStore.getState().S
-const ui = () => useUI.getState()
-const toast = m => ui().toast(m)
 
 export function startFlow(routineId) {
   const weighed = latestWeighIn(useStore.getState().S)

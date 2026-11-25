@@ -1,9 +1,7 @@
-import { useUI } from '../store/useUI.js'
 import { glyphOf, GLYPH_GROUPS } from '../lib/glyphs.js'
 import Icon, { ICON_NAMES } from '../components/Icon.jsx'
 import { t } from '../lib/i18n.js'
-
-const ui = () => useUI.getState()
+import { ui } from './store-helpers.js'
 
 export const glyphPicker = (current, onPick) => {
   const cur = glyphOf(current, ICON_NAMES)
