@@ -9,13 +9,7 @@ vi.mock('./platform/media-warm.js', async importOriginal => ({
   ...(await importOriginal()),
   warmArt: vi.fn(async () => {}),
 }))
-vi.mock('./platform/mobile.js', () => ({
-  MOBILE: false,
-  nativeLoad: vi.fn(async () => null),
-  nativeSave: vi.fn(async () => {}),
-  syncReminder: vi.fn(async () => true),
-  shareExport: vi.fn(async () => {}),
-}))
+vi.mock('./platform/mobile.js', async orig => (await import('./test/platform-mocks.js')).mockMobile(await orig()))
 
 let idle
 let root

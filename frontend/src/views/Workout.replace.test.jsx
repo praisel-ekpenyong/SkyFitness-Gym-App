@@ -26,14 +26,7 @@ vi.mock('../sheets/catalogue.jsx', async (importOriginal) => {
     exerciseDetailSheet: mocks.exerciseDetailSheet,
   }
 })
-vi.mock('../platform/sound.js', () => ({
-  beep: vi.fn(),
-  vibrate: vi.fn(),
-  playSetComplete: vi.fn(),
-  playTimerWarning: vi.fn(),
-  playTimerComplete: vi.fn(),
-  playWorkoutComplete: vi.fn(),
-}))
+vi.mock('../platform/sound.js', async orig => (await import('../test/platform-mocks.js')).mockSound(await orig()))
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true
 

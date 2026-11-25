@@ -8,17 +8,8 @@ import { selectStatsOverview } from '../lib/stats-selectors.js'
 import { switchTrainingStyle, setVolumeRange } from '../lib/volume-ranges.js'
 import { buildPlanBundle, parsePlan, mergePlan } from '../lib/plan-share.js'
 
-vi.mock('../platform/sound.js', () => ({
-  beep: vi.fn(), vibrate: vi.fn(), playSetComplete: vi.fn(), playTimerWarning: vi.fn(),
-  playTimerComplete: vi.fn(), playWorkoutComplete: vi.fn(),
-}))
-vi.mock('../platform/mobile.js', () => ({
-  MOBILE: false,
-  nativeLoad: vi.fn(async () => null),
-  nativeSave: vi.fn(async () => {}),
-  syncReminder: vi.fn(async () => true),
-  shareExport: vi.fn(async () => {}),
-}))
+vi.mock('../platform/sound.js', async orig => (await import('../test/platform-mocks.js')).mockSound(await orig()))
+vi.mock('../platform/mobile.js', async orig => (await import('../test/platform-mocks.js')).mockMobile(await orig()))
 
 const NOW = Date.UTC(2026, 6, 1, 12)
 const cloneDef = () => JSON.parse(JSON.stringify(DEF))

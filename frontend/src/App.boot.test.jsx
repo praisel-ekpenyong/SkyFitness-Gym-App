@@ -5,21 +5,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App.jsx'
 import { useStore } from './store/useStore.js'
 
-vi.mock('./platform/sound.js', () => ({
-  beep: vi.fn(),
-  vibrate: vi.fn(),
-  playSetComplete: vi.fn(),
-  playTimerWarning: vi.fn(),
-  playTimerComplete: vi.fn(),
-  playWorkoutComplete: vi.fn(),
-}))
-vi.mock('./platform/mobile.js', () => ({
-  MOBILE: false,
-  nativeLoad: vi.fn(async () => null),
-  nativeSave: vi.fn(async () => {}),
-  syncReminder: vi.fn(async () => true),
-  shareExport: vi.fn(async () => {}),
-}))
+vi.mock('./platform/sound.js', async orig => (await import('./test/platform-mocks.js')).mockSound(await orig()))
+vi.mock('./platform/mobile.js', async orig => (await import('./test/platform-mocks.js')).mockMobile(await orig()))
 beforeEach(() => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true
   localStorage.clear()
