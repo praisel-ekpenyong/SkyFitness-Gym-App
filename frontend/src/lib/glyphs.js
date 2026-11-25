@@ -7,7 +7,7 @@ export const GLYPH_GROUPS = [
   { key: 'Recovery',  items: ['stretch', 'moon', 'heart', 'flame', 'bolt'] },
 ]
 
-/** Human-readable names for the picker's icon-only buttons, wrapped in t() at the use site. */
+/** Human-readable names for the picker's icon-only buttons. */
 /** @type {Record<string, string>} */
 export const GLYPH_LABELS = {
   figureStrength: 'Figure strength', arm: 'Arm', abs: 'Abs', legs: 'Legs', pullup: 'Pull-up',
