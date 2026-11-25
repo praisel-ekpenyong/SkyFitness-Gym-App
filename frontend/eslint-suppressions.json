@@ -162,10 +162,5 @@
     "no-restricted-syntax": {
       "count": 2
     }
-  },
-  "src/views/Workout.test.jsx": {
-    "no-restricted-syntax": {
-      "count": 4
-    }
   }
 }

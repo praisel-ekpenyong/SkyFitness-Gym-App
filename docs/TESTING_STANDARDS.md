@@ -199,11 +199,11 @@ is inside `platform/`:
 any path through `platform/` pass, so the exemption is in the selector, not in
 prose. Mocking
 `platform/sound.js`, `localStorage`, and Capacitor stays legal: those are the
-boundary. The rule is wider than `lib/` and `store/`: 38 calls in 11 files
+boundary. The rule is wider than `lib/` and `store/`: 34 calls in 10 files
 (2026-11-25; 39 when the rule was scoped on 2026-11-24) mock one of our own
 modules (`../store/useUI.js` in `components/Modals.test.jsx`,
 `../sheets/confirm.jsx` in `views/Settings.test.jsx`, `./def.js` in
-`lib/profile/admit-defaults.test.js`). Those 38 are baselined in
+`lib/profile/admit-defaults.test.js`). Those 34 are baselined in
 `frontend/eslint-suppressions.json` and only shrink. A new test that mocks its
 own module fails.
 
