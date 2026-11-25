@@ -776,33 +776,33 @@ describe('seedForReplacement', () => {
     expect(res.sets).toBe(3)
   })
 
-  it('prefers routine-specific history over global history when routineId provided', () => {
+  it('seeds a Routine replacement from that Routine only, not a heavier Routine or Best (ADR 0011)', () => {
     const S = {
       workouts: [
         {
           d: '2026-10-01',
-          routineId: 'other-routine',
+          routineId: 'routine-a',
           entries: [
-            { id: LIFT, target: { reps: 5, weight: 100 }, sets: [{ w: 100, r: 5, done: true }] },
+            { id: LIFT, target: { reps: 8, weight: 60 }, sets: [{ w: 60, r: 8, done: true }] },
           ],
         },
         {
           d: '2026-10-02',
-          routineId: 'target-routine',
+          routineId: 'routine-b',
           entries: [
-            { id: LIFT, target: { reps: 12, weight: 70 }, sets: [{ w: 70, r: 12, done: true }] },
+            { id: LIFT, target: { reps: 5, weight: 100 }, sets: [{ w: 100, r: 5, done: true }] },
           ],
         },
       ],
       exWeights: {},
     }
-    const res = seedForReplacement(S, LIFT, 'target-routine', 3)
-    expect(res.reps).toBe(12)
-    expect(res.weight).toBe(100)
+    const res = seedForReplacement(S, LIFT, 'routine-a', 3)
+    expect(res.reps).toBe(8)
+    expect(res.weight).toBe(60)
     expect(res.sets).toBe(3)
   })
 
-  it('falls back to global history when routine history is absent', () => {
+  it('seeds a Routine replacement with no history in that Routine from the default config, not another Routine', () => {
     const S = {
       workouts: [
         {
@@ -815,10 +815,8 @@ describe('seedForReplacement', () => {
       ],
       exWeights: {},
     }
-    const res = seedForReplacement(S, LIFT, 'non-existent-routine', 3)
-    expect(res.reps).toBe(6)
-    expect(res.weight).toBe(90)
-    expect(res.sets).toBe(3)
+    const res = seedForReplacement(S, LIFT, 'routine-a', 3)
+    expect(res).toEqual({ ...defaultConfig(LIFT), sets: 3 })
   })
 
   it('overrides weight with Best when Best > 0 and not bodyweight', () => {
