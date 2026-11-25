@@ -1,5 +1,5 @@
 
-import { weekKey, isoOf, assertClock } from './dates.js'
+import { weekKey, isoOf, assertClock, parseDay } from './dates.js'
 
 /** @typedef {import('./types.js').Profile} Profile */
 /** @typedef {import('./types.js').Routine} Routine */
@@ -26,7 +26,7 @@ export function effectiveRoutineId(S, iso) {
   const ov = S?.dayPlan?.[iso]
   if (ov === 'rest') return null
   if (ov && (S?.routines || []).some(r => r.id === ov)) return ov
-  const wd = new Date(iso + 'T12:00:00').getDay()
+  const wd = parseDay(iso).getDay()
   const id = S?.week?.[wd] || null
   return id === 'rest' ? null : id
 }

@@ -1,4 +1,4 @@
-import { weekKey, mondayOf, workoutTimestamp, assertClock, DAY_MS } from './dates.js'
+import { weekKey, mondayOf, workoutTimestamp, assertClock, DAY_MS, parseDay } from './dates.js'
 import { doneWorkSets } from './workout-sets.js'
 
 /** @typedef {import('./types.js').Profile} Profile */
@@ -143,7 +143,7 @@ export function effortWeeks(S, days, now) {
  * @param {string} iso
  * @returns {number}
  */
-const mondayNoon = iso => +new Date(mondayOf(iso) + 'T12:00:00')
+const mondayNoon = iso => parseDay(mondayOf(iso)).getTime()
 
 export const BUCKETS = 4
 /** @param {Profile | null | undefined} S @param {number | undefined} days @param {number} now - The clock: epoch milliseconds. */

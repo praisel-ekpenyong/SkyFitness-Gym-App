@@ -7,6 +7,15 @@ export const GLYPH_GROUPS = [
   { key: 'Recovery',  items: ['stretch', 'moon', 'heart', 'flame', 'bolt'] },
 ]
 
+/** Human-readable names for the picker's icon-only buttons. */
+/** @type {Record<string, string>} */
+export const GLYPH_LABELS = {
+  figureStrength: 'Figure strength', arm: 'Arm', abs: 'Abs', legs: 'Legs', pullup: 'Pull-up',
+  dumbbell: 'Dumbbell', barbell: 'Barbell', kettlebell: 'Kettlebell', plate: 'Weight plate', machine: 'Machine',
+  figureRun: 'Running', bike: 'Cycling', swim: 'Swimming', boxing: 'Boxing', timer: 'Timer',
+  stretch: 'Stretching', moon: 'Moon', heart: 'Heart', flame: 'Flame', bolt: 'Lightning',
+}
+
 /** @type {Record<string, string>} */
 const LEGACY = {
   '💪': 'arm', '🦾': 'arm', '🫸': 'figureStrength', '🫷': 'pullup',

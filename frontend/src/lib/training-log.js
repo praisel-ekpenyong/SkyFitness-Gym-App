@@ -163,8 +163,8 @@ const isPerformedWork = set => !!set?.done && !isWarmupRow(set)
 
 /** @param {Workout | null | undefined} workout @returns {number} */
 const startOf = workout => {
-  const n = Number(workout?.start ?? workout?.t)
-  return Number.isFinite(n) ? n : 0
+  const t = workoutTimestamp(workout)
+  return Number.isFinite(t) ? t : 0
 }
 
 /** @param {Workout} a @param {Workout | null | undefined} b @returns {boolean} */

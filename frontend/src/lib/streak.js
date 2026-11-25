@@ -1,4 +1,4 @@
-import { weekKey, isoOf, mondayOf, assertClock } from './dates.js'
+import { weekKey, isoOf, mondayOf, assertClock, parseDay } from './dates.js'
 import { hasWorkSet } from './workout-model.js'
 
 /** @typedef {import('./types.js').Profile} Profile */
@@ -29,7 +29,7 @@ export function streakOf(S, now) {
   let best = 0
   const first = [...counted].sort()[0]
   if (first) {
-    const cur = new Date(first + 'T12:00:00')
+    const cur = parseDay(first)
     for (let key = isoOf(cur); key <= currentMonday; key = isoOf(cur)) {
       /** @type {'counted' | 'broke' | 'missed' | 'open'} */
       let state

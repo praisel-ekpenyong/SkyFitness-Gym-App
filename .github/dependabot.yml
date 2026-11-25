@@ -17,10 +17,10 @@ updates:
         patterns: ['*']
         update-types: ['major']
     ignore:
-      # Capacitor 8 needs Node >= 22 (its own `engines` field) and the build host is on 20, and
-      # `frontend/android` + `frontend/ios` are committed, so a major also means migrating the
-      # native projects — Gradle/AGP, the Podfile. That is a deliberate piece of work, not a
-      # dependency bump. Drop this ignore once the build host is on Node 22 and you want it.
+      # The committed native projects (frontend/android, frontend/ios) pin Gradle/AGP and the
+      # Podfile to the @capacitor/* versions, so a major means migrating both native projects.
+      # That is a deliberate piece of work, not a dependency bump. Drop this ignore once that
+      # migration is done.
       - dependency-name: '@capacitor/*'
         update-types: ['version-update:semver-major']
 

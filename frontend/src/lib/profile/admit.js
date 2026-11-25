@@ -77,15 +77,17 @@ function stampProfileRows(S) {
 }
 
 /**
- * The one way a Profile comes in (boot, another tab, a Restore, a CSV import). Runs the upgrade
+ * The one way a Profile comes in (boot, another tab, a Restore). Runs the upgrade
  * steps from the stored schema version (absent is version 0), fills absent fields from `DEF` at
  * any depth, stamps a missing id on each Active set row and a missing rowId on each Routine row,
  * stamps the current version and puts Workouts in Training-log order.
  * Values are never rewritten except the stored unit, which is sanitized to a valid unit at the
  * boundary so every reader sees one; `topW` and `asked` stay as stored (ADR 0031, ADR 0020).
  * Finished Workouts in the log stay as stored.
+ * A CSV import adds parsed Workouts to the Profile the store already admitted; no raw Profile
+ * crosses this boundary there.
  * @overload
- * @param {Record<string, unknown>} raw - A Profile record from boot, another tab, a Restore or a CSV import.
+ * @param {Record<string, unknown>} raw - A Profile record from boot, another tab or a Restore.
  * @returns {Profile} A new Profile at `SCHEMA_VERSION`.
  * @throws {NewerProfileError} When `raw` was saved by a newer Sky; it is refused, never admitted.
  * @throws {Error} When `raw` is not a plain Profile record.

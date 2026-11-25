@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client'
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import Media, { Thumb } from './Media.jsx'
 import { cdnImgSrc, cdnGifSrc } from '../lib/exercises.js'
+import { useStore } from '../store/useStore.js'
 
 let container
 let root
@@ -197,5 +198,18 @@ describe('Media component', () => {
       root.render(<Media ex={ex2} />)
     })
     expect(img.getAttribute('src')).toBe('media/videos/0002-3hQgomO.gif')
+  })
+
+  it('Expand/Minimize key press is not swallowed by the play wrapper', async () => {
+    useStore.getState().update(s => { s.gifSize = 'full' })
+    const ex = { id: '0001', n: '3/4 sit-up', img: '0001-2gPfomN.jpg', gif: '0001-2gPfomN.gif' }
+    await act(async () => { root.render(<Media ex={ex} minimizable />) })
+    const toggle = container.querySelector('button.giftoggle')
+    const key = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true })
+    await act(async () => { toggle.dispatchEvent(key) })
+    expect(key.defaultPrevented).toBe(false)
+    expect(container.querySelector('.exmedia').getAttribute('aria-label')).toBe('tap to pause')
+    await act(async () => { toggle.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
+    expect(container.querySelector('.exmedia').classList.contains('mini')).toBe(true)
   })
 })

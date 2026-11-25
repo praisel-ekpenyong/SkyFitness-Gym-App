@@ -10,7 +10,7 @@ import {
 } from './effort.js'
 import { modeOf } from './workout-model.js'
 import { isPerformed, isWorkSet, metricRowsForEntry, metricModeForEntry } from './workout-sets.js'
-import { workoutTimestamp, isoOf, weekKey, monthKey, DAY_MS } from './dates.js'
+import { workoutTimestamp, isoOf, weekKey, monthKey, DAY_MS, parseDay } from './dates.js'
 import { trainedWeeks, effectiveRoutine } from './history.js'
 import { streakOf } from './streak.js'
 import { strengthExerciseRowsForMuscle } from './strength-exercises.js'
@@ -181,7 +181,7 @@ function plannedLoadOf(S, today, muscleCatalogue) {
   const trainedToday = activeDayOf(S?.active) === today || (S?.workouts || []).some(w => w.d === today)
   /** @type {Record<string, number>} */
   const planned = {}
-  const day = new Date(today + 'T12:00:00')
+  const day = parseDay(today)
   if (trainedToday) day.setDate(day.getDate() + 1)
   for (let iso = isoOf(day); weekKey(iso) === week; day.setDate(day.getDate() + 1), iso = isoOf(day)) {
     const routine = effectiveRoutine(S, iso)

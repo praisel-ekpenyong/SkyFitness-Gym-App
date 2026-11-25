@@ -6,6 +6,7 @@ import { Calendar } from './sheets/history.jsx'
 import { useStore } from './store/useStore.js'
 import { DEF } from './lib/profile/index.js'
 import { useUI } from './store/useUI.js'
+import { MONTHS_LONG } from './lib/dates.js'
 
 const NOW = new Date(2026, 6, 1, 12)
 const trained = d => ({ id: `w-${d}`, d, name: 'Push', entries: [{ id: 'lift', sets: [{ done: true, w: 60, r: 5 }] }] })
@@ -46,7 +47,7 @@ const tap = async label => { await act(async () => { mark(label).click() }) }
 
 describe('Calendar week marks', () => {
   it('a mark sits at the end of each week row, labelled by week and state', async () => {
-    await render('2026-06-01T12:00:00')
+    await render('2026-06-01')
     expect(marks().map(b => b.getAttribute('aria-label'))).toEqual([
       'Week of 1 Jun: counted',
       'Week of 8 Jun: broke',
@@ -57,7 +58,7 @@ describe('Calendar week marks', () => {
   })
 
   it('shows no marks before the first counted week', async () => {
-    await render('2026-05-01T12:00:00')
+    await render('2026-05-01')
     expect(marks().map(b => b.getAttribute('aria-label'))).toEqual([
       'Week of 11 May: counted',
       'Week of 18 May: counted',
@@ -66,7 +67,7 @@ describe('Calendar week marks', () => {
   })
 
   it('a week with no workout and nothing left to break is labelled missed', async () => {
-    await render('2026-06-01T12:00:00', [trained('2026-05-11')])
+    await render('2026-06-01', [trained('2026-05-11')])
     expect(marks().map(b => b.getAttribute('aria-label'))).toEqual([
       'Week of 1 Jun: missed',
       'Week of 8 Jun: missed',
@@ -77,7 +78,7 @@ describe('Calendar week marks', () => {
   })
 
   it('tapping a mark selects that week and explains it', async () => {
-    await render('2026-06-01T12:00:00')
+    await render('2026-06-01')
     expect(explanation()).toBe('')
     await tap('Week of 1 Jun: counted')
     expect(explanation()).toBe('You trained, so this week counts. Streak: 4.')
@@ -87,7 +88,7 @@ describe('Calendar week marks', () => {
   })
 
   it('explains a broken week and an open week', async () => {
-    await render('2026-06-01T12:00:00')
+    await render('2026-06-01')
     await tap('Week of 8 Jun: broke')
     expect(explanation()).toBe('No workout, so the streak started over.')
     await tap('Week of 29 Jun: open')
@@ -95,14 +96,14 @@ describe('Calendar week marks', () => {
   })
 
   it('an old Profile\'s stored streakRule changes no mark', async () => {
-    await render('2026-06-01T12:00:00', HISTORY, { streakRule: 'generous' })
+    await render('2026-06-01', HISTORY, { streakRule: 'generous' })
     expect(mark('Week of 8 Jun: broke')).toBeTruthy()
     await tap('Week of 8 Jun: broke')
     expect(explanation()).toBe('No workout, so the streak started over.')
   })
 
   it('changing month clears the selected week and its explanation', async () => {
-    await render('2026-06-01T12:00:00')
+    await render('2026-06-01')
     await tap('Week of 15 Jun: counted')
     expect(explanation()).toBe('You trained, so this week counts. Streak: 1.')
     const nav = label => act(async () => { container.querySelector(`button[aria-label="${label}"]`).click() })
@@ -115,26 +116,40 @@ describe('Calendar week marks', () => {
   })
 
   it('marks are buttons with an accessible name', async () => {
-    await render('2026-06-01T12:00:00')
+    await render('2026-06-01')
     expect(marks().every(b => b.tagName === 'BUTTON' && b.getAttribute('aria-label'))).toBe(true)
+  })
+})
+
+describe('Calendar month from a day-only start', () => {
+  it('opens the month named by the key west of UTC', async () => {
+    const originalTz = process.env.TZ
+    process.env.TZ = 'America/New_York'
+    try {
+      await render('2026-06-01')
+      expect(container.querySelector('.sheet-head h3').textContent).toBe(`${MONTHS_LONG[5]} 2026`)
+    } finally {
+      if (originalTz === undefined) delete process.env.TZ
+      else process.env.TZ = originalTz
+    }
   })
 })
 
 describe('Calendar streak header', () => {
   it('shows the current and best weeks in a row', async () => {
-    await render('2026-06-01T12:00:00')
+    await render('2026-06-01')
     expect(header()).toContain('Streak 0 weeks')
     expect(header()).toContain('Best 4 weeks')
   })
 
   it('an open current week that is counted adds to the current streak', async () => {
-    await render('2026-06-01T12:00:00', [...HISTORY, trained('2026-06-29')])
+    await render('2026-06-01', [...HISTORY, trained('2026-06-29')])
     expect(header()).toContain('Streak 1 week')
     expect(header()).toContain('Best 4 weeks')
   })
 
   it('has no freezes and no rule picker', async () => {
-    await render('2026-06-01T12:00:00')
+    await render('2026-06-01')
     expect(container.textContent.toLowerCase()).not.toContain('freeze')
     expect(container.querySelector('[role="radiogroup"]')).toBeNull()
     expect(container.querySelector('[role="radio"]')).toBeNull()

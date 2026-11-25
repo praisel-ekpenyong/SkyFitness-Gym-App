@@ -6,6 +6,8 @@ Status: Accepted, 2026-11-24.
 
 Sky lints with ESLint 10 only (`frontend/eslint.config.js`, `npm run lint`, in CI and the pre-commit hook), on `@eslint/js` recommended plus `react-hooks/rules-of-hooks` and `react-hooks/exhaustive-deps` (a warning, so 12 findings pass CI). [`CODING_STANDARDS.md`](../../CODING_STANDARDS.md) names a tooth for each rule, and most of those teeth are lint rules the code breaks today: 54 functions over complexity 15, 18 index keys, 57 accessibility findings, 27 in-place sorts (counts re-measured 2026-11-24). A tooth the code already fails needs a ratchet: a recorded count that may only shrink.
 
+_(Superseded by the 2026-11-25 amendment below: ESLint runs in CI only; the pre-commit hook runs the oxlint ratchet and tsc.)_
+
 _(Superseded for `eslint/no-unused-vars` by the 2026-11-25 amendment below: that rule keeps ESLint's options and reports 0 hits, so this line does not apply to it.)_
 
 A probe on `ea9b171` measured the options. oxlint 1.95.0 with the react, jsx-a11y, unicorn and oxc plugins runs in about 1 s. ESLint with every `react-hooks` rule runs in about 19 s. oxlint has `complexity`, `no-restricted-globals`, `no-restricted-properties`, `no-restricted-imports`, `no-throw-literal` (which `only-throw-error` replaces; `Promise.reject(nonError)` is then uncovered, and `typescript/prefer-promise-reject-errors` is a possible later row) and the type-aware rows through `oxlint-tsgolint`, but no AST selectors (`no-restricted-syntax`). The official `eslint-plugin-react-hooks` 7.1.1 already ships the React Compiler rules.
@@ -42,3 +44,7 @@ The Decision said a disable comment for a ratcheted rule is illegal, but nothing
 
 1. `frontend/eslint.config.js` sets `linterOptions.noInlineConfig`, so an `eslint-disable` or inline rule comment hides nothing, and `npm run lint` runs ESLint with `--max-warnings 0`, so the warning ESLint leaves for the comment fails the lint. Fixture: `frontend/scripts/eslint-inline-config.test.mjs`.
 2. `frontend/scripts/check-lint-baseline.mjs` fails any `oxlint-disable` or `eslint-disable` comment (oxlint honours both) in a file oxlint lints. Fixture: `frontend/scripts/check-lint-baseline.test.mjs`.
+
+## Amendment 2026-11-25: ESLint left the pre-commit hook
+
+The Context line saying ESLint runs "in CI and the pre-commit hook" is superseded. `.githooks/pre-commit` now runs the oxlint ratchet (`node scripts/check-lint-baseline.mjs`) and `npm run typecheck` (the tsc ratchet); ESLint runs only in CI as the second half of `npm run lint`. `CODING_STANDARDS.md` states the same split. No rule moved between the two tools, and neither ratchet file changed.

@@ -103,7 +103,6 @@ if (process.argv.includes('--write')) {
 }
 const problems = [...compare(actual, recorded), ...disableComments(root)]
 
-/** @param {{ kind: string, path: string, rule?: string, count?: number, allowed?: number, line?: number }} p */
 const lineFor = p => (p.kind === 'stale'
   ? `${p.path}: ${p.rule} is stale, the baseline records ${p.allowed} hits but there are ${p.count}. Run npm run lint:baseline to lower it.`
   : `${p.path}:${p.line}: a disable comment is not allowed (ADR 0034). Fix the hit, or let the baseline hold it.`)

@@ -20,7 +20,7 @@ async function acquire() {
     sentinel = s
     s.addEventListener('release', () => { if (sentinel === s) sentinel = null })
   } catch (e) {
-    // iOS refuses in Low Power Mode, and some browsers refuse on low battery. Nothing to
+    // iOS refuses in Low Power Mode, and some browsers refuse on low battery; dropping the lock is all we can do.
     sentinel = null
   } finally { pending = false }
 }

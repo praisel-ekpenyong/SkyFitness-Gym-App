@@ -4,7 +4,7 @@ import { isWorkSet, isPerformed, workSets, doneWorkSets, modeForSet } from './wo
 import { resolveSetWeight, normalizeWeight, targetIn, entryUnit, round1 } from './units.js'
 import { fmtNum, fmtSigned } from './format.js'
 import { t } from './i18n.js'
-import { assertClock, isoOf, nowMs } from './dates.js'
+import { assertClock, isoOf } from './dates.js'
 
 /** @typedef {import('./types.js').Profile} Profile */
 /** @typedef {import('./types.js').Workout} Workout */
@@ -986,14 +986,14 @@ const entryDayKey = (entry, now) => ('d' in entry && typeof entry.d === 'string'
  *
  * @param {Entry} entry Completed workout entry.
  * @param {Partial<Profile> | null | undefined} state Store state S.
- * @param {{ workout?: Workout | null, routine?: Routine | null, now?: number }} [context] Optional { workout, routine, now }.
+ * @param {{ workout?: Workout | null, routine?: Routine | null, now: number }} context - Workout, routine and the caller's clock.
  * @returns {ProgressionDescriptor | null} Progression descriptor or null if no performed work sets.
  */
-export function evaluateSessionProgression(entry, state, context = {}) {
+export function evaluateSessionProgression(entry, state, context) {
   if (!entry || doneWorkSets(entry).length <= 0) return null
 
-  const now = context?.now ?? nowMs()
-  assertClock(now)
+  assertClock(context?.now)
+  const now = context.now
   const workout = context?.workout
   const routine = context?.routine ||
     (workout?.routineId ? state?.routines?.find(r => r.id === workout.routineId) : null) ||
@@ -1120,9 +1120,10 @@ export function evaluateSessionProgression(entry, state, context = {}) {
  *
  * @param {Workout | null | undefined} workout Completed workout.
  * @param {Partial<Profile> | null | undefined} state Store state S.
+ * @param {number} now - Caller's clock in milliseconds.
  * @returns {ProgressionDescriptor[]} List of progression descriptors for trained exercises.
  */
-export function sessionProgressionItems(workout, state) {
+export function sessionProgressionItems(workout, state, now) {
   if (!workout?.entries) return []
   const routine = (workout.routineId && state?.routines?.find(r => r.id === workout.routineId)) || null
   const workouts = state?.workouts || []
@@ -1134,7 +1135,7 @@ export function sessionProgressionItems(workout, state) {
   const items = []
   for (const entry of workout.entries) {
     if (doneWorkSets(entry).length <= 0) continue
-    const item = evaluateSessionProgression(entry, effectiveS, { workout, routine })
+    const item = evaluateSessionProgression(entry, effectiveS, { workout, routine, now })
     if (item) items.push(item)
   }
   return items

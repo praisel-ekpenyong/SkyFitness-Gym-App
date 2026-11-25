@@ -45,7 +45,7 @@ export default function Media({ ex, id, compact, minimizable }) {
       tabIndex={0}
       aria-label={playing ? t('tap to pause') : t('tap to play')}
       onClick={() => setPlaying(p => !p)}
-      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setPlaying(p => !p) } }}
+      onKeyDown={e => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); setPlaying(p => !p) } }}
     >
       {!currentSrc
         ? <div className="thumb-x ex-art"><Icon name="dumbbell" /></div>
