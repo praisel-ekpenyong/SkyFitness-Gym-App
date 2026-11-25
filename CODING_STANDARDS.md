@@ -554,19 +554,28 @@ Judgement calls, no tooth: 1, 2, 3, 4, 7 and 8 (wording and order).
 **Runs** for 5 and 6: `frontend/src/i18n-lint.test.js` reads the label of every
 text button, menu row, icon button (`aria-label`) and `confirmSheet` confirm
 and cancel. It fails a label that ends in "…" or "..." (a placeholder such as
-`Search…` is not an action), the cancel label included. It fails a destructive
-label (Delete, Discard, Reset, Erase, Wipe, Clear all, Clear everything, or
-Remove except "Remove set" and "Remove from favorites") that is not
-`<Button variant="danger">`, a `danger` class, `Row`'s `danger` prop, or
-`danger: true` on `confirmSheet`; a cancel label is not checked for this. It
-also fails that label when the click changes anything before a `danger: true`
-confirm. A click passes when it is that confirm, a same-file function that ends
-in one (an early return or `close()` may come first), a sheet chooser whose own
-clicks confirm, or `undo()` alone. A conditional that can reach another path
-fails, and so does a name declared twice. The red text keys Delete routine and
-Discard workout (see `DESIGN.md`) work this way. "Remove set" takes a set off
-the running workout and acts at once; "Remove from favorites" is the favorites
-toggle; a bare "Clear" empties a field.
+`Search…` is not an action), the cancel label included. Rule 6's **danger half**
+keeps #130's label check: a destructive label (Delete, Discard, Reset, Erase,
+Wipe, Clear all, Clear everything, or Remove except "Remove set" and "Remove
+from favorites") that is not `<Button variant="danger">`, a `danger` class,
+`Row`'s `danger` prop, or `danger: true` on `confirmSheet` fails; a cancel label
+is not checked for this. Its **confirm half** is layered on top and is signalled
+by `variant="danger"` or a trash icon (`icon="trash"` or a nested
+`<Icon name="trash" />`), not by the label verb: such an action fails when the
+click changes anything before a `danger: true` confirm, even if its label is
+harmless. Both signals can fail the same button. A click passes when it is that
+confirm, a same-file function that ends in one (an early return or `close()` may
+come first), a sheet chooser whose own clicks confirm, or `undo()` alone. A
+conditional that can reach another path fails, and so does a name declared
+twice. Actions the check cannot prove are in a fixed exemption list keyed by
+file and source text, each with a reason naming the file that confirms; an
+entry that no longer matches an action fails too. ErrorBoundary's discard is
+the one inline exception: its local two-step confirm (first tap relabels,
+second discards) runs because the shared sheet host may be part of the crashed
+tree. The red text keys Delete routine and Discard workout (see `DESIGN.md`)
+work this way. "Remove set" takes a set off the running workout and acts at
+once; "Remove from favorites" is the favorites toggle; a bare "Clear" empties
+a field.
 Hits at the start: 0 for rule 5, 0 for rule 6.
 
 ## Sheets and dialogs

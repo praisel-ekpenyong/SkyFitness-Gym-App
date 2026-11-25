@@ -35,52 +35,46 @@ async function showCrash() {
   await act(async () => { root.render(<ErrorBoundary><Bomb /></ErrorBoundary>) })
 }
 
-describe('ErrorBoundary discard', () => {
-  it('keeps the running workout until the confirm, then discards, stops the timers and reloads', async () => {
+/** The discard button, whatever step of the inline confirm it is showing. */
+const discardButton = () => [...container.querySelectorAll('button')].find(b =>
+  b.textContent === 'Discard the running workout' || b.textContent === 'Tap again to discard')
+
+const tap = async () => {
+  const button = discardButton()
+  expect(button, 'the inline discard button is rendered').toBeTruthy()
+  await act(async () => { button.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
+}
+
+describe('ErrorBoundary inline two-step discard', () => {
+  it('first tap only relabels the button to Tap again to discard, without discarding or opening a sheet', async () => {
     await showCrash()
-    const discard = [...container.querySelectorAll('button')].find(b => b.textContent === 'Discard the running workout')
-    await act(async () => { discard.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
+    expect(discardButton().textContent).toBe('Discard the running workout')
+    await tap()
+    expect(discardButton().textContent).toBe('Tap again to discard')
+    expect(container.textContent).not.toContain('Discard the running workout')
     expect(useStore.getState().S.active).toBeTruthy()
+    expect(useUI.getState().timer).toBeTruthy()
+    expect(useUI.getState().work).toBeTruthy()
+    expect(useUI.getState().sheets).toEqual([])
     expect(location.reload).not.toHaveBeenCalled()
+  })
 
-    const sheet = useUI.getState().sheets.at(-1)
-    const host = document.createElement('div')
-    document.body.appendChild(host)
-    const confirmRoot = createRoot(host)
-    await act(async () => { confirmRoot.render(sheet.render(() => {})) })
-    expect(host.textContent).toContain('Discard workout?')
-    expect(host.textContent).toContain('The sets you logged in this session will be lost.')
-
-    const cancel = [...host.querySelectorAll('button')].find(b => b.textContent === 'Cancel')
-    await act(async () => { cancel.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
+  it('second tap discards the running workout, stops the timers and reloads', async () => {
+    await showCrash()
+    await tap()
     expect(useStore.getState().S.active).toBeTruthy()
-    expect(location.reload).not.toHaveBeenCalled()
-
-    const ok = [...host.querySelectorAll('button')].find(b => b.textContent === 'Discard')
-    await act(async () => { ok.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
+    await tap()
     expect(useStore.getState().S.active).toBeNull()
     expect(useUI.getState().timer).toBeNull()
     expect(useUI.getState().work).toBeNull()
     expect(location.reload).toHaveBeenCalledOnce()
-    await act(async () => { confirmRoot.unmount() })
-    host.remove()
   })
 
   it('reloads when the discard command refuses because the workout is already gone', async () => {
     await showCrash()
-    const discard = [...container.querySelectorAll('button')].find(b => b.textContent === 'Discard the running workout')
-    await act(async () => { discard.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
+    await tap()
     useStore.getState().update(s => { s.active = null })
-
-    const sheet = useUI.getState().sheets.at(-1)
-    const host = document.createElement('div')
-    document.body.appendChild(host)
-    const confirmRoot = createRoot(host)
-    await act(async () => { confirmRoot.render(sheet.render(() => {})) })
-    const ok = [...host.querySelectorAll('button')].find(b => b.textContent === 'Discard')
-    await act(async () => { ok.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
+    await tap()
     expect(location.reload).toHaveBeenCalledOnce()
-    await act(async () => { confirmRoot.unmount() })
-    host.remove()
   })
 })
