@@ -723,6 +723,33 @@ describe('finishing a workout', () => {
       expect(S.active).toBeNull()
     })
 
+    it('reports a replacement and a reorder as change items naming exercise ids, not English text', () => {
+      const S = fromRoutine('routine-push', [
+        { id: '0027', sets: fiveSets(3), target: { sets: 3 } },
+        { id: '0099', sets: fiveSets(3), target: { sets: 3 } },
+        { id: '0025', sets: fiveSets(3), target: { sets: 3 } },
+      ])
+      S.routines = pushDay([{ id: '0025', sets: 3 }, { id: '0026', sets: 3 }, { id: '0027', sets: 3 }])
+      expect(act(S, { type: 'finish' }).result.routineSync.changes).toEqual([
+        { kind: 'replaced', ids: ['0026', '0099'] },
+        { kind: 'reordered', ids: [] },
+      ])
+    })
+
+    it('reports a new Superset and an unlinked one as change items naming their members', () => {
+      const S = fromRoutine('routine-push', [
+        { id: '0025', sg: 'a', sets: fiveSets(3), target: { sets: 3 } },
+        { id: '0026', sg: 'a', sets: fiveSets(3), target: { sets: 3 } },
+        { id: '0027', sets: fiveSets(3), target: { sets: 3 } },
+        { id: '0028', sets: fiveSets(3), target: { sets: 3 } },
+      ])
+      S.routines = pushDay([{ id: '0025', sets: 3 }, { id: '0026', sets: 3 }, { id: '0027', sg: 'b', sets: 3 }, { id: '0028', sg: 'b', sets: 3 }])
+      expect(act(S, { type: 'finish' }).result.routineSync.changes).toEqual([
+        { kind: 'superset', ids: ['0025', '0026'] },
+        { kind: 'unlinkedSuperset', ids: ['0027', '0028'] },
+      ])
+    })
+
     it('carries none when the session matched its Routine exactly', () => {
       const S = fromRoutine('routine-push', [{ id: '0025', sets: fiveSets(3), target: { sets: 3, reps: 5 } }])
       S.routines = pushDay([{ id: '0025', sets: 3, reps: 5 }])
