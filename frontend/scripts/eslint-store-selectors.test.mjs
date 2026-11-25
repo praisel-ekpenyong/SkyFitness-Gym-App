@@ -19,6 +19,8 @@ describe('store selector rules', { timeout: 30000 }, () => {
     ['an array returned from a selector', 'const a = useStore(s => [s.S.x])'],
     ['a fallback [] in a selector', 'const a = useStore(s => s.S.active || [])'],
     ['a fallback {} in a selector', 'const a = useUI(s => s.map ?? {})'],
+    ['a direct write to s.active', 'update(s => { s.active = null })'],
+    ['a direct write to s.routines', 'update(s => { s.routines = [] })'],
   ])('fails %s', async (_name, code) => {
     expect(await messages(code)).toHaveLength(1)
   })
