@@ -95,7 +95,7 @@ export const ICON_NAMES = Object.keys(P)
 
 /**
  * One line icon from the set, sized by the font unless `size` is given; null for an unknown name.
- * @param {{ name: string, size?: number | string, className?: string, style?: import('react').CSSProperties } & Record<string, *>} props - Other props land on the `<svg>`.
+ * @param {{ name: string, size?: number | string, className?: string, style?: import('react').CSSProperties } & import('react').SVGProps<SVGSVGElement>} props - Other props land on the `<svg>`.
  */
 export default function Icon({ name, size, className = '', style, ...rest }) {
   const d = P[name]

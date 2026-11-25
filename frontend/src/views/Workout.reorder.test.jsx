@@ -6,6 +6,7 @@ import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { exOr } from '../lib/exercises.js'
 import { ReorderExercisesSheet } from '../sheets/edit-workout.jsx'
+import { buttonNamed } from '../test/sheet-host.jsx'
 import { entry, resetViewTestState, renderWorkoutApp, cleanupViewTest } from '../test/view-harness.jsx'
 
 vi.mock('../platform/sound.js', () => ({
@@ -30,9 +31,33 @@ function inEditSheet(label, exact = false) {
   return find()
 }
 
-/** The reorder sheet's control that jumps to an exercise, found by its accessible name. */
+/** The open sheet, found by its role. */
+const sheet = () => document.querySelector('[role="dialog"]')
+
+/** The reorder sheet's control that jumps to an exercise: the button named for it. */
 function jumpButton(exId) {
-  return [...document.querySelectorAll('.list button')].find(b => b.getAttribute('aria-label') === exOr(exId).n)
+  return buttonNamed(sheet(), exOr(exId).n)
+}
+
+/** The reorder sheet's move button for an exercise, `dir` 'up' or 'down'. */
+function moveButton(exId, dir) {
+  return buttonNamed(sheet(), `Move ${exOr(exId).n} ${dir}`)
+}
+
+/**
+ * Press a key on a focused control the way a browser does, like user-event's keyboard: keydown,
+ * then a native button's activation (a click on Enter at keydown, on Space at keyup) unless a
+ * handler prevented it. happy-dom does not activate buttons from the keyboard itself.
+ */
+function press(el, key) {
+  act(() => {
+    el.focus()
+    const down = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true })
+    const activates = el.dispatchEvent(down) && el instanceof HTMLButtonElement && !el.disabled
+    if (activates && key === 'Enter') el.click()
+    const up = new KeyboardEvent('keyup', { key, bubbles: true, cancelable: true })
+    if (el.dispatchEvent(up) && activates && key === ' ') el.click()
+  })
 }
 
 function reorderButton() {
@@ -102,29 +127,22 @@ describe('Workout exercise reorder sheet interaction', () => {
     const heading = document.querySelector('h3')
     expect(heading?.textContent).toContain('Reorder exercises')
 
-    const items = [...document.querySelectorAll('.list .item')]
-    expect(items).toHaveLength(3)
-    expect(items[0].textContent).toContain('1/1 sets')
-    expect(items[1].textContent).toContain('0/1 sets')
+    expect(['0025', '0043', '0116'].map(id => !!jumpButton(id))).toEqual([true, true, true])
+    expect(jumpButton('0025').textContent).toContain('1/1 sets')
+    expect(jumpButton('0043').textContent).toContain('0/1 sets')
 
-    const item0Up = items[0].querySelector('button[aria-label*="up"]')
-    const item0Down = items[0].querySelector('button[aria-label*="down"]')
-    expect(item0Up.disabled).toBe(true)
-    expect(item0Down.disabled).toBe(false)
+    expect(moveButton('0025', 'up').disabled).toBe(true)
+    expect(moveButton('0025', 'down').disabled).toBe(false)
+    expect(moveButton('0116', 'up').disabled).toBe(false)
+    expect(moveButton('0116', 'down').disabled).toBe(true)
 
-    const item2Up = items[2].querySelector('button[aria-label*="up"]')
-    const item2Down = items[2].querySelector('button[aria-label*="down"]')
-    expect(item2Up.disabled).toBe(false)
-    expect(item2Down.disabled).toBe(true)
-
-    click(item0Down)
+    click(moveButton('0025', 'down'))
 
     const updatedEntries = useStore.getState().S.active.entries.map(e => e.id)
     expect(updatedEntries).toEqual(['0043', '0025', '0116'])
 
-    const updatedItems = [...document.querySelectorAll('.list .item')]
-    const updatedItem0Up = updatedItems[0].querySelector('button[aria-label*="up"]')
-    expect(updatedItem0Up.disabled).toBe(true)
+    expect(moveButton('0043', 'up').disabled).toBe(true)
+    expect(moveButton('0025', 'up').disabled).toBe(false)
   })
 
   it('tapping an exercise row jumps to that exercise and closes the sheet', () => {
@@ -145,7 +163,7 @@ describe('Workout exercise reorder sheet interaction', () => {
     expect(useUI.getState().sheets).toHaveLength(0)
   })
 
-  it('displays superset badge and in-ss class on paired exercises', () => {
+  it('labels a superset once, above its first exercise', () => {
     view = renderWorkoutApp([
       { ...entry('0025'), sg: 'sg-pair' },
       { ...entry('0043'), sg: 'sg-pair' },
@@ -154,12 +172,10 @@ describe('Workout exercise reorder sheet interaction', () => {
 
     click(reorderButton())
 
-    const ssLabel = document.querySelector('.ss-label')
-    expect(ssLabel).toBeTruthy()
-    expect(ssLabel.textContent).toContain('Superset')
-
-    const inSSItems = document.querySelectorAll('.list .item.in-ss')
-    expect(inSSItems).toHaveLength(2)
+    const labels = [...sheet().querySelectorAll('div')].filter(el => el.children.length <= 1 && el.textContent === 'Superset')
+    expect(labels).toHaveLength(1)
+    const before = (a, b) => !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING)
+    expect(before(labels[0], jumpButton('0025'))).toBe(true)
   })
 
   it('dismisses sheet when clicking the close button', () => {
@@ -174,13 +190,14 @@ describe('Workout exercise reorder sheet interaction', () => {
     expect(useUI.getState().sheets).toHaveLength(0)
   })
 
-  it('makes each exercise row a native button named for the exercise, so Enter and Space reach it', () => {
+  it.each([['Enter'], [' ']])('pressing %j on an exercise jumps to it and closes the sheet', key => {
     view = renderWorkoutApp([entry('0025'), entry('0043')])
     click(reorderButton())
 
-    const jump = jumpButton('0043')
-    expect(jump.tagName).toBe('BUTTON')
-    expect(jump.closest('.list .item')).toBe(document.querySelectorAll('.list .item')[1])
+    press(jumpButton('0043'), key)
+
+    expect(useStore.getState().S.active.cur).toBe(1)
+    expect(useUI.getState().sheets).toHaveLength(0)
   })
 })
 
@@ -231,7 +248,7 @@ describe('Reorder sheet with no active workout', () => {
       expect(errors.mock.calls.map(c => String(c[0])).filter(m => /getSnapshot/.test(m))).toEqual([])
       expect(renders).toBeLessThanOrEqual(2)
       expect(container.querySelector('[role="heading"], h1, h2, h3')?.textContent).toBe('Reorder exercises')
-      expect(container.querySelectorAll('.list .item')).toHaveLength(0)
+      expect([...container.querySelectorAll('button')].map(b => b.getAttribute('aria-label'))).toEqual(['Close'])
     } finally {
       act(() => root.unmount())
       container.remove()

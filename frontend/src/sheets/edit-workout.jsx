@@ -7,14 +7,12 @@ import { Thumb } from '../components/Media.jsx'
 import Icon from '../components/Icon.jsx'
 
 /** @typedef {import('../lib/types.js').Entry} Entry */
+/** @typedef {import('../lib/active-act.js').ActiveCommand} ActiveCommand */
 
 /** @type {Entry[]} */
 const NO_ENTRIES = []
 
-/**
- * One key per entry that follows its exercise when the list reorders: the exercise id, numbered when it repeats.
- * @param {Entry[]} entries
- */
+/** @param {Entry[]} entries */
 function entryKeys(entries) {
   const seen = new Map()
   return entries.map(entry => {
@@ -26,13 +24,12 @@ function entryKeys(entries) {
 
 /**
  * Bottom sheet listing active workout entries for sequential reordering and fast navigation.
- * @param {{ close: () => void, send: (command: Object) => * }} props - `send` is the Workout view's sender, so moves run like any other command.
+ * @param {{ close: () => void, send: (command: ActiveCommand) => unknown }} props - `send` is the Workout view's sender, so moves run like any other command.
  */
 export function ReorderExercisesSheet({ close, send }) {
-  /** @type {import('../lib/types.js').ActiveWorkout | null | undefined} */
-  const active = useStore(s => s.S.active)
-  const entries = active?.entries ?? NO_ENTRIES
-  const view = sessionView(active)
+  /** @type {Entry[]} */
+  const entries = useStore(s => s.S.active?.entries ?? NO_ENTRIES)
+  const view = sessionView({ entries })
   const supersets = view.steps.filter(s => s.entries.length > 1).map(s => s.entries)
   const supersetFirst = new Set(supersets.map(s => s[0]))
   const inSuperset = new Set(supersets.flat())

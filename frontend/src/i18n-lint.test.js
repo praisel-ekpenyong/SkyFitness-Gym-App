@@ -205,9 +205,9 @@ describe('attribute text a lifter reads or hears goes through t()', () => {
 //   in it (an early return or close() may come first), a sheet chooser whose own clicks do, or
 //   the prop those clicks forward to, wherever that prop is passed: in the same file or on the
 //   component where another file imports and renders it. A name declared twice is not followed,
-//   so it fails. undo() as the click's only action acts at once and needs no danger mark. "Remove set" takes a set
-//   off the running workout at once. "Remove from favorites" is the favourite toggle. A bare
-//   "Clear" empties a field.
+//   so it fails. undo() as the click's only action acts at once and needs no danger mark.
+//   "Remove set" takes a set off the running workout at once. "Remove from favorites" is the
+//   favourite toggle. A bare "Clear" empties a field.
 const ELLIPSIS = /(…|\.\.\.)$/
 const DESTRUCTIVE = /^(Delete|Discard|Reset|Erase|Wipe)\b|^Clear (all|everything)\b|^Remove\b(?! set\b| from favorites\b)/
 const HARMLESS_CALL = /^(close|toast|t|fmtDate|fmtNum|fmtVol|fmtSigned|exOr)$/
@@ -419,42 +419,51 @@ function propForwards(name, ctx, seen) {
   return passed.length > 0 && ok
 }
 
-/** The expressions passed as attribute `name` in `ast`, on any element, or only on elements named in `tags` when given. */
-function propAttrs(ast, name, tags) {
+/** The expressions passed as attribute `name` in `ast`, on the elements `counts` accepts. */
+function attrValues(ast, name, counts) {
   const out = []
   const walk = (n, element) => {
     if (!n || typeof n.type !== 'string') return
     if (n.type === 'JSXElement') return children(n).forEach(c => walk(c, n))
-    const counts = !tags || tags.has(element?.openingElement.name?.name)
-    if (n.type === 'JSXAttribute' && counts && n.name?.name === name && n.value?.type === 'JSXExpressionContainer') return out.push(n.value.expression)
+    if (n.type === 'JSXAttribute' && counts(element) && n.name?.name === name && n.value?.type === 'JSXExpressionContainer') return out.push(n.value.expression)
     children(n).forEach(c => walk(c, element))
   }
   walk(ast, null)
   return out
 }
 
-/** Attribute `name` on the elements other files render from imports of `ctx.file`, each with its own file's context. */
+/** The expressions passed as attribute `name` on any element in `ast`. */
+const propAttrs = (ast, name) => attrValues(ast, name, () => true)
+
+/** The expressions passed as attribute `name` in `ast` on elements whose tag is one of `tags`. */
+const propAttrsOn = (ast, name, tags) => attrValues(ast, name, element => tags.has(element?.openingElement.name?.name))
+
+/**
+ * Attribute `name` on the elements other files render from imports of `ctx.file`, each with its
+ * own file's context. An import counts only when its relative path, extension included, joins to
+ * `ctx.file` exactly, so an import this cannot resolve proves nothing and the prop fails closed.
+ */
 function importerPropAttrs(ctx, name) {
   return Object.keys(ctx.project).filter(f => f !== ctx.file).flatMap(file => {
     const other = contextOf(file, ctx.project)
     const tags = new Set(other.ast.body
       .filter(n => n.type === 'ImportDeclaration' && posix.join(posix.dirname(file), n.source.value) === ctx.file)
       .flatMap(n => n.specifiers.map(sp => sp.local.name)))
-    return tags.size ? propAttrs(other.ast, name, tags).map(value => ({ value, ctx: other })) : []
+    return tags.size ? propAttrsOn(other.ast, name, tags).map(value => ({ value, ctx: other })) : []
   })
 }
 
-/** The sources rule 6 follows props through: every view, sheet and component, read once. */
+/** @type {Record<string, string> | undefined} */
 let diskProject
 const sourceProject = () => (diskProject ??= Object.fromEntries(sourceFiles().map(f => [f, readFileSync(join(SRC, f), 'utf8')])))
 
 const contexts = new WeakMap()
-/** What rule 6 reads of one file: its syntax tree, its named handlers, and the project it sits in. Parsed once per project. */
-function contextOf(file, project, source = project[file]) {
+/** @param {string} file @param {Record<string, string>} project */
+function contextOf(file, project) {
   if (!contexts.has(project)) contexts.set(project, new Map())
   const cache = contexts.get(project)
-  if (cache.get(file)?.code !== source) {
-    const { code, ast } = parsed(file, source)
+  if (!cache.has(file)) {
+    const { code, ast } = parsed(file, project[file])
     cache.set(file, { file, code, ast, handlers: namedHandlers(ast), project })
   }
   return cache.get(file)
@@ -517,9 +526,12 @@ function actionRuleHits(file, code, node, action) {
   return out
 }
 
-/** Every action label in `source` (from `file`) that breaks rule 5 ('ellipsis') or rule 6 ('danger'). */
-function actionHitsIn(file, source, project = source === undefined ? sourceProject() : { [file]: source }) {
-  const ctx = contextOf(file, project, source)
+/**
+ * Every action label in `file` that breaks rule 5 ('ellipsis') or rule 6 ('danger', 'confirm').
+ * `project` holds the source of `file` and of every file rule 6 may follow a prop into.
+ */
+function actionHitsIn(file, project) {
+  const ctx = contextOf(file, project)
   const out = []
   const visit = node => {
     const action = node.type === 'JSXElement' ? elementAction(node, ctx) : null
@@ -533,9 +545,9 @@ function actionHitsIn(file, source, project = source === undefined ? sourceProje
   return out
 }
 
-/** Every action element and confirm-sheet options object in `source`, with its source text. */
-function actionTextsIn(file, source, project = source === undefined ? sourceProject() : { [file]: source }) {
-  const ctx = contextOf(file, project, source)
+/** Every action element and confirm-sheet options object in `file` of `project`, with its source text. */
+function actionTextsIn(file, project) {
+  const ctx = contextOf(file, project)
   const out = []
   const visit = node => {
     if (node.type === 'JSXElement' && elementAction(node, ctx)) out.push(hitAt(file, ctx.code, node))
@@ -548,6 +560,9 @@ function actionTextsIn(file, source, project = source === undefined ? sourceProj
   return out
 }
 
+/** The rule 5 and 6 hits of a fixture `code` standing alone as `file`. */
+const fixtureActionHits = (file, code) => actionHitsIn(file, { [file]: code })
+
 /** An exemption matches an item when its file and source text are still present. */
 const matchesEntry = (entry, item) => entry.file === item.file && item.text.includes(entry.text)
 /** Hits left after applying the fixed exemption list (the real list unless fixtures pass one). */
@@ -557,19 +572,19 @@ const staleExemptions = (exemptions, actions) => exemptions.filter(e => !e.reaso
 
 describe('action labels follow Action consistency rules 5 and 6', () => {
   it('no view, sheet or component ends an action label in an ellipsis or leaves a destructive action plain', () => {
-    const bad = exemptHits(sourceFiles().flatMap(f => actionHitsIn(f))).map(h => `${h.file}:${h.line}: [${h.rule}] ${h.text.slice(0, 120)}`)
+    const bad = exemptHits(sourceFiles().flatMap(f => actionHitsIn(f, sourceProject()))).map(h => `${h.file}:${h.line}: [${h.rule}] ${h.text.slice(0, 120)}`)
     expect(bad, `Rule 5: drop the "…" from an action label (the confirm sheet asks). Rule 6: a destructive action is variant="danger" and opens confirmSheet({ danger: true }) before it changes anything. undo() may act at once.\n${bad.join('\n')}`).toEqual([])
   })
 
   it('every exemption entry still matches an action and gives a reason', () => {
-    const actions = sourceFiles().flatMap(f => actionTextsIn(f))
+    const actions = sourceFiles().flatMap(f => actionTextsIn(f, sourceProject()))
     const stale = staleExemptions(EXEMPT, actions)
     expect(stale.map(e => `${e.file}: ${e.text}`), 'Remove exemption entries that match no action, and give every entry a reason.').toEqual([])
   })
 
   // A check on the rules themselves, so a parser change cannot silently empty the guard.
   it('fails an action label that ends in an ellipsis, and passes a placeholder', () => {
-    const hits = code => actionHitsIn('fixture.jsx', code).map(h => h.rule)
+    const hits = code => fixtureActionHits('fixture.jsx', code).map(h => h.rule)
     expect(hits('const a = <Button variant="danger" onClick={go}>{t(\'Delete workout…\')}</Button>')).toEqual(['ellipsis', 'confirm'])
     expect(hits('const a = <button className="lrow tap"><span>{t(\'Rename...\')}</span></button>')).toEqual(['ellipsis'])
     expect(hits('confirmSheet({ title: t(\'Sure?\'), confirmText: t(\'Finish…\') })')).toEqual(['ellipsis'])
@@ -582,7 +597,7 @@ describe('action labels follow Action consistency rules 5 and 6', () => {
   })
 
   it('fails a destructive button or confirm that is not danger, and passes the danger ones', () => {
-    const hits = code => actionHitsIn('fixture.jsx', code).map(h => h.rule)
+    const hits = code => fixtureActionHits('fixture.jsx', code).map(h => h.rule)
     expect(hits('const a = <Button variant="ghost" onClick={go}>{t(\'Delete routine\')}</Button>')).toEqual(['danger', 'confirm'])
     expect(hits('const a = <button className="btn ghost" onClick={go}>{t(\'Discard workout\')}</button>')).toEqual(['danger', 'confirm'])
     expect(hits('const a = <Row title={t(\'Reset everything\')} onClick={go} />')).toEqual(['danger', 'confirm'])
@@ -615,7 +630,7 @@ describe('action labels follow Action consistency rules 5 and 6', () => {
   })
 
   it('fails a destructive action that acts at once, including an icon button, and passes a danger confirm or undo()', () => {
-    const hits = code => actionHitsIn('fixture.jsx', code).map(h => h.rule)
+    const hits = code => fixtureActionHits('fixture.jsx', code).map(h => h.rule)
     expect(hits('const a = <Button variant="danger" onClick={go}>{t(\'Remove goal\')}</Button>')).toEqual(['confirm'])
     expect(hits('const a = <button className="iconbtn bare" aria-label={t(\'Delete entry for {0}\', d)} onClick={go} />')).toEqual(['danger', 'confirm'])
     expect(hits('const a = <Button variant="ghost" className="rt-delete danger" onClick={go}>{t(\'Delete routine\')}</Button>')).toEqual(['confirm'])
@@ -627,7 +642,7 @@ describe('action labels follow Action consistency rules 5 and 6', () => {
   // variant="danger" or the trash icon, not the label verb. A harmless-looking label on a
   // trash-icon or danger button must still confirm. #130's label check stays for the danger half.
   it('fails an unconfirmed danger text or trash-icon action even with a non-destructive label', () => {
-    const hits = code => actionHitsIn('fixture.jsx', code).map(h => h.rule)
+    const hits = code => fixtureActionHits('fixture.jsx', code).map(h => h.rule)
     expect(hits('const a = <Button variant="danger" onClick={go}>{t(\'Archive\')}</Button>')).toEqual(['confirm'])
     expect(hits('const a = <button className="iconbtn bare" aria-label={t(\'Bin\')} onClick={go}><Icon name="trash" /></button>')).toEqual(['confirm'])
     expect(hits('const a = <Row icon="trash" title={t(\'Bin\')} onClick={go} />')).toEqual(['confirm'])
@@ -648,7 +663,7 @@ describe('action labels follow Action consistency rules 5 and 6', () => {
       '}',
     ].join('\n')
     const importer = body => `import { EditSheet as Edit } from '../sheets/edit.jsx'\n${body}`
-    const hits = (...others) => actionHitsIn('sheets/edit.jsx', sheet, Object.fromEntries([['sheets/edit.jsx', sheet], ...others.map((code, i) => [`views/V${i}.jsx`, code])])).map(h => h.rule)
+    const hits = (...others) => actionHitsIn('sheets/edit.jsx', Object.fromEntries([['sheets/edit.jsx', sheet], ...others.map((code, i) => [`views/V${i}.jsx`, code])])).map(h => h.rule)
     const confirm = 'confirmSheet({ confirmText: t(\'Remove\'), danger: true })'
     expect(hits(importer(`const removeIt = () => ${confirm}\nconst a = <Edit close={c} onRemove={removeIt} />`))).toEqual([])
     expect(hits(importer('const removeIt = () => destroy()\nconst a = <Edit close={c} onRemove={removeIt} />'))).toEqual(['confirm'])
@@ -661,7 +676,7 @@ describe('action labels follow Action consistency rules 5 and 6', () => {
   })
 
   it('exempted entry (passes)', () => {
-    const hits = actionHitsIn('fixture.jsx', 'const a = <Button variant="danger" onClick={go}>{t(\'Archive\')}</Button>')
+    const hits = fixtureActionHits('fixture.jsx', 'const a = <Button variant="danger" onClick={go}>{t(\'Archive\')}</Button>')
     expect(hits.map(h => h.rule)).toEqual(['confirm'])
     const entry = [{ file: 'fixture.jsx', text: 'Archive', reason: 'fixture: the local two-step confirm is in this file' }]
     expect(exemptHits(hits, entry)).toEqual([])
@@ -670,7 +685,7 @@ describe('action labels follow Action consistency rules 5 and 6', () => {
   })
 
   it('stale exemption (fails)', () => {
-    const hits = actionHitsIn('fixture.jsx', 'const a = <Button variant="danger" onClick={go}>{t(\'Archive\')}</Button>')
+    const hits = fixtureActionHits('fixture.jsx', 'const a = <Button variant="danger" onClick={go}>{t(\'Archive\')}</Button>')
     const stale = [{ file: 'fixture.jsx', text: 'Bin', reason: 'fixture: the action was renamed' }]
     expect(staleExemptions(stale, hits).map(e => e.text)).toEqual(['Bin'])
     expect(exemptHits(hits, stale).map(h => h.rule)).toEqual(['confirm'])
