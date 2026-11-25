@@ -184,7 +184,6 @@ const positive = v => (typeof v === 'number' && Number.isFinite(v) && v > 0 ? v 
 function inStream(session, cfg, mode) {
   if (session.mode !== mode) return false
   const target = session.target || {}
-  // A Bodyweight exercise with no load; a saved weight of 0 alone is not one (ADR 0011, 2026-11).
   const bodyweight = mode === 'reps' && isBw(cfg) && (cfg.weight === 0 || cfg.weight == null)
   if (!bodyweight) {
     const wantTop = positive(mode === 'time' ? cfg.sec : cfg.reps)
@@ -1010,8 +1009,6 @@ export function evaluateSessionProgression(entry, state, context = {}) {
     if (!inWorkouts) {
       dummyWorkout = {
         id: 'session-entry-' + entry.id,
-        // Stand-in Workout day key uses local calendar date.
-        // Passing now into evaluateSessionProgression is deferred to clock audit.
         d: entryDayKey(entry),
         start: 0,
         end: 0,

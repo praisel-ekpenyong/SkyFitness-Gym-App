@@ -4,12 +4,9 @@ import { PROFILE_CLEAN } from './fields.js'
 
 const NOW = new Date(2026, 0, 15, 12).getTime()
 
-// Every DEF key needs one decision about cleaning. A new field fails here until it joins one list.
 
-// normalizeState shapes these itself: admit stamps the version, collections are reset to their type.
 const STRUCTURAL = ['schemaVersion', 'workouts', 'routines', 'bodyweight', 'customEx', 'favorites', 'week', 'dayPlan', 'reminder', 'active']
 
-// Kept as stored, because every reader already defends itself.
 const PASS_THROUGH = {
   sound: 'read as truthy (`!!S.sound`), so any value is a boolean',
   keepAwake: 'read as `!== false`, so any other value means on',

@@ -3,7 +3,6 @@ import { fileURLToPath } from 'node:url'
 import { ESLint } from 'eslint'
 import { describe, expect, it } from 'vitest'
 
-// The local-dates selectors in eslint.config.js (CODING_STANDARDS.md "Local dates, never UTC").
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const eslint = new ESLint({ cwd: root })
 
@@ -12,7 +11,6 @@ async function lint(code, path = 'src/lib/sample.js') {
   return r.messages.filter(m => m.ruleId === 'no-restricted-syntax')
 }
 
-// ESLint loads the whole config on first use, slow on a busy machine.
 describe('local-dates selectors', { timeout: 60000 }, () => {
   it('rejects toISOString().slice for a day key and names the helpers', async () => {
     const hits = await lint('export const k = date => date.toISOString().slice(0, 10)\n')

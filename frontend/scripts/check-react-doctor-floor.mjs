@@ -1,8 +1,3 @@
-// The React Doctor score floor (CODING_STANDARDS.md, "React Doctor: a score floor that only rises").
-// Runs react-doctor (or reads --report <json>) and compares summary.score against
-// react-doctor-floor.json ({ "score": <n> }). Fails below the floor and passes at or above it.
-//
-//   node scripts/check-react-doctor-floor.mjs [--root <dir>] [--report <path>] [--write]
 import { spawnSync } from 'node:child_process'
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'

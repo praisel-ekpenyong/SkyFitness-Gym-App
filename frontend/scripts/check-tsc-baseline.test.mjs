@@ -12,7 +12,6 @@ const fixture = join(here, 'fixtures', 'tsc-baseline')
 let root
 afterEach(() => rmSync(root, { recursive: true, force: true }))
 
-// A copy of the fixture (hit.js holds two strict checkJs errors) with the given baseline.
 function project(baseline) {
   root = mkdtempSync(join(tmpdir(), 'tsc-baseline-'))
   cpSync(fixture, root, { recursive: true })

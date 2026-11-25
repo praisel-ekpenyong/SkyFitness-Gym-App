@@ -1,5 +1,3 @@
-// Shared JSDoc typedefs for Sky's stored domain shapes.
-// Keep this module a pure leaf (no local or external imports in code or comments).
 
 /** @typedef {'kg' | 'lb'} Unit */
 

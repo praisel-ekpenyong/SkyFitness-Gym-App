@@ -1,11 +1,3 @@
-// Guard: the Active workout's effect types and command types are closed sets. In JavaScript this
-// stands in for typescript/switch-exhaustiveness-check (docs/EFFECT_STANDARDS.md "Teeth").
-//
-// Effects: every effect('<type>') that lib/active-act.js builds has an `e.type === '<type>'` branch
-// in runEffects (store/effects.js) or in Workout.jsx's send, and every branch is a type the producer
-// builds. open-finish is the one type whose branch is the view. A new type means a new branch and
-// a new entry in EFFECT_TYPES below.
-// Commands: the keys of COMMANDS in lib/active-act.js are the list in ADR 0032.
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -30,7 +22,6 @@ function walk(node, visit) {
 const isString = node => node?.type === 'Literal' && typeof node.value === 'string'
 const sorted = set => [...set].sort()
 
-/** Types passed as a string to effect(...) in `code`. */
 function producedTypes(code) {
   const types = new Set()
   walk(parseAst(code), node => {
@@ -41,7 +32,6 @@ function producedTypes(code) {
   return types
 }
 
-/** Types compared as `<x>.type === '<type>'` inside the function or const named `name` in `code`. */
 function branchTypes(code, name) {
   const types = new Set()
   let found = false
@@ -60,7 +50,6 @@ function branchTypes(code, name) {
   return types
 }
 
-/** Problems with the effect types, or [] when producer, runner, view and the closed set agree. */
 function effectProblems({ producer, runner, view }) {
   const problems = []
   const branched = new Set([...runner, ...view])
@@ -72,7 +61,6 @@ function effectProblems({ producer, runner, view }) {
   return problems
 }
 
-/** Keys of the COMMANDS object in `code`. */
 function commandTypes(code) {
   const keys = new Set()
   walk(parseAst(code), node => {
@@ -83,14 +71,12 @@ function commandTypes(code) {
   return keys
 }
 
-/** The commands ADR 0032 lists after "The commands are:", as backticked names up to the next blank line. */
 function adrCommands(markdown) {
   const list = markdown.split('The commands are:')[1]?.split(/\n\s*\n/)[1]
   if (!list) throw new Error('ADR 0032 has no "The commands are:" list')
   return new Set([...list.matchAll(/`(\w+)/g)].map(m => m[1]))
 }
 
-/** Commands on one side only, or [] when COMMANDS and the ADR agree. */
 function commandProblems(commands, adr) {
   return [
     ...sorted(commands).filter(c => !adr.has(c)).map(c => `${c}: in COMMANDS, not in ADR 0032`),

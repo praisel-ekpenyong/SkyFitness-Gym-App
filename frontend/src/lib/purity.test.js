@@ -9,11 +9,6 @@ const BANNED = new Set(['store', 'components', 'sheets', 'views', 'platform'])
 const BANNED_PACKAGES = ['react', 'react-dom', 'zustand', '@capacitor']
 const BANNED_GLOBALS = ['localStorage', 'sessionStorage', 'document', 'window', 'navigator', 'indexedDB', 'Capacitor']
 
-/**
- * Intended uses of a banned global, keyed by `lib/`-relative path, each with its reason.
- * Empty today: `env.js` reads `import.meta.env` and `process.env`, neither of which is banned.
- * @type {Record<string, { globals: string[], reason: string }>}
- */
 const GLOBAL_ALLOWLIST = {}
 
 const SPECIFIER = /\bfrom\s*['"]([^'"]+)['"]|\bimport\s*\(\s*['"]([^'"]+)['"]|^\s*import\s+['"]([^'"]+)['"]/gm
@@ -46,16 +41,10 @@ function isBannedPackage(spec) {
   return BANNED_PACKAGES.some(pkg => spec === pkg || spec.startsWith(`${pkg}/`))
 }
 
-/**
- * Blanks out comments, string literals and template-literal text so only code is left,
- * keeping `${…}` expressions inside templates as code. Line breaks are kept.
- * @param {string} text - JavaScript source.
- * @returns {string} The source with every non-code character replaced by a space.
- */
 function codeOnly(text) {
   let out = ''
   let i = 0
-  const braces = [] // per open `${`: brace depth inside it
+  const braces = []
   const blank = s => s.replace(/[^\n]/g, ' ')
   const skipString = quote => {
     let j = i + 1
@@ -101,12 +90,6 @@ function codeOnly(text) {
   return out
 }
 
-/**
- * Lists the banned browser globals a source uses as identifiers, ignoring comments, strings
- * and property names such as `opts.window`.
- * @param {string} text - JavaScript source.
- * @returns {string[]} Banned global names found, in order of appearance.
- */
 function bannedGlobals(text) {
   return [...codeOnly(text).matchAll(GLOBAL_USE)].map(m => m[1])
 }

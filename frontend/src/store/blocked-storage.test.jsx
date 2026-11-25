@@ -1,5 +1,4 @@
 // @vitest-environment happy-dom
-// Audit-fixes 02: blocked storage stays usable.
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'

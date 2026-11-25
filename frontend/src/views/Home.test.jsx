@@ -229,7 +229,6 @@ describe('Home declarative weekly progress card (non-gamified PRODUCT.md voice)'
       d.setDate(d.getDate() - 7 * n)
       return isoOf(d)
     }
-    // Four counted weeks in a row, this one included.
     const workouts = [0, 1, 2, 3].map(n => ({
       id: `w-${n}`, d: weeksAgo(n), name: 'Push', entries: [{ id: 'lift', sets: [{ done: true, w: 60, r: 5 }] }],
     }))
@@ -252,7 +251,6 @@ describe('Home declarative weekly progress card (non-gamified PRODUCT.md voice)'
   it('a re-render after the week ends shows the new week\'s streak, not last week\'s', async () => {
     vi.useFakeTimers({ toFake: ['Date'] })
     try {
-      // Sunday 28 Jun 2026: last week counted, this week is still open, so the streak is 1.
       vi.setSystemTime(new Date(2026, 5, 28, 20))
       useStore.getState().update(s => {
         s.workouts = [{ id: 'w1', d: '2026-06-15', name: 'Push', entries: [{ id: 'lift', sets: [{ done: true, w: 60, r: 5 }] }] }]
@@ -260,7 +258,6 @@ describe('Home declarative weekly progress card (non-gamified PRODUCT.md voice)'
       await act(async () => { root.render(<Home />) })
       expect(container.querySelector('.wp-streak').textContent.trim()).toBe('1-week streak')
 
-      // Monday: the empty week has ended, so the streak broke. The store has not changed.
       vi.setSystemTime(new Date(2026, 5, 29, 9))
       await act(async () => { container.querySelector('button[aria-label="Next week"]').click() })
       expect(container.querySelector('.wp-streak')).toBeNull()

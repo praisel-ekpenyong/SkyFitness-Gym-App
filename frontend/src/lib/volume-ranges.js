@@ -1,5 +1,3 @@
-// Volume ranges: the band of effective sets per week a muscle is aimed at, by training style.
-// Terms: GLOSSARY.md (Volume range, Training style). Defaults follow Schoenfeld and Pelland et al. (2024–25).
 
 import { t } from './i18n.js'
 

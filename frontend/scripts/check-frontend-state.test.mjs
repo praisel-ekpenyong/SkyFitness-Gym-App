@@ -12,8 +12,6 @@ const fixture = join(here, 'fixtures', 'frontend-state')
 let root
 afterEach(() => { if (root) rmSync(root, { recursive: true, force: true }); root = undefined })
 
-// A copy of the fixture (src/over.jsx holds 5 useState calls, src/sub/at-cap.jsx 4)
-// with the given allowlist.
 function project(allowlist) {
   root = mkdtempSync(join(tmpdir(), 'frontend-state-'))
   cpSync(fixture, root, { recursive: true })

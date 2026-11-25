@@ -80,7 +80,6 @@ describe('removing an exercise from the screen', () => {
 })
 
 describe('removing a set from the ladder', () => {
-  // The middle and last warm-ups share a weight, so a reused input can keep the deleted row's draft.
   const warm = (w, r) => ({ w, r, done: false, phase: 'warmup' })
 
   function weightInputs() {

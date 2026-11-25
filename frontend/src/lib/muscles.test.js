@@ -158,7 +158,6 @@ describe('upper-body and core movement corrections', () => {
     expect(musclesOf(id)).toEqual(weights)
   })
 
-  // The spec's table, row by row, as muscle weights.
   const TABLE = {
     'pull-up, chin-up, pulldown': { lats: 1, 'upper-back': 0.4, biceps: 0.4 },
     pullover: { lats: 1, chest: 0.4, triceps: 0.4 },

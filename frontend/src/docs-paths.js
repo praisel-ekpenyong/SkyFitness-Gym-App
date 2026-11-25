@@ -1,14 +1,10 @@
-// Finds relative markdown links and backticked repo paths that point at nothing.
-// Test tooling only; lives beside docs.test.js, not under lib/ (which stays pure).
 import { existsSync, readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 
-// Folders under frontend/src/, which docs name without the frontend/src/ in front.
 const SRC_DIRS = 'lib|platform|views|sheets|components|store|styles'
 const PREFIXES = new RegExp(`^(frontend|src|docs|scripts|\\.claude|${SRC_DIRS})/`)
 const IN_SRC = new RegExp(`^(${SRC_DIRS})/`)
 
-// Fenced code blocks show commands and diffs, not paths to keep true.
 export function proseLines(text) {
   let fence = null
   const out = []
@@ -31,14 +27,12 @@ export function extractRefs(line) {
     if (t && !/^[a-z][a-z0-9+.-]*:/i.test(t) && !t.startsWith('/')) refs.push({ kind: 'link', target: decodeURI(t) })
   }
   for (const m of line.matchAll(/`([^`\s]+)`/g)) {
-    // A trailing :line or :line-line names a place in the file, not part of its path.
     const t = m[1].replace(/[.,:;]+$/, '').split('#')[0].replace(/:\d+(-\d+)?$/, '')
     if (PREFIXES.test(t) && !/[*<>{}$]/.test(t)) refs.push({ kind: 'path', target: t })
   }
   return refs
 }
 
-// Candidate locations for a reference, first hit wins.
 function candidates(ref, fileDir, root) {
   if (ref.kind === 'link') return [resolve(fileDir, ref.target)]
   const t = ref.target
@@ -47,7 +41,6 @@ function candidates(ref, fileDir, root) {
   return [resolve(root, t), resolve(root, 'frontend', t)]
 }
 
-// files: absolute markdown paths. Returns "relative/file.md:LINE: missing path".
 export function findBrokenRefs(files, root, allow = []) {
   const broken = []
   for (const file of files) {

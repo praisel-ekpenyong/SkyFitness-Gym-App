@@ -64,8 +64,6 @@ describe('NumberField under StrictMode', () => {
   })
 })
 
-// A render React discards (here: a transition that suspends) must not leave the field believing
-// the outside value changed, or the next urgent render throws the lifter's draft away.
 describe('NumberField when a render is discarded', () => {
   const never = new Promise(() => {})
   function Suspends({ when }) {
@@ -96,7 +94,6 @@ describe('NumberField when a render is discarded', () => {
   })
 })
 
-// The set row's effort field is nullable and passes `value={v ?? ''}`, so the stored null comes back as ''.
 describe('NumberField in an optional field', () => {
   let stored
   function Effort() {

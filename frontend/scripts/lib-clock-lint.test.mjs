@@ -3,7 +3,6 @@ import { fileURLToPath } from 'node:url'
 import { ESLint } from 'eslint'
 import { describe, expect, it } from 'vitest'
 
-// The clock selector in eslint.config.js (CODING_STANDARDS.md "The clock is an argument in `lib/`").
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const eslint = new ESLint({ cwd: root })
 

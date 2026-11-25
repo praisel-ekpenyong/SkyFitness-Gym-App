@@ -459,7 +459,6 @@ describe('WorkoutDetail', () => {
     const exRows = container.querySelectorAll('.ex-entry')
     expect(exRows.length).toBe(4)
 
-    // Entry 0: Warm-ups + Work sets
     const row0Warm = exRows[0].querySelector('.ss-warm')
     const row0Work = exRows[0].querySelector('.ss')
     expect(row0Warm).toBeTruthy()
@@ -468,18 +467,15 @@ describe('WorkoutDetail', () => {
     expect(row0Work.textContent).toBe('95×8  ·  95×8')
     expect(row0Warm.compareDocumentPosition(row0Work) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
 
-    // Entry 1: Work sets only (no .ss-warm)
     expect(exRows[1].querySelector('.ss-warm')).toBeNull()
     expect(exRows[1].querySelector('.ss')?.textContent).toBe('60×10')
 
-    // Entry 2: Warm-ups only (renders .ss-warm, no 'no sets' fallback)
     const row2Warm = exRows[2].querySelector('.ss-warm')
     expect(row2Warm).toBeTruthy()
     expect(row2Warm.textContent).toBe('Warm-up: 20×10')
     expect(exRows[2].querySelector('.ss')).toBeNull()
     expect(exRows[2].textContent).not.toContain('no sets')
 
-    // Entry 3: Zero performed sets (renders 'no sets', no .ss-warm)
     expect(exRows[3].querySelector('.ss-warm')).toBeNull()
     expect(exRows[3].querySelector('.ss')?.textContent).toBe('no sets')
   })

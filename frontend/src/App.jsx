@@ -75,7 +75,6 @@ function Shell() {
     <div id="app"><div className="boot"><Mark size={22} /></div></div>
   )
 
-  // ADR 0027: this build cannot read the stored Profile, so it shows nothing and changes nothing.
   if (newerProfile) return (
     <div id="app"><div className="narrow">
       <div role="alert" className="empty error-empty">

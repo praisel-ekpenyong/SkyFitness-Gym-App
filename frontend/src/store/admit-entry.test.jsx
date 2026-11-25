@@ -1,5 +1,4 @@
 // @vitest-environment happy-dom
-// ADR 0027: every way a Profile comes in — boot, another tab, Restore, CSV import — runs admit.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useStore } from './useStore.js'
 import { DEF } from '../lib/profile/index.js'

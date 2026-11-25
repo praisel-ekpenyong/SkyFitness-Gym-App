@@ -133,7 +133,6 @@ describe('save / flush', () => {
   })
 
   it('survives a storage quota exceeded exception and still drains to sinks', () => {
-    // Denied device storage goes through the injectable local-write seam:
     // per-instance stubbing of the frozen happy-dom Storage never lands.
     __setLocalWriteForTests(() => { throw new DOMException('Quota exceeded', 'QuotaExceededError') })
     expect(() => save({ n: 5 })).not.toThrow()
@@ -272,7 +271,6 @@ describe('mirror write failures', () => {
 describe('persistOnFirstKeep', () => {
   beforeEach(() => { vi.useRealTimers(); localStorage.clear() })
 
-  // A fake store: subscribe like zustand, and a change() that emits (state, prev).
   function fakeStore(S) {
     let listeners = []
     let state = { S }

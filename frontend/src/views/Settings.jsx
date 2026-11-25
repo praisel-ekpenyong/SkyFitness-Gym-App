@@ -32,7 +32,6 @@ export default function Settings() {
   const IS_ANDROID = /android/i.test(navigator.userAgent)
 
   const stampExported = () => update(s => { s.lastExport = Date.now() })
-  // ADR 0031: Routines and the Goal weight convert; logs keep their numbers and read in the new unit.
   const setUnit = v => {
     if (v === S.unit) return
     if (S.active) { toast(t('Finish or discard the workout in progress to switch units.')); return }

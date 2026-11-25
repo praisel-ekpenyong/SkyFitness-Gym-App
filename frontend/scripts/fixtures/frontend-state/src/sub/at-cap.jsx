@@ -1,4 +1,3 @@
-// Four useState calls: at the cap, for check-frontend-state.test.mjs.
 import { useState } from 'react'
 
 export function AtCap() {

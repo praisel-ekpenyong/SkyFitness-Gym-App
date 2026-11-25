@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest'
 import { streakOf } from './streak.js'
 import { weekKey } from './dates.js'
 
-// Mondays used as week anchors. 2026-07-01 is a Wednesday, so its week starts 2026-06-29.
 const trained = d => ({ id: `w-${d}`, d, entries: [{ id: 'lift', sets: [{ done: true, w: 60, r: 5 }] }] })
 const warmupOnly = d => ({ id: `w-${d}`, d, entries: [{ id: 'lift', sets: [{ done: true, phase: 'warmup', w: 20, r: 10 }] }] })
 const uncheckedOnly = d => ({ id: `w-${d}`, d, entries: [{ id: 'lift', sets: [{ done: false, w: 60, r: 5 }] }] })
@@ -34,7 +33,6 @@ describe('streakOf', () => {
   })
 
   it('one missed week breaks the streak: nothing is banked to cover it', () => {
-    // Four counted weeks, one missed, then a counted current week.
     const S = { workouts: on('2026-05-25', '2026-06-01', '2026-06-08', '2026-06-15', '2026-06-29') }
     const r = streakOf(S, at(2026, 7, 1))
     expect(r.current).toBe(1)

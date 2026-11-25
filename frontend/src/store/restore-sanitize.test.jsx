@@ -1,5 +1,4 @@
 // @vitest-environment happy-dom
-// Audit-fixes 03: Restore skips bad Entries.
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -254,7 +253,6 @@ describe('Restore keeps every DEF key and puts the Training log in order', () =>
     restoreFromBackup({ ...cloneDef(), sex: 42, birthYear: '1990' })
     expect(useStore.getState().S).toMatchObject({ sex: null, birthYear: null })
 
-    // The restore cleaner itself leaves field values to normalizeState.
     expect(sanitizeRestorePayload({ workouts: [], routines: [], sex: 'robot' }).clean.sex).toBe('robot')
   })
 
@@ -276,7 +274,6 @@ describe('Restore keeps every DEF key and puts the Training log in order', () =>
 
   it('upgrades a legacy warm-up shape on restore, the same way boot does', async () => {
     const { restoreFromBackup } = await import('../platform/restore.js')
-    // A backup with warm-up flags predates the schema version: version 0.
     const { schemaVersion, ...version0 } = cloneDef()
     const backup = {
       ...version0,

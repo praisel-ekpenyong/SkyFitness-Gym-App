@@ -1,5 +1,3 @@
-// Exercise search (ADR 0013): tokenising a query and matching tokens against an exercise's name,
-// target, muscles, equipment and notes. The muscle taxonomy it reads stays in muscles.js.
 
 import { EXIDX, smOf } from './exercises.js'
 import { MUSCLE_NAME, canonicalMuscle, primaryMuscleOf, secondaryMusclesOf } from './muscles.js'

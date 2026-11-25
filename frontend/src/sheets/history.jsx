@@ -130,7 +130,6 @@ export function Calendar({ start, close }) {
   const st = useStore(s => s.S)
   const [cur, setCur] = useState(() => { const d = start ? new Date(start) : new Date(); d.setDate(1); return d })
   const [sel, setSel] = useState(null)
-  // A new month shows new weeks, so the selected week and its explanation go with the old one.
   const goMonth = d => { setCur(d); setSel(null) }
   const streak = streakOf(st, Date.now())
   const y = cur.getFullYear(), mo = cur.getMonth()
@@ -168,7 +167,6 @@ export function Calendar({ start, close }) {
       </button>
     )
   }
-  // One row per Monday-first week: seven day cells, then the week's mark (or a gap when it has none).
   const padded = [...cells]
   while (padded.length % 7) padded.push(<div key={'p' + padded.length} />)
   const rows = []

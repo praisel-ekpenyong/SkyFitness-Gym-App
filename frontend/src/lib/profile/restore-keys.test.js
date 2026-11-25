@@ -14,7 +14,6 @@ describe('restore keys derived from DEF', () => {
       expect(DEF).not.toHaveProperty(key)
       expect(RESTORE_TOP_KEYS).toContain(key)
     }
-    // Every DEF key but `active`, plus the three legacy keys.
     expect(RESTORE_TOP_KEYS).toHaveLength(Object.keys(DEF).length + 2)
   })
 })

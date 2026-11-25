@@ -55,7 +55,6 @@ describe('a retired accent reads as lime', () => {
   })
 
   it('seals a legacy showRir flag onto effort', () => {
-    // Profiles that still carry showRir were saved before the schema version: version 0.
     const { schemaVersion, ...version0 } = cloneDef()
     const stored = { ...version0, showRir: true }
     const S = normalizeState(stored, Date.now())

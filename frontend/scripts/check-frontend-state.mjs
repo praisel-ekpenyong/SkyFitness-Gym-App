@@ -1,12 +1,3 @@
-// The use-state cap (CODING_STANDARDS.md, "The state caps", rule 1). Counts the
-// useState calls in each file under src/; a file may hold at most 4.
-//
-// frontend-state-allowlist.json ({ "<path>": { "count": <n>, "reason": "..." } })
-// holds the files already over the cap, shrink-only: a file may not pass its count,
-// and a count above the real count is stale and fails, so a fix also lowers the entry.
-// An entry whose file falls to the cap is dropped.
-//
-//   node scripts/check-frontend-state.mjs [--root <dir>]
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { dirname, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'

@@ -1,32 +1,3 @@
-/**
- * Movement-pattern corrections to the upstream catalogue (ADR 0012, ADR 0025).
- *
- * The pinned catalogue (`exercises-data.js`, never edited) mis-tags whole
- * movement patterns. Squats, hack squats and leg presses are glutes-primary
- * with quads at 0.4, so twelve squat sets read as 4.8 quad sets. Most hip
- * hinges are glutes-primary too. Calf raises credit hamstrings, leg curls
- * credit glutes and leg extensions credit hamstrings. `exercises.js` applies
- * these lists as an overlay when it builds the catalogue index; catalogue
- * exercises are read live, so past workouts re-read through them with no
- * migration. Custom exercises keep the muscles the lifter picked.
- *
- * Each pattern names the curation it applies and the hand-reviewed catalogue
- * ids it applies to. Name patterns only proposed these ids; every id was read
- * and checked. Combination moves and misfires are left out on purpose and
- * keep their catalogue tags; each table lists its exclusions above it. No name
- * matching happens at runtime. An id may be curated once: `curationsByIdOf`
- * throws on a second.
- *
- * Curation fields (spelled the way the catalogue spells muscles):
- * - `tg`: overrides the primary target.
- * - `smAdd`: secondary muscles to add.
- * - `smRemove`: secondary muscles to drop, from `sm` and from `mg`.
- *
- * Upper-body and core patterns apply their row in full: the primary, every
- * listed secondary, and removal of every other secondary the reviewed ids
- * carry. So sit-ups lose hip flexors, pull-ups lose forearms and front raises
- * keep no secondary.
- */
 
 const KNEE_DOMINANT = {
   tg: 'quads',
@@ -34,22 +5,6 @@ const KNEE_DOMINANT = {
   smRemove: ['quadriceps', 'hamstrings', 'calves', 'core'],
 }
 
-// Excluded on review, keeping catalogue tags:
-// - combination moves: 2798 squat jump step rear lunge, 1003 band squat row,
-//   0551 turkish get up, 0786 squat jerk, 1685/1686 squat to overhead reach,
-//   3644 lunge with swing, 1417 diagonal kick hamstring curl, curl/press
-//   combos (1644, 1655, 1651, 1658, 1684, 1732), thrusters (3305, 0550);
-// - not the pattern: 0102 squat on knees and 1420 kneeling jump squat (hip
-//   dominant), 1489/0851 sissy squats (quad isolation, already quads), 3119
-//   potty squat (abs), 3222 semi squat jump and 3655 high knees lunge
-//   (cardio), 1688 lunge with twist (waist), squatting rows (3168, 3167,
-//   1717), RDL family (its own pattern below) and 0116/1010 straight-leg
-//   deadlifts;
-// - "extension" misfires: hip and reverse-hyper extensions (0980, 0130,
-//   0228, 2286, 0593, 0675), triceps extensions (the upper-body
-//   'triceps extension' pattern owns them);
-// - calf stretches (1377, 1378, 1390, 1398, 1407, 1599) and tibialis work
-//   (1396 toe raise, 1000/0763/1394 reverse calf raises).
 export const LOWER_BODY_CORRECTIONS = [
   {
     pattern: 'squat, hack squat, front squat',
@@ -92,15 +47,6 @@ export const LOWER_BODY_CORRECTIONS = [
     ids: ['0032', '0074', '0300', '0578', '0752', '0811', '0117', '0157', '0066'],
   },
   {
-    // Hamstring hinges (ADR 0012). The RDL and stiff-leg deadlift load the
-    // hamstrings in a long, stretched position and are programmed as hamstring
-    // builders, but upstream tags most of them glutes-primary, and splits one
-    // movement by implement: barbell straight-leg deadlift 0116 is hamstrings,
-    // dumbbell stiff-leg 0432 glutes. Glutes join as a secondary and the
-    // catalogue's lower back stays the third, so four sets credit hamstrings 4,
-    // glutes 1.6 and lower back 1.6. A full set to all three was rejected: the
-    // lower back holds the spine still, and full sets for a stabiliser overstate
-    // its volume.
     pattern: 'RDL, stiff-leg, good morning',
     tg: 'hamstrings',
     smAdd: ['glutes'],
@@ -159,40 +105,8 @@ export function curationsByIdOf(patterns) {
   return out
 }
 
-// Shoulder heads: removals spell the catalogue's plain "shoulders" (heads
-// replace it after removals run, ADR 0024); additions name a head the way the
-// catalogue does, as "front/side/rear deltoids". These patterns never set a
-// head as the primary: the delt-head patterns below keep their ids for the
-// secondary changes only, and `PRIMARY_DELT_HEAD_IDS` in shoulder-heads.js
-// owns every primary head.
 const DELTS_ASSIST = ['shoulders', 'deltoids']
 
-// Excluded on review, keeping catalogue tags:
-// - combination moves: muscle-ups (0558, 0631, 1401, 3286, 3312), 0022
-//   pullover to press, 0040 front raise and pullover, 1294 pullover hip
-//   extension, 1638 pulldown bicep curl, squatting and twisting rows (3168,
-//   3167, 1717, 1003, 0990, 0236), 0521 renegade row, twisting presses (0989,
-//   1012), jerks, thrusters and cleans, curl combos (1644, 1655, 1651, 1658,
-//   1684, 3547, 3560), 1732 lunge triceps extension, 0035 close grip to skull
-//   press, plank combos (0464, 0664, 3239, 3664, 3665), twisting leg raises
-//   (0476, 2801, 2802), throw-down leg raises (0010, 0012, 0013), sit-ups
-//   with a press (0071, 0992);
-// - not the pattern: biceps-tagged pull-ups (0139, 0140) and 0232 standing
-//   pulldown, 0688 scapular pull-up, straight-arm pulldowns and pushdowns
-//   (0237, 0238, 0199, 0172), 2464 kayak row, shoulder rotations (0216, 0235,
-//   0863, 0864), Cuban presses (0299, 2136), 3541 y-raise, 0669 and other
-//   stretches, ambiguous raises (0977, 0335, 0376, 0415, 0325, 1017, 0332),
-//   0286 side press, 0438 w-press, 0445 anti gravity press, 1296 pike push-up,
-//   push-up variants that are plyometric, isometric or planche work (0258,
-//   0492, 0545, 1306, 3294, 3327, 3217, 3145, 0699, 0803, 1297, 0500), 0316
-//   incline breeding, 0856 svend press, 0052/0450 JM press, 0204 rear drive,
-//   0436 tate press, 0816 triceps press, 1751 pin presses, neutral wrist
-//   curls tagged biceps (0365, 0366, 0397), zottman curls
-//   (0439, 1672, 2293, 2294), side, twisting and reverse crunches, 0469
-//   groin crunch, 0981 jack knife sit-up, 0600 leg raise crunch, 0230 cable
-//   standing lift, 2329 spine twist, side planks;
-// - "extension" misfires: back and hip extensions (lower body), 0048
-//   incline reverse-grip press.
 export const UPPER_BODY_CORRECTIONS = [
   {
     pattern: 'pull-up, chin-up, pulldown',

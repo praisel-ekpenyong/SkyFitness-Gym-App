@@ -61,7 +61,6 @@ describe('format utility module', () => {
       expect(fmtNum(16910)).toBe('16,910')
       expect(fmtNum(1234.56)).toBe('1,234.6')
       expect(fmtVol(8200, 'kg')).toBe('8,200\u00a0kg')
-      // A number and its unit never break across lines (iron-launch 10).
       expect(fmtVol(8200, 'kg')).not.toMatch(/\d kg/)
     })
 

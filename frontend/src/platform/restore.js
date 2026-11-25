@@ -3,8 +3,6 @@ import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { t } from '../lib/i18n.js'
 
-// No DEF overlay before replaceState: `admit` fills absent fields, and an overlay would hide a
-// backup's missing `schemaVersion`, so its upgrades would not run.
 export function restoreFromBackup(data) {
   validateBackup(data)
   const { clean, skipped } = sanitizeRestorePayload(data)

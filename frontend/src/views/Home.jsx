@@ -59,7 +59,6 @@ export default function Home() {
   const monday = new Date(today); monday.setDate(today.getDate() - ((today.getDay() + 6) % 7) + weekOffset * 7)
   const doneDays = new Set(S.workouts.map(w => w.d))
   const doneToday = doneDays.has(todayISO())
-  // Not memoised on S: the streak also depends on today, and a new week can arrive without a store change.
   const streak = streakOf(S, today.getTime())
 
   const strip = []

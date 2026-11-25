@@ -33,9 +33,6 @@ const activeWorkout = () => useStore.getState().update(s => {
 })
 const sheetOf = Component => () => useUI.getState().openSheet(close => <Component close={close} />)
 
-// Every sheet the app opens must be named: by its first h2/h3, or by a label passed to openSheet.
-// `renders` names the component the opener's openSheet call renders; the source scan below
-// requires every openSheet call that renders a component to have that component swept here.
 const OPENERS = {
   bwSheet: { renders: 'BwSheet', open: () => bwSheet() },
   requiredBwSheet: { renders: 'BwSheet', open: () => bwSheet({ required: true }) },
@@ -75,7 +72,6 @@ const OPENERS = {
   },
 }
 
-// ---- source scan: every openSheet call in src/ is named by a label, an inline h2/h3, or a swept component ----
 const SRC = join(dirname(fileURLToPath(import.meta.url)), '..')
 
 function sourceFiles(dir) {
@@ -86,7 +82,6 @@ function sourceFiles(dir) {
   })
 }
 
-// The text of a call from its opening paren to the matching close, skipping quoted strings.
 function callText(text, open) {
   let depth = 0
   for (let i = open; i < text.length; i++) {

@@ -1,5 +1,4 @@
 // @vitest-environment happy-dom
-// The Freeze rule is gone (docs review 04). An old Profile keeps `streakRule` unread, the way ADR 0031 leaves `exWeights`.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useStore } from './useStore.js'
 import { DEF, normalizeState } from '../lib/profile/index.js'

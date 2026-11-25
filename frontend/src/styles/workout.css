@@ -48,7 +48,7 @@
 .ex-last { margin: 0 0 4px; line-height: 1.35 }
 .progline { display: flex; align-items: flex-start; gap: 7px; margin: 0 0 8px; font-size: var(--fs-meta); line-height: 1.35; color: var(--label-2) }
 .progline .icn { flex: none; margin-top: 2px; font-size: var(--fs-small); --icon-stroke: 2 }
-.progline.up .icn { color: var(--acc-text) }   /* more work ahead: the arrow alone carries the accent */
+.progline.up .icn { color: var(--acc-text) }
 .exblock .exnote { display: flex; align-items: flex-start; gap: 8px; margin: 2px 0 10px; cursor: pointer; padding: 10px 12px }
 .exblock .exnote .icn { margin-top: 2px; color: var(--label-3); flex: none }
 

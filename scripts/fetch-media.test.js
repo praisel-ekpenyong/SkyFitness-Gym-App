@@ -9,7 +9,6 @@ import {
   downloadAndExtractMedia,
 } from './fetch-media.mjs'
 
-// Helper to create a minimal 512-byte POSIX ustar header block for testing
 function buildTarHeader(name, size, typeflag = '0', prefix = '') {
   const buf = Buffer.alloc(512, 0)
   buf.write(name, 0, 100, 'utf8')

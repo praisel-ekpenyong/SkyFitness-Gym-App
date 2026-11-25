@@ -22,7 +22,6 @@ const session = ({ d = '2026-01-01', target = REP_TARGET, rows, plan, routineId 
 const state = (workouts, extra = {}) => ({ unit: 'kg', workouts, ...extra })
 const repeat = (n, make) => Array.from({ length: n }, (_, i) => make(i))
 const day = i => `2026-01-${String(i + 1).padStart(2, '0')}`
-/** Begins a workout of the Routine on day `d`, through the Active workout interface. */
 const begin = (S, routineId, d) => {
   act(S, { type: 'begin', routineId })
   S.active.d = d
@@ -96,7 +95,6 @@ describe('progression streams', () => {
   })
 })
 
-// Ticket dr13: the carve-out keys on the Bodyweight exercise flag, never on `weight: 0` alone.
 describe('the bodyweight carve-out reads the Bodyweight exercise flag, not a saved weight of 0', () => {
   const BAR = EXDB.find(e => e.eq === 'barbell' && e.bp === 'chest').id
   const logged = (routineId, id, target, rows) => ({ d: '2026-01-01', routineId, entries: [{ id, target, sets: rows }] })

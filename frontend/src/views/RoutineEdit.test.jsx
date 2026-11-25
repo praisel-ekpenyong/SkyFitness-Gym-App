@@ -319,7 +319,6 @@ describe('RoutineEdit delete key', () => {
     expect(mocks.confirmSheet).toHaveBeenCalledTimes(1)
     expect(mocks.confirmSheet.mock.calls[0][0].danger).toBe(true)
 
-    // Execute confirmation
     await act(async () => {
       mocks.confirmSheet.mock.calls[0][0].onConfirm()
     })
@@ -377,12 +376,11 @@ describe('RoutineEdit reordering and superset pairing', () => {
   it('toggles superset link with above on superset button click', async () => {
     await act(async () => { root.render(<RoutineEdit />) })
 
-    // Exercise 2 ('0003') is not currently in a superset with 1 ('0002')
     const linkBtns = container.querySelectorAll('.rt-link')
     expect(linkBtns.length).toBe(2)
 
     await act(async () => {
-      linkBtns[1].click() // Button on exercise 2 linking with exercise 1
+      linkBtns[1].click()
     })
 
     const r = useStore.getState().S.routines.find(x => x.id === 'r-test-1')

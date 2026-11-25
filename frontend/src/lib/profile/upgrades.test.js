@@ -5,7 +5,6 @@ import {
 } from './index.js'
 import { UPGRADES, schemaVersionOf, upgrade } from './upgrades.js'
 
-// A Profile as every one on disk looked before the schema version: no `schemaVersion`.
 const legacy = () => ({
   showRir: true,
   unit: 'lb',
@@ -117,7 +116,6 @@ describe('a Profile from a newer Sky is never admitted', () => {
 describe('the restore path and the schema version', () => {
   it('refuses a backup from a newer Sky with a clear message, before anything is cleaned', () => {
     expect(() => validateBackup(newer())).toThrow(/newer version of Sky/)
-    // Even when the newer shape no longer looks like an older backup.
     expect(() => validateBackup({ schemaVersion: SCHEMA_VERSION + 1 })).toThrow(/newer version of Sky/)
   })
 

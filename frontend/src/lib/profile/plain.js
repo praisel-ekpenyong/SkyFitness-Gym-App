@@ -1,4 +1,3 @@
-// The two plain-data helpers every Profile path shares.
 
 /**
  * True for a plain record: an object that is not null and not an array.

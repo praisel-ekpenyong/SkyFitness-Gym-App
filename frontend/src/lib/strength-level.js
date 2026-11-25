@@ -1,12 +1,3 @@
-// Strength levels: one main barbell lift graded from Beginner to Elite by its Estimated 1RM
-// divided by body weight, against a Strength standard (body-weight multiples, approximate).
-//
-// Each workout's Estimated 1RM is the Training log's, in the Profile's unit; a workout holding two
-// exercises of one lift counts the greater. It is divided by the body weight then: the workout's own
-// Weigh-in, else the nearest Weigh-in in the Body-weight log within 30 days, else the workout is
-// skipped. The current level reads the last 12 weeks; the peak reads every workout. Next level is
-// the next threshold times the latest Weigh-in (log or workout, whichever is most recent), rounded
-// up to a loadable step, in the Profile's unit.
 
 import { e1rmByWorkout, latestWorkSetAt } from './training-log.js'
 import { workoutTimestamp } from './dates.js'

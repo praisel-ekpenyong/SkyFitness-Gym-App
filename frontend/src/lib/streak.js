@@ -27,7 +27,6 @@ export function streakOf(S, now) {
   const weeks = {}
   let current = 0
   let best = 0
-  // A malformed day key's Monday reads 'NaN-…', which sorts after every real day, so the walk never reaches it.
   const first = [...counted].sort()[0]
   if (first) {
     const cur = new Date(first + 'T12:00:00')

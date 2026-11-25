@@ -1,5 +1,3 @@
-// The Profile's schema version and the ordered steps that bring an older Profile up to it (ADR 0027).
-// A step changes shapes only, never values. Adding one raises SCHEMA_VERSION by one.
 
 import { isRecord } from './plain.js'
 

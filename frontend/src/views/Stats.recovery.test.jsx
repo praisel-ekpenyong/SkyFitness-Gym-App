@@ -295,7 +295,6 @@ describe('MuscleBalance expansion and a11y', () => {
         { id: 'ex-hams', muscleWeights: { hamstring: 1 }, sets: [set(true, { w: 90, r: 8 })] },
         { id: 'ex-glutes', muscleWeights: { gluteal: 1 }, sets: [set(true, { w: 80, r: 8 })] },
         { id: 'ex-back', muscleWeights: { 'upper-back': 1 }, sets: [set(true, { w: 70, r: 8 })] },
-        // A legacy Shoulders snapshot reads as all three heads.
         { id: 'ex-shoulders', muscleWeights: { deltoids: 1 }, sets: [set(true, { w: 50, r: 8 })] },
         { id: 'ex-biceps', muscleWeights: { biceps: 1 }, sets: [set(true, { w: 30, r: 8 })] },
       ]),

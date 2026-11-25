@@ -7,11 +7,8 @@ import { useStore } from './store/useStore.js'
 import { DEF } from './lib/profile/index.js'
 import { useUI } from './store/useUI.js'
 
-// Clock: Wed 1 Jul 2026, so the current week starts Mon 29 Jun.
 const NOW = new Date(2026, 6, 1, 12)
 const trained = d => ({ id: `w-${d}`, d, name: 'Push', entries: [{ id: 'lift', sets: [{ done: true, w: 60, r: 5 }] }] })
-// Counted: 11, 18, 25 May and 1 Jun (a run of four); 8 Jun missed (broke);
-// 15 Jun counted; 22 Jun missed (broke); this week open.
 const HISTORY = ['2026-05-11', '2026-05-18', '2026-05-25', '2026-06-01', '2026-06-15'].map(trained)
 
 let container
@@ -69,7 +66,6 @@ describe('Calendar week marks', () => {
   })
 
   it('a week with no workout and nothing left to break is labelled missed', async () => {
-    // One counted week in May, then no workouts: the next week breaks it, and the weeks after are missed.
     await render('2026-06-01T12:00:00', [trained('2026-05-11')])
     expect(marks().map(b => b.getAttribute('aria-label'))).toEqual([
       'Week of 1 Jun: missed',

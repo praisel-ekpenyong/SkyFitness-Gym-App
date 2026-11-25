@@ -22,7 +22,7 @@ const KEY = 'state'
 let dbp = null
 
 function openDB() {
-  if (!('indexedDB' in globalThis)) return null   // tests / very old browsers: mirror is off
+  if (!('indexedDB' in globalThis)) return null
   if (!dbp) {
     dbp = new Promise((resolve, reject) => {
       const req = indexedDB.open(DB, 1)
@@ -83,7 +83,6 @@ const DRAIN_MS = 800
 let tm = null
 let pending = null
 
-// Ids of mirrors whose latest write failed. The localStorage copy is still good; this is the "insurance is down" signal.
 const failedMirrors = new Set()
 
 export function isMirrorFailing() {
@@ -94,7 +93,6 @@ export function __resetMirrorFailuresForTests() {
   failedMirrors.clear()
 }
 
-// Every mirror write goes through here so a failure, sync or async, is recorded and never unhandled.
 function writeToSink(sink, snapshot) {
   try {
     const r = sink.write(snapshot)
@@ -128,8 +126,6 @@ function isStorageDenied(e) {
   const code = e.code
   if (name === 'QuotaExceededError' || name === 'NS_ERROR_DOM_QUOTA_REACHED' || code === 22 || code === 1014) return true
   if (name === 'SecurityError' || name === 'NotAllowedError' || code === 18 || code === 1000) return true
-  // Last resort: message sniffing, DOMExceptions only — a programmer TypeError
-  // that happens to mention e.g. "permission" must stay loud, not degrade.
   if (typeof DOMException !== 'function' || !(e instanceof DOMException)) return false
   const msg = String(e.message || '').toLowerCase()
   return DENIED_MSGS.some(m => msg.includes(m))
@@ -154,7 +150,6 @@ export function __setLocalWriteForTests(fn) {
   localWriteImpl = fn || ((key, value) => localStorage.setItem(key, value))
 }
 
-// The caller stamps `_ts`; save only reads its argument.
 export function save(snapshot) {
   try {
     localWriteImpl(LOCAL_KEY, JSON.stringify(snapshot))
@@ -187,7 +182,9 @@ async function requestPersistenceOnce(manager) {
     if (localStorage.getItem(PERSIST_ASKED_KEY)) return
     localStorage.setItem(PERSIST_ASKED_KEY, '1')
   } catch (e) { return }
-  try { if ((await manager.persisted?.()) === true) return } catch (e) { /* ask anyway */ }
+  let alreadyPersisted = false
+  try { alreadyPersisted = (await manager.persisted?.()) === true } catch { alreadyPersisted = false }
+  if (alreadyPersisted) return
   await requestPersistence(manager)
 }
 

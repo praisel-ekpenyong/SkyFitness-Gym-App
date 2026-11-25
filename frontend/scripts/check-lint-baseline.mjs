@@ -1,13 +1,3 @@
-// The oxlint ratchet (ADR 0034). Runs oxlint type-aware (oxlint-tsgolint, against
-// <root>/tsconfig.json, ADR 0035), counts hits per file per rule, and
-// compares them with lint-baseline.json ({ "<path>": { "<rule>": <count> } }).
-// Fails on a hit the baseline does not cover, and on a stale entry (a recorded
-// count above the real count), so a fix also lowers the file. A file not in the baseline must be clean.
-//
-//   node scripts/check-lint-baseline.mjs [--write] [--root <dir>]
-//
-// --write (npm run lint:baseline) lowers each entry to its real count and drops the
-// ones that reach 0. It never raises a count or adds an entry: a new hit is fixed.
 import { spawnSync } from 'node:child_process'
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
@@ -22,7 +12,6 @@ function option(name) {
   return i === -1 ? undefined : process.argv[i + 1]
 }
 
-// `eslint(no-unused-vars)` -> `eslint/no-unused-vars`
 const ruleName = code => code.replace(/^([^(]+)\((.+)\)$/, '$1/$2')
 
 function lint(root) {
@@ -68,7 +57,6 @@ function compare(actual, recorded) {
   return problems
 }
 
-// Each recorded entry at min(recorded, real), 0s dropped, keys sorted for stable diffs.
 function lowerBaseline(actual, recorded) {
   const next = {}
   for (const path of Object.keys(recorded).sort()) {

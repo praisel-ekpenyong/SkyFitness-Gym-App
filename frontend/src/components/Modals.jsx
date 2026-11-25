@@ -9,7 +9,6 @@ function Sheet({ sheet, covered }) {
   const previousFocus = useRef(null)
   const titleId = useId()
 
-  // A dialog is named by its first h2/h3; one without a heading must pass a label to openSheet.
   useLayoutEffect(() => {
     const dialog = ref.current || centerRef.current
     if (!dialog) return
@@ -172,8 +171,6 @@ export default function Modals() {
   const modalRoot = useRef(null)
   const open = sheets.length > 0
 
-  // Everything outside the dialogs goes inert while one is open; [data-over-modals] (the toast) stays live.
-  // Siblings mounted while a dialog is open go inert too.
   useLayoutEffect(() => {
     if (!open || !modalRoot.current) return
     const made = new Set()

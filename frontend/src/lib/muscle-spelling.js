@@ -1,5 +1,3 @@
-// Muscle spellings shared by the catalogue overlay, the shoulder-head rewrite
-// and the muscle lookup. Imports nothing, so every one of them can use it.
 
 /**
  * Normalises a muscle spelling for comparison.

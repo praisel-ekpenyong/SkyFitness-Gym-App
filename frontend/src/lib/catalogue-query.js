@@ -143,8 +143,6 @@ function compareChosenUsage(a, b, usage) {
   return String(a.n || '').localeCompare(String(b.n || ''))
 }
 
-// Workout usage is cached per Workouts array, so typing in the picker does not
-// re-walk the log; Routines are few and counted on every call.
 /** @type {WeakMap<Workout[], Record<string, number>>} */
 const workoutUsageCache = new WeakMap()
 

@@ -1,4 +1,3 @@
-// Five useState calls: one over the cap, for check-frontend-state.test.mjs.
 import { useState } from 'react'
 
 export function Over() {

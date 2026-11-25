@@ -3,8 +3,6 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
-// CODING_STANDARDS.md "The state caps", rule 3: subscribe to a slice, never the whole
-// store, and return no fresh [] or {} from a selector.
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const eslint = new ESLint({ cwd: root })
 
@@ -13,7 +11,6 @@ async function messages(code) {
   return r.messages.filter(m => m.ruleId === 'no-restricted-syntax')
 }
 
-// The first lint loads the whole config, which can pass the 5 s default under load.
 describe('store selector rules', { timeout: 30000 }, () => {
   it.each([
     ['useStore()', 'const { S } = useStore()'],

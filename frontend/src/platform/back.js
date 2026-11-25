@@ -1,5 +1,4 @@
 // Capacitor's BridgeActivity does not handle back at all — without a JS listener the activity simply finishes.
-// Once a `backButton` listener exists, the plugin stops falling through to finish() — back can then only leave the app through App.exitApp().
 import { MOBILE } from './mobile.js'
 import { useUI } from '../store/useUI.js'
 import { t } from '../lib/i18n.js'
