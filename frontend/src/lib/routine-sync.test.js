@@ -94,7 +94,7 @@ describe('diffRoutineWithSession', () => {
   })
 
   describe('added exercises', () => {
-    it('detects added exercises and formats descriptor with +', () => {
+    it('detects added exercises as an added change', () => {
       const routine = { id: 'r1', name: 'Push', ex: [{ ...ex1 }] }
       const session = {
         id: 's1',
@@ -103,14 +103,14 @@ describe('diffRoutineWithSession', () => {
       }
       const res = diffRoutineWithSession(routine, session)
       expect(res.hasDiff).toBe(true)
-      expect(res.changes).toContain('+ Barbell Incline Bench Press')
+      expect(res.changes).toContainEqual({ kind: 'added', ids: ['0026'] })
       expect(res.syncedEx).toHaveLength(2)
       expect(res.syncedEx[1].id).toBe(ex2.id)
     })
   })
 
   describe('removed exercises', () => {
-    it('detects removed exercises and formats descriptor with -', () => {
+    it('detects removed exercises as a removed change', () => {
       const routine = { id: 'r1', name: 'Push', ex: [{ ...ex1 }, { ...ex2 }] }
       const session = {
         id: 's1',
@@ -119,14 +119,14 @@ describe('diffRoutineWithSession', () => {
       }
       const res = diffRoutineWithSession(routine, session)
       expect(res.hasDiff).toBe(true)
-      expect(res.changes).toContain('\u2212 Barbell Incline Bench Press')
+      expect(res.changes).toContainEqual({ kind: 'removed', ids: ['0026'] })
       expect(res.syncedEx).toHaveLength(1)
       expect(res.syncedEx[0].id).toBe(ex1.id)
     })
   })
 
   describe('replaced exercises', () => {
-    it('detects in-place exercise replacement and formats ⇄ descriptor', () => {
+    it('detects in-place exercise replacement as a replaced change, old id then new', () => {
       const routine = { id: 'r1', name: 'Push', ex: [{ ...ex1 }, { ...ex2 }] }
       const session = {
         id: 's1',
@@ -135,7 +135,7 @@ describe('diffRoutineWithSession', () => {
       }
       const res = diffRoutineWithSession(routine, session)
       expect(res.hasDiff).toBe(true)
-      expect(res.changes).toContain('⇄ Replaced Barbell Incline Bench Press → Cable Flyes')
+      expect(res.changes).toContainEqual({ kind: 'replaced', ids: ['0026', '0027'] })
       expect(res.syncedEx).toHaveLength(2)
       expect(res.syncedEx[0].id).toBe(ex1.id)
       expect(res.syncedEx[1].id).toBe(ex3.id)
@@ -143,7 +143,7 @@ describe('diffRoutineWithSession', () => {
   })
 
   describe('reordered exercises', () => {
-    it('detects changed exercise sequence and formats ⇅ Reordered descriptor', () => {
+    it('detects changed exercise sequence as a reordered change', () => {
       const routine = { id: 'r1', name: 'Push', ex: [{ ...ex1 }, { ...ex2 }, { ...ex3 }] }
       const session = {
         id: 's1',
@@ -152,7 +152,7 @@ describe('diffRoutineWithSession', () => {
       }
       const res = diffRoutineWithSession(routine, session)
       expect(res.hasDiff).toBe(true)
-      expect(res.changes).toContain('⇅ Reordered')
+      expect(res.changes).toContainEqual({ kind: 'reordered', ids: [] })
       expect(res.syncedEx.map(e => e.id)).toEqual([ex2.id, ex1.id, ex3.id])
     })
   })
@@ -167,7 +167,7 @@ describe('diffRoutineWithSession', () => {
       }
       const res = diffRoutineWithSession(routine, session)
       expect(res.hasDiff).toBe(true)
-      expect(res.changes.some(c => c.includes('Superset:') && c.includes('Barbell Bench Press'))).toBe(true)
+      expect(res.changes).toContainEqual({ kind: 'superset', ids: ['0025', '0026'] })
       expect(res.syncedEx[0].sg).toBe('sg-1')
       expect(res.syncedEx[1].sg).toBe('sg-1')
     })
@@ -185,7 +185,7 @@ describe('diffRoutineWithSession', () => {
       }
       const res = diffRoutineWithSession(routine, session)
       expect(res.hasDiff).toBe(true)
-      expect(res.changes.some(c => c.toLowerCase().includes('unlinked') || c.toLowerCase().includes('unpaired'))).toBe(true)
+      expect(res.changes).toContainEqual({ kind: 'unlinkedSuperset', ids: ['0025', '0026'] })
       expect(res.syncedEx[0].sg).toBeUndefined()
       expect(res.syncedEx[1].sg).toBeUndefined()
     })
@@ -203,8 +203,8 @@ describe('diffRoutineWithSession', () => {
       }
       const res = diffRoutineWithSession(routine, session)
       expect(res.hasDiff).toBe(true)
-      expect(res.changes).toContain('⇄ Replaced Barbell Incline Bench Press → Cable Flyes')
-      expect(res.changes.filter(c => c.toLowerCase().includes('superset'))).toHaveLength(0)
+      expect(res.changes).toContainEqual({ kind: 'replaced', ids: ['0026', '0027'] })
+      expect(res.changes.filter(c => c.kind === 'superset' || c.kind === 'unlinkedSuperset')).toHaveLength(0)
       expect(res.syncedEx[0].sg).toBe('sg-1')
       expect(res.syncedEx[1].sg).toBe('sg-1')
     })
@@ -220,7 +220,7 @@ describe('diffRoutineWithSession', () => {
       }
       const res = diffRoutineWithSession(routine, session)
       expect(res.hasDiff).toBe(true)
-      expect(res.changes).toContain('Barbell Bench Press: 3 → 4 sets')
+      expect(res.changes).toContainEqual({ kind: 'sets', ids: ['0025'], from: 3, to: 4 })
       expect(res.syncedEx[0].sets).toBe(4)
     })
 
@@ -233,7 +233,7 @@ describe('diffRoutineWithSession', () => {
       }
       const res = diffRoutineWithSession(routine, session)
       expect(res.hasDiff).toBe(true)
-      expect(res.changes).toContain('Barbell Bench Press: 3 → 2 sets')
+      expect(res.changes).toContainEqual({ kind: 'sets', ids: ['0025'], from: 3, to: 2 })
       expect(res.syncedEx[0].sets).toBe(2)
     })
 
@@ -273,7 +273,7 @@ describe('diffRoutineWithSession', () => {
       }
       const res = diffRoutineWithSession(routine, session)
       expect(res.hasDiff).toBe(true)
-      expect(res.changes).toEqual(['Barbell Bench Press: 3 → 4 sets'])
+      expect(res.changes).toEqual([{ kind: 'sets', ids: ['0025'], from: 3, to: 4 }])
       expect(res.syncedEx[0].sets).toBe(4)
       expect(res.syncedEx[1].sets).toBe(3)
     })
@@ -287,7 +287,7 @@ describe('diffRoutineWithSession', () => {
       }
       const res = diffRoutineWithSession(routine, session)
       expect(res.hasDiff).toBe(true)
-      expect(res.changes).toContain('+ Barbell Incline Bench Press')
+      expect(res.changes).toContainEqual({ kind: 'added', ids: ['0026'] })
       expect(res.syncedEx[1].sets).toBe(4)
     })
   })
@@ -319,7 +319,7 @@ describe('diffRoutineWithSession', () => {
   })
 
   describe('exercise notes diffing & routine projection', () => {
-    it('detects added note and generates "{name}: note updated" descriptor', () => {
+    it('detects added note as a noteUpdated change', () => {
       const routine = { id: 'r1', name: 'Push', ex: [{ ...ex1 }] }
       const session = {
         id: 's1',
@@ -328,11 +328,11 @@ describe('diffRoutineWithSession', () => {
       }
       const res = diffRoutineWithSession(routine, session)
       expect(res.hasDiff).toBe(true)
-      expect(res.changes).toContain('Barbell Bench Press: note updated')
+      expect(res.changes).toContainEqual({ kind: 'noteUpdated', ids: ['0025'] })
       expect(res.syncedEx[0].notes).toBe('Seat height 5, pin 8')
     })
 
-    it('detects modified note and generates "{name}: note updated" descriptor', () => {
+    it('detects modified note as a noteUpdated change', () => {
       const routine = { id: 'r1', name: 'Push', ex: [{ ...ex1, notes: 'Seat height 4' }] }
       const session = {
         id: 's1',
@@ -341,11 +341,11 @@ describe('diffRoutineWithSession', () => {
       }
       const res = diffRoutineWithSession(routine, session)
       expect(res.hasDiff).toBe(true)
-      expect(res.changes).toContain('Barbell Bench Press: note updated')
+      expect(res.changes).toContainEqual({ kind: 'noteUpdated', ids: ['0025'] })
       expect(res.syncedEx[0].notes).toBe('Seat height 5')
     })
 
-    it('detects cleared note and generates "{name}: note removed" descriptor', () => {
+    it('detects cleared note as a noteRemoved change', () => {
       const routine = { id: 'r1', name: 'Push', ex: [{ ...ex1, notes: 'Seat height 5' }] }
       const session = {
         id: 's1',
@@ -354,7 +354,7 @@ describe('diffRoutineWithSession', () => {
       }
       const res = diffRoutineWithSession(routine, session)
       expect(res.hasDiff).toBe(true)
-      expect(res.changes).toContain('Barbell Bench Press: note removed')
+      expect(res.changes).toContainEqual({ kind: 'noteRemoved', ids: ['0025'] })
       expect(res.syncedEx[0].notes).toBeUndefined()
     })
 
@@ -367,7 +367,7 @@ describe('diffRoutineWithSession', () => {
       }
       const res = diffRoutineWithSession(routine, session)
       expect(res.hasDiff).toBe(true)
-      expect(res.changes).toContain('Barbell Bench Press: note removed')
+      expect(res.changes).toContainEqual({ kind: 'noteRemoved', ids: ['0025'] })
       expect(res.syncedEx[0].notes).toBeUndefined()
     })
 
@@ -409,8 +409,8 @@ describe('diffRoutineWithSession', () => {
       }
       const res = diffRoutineWithSession(routine, session)
       expect(res.hasDiff).toBe(true)
-      expect(res.changes).toContain('+ Barbell Incline Bench Press')
-      expect(res.changes.filter(c => c.includes('note'))).toHaveLength(0)
+      expect(res.changes).toContainEqual({ kind: 'added', ids: ['0026'] })
+      expect(res.changes.filter(c => c.kind === 'noteUpdated' || c.kind === 'noteRemoved')).toHaveLength(0)
       expect(res.syncedEx).toHaveLength(2)
       expect(res.syncedEx[1].notes).toBe('Incline bench at 30°')
     })
@@ -461,7 +461,7 @@ describe('diffRoutineWithSession', () => {
       }
       const resModified = diffRoutineWithSession(routine, modifiedSecondSession)
       expect(resModified.hasDiff).toBe(true)
-      expect(resModified.changes).toEqual(['Barbell Bench Press: note updated'])
+      expect(resModified.changes).toEqual([{ kind: 'noteUpdated', ids: ['0025'] }])
       expect(resModified.syncedEx[0].notes).toBe('Flat bench cue')
       expect(resModified.syncedEx[1].notes).toBe('Close-grip bench cue (elbows tucked)')
 
@@ -475,7 +475,7 @@ describe('diffRoutineWithSession', () => {
       }
       const resCleared = diffRoutineWithSession(routine, clearedFirstSession)
       expect(resCleared.hasDiff).toBe(true)
-      expect(resCleared.changes).toEqual(['Barbell Bench Press: note removed'])
+      expect(resCleared.changes).toEqual([{ kind: 'noteRemoved', ids: ['0025'] }])
       expect(resCleared.syncedEx[0].notes).toBeUndefined()
       expect(resCleared.syncedEx[1].notes).toBe('Close-grip bench cue')
     })

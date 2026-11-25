@@ -67,8 +67,8 @@ describe('FinishSummary Routine Sync UI Integration', () => {
     routineId: 'routine-push',
     routineName: 'Push Day',
     changes: [
-      '+ Incline Dumbbell Press',
-      'Bench Press: 3 → 4 sets',
+      { kind: 'added', ids: ['0026'] },
+      { kind: 'sets', ids: ['0025'], from: 3, to: 4 },
     ],
     syncedEx: [
       { id: '0025', sets: 4 },
@@ -94,8 +94,8 @@ describe('FinishSummary Routine Sync UI Integration', () => {
 
     const badges = Array.from(card.querySelectorAll('.tag'))
     expect(badges.length).toBe(2)
-    expect(badges[0].textContent).toBe('+ Incline Dumbbell Press')
-    expect(badges[1].textContent).toBe('Bench Press: 3 → 4 sets')
+    expect(badges[0].textContent).toBe('+ Barbell Bench Squat')
+    expect(badges[1].textContent).toBe('Barbell Bench Press: 3 → 4 sets')
 
     const niceBtn = Array.from(container.querySelectorAll('button')).find(b => b.textContent.includes('Done'))
     expect(niceBtn).not.toBeNull()

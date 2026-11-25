@@ -7,6 +7,7 @@ import { fmtDate, todayISO } from '../lib/dates.js'
 import { latestWeighIn } from '../lib/bodyweight.js'
 import { sessionView } from '../lib/active-workout.js'
 import { seedForReplacement } from '../lib/workout-model.js'
+import { exerciseDisplayName } from '../lib/routine-sync.js'
 import { workSets } from '../lib/workout-sets.js'
 import { workoutSummary } from '../lib/workout-summary.js'
 import { sessionProgressionItems, prescriptionStyle } from '../lib/progression.js'
@@ -20,6 +21,9 @@ import { loadOfWorkouts, MUSCLE_NAME } from '../lib/muscles.js'
 import { confirmSheet } from './confirm.jsx'
 import { bwSheet } from './bodyweight.jsx'
 import { exercisePicker, exConfigSheet } from './catalogue.jsx'
+
+/** @typedef {import('../lib/types.js').Routine} Routine */
+/** @typedef {import('../lib/types.js').Entry} Entry */
 
 const S = () => useStore.getState().S
 const ui = () => useUI.getState()
@@ -118,6 +122,22 @@ function useFigureFit() {
 }
 
 /**
+ * The label of each kind of Routine sync change, from the display names of its exercise ids.
+ * @type {Record<string, (names: string[], change: { from?: number, to?: number }) => string>}
+ */
+const SYNC_LABEL = {
+  replaced: ([from, to]) => t('⇄ Replaced {0} → {1}', from, to),
+  added: ([name]) => t('+ {0}', name),
+  removed: ([name]) => t('\u2212 {0}', name),
+  reordered: () => t('⇅ Reordered'),
+  superset: names => t('Superset: {0}', names.join(' + ')),
+  unlinkedSuperset: names => t('Unlinked superset: {0}', names.join(' + ')),
+  sets: ([name], { from, to }) => t('{0}: {1} → {2} sets', name, from, to),
+  noteUpdated: ([name]) => t('{0}: note updated', name),
+  noteRemoved: ([name]) => t('{0}: note removed', name),
+}
+
+/**
  * Finish summary; shows duration, volume, Records, and trained muscles.
  *
  * @param {Object} w Finished workout.
@@ -135,6 +155,10 @@ export function FinishSummary({ w, prs, e1prs = [], routineSync = null, close })
   const sum = workoutSummary(st, w)
   const warmUps = sum.warmups
   const [measureFigure, tight] = useFigureFit()
+  /** @type {Routine | undefined} */
+  const syncRoutine = st.routines?.find((/** @type {Routine} */ r) => r.id === routineSync?.routineId)
+  /** @param {string} id @returns {string} */
+  const syncName = id => exerciseDisplayName(id, w.entries.find((/** @type {Entry} */ e) => e.id === id) ?? syncRoutine?.ex.find(e => e.id === id))
 
   const onDismiss = () => {
     if (syncChecked && routineSync?.routineId && routineSync?.syncedEx) {
@@ -228,7 +252,7 @@ export function FinishSummary({ w, prs, e1prs = [], routineSync = null, close })
           <div className="row sync-tags">
             {routineSync.changes.map((ch, idx) => (
               <span key={idx} className="tag nocap">
-                {ch}
+                {SYNC_LABEL[ch.kind](ch.ids.map(syncName), ch)}
               </span>
             ))}
           </div>
