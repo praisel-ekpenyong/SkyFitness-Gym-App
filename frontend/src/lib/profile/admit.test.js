@@ -20,6 +20,12 @@ function sourceFiles() {
 }
 
 describe('admit', () => {
+  it('throws on a non-record payload instead of returning it unchanged', () => {
+    for (const raw of [null, 'x', 5, []]) {
+      expect(() => admit(raw), `admit(${JSON.stringify(raw)})`).toThrow(Error)
+    }
+  })
+
   it('maps a legacy showRir flag onto effort and drops the flag', () => {
     const raw = { showRir: true, unit: 'lb', topW: { a: 100 }, asked: true, workouts: [{ id: 'w1' }] }
     const sealed = admit(raw)
