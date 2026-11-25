@@ -64,4 +64,15 @@ describe('boot lands straight in an empty Sky log', () => {
 
     expect(fetch).not.toHaveBeenCalled()
   })
+
+  it('paints the page in the Profile\'s theme and repaints when the lifter switches it', async () => {
+    await boot()
+    expect(document.documentElement.dataset.theme).toBe('dark')
+
+    await act(async () => { useStore.getState().update(s => { s.theme = 'light' }) })
+    expect(document.documentElement.dataset.theme).toBe('light')
+
+    await act(async () => { useStore.getState().update(s => { s.theme = 'dark' }) })
+    expect(document.documentElement.dataset.theme).toBe('dark')
+  })
 })

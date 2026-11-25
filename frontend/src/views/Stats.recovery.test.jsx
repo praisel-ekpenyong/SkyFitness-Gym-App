@@ -1,3 +1,4 @@
+// @vitest-environment happy-dom
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Window } from 'happy-dom'
@@ -5,6 +6,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { recapSheet } from '../sheets/history.jsx'
 import Stats from './Stats.jsx'
 import { isoOf } from '../lib/dates.js'
+import { useStore } from '../store/useStore.js'
+import { DEF, normalizeState } from '../lib/profile/index.js'
 
 const DAY = 86400000
 const HOUR = 3600000
@@ -19,9 +22,6 @@ const mocks = vi.hoisted(() => ({
   },
 }))
 
-vi.mock('../store/useStore.js', () => ({
-  useStore: selector => selector({ S: mocks.S }),
-}))
 vi.mock('react-router-dom', () => ({ useNavigate: () => () => {} }))
 vi.mock('../sheets/bodyweight.jsx', () => ({ bwSheet: () => {}, goalSheet: () => {} }))
 vi.mock('../sheets/history.jsx', () => ({
@@ -113,6 +113,7 @@ function installDom() {
 }
 
 async function mountStats() {
+  useStore.setState({ S: normalizeState({ ...JSON.parse(JSON.stringify(DEF)), ...mocks.S }, Date.now()) })
   installDom()
   await act(async () => { root.render(React.createElement(Stats)) })
 }

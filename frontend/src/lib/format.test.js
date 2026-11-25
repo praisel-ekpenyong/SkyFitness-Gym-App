@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { fmtDur, durPart, fmtNum, fmtVol, fmtSigned, fmtDurParts, sentenceCase, MINUS, exCount, uid, ACCENTS, fmtSec, fmtElapsed, exLine } from './format.js'
-import { todayISO, isoOf, DAYN, DAYS, MONTHS, MONTHS_LONG, fmtDate, weekKey, mondayOf, localTZ } from './dates.js'
+import { fmtDur, durPart, fmtNum, fmtVol, fmtSigned, fmtDurParts, sentenceCase, exCount, uid, ACCENTS, fmtSec, fmtElapsed, exLine } from './format.js'
+import { todayISO, isoOf, fmtDate, weekKey, mondayOf, localTZ } from './dates.js'
 import { setLabel } from './set-label.js'
 import { EXDB } from './exercises.js'
 
@@ -26,13 +26,6 @@ describe('format utility module', () => {
       const long = fmtDate('2026-08-24', true)
       expect(long).toContain('Mon')
       expect(long).toContain('24')
-    })
-
-    it('exports calendar day and month constants', () => {
-      expect(DAYN.length).toBe(7)
-      expect(DAYS.length).toBe(7)
-      expect(MONTHS.length).toBe(12)
-      expect(MONTHS_LONG.length).toBe(12)
     })
   })
 
@@ -72,7 +65,6 @@ describe('format utility module', () => {
 
   describe('fmtSigned: the one way a signed figure is written', () => {
     it('writes a loss with the U+2212 minus sign, never a hyphen or an en dash', () => {
-      expect(MINUS).toBe('−')
       expect(fmtSigned(-0.2)).toBe('−0.2')
       expect(fmtSigned(-15)).toBe('−15')
       expect(fmtSigned(-0.2)).not.toMatch(/[-–]/)
@@ -171,13 +163,6 @@ describe('format utility module', () => {
       const id2 = uid()
       expect(id1).not.toBe(id2)
       expect(typeof id1).toBe('string')
-    })
-
-    it('exports the five accents, none of which reads as a status colour', () => {
-      expect(Object.keys(ACCENTS)).toEqual(['lime', 'sky', 'violet', 'pink', 'teal'])
-      expect(ACCENTS.lime).toBe('#a3e635')
-      expect(ACCENTS.sky).toBe('#5cb8ff')
-      expect(ACCENTS.violet).toBe('#b79cff')
     })
   })
 

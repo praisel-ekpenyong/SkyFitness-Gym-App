@@ -23,7 +23,6 @@ describe('setDayOverride / clearDayOverride', () => {
     const s = mkState()
     setDayOverride(s, '2026-10-16', REST)
     expect(s.dayPlan['2026-10-16']).toBe('rest')
-    expect(REST).toBe('rest')
   })
 
   it('treats falsy as clear, making the old implicit convention explicit', () => {

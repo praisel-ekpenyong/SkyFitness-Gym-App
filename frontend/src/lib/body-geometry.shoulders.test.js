@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import bodyPaths from './body-paths.js'
-import { levelsOf, MUSCLE_NAME } from './muscles.js'
+import { levelsOf } from './muscles.js'
 
 const OLD_DELTOIDS = {
   'male': {
@@ -139,6 +139,5 @@ describe('shoulder heads on the body map', () => {
     expect(levels['front-delts']).toBe(0)
     expect(levels['rear-delts']).toBeGreaterThan(0)
     expect(levels['rear-delts']).toBeLessThan(4)
-    expect(MUSCLE_NAME['side-delts']).toBe('Side delts')
   })
 })

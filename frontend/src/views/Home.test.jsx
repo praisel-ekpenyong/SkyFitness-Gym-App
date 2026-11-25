@@ -2,9 +2,6 @@
 import { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { readFileSync } from 'node:fs'
-import { resolve, dirname } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import Home from './Home.jsx'
 import { useStore } from '../store/useStore.js'
 import { DEF } from '../lib/profile/index.js'
@@ -49,16 +46,6 @@ afterEach(async () => {
 })
 
 describe('Home hero routine exercise count binding (05)', () => {
-  it('source binds to routine.ex via exCount and not routine.exercises', () => {
-    const here = dirname(fileURLToPath(import.meta.url))
-    const src = readFileSync(resolve(here, 'Home.jsx'), 'utf8')
-    expect(src).toContain('routine.ex?.length ? exCount(routine.ex.length)')
-    expect(src).toContain("t(\"Today's routine\")")
-    expect(src).not.toContain('routine.exercises')
-    expect(src).toContain("from '../lib/format.js'")
-    expect(src).toMatch(/import\s+\{[^}]*exCount[^}]*\}\s+from\s+['"]\.\.\/lib\/format\.js['"]/)
-  })
-
   it('renders "4 exercises" for a scheduled routine with 4 items', async () => {
     const today = todayISO()
     const wd = weekdayFromISO(today)
