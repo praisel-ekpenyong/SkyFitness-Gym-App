@@ -26,7 +26,7 @@ function option(name) {
 const ruleName = code => code.replace(/^([^(]+)\((.+)\)$/, '$1/$2')
 
 function lint(root) {
-  const r = spawnSync(process.execPath, [oxlintBin, '--type-aware', '--tsconfig', join(root, 'tsconfig.json'), '--format', 'json', '-c', join(root, '.oxlintrc.json'), '.'], { cwd: root, encoding: 'utf8' })
+  const r = spawnSync(process.execPath, [oxlintBin, '--type-aware', '--format', 'json', '-c', join(root, '.oxlintrc.json'), '.'], { cwd: root, encoding: 'utf8' })
   let report
   try { report = JSON.parse(r.stdout) } catch {
     throw new Error(`oxlint did not report JSON (exit ${r.status}):\n${r.stderr || r.stdout}`)
