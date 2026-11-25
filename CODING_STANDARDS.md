@@ -34,8 +34,9 @@ in review. Each rule is an imperative that names its one legal exception, and a
   selectors). Ten compiler rules are on at error (see "Render stays pure"): six
   with 0 hits (`refs` and `memo-dependencies` included), and `static-components` and
   `purity` baselined in `frontend/eslint-suppressions.json`.
-  `react-hooks/todo` stays off. The `no-restricted-syntax` selectors are not on
-  yet. A rule runs in one tool, never two.
+  `react-hooks/todo` stays off. The `no-restricted-syntax` selectors run from
+  one table in `frontend/eslint.config.js`, with their hits baselined in the same
+  suppressions file. A rule runs in one tool, never two.
 - **tsc** (strict, `allowJs`, `checkJs`) joins when `frontend/tsconfig.json`
   exists. Then oxlint adds its type-aware rows through `oxlint-tsgolint`.
 - **Vitest guard tests** (`npm test`) and `frontend/scripts/check-*.mjs`
@@ -70,12 +71,14 @@ load, and the message names the variable. Profile preferences (`restSec`,
 build flags that are not configuration, `import.meta.env.MODE` in `useStore.js`
 (Immer's test freeze) and `import.meta.env.DEV` in `components/Modals.jsx`.
 
-**Runs:** `frontend/src/lib/env.test.js` pins the defaults.
-**To add:** ESLint `no-restricted-syntax` selectors on
+**Runs:** `frontend/src/lib/env.test.js` pins the defaults. ESLint
+`no-restricted-syntax` selectors on
 `MemberExpression[object.type='MetaProperty'][property.name='env']` and on
-`process.env`, failing outside `lib/env.js`, `vite.config.js`, scripts and
-tests. The two build flags above are the allowlist, each with its reason in the
-config. No ratchet: the code is clean once those two are listed.
+`process.env` fail outside `lib/env.js`, `vite.config.js`, scripts and tests.
+The two build flags above are the allowlist, each with its reason in the
+config: `useStore.js` may read only `import.meta.env.MODE` and `Modals.jsx` only
+`import.meta.env.DEV`; any other `import.meta.env` read there fails.
+`frontend/scripts/env-lint.test.mjs` pins the allowlist. No ratchet.
 
 ## Active-workout effects
 
@@ -297,14 +300,14 @@ JSON backup restore, or CSV import — must pass through `admit` in
 
 Never inject raw objects directly into the store or storage. Exception: none.
 
-**Runs:** `admit-defaults.test.js`, `upgrades.test.js`, `workouts.test.js` and
-`restore-keys.test.js` under `frontend/src/lib/profile/`.
-**To add:** a test that walks `Object.keys(DEF)` and fails a Profile field that
-is in none of `PROFILE_CLEAN`, a structural list, or a pass-through list with a
-reason, so a new field forces a decision about cleaning
-(`frontend/src/lib/profile/profile-keys.test.js`). Today `PROFILE_CLEAN` cleans
-two fields and `normalizeState` hand-cleans five more, and readers defend
-themselves with 18 `|| 'kg'` fallbacks.
+**Runs:** `admit-defaults.test.js`, `upgrades.test.js`, `workouts.test.js`,
+`restore-keys.test.js` and `profile-keys.test.js` under
+`frontend/src/lib/profile/`. `profile-keys.test.js` walks `Object.keys(DEF)` and
+fails a Profile field that is in none of `PROFILE_CLEAN`, a structural list, or
+a pass-through list with a reason, so a new field forces a decision about
+cleaning. Of the 26 `DEF` keys, `PROFILE_CLEAN` cleans 9, 10 are structural
+(`normalizeState` resets them to their type) and 7 pass through. A hostile
+payload comes in through `normalizeState` as a clean Profile.
 
 ### Dual-write persistence
 
@@ -594,23 +597,23 @@ Set disagree); `lib/recovery.js` re-writes Epley with a different rep cap;
 `latestWorkSetAt` in `lib/training-log.js` re-implements `workoutTimestamp`;
 `round1` is defined five times (four copies); a day is spelled seven ways
 (`DAY_MS` in two files, `86400000`, `24 * 60 * 60 * 1000`).
-**To add:** ESLint `no-restricted-syntax` selectors, each failing outside its
-owner with a message naming the owner: `Identifier[name='LB_TO_KG']` and the
-literals `2.2046` and `0.4535` (`lib/import-csv.js`, `lib/bodyweight.js`);
-`LogicalExpression[right.value='kg']` (18 hits in `lib/`); the inline
+**Runs:** ESLint `no-restricted-syntax` selectors in `frontend/eslint.config.js`,
+each failing outside its owner with a message naming the owner:
+`Identifier[name='LB_TO_KG']` and the literals `2.2046` and `0.4535` (0 hits; the
+copies in `lib/import-csv.js` and `lib/bodyweight.js` are fixed);
+`LogicalExpression[right.value='kg']` (18 hits in 7 files, exempt in `lib/units.js`); the inline
 `Math.round(x * 10) / 10`, selector
 `BinaryExpression[operator='/'][right.value=10][left.callee.object.name='Math'][left.callee.property.name='round'][left.arguments.0.operator='*'][left.arguments.0.right.value=10]`
-(25 hits in 12 files outside `lib/units.js`, 4 of them `round1` definitions);
+(21 hits in 13 files outside `lib/units.js`);
 `(getDay() + 6) % 7`, selector
 `BinaryExpression[operator='%'][right.value=7][left.type='BinaryExpression'][left.operator='+'][left.right.value=6][left.left.callee.property.name='getDay']`
-(3 hits outside `lib/dates.js`: `components/Heatmap.jsx:36`,
-`sheets/history.jsx:139` and `views/Home.jsx:59`). All counts and selectors were
-run on 2026-11-24; the `% 7` selector does not hit `padded.length % 7`
-(`sheets/history.jsx:173`).
-Baseline each in `frontend/eslint-suppressions.json`, and fix the `LB_TO_KG`
-copies first because they hold real value drift. The `|| 'kg'` count falls as
-`unit` joins `PROFILE_CLEAN`. Epley and the timestamp copies are judgement
-calls, no tooth; a duplicate-code tool would be noise.
+(3 hits outside `lib/dates.js`: `components/Heatmap.jsx`, `sheets/history.jsx`
+and `views/Home.jsx`). The `% 7` selector does not hit `padded.length % 7`
+(`sheets/history.jsx`). Counts as of 2026-11-25. Every hit is baselined in
+`frontend/eslint-suppressions.json`; `frontend/scripts/owner-selectors.test.mjs`
+pins each selector and its owner. The `|| 'kg'` count falls as callers read the
+cleaned `S.unit`. Epley and the timestamp copies are judgement calls, no tooth;
+a duplicate-code tool would be noise.
 
 ### Local dates, never UTC
 
@@ -668,9 +671,9 @@ Formatting logic must never be duplicated across components:
   `components/Toast.jsx`.
 
 Exception: the owner files themselves.
-**To add:** ESLint `no-restricted-syntax` on `BinaryExpression[operator='%'][right.value=60]`,
-failing outside `lib/format.js` and `lib/dates.js` (clean today apart from the
-owner). The rest is a judgement call, no tooth.
+**Runs:** ESLint `no-restricted-syntax` on `BinaryExpression[operator='%'][right.value=60]`,
+failing outside `lib/format.js` and `lib/dates.js`, 0 suppressions. The rest is a
+judgement call, no tooth.
 
 ### Localization readiness
 
@@ -743,17 +746,11 @@ Sky is pure ECMAScript (`"type": "module"`). Use `import.meta.url`,
 (`__dirname`, `__filename`, `require`) or create shims named after them.
 Exception: none.
 
-**To add:** oxlint `eslint/no-restricted-globals` for `__dirname`, `__filename`
-and `require`. ESLint's `globals.node` hides them today. The rule has no
-exception for tests: fix these hits first (re-run 2026-11-24, oxlint finds
-exactly these three): `components/Icon.test.js:6`, `sw.test.js:11` and
-`index-html.test.js:29` use the global `__dirname`. The ban on shims also hits
-`docs.test.js`, `deployment.test.js` and `lib/env.test.js`, which declare their
-own `const __dirname`, and `scripts/test-deploy-preview.mjs` (same shim) and
-`scripts/review/lib.mjs` (`const require = createRequire(...)`); replace each
-with `import.meta.dirname` (no tool finds the shims until an ESLint
-`no-restricted-syntax` selector on `VariableDeclarator[id.name=/^(__dirname|__filename|require)$/]`
-is added).
+**Runs:** oxlint `eslint/no-restricted-globals` bans `__dirname`, `__filename`
+and `require`; oxlint skips tests, so ESLint `no-restricted-globals` bans them in
+test files. ESLint `no-restricted-syntax` on
+`VariableDeclarator[id.name=/^(__dirname|__filename|require)$/]` bans shims. No
+baseline entries.
 
 ### Session performance: nothing starves the lifter
 
@@ -804,10 +801,11 @@ our own modules. Exception: a module in `platform/`, which is the boundary. A
 test must be able to fail for a bug a lifter or a caller would see. If you can't
 name the bug, don't write the test (a judgement call, no tooth).
 
-**To add:** an ESLint rule in the test files, scoped in
+**Runs:** ESLint `no-restricted-syntax` in the test files (`noOwnModuleMock` in
+`frontend/eslint.config.js`), scoped in
 [`docs/TESTING_STANDARDS.md`](./docs/TESTING_STANDARDS.md): fail `vi.mock` of a
-relative path that is not in `platform/`, with the selector run on 2026-11-24:
-39 hits in 11 files, baseline in `frontend/eslint-suppressions.json`.
+relative path that is not in `platform/`. 38 hits in 11 files (2026-11-25) are
+baselined in `frontend/eslint-suppressions.json`.
 
 Worked examples, the seam table, and the red flags:
 [`docs/TESTING_STANDARDS.md`](./docs/TESTING_STANDARDS.md).
@@ -840,13 +838,13 @@ names every one:
 
 | Tool | Runs today | To add |
 |---|---|---|
-| Vitest guard tests, in `npm test` | `purity.test.js`, `import-cycles.test.js`, `design-tokens.test.js`, `design-lint.test.js`, `env.test.js`, `i18n-lint.test.js`, `sheets/dialog-names.test.jsx`, `docs.test.js`, `platform/storage.test.js` (the 800ms debounce), `comments.test.js`, `effect-types.test.js`, the `warmArt` test (`App.warm-art.test.jsx`), the `flush()` test (`store/useStore.flush.test.jsx`), the save round-trip tests (`sheets/catalogue.test.jsx`, `views/RoutineEdit.test.jsx`) | `profile-keys.test.js` |
-| ESLint 10, `npm run lint` after the oxlint ratchet (CI only) | `react-hooks/set-state-in-effect`, `react-hooks/no-deriving-state-in-effects`, `react-hooks/set-state-in-render`, `react-hooks/immutability`, `react-hooks/preserve-manual-memoization`, `react-hooks/globals`, all at error, 0 hits. `static-components` (9 hits, 2 files) and `purity` (5), at error with `frontend/eslint-suppressions.json`. `react-hooks/todo` stays off. `no-restricted-syntax` One-owner selectors (`LB_TO_KG` and the `2.2046` and `0.4535` literals at 0 suppressions, inline `Math.round(x * 10) / 10`, `(getDay() + 6) % 7`), in `frontend/eslint.owner-selectors.js` | the remaining `no-restricted-syntax` selectors (including `vi.mock` scope). Ratchet: `frontend/eslint-suppressions.json` |
+| Vitest guard tests, in `npm test` | `purity.test.js`, `import-cycles.test.js`, `design-tokens.test.js`, `design-lint.test.js`, `env.test.js`, `i18n-lint.test.js`, `sheets/dialog-names.test.jsx`, `docs.test.js`, `platform/storage.test.js` (the 800ms debounce), `comments.test.js`, `effect-types.test.js`, the `warmArt` test (`App.warm-art.test.jsx`), the `flush()` test (`store/useStore.flush.test.jsx`), the save round-trip tests (`sheets/catalogue.test.jsx`, `views/RoutineEdit.test.jsx`), `lib/profile/profile-keys.test.js` | |
+| ESLint 10, `npm run lint` after the oxlint ratchet (CI only) | `react-hooks/set-state-in-effect`, `react-hooks/no-deriving-state-in-effects`, `react-hooks/set-state-in-render`, `react-hooks/immutability`, `react-hooks/preserve-manual-memoization`, `react-hooks/globals`, all at error, 0 hits. `static-components` (9 hits, 2 files) and `purity` (5), at error with `frontend/eslint-suppressions.json`. `react-hooks/todo` stays off. `no-restricted-syntax` selectors, one table in `frontend/eslint.config.js`: One-owner (`LB_TO_KG` and the `2.2046` and `0.4535` literals at 0 suppressions, inline `Math.round(x * 10) / 10`, `(getDay() + 6) % 7`, `\|\| 'kg'`), `% 60`, local dates, store selectors, the `lib/` clock, `import.meta.env` and `process.env`, the CommonJS shim, and `vi.mock` scope in tests. Ratchet: `frontend/eslint-suppressions.json` | nothing |
 | oxlint, ratchet in the pre-commit hook and in `npm run lint` (CI) | `correctness` category, `react/rules-of-hooks`, `react/exhaustive-deps`, `no-throw-literal`, `prefer-promise-reject-errors`, `complexity`, restricted globals and properties (including `Date.now` in `lib/`), `unicorn/no-array-sort`, `unicorn/no-array-reverse`, `react/no-array-index-key`, `jsx-a11y/click-events-have-key-events`, `jsx-a11y/no-static-element-interactions`, `jsx-a11y/prefer-tag-over-role`, `jsx-a11y/no-autofocus`, all at error. Ratchet: `frontend/lint-baseline.json`, checked by `scripts/check-lint-baseline.mjs` with its failing fixture in `npm test` | nothing |
 | tsc | nothing | `tsconfig.json`, `npm run typecheck` in the hook and CI. Ratchet: `frontend/tsc-baseline.json` |
 | oxlint type-aware (`oxlint-tsgolint`) | nothing | `no-floating-promises`, `no-misused-promises`, `only-throw-error`, `switch-exhaustiveness-check`, `no-explicit-any`, `no-non-null-assertion`, `ban-ts-comment` |
 | `frontend/scripts/check-frontend-state.mjs`, in `npm test` | The `use-state` cap, with its failing fixture. Ratchet: `frontend/frontend-state-allowlist.json` | nothing |
-| Babel and CI | `npm run test:fatigue-probe`, `npm run build`, and the `React Doctor` floor (`frontend/react-doctor-floor.json`, checked by `frontend/scripts/check-react-doctor-floor.mjs` with its failing fixture in `npm test`) | `babel-plugin-react-compiler` |
+| Babel and CI | `babel-plugin-react-compiler` (done, #122), `npm run test:fatigue-probe`, `npm run build`, and the `React Doctor` floor (`frontend/react-doctor-floor.json`, checked by `frontend/scripts/check-react-doctor-floor.mjs` with its failing fixture in `npm test`) | |
 
 `npm run test:fatigue-probe` stays out of `npm test` on purpose: the workflow
 says it is too slow for the unit suite.
@@ -857,7 +855,7 @@ says it is too slow for the unit suite.
    `static-components` and `purity` are on at
    error with `frontend/eslint-suppressions.json`. Fix the small real hits
    first: 4 bare store reads, 1 selector `[]`, 1 UTC day key, the `LB_TO_KG` copies.
-2. The ESLint `no-restricted-syntax` selector block with its allowlists.
+2. The ESLint `no-restricted-syntax` selector table with its allowlists runs.
 3. oxlint, `frontend/lint-baseline.json` and its failing fixture already run
    `complexity`, restricted globals and properties, `exhaustive-deps`,
    `unicorn/no-array-sort`, `unicorn/no-array-reverse`, `react/no-array-index-key`
