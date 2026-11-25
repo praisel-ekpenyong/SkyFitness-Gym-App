@@ -14,6 +14,14 @@ export const todayISO = () => {
 }
 
 /**
+ * The wall clock in milliseconds, for rules whose caller omits `now`.
+ * The read lives with the clock owners in this module so a rule in `lib/`
+ * never reads or fakes the clock itself.
+ * @returns {number} Milliseconds since epoch.
+ */
+export const nowMs = () => Date.now()
+
+/**
  * Formats a Date as the `YYYY-MM-DD` day key the log is grouped by.
  * @param {Date} d - Local date to format; must be a valid Date.
  * @returns {string} Zero-padded `YYYY-MM-DD` in local time.

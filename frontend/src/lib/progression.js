@@ -4,7 +4,7 @@ import { isWorkSet, isPerformed, workSets, doneWorkSets, modeForSet } from './wo
 import { resolveSetWeight, normalizeWeight, targetIn, entryUnit } from './units.js'
 import { fmtNum, fmtSigned } from './format.js'
 import { t } from './i18n.js'
-import { todayISO } from './dates.js'
+import { assertClock, isoOf, nowMs } from './dates.js'
 
 /** @typedef {import('./types.js').Profile} Profile */
 /** @typedef {import('./types.js').Workout} Workout */
@@ -977,20 +977,22 @@ export function prescriptionStyle(kindOrPlan) {
   return kind === 'up' ? 'up' : ''
 }
 
-/** @param {Entry} entry @returns {string} */
-const entryDayKey = entry => ('d' in entry && typeof entry.d === 'string' && entry.d) || todayISO()
+/** @param {Entry} entry @param {number} now @returns {string} */
+const entryDayKey = (entry, now) => ('d' in entry && typeof entry.d === 'string' && entry.d) || isoOf(new Date(now))
 
 /**
  * Evaluates a single completed entry against its next prescription, returning a progression descriptor.
  *
  * @param {Entry} entry Completed workout entry.
  * @param {Partial<Profile> | null | undefined} state Store state S.
- * @param {{ workout?: Workout | null, routine?: Routine | null }} [context] Optional { workout, routine }.
+ * @param {{ workout?: Workout | null, routine?: Routine | null, now?: number }} [context] Optional { workout, routine, now }.
  * @returns {ProgressionDescriptor | null} Progression descriptor or null if no performed work sets.
  */
 export function evaluateSessionProgression(entry, state, context = {}) {
   if (!entry || doneWorkSets(entry).length <= 0) return null
 
+  const now = context?.now ?? nowMs()
+  assertClock(now)
   const workout = context?.workout
   const routine = context?.routine ||
     (workout?.routineId ? state?.routines?.find(r => r.id === workout.routineId) : null) ||
@@ -1009,7 +1011,7 @@ export function evaluateSessionProgression(entry, state, context = {}) {
     if (!inWorkouts) {
       dummyWorkout = {
         id: 'session-entry-' + entry.id,
-        d: entryDayKey(entry),
+        d: entryDayKey(entry, now),
         start: 0,
         end: 0,
         routineId: null,

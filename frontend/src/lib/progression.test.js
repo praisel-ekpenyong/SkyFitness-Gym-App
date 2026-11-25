@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from 'vitest'
+import { describe, it, expect, afterEach } from 'vitest'
 import {
   readSession, sessionsFor, stallCount, nextPrescription, applyPrescription,
   policyFor, defaultIncrement, POLICIES_FOR, DELOAD_AFTER, MAX_BW_SETS,
@@ -778,7 +778,6 @@ describe('evaluateSessionProgression stand-in workout date', () => {
   const origTZ = process.env.TZ
 
   afterEach(() => {
-    vi.useRealTimers()
     if (origTZ === undefined) {
       delete process.env.TZ
     } else {
@@ -801,10 +800,13 @@ describe('evaluateSessionProgression stand-in workout date', () => {
     { tz: 'Asia/Tokyo', time: '2026-03-11T00:30:00+09:00', expected: '2026-03-11', desc: 'just after midnight in an east-of-UTC zone' },
   ])('stamps local day key $desc', ({ tz, time, expected }) => {
     process.env.TZ = tz
-    vi.useFakeTimers()
-    vi.setSystemTime(new Date(time))
 
-    const item = evaluateSessionProgression(entry, { unit: 'kg', workouts: [] })
+    const item = evaluateSessionProgression(entry, { unit: 'kg', workouts: [] }, { now: Date.parse(time) })
     expect(item?.d).toBe(expected)
+  })
+
+  it('refuses a non-finite clock instead of stamping an unusable day key', () => {
+    expect(() => evaluateSessionProgression(entry, { unit: 'kg', workouts: [] }, { now: Number.NaN }))
+      .toThrow(TypeError, 'now must be a finite millisecond timestamp')
   })
 })

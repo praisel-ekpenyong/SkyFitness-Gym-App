@@ -557,7 +557,7 @@ describe('destructive confirms', () => {
     const confirm = useUI.getState().sheets.at(-1)
     await show(confirm)
     expect(container.textContent).toContain(`${del.getAttribute('aria-label')}?`)
-    expect(container.querySelector('.confirm-msg').textContent).toBe('')
+    expect(container.textContent).toBe(`${del.getAttribute('aria-label')}?${button('Delete').textContent}${button('Cancel').textContent}`)
     await click(button('Cancel'))
     expect(useStore.getState().S.bodyweight).toHaveLength(2)
 
@@ -580,7 +580,7 @@ describe('destructive confirms', () => {
     const confirm = useUI.getState().sheets.at(-1)
     await show(confirm)
     expect(container.textContent).toContain('Remove goal?')
-    expect(container.querySelector('.confirm-msg').textContent).toBe('')
+    expect(container.textContent).toBe(`Remove goal?${button('Remove').textContent}${button('Cancel').textContent}`)
     await click(button('Remove'))
     expect(useStore.getState().S.targetW).toBeNull()
     expect(useUI.getState().toastMsg).toBe('Goal removed')
