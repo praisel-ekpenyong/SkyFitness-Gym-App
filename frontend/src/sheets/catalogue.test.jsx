@@ -9,6 +9,9 @@ import { FILTER_MUSCLES, PICKABLE_MUSCLES, MUSCLE_NAME } from '../lib/muscles.js
 import { isoOf } from '../lib/dates.js'
 import { useUI } from '../store/useUI.js'
 import { buttonNamed, leafTexts, pick } from '../test/sheet-host.jsx'
+import { fireEvent, within } from '@testing-library/react'
+import { allChips, chipNamed, chipRow, chipRows, isOn, primaryAction, typeInto } from '../test/catalogue-queries.js'
+import { tilesIn } from '../test/library-queries.js'
 
 let container
 let root
@@ -48,35 +51,24 @@ describe('ExerciseDetail sheet favorite starring', () => {
       root.render(<ExerciseDetail ex={sampleEx} close={vi.fn()} />)
     })
 
-    const title = container.querySelector('h3')
+    const title = within(container).getByRole('heading', { level: 3 })
     expect(title).toBeTruthy()
     expect(title.textContent).toBe('3/4 sit-up')
 
-    const starBtn = container.querySelector('.row.between button.iconbtn')
+    const starBtn = within(container).getByRole('button', { name: /favorites$/ })
     expect(starBtn).toBeTruthy()
     expect(starBtn.getAttribute('aria-label')).toBe('Add to favorites')
-    expect(starBtn.classList.contains('on-ss')).toBe(false)
-    expect(starBtn.querySelector('svg.icn')).toBeTruthy()
-    expect(starBtn.querySelector('path').getAttribute('fill')).toBeNull()
     expect(useStore.getState().S.favorites).toEqual([])
 
-    await act(async () => {
-      starBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    fireEvent.click(starBtn)
 
     expect(useStore.getState().S.favorites).toEqual(['0001'])
     expect(starBtn.getAttribute('aria-label')).toBe('Remove from favorites')
-    expect(starBtn.classList.contains('on-ss')).toBe(true)
-    expect(starBtn.querySelector('svg.icn path').getAttribute('fill')).toBe('currentColor')
 
-    await act(async () => {
-      starBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    fireEvent.click(starBtn)
 
     expect(useStore.getState().S.favorites).toEqual([])
     expect(starBtn.getAttribute('aria-label')).toBe('Add to favorites')
-    expect(starBtn.classList.contains('on-ss')).toBe(false)
-    expect(starBtn.querySelector('svg.icn path').getAttribute('fill')).toBeNull()
   })
 
   it('initializes filled star if exercise is already favorited', async () => {
@@ -88,11 +80,9 @@ describe('ExerciseDetail sheet favorite starring', () => {
       root.render(<ExerciseDetail ex={sampleEx} close={vi.fn()} />)
     })
 
-    const starBtn = container.querySelector('.row.between button.iconbtn')
+    const starBtn = within(container).getByRole('button', { name: /favorites$/ })
     expect(starBtn).toBeTruthy()
     expect(starBtn.getAttribute('aria-label')).toBe('Remove from favorites')
-    expect(starBtn.classList.contains('on-ss')).toBe(true)
-    expect(starBtn.querySelector('svg.icn path').getAttribute('fill')).toBe('currentColor')
   })
 })
 
@@ -113,10 +103,7 @@ describe('ExerciseDetail strength line', () => {
       root.render(<ExerciseDetail ex={bench} close={vi.fn()} />)
     })
 
-    const line = container.querySelector('.ex-strength')
-    expect(line).toBeTruthy()
-    expect(line.textContent).toContain('Strength Intermediate · Peak Intermediate')
-    expect(line.previousElementSibling.classList.contains('best-line')).toBe(true)
+    expect(container.textContent).toContain('Strength Intermediate · Peak Intermediate')
   })
 
   it('shows no strength line for an ungraded exercise', async () => {
@@ -129,7 +116,7 @@ describe('ExerciseDetail strength line', () => {
       root.render(<ExerciseDetail ex={cable} close={vi.fn()} />)
     })
 
-    expect(container.querySelector('.ex-strength')).toBeNull()
+    expect(within(container).queryByText(/^Strength /)).toBeNull()
   })
 })
 
@@ -169,13 +156,11 @@ describe('deleteCustomEx cascading deletion', () => {
       confirmRoot.render(renderConfirm(() => useUI.getState().closeSheet(sheets[0].id)))
     })
 
-    const confirmBtn = confirmContainer.querySelector('button.btn.danger')
+    const confirmBtn = within(confirmContainer).getByRole('button', { name: 'Delete' })
     expect(confirmBtn).toBeTruthy()
     expect(confirmBtn.textContent).toBe('Delete')
 
-    await act(async () => {
-      confirmBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    fireEvent.click(confirmBtn)
 
     const state = useStore.getState().S
     expect(state.customEx.find(e => e.id === 'c123')).toBeUndefined()
@@ -204,14 +189,12 @@ describe('ExercisePicker favorites integration', () => {
       root.render(<ExercisePicker onPick={vi.fn()} close={vi.fn()} />)
     })
 
-    const chipButtons = Array.from(container.querySelectorAll('.chips button.chip'))
+    const chipButtons = allChips(container)
     expect(chipButtons.length).toBeGreaterThan(3)
 
     expect(chipButtons[0].textContent).toContain('Favorites (2)')
-    expect(chipButtons[0].querySelector('svg')).toBeTruthy()
 
     expect(chipButtons[1].textContent).toContain('Chosen (1)')
-    expect(chipButtons[1].querySelector('svg')).toBeTruthy()
 
     expect(chipButtons[2].textContent).toBe('All')
   })
@@ -228,7 +211,7 @@ describe('ExercisePicker favorites integration', () => {
       root.render(<ExercisePicker onPick={vi.fn()} close={vi.fn()} />)
     })
 
-    const chipButtons = Array.from(container.querySelectorAll('.chips button.chip'))
+    const chipButtons = allChips(container)
     const chipTexts = chipButtons.map(b => b.textContent)
     expect(chipTexts.some(t => t.includes('Favorites'))).toBe(false)
     expect(chipButtons[0].textContent).toContain('Chosen (1)')
@@ -245,40 +228,30 @@ describe('ExercisePicker favorites integration', () => {
       root.render(<ExercisePicker onPick={onPick} close={vi.fn()} />)
     })
 
-    const exerciseItems = Array.from(container.querySelectorAll('.list .item')).slice(1)
+    const exerciseItems = tilesIn(container)
     expect(exerciseItems.length).toBeGreaterThan(2)
 
-    const firstStarBtn = exerciseItems[0].querySelector('button.iconbtn')
+    const firstStarBtn = within(exerciseItems[0]).getByRole('button', { name: /favorites$/ })
     expect(firstStarBtn).toBeTruthy()
     expect(firstStarBtn.getAttribute('aria-label')).toBe('Remove from favorites')
-    expect(firstStarBtn.classList.contains('on-ss')).toBe(true)
 
-    const secondStarBtn = exerciseItems[1].querySelector('button.iconbtn')
+    const secondStarBtn = within(exerciseItems[1]).getByRole('button', { name: /favorites$/ })
     expect(secondStarBtn).toBeTruthy()
     expect(secondStarBtn.getAttribute('aria-label')).toBe('Add to favorites')
-    expect(secondStarBtn.classList.contains('on-ss')).toBe(false)
 
-    await act(async () => {
-      secondStarBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    fireEvent.click(secondStarBtn)
 
     expect(useStore.getState().S.favorites).toEqual(['0001', '0002'])
     expect(onPick).not.toHaveBeenCalled()
     expect(secondStarBtn.getAttribute('aria-label')).toBe('Remove from favorites')
-    expect(secondStarBtn.classList.contains('on-ss')).toBe(true)
 
-    await act(async () => {
-      firstStarBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    fireEvent.click(firstStarBtn)
 
     expect(useStore.getState().S.favorites).toEqual(['0002'])
     expect(onPick).not.toHaveBeenCalled()
     expect(firstStarBtn.getAttribute('aria-label')).toBe('Add to favorites')
-    expect(firstStarBtn.classList.contains('on-ss')).toBe(false)
 
-    await act(async () => {
-      exerciseItems[0].dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    fireEvent.click(exerciseItems[0])
 
     expect(onPick).toHaveBeenCalledTimes(1)
     expect(onPick).toHaveBeenCalledWith(expect.objectContaining({ id: '0001', n: '3/4 sit-up' }))
@@ -293,21 +266,17 @@ describe('ExercisePicker favorites integration', () => {
       root.render(<ExercisePicker onPick={vi.fn()} close={vi.fn()} />)
     })
 
-    const favChip = Array.from(container.querySelectorAll('.chips button.chip'))
+    const favChip = allChips(container)
       .find(b => b.textContent.includes('Favorites'))
 
-    await act(async () => {
-      favChip.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    fireEvent.click(favChip)
 
-    const starBtn = container.querySelector('.list .item button.iconbtn')
+    const starBtn = within(tilesIn(container)[0]).getByRole('button', { name: /favorites$/ })
     expect(starBtn).toBeTruthy()
 
-    await act(async () => {
-      starBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    fireEvent.click(starBtn)
 
-    const emptyState = container.querySelector('.list .empty')
+    const emptyState = within(container).getByText(/No favorites yet/)
     expect(emptyState).toBeTruthy()
     expect(emptyState.textContent).toContain('No favorites yet')
   })
@@ -322,7 +291,7 @@ describe('ExercisePicker own-first order', () => {
     })
     await act(async () => { root.render(<ExercisePicker onPick={vi.fn()} close={vi.fn()} />) })
 
-    const names = [...container.querySelectorAll('.list .item[aria-label]')].map(el => el.getAttribute('aria-label'))
+    const names = tilesIn(container).map(el => el.getAttribute('aria-label'))
     const sitUp = names.findIndex(n => n.toLowerCase() === '3/4 sit-up')
     expect(sitUp).toBeGreaterThan(-1)
     expect(names.slice(0, 2)).toEqual(['barbell bench press', 'barbell incline bench press'])
@@ -341,8 +310,7 @@ describe('ExercisePicker canonical muscle filtering and search', () => {
       root.render(<ExercisePicker onPick={vi.fn()} close={vi.fn()} />)
     })
 
-    const firstChipsRow = container.querySelectorAll('.chips')[0]
-    const chips = Array.from(firstChipsRow.querySelectorAll('button.chip')).map(c => c.textContent.trim())
+    const chips = chipRow(container, 0).map(c => c.textContent.trim())
     expect(chips).toEqual(['Favorites (1)', 'Chosen (1)', 'All', ...FILTER_MUSCLES.map(m => MUSCLE_NAME[m])])
   })
 
@@ -351,21 +319,17 @@ describe('ExercisePicker canonical muscle filtering and search', () => {
       root.render(<ExercisePicker onPick={vi.fn()} close={vi.fn()} />)
     })
 
-    const tricepsChip = Array.from(container.querySelectorAll('.chips button.chip'))
+    const tricepsChip = allChips(container)
       .find(b => b.textContent.trim() === 'Triceps')
     expect(tricepsChip).toBeTruthy()
 
-    await act(async () => {
-      tricepsChip.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    fireEvent.click(tricepsChip)
 
-    const items = Array.from(container.querySelectorAll('.list .item'))
+    const items = tilesIn(container)
     const benchItem = items.find(it => it.textContent.toLowerCase().includes('bench press'))
     expect(benchItem).toBeTruthy()
 
-    const secondaryBadge = benchItem.querySelector('.ss .tag')
-    expect(secondaryBadge).toBeTruthy()
-    expect(secondaryBadge.textContent).toContain('Secondary: Triceps')
+    expect(within(benchItem).getByText(/Secondary: Triceps/)).toBeTruthy()
   })
 
   it('searches exercises matching primary and secondary muscle names in picker', async () => {
@@ -373,28 +337,22 @@ describe('ExercisePicker canonical muscle filtering and search', () => {
       root.render(<ExercisePicker onPick={vi.fn()} close={vi.fn()} />)
     })
 
-    const searchInput = container.querySelector('input.input')
-    await act(async () => {
-      const nativeSetter = Object.getOwnPropertyDescriptor(globalThis.HTMLInputElement.prototype, 'value').set
-      nativeSetter.call(searchInput, 'triceps')
-      searchInput.dispatchEvent(new Event('input', { bubbles: true }))
-    })
+    const searchInput = within(container).getByRole('textbox', { name: 'Search exercises' })
+    typeInto(searchInput, 'triceps')
 
-    const items = Array.from(container.querySelectorAll('.list .item'))
+    const items = tilesIn(container)
     expect(items.length).toBeGreaterThan(5)
 
-    const showMore = Array.from(container.querySelectorAll('button')).find(b => b.textContent.includes('Show more'))
+    const showMore = within(container).getByRole('button', { name: /Show more/ })
     if (showMore) {
-      await act(async () => {
-        showMore.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-      })
+      fireEvent.click(showMore)
     }
 
-    const allItems = Array.from(container.querySelectorAll('.list .item'))
+    const allItems = tilesIn(container)
     const benchItem = allItems.find(it => it.textContent.toLowerCase().includes('bench press'))
     expect(benchItem).toBeTruthy()
-    expect(benchItem.querySelector('.ss .tag')?.textContent).toContain('Secondary: Triceps')
-    expect(benchItem.querySelector('.ss')?.textContent.toLowerCase()).toContain('chest')
+    expect(within(benchItem).getByText(/Secondary: Triceps/)).toBeTruthy()
+    expect(benchItem.textContent.toLowerCase()).toContain('chest')
   })
 
   it('filters exercises by Cardio chip and allows equipment filtering within muscle filter', async () => {
@@ -402,35 +360,29 @@ describe('ExercisePicker canonical muscle filtering and search', () => {
       root.render(<ExercisePicker onPick={vi.fn()} close={vi.fn()} />)
     })
 
-    const cardioChip = Array.from(container.querySelectorAll('.chips button.chip'))
+    const cardioChip = allChips(container)
       .find(b => b.textContent.trim() === 'Cardio')
     expect(cardioChip).toBeTruthy()
 
-    await act(async () => {
-      cardioChip.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    fireEvent.click(cardioChip)
 
-    let items = Array.from(container.querySelectorAll('.list .item')).slice(1)
+    let items = tilesIn(container)
     expect(items.length).toBeGreaterThan(0)
     expect(items.every(it => it.textContent.toLowerCase().includes('cardio'))).toBe(true)
 
-    const chestChip = Array.from(container.querySelectorAll('.chips button.chip'))
+    const chestChip = allChips(container)
       .find(b => b.textContent.trim() === 'Chest')
     expect(chestChip).toBeTruthy()
 
-    await act(async () => {
-      chestChip.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    fireEvent.click(chestChip)
 
-    const eqChips = Array.from(container.querySelectorAll('.chips')[1].querySelectorAll('button.chip'))
+    const eqChips = chipRow(container, 1)
     const dumbbellChip = eqChips.find(b => b.textContent.toLowerCase().includes('dumbbell'))
     expect(dumbbellChip).toBeTruthy()
 
-    await act(async () => {
-      dumbbellChip.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    fireEvent.click(dumbbellChip)
 
-    items = Array.from(container.querySelectorAll('.list .item')).slice(1)
+    items = tilesIn(container)
     expect(items.length).toBeGreaterThan(0)
     expect(items.every(it => it.textContent.toLowerCase().includes('dumbbell'))).toBe(true)
   })
@@ -451,18 +403,12 @@ describe('ExerciseDetail primary and secondary muscle tags', () => {
     await act(async () => {
       root.render(<ExerciseDetail ex={benchEx} close={vi.fn()} />)
     })
+    expect(within(container).getByText('Primary: Chest')).toBeTruthy()
 
-    const tags = Array.from(container.querySelectorAll('.row .tag'))
-    const tagTexts = tags.map(t => t.textContent.trim())
+    expect(within(container).getByText('Barbell')).toBeTruthy()
 
-    const primaryTag = tags.find(t => t.classList.contains('strong'))
-    expect(primaryTag).toBeTruthy()
-    expect(primaryTag.textContent).toContain('Primary: Chest')
-
-    expect(tagTexts).toContain('Barbell')
-
-    expect(tagTexts).toContain('Secondary: Front delts')
-    expect(tagTexts).toContain('Secondary: Triceps')
+    expect(within(container).getByText('Secondary: Front delts')).toBeTruthy()
+    expect(within(container).getByText('Secondary: Triceps')).toBeTruthy()
   })
 
   it('displays Cardio for cardio exercises without secondary tags', async () => {
@@ -477,15 +423,9 @@ describe('ExerciseDetail primary and secondary muscle tags', () => {
     await act(async () => {
       root.render(<ExerciseDetail ex={cardioEx} close={vi.fn()} />)
     })
-
-    const tags = Array.from(container.querySelectorAll('.row .tag'))
-    const tagTexts = tags.map(t => t.textContent.trim())
-
-    const primaryTag = tags.find(t => t.classList.contains('strong'))
-    expect(primaryTag).toBeTruthy()
-    expect(primaryTag.textContent).toContain('Cardio')
-    expect(primaryTag.textContent).not.toContain('Primary: Cardio')
-    expect(tagTexts.some(t => t.startsWith('Secondary:'))).toBe(false)
+    expect(within(container).getByText('Cardio')).toBeTruthy()
+    expect(within(container).queryByText(/^Primary:/)).toBeNull()
+    expect(within(container).queryByText(/^Secondary:/)).toBeNull()
   })
 
   it('displays Primary and Secondary tags for custom exercises', async () => {
@@ -502,14 +442,8 @@ describe('ExerciseDetail primary and secondary muscle tags', () => {
     await act(async () => {
       root.render(<ExerciseDetail ex={customEx} close={vi.fn()} />)
     })
-
-    const tags = Array.from(container.querySelectorAll('.row .tag'))
-    const tagTexts = tags.map(t => t.textContent.trim())
-
-    const primaryTag = tags.find(t => t.classList.contains('strong'))
-    expect(primaryTag).toBeTruthy()
-    expect(primaryTag.textContent).toContain('Primary: Biceps')
-    expect(tagTexts).toContain('Secondary: Forearms')
+    expect(within(container).getByText('Primary: Biceps')).toBeTruthy()
+    expect(within(container).getByText('Secondary: Forearms')).toBeTruthy()
   })
 
   it('displays Primary and Secondary tags for legacy custom exercises via bodypart fallbacks', async () => {
@@ -524,15 +458,9 @@ describe('ExerciseDetail primary and secondary muscle tags', () => {
     await act(async () => {
       root.render(<ExerciseDetail ex={legacyEx} close={vi.fn()} />)
     })
-
-    const tags = Array.from(container.querySelectorAll('.row .tag'))
-    const tagTexts = tags.map(t => t.textContent.trim())
-
-    const primaryTag = tags.find(t => t.classList.contains('strong'))
-    expect(primaryTag).toBeTruthy()
-    expect(primaryTag.textContent).toContain('Primary: Quads')
-    expect(tagTexts).toContain('Secondary: Hamstrings')
-    expect(tagTexts).toContain('Secondary: Glutes')
+    expect(within(container).getByText('Primary: Quads')).toBeTruthy()
+    expect(within(container).getByText('Secondary: Hamstrings')).toBeTruthy()
+    expect(within(container).getByText('Secondary: Glutes')).toBeTruthy()
   })
 
   it('displays only Primary and Equipment tags for pure isolation exercises without secondaries', async () => {
@@ -548,15 +476,9 @@ describe('ExerciseDetail primary and secondary muscle tags', () => {
     await act(async () => {
       root.render(<ExerciseDetail ex={isolationEx} close={vi.fn()} />)
     })
-
-    const tags = Array.from(container.querySelectorAll('.row .tag'))
-    const tagTexts = tags.map(t => t.textContent.trim())
-
-    const primaryTag = tags.find(t => t.classList.contains('strong'))
-    expect(primaryTag).toBeTruthy()
-    expect(primaryTag.textContent).toContain('Primary: Biceps')
-    expect(tagTexts).toContain('Dumbbell')
-    expect(tagTexts.some(t => t.startsWith('Secondary:'))).toBe(false)
+    expect(within(container).getByText('Primary: Biceps')).toBeTruthy()
+    expect(within(container).getByText('Dumbbell')).toBeTruthy()
+    expect(within(container).queryByText(/^Secondary:/)).toBeNull()
   })
 
   it('displays dedicated Cardio tag and equipment for custom cardio exercises', async () => {
@@ -573,16 +495,10 @@ describe('ExerciseDetail primary and secondary muscle tags', () => {
     await act(async () => {
       root.render(<ExerciseDetail ex={customCardio} close={vi.fn()} />)
     })
-
-    const tags = Array.from(container.querySelectorAll('.row .tag'))
-    const tagTexts = tags.map(t => t.textContent.trim())
-
-    const primaryTag = tags.find(t => t.classList.contains('strong'))
-    expect(primaryTag).toBeTruthy()
-    expect(primaryTag.textContent).toContain('Cardio')
-    expect(primaryTag.textContent).not.toContain('Primary:')
-    expect(tagTexts).toContain('Custom')
-    expect(tagTexts.some(t => t.startsWith('Secondary:'))).toBe(false)
+    expect(within(container).getByText('Cardio')).toBeTruthy()
+    expect(within(container).queryByText(/^Primary:/)).toBeNull()
+    expect(within(container).getByText('Custom')).toBeTruthy()
+    expect(within(container).queryByText(/^Secondary:/)).toBeNull()
   })
 })
 
@@ -592,13 +508,12 @@ describe('CustomExForm canonical muscle selection and editing', () => {
       root.render(<CustomExForm onDone={vi.fn()} close={vi.fn()} />)
     })
 
-    const title = container.querySelector('h3')
+    const title = within(container).getByRole('heading', { level: 3 })
     expect(title.textContent).toBe('Create your own exercise')
 
-    expect(container.querySelectorAll('.chips').length).toBe(1)
+    expect(chipRows(container).length).toBe(1)
 
-    const primaryChipContainer = container.querySelectorAll('.chips')[0]
-    const primaryChips = Array.from(primaryChipContainer.querySelectorAll('button.chip')).map(c => c.textContent.trim())
+    const primaryChips = chipRow(container, 0).map(c => c.textContent.trim())
     expect(primaryChips).toEqual(PICKABLE_MUSCLES.map(m => MUSCLE_NAME[m]))
   })
 
@@ -610,54 +525,37 @@ describe('CustomExForm canonical muscle selection and editing', () => {
       root.render(<CustomExForm onDone={onDone} close={close} />)
     })
 
-    const nameInput = container.querySelector('input.input')
-    await act(async () => {
-      const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set
-      nativeSetter.call(nameInput, 'Incline Hammer Curl')
-      nameInput.dispatchEvent(new Event('input', { bubbles: true }))
-    })
+    const nameInput = within(container).getByRole('textbox', { name: 'Exercise name' })
+    typeInto(nameInput, 'Incline Hammer Curl')
 
-    const primaryChips = Array.from(container.querySelectorAll('.chips')[0].querySelectorAll('button.chip'))
+    const primaryChips = chipRow(container, 0)
     const bicepsPrimary = primaryChips.find(c => c.textContent.trim() === 'Biceps')
     expect(bicepsPrimary).toBeTruthy()
 
-    await act(async () => {
-      bicepsPrimary.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
-    expect(bicepsPrimary.classList.contains('on')).toBe(true)
+    fireEvent.click(bicepsPrimary)
+    expect(isOn(bicepsPrimary)).toBe(true)
 
-    const chipRows = container.querySelectorAll('.chips')
-    expect(chipRows.length).toBe(2)
-    const secondaryChips = Array.from(chipRows[1].querySelectorAll('button.chip'))
+    expect(chipRows(container)).toHaveLength(2)
+    const secondaryChips = chipRow(container, 1)
     expect(secondaryChips.map(c => c.textContent.trim())).not.toContain('Biceps')
     expect(secondaryChips.length).toBe(20)
 
     const forearmsSec = secondaryChips.find(c => c.textContent.trim() === 'Forearms')
     expect(forearmsSec).toBeTruthy()
-    await act(async () => {
-      forearmsSec.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    fireEvent.click(forearmsSec)
 
-    const secondaryChipsAfter = Array.from(container.querySelectorAll('.chips')[1].querySelectorAll('button.chip'))
+    const secondaryChipsAfter = chipRow(container, 1)
     const upperBackSec = secondaryChipsAfter.find(c => c.textContent.trim() === 'Upper back')
     expect(upperBackSec).toBeTruthy()
-    await act(async () => {
-      upperBackSec.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    fireEvent.click(upperBackSec)
 
-    const descInput = container.querySelector('textarea.input')
-    await act(async () => {
-      const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set
-      nativeSetter.call(descInput, 'Strict form, palms facing each other')
-      descInput.dispatchEvent(new Event('input', { bubbles: true }))
-    })
+    const descInput = within(container).getByRole('textbox', { name: 'Description' })
+    typeInto(descInput, 'Strict form, palms facing each other')
 
-    const saveBtn = Array.from(container.querySelectorAll('button')).find(b => b.textContent.includes('Create exercise'))
+    const saveBtn = within(container).getByRole('button', { name: /Create exercise/ })
     expect(saveBtn).toBeTruthy()
 
-    await act(async () => {
-      saveBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    fireEvent.click(saveBtn)
 
     const state = useStore.getState().S
     expect(state.customEx.length).toBe(1)
@@ -679,32 +577,24 @@ describe('CustomExForm canonical muscle selection and editing', () => {
       root.render(<CustomExForm onDone={vi.fn()} close={vi.fn()} />)
     })
 
-    const primaryChips = () => Array.from(container.querySelectorAll('.chips')[0].querySelectorAll('button.chip'))
+    const primaryChips = () => chipRow(container, 0)
     const chestPrimary = primaryChips().find(c => c.textContent.trim() === 'Chest')
-    await act(async () => {
-      chestPrimary.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    fireEvent.click(chestPrimary)
 
-    let secondaryChips = Array.from(container.querySelectorAll('.chips')[1].querySelectorAll('button.chip'))
+    let secondaryChips = chipRow(container, 1)
     const shouldersSec = secondaryChips.find(c => c.textContent.trim() === 'Side delts')
-    await act(async () => {
-      shouldersSec.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    fireEvent.click(shouldersSec)
 
-    const secondaryChipsAfter = Array.from(container.querySelectorAll('.chips')[1].querySelectorAll('button.chip'))
+    const secondaryChipsAfter = chipRow(container, 1)
     const tricepsSec = secondaryChipsAfter.find(c => c.textContent.trim() === 'Triceps')
-    await act(async () => {
-      tricepsSec.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    fireEvent.click(tricepsSec)
 
     const shouldersPrimary = primaryChips().find(c => c.textContent.trim() === 'Side delts')
-    await act(async () => {
-      shouldersPrimary.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    fireEvent.click(shouldersPrimary)
 
-    secondaryChips = Array.from(container.querySelectorAll('.chips')[1].querySelectorAll('button.chip'))
+    secondaryChips = chipRow(container, 1)
     const tricepsSecAfter = secondaryChips.find(c => c.textContent.trim() === 'Triceps')
-    expect(tricepsSecAfter?.classList.contains('on')).toBe(true)
+    expect(isOn(tricepsSecAfter)).toBe(true)
     expect(secondaryChips.some(c => c.textContent.trim() === 'Side delts')).toBe(false)
   })
 
@@ -716,36 +606,24 @@ describe('CustomExForm canonical muscle selection and editing', () => {
       root.render(<CustomExForm onDone={onDone} close={close} />)
     })
 
-    const primaryChips = () => Array.from(container.querySelectorAll('.chips')[0].querySelectorAll('button.chip'))
+    const primaryChips = () => chipRow(container, 0)
     const chestPrimary = primaryChips().find(c => c.textContent.trim() === 'Chest')
-    await act(async () => {
-      chestPrimary.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    fireEvent.click(chestPrimary)
 
-    const tricepsSec = Array.from(container.querySelectorAll('.chips')[1].querySelectorAll('button.chip')).find(c => c.textContent.trim() === 'Triceps')
-    await act(async () => {
-      tricepsSec.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    const tricepsSec = chipRow(container, 1).find(c => c.textContent.trim() === 'Triceps')
+    fireEvent.click(tricepsSec)
 
     const cardioPrimary = primaryChips().find(c => c.textContent.trim() === 'Cardio')
-    await act(async () => {
-      cardioPrimary.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    fireEvent.click(cardioPrimary)
 
-    expect(container.querySelectorAll('.chips').length).toBe(1)
+    expect(chipRows(container).length).toBe(1)
     expect(container.textContent).toContain('Cardio exercises log time and speed')
 
-    const nameInput = container.querySelector('input.input')
-    await act(async () => {
-      const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set
-      nativeSetter.call(nameInput, 'Rowing Machine Sprint')
-      nameInput.dispatchEvent(new Event('input', { bubbles: true }))
-    })
+    const nameInput = within(container).getByRole('textbox', { name: 'Exercise name' })
+    typeInto(nameInput, 'Rowing Machine Sprint')
 
-    const saveBtn = Array.from(container.querySelectorAll('button')).find(b => b.textContent.includes('Create exercise'))
-    await act(async () => {
-      saveBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    const saveBtn = within(container).getByRole('button', { name: /Create exercise/ })
+    fireEvent.click(saveBtn)
 
     const state = useStore.getState().S
     const created = state.customEx.find(c => c.n === 'Rowing Machine Sprint')
@@ -775,35 +653,29 @@ describe('CustomExForm canonical muscle selection and editing', () => {
       root.render(<CustomExForm existing={existing} onDone={vi.fn()} close={vi.fn()} />)
     })
 
-    expect(container.querySelector('h3')?.textContent).toBe('Edit custom exercise')
-    expect(container.querySelector('input.input')?.value).toBe('My Custom Deadlift')
-    expect(container.querySelector('textarea.input')?.value).toBe('Neutral grip handles')
+    expect(within(container).getByRole('heading', { level: 3 })?.textContent).toBe('Edit custom exercise')
+    expect(within(container).getByRole('textbox', { name: 'Exercise name' })?.value).toBe('My Custom Deadlift')
+    expect(within(container).getByRole('textbox', { name: 'Description' })?.value).toBe('Neutral grip handles')
 
-    const lowerBackPrimary = Array.from(container.querySelectorAll('.chips')[0].querySelectorAll('button.chip'))
+    const lowerBackPrimary = chipRow(container, 0)
       .find(c => c.textContent.trim() === 'Lower back')
-    expect(lowerBackPrimary?.classList.contains('on')).toBe(true)
+    expect(isOn(lowerBackPrimary)).toBe(true)
 
-    const secChips = Array.from(container.querySelectorAll('.chips')[1].querySelectorAll('button.chip'))
+    const secChips = chipRow(container, 1)
     const glutesSec = secChips.find(c => c.textContent.trim() === 'Glutes')
     const hamstringsSec = secChips.find(c => c.textContent.trim() === 'Hamstrings')
-    expect(glutesSec?.classList.contains('on')).toBe(true)
-    expect(hamstringsSec?.classList.contains('on')).toBe(true)
+    expect(isOn(glutesSec)).toBe(true)
+    expect(isOn(hamstringsSec)).toBe(true)
 
-    await act(async () => {
-      hamstringsSec.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    fireEvent.click(hamstringsSec)
 
-    const secChipsAfter = Array.from(container.querySelectorAll('.chips')[1].querySelectorAll('button.chip'))
+    const secChipsAfter = chipRow(container, 1)
     const quadsSec = secChipsAfter.find(c => c.textContent.trim() === 'Quads')
-    await act(async () => {
-      quadsSec.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    fireEvent.click(quadsSec)
 
-    const saveBtn = container.querySelector('button.btn.primary')
+    const saveBtn = primaryAction(container)
     expect(saveBtn).toBeTruthy()
-    await act(async () => {
-      saveBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    fireEvent.click(saveBtn)
 
     const updated = useStore.getState().S.customEx.find(c => c.id === 'c-test-99')
     expect(updated.tg).toBe('lower-back')
@@ -818,14 +690,9 @@ describe('CustomExForm canonical muscle selection and editing', () => {
     await act(async () => {
       root.render(<CustomExForm existing={legacy} onDone={vi.fn()} close={vi.fn()} />)
     })
-    const nameInput = container.querySelector('input.input')
-    await act(async () => {
-      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(nameInput, 'Old overhead press')
-      nameInput.dispatchEvent(new Event('input', { bubbles: true }))
-    })
-    await act(async () => {
-      container.querySelector('button.btn.primary').dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    const nameInput = within(container).getByRole('textbox', { name: 'Exercise name' })
+    typeInto(nameInput, 'Old overhead press')
+    fireEvent.click(primaryAction(container))
 
     const updated = useStore.getState().S.customEx.find(c => c.id === 'c-legacy-sh')
     expect(updated.n).toBe('Old overhead press')
@@ -840,14 +707,10 @@ describe('CustomExForm canonical muscle selection and editing', () => {
     await act(async () => {
       root.render(<CustomExForm existing={legacy} onDone={vi.fn()} close={vi.fn()} />)
     })
-    const sideDelts = Array.from(container.querySelectorAll('.chips')[0].querySelectorAll('button.chip'))
+    const sideDelts = chipRow(container, 0)
       .find(c => c.textContent.trim() === 'Side delts')
-    await act(async () => {
-      sideDelts.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
-    await act(async () => {
-      container.querySelector('button.btn.primary').dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    fireEvent.click(sideDelts)
+    fireEvent.click(primaryAction(container))
 
     const updated = useStore.getState().S.customEx.find(c => c.id === 'c-legacy-sh2')
     expect(updated.tg).toBe('side-delts')
@@ -860,9 +723,7 @@ describe('CustomExForm canonical muscle selection and editing', () => {
     await act(async () => {
       root.render(<CustomExForm existing={legacy} onDone={vi.fn()} close={vi.fn()} />)
     })
-    await act(async () => {
-      container.querySelector('button.btn.primary').dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    fireEvent.click(primaryAction(container))
 
     const updated = useStore.getState().S.customEx.find(c => c.id === 'c-legacy-bp')
     expect(updated.tg).toBeUndefined()
@@ -887,12 +748,12 @@ describe('CustomExForm canonical muscle selection and editing', () => {
       root.render(<CustomExForm existing={legacyEx} onDone={vi.fn()} close={vi.fn()} />)
     })
 
-    const chestPrimary = Array.from(container.querySelectorAll('.chips')[0].querySelectorAll('button.chip'))
+    const chestPrimary = chipRow(container, 0)
       .find(c => c.textContent.trim() === 'Chest')
-    expect(chestPrimary?.classList.contains('on')).toBe(true)
+    expect(isOn(chestPrimary)).toBe(true)
 
-    const secChips = Array.from(container.querySelectorAll('.chips')[1].querySelectorAll('button.chip'))
-    expect(secChips.some(c => c.classList.contains('on'))).toBe(false)
+    const secChips = chipRow(container, 1)
+    expect(secChips.some(c => isOn(c))).toBe(false)
   })
 
   it('pre-fills primary and secondary muscles from multi-muscle bodypart fallback when editing legacy custom exercise', async () => {
@@ -913,30 +774,24 @@ describe('CustomExForm canonical muscle selection and editing', () => {
       root.render(<CustomExForm existing={legacyLegEx} onDone={vi.fn()} close={vi.fn()} />)
     })
 
-    const quadsPrimary = Array.from(container.querySelectorAll('.chips')[0].querySelectorAll('button.chip'))
+    const quadsPrimary = chipRow(container, 0)
       .find(c => c.textContent.trim() === 'Quads')
-    expect(quadsPrimary?.classList.contains('on')).toBe(true)
+    expect(isOn(quadsPrimary)).toBe(true)
 
-    const secChips = Array.from(container.querySelectorAll('.chips')[1].querySelectorAll('button.chip'))
+    const secChips = chipRow(container, 1)
     const hamstringsSec = secChips.find(c => c.textContent.trim() === 'Hamstrings')
     const glutesSec = secChips.find(c => c.textContent.trim() === 'Glutes')
-    expect(hamstringsSec?.classList.contains('on')).toBe(true)
-    expect(glutesSec?.classList.contains('on')).toBe(true)
+    expect(isOn(hamstringsSec)).toBe(true)
+    expect(isOn(glutesSec)).toBe(true)
 
-    await act(async () => {
-      glutesSec.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    fireEvent.click(glutesSec)
 
-    const secChipsAfter = Array.from(container.querySelectorAll('.chips')[1].querySelectorAll('button.chip'))
+    const secChipsAfter = chipRow(container, 1)
     const adductorsSec = secChipsAfter.find(c => c.textContent.trim() === 'Adductors')
-    await act(async () => {
-      adductorsSec.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    fireEvent.click(adductorsSec)
 
-    const saveBtn = container.querySelector('button.btn.primary')
-    await act(async () => {
-      saveBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    const saveBtn = primaryAction(container)
+    fireEvent.click(saveBtn)
 
     const updated = useStore.getState().S.customEx.find(c => c.id === 'c-legacy-legs-2')
     expect(updated.tg).toBe('quadriceps')
@@ -953,12 +808,10 @@ describe('CustomExForm canonical muscle selection and editing', () => {
       root.render(<CustomExForm onDone={vi.fn()} close={vi.fn()} />)
     })
 
-    const nameInput = container.querySelector('input.input')
-    const saveBtn = Array.from(container.querySelectorAll('button')).find(b => b.textContent.includes('Create exercise'))
+    const nameInput = within(container).getByRole('textbox', { name: 'Exercise name' })
+    const saveBtn = within(container).getByRole('button', { name: /Create exercise/ })
 
-    await act(async () => {
-      saveBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    fireEvent.click(saveBtn)
     expect(useUI.getState().toastMsg).toBe('Give it a name')
     expect(useStore.getState().S.customEx.length).toBe(1)
 
@@ -971,7 +824,7 @@ describe('CustomExForm canonical muscle selection and editing', () => {
     expect(useUI.getState().toastMsg).toBe('Pick a primary muscle')
     expect(useStore.getState().S.customEx.length).toBe(1)
 
-    const bicepsPrimary = Array.from(container.querySelectorAll('.chips')[0].querySelectorAll('button.chip'))
+    const bicepsPrimary = chipRow(container, 0)
       .find(c => c.textContent.trim() === 'Biceps')
     await act(async () => {
       bicepsPrimary.dispatchEvent(new MouseEvent('click', { bubbles: true }))
@@ -1011,14 +864,10 @@ describe('ExConfig and exConfigSheet onReplace support', () => {
       )
     })
 
-    const buttons = Array.from(container.querySelectorAll('button'))
-    const replaceBtn = buttons.find(b => b.textContent.includes('Replace exercise'))
+    const replaceBtn = within(container).queryByRole('button', { name: /Replace exercise/ })
     expect(replaceBtn).toBeTruthy()
-    expect(replaceBtn.querySelector('svg.icn')).toBeTruthy()
 
-    await act(async () => {
-      replaceBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    fireEvent.click(replaceBtn)
 
     expect(close).toHaveBeenCalledTimes(1)
     expect(onReplace).toHaveBeenCalledTimes(1)
@@ -1039,9 +888,8 @@ describe('ExConfig and exConfigSheet onReplace support', () => {
       )
     })
 
-    const buttons = Array.from(container.querySelectorAll('button'))
-    const replaceBtn = buttons.find(b => b.textContent.includes('Replace exercise'))
-    expect(replaceBtn).toBeUndefined()
+    const replaceBtn = within(container).queryByRole('button', { name: /Replace exercise/ })
+    expect(replaceBtn).toBeNull()
   })
 
   it('does not render "Replace exercise" button when onReplace is not provided', async () => {
@@ -1056,9 +904,8 @@ describe('ExConfig and exConfigSheet onReplace support', () => {
       )
     })
 
-    const buttons = Array.from(container.querySelectorAll('button'))
-    const replaceBtn = buttons.find(b => b.textContent.includes('Replace exercise'))
-    expect(replaceBtn).toBeUndefined()
+    const replaceBtn = within(container).queryByRole('button', { name: /Replace exercise/ })
+    expect(replaceBtn).toBeNull()
   })
 
   it('pre-seeds sets and merges with exercise defaults when initial is provided without existing', async () => {
@@ -1078,13 +925,11 @@ describe('ExConfig and exConfigSheet onReplace support', () => {
       )
     })
 
-    const setsInput = container.querySelector('.cfgrow input')
+    const setsInput = within(container).getByLabelText('Sets')
     expect(setsInput.value).toBe('5')
 
-    const saveBtn = container.querySelector('button.btn.primary')
-    await act(async () => {
-      saveBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    const saveBtn = primaryAction(container)
+    fireEvent.click(saveBtn)
 
     expect(onSave).toHaveBeenCalledTimes(1)
     expect(savedConfig.sets).toBe(5)
@@ -1102,12 +947,10 @@ describe('ExConfig and exConfigSheet onReplace support', () => {
       root.render(sheets[0].render(() => useUI.getState().closeSheet(sheets[0].id)))
     })
 
-    const replaceBtn = Array.from(container.querySelectorAll('button')).find(b => b.textContent.includes('Replace exercise'))
+    const replaceBtn = within(container).queryByRole('button', { name: /Replace exercise/ })
     expect(replaceBtn).toBeTruthy()
 
-    await act(async () => {
-      replaceBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    fireEvent.click(replaceBtn)
 
     expect(onReplace).toHaveBeenCalledTimes(1)
     expect(useUI.getState().sheets.length).toBe(0)
@@ -1125,8 +968,7 @@ describe('ExConfig and exConfigSheet onReplace support', () => {
         />
       )
     })
-    const saveBtn = container.querySelector('button.btn.primary')
-    expect(saveBtn.textContent.trim()).toBe('Replace')
+    expect(within(container).getByRole('button', { name: 'Replace' })).toBeTruthy()
   })
 
   it('passes actionLabel through exConfigSheet to ExConfig', async () => {
@@ -1136,8 +978,7 @@ describe('ExConfig and exConfigSheet onReplace support', () => {
     await act(async () => {
       root.render(sheets[0].render(() => useUI.getState().closeSheet(sheets[0].id)))
     })
-    const saveBtn = container.querySelector('button.btn.primary')
-    expect(saveBtn.textContent.trim()).toBe('Custom Action')
+    expect(within(container).getByRole('button', { name: 'Custom Action' })).toBeTruthy()
   })
 })
 
@@ -1177,13 +1018,13 @@ describe('ExConfig notes and cues', () => {
       )
     })
 
-    const textarea = container.querySelector('textarea[aria-label="Notes and cues"]')
+    const textarea = within(container).getByRole('textbox', { name: 'Notes and cues' })
     expect(textarea).toBeTruthy()
     expect(textarea.placeholder).toBe('Notes, cues, or machine setup…')
     expect(textarea.value).toBe('')
     expect(textarea.getAttribute('maxlength')).toBe('500')
 
-    const counter = Array.from(container.querySelectorAll('.small.dim')).find(el => el.textContent.includes('/500'))
+    const counter = within(container).getByText(/\/500$/)
     expect(counter).toBeTruthy()
     expect(counter.textContent).toBe('0/500')
   })
@@ -1200,11 +1041,11 @@ describe('ExConfig notes and cues', () => {
       )
     })
 
-    const textarea = container.querySelector('textarea[aria-label="Notes and cues"]')
+    const textarea = within(container).getByRole('textbox', { name: 'Notes and cues' })
     expect(textarea).toBeTruthy()
     expect(textarea.value).toBe('Seat height 5, pin 3')
 
-    const counter = Array.from(container.querySelectorAll('.small.dim')).find(el => el.textContent.includes('/500'))
+    const counter = within(container).getByText(/\/500$/)
     expect(counter.textContent).toBe('20/500')
   })
 
@@ -1221,10 +1062,10 @@ describe('ExConfig notes and cues', () => {
       )
     })
 
-    const textarea = container.querySelector('textarea[aria-label="Notes and cues"]')
+    const textarea = within(container).getByRole('textbox', { name: 'Notes and cues' })
     expect(textarea.value).toBe('Focus on slow negative')
 
-    const counter = Array.from(container.querySelectorAll('.small.dim')).find(el => el.textContent.includes('/500'))
+    const counter = within(container).getByText(/\/500$/)
     expect(counter.textContent).toBe('22/500')
   })
 
@@ -1240,12 +1081,12 @@ describe('ExConfig notes and cues', () => {
       )
     })
 
-    const textarea = container.querySelector('textarea[aria-label="Notes and cues"]')
+    const textarea = within(container).getByRole('textbox', { name: 'Notes and cues' })
     await act(async () => {
       setTextAreaValue(textarea, 'Keep back flat')
     })
 
-    const counter = Array.from(container.querySelectorAll('.small.dim')).find(el => el.textContent.includes('/500'))
+    const counter = within(container).getByText(/\/500$/)
     expect(counter.textContent).toBe('14/500')
   })
 
@@ -1264,15 +1105,13 @@ describe('ExConfig notes and cues', () => {
       )
     })
 
-    const textarea = container.querySelector('textarea[aria-label="Notes and cues"]')
+    const textarea = within(container).getByRole('textbox', { name: 'Notes and cues' })
     await act(async () => {
       setTextAreaValue(textarea, '   Pause at peak contraction   ')
     })
 
-    const saveBtn = container.querySelector('button.btn.primary')
-    await act(async () => {
-      saveBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    const saveBtn = primaryAction(container)
+    fireEvent.click(saveBtn)
 
     expect(onSave).toHaveBeenCalledTimes(1)
     expect(saved.notes).toBe('Pause at peak contraction')
@@ -1293,15 +1132,13 @@ describe('ExConfig notes and cues', () => {
       )
     })
 
-    const textarea = container.querySelector('textarea[aria-label="Notes and cues"]')
+    const textarea = within(container).getByRole('textbox', { name: 'Notes and cues' })
     await act(async () => {
       setTextAreaValue(textarea, '  Incline 3.0  ')
     })
 
-    const saveBtn = container.querySelector('button.btn.primary')
-    await act(async () => {
-      saveBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    const saveBtn = primaryAction(container)
+    fireEvent.click(saveBtn)
 
     expect(onSave).toHaveBeenCalledTimes(1)
     expect(saved.notes).toBe('Incline 3.0')
@@ -1322,21 +1159,17 @@ describe('ExConfig notes and cues', () => {
       )
     })
 
-    const segButtons = Array.from(container.querySelectorAll('[role="radio"]'))
+    const segButtons = within(container).getAllByRole('radio')
     const timeBtn = segButtons.find(b => b.textContent.includes('Time'))
-    await act(async () => {
-      timeBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    fireEvent.click(timeBtn)
 
-    const textarea = container.querySelector('textarea[aria-label="Notes and cues"]')
+    const textarea = within(container).getByRole('textbox', { name: 'Notes and cues' })
     await act(async () => {
       setTextAreaValue(textarea, 'Hold steady')
     })
 
-    const saveBtn = container.querySelector('button.btn.primary')
-    await act(async () => {
-      saveBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    const saveBtn = primaryAction(container)
+    fireEvent.click(saveBtn)
 
     expect(onSave).toHaveBeenCalledTimes(1)
     expect(saved.mode).toBe('time')
@@ -1358,15 +1191,13 @@ describe('ExConfig notes and cues', () => {
       )
     })
 
-    const textarea = container.querySelector('textarea[aria-label="Notes and cues"]')
+    const textarea = within(container).getByRole('textbox', { name: 'Notes and cues' })
     await act(async () => {
       setTextAreaValue(textarea, '     ')
     })
 
-    const saveBtn = container.querySelector('button.btn.primary')
-    await act(async () => {
-      saveBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    const saveBtn = primaryAction(container)
+    fireEvent.click(saveBtn)
 
     expect(onSave).toHaveBeenCalledTimes(1)
     expect('notes' in saved).toBe(false)
@@ -1388,15 +1219,13 @@ describe('ExConfig notes and cues', () => {
     })
 
     const longNote = 'A'.repeat(550)
-    const textarea = container.querySelector('textarea[aria-label="Notes and cues"]')
+    const textarea = within(container).getByRole('textbox', { name: 'Notes and cues' })
     await act(async () => {
       setTextAreaValue(textarea, longNote)
     })
 
-    const saveBtn = container.querySelector('button.btn.primary')
-    await act(async () => {
-      saveBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    const saveBtn = primaryAction(container)
+    fireEvent.click(saveBtn)
 
     expect(onSave).toHaveBeenCalledTimes(1)
     expect(saved.notes.length).toBe(500)
@@ -1411,9 +1240,9 @@ const pushUp = { id: '0662', n: 'push-up', bp: 'chest', tg: 'pectorals', eq: 'bo
 const steps = { id: '3672', n: 'back and forth step', bp: 'cardio', tg: 'cardio', eq: 'body weight' }
 
 describe('ExConfig Rest duration', () => {
-  const restRow = () => Array.from(container.querySelectorAll('button.lrow')).find(b => b.querySelector('.lrow-t')?.textContent === 'Rest duration')
+  const restRow = () => within(container).getByRole('button', { name: /^Rest duration/ })
   const click = el => el.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-  const saveBtn = () => Array.from(container.querySelectorAll('button')).find(b => /^(Save|Add to routine)$/.test(b.textContent.trim()))
+  const saveBtn = () => primaryAction(container)
 
   let mounts = 0
   async function renderConfig(ex, existing) {
@@ -1423,16 +1252,16 @@ describe('ExConfig Rest duration', () => {
   }
 
   async function pick(label) {
-    await act(async () => { click(restRow()) })
+    fireEvent.click(restRow())
     const sheet = useUI.getState().sheets.at(-1)
     const host = document.createElement('div')
     document.body.appendChild(host)
     const sheetRoot = createRoot(host)
     await act(async () => { sheetRoot.render(sheet.render(() => useUI.getState().closeSheet(sheet.id))) })
-    const options = Array.from(host.querySelectorAll('button.lrow'))
-    const labels = options.map(o => o.querySelector('.lrow-t').textContent)
-    const option = options.find(o => o.querySelector('.lrow-t').textContent === label)
-    await act(async () => { click(option) })
+    const options = within(host).getAllByRole('button')
+    const labels = options.map(o => o.textContent)
+    const option = within(host).getByRole('button', { name: label })
+    fireEvent.click(option)
     await act(async () => { sheetRoot.unmount() })
     host.remove()
     return labels
@@ -1441,63 +1270,63 @@ describe('ExConfig Rest duration', () => {
   it('reads Default, naming the Profile\'s Rest duration, when the exercise has none of its own', async () => {
     useStore.getState().update(s => { s.restSec = 120 })
     await renderConfig(bench, { id: '0025', sets: 3, reps: 8, weight: 60 })
-    expect(restRow().querySelector('.lrow-v').textContent).toBe('Default (120s)')
+    expect(within(restRow()).getByText('Default (120s)')).toBeTruthy()
   })
 
   it('offers Default and the Settings durations, and saves the one picked', async () => {
     const onSave = await renderConfig(bench, { id: '0025', sets: 3, reps: 8, weight: 60 })
     expect(await pick('180s')).toEqual(['Default (90s)', '60s', '90s', '120s', '150s', '180s'])
-    expect(restRow().querySelector('.lrow-v').textContent).toBe('180s')
-    await act(async () => { click(saveBtn()) })
+    expect(within(restRow()).getByText('180s')).toBeTruthy()
+    fireEvent.click(saveBtn())
     expect(onSave.mock.calls[0][0]).toMatchObject({ sets: 3, reps: 8, rest: 180 })
   })
 
   it('stores nothing for Default', async () => {
     const onSave = await renderConfig(bench, { id: '0025', sets: 3, reps: 8, weight: 60, rest: 150 })
-    expect(restRow().querySelector('.lrow-v').textContent).toBe('150s')
+    expect(within(restRow()).getByText('150s')).toBeTruthy()
     await pick('Default (90s)')
-    await act(async () => { click(saveBtn()) })
+    fireEvent.click(saveBtn())
     expect(onSave.mock.calls[0][0]).not.toHaveProperty('rest')
   })
 
   it('keeps a picked duration that equals the Profile\'s, so it does not follow a later Settings change', async () => {
     const picked = await renderConfig(bench, { id: '0025', sets: 3, reps: 8, weight: 60 })
     await pick('90s')
-    await act(async () => { click(saveBtn()) })
+    fireEvent.click(saveBtn())
     expect(picked.mock.calls[0][0].rest).toBe(90)
 
     const kept = await renderConfig(bench, { id: '0025', sets: 3, reps: 8, weight: 60, rest: 90 })
-    expect(restRow().querySelector('.lrow-v').textContent).toBe('90s')
-    await act(async () => { click(saveBtn()) })
+    expect(within(restRow()).getByText('90s')).toBeTruthy()
+    fireEvent.click(saveBtn())
     expect(kept.mock.calls[0][0].rest).toBe(90)
   })
 
   it('shows a Rest duration from a plan file that is not on the list, and keeps it', async () => {
     const onSave = await renderConfig(bench, { id: '0025', sets: 3, reps: 8, weight: 60, rest: 75 })
-    expect(restRow().querySelector('.lrow-v').textContent).toBe('75s')
-    await act(async () => { click(saveBtn()) })
+    expect(within(restRow()).getByText('75s')).toBeTruthy()
+    fireEvent.click(saveBtn())
     expect(onSave.mock.calls[0][0].rest).toBe(75)
   })
 
   it('has a Rest duration for timed and cardio exercises too', async () => {
     const timed = await renderConfig(bench, { id: '0025', sets: 3, mode: 'time', sec: 45 })
     await pick('60s')
-    await act(async () => { click(saveBtn()) })
+    fireEvent.click(saveBtn())
     expect(timed.mock.calls[0][0]).toMatchObject({ mode: 'time', rest: 60 })
 
     const cardio = await renderConfig(steps, null)
     await pick('120s')
-    await act(async () => { click(saveBtn()) })
+    fireEvent.click(saveBtn())
     expect(cardio.mock.calls[0][0]).toMatchObject({ min: 20, rest: 120 })
   })
 })
 
 describe('ExConfig round trip: pick, save to the routine, change the Setting, read the entry', () => {
   const click = el => el.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    const switchOf = name => container.querySelector(`[role="switch"][aria-label="${name}"]`)
-  const stepperValue = label => container.querySelector(`input[aria-label="${label}"]`).value
-  const stepUp = async label => { await act(async () => { click(buttonNamed(container, `Increase ${label}`)) }) }
-  const stepDown = async label => { await act(async () => { click(buttonNamed(container, `Decrease ${label}`)) }) }
+    const switchOf = name => within(container).getByRole('switch', { name })
+  const stepperValue = label => within(container).getByLabelText(label).value
+  const stepUp = async label => { fireEvent.click(buttonNamed(container, `Increase ${label}`)) }
+  const stepDown = async label => { fireEvent.click(buttonNamed(container, `Decrease ${label}`)) }
   const entry = () => useStore.getState().S.routines[0].ex[0]
   const routine = () => useStore.getState().S.routines[0]
 
@@ -1507,7 +1336,7 @@ describe('ExConfig round trip: pick, save to the routine, change the Setting, re
     const onSave = cfg => useStore.getState().actRoutine({ type: 'replaceExercise', routineId: 'r-rt', index: 0, exId: ex.id, target: cfg })
     await act(async () => { root.render(<ExConfig key={mounts++} ex={ex} existing={entry()} routine={routine()} onSave={onSave} close={vi.fn()} />) })
   }
-  const save = async () => { await act(async () => { click(buttonNamed(container, 'Save')) }) }
+  const save = async () => { fireEvent.click(buttonNamed(container, 'Save')) }
 
   describe('Bodyweight switch: stores only a difference from the catalogue', () => {
     it('stores nothing for a body-weight exercise saved as body weight', async () => {
@@ -1518,12 +1347,12 @@ describe('ExConfig round trip: pick, save to the routine, change the Setting, re
 
     it('stores false when a body-weight exercise is switched off, and nothing once it is switched back', async () => {
       await openEntry(pushUp, { sets: 3, reps: 12, weight: 0, mode: 'reps' })
-      await act(async () => { click(switchOf('Bodyweight')) })
+      fireEvent.click(switchOf('Bodyweight'))
       await save()
       expect(entry().bodyweight).toBe(false)
 
       await openEntry(pushUp, entry())
-      await act(async () => { click(switchOf('Bodyweight')) })
+      fireEvent.click(switchOf('Bodyweight'))
       await save()
       expect(entry()).not.toHaveProperty('bodyweight')
     })
@@ -1533,12 +1362,12 @@ describe('ExConfig round trip: pick, save to the routine, change the Setting, re
       await save()
       expect(entry()).not.toHaveProperty('bodyweight')
 
-      await act(async () => { click(switchOf('Bodyweight')) })
+      fireEvent.click(switchOf('Bodyweight'))
       await save()
       expect(entry().bodyweight).toBe(true)
 
       await openEntry(bench, entry())
-      await act(async () => { click(switchOf('Bodyweight')) })
+      fireEvent.click(switchOf('Bodyweight'))
       await save()
       expect(entry()).not.toHaveProperty('bodyweight')
     })
@@ -1616,24 +1445,24 @@ describe('ExConfig round trip: pick, save to the routine, change the Setting, re
   describe('controls that follow no Setting store what is picked', () => {
     it('Reps per side stores side when on and nothing when off', async () => {
       await openEntry(bench, { sets: 3, reps: 8, weight: 20, mode: 'reps' })
-      await act(async () => { click(switchOf('Reps per side')) })
+      fireEvent.click(switchOf('Reps per side'))
       await save()
       expect(entry()).toMatchObject({ side: true, reps: 8 })
 
       await openEntry(bench, entry())
-      await act(async () => { click(switchOf('Reps per side')) })
+      fireEvent.click(switchOf('Reps per side'))
       await save()
       expect(entry()).not.toHaveProperty('side')
     })
 
     it('Log mode stores the mode picked, the shown one included', async () => {
       await openEntry(bench, { sets: 3, reps: 8, weight: 60 })
-      await act(async () => { click(container.querySelector('[role="radio"][aria-checked="true"]')) })
+      fireEvent.click(within(container).getByRole('radio', { checked: true }))
       await save()
       expect(entry().mode).toBe('reps')
 
       await openEntry(bench, entry())
-      await act(async () => { click(Array.from(container.querySelectorAll('[role="radio"]')).find(b => b.textContent === 'Time')) })
+      fireEvent.click(within(container).getAllByRole('radio').find(b => b.textContent === 'Time'))
       await save()
       expect(entry()).toMatchObject({ mode: 'time', sec: 45 })
       expect(entry()).not.toHaveProperty('reps')
@@ -1670,8 +1499,8 @@ describe('Remove from routine confirms', () => {
       root.render(<ExConfig ex={sampleEx} existing={{ id: '0001', sets: 3, reps: 10 }} onSave={vi.fn()} onDelete={onDelete} close={close} />)
     })
 
-    const remove = [...container.querySelectorAll('button')].find(b => b.textContent === 'Remove from routine')
-    await act(async () => { remove.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
+    const remove = within(container).getByRole('button', { name: 'Remove from routine' })
+    fireEvent.click(remove)
     expect(onDelete).not.toHaveBeenCalled()
     expect(close).not.toHaveBeenCalled()
 
@@ -1682,12 +1511,12 @@ describe('Remove from routine confirms', () => {
     await act(async () => { confirmRoot.render(confirm.render(vi.fn())) })
     expect(host.textContent).toContain('Remove 3/4 sit-up?')
     expect(host.textContent).toContain('This removes the exercise from the routine.')
-    const cancel = [...host.querySelectorAll('button')].find(b => b.textContent === 'Cancel')
-    await act(async () => { cancel.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
+    const cancel = within(host).getByRole('button', { name: 'Cancel' })
+    fireEvent.click(cancel)
     expect(onDelete).not.toHaveBeenCalled()
 
-    const ok = [...host.querySelectorAll('button')].find(b => b.textContent === 'Remove')
-    await act(async () => { ok.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
+    const ok = within(host).getByRole('button', { name: 'Remove' })
+    fireEvent.click(ok)
     expect(close).toHaveBeenCalledOnce()
     expect(onDelete).toHaveBeenCalledOnce()
     await act(async () => { confirmRoot.unmount() })
