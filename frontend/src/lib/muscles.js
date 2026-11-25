@@ -493,10 +493,16 @@ export function rankOf(load) {
   return { worked, missed }
 }
 
-/** @param {ReturnType<typeof exerciseFor> | Entry} ex @param {Entry} entry @returns {string} */
-function entryDisplayName(ex, entry) {
-  if (ex && 'n' in ex && ex.n) return ex.n
-  return entry.muscleSnapshot?.n || entry.n || (typeof entry.id === 'string' ? entry.id : '')
+/**
+ * The name a finished Entry was trained under: the frozen name, then the Entry's own,
+ * then the Catalogue's (a built-in freezes none), then the id.
+ * @param {Entry} entry
+ * @returns {string}
+ */
+export function entryName(entry) {
+  const ex = exerciseFor(entry)
+  const live = ex && 'n' in ex ? ex.n : ''
+  return entry.muscleSnapshot?.n || entry.n || live || (typeof entry.id === 'string' ? entry.id : '')
 }
 
 /**
@@ -517,8 +523,7 @@ export function sessionMuscleDistribution(workout) {
     if (count === 0) continue
     totalWorkSets += count
 
-    const ex = exerciseFor(entry) || entry
-    const exName = entryDisplayName(ex, entry)
+    const exName = entryName(entry)
 
     /** @param {string} slug */
     const getAcc = slug => {
