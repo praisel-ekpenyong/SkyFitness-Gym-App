@@ -1,5 +1,5 @@
 
-import { weekKey, isoOf } from './dates.js'
+import { weekKey, isoOf, assertClock } from './dates.js'
 
 /** @typedef {import('./types.js').Profile} Profile */
 /** @typedef {import('./types.js').Routine} Routine */
@@ -57,13 +57,15 @@ export function effectiveRoutine(S, iso) {
 }
 
 /**
- * Count how many of the last `n` calendar weeks had at least one Workout.
- * @param {Profile | null | undefined} S
- * @param {number} [n=12]
- * @param {number} [now=Date.now()]
- * @returns {number}
+ * Counts how many of the last `n` weeks hold a workout.
+ * @param {Profile | null | undefined} S - Profile with `workouts`.
+ * @param {number} now - The clock: epoch milliseconds.
+ * @param {number} [n] - Weeks to look back, the current one included.
+ * @returns {number} Trained weeks, 0..n.
+ * @throws {TypeError} When `now` is not a finite number.
  */
-export function trainedWeeks(S, n = 12, now = Date.now()) {
+export function trainedWeeks(S, now, n = 12) {
+  assertClock(now)
   if (!S?.workouts?.length) return 0
   const weeks = new Set(S.workouts.map(w => weekKey(w.d)))
   const cur = new Date(now)

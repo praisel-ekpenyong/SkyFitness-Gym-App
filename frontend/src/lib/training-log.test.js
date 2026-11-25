@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { best, best1RM, e1rmByWorkout, e1rmRecords, e1rmSeries, metric, records, tonnage, lastSession, lastSessionInRoutine, latestWorkSetAt, lastWorkoutInRoutine } from './training-log.js'
+import { isoOf } from './dates.js'
 
 const lift = (sets, extra = {}) => ({ id: 'bench', sets, ...extra })
 const day = (d, entries, unit) => ({ d, entries, ...(unit ? { unit } : {}) })
@@ -570,7 +571,7 @@ describe('Training log: Records of a cloned in-log Workout', () => {
 describe('Training log: Records over a large history', () => {
   it('reads Records for every Workout of a 2000-Workout history quickly', () => {
     const workouts = Array.from({ length: 2000 }, (_, i) => ({
-      id: `w${i}`, d: new Date(Date.UTC(2020, 0, 1 + i)).toISOString().slice(0, 10), start: 1,
+      id: `w${i}`, d: isoOf(new Date(2020, 0, 1 + i)), start: 1,
       entries: ['bench', 'squat', 'row'].map(id => ({ id, sets: [work(50 + (i % 7) * 5 + Math.floor(i / 100))] })),
     }))
     const S = { unit: 'kg', workouts }

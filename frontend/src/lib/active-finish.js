@@ -1,3 +1,4 @@
+import { assertClock } from './dates.js'
 import { isPerformed } from './workout-sets.js'
 import { loadRecords, e1rmRecords } from './training-log.js'
 import { EXIDX } from './exercises.js'
@@ -31,10 +32,12 @@ function planRecord(plan) {
 /**
  * Freeze an ActiveWorkout into a finished Workout record.
  * @param {ActiveWorkout} active
- * @param {{ end?: number, unit?: Unit, snapshotFor?: (entry: Entry) => MuscleSnapshot | null }} [options]
+ * @param {{ end: number, unit?: Unit, snapshotFor?: (entry: Entry) => MuscleSnapshot | null }} options - `end` is the clock: epoch milliseconds.
  * @returns {Workout}
+ * @throws {TypeError} When `end` is not a finite number.
  */
-export function buildCompletedWorkout(active, { end = Date.now(), unit = 'kg', snapshotFor } = {}) {
+export function buildCompletedWorkout(active, { end, unit = 'kg', snapshotFor }) {
+  assertClock(end, 'end')
   const entries = (active?.entries || []).map(entry => {
     /** @type {Entry} */
     const completed = {

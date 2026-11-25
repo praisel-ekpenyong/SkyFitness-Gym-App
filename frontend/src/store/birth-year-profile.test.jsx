@@ -77,10 +77,10 @@ describe('Reset clears birth year', () => {
 
 describe('invalid stored birth years read as not set', () => {
   it('normalizeState keeps a four-digit year that is not in the future', () => {
-    expect(normalizeState({ birthYear: 1966 }).birthYear).toBe(1966)
-    expect(normalizeState({ birthYear: 2999 }).birthYear).toBeNull()
-    expect(normalizeState({ birthYear: 'robot' }).birthYear).toBeNull()
-    expect(normalizeState({}).birthYear).toBeNull()
+    expect(normalizeState({ birthYear: 1966 }, Date.now()).birthYear).toBe(1966)
+    expect(normalizeState({ birthYear: 2999 }, Date.now()).birthYear).toBeNull()
+    expect(normalizeState({ birthYear: 'robot' }, Date.now()).birthYear).toBeNull()
+    expect(normalizeState({}, Date.now()).birthYear).toBeNull()
   })
 })
 

@@ -270,11 +270,11 @@ export function selectStatsOverview(S, opts = {}) {
   const scale = displayScale(S)
   const effortWin = inWindow(workouts, now, effortDays)
   const scoped = S ? { ...S, workouts: effortWin } : null
-  const sum = effortSummary(scoped, 0)
-  const weeks = effortWeeks(scoped, 0).map(e => ({
+  const sum = effortSummary(scoped, 0, now)
+  const weeks = effortWeeks(scoped, 0, now).map(e => ({
     t: e.t, rir: e.rir, y: toScale(scale, e.rir), n: e.n, sets: e.sets,
   }))
-  const bins = effortHistogram(scoped, 0)
+  const bins = effortHistogram(scoped, 0, now)
   const maxBin = Math.max(1, ...bins.map(bin => bin.n))
   const histogram = bins.map(bin => ({ ...bin,
     value: toScale(scale, bin.rir), hard: bin.rir <= HARD_RIR,
@@ -314,7 +314,7 @@ export function selectStatsOverview(S, opts = {}) {
     exerciseIndex,
     bodyweightKg,
     bodyweight,
-    counts: { total: workouts.length, month: workouts.filter(w => monthKey(w) === monthKey(today)).length, streak: { current: streak.current, best: streak.best }, weeks12: trainedWeeks(S, 12, now) },
+    counts: { total: workouts.length, month: workouts.filter(w => monthKey(w) === monthKey(today)).length, streak: { current: streak.current, best: streak.best }, weeks12: trainedWeeks(S, now) },
     workouts: { recent: [...workouts].reverse().slice(0, 6), forDay: /** @param {string} day */ day => workouts.filter(w => w.d === day) },
     scale,
     scaleName: scaleName(scale),

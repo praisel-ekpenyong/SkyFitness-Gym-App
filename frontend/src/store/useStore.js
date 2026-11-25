@@ -15,13 +15,17 @@ import { runEffects } from './effects.js'
 // Frozen in tests so code that changes state outside update fails the suite (ADR 0026).
 setAutoFreeze(import.meta.env.MODE === 'test')
 
+// The one place the store reads the clock for normalizeState (lib/ takes it as an argument).
+/** @param {unknown} raw */
+const normalizeAtEdge = raw => normalizeState(raw, Date.now())
+
 const stamp = S => ({ ...S, _ts: Date.now() })
 
 // A Profile saved by a newer Sky is not admitted (ADR 0027). The tab starts empty in memory,
 // flags `newerProfile`, and never writes, so the newer Profile stays on disk as it was.
 function loadState(raw = loadLocal()) {
   if (isNewerProfile(raw)) return { S: freshProfile(), newerProfile: true }
-  return { S: normalizeState(raw), newerProfile: false }
+  return { S: normalizeAtEdge(raw), newerProfile: false }
 }
 
 const hasData = st => !!((st.workouts || []).length || (st.routines || []).length || (st.bodyweight || []).length)
@@ -58,7 +62,7 @@ export const useStore = create((set, get) => {
     const incomingTs = Number(incoming?._ts) || 0
     const currentTs = Number(current?._ts) || 0
     if (incomingTs > currentTs) {
-      const normalized = normalizeState(incoming)
+      const normalized = normalizeAtEdge(incoming)
       registerCustom(normalized.customEx)
       set({ S: normalized })
     }
@@ -81,7 +85,7 @@ export const useStore = create((set, get) => {
         draft._ts = Date.now()
       }))
     },
-    replaceState(S) { persist(stamp(normalizeState(S))) },
+    replaceState(S) { persist(stamp(normalizeAtEdge(S))) },
     // `send` is where a hold's completeHold goes; a default here would drop its open-finish.
     act(command, send) {
       let res = null
@@ -101,7 +105,7 @@ export const useStore = create((set, get) => {
         running: S,
         hasData,
         overlay: x => {
-          try { return normalizeState(x) } catch (e) {
+          try { return normalizeAtEdge(x) } catch (e) {
             if (!(e instanceof NewerProfileError)) throw e
             set({ newerProfile: true })
             return null

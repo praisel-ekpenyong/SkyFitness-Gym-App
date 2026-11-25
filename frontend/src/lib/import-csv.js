@@ -8,7 +8,8 @@
 import { EXDB, EXIDX } from './exercises.js'
 import { uid } from './format.js'
 import { parseDay } from './dates.js'
-import { LB_TO_KG, mergeWeighIns, weighInsPreview } from './bodyweight.js'
+import { mergeWeighIns, weighInsPreview } from './bodyweight.js'
+import { normalizeWeight, round1 } from './units.js'
 import { admit, sortWorkouts } from './profile/index.js'
 
 /** @typedef {import('./types.js').Profile} Profile */
@@ -411,9 +412,9 @@ export function parseWorkoutCSV(text, { unit = 'kg' } = {}) {
   const fileUnit = sawLb && !sawKg ? 'lb' : sawKg && !sawLb ? 'kg' : ''
   const mixedUnits = sawLb && sawKg
   /** @param {number} x @returns {number} */
-  const toKg = x => Math.round(x * LB_TO_KG * 10) / 10
+  const toKg = x => normalizeWeight(x, 'lb', 'kg')
   /** @param {number} x @returns {number} */
-  const toLb = x => Math.round(x / LB_TO_KG * 10) / 10
+  const toLb = x => normalizeWeight(x, 'kg', 'lb')
   /** @param {{ w?: number, u?: string }} s @returns {number} */
   const convRow = s => {
     const u = s.u || fileUnit
@@ -505,8 +506,8 @@ export function parseBodyweight(text, { unit = 'kg' } = {}) {
   const converted = !!fileUnit && fileUnit !== unit
   /** @type {(x: number) => number} */
   const conv = converted
-    ? (fileUnit === 'lb' ? x => Math.round(x * LB_TO_KG * 10) / 10 : x => Math.round(x / LB_TO_KG * 10) / 10)
-    : x => Math.round(x * 10) / 10
+    ? x => normalizeWeight(x, fileUnit, unit)
+    : round1
   const dates = [...out.keys()].sort()
   return {
     kind: 'bodyweight', source: 'Apple Health',

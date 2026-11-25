@@ -90,6 +90,12 @@
     "jsx-a11y/prefer-tag-over-role": 3,
     "react/no-array-index-key": 1
   },
+  "src/lib/active-finish.js": {
+    "eslint/no-restricted-properties": 1
+  },
+  "src/lib/active-session.js": {
+    "eslint/no-restricted-properties": 1
+  },
   "src/lib/active-toggle.js": {
     "eslint/complexity": 1
   },

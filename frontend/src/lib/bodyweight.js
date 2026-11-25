@@ -1,5 +1,4 @@
 
-export { LB_TO_KG } from './units.js'
 import { normalizeWeight, sanitizeUnit } from './units.js'
 
 /** @typedef {import('./types.js').Profile} Profile */

@@ -59,7 +59,9 @@ const SPEC = {
   pull: { name: 'Pull Day', emoji: 'pullup', ex: [['2330', 4, 10, 50], ['0027', 4, 8, 70], ['1323', 3, 10, 45], ['0031', 3, 10, 30], ['0313', 3, 12, 12]] },
   legs: { name: 'Leg Day', emoji: 'legs', ex: [['0043', 4, 8, 100], ['0085', 3, 10, 80], ['0739', 3, 12, 60], ['0585', 3, 12, 40], ['0586', 3, 12, 35], ['0605', 4, 15, 50]] },
 }
-const iso = d => d.toISOString().slice(0, 10)
+const pad = n => String(n).padStart(2, '0')
+// The seed is built in UTC on purpose, so its day key is read in UTC too.
+const iso = d => `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`
 
 export function buildSeed({ today = '2026-11-09', theme = 'dark' } = {}) {
   const routines = Object.entries(SPEC).map(([id, r]) => ({ id, name: r.name, emoji: r.emoji, prog: 'linear', ex: r.ex.map(([eid, sets, reps, w]) => ({ id: eid, sets, reps, weight: w + 15 })) }))
@@ -71,7 +73,7 @@ export function buildSeed({ today = '2026-11-09', theme = 'dark' } = {}) {
     const wd = d.getUTCDay()
     if ([1, 3, 5].includes(wd) && !(i > 20 && i < 27)) {
       const key = wd === 1 ? 'push' : wd === 3 ? 'pull' : 'legs', r = SPEC[key], weeks = (14 * 7 - i) / 7
-      const start = new Date(d); start.setUTCHours(18, 5, 0, 0)
+      const start = new Date(d.getTime()); start.setUTCHours(18, 5, 0, 0)
       const entries = r.ex.map(([id, sets, reps, w0], k) => {
         const w = w0 ? Math.round((w0 + Math.floor(weeks / 2) * 2.5) * 2) / 2 : 0
         const rows = Array.from({ length: sets }, (_, s) => ({ w, r: reps - (i > 21 && s === sets - 1 && (n + k) % 3 === 0 ? 1 : 0), done: true }))

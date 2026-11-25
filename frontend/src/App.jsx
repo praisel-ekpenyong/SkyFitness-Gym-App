@@ -40,7 +40,10 @@ function applyPrefs(theme, accent) {
 function Shell() {
   const navigate = useNavigate()
   const loc = useLocation()
-  const { S, ready, storageBlocked, newerProfile } = useStore()
+  const S = useStore(s => s.S)
+  const ready = useStore(s => s.ready)
+  const storageBlocked = useStore(s => s.storageBlocked)
+  const newerProfile = useStore(s => s.newerProfile)
   const langV = useLang()
   useEffect(() => { setNav(navigate) }, [navigate])
   useEffect(() => { applyPrefs(S.theme, S.accent) }, [S.theme, S.accent])

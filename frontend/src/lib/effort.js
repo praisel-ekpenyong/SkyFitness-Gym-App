@@ -1,4 +1,4 @@
-import { weekKey, mondayOf, workoutTimestamp } from './dates.js'
+import { weekKey, mondayOf, workoutTimestamp, assertClock } from './dates.js'
 import { doneWorkSets } from './workout-sets.js'
 
 /** @typedef {import('./types.js').Profile} Profile */
@@ -80,9 +80,9 @@ function eachDoneSet(S, fn) {
   }
 }
 
-/** @param {Workout} w @param {number} [days] @returns {boolean} */
-const inWindow = (w, days) =>
-  !days || workoutTimestamp(w) > Date.now() - days * 86400000
+/** @param {Workout} w @param {number | undefined} days @param {number} now @returns {boolean} */
+const inWindow = (w, days, now) =>
+  !days || workoutTimestamp(w) > now - days * 86400000
 
 /**
  * Average the rated effort of a set list in RIR units.
@@ -95,11 +95,12 @@ export const avgRir = sets => {
   return vs.length ? vs.reduce((a, b) => a + b, 0) / vs.length : null
 }
 
-/** @param {Profile | null | undefined} S @param {number} [days] */
-export function effortSummary(S, days) {
+/** @param {Profile | null | undefined} S @param {number | undefined} days @param {number} now - The clock: epoch milliseconds. */
+export function effortSummary(S, days, now) {
+  assertClock(now)
   let done = 0, rated = 0, sum = 0, hard = 0
   eachDoneSet(S, (s, w) => {
-    if (!inWindow(w, days)) return
+    if (!inWindow(w, days, now)) return
     done++
     const r = rirOf(s)
     if (r == null) return
@@ -120,12 +121,13 @@ export function hasEffort(S) {
   return any
 }
 
-/** @param {Profile | null | undefined} S @param {number} [days] */
-export function effortWeeks(S, days) {
+/** @param {Profile | null | undefined} S @param {number | undefined} days @param {number} now - The clock: epoch milliseconds. */
+export function effortWeeks(S, days, now) {
+  assertClock(now)
   /** @type {Map<string, { k: string, t: number, sum: number, n: number, sets: number }>} */
   const wk = new Map()
   eachDoneSet(S, (s, w) => {
-    if (!inWindow(w, days)) return
+    if (!inWindow(w, days, now)) return
     const k = weekKey(w.d)
     let e = wk.get(k)
     if (!e) wk.set(k, e = { k, t: mondayNoon(w.d), sum: 0, n: 0, sets: 0 })
@@ -144,13 +146,14 @@ export function effortWeeks(S, days) {
 const mondayNoon = iso => +new Date(mondayOf(iso) + 'T12:00:00')
 
 export const BUCKETS = 4
-/** @param {Profile | null | undefined} S @param {number} [days] */
-export function effortHistogram(S, days) {
+/** @param {Profile | null | undefined} S @param {number | undefined} days @param {number} now - The clock: epoch milliseconds. */
+export function effortHistogram(S, days, now) {
+  assertClock(now)
   /** @type {number[]} */
   const bins = new Array(BUCKETS + 1).fill(0)
   let rated = 0
   eachDoneSet(S, (s, w) => {
-    if (!inWindow(w, days)) return
+    if (!inWindow(w, days, now)) return
     const r = rirOf(s)
     if (r == null) return
     rated++

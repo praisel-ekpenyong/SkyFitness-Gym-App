@@ -6,6 +6,7 @@ import { isWorkSet } from '../workout-sets.js'
 import { registerCustom } from '../exercises.js'
 import { epleyReps } from '../onerm.js'
 import { freshProfile } from '../profile/index.js'
+import { round1 } from '../units.js'
 
 /** @typedef {import('../types.js').Profile} Profile */
 /** @typedef {import('../types.js').Routine} Routine */
@@ -57,8 +58,8 @@ const WEEKLY_GAIN = 0.01
 const iso = ms => new Date(ms).toISOString().slice(0, 10)
 /** @param {number} ms @returns {number} */
 const weekday = ms => new Date(ms).getUTCDay()
-/** @param {number} v @returns {number} */
-const round = v => Math.round(v * 10) / 10
+/** @type {(v: number) => number} */
+const round = round1
 
 const ZERO_LOAD_CAPACITY = 30
 

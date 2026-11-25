@@ -369,6 +369,21 @@
       }
     },
     {
+      // lib/ takes the clock as an argument (CODING_STANDARDS "The clock is an argument in `lib/`"). uid() in format.js and todayISO() in dates.js own the reads. The other restricted properties repeat because an override replaces the rule's options.
+      "files": ["src/lib/**/*.js"],
+      "excludeFiles": ["src/lib/format.js", "src/lib/dates.js", "**/*.test.js"],
+      "rules": {
+        "eslint/no-restricted-properties": [
+          "error",
+          { "object": "navigator", "property": "vibrate", "message": "navigator.vibrate belongs to platform/sound.js." },
+          { "object": "navigator", "property": "wakeLock", "message": "navigator.wakeLock belongs to platform/wakelock.js." },
+          { "object": "navigator", "property": "serviceWorker", "message": "navigator.serviceWorker belongs to platform/. useUI.js and main.jsx are allowlisted until that code moves." },
+          { "object": "Math", "property": "random", "message": "Math.random belongs to uid() in lib/format.js." },
+          { "object": "Date", "property": "now", "message": "lib/ takes the clock as an argument; read it at the edge (store/, platform/, handlers)." }
+        ]
+      }
+    },
+    {
       // Tests clear localStorage in setup. ignorePatterns already skips tests; this override stays so a linted test may still clear storage and still bans every other global.
       "files": ["**/*.test.js", "**/*.test.jsx"],
       "rules": {
