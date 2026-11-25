@@ -61,6 +61,17 @@ const ALLOW = [
   { file: 'sheets/history.jsx', text: '${fmtDur(month.durationMs)}', reason: 'separator join of whole t() strings, durations and volumes' },
 ]
 
+/**
+ * Actions rule 6 cannot prove on its own, by file and source text, each with the reason it is
+ * safe. A prop callback such as `onDelete` is only confirmed in the file named in the reason;
+ * ErrorBoundary's confirm is inline because the shared sheet host may be in the crashed tree.
+ * An entry whose action has gone away fails the stale check below.
+ */
+const EXEMPT = [
+  { file: 'components/ErrorBoundary.jsx', text: 'Tap again to discard', reason: 'inline two-step local confirm in components/ErrorBoundary.jsx (first tap relabels, second discards); the sheet host may be part of the crashed tree' },
+  { file: 'sheets/catalogue.jsx', text: 'Remove from routine', reason: 'the onDelete prop callback is gated by the danger confirm in sheets/catalogue.jsx before it removes from views/RoutineEdit.jsx' },
+]
+
 function sourceFiles() {
   const out = []
   for (const dir of ['views', 'sheets', 'components']) {
@@ -417,8 +428,26 @@ function propForwards(name, handlers, ast, seen) {
 }
 
 /**
+ * The rule 6 confirm signal, independent of the label verb: `variant="danger"`, a `danger` class
+ * or prop, an `icon="trash"` prop, or a nested `<Icon name="trash" />`. Layered on #130's label
+ * check, so a trash/danger action fails even when its label is harmless.
+ */
+const hasTrashIcon = node => {
+  if (literalAttr(node.openingElement, 'icon') === 'trash') return true
+  let found = false
+  const walk = n => {
+    if (!n || typeof n !== 'object' || found) return
+    if (n.type === 'JSXElement' && n.openingElement?.name?.name === 'Icon' && literalAttr(n.openingElement, 'name') === 'trash') { found = true; return }
+    for (const c of children(n)) walk(c)
+  }
+  walk(node)
+  return found
+}
+
+/**
  * The action a JSX element is, or null: `labels` it shows (rules 5 and 6), `cancelLabels`
- * (rule 5 only), whether it is `markedDanger`, and whether its click `confirms` before writing.
+ * (rule 5 only), whether it is `markedDanger`, whether it carries the rule 6 `dangerSignal`
+ * for the confirm half, and whether its click `confirms` before writing.
  */
 function elementAction(node, handlers, ast) {
   const el = node.openingElement
@@ -426,10 +455,11 @@ function elementAction(node, handlers, ast) {
   const cls = literalAttr(el, 'className').split(/\s+/)
   const confirmed = confirms(attrOf(el, 'onClick')?.value?.expression, handlers, ast, new Set())
   const marked = cls.includes('danger') || confirmed
-  if (tag === 'Button') return { labels: node.children.flatMap(labelTexts), cancelLabels: [], markedDanger: literalAttr(el, 'variant') === 'danger' || marked, confirms: confirmed }
-  if (tag === 'button' && cls.includes('iconbtn')) return { labels: labelTexts(attrOf(el, 'aria-label')?.value), cancelLabels: [], markedDanger: marked, confirms: confirmed }
-  if (tag === 'button' && (cls.includes('btn') || cls.includes('lrow'))) return { labels: node.children.flatMap(labelTexts), cancelLabels: [], markedDanger: marked, confirms: confirmed }
-  if (tag === 'Row' && attrOf(el, 'onClick')) return { labels: labelTexts(attrOf(el, 'title')?.value), cancelLabels: [], markedDanger: !!attrOf(el, 'danger') || confirmed, confirms: confirmed }
+  const dangerSignal = literalAttr(el, 'variant') === 'danger' || cls.includes('danger') || !!attrOf(el, 'danger') || hasTrashIcon(node)
+  if (tag === 'Button') return { labels: node.children.flatMap(labelTexts), cancelLabels: [], markedDanger: literalAttr(el, 'variant') === 'danger' || marked, dangerSignal, confirms: confirmed }
+  if (tag === 'button' && cls.includes('iconbtn')) return { labels: labelTexts(attrOf(el, 'aria-label')?.value), cancelLabels: [], markedDanger: marked, dangerSignal, confirms: confirmed }
+  if (tag === 'button' && (cls.includes('btn') || cls.includes('lrow'))) return { labels: node.children.flatMap(labelTexts), cancelLabels: [], markedDanger: marked, dangerSignal, confirms: confirmed }
+  if (tag === 'Row' && attrOf(el, 'onClick')) return { labels: labelTexts(attrOf(el, 'title')?.value), cancelLabels: [], markedDanger: !!attrOf(el, 'danger') || confirmed, dangerSignal, confirms: confirmed }
   return null
 }
 
@@ -438,6 +468,7 @@ const confirmAction = options => ({
   labels: labelTexts(propOf(options, 'confirmText')?.value),
   cancelLabels: labelTexts(propOf(options, 'cancelText')?.value),
   markedDanger: isDangerOptions(options),
+  dangerSignal: isDangerOptions(options),
   confirms: true,
 })
 
@@ -447,7 +478,9 @@ function actionRuleHits(file, code, node, action) {
   if ([...action.labels, ...action.cancelLabels].some(s => ELLIPSIS.test(s))) out.push({ ...hitAt(file, code, node), rule: 'ellipsis' })
   const destructive = action.labels.some(s => DESTRUCTIVE.test(s))
   if (!action.markedDanger && destructive) out.push({ ...hitAt(file, code, node), rule: 'danger' })
-  if (destructive && !action.confirms) out.push({ ...hitAt(file, code, node), rule: 'confirm' })
+  // The danger half keeps #130's label verb; the confirm half is layered with the danger signal,
+  // so variant="danger" or a trash icon needs a confirm even under a harmless label.
+  if ((destructive || action.dangerSignal) && !action.confirms) out.push({ ...hitAt(file, code, node), rule: 'confirm' })
   return out
 }
 
@@ -468,10 +501,39 @@ function actionHitsIn(file, source) {
   return out
 }
 
+/** Every action element and confirm-sheet options object in `source`, with its source text. */
+function actionTextsIn(file, source) {
+  const { code, ast } = parsed(file, source)
+  const handlers = namedHandlers(ast)
+  const out = []
+  const visit = node => {
+    if (node.type === 'JSXElement' && elementAction(node, handlers, ast)) out.push(hitAt(file, code, node))
+    if (isConfirmSheetCall(node)) {
+      for (const options of confirmOptions(node.arguments[0])) if (options) out.push(hitAt(file, code, options))
+    }
+    children(node).forEach(visit)
+  }
+  visit(ast)
+  return out
+}
+
+/** An exemption matches an item when its file and source text are still present. */
+const matchesEntry = (entry, item) => entry.file === item.file && item.text.includes(entry.text)
+/** Hits left after applying the fixed exemption list (the real list unless fixtures pass one). */
+const exemptHits = (hits, exemptions = EXEMPT) => hits.filter(h => !exemptions.some(e => matchesEntry(e, h)))
+/** Entries with no reason, or whose action no longer exists. */
+const staleExemptions = (exemptions, actions) => exemptions.filter(e => !e.reason || !actions.some(a => matchesEntry(e, a)))
+
 describe('action labels follow Action consistency rules 5 and 6', () => {
   it('no view, sheet or component ends an action label in an ellipsis or leaves a destructive action plain', () => {
-    const bad = sourceFiles().flatMap(f => actionHitsIn(f)).map(h => `${h.file}:${h.line}: [${h.rule}] ${h.text.slice(0, 120)}`)
+    const bad = exemptHits(sourceFiles().flatMap(f => actionHitsIn(f))).map(h => `${h.file}:${h.line}: [${h.rule}] ${h.text.slice(0, 120)}`)
     expect(bad, `Rule 5: drop the "…" from an action label (the confirm sheet asks). Rule 6: a destructive action is variant="danger" and opens confirmSheet({ danger: true }) before it changes anything. undo() may act at once.\n${bad.join('\n')}`).toEqual([])
+  })
+
+  it('every exemption entry still matches an action and gives a reason', () => {
+    const actions = sourceFiles().flatMap(f => actionTextsIn(f))
+    const stale = staleExemptions(EXEMPT, actions)
+    expect(stale.map(e => `${e.file}: ${e.text}`), 'Remove exemption entries that match no action, and give every entry a reason.').toEqual([])
   })
 
   // A check on the rules themselves, so a parser change cannot silently empty the guard.
@@ -528,5 +590,36 @@ describe('action labels follow Action consistency rules 5 and 6', () => {
     expect(hits('const a = <Button variant="ghost" className="rt-delete danger" onClick={go}>{t(\'Delete routine\')}</Button>')).toEqual(['confirm'])
     expect(hits('const a = <button className="iconbtn bare" aria-label={t(\'Delete entry for {0}\', d)} onClick={() => confirmSheet({ confirmText: t(\'Delete\'), danger: true })} />')).toEqual([])
     expect(hits('const a = <Button onClick={undo}>{t(\'Discard workout\')}</Button>')).toEqual([])
+  })
+
+  // Rule 6's confirm half is layered on top of the label check: the danger signal is
+  // variant="danger" or the trash icon, not the label verb. A harmless-looking label on a
+  // trash-icon or danger button must still confirm. #130's label check stays for the danger half.
+  it('fails an unconfirmed danger text or trash-icon action even with a non-destructive label', () => {
+    const hits = code => actionHitsIn('fixture.jsx', code).map(h => h.rule)
+    expect(hits('const a = <Button variant="danger" onClick={go}>{t(\'Archive\')}</Button>')).toEqual(['confirm'])
+    expect(hits('const a = <button className="iconbtn bare" aria-label={t(\'Bin\')} onClick={go}><Icon name="trash" /></button>')).toEqual(['confirm'])
+    expect(hits('const a = <Row icon="trash" title={t(\'Bin\')} onClick={go} />')).toEqual(['confirm'])
+    expect(hits('const a = <Button variant="danger" onClick={() => confirmSheet({ confirmText: t(\'Archive\'), danger: true })}>{t(\'Archive\')}</Button>')).toEqual([])
+    expect(hits([
+      'const archive = () => confirmSheet({ confirmText: t(\'Archive\'), danger: true })',
+      'const a = <button className="lrow tap danger" onClick={archive}><Icon name="trash" /><span>{t(\'Archive\')}</span></button>',
+    ].join('\n'))).toEqual([])
+  })
+
+  it('exempted entry (passes)', () => {
+    const hits = actionHitsIn('fixture.jsx', 'const a = <Button variant="danger" onClick={go}>{t(\'Archive\')}</Button>')
+    expect(hits.map(h => h.rule)).toEqual(['confirm'])
+    const entry = [{ file: 'fixture.jsx', text: 'Archive', reason: 'fixture: the local two-step confirm is in this file' }]
+    expect(exemptHits(hits, entry)).toEqual([])
+    expect(staleExemptions(entry, hits)).toEqual([])
+    expect(staleExemptions([{ file: 'fixture.jsx', text: 'Archive' }], hits)).toHaveLength(1)
+  })
+
+  it('stale exemption (fails)', () => {
+    const hits = actionHitsIn('fixture.jsx', 'const a = <Button variant="danger" onClick={go}>{t(\'Archive\')}</Button>')
+    const stale = [{ file: 'fixture.jsx', text: 'Bin', reason: 'fixture: the action was renamed' }]
+    expect(staleExemptions(stale, hits).map(e => e.text)).toEqual(['Bin'])
+    expect(exemptHits(hits, stale).map(h => h.rule)).toEqual(['confirm'])
   })
 })
