@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { act } from 'react'
 import { createRoot } from 'react-dom/client'
+import { within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import TabBar from './TabBar.jsx'
 import { useStore } from '../store/useStore.js'
@@ -30,30 +31,28 @@ afterEach(async () => {
 })
 
 const render = async () => { await act(async () => { root.render(<TabBar onStart={vi.fn()} />) }) }
-const startTab = () => container.querySelector('#tabbar button.start')
+const tabs = () => within(container).getByRole('navigation', { name: 'Main' })
+const tab = name => within(tabs()).getByRole('button', { name })
 
 describe('tab bar Start', () => {
-  it('is drawn like every other tab: an icon and a label, no block behind it', async () => {
+  it('is a tab named Start in the main navigation, beside Home', async () => {
     await render()
-    const home = [...container.querySelectorAll('#tabbar button')].find(b => b.textContent === 'Home')
-    const start = startTab()
-    expect(start.textContent).toBe('Start')
-    expect(start.querySelector('.cir')).toBeNull()
-    expect([...start.children].map(c => c.tagName.toLowerCase())).toEqual([...home.children].map(c => c.tagName.toLowerCase()))
-    expect(start.classList.contains('rec')).toBe(false)
+    const names = within(tabs()).getAllByRole('button').map(b => b.textContent)
+    expect(names.indexOf('Start')).toBeGreaterThan(names.indexOf('Home'))
+    expect(tab('Start').getAttribute('aria-current')).toBeNull()
   })
 
   it('turns to Resume, marked as running, while a workout is on', async () => {
     useStore.getState().update(s => { s.active = { id: 'a', name: 'Push', start: Date.now(), cur: 0, entries: [] } })
     await render()
-    expect(startTab().textContent).toBe('Resume')
-    expect(startTab().classList.contains('rec')).toBe(true)
+    expect(within(tabs()).queryByRole('button', { name: 'Start' })).toBeNull()
+    expect(tab('Resume').classList.contains('rec'), 'the running dot has no accessible name').toBe(true)
   })
 
   it('is the current tab on the workout screen', async () => {
     route.pathname = '/workout'
     await render()
-    expect(startTab().getAttribute('aria-current')).toBe('page')
-    expect(startTab().classList.contains('on')).toBe(true)
+    expect(tab('Start').getAttribute('aria-current')).toBe('page')
+    expect(tab('Home').getAttribute('aria-current')).toBeNull()
   })
 })
