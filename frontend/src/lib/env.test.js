@@ -1,10 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs'
-import { resolve, dirname } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { validateEnv } from './env.js'
-
-const __dirname = dirname(fileURLToPath(import.meta.url))
 
 describe('env seam validates every environment-gated behavior', () => {
   it('defaults to web, local media, relative base when nothing is set', () => {
@@ -39,7 +36,7 @@ describe('env seam validates every environment-gated behavior', () => {
   })
 
   it('is documented by a tracked example covering every variable', () => {
-    const examplePath = resolve(__dirname, '..', '..', '.env.example')
+    const examplePath = resolve(import.meta.dirname, '..', '..', '.env.example')
     expect(existsSync(examplePath)).toBe(true)
     const content = readFileSync(examplePath, 'utf-8')
     for (const key of ['VITE_MOBILE', 'VITE_IMG_BASE', 'VITE_GIF_BASE', 'BASE_URL']) {

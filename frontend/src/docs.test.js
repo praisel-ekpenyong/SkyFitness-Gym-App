@@ -1,13 +1,11 @@
 import { mkdirSync, mkdtempSync, readdirSync, writeFileSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
 import { tmpdir } from 'node:os'
-import { resolve, dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { resolve, join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { findBrokenRefs } from './docs-paths.js'
 
-const __dirname = dirname(fileURLToPath(import.meta.url))
-const adrDir = resolve(__dirname, '..', '..', 'docs', 'adr')
+const adrDir = resolve(import.meta.dirname, '..', '..', 'docs', 'adr')
 
 describe('ADRs', () => {
   const files = readdirSync(adrDir).filter(f => f.endsWith('.md') && f !== 'README.md')
@@ -24,7 +22,7 @@ describe('ADRs', () => {
   })
 })
 
-const root = resolve(__dirname, '..', '..')
+const root = resolve(import.meta.dirname, '..', '..')
 
 // Gitignored build output and fetched media: docs name them, a clean checkout lacks them.
 const ALLOW = ['frontend/.tmp/review/', 'frontend/dist', 'frontend/dist/', 'frontend/public/media/']
@@ -48,8 +46,6 @@ const HISTORICAL = new Set([
 const PLANNED = new Set([
   'CODING_STANDARDS.md: frontend/tsconfig.json',
   'CODING_STANDARDS.md: frontend/tsc-baseline.json',
-  'CODING_STANDARDS.md: frontend/src/lib/profile/profile-keys.test.js',
-  'docs/DRAFT_GUARD.md: frontend/src/lib/profile/profile-keys.test.js',
   'docs/adr/0035-typescript-starts-as-checkjs-with-an-error-baseline.md: frontend/tsconfig.json',
   'docs/adr/0035-typescript-starts-as-checkjs-with-an-error-baseline.md: frontend/tsc-baseline.json',
 ])
