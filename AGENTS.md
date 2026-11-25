@@ -37,6 +37,7 @@ Single-context layout: root `GLOSSARY.md` + `docs/adr/`. See `docs/agents/domain
 
 ## GitHub and deploys
 
+- The GitHub remote is `origin`.
 - GitHub `main` is the default branch and deploys production (skyfitness.pages.dev); merge by PR only, after the Tests check passes. Never push to it directly.
 - Every other branch on GitHub builds only a Cloudflare preview. Open a PR's preview before merging it.
 - Undo a bad deploy with a Cloudflare rollback, not a Git push. Cloudflare Pages project `skyfitness`, built by Cloudflare's Git integration (no `wrangler.toml`). Wrangler has no rollback command: roll back in the Cloudflare dashboard.

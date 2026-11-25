@@ -30,6 +30,14 @@ GitHub shares one number space across issues and PRs, so a bare `#42` may be eit
 
 A ticket closes only when its PR merges into `main`. Put `Closes #<n>` in the PR body so the merge closes it; never close it by hand before then. The issues are public: keep personal remarks out of issue bodies and comments.
 
+## After the merge
+
+Once the merge commit is on `main`, clean up the session's checkout before starting the next ticket:
+
+1. `git checkout main && git pull --ff-only` in the main checkout. Leave it on `main` rather than on a merged `ticket/*` branch.
+2. `git worktree remove .worktrees/<name>` and `git branch -d ticket/<name>` for the merged branch. If GitHub has not auto-deleted the remote branch, `git push origin --delete ticket/<name>`.
+3. Check the worktree and branch are gone with `git worktree list` and `git branch -a`. Keep the main checkout's `frontend/node_modules` directory intact — worktrees link to it.
+
 ## When a skill says "publish to the issue tracker"
 
 Create a GitHub issue.
