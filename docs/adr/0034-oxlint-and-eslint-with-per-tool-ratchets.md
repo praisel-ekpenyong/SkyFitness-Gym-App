@@ -6,7 +6,7 @@ Status: Accepted, 2026-11-24.
 
 Sky lints with ESLint 10 only (`frontend/eslint.config.js`, `npm run lint`, in CI and the pre-commit hook), on `@eslint/js` recommended plus `react-hooks/rules-of-hooks` and `react-hooks/exhaustive-deps` (a warning, so 12 findings pass CI). [`CODING_STANDARDS.md`](../../CODING_STANDARDS.md) names a tooth for each rule, and most of those teeth are lint rules the code breaks today: 54 functions over complexity 15, 18 index keys, 57 accessibility findings, 27 in-place sorts (counts re-measured 2026-11-24). A tooth the code already fails needs a ratchet: a recorded count that may only shrink.
 
-A probe on `ea9b171` measured the options. oxlint 1.95.0 with the react, jsx-a11y, unicorn and oxc plugins runs in about 1 s. ESLint with every `react-hooks` rule runs in about 19 s. oxlint has `complexity`, `no-restricted-globals`, `no-restricted-properties`, `no-restricted-imports`, `no-throw-literal` (which `only-throw-error` replaces) and the type-aware rows through `oxlint-tsgolint`, but no AST selectors (`no-restricted-syntax`). The official `eslint-plugin-react-hooks` 7.1.1 already ships the React Compiler rules.
+A probe on `ea9b171` measured the options. oxlint 1.95.0 with the react, jsx-a11y, unicorn and oxc plugins runs in about 1 s. ESLint with every `react-hooks` rule runs in about 19 s. oxlint has `complexity`, `no-restricted-globals`, `no-restricted-properties`, `no-restricted-imports`, `no-throw-literal` (which `only-throw-error` replaces; `Promise.reject(nonError)` is then uncovered, and `typescript/prefer-promise-reject-errors` is a possible later row) and the type-aware rows through `oxlint-tsgolint`, but no AST selectors (`no-restricted-syntax`). The official `eslint-plugin-react-hooks` 7.1.1 already ships the React Compiler rules.
 
 ## Decision
 
@@ -23,4 +23,4 @@ ESLint's native suppressions were checked against ESLint 10.15.0: `--suppress-ru
 
 - The pre-commit hook gets faster once ESLint leaves it, and the cheap checks (oxlint, tsc) run on every commit.
 - Two linters exist, so the split has to stay clean: a new rule goes in oxlint unless it needs an AST selector or a `react-hooks` rule.
-- [`CODING_STANDARDS.md`](../../CODING_STANDARDS.md) lists each rule as **To add** until its tool and ratchet file exist, then as **Runs**.
+- [`CODING_STANDARDS.md`](../../CODING_STANDARDS.md) lists each rule as **To add** until its tool exists (and its ratchet file, where today's code is over the bar), then as **Runs**.

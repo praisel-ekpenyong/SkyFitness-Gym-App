@@ -29,8 +29,10 @@ in review. Each rule is an imperative that names its one legal exception, and a
   excluded. The ratchet runs oxlint with `--type-aware` against
   `frontend/tsconfig.json` through `oxlint-tsgolint` (pinned at 7.0.2008, the
   version oxlint 1.95.0 asks for). The `typescript` plugin brings its own
-  `correctness` rules; those not named in this document are set to `off` in
-  `.oxlintrc.json`, so only the rows below are rules. Its own `react/*` copies of the compiler rules are off.
+  `correctness` rules; those not named in this document are listed as `off` in
+  `.oxlintrc.json` (oxlint's categories are global, so they are switched off one
+  by one), so only the rows below are rules. Its own `react/*` copies of the
+  compiler rules are off too.
 - **ESLint 10** runs after the oxlint ratchet in `npm run lint`, and only in CI:
   `frontend/eslint.config.js`. The pre-commit hook does not call ESLint. It
   keeps only what oxlint cannot do: the official `eslint-plugin-react-hooks`
@@ -157,9 +159,10 @@ Never use one where the swallowed failure would lose or hide lifter data.
 
 **Why:** the rule already holds (0 thrown literals today), so the tooth is free.
 **Runs:** oxlint `typescript/only-throw-error` at error (type-aware, 0 hits, no
-baseline entry). It replaced `eslint/no-throw-literal` and
-`eslint/prefer-promise-reject-errors`, which are removed: it also catches a
-thrown value that is not typed as an `Error`.
+baseline entry). It replaced `eslint/no-throw-literal`, which is removed: it
+also catches a thrown value that is not typed as an `Error`. It does not cover
+`Promise.reject(nonError)`, which `eslint/prefer-promise-reject-errors` used to
+catch; `typescript/prefer-promise-reject-errors` is a possible later row.
 
 ### A catch hides nothing from the lifter
 
@@ -182,15 +185,16 @@ async function to a slot that expects a `void` callback either (an event
 listener, `forEach`), because nothing there awaits or catches what it returns.
 Exception: none.
 
-**Why:** `nativeSave` in `platform/mobile.js` swallows its errors and is called
-floating, so `isMirrorFailing()` never sees a mobile write fail.
+**Why:** a floating promise drops its rejection, so a failed write never
+reaches the code that records it (`isMirrorFailing()` for the mobile file
+mirror). `nativeSave` in `platform/mobile.js` is not a hit: it rejects on a
+failed write and `nativeSink` awaits it.
 **Runs:** oxlint `typescript/no-floating-promises` (15 hits in 10 files) and
 `typescript/no-misused-promises` (12 hits in 11 files), type-aware, at error
 (counts measured 2026-11-25 with oxlint 1.95.0, `oxlint-tsgolint` 7.0.2008 and
 `frontend/tsconfig.json`, app code and `scripts/`). The old hits are in
 `frontend/lint-baseline.json`, and a new one fails
-`npm run lint`. The `nativeSave` floating call is fixed separately, not by the
-baseline.
+`npm run lint`.
 
 ## Function signatures
 

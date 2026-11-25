@@ -56,7 +56,7 @@
         "allowEmptyCatch": true
       }
     ],
-    // The typescript plugin brings its own correctness category; only the rows named in CODING_STANDARDS.md are rules (ADR 0034).
+    // The typescript plugin's own correctness rules are switched off one by one: oxlint's `categories` are global, with no per-plugin setting. The list was generated against oxlint 1.95.0, so re-generate it when oxlint is upgraded. Only the rows named in CODING_STANDARDS.md are rules (ADR 0034).
     "typescript/await-thenable": "off",
     "typescript/no-array-delete": "off",
     "typescript/no-base-to-string": "off",
