@@ -95,12 +95,3 @@ export function sanitizeRestorePayload(data) {
   return { clean, skipped }
 }
 
-/**
- * Returns a backup-safe copy of a profile with malformed workouts and routines stripped.
- * @param {unknown} data - Raw profile payload of any shape; non-objects pass through unchanged.
- * @returns {Record<string, unknown> | unknown} Cleaned profile limited to known top-level keys with `active` cleared; stale day-plan overrides pruned.
- */
-export function sanitizeBackup(data) {
-  if (!isRecord(data)) return data
-  return sanitizeRestorePayload(data).clean
-}

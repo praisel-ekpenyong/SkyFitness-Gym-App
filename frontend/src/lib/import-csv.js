@@ -10,7 +10,7 @@ import { uid } from './format.js'
 import { parseDay } from './dates.js'
 import { mergeWeighIns, weighInsPreview } from './bodyweight.js'
 import { normalizeWeight, round1 } from './units.js'
-import { admit, sortWorkouts } from './profile/index.js'
+import { sortWorkouts } from './profile/index.js'
 
 /** @typedef {import('./types.js').Profile} Profile */
 /** @typedef {import('./types.js').Workout} Workout */
@@ -566,7 +566,7 @@ export function importPreview(state, parsed) {
  */
 export function mergeImport(S, parsed) {
   if (parsed.kind === 'bodyweight') return mergeWeighIns(S, parsed.bodyweight)
-  const fresh = admit({ workouts: freshWorkouts(S, parsed) }).workouts
+  const fresh = sortWorkouts(freshWorkouts(S, parsed))
   const used = new Set(fresh.flatMap(w => (w.entries || []).map(e => e.id)))
   const customs = parsed.customEx.filter(c => used.has(c.id) && !EXIDX[c.id])
   S.customEx = [...(S.customEx || []), ...customs]
