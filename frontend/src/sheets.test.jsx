@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
 import { act } from 'react'
+import { fireEvent, within } from '@testing-library/react'
 import { createRoot } from 'react-dom/client'
 import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest'
 import { RecapSheet, workoutDetailSheet, WorkoutRow } from './sheets/history.jsx'
@@ -11,6 +12,12 @@ import { useUI } from './store/useUI.js'
 
 let container
 let root
+
+const screen = () => within(container)
+// A Recap metric is a row of the shared Row primitive: its label, its figure and any change.
+const rowOf = label => screen().getByText(label).closest('.lrow')
+const typeInto = (field, value) => fireEvent.change(field, { target: { value } })
+const nextTo = (a, b) => !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING)
 
 beforeAll(async () => {
   await import('./lib/body-paths.js')
@@ -60,38 +67,21 @@ describe('RecapSheet', () => {
       root.render(<RecapSheet start="2026-02-01" close={close} />)
     })
 
-    const header = container.querySelector('h3')
-    expect(header?.textContent).toContain('February 2026')
+    expect(screen().getByRole('heading', { level: 3 }).textContent).toContain('February 2026')
 
-    const headlineSection = container.querySelectorAll('.sect-b')[0]
-    const rows = Array.from(headlineSection.querySelectorAll('.lrow'))
-    expect(rows.length).toBe(4)
-    expect(rows[0].textContent).toContain('Workouts')
-    expect(rows[0].textContent).toContain('1')
-    expect(rows[1].textContent).toContain('Time trained')
-    expect(rows[1].textContent).toContain('50 min')
-    expect(rows[2].textContent).toContain('Volume')
-    expect(rows[2].textContent).toContain('550\u00a0kg')
-    expect(rows[3].textContent).toContain('Sets')
-    expect(rows[3].textContent).toContain('1')
+    expect(rowOf('Workouts').textContent).toContain('1')
+    expect(rowOf('Time trained').textContent).toContain('50 min')
+    expect(rowOf('Volume').textContent).toContain('550\u00a0kg')
+    expect(rowOf('Sets').textContent).toContain('1')
 
-    expect([...container.querySelectorAll('h4.sec')].map(h => h.textContent)).toContain('Records')
+    expect(screen().getByRole('heading', { level: 4, name: 'Records' })).toBeTruthy()
     expect(container.textContent).not.toMatch(/\bPRs?\b|personal record/i)
     expect(container.textContent).not.toContain('Estimated 1RM records')
 
-    const prevBtn = container.querySelector('button[aria-label="Previous month"]')
-    expect(prevBtn).toBeTruthy()
-    await act(async () => {
-      prevBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    fireEvent.click(screen().getByRole('button', { name: 'Previous month' }))
+    expect(screen().getByRole('heading', { level: 3 }).textContent).toContain('January 2026')
 
-    expect(container.querySelector('h3')?.textContent).toContain('January 2026')
-
-    const calBtn = Array.from(container.querySelectorAll('button')).find(b => b.textContent.includes('View calendar'))
-    expect(calBtn).toBeTruthy()
-    await act(async () => {
-      calBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    fireEvent.click(screen().getByRole('button', { name: /View calendar/ }))
     expect(close).toHaveBeenCalledTimes(1)
     expect(useUI.getState().sheets.length).toBe(1)
   })
@@ -118,11 +108,10 @@ describe('RecapSheet', () => {
       twoMonths()
       await act(async () => { root.render(<RecapSheet start="2026-11-09" close={vi.fn()} />) })
 
-      expect(container.querySelector('h3')?.textContent).toBe('November 2026')
-      expect(container.querySelector('.recap-sofar')?.textContent).toBe('So far')
-      const rows = container.querySelectorAll('.sect-b')[0].querySelectorAll('.lrow')
-      expect(rows.length).toBe(4)
-      expect(container.querySelectorAll('.delta-pill').length).toBe(0)
+      expect(screen().getByRole('heading', { level: 3 }).textContent).toBe('November 2026')
+      expect(screen().getByText('So far')).toBeTruthy()
+      for (const label of ['Workouts', 'Time trained', 'Volume', 'Sets']) expect(rowOf(label), label).toBeTruthy()
+      expect(rowOf('Workouts').textContent, 'no change figure on a month under way').toBe('Workouts1')
       expect(container.textContent).not.toContain('%')
     })
 
@@ -130,9 +119,10 @@ describe('RecapSheet', () => {
       twoMonths()
       await act(async () => { root.render(<RecapSheet start="2026-10-01" close={vi.fn()} />) })
 
-      expect(container.querySelector('h3')?.textContent).toBe('October 2026')
-      expect(container.querySelector('.recap-sofar')).toBeNull()
-      expect(container.querySelectorAll('.delta-pill').length).toBe(4)
+      expect(screen().getByRole('heading', { level: 3 }).textContent).toBe('October 2026')
+      expect(screen().queryByText('So far')).toBeNull()
+      expect(rowOf('Workouts').textContent).toContain('+3')
+      expect(rowOf('Sets').textContent).toContain('+6')
     })
   })
 
@@ -213,19 +203,19 @@ describe('weigh-in', () => {
     const sheet = useUI.getState().sheets.at(-1)
     await act(async () => { root.render(sheet.render(vi.fn())) })
   }
-  const click = async el => { await act(async () => { el.dispatchEvent(new MouseEvent('click', { bubbles: true })) }) }
+  const field = () => screen().getByRole('textbox', { name: /^Body weight/ })
 
   it('has two step keys that say their step, and no row of step chips', async () => {
     useStore.getState().update(s => { s.unit = 'kg'; s.bodyweight = [{ d: '2026-01-01', w: 82.8, t: 1 }] })
     await openRequired(vi.fn())
 
-    const keys = [...container.querySelectorAll('.bw-pm')]
-    expect(keys.map(k => k.textContent)).toEqual(['−0.1', '+0.1'])
-    expect(keys.map(k => k.getAttribute('aria-label'))).toEqual(['Decrease by 0.1 kg', 'Increase by 0.1 kg'])
-    expect(container.querySelector('.chip')).toBeNull()
+    const down = screen().getByRole('button', { name: 'Decrease by 0.1 kg' })
+    const up = screen().getByRole('button', { name: 'Increase by 0.1 kg' })
+    expect([down.textContent, up.textContent]).toEqual(['−0.1', '+0.1'])
+    expect(screen().queryAllByRole('button').filter(b => b.hasAttribute('aria-pressed')), 'no row of step chips').toHaveLength(0)
 
-    await click(keys[1])
-    expect(container.querySelector('.bw-num').value).toBe('82.9')
+    fireEvent.click(up)
+    expect(field().value).toBe('82.9')
   })
 
   it('takes a typed figure', async () => {
@@ -233,38 +223,25 @@ describe('weigh-in', () => {
     const onDone = vi.fn()
     await openRequired(onDone)
 
-    const field = container.querySelector('input.bw-num')
-    expect(field.getAttribute('aria-label')).toBe('Body weight (kg)')
-    expect(field.getAttribute('inputmode')).toBe('decimal')
-    await act(async () => {
-      Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set.call(field, '81.4')
-      field.dispatchEvent(new Event('input', { bubbles: true }))
-    })
-    await click([...container.querySelectorAll('button')].find(b => b.textContent === 'Save and start workout'))
+    expect(screen().getByRole('textbox', { name: 'Body weight (kg)' }).getAttribute('inputmode')).toBe('decimal')
+    typeInto(field(), '81.4')
+    fireEvent.click(screen().getByRole('button', { name: 'Save and start workout' }))
 
     expect(onDone).toHaveBeenCalledWith(81.4)
     expect(useStore.getState().S.bodyweight.at(-1).w).toBe(81.4)
   })
 
-  const type = async (field, raw) => {
-    await act(async () => {
-      Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set.call(field, raw)
-      field.dispatchEvent(new Event('input', { bubbles: true }))
-    })
-  }
-
   it('holds a typed figure to the same range as the step keys once the field is left', async () => {
     useStore.getState().update(s => { s.unit = 'kg'; s.bodyweight = [{ d: '2026-01-01', w: 82.8, t: 1 }] })
     await openRequired(vi.fn())
 
-    const field = container.querySelector('input.bw-num')
-    await type(field, '8280')
-    await act(async () => { field.dispatchEvent(new FocusEvent('focusout', { bubbles: true })) })
-    expect(field.value).toBe('300')
+    typeInto(field(), '8280')
+    fireEvent.blur(field())
+    expect(field().value).toBe('300')
 
-    await type(field, '0.4')
-    await act(async () => { field.dispatchEvent(new FocusEvent('focusout', { bubbles: true })) })
-    expect(field.value).toBe('1')
+    typeInto(field(), '0.4')
+    fireEvent.blur(field())
+    expect(field().value).toBe('1')
   })
 
   it('saves a typed figure inside the range even when Save is pressed without leaving the field', async () => {
@@ -272,8 +249,8 @@ describe('weigh-in', () => {
     const onDone = vi.fn()
     await openRequired(onDone)
 
-    await type(container.querySelector('input.bw-num'), '18200')
-    await click([...container.querySelectorAll('button')].find(b => b.textContent === 'Save and start workout'))
+    typeInto(field(), '18200')
+    fireEvent.click(screen().getByRole('button', { name: 'Save and start workout' }))
 
     expect(onDone).toHaveBeenCalledWith(660)
     expect(useStore.getState().S.bodyweight.at(-1).w).toBe(660)
@@ -297,25 +274,25 @@ describe('Record badges', () => {
     await act(async () => { workoutDetailSheet(w) })
     const sheet = useUI.getState().sheets.at(-1)
     await act(async () => { root.render(sheet.render(vi.fn())) })
-    expect([...container.querySelectorAll('.pr')].map(b => b.textContent)).toEqual(['Record'])
+    expect(screen().getAllByText(/record/i).map(b => b.textContent)).toEqual(['Record'])
   })
 
   it('shows no Record on the first session of an exercise', async () => {
     const w = recordWorkout()
     useStore.getState().update(s => { s.workouts = [w] })
     await act(async () => { root.render(<WorkoutRow w={w} onClick={vi.fn()} />) })
-    expect(container.querySelector('.pr')).toBeNull()
+    expect(screen().queryByText(/record/i)).toBeNull()
   })
 
   it('counts Records on a Workout row: 1 record, 2 records', async () => {
     const one = recordWorkout()
     logged(one)
     await act(async () => { root.render(<WorkoutRow w={one} onClick={vi.fn()} />) })
-    expect(container.querySelector('.pr')?.textContent).toBe('1 record')
+    expect(screen().getByText(/record/i).textContent).toBe('1 record')
     const two = recordWorkout(65)
     logged(two)
     await act(async () => { root.render(<WorkoutRow w={two} onClick={vi.fn()} />) })
-    expect(container.querySelector('.pr')?.textContent).toBe('2 records')
+    expect(screen().getByText(/record/i).textContent).toBe('2 records')
   })
 })
 
@@ -329,8 +306,8 @@ describe('Workout detail sheet after a unit switch (ADR 0031)', () => {
     await act(async () => { workoutDetailSheet(w) })
     const sheet = useUI.getState().sheets.at(-1)
     await act(async () => { root.render(sheet.render(vi.fn())) })
-    expect(container.querySelector('.sheet-sub').textContent).toContain('176.4\u00a0lb')
-    expect(container.querySelector('.ex-entry .ss').textContent).toBe('220.5×5')
+    expect(screen().getByText(/176\.4\s*lb/)).toBeTruthy()
+    expect(screen().getByText('220.5×5')).toBeTruthy()
   })
 })
 
@@ -342,8 +319,8 @@ describe('WorkoutRow', () => {
     }
     useStore.getState().update(s => { s.workouts = [w] })
     await act(async () => { root.render(<WorkoutRow w={w} onClick={vi.fn()} />) })
-    expect(container.querySelector('.item').getAttribute('aria-label')).toBe('Push Day, Sun 1 Mar, 2 sets')
-    expect(container.querySelector('.ss').textContent).toContain('2 sets')
+    expect(screen().getByRole('button', { name: 'Push Day, Sun 1 Mar, 2 sets' })).toBeTruthy()
+    expect(screen().getByText(/2 sets/).textContent).toContain('2 sets')
   })
 })
 
@@ -372,7 +349,7 @@ describe('WorkoutDetail', () => {
       root.render(sheet.render(vi.fn()))
     })
 
-    expect(container.querySelector('.ss')?.textContent).toBe('45.4×5')
+    expect(screen().getByText('45.4×5')).toBeTruthy()
   })
 
   it('renders exercise notes beneath completed sets when present', async () => {
@@ -404,16 +381,13 @@ describe('WorkoutDetail', () => {
       root.render(sheet.render(vi.fn()))
     })
 
-    const noteDiv = container.querySelector('.exnote')
-    expect(noteDiv).toBeTruthy()
-    expect(noteDiv.textContent).toBe('Right shoulder felt tight on set 2')
-
-    const exRows = container.querySelectorAll('.row')
-    expect(exRows[0].querySelector('.exnote')?.textContent).toBe('Right shoulder felt tight on set 2')
-    expect(exRows[1].querySelector('.exnote')).toBeNull()
+    const note = screen().getByText('Right shoulder felt tight on set 2')
+    expect(screen().getAllByText(/felt tight/)).toHaveLength(1)
+    expect(nextTo(screen().getByText('80×8'), note), 'beneath the first exercise\'s sets').toBe(true)
+    expect(nextTo(note, screen().getByText('0×15')), 'and above the next exercise').toBe(true)
   })
 
-  it('renders performed warm-up sets in .ss-warm above performed work sets in .ss', async () => {
+  it('lists performed warm-up sets above performed work sets, and an exercise with none logged as no sets', async () => {
     const workout = {
       id: 'w-warm',
       name: 'Push Day',
@@ -456,28 +430,14 @@ describe('WorkoutDetail', () => {
       root.render(sheet.render(vi.fn()))
     })
 
-    const exRows = container.querySelectorAll('.ex-entry')
-    expect(exRows.length).toBe(4)
+    const warm = screen().getByText('Warm-up: 20×10 · 40×5')
+    const work = screen().getByText('95×8 · 95×8')
+    expect(nextTo(warm, work), 'warm-ups come first').toBe(true)
 
-    const row0Warm = exRows[0].querySelector('.ss-warm')
-    const row0Work = exRows[0].querySelector('.ss')
-    expect(row0Warm).toBeTruthy()
-    expect(row0Warm.textContent).toBe('Warm-up: 20×10  ·  40×5')
-    expect(row0Work).toBeTruthy()
-    expect(row0Work.textContent).toBe('95×8  ·  95×8')
-    expect(row0Warm.compareDocumentPosition(row0Work) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-
-    expect(exRows[1].querySelector('.ss-warm')).toBeNull()
-    expect(exRows[1].querySelector('.ss')?.textContent).toBe('60×10')
-
-    const row2Warm = exRows[2].querySelector('.ss-warm')
-    expect(row2Warm).toBeTruthy()
-    expect(row2Warm.textContent).toBe('Warm-up: 20×10')
-    expect(exRows[2].querySelector('.ss')).toBeNull()
-    expect(exRows[2].textContent).not.toContain('no sets')
-
-    expect(exRows[3].querySelector('.ss-warm')).toBeNull()
-    expect(exRows[3].querySelector('.ss')?.textContent).toBe('no sets')
+    expect(screen().getByText('60×10')).toBeTruthy()
+    expect(screen().getByText('Warm-up: 20×10'), 'a warm-up-only exercise still lists its warm-up').toBeTruthy()
+    expect(screen().getAllByText(/^Warm-up:/), 'only the two exercises that logged one').toHaveLength(2)
+    expect(screen().getAllByText('no sets'), 'only the exercise that logged nothing').toHaveLength(1)
   })
 
   it('renders compact BodyMap and SessionMuscleDistribution after the exercises list with tap selection', async () => {
@@ -510,38 +470,28 @@ describe('WorkoutDetail', () => {
       await new Promise(r => setTimeout(r, 100))
     })
 
-    const distContainer = container.querySelector('.workout-detail-distribution')
-    expect(distContainer).toBeTruthy()
+    const rows = screen().getAllByRole('button').filter(b => b.hasAttribute('aria-pressed') && !/effective sets|not trained/.test(b.getAttribute('aria-label') ?? ''))
+    expect(rows).toHaveLength(3)
+    expect(rows[0].textContent).toContain('Chest')
 
-    const entry = container.querySelector('.ex-entry')
-    const del = [...container.querySelectorAll('button')].find(b => b.textContent === 'Delete')
-    expect(entry.compareDocumentPosition(distContainer) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-    expect(distContainer.compareDocumentPosition(del) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    const entry = screen().getByText('100×5 · 100×5')
+    const del = screen().getByRole('button', { name: 'Delete' })
+    expect(nextTo(entry, rows[0]), 'after the exercises').toBe(true)
+    expect(nextTo(rows[0], del), 'before Delete').toBe(true)
 
-    const bodyMap = distContainer?.querySelector('.bodymap')
-    expect(bodyMap).toBeTruthy()
-    expect(bodyMap?.classList.contains('compact')).toBe(true)
+    expect(rows[0].getAttribute('aria-pressed')).toBe('false')
+    fireEvent.click(rows[0])
+    expect(rows[0].getAttribute('aria-pressed')).toBe('true')
 
-    const distRows = distContainer?.querySelectorAll('.smd-row')
-    expect(distRows?.length).toBe(3)
-    expect(distRows?.[0].textContent).toContain('Chest')
-
-    await act(async () => {
-      distRows?.[0].dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
-    expect(distRows?.[0].classList.contains('selected')).toBe(true)
-
-    const chestButton = distContainer?.querySelector('.bodymap [role="button"][aria-label*="Chest"]')
-    expect(chestButton?.getAttribute('aria-label')).toBe('Chest, 2.0 effective sets')
-    const calvesButton = distContainer?.querySelector('.bodymap [role="button"][aria-label*="Calves"]')
-    expect(calvesButton?.getAttribute('aria-label')).toBe('Calves, not trained')
+    expect(screen().getByRole('button', { name: 'Chest, 2.0 effective sets' })).toBeTruthy()
+    expect(screen().getByRole('button', { name: 'Calves, not trained' })).toBeTruthy()
   })
 })
 
 describe('destructive confirms', () => {
-  const click = async el => { await act(async () => { el.dispatchEvent(new MouseEvent('click', { bubbles: true })) }) }
+  const click = el => fireEvent.click(el)
   const show = async sheet => { await act(async () => { root.render(sheet.render(vi.fn())) }) }
-  const button = name => [...container.querySelectorAll('button')].find(b => b.textContent === name || b.getAttribute('aria-label') === name)
+  const button = name => screen().getByRole('button', { name })
 
   it('deletes a weigh-in only after confirm, and leaves the log sheet open', async () => {
     useStore.getState().update(s => { s.unit = 'kg'; s.bodyweight = [{ d: '2026-01-01', w: 80, t: 1 }, { d: '2026-01-02', w: 81, t: 2 }] })
@@ -550,7 +500,7 @@ describe('destructive confirms', () => {
     const closeLog = vi.fn()
     await act(async () => { root.render(log.render(closeLog)) })
 
-    const del = [...container.querySelectorAll('button')].find(b => b.getAttribute('aria-label')?.startsWith('Delete entry for '))
+    const [del] = screen().getAllByRole('button', { name: /^Delete entry for / })
     await click(del)
     expect(useStore.getState().S.bodyweight).toHaveLength(2)
 
