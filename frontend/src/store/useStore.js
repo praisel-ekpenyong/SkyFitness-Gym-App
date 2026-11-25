@@ -12,17 +12,13 @@ import { act } from '../lib/active-workout.js'
 import { actRoutine } from '../lib/routines.js'
 import { runEffects } from './effects.js'
 
-// Frozen in tests so code that changes state outside update fails the suite (ADR 0026).
 setAutoFreeze(import.meta.env.MODE === 'test')
 
-// The one place the store reads the clock for normalizeState (lib/ takes it as an argument).
 /** @param {unknown} raw */
 const normalizeAtEdge = raw => normalizeState(raw, Date.now())
 
 const stamp = S => ({ ...S, _ts: Date.now() })
 
-// A Profile saved by a newer Sky is not admitted (ADR 0027). The tab starts empty in memory,
-// flags `newerProfile`, and never writes, so the newer Profile stays on disk as it was.
 function loadState(raw = loadLocal()) {
   if (isNewerProfile(raw)) return { S: freshProfile(), newerProfile: true }
   return { S: normalizeAtEdge(raw), newerProfile: false }
@@ -42,7 +38,6 @@ export const useStore = create((set, get) => {
   registerCustom(initial.S.customEx)
 
   const persist = S => {
-    // The stored Profile belongs to a newer Sky: writing would overwrite it with an older shape.
     if (get().newerProfile) return
     registerCustom(S.customEx)
     let blocked = false
@@ -56,7 +51,6 @@ export const useStore = create((set, get) => {
   }
 
   onStorageSync(incoming => {
-    // Another tab runs a newer Sky: whatever the timestamps, this tab stops reading and writing.
     if (isNewerProfile(incoming)) { set({ newerProfile: true }); return }
     const current = get().S
     const incomingTs = Number(incoming?._ts) || 0
@@ -86,7 +80,6 @@ export const useStore = create((set, get) => {
       }))
     },
     replaceState(S) { persist(stamp(normalizeAtEdge(S))) },
-    // `send` is where a hold's completeHold goes; a default here would drop its open-finish.
     act(command, send) {
       let res = null
       get().update(s => { res = act(s, command) })

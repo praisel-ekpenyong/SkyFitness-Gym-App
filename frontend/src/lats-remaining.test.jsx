@@ -11,7 +11,6 @@ import { MUSCLES, MUSCLE_NAME, primaryMuscleOf, secondaryMusclesOf, matchesMuscl
 import { buildPlanBundle, parsePlan, mergePlan } from './lib/plan-share.js'
 import { act as actOn } from './lib/active-workout.js'
 
-/** Logs an Active workout into the Training log the way the app does, and returns the Workout. */
 const logged = active => actOn({ unit: 'kg', routines: [], workouts: [], active }, { type: 'finish' }).result.workout
 
 vi.mock('./platform/sound.js', () => ({
@@ -82,7 +81,6 @@ describe('Ticket 03 — Library and Picker filters plus Exercise Detail presenta
     const latsItems = Array.from(container.querySelectorAll('.list .item'))
     const latPulldown = latsItems.find(it => it.textContent.toLowerCase().includes('alternate lateral pulldown'))
     expect(latPulldown).toBeTruthy()
-    // Rows credit lats as a secondary (ADR 0025), so they show as contributors.
     const rowItemUnderLats = latsItems.find(it => it.textContent.toLowerCase().includes('barbell bent over row'))
     expect(rowItemUnderLats).toBeTruthy()
 

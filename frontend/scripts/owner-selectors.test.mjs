@@ -3,8 +3,6 @@ import { fileURLToPath } from 'node:url'
 import { ESLint } from 'eslint'
 import { describe, expect, it } from 'vitest'
 
-// "One owner per derived value" (CODING_STANDARDS.md): each selector fails a one-line
-// fixture outside its owner, with a message that names the owner.
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const eslint = new ESLint({ cwd: root })
 

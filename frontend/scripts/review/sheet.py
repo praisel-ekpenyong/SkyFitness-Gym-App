@@ -1,5 +1,3 @@
-# Contact sheet: lay several screenshots side by side to review them together.
-# usage: python3 sheet.py out.png a.png b.png ...   (needs Pillow)
 import sys
 from PIL import Image
 out = sys.argv[1]; files = sys.argv[2:]

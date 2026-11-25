@@ -8,7 +8,6 @@ import { SCHEMA_VERSION } from './upgrades.js'
  * @type {Profile}
  */
 export const DEF = {
-  // A fresh Profile is in the current shape. A stored Profile without it is version 0 (ADR 0027).
   schemaVersion: SCHEMA_VERSION,
 
   unit: 'kg',

@@ -1,12 +1,3 @@
-// The tsc ratchet (ADR 0035). Runs tsc, counts errors per file, and compares them
-// with tsc-baseline.json ({ "<path>": <count> }). Fails on an error the baseline
-// does not cover, and on a stale entry (a recorded count above the real count), so
-// a fix also lowers the file. A file not in the baseline must be clean.
-//
-//   node scripts/check-tsc-baseline.mjs [--write] [--root <dir>]
-//
-// --write (npm run typecheck:baseline) lowers each entry to its real count and drops
-// the ones that reach 0. It never raises a count or adds an entry: a new error is fixed.
 import { spawnSync } from 'node:child_process'
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
@@ -16,7 +7,6 @@ import { fileURLToPath } from 'node:url'
 const frontend = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const tscBin = join(dirname(createRequire(import.meta.url).resolve('typescript/package.json')), 'bin', 'tsc')
 
-// Standard tsc --pretty false line: path(line,col): error TS1234: message
 const DIAG_LINE = /^([^\r\n]+?)\((\d+),(\d+)\): error (TS\d+): (.*)$/
 
 function option(name) {
@@ -69,7 +59,6 @@ function compare(actual, recorded) {
   return problems
 }
 
-// Each recorded entry at min(recorded, real), 0s dropped, keys sorted for stable diffs.
 function lowerBaseline(actual, recorded) {
   const next = {}
   for (const path of Object.keys(recorded).toSorted()) {

@@ -21,8 +21,6 @@ const field = scale => document.querySelector(`input[aria-label="Set 1 ${scale}"
 const set1 = () => useStore.getState().S.active.entries[0].sets[0]
 const stored = scale => set1()[scale.toLowerCase()]
 
-// Types one key at a time, as a lifter does, so every partial value passes through the field.
-// An empty text clears the field.
 function typeKeys(el, text) {
   const set = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set
   const steps = text ? [...text].map((_, i) => text.slice(0, i + 1)) : ['']

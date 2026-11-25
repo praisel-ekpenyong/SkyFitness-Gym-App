@@ -3,7 +3,6 @@ html {
   font-size: var(--fs-field); background: var(--bg); overscroll-behavior: none; overflow-x: clip;
   -webkit-text-size-adjust: 100%; min-height: 100%; scroll-padding-bottom: var(--page-clearance);
 }
-/* No visible scrollbars across the app: wheel, trackpad, touch and keyboard still scroll. */
 html, body, * { scrollbar-width: none; -ms-overflow-style: none }
 html::-webkit-scrollbar, body::-webkit-scrollbar, *::-webkit-scrollbar { display: none; width: 0; height: 0 }
 html:has(body.resting) { scroll-padding-bottom: var(--timer-clearance) }

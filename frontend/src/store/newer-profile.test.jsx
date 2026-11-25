@@ -1,5 +1,4 @@
 // @vitest-environment happy-dom
-// ADR 0027: a Profile written by a newer Sky is never admitted, at boot, from another tab or on Restore.
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -170,7 +169,6 @@ describe('the notice', () => {
   })
 })
 
-// Last in the file: it resets the module registry, so later dynamic imports would load a second store.
 describe('store creation', () => {
   it('refuses a newer Profile already in localStorage when the store is created', async () => {
     const onDisk = JSON.stringify(newerProfile(5))

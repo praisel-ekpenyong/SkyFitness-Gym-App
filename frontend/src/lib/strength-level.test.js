@@ -210,7 +210,7 @@ describe('strength levels: read from the Training log', () => {
     expect(switchUnit(S, 'lb')).toBe(true)
     const estimate = Math.max(best1RM(S, SQUAT.id).est, best1RM(S, '1461').est)
     expect(estimate).toBe(257.3)
-    const bodyweightThen = 176.4 // the Workout's 80 kg, read in pounds
+    const bodyweightThen = 176.4
     const lift = liftOf(S)
     expect(lift.current).toEqual({ level: 'Novice', ratio: Math.round(estimate / bodyweightThen * 100) / 100 })
     expect(lift.peak).toEqual(lift.current)

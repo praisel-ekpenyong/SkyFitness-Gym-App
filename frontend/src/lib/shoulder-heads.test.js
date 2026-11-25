@@ -19,7 +19,6 @@ describe('shoulder heads at the muscle lookup', () => {
     expect(musclesOf('2292')).toEqual({ 'rear-delts': 1, trapezius: 0.4, 'upper-back': 0.4 })
   })
 
-  // The catalogue has no face pull; a band reverse fly and a rope rear-delt row are its closest moves.
   it('credits reverse flyes and rear-delt rows to rear delts', () => {
     expect(musclesOf('0993')).toEqual({ 'rear-delts': 1, 'upper-back': 0.4, trapezius: 0.4 })
     expect(musclesOf('0203')).toMatchObject({ 'rear-delts': 1 })

@@ -58,7 +58,6 @@ const SPEC = {
   legs: { name: 'Leg Day', emoji: 'legs', ex: [['0043', 4, 8, 100], ['0085', 3, 10, 80], ['0739', 3, 12, 60], ['0585', 3, 12, 40], ['0586', 3, 12, 35], ['0605', 4, 15, 50]] },
 }
 const pad = n => String(n).padStart(2, '0')
-// The seed is built in UTC on purpose, so its day key is read in UTC too.
 const iso = d => `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`
 
 export function buildSeed({ today = '2026-11-09', theme = 'dark' } = {}) {

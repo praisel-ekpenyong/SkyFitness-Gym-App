@@ -35,9 +35,6 @@ export const SHOULDERS = 'shoulders'
  */
 const shoulderHeadsOf = value => isPlainShoulders(value) ? DELT_HEADS : null
 
-// A plain Shoulders on custom exercises, plan files and old custom-exercise
-// snapshots is read as front 1, side 0.4, rear 0.4 when primary and front 0.4
-// when secondary (ADR 0024).
 
 /** @param {boolean} asPrimary @returns {Array<[string, number]>} */
 const plainShouldersWeights = asPrimary => asPrimary

@@ -56,8 +56,6 @@ function StrengthLegend() {
   </div>
 }
 
-// Volume verdicts on the body map's data ramp: below light, in range strong, above full. Count-only stays neutral.
-// `label` reads in the inspector and a11y; `legend` is the shorter legend text.
 const VOLUME_VERDICTS = {
   below: { level: 1, label: 'Room for more', legend: 'Room for more' },
   in: { level: 3, label: 'In range', legend: 'In range' },

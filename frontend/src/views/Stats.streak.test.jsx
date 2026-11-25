@@ -36,7 +36,6 @@ afterEach(async () => {
   container = null
 })
 
-// A counted workout (a performed work set) on the same weekday, the given number of weeks ago.
 function trainedWeeksAgo(n) {
   const d = new Date(todayISO() + 'T12:00:00')
   d.setDate(d.getDate() - 7 * n)
@@ -49,7 +48,6 @@ function kpi(label) {
 
 describe('Stats counts row streak', () => {
   it('shows the current and best week streak from the overview', async () => {
-    // This week and last week, both counted: a streak of two, and the best too.
     useStore.getState().update(s => { s.workouts = [trainedWeeksAgo(1), trainedWeeksAgo(0)] })
 
     await act(async () => { root.render(<Stats />) })
@@ -59,7 +57,6 @@ describe('Stats counts row streak', () => {
   })
 
   it('keeps best above current once a missed week breaks the run', async () => {
-    // Two counted weeks, then a missed week that Gentle cannot cover, then this week counted again.
     useStore.getState().update(s => { s.workouts = [trainedWeeksAgo(3), trainedWeeksAgo(2), trainedWeeksAgo(0)] })
 
     await act(async () => { root.render(<Stats />) })

@@ -37,7 +37,6 @@ const maybeRestNotification = async () => {
   }
 }
 
-// The sound setting comes as a getter: useUI must not import useStore (an import cycle).
 const mustRead = soundOn => {
   if (typeof soundOn !== 'function') throw new TypeError('A timer needs a soundOn getter for the live sound setting')
 }

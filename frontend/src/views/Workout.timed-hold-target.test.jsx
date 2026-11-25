@@ -1,5 +1,4 @@
 // @vitest-environment happy-dom
-// Where a hold lands is an act rule (lib/active-workout.test.js); this checks the screen opens the finish sheet.
 import { act } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useStore } from '../store/useStore.js'

@@ -1,5 +1,3 @@
-// The Profile's optional birth year. From age 40 the Strength standard's thresholds are divided by
-// McCulloch's masters coefficient for the lifter's age. Under 40, or with no birth year, no adjustment.
 
 /** McCulloch's masters coefficients, [age, coefficient], interpolated between rows and capped at 80. */
 const MASTERS = [[40, 1.00], [45, 1.06], [50, 1.13], [55, 1.21], [60, 1.30], [65, 1.43], [70, 1.59], [75, 1.79], [80, 2.03]]

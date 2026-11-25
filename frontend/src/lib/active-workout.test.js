@@ -11,7 +11,6 @@ const blankProfile = () => ({
   routines: [], workouts: [], exWeights: {}, bodyweight: [], week: {}, dayPlan: {},
 })
 
-/** A Profile holding an Active workout of the given Entries. */
 const withActive = (entries, extra = {}) => ({
   ...blankProfile(),
   active: { id: 'a1', d: '2026-08-24', start: 1000, routineId: null, name: 'Freestyle', bw: null, unit: 'kg', cur: 0, entries, ...extra },
@@ -1133,7 +1132,6 @@ describe('act', () => {
   })
 })
 
-/** A 50 kg × 8 work set, and a lift Entry of such sets aiming at the same. */
 const workSet = (done = false) => ({ w: 50, r: 8, done })
 const liftEntry = (id, sets, target = {}) => ({ id, target: { reps: 8, weight: 50, ...target }, sets })
 

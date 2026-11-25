@@ -1,6 +1,4 @@
 // @vitest-environment happy-dom
-// Weekly volume 03: training style and range edits travel in Export and Restore, Reset clears them,
-// and the plan file never carries them.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useStore } from './useStore.js'
 import { DEF, normalizeState } from '../lib/profile/index.js'

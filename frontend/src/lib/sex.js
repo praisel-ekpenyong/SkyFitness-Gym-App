@@ -1,5 +1,3 @@
-// The Profile's optional sex, used only to pick a Strength standard table. Anything but the two
-// known values reads as not set, so a stored or restored value can never grade against the wrong table.
 
 /** @type {readonly ('male' | 'female')[]} */
 export const SEXES = ['male', 'female']

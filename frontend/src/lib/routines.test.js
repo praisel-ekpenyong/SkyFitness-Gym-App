@@ -185,11 +185,9 @@ describe('Routine Domain Module (lib/routines.js)', () => {
 
   describe('actRoutine: removeExercise', () => {
     it('splices entry and calls cleanupSg on routine.ex', () => {
-      // First, set up a superset between 0 and 1
       S.routines[0].ex[0].sg = 'sg-0-1'
       S.routines[0].ex[1].sg = 'sg-0-1'
 
-      // Removing entry 0 should leave entry 1 isolated; cleanupSg should clear entry 1's sg
       const res = actRoutine(S, { type: 'removeExercise', routineId: 'r-push', index: 0 })
       expect(res.ok).toBe(true)
       expect(S.routines[0].ex).toHaveLength(2)
@@ -205,11 +203,9 @@ describe('Routine Domain Module (lib/routines.js)', () => {
 
   describe('actRoutine: moveExercise', () => {
     it('checks bounds, swaps entries, and calls cleanupSg(routine.ex)', () => {
-      // Setup superset between 0 and 1
       S.routines[0].ex[0].sg = 'sg-0-1'
       S.routines[0].ex[1].sg = 'sg-0-1'
 
-      // Move 0 down by +1: swaps 0 and 1 (still adjacent, sg preserved)
       const res1 = actRoutine(S, { type: 'moveExercise', routineId: 'r-push', index: 0, dir: 1 })
       expect(res1.ok).toBe(true)
       expect(S.routines[0].ex[0].id).toBe('0026')
@@ -217,12 +213,9 @@ describe('Routine Domain Module (lib/routines.js)', () => {
       expect(S.routines[0].ex[0].sg).toBe('sg-0-1')
       expect(S.routines[0].ex[1].sg).toBe('sg-0-1')
 
-      // Now move 0 down to 2 (move index 0 dir 1 swaps 0 and 1 again).
-      // Now move entry 2 (0027) up by -1 to index 1: separates 0026 (at 0) and 0025 (now at 2)
       const res2 = actRoutine(S, { type: 'moveExercise', routineId: 'r-push', index: 2, dir: -1 })
       expect(res2.ok).toBe(true)
       expect(S.routines[0].ex.map(e => e.id)).toEqual(['0026', '0027', '0025'])
-      // Because 0026 and 0025 are no longer adjacent, cleanupSg clears both sg!
       expect(S.routines[0].ex[0].sg).toBeUndefined()
       expect(S.routines[0].ex[2].sg).toBeUndefined()
     })
@@ -236,7 +229,6 @@ describe('Routine Domain Module (lib/routines.js)', () => {
 
   describe('actRoutine: replaceExercise', () => {
     it('swaps entry in place, clears notes per ADR 0015, seeds defaults, and normalizes superset via cleanupSg', () => {
-      // Entry 0 has notes: 'Bench cue'
       expect(S.routines[0].ex[0].notes).toBe('Bench cue')
       S.routines[0].ex[0].sg = 'sg-0-1'
       S.routines[0].ex[1].sg = 'sg-0-1'
@@ -254,9 +246,7 @@ describe('Routine Domain Module (lib/routines.js)', () => {
       expect(S.routines[0].ex[0].sets).toBe(4)
       expect(S.routines[0].ex[0].reps).toBe(6)
       expect(S.routines[0].ex[0].weight).toBe(80)
-      // Notes cleared!
       expect(S.routines[0].ex[0].notes).toBeUndefined()
-      // Preserved superset linkage with entry 1
       expect(S.routines[0].ex[0].sg).toBe('sg-0-1')
       expect(S.routines[0].ex[1].sg).toBe('sg-0-1')
     })
@@ -281,17 +271,14 @@ describe('Routine Domain Module (lib/routines.js)', () => {
 
   describe('actRoutine: toggleSuperset', () => {
     it('pairs adjacent exercises when unpaired, and unpairs when already paired, calling cleanupSg', () => {
-      // Initially unpaired
       expect(S.routines[0].ex[0].sg).toBeUndefined()
       expect(S.routines[0].ex[1].sg).toBeUndefined()
 
-      // Pair 0 with subsequent (1)
       const resPair = actRoutine(S, { type: 'toggleSuperset', routineId: 'r-push', index: 0 })
       expect(resPair.ok).toBe(true)
       expect(S.routines[0].ex[0].sg).toBeDefined()
       expect(S.routines[0].ex[1].sg).toBe(S.routines[0].ex[0].sg)
 
-      // Toggle again on 0 unpairs them
       const resUnpair = actRoutine(S, { type: 'toggleSuperset', routineId: 'r-push', index: 0 })
       expect(resUnpair.ok).toBe(true)
       expect(S.routines[0].ex[0].sg).toBeUndefined()
@@ -316,7 +303,6 @@ describe('Routine Domain Module (lib/routines.js)', () => {
       expect(res.ok).toBe(true)
       expect(S.routines[0].ex.map(({ rowId, ...rest }) => rest)).toEqual(syncedEx)
       expect(S.routines[0].ex.every(e => typeof e.rowId === 'string' && e.rowId)).toBe(true)
-      // Verify deep clone (independent object references)
       expect(S.routines[0].ex).not.toBe(syncedEx)
       expect(S.routines[0].ex[0]).not.toBe(syncedEx[0])
     })
@@ -342,12 +328,11 @@ describe('Routine Domain Module (lib/routines.js)', () => {
       expect(res.ok).toBe(true)
       expect(S.routines[0].ex[0].id).toBe('0025')
       expect(S.routines[0].ex[0].sets).toBe(5)
-      expect(S.routines[0].ex[0].reps).toBe(10) // seeded from defaultConfig('0025')
+      expect(S.routines[0].ex[0].reps).toBe(10)
       expect(S.routines[0].ex[0].weight).toBe(70)
       expect(S.routines[0].ex[0].mode).toBe('reps')
       expect(S.routines[0].ex[0].notes).toBe('wrist wraps on')
 
-      // Empty note clears notes property
       actRoutine(S, {
         type: 'replaceExercise',
         routineId: 'r-push',
@@ -472,29 +457,26 @@ describe('Routine Domain Module (lib/routines.js)', () => {
         name: 'Upper',
         ex: [
           { id: '0001', sg: 'sg-1', notes: 'First exercise note' },
-          { id: '0002', sg: 'sg-1', notes: '   ' }, // empty note
-          { id: '0003' }, // standalone exercise, no note
+          { id: '0002', sg: 'sg-1', notes: '   ' },
+          { id: '0003' },
         ],
       }
 
       const view = routineView(routine)
       expect(view.entries).toHaveLength(3)
 
-      // Entry 0: first in superset, hasNote: true
       expect(view.entries[0].id).toBe('0001')
       expect(view.entries[0].isLinkedPrev).toBe(false)
       expect(view.entries[0].inSuperset).toBe(true)
       expect(view.entries[0].isFirstInSuperset).toBe(true)
       expect(view.entries[0].hasNote).toBe(true)
 
-      // Entry 1: second in superset, linked prev, empty note -> hasNote: false
       expect(view.entries[1].id).toBe('0002')
       expect(view.entries[1].isLinkedPrev).toBe(true)
       expect(view.entries[1].inSuperset).toBe(true)
       expect(view.entries[1].isFirstInSuperset).toBe(false)
       expect(view.entries[1].hasNote).toBe(false)
 
-      // Entry 2: standalone, no superset, no note
       expect(view.entries[2].id).toBe('0003')
       expect(view.entries[2].isLinkedPrev).toBe(false)
       expect(view.entries[2].inSuperset).toBe(false)

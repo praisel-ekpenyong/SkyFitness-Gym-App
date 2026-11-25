@@ -4,13 +4,6 @@ import { loadRecords } from '../training-log.js'
 import { deleteWorkout } from '../history.js'
 import { DELOAD_AFTER } from '../progression.js'
 
-/*
- * Seven named scenarios on the 5-day hypertrophy plan, generated from a made-up lifter.
- * Where the plan's own rule needs an engine Sky does not have, the shipped plan adapts its
- * numbers instead (ADR 0011 holds), and a test asserts that the shipped plan progresses.
- * The other gaps were closed wontfix in .scratch/hypertrophy-plan/issues/: each test that
- * pins today's behaviour for one names its ticket.
- */
 
 const kinds = entries => entries.map(e => e.plan?.kind)
 const firstIndex = (entries, kind) => entries.findIndex(e => e.plan?.kind === kind)
@@ -50,18 +43,15 @@ describe('scenario 1: baseline, 8 clean weeks', () => {
     })
   })
 
-  // Ticket 05 (wontfix): one lift on two days with different Target shapes is two streams.
   it('reads Monday and Thursday bench as separate streams, so their weights can drift apart', () => {
     expect(entriesOf(S, 'Push', '0025')[0].plan.kind).toBe('first')
   })
 })
 
 describe('scenario 1b: isolation total-reps target', () => {
-  // A flat lifter doing 14, 13, 12, 11 on Thursday's 4 × 10–15 lateral raise: 50 reps, none under 10.
   const S = generateHistory({ weeks: 6, lifter: { '0178': { w: 12.5, e1rm: 19 } }, day: () => ({ gain: { '0178': 0 } }) })
   const raise = entriesOf(S, 'Push', '0178')
 
-  // Ticket 03 (wontfix): no total-reps rule; double progression needs every set at the top.
   it('holds below the top of the range, then deloads a lifter the plan would step up', () => {
     expect(work(raise[0]).map(s => s.r)).toEqual([14, 13, 12, 11])
     expect(kinds(raise)).toEqual(['first', 'hold', 'hold', 'hold', 'hold', 'deload'])
@@ -69,7 +59,6 @@ describe('scenario 1b: isolation total-reps target', () => {
 })
 
 describe('scenario 2: illness', () => {
-  // A lifter close to a stall on Thursday overhead extensions; week 2 Thursday is a sick session.
   const lifter = { '0194': { w: 27.5, e1rm: 34 } }
   const flat = { gain: { '0194': 0 } }
   const sick = ({ week, routine }) => (week === 2 && routine.name === 'Push' ? { ...flat, strength: 0.8 } : flat)
@@ -77,8 +66,6 @@ describe('scenario 2: illness', () => {
   const ill = generateHistory({ weeks: 8, lifter, day: sick })
   const control = generateHistory({ weeks: 8, lifter, day: skipped })
 
-  // Ticket 07 (wontfix): no flag takes a finished Workout out of progression.
-  // A sick session's first set falls below the range, so the next one drops (ADR 0033).
   it('drops one Increment the session after the sick one', () => {
     const push = ill.routines.find(r => r.name === 'Push').id
     const sessions = ill.workouts.filter(w => w.routineId === push)
@@ -92,18 +79,15 @@ describe('scenario 2: illness', () => {
 })
 
 describe('scenario 3: leg ramp', () => {
-  // Weeks 0–1: one fewer set on every leg exercise (min 2), by skipping it rather than editing the Routine.
   const ramp = ({ week, routine }) => (week < 2 && ['Lower', 'Legs'].includes(routine.name) ? { dropSets: 1 } : {})
   const S = generateHistory({ weeks: 5, day: ramp })
 
-  // Ticket 08 (wontfix): no planned phases, so a dropped ramp set reads as a Miss.
   it('reads a skipped ramp set as missed reps, so the squat holds through the ramp', () => {
     expect(kinds(entriesOf(S, 'Lower', '0043')).slice(0, 4)).toEqual(['first', 'hold', 'hold', 'up'])
   })
 })
 
 describe('scenario 4: exam week', () => {
-  // Week 4: Upper and Lower only, a third of the sets, a little weaker; the rest of the week off.
   const exam = ({ week, routine }) => (week === 4
     ? (['Upper', 'Lower'].includes(routine.name) ? { setsFactor: 1 / 3, strength: 0.95 } : null)
     : {})
@@ -122,8 +106,6 @@ describe('scenario 5: stall and deload', () => {
   const S = generateHistory({ weeks: 8, lifter: { '0194': { w: 27.5, e1rm: 34 } }, day: () => ({ gain: { '0194': 0 } }) })
   const ext = entriesOf(S, 'Push', '0194')
 
-  // Ticket 04 (wontfix): the plan deloads after 3 flat sessions; Sky keeps 4.
-  // The made-up lifter starts too heavy for the range, so it drops first (ADR 0033).
   it(`drops into the range, then deloads about 10% after ${DELOAD_AFTER.double} flat sessions on double progression`, () => {
     expect(ext[firstIndex(ext, 'down')].plan.weight).toBe(25)
     expect(firstIndex(ext, 'deload')).toBe(firstIndex(ext, 'down') + 1 + DELOAD_AFTER.double)
@@ -132,11 +114,9 @@ describe('scenario 5: stall and deload', () => {
 })
 
 describe('scenario 6: load ceiling', () => {
-  // The heel-elevated squat tops out at 30 kg dumbbells.
   const S = generateHistory({ weeks: 8, day: () => ({ ceiling: { 'Heel-elevated dumbbell squat': 30 } }) })
   const squat = entriesOf(S, 'Legs', 'Heel-elevated dumbbell squat')
 
-  // Ticket 06 (wontfix): no per-exercise load ceiling.
   it('keeps prescribing heavier dumbbells once the lifter is capped', () => {
     expect(squat.slice(3).every(e => e.plan.kind === 'up' && work(e)[0].w === 30)).toBe(true)
   })

@@ -1,6 +1,3 @@
-# Before/after pairs: for every PNG name present in two shot folders, write one captioned
-# side-by-side JPEG plus pairs.json. Needs Pillow.
-# usage: python3 compare.py --before=DIR --after=DIR --out=DIR [--only=a,b] [--labels=Before,After]
 import argparse, json, os, sys
 from PIL import Image, ImageDraw, ImageFont
 
@@ -28,7 +25,6 @@ def font(size):
         except OSError: pass
     return ImageFont.load_default(size)
 
-# Viewport sizes from shots.mjs (CSS width -> height); shots are 1x or 2x.
 def screen_h(w, h):
     from_vp = {390: 844, 360: 640, 768: 1024, 1440: 900}
     for vw, vh in from_vp.items():
@@ -69,7 +65,6 @@ for n in both:
                   'jpg': os.path.join(a.out, jpg)})
 
 man = {'pairs': pairs, 'onlyBefore': sorted(nb - na), 'onlyAfter': sorted(na - nb)}
-# pairs.json is the pairs array per the ticket; the only-lists ride in a sibling object key.
 with open(os.path.join(a.out, 'pairs.json'), 'w') as fh:
     json.dump(man, fh, indent=2)
 print(f'{len(pairs)} pairs -> {a.out}')

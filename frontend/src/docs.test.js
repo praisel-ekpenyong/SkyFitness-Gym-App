@@ -14,7 +14,6 @@ describe('ADRs', () => {
     expect(files.filter(f => !/^\d{4}-[a-z0-9-]+\.md$/.test(f))).toEqual([])
   })
 
-  // Two branches can each take the next number; whichever merges second must renumber.
   it('never share a number', () => {
     const byNumber = {}
     for (const f of files) (byNumber[f.slice(0, 4)] ||= []).push(f)
@@ -24,21 +23,13 @@ describe('ADRs', () => {
 
 const root = resolve(import.meta.dirname, '..', '..')
 
-// Gitignored build output and fetched media: docs name them, a clean checkout lacks them.
 const ALLOW = ['frontend/.tmp/review/', 'frontend/dist', 'frontend/dist/', 'frontend/public/media/']
 
-// Paths an ADR names as they were when it was written, one file at a time. Superseded and
-// historical ADR bodies stay unchanged (docs/adr/README.md); an entry no longer needed fails the test below.
 const HISTORICAL = new Set([
-  // The storage module has since moved to platform/storage.js.
   'docs/adr/0004-dual-write-storage.md: lib/storage.js',
-  // The Context describes storage before admit; the module is now platform/storage.js.
   'docs/adr/0027-admit-is-the-single-way-a-profile-comes-in.md: lib/storage.js',
-  // Superseded by 0032; that ADR deleted this file.
   'docs/adr/0006-active-workout-lifecycle.md: lib/finish-workout.js',
-  // Superseded by 0031; written as file::function, which is not a path.
   'docs/adr/0019-read-time-unit-normalization-across-history.md: lib/progression.js::sessionsFor',
-  // Superseded by 0031; written as file::function, which is not a path.
   'docs/adr/0019-read-time-unit-normalization-across-history.md: lib/stats-selectors.js::selectExerciseStats',
 ])
 

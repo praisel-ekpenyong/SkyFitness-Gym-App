@@ -214,7 +214,6 @@ h4.sec, .sec {
 .cal-d i.plan { background: var(--label-3) }
 .cal-d i.ovr { background: var(--label-2) }
 .cal-d i.done { background: transparent }
-/* Week marks sit at the end of each week row: counted, broke, missed, open. */
 .cal-mark {
   width: 26px; height: 26px; border-radius: 50%; align-self: center; justify-self: center;
   display: flex; align-items: center; justify-content: center; color: var(--label);

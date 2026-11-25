@@ -9,7 +9,6 @@ import { useStore } from '../store/useStore.js'
 import { DEF, normalizeState } from '../lib/profile/index.js'
 import { useUI } from '../store/useUI.js'
 
-// The harness reads the clock once, like the store does.
 const normalizeAtEdge = raw => normalizeState(raw, Date.now())
 
 const clone = value => JSON.parse(JSON.stringify(value))

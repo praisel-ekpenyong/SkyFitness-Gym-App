@@ -490,7 +490,6 @@ describe('history re-read through the catalogue corrections', () => {
 })
 
 describe('weekly volume', () => {
-  // NOW is Wednesday 1 July 2026; the ISO week runs Monday 29 June to Sunday 5 July.
   const COUNT_ONLY = ['trapezius', 'forearm', 'lower-back', 'obliques', 'adductors', 'serratus', 'hip-flexors', 'tibialis']
 
   it('reads an empty week as zero done against the Standard volume ranges, with count-only muscles unranged', () => {
@@ -565,8 +564,6 @@ describe('weekly volume', () => {
 })
 
 describe('projected volume', () => {
-  // NOW is Wednesday 1 July 2026; the ISO week runs Monday 29 June to Sunday 5 July.
-  // S.week is indexed by getDay(): 0 Sunday … 6 Saturday.
   const MONDAY = NOW - 2 * DAY
   const push = { id: 'push', name: 'Push', ex: [{ id: LIFT.id, sets: 4 }] }
   const legs = { id: 'legs', name: 'Legs', ex: [{ id: 'squat', sets: 5 }] }

@@ -218,7 +218,6 @@ describe('set rows keep their figures when the ladder shifts', () => {
 })
 
 describe('Reorder sheet with no active workout', () => {
-  // A stale sheet can outlive finish/discard; its selector must return a cached value, not a fresh [].
   it('renders an empty list without a getSnapshot warning or a render loop', () => {
     expect(useStore.getState().S.active).toBeFalsy()
     const errors = vi.spyOn(console, 'error').mockImplementation(() => {})

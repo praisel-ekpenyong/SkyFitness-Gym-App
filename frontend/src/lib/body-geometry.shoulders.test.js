@@ -2,9 +2,6 @@ import { describe, it, expect } from 'vitest'
 import bodyPaths from './body-paths.js'
 import { levelsOf, MUSCLE_NAME } from './muscles.js'
 
-// The single deltoid shape each view drew before the heads were split (ADR 0024).
-// The heads must stay inside this outline, never overlap, and leave only the thin
-// seam between heads that every other muscle on the map has.
 const OLD_DELTOIDS = {
   'male': {
     'front': [
@@ -30,14 +27,11 @@ const OLD_DELTOIDS = {
   }
 }
 
-// Flattens an SVG path into polygons (one per subpath). Curves are sampled;
-// the tiny arcs in this data are taken as straight lines.
 function flatten(d) {
   const toks = d.match(/[a-zA-Z]|-?(?:\d+\.?\d*|\.\d+)(?:e-?\d+)?/g)
   const polys = []
   let i = 0, cmd = '', x = 0, y = 0, sx = 0, sy = 0, cx = 0, cy = 0, poly = null, prev = ''
   const num = () => +toks[i++]
-  // Arc flags may be packed against the next number ("01-.16").
   const flag = () => { const t = toks[i]; if (t.length > 1) { toks[i] = t.slice(1); return } i++ }
   const sample = (pts, n = 12) => {
     for (let k = 1; k <= n; k++) {
@@ -73,7 +67,6 @@ function flatten(d) {
   return polys
 }
 
-// A shape is its polygons plus their bounding box, so most sample points skip the ray test.
 function shape(paths) {
   const polys = paths.flatMap(flatten)
   const pts = polys.flat()
@@ -91,9 +84,6 @@ const inside = ({ polys, box }, px, py) => {
   return n % 2 === 1
 }
 
-// Grid-samples the old outline's box: how many points fall in the old shape,
-// in no head, in more than one head, outside the old shape but in a head,
-// and in each head.
 function coverage(oldPaths, headPaths) {
   const old = shape(oldPaths)
   const heads = headPaths.map(d => shape([d]))

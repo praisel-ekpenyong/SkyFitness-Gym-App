@@ -1,5 +1,4 @@
 // @vitest-environment happy-dom
-// The set ladder's one open console: which set it opens on, how it moves, and what it draws.
 import { act } from 'react'
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest'
 import { cleanupViewTest, entry, renderWorkout, resetViewTestState } from '../test/view-harness.jsx'

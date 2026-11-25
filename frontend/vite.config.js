@@ -22,8 +22,6 @@ if (process.env.npm_lifecycle_event === 'build' || process.argv.includes('build'
   if (!mediaBundled && !process.env.VITE_GIF_BASE) process.env.VITE_GIF_BASE = CDN_GIF_BASE
 }
 
-// src/lib/ owns no UI (purity.test.js), so the compiler skips it; this keeps the
-// 500 KB catalogue data out of Babel. Tests are not compiled either.
 const compilerPreset = reactCompilerPreset()
 compilerPreset.rolldown.filter.id = { exclude: ['**/src/lib/**', '**/*.test.*'] }
 
@@ -43,7 +41,6 @@ export default defineConfig({
     }
   },
   test: {
-    // Cold dynamic imports in tests pay the React Compiler's Babel transform.
     testTimeout: 15000,
     include: ['src/**/*.{test,spec}.?(c|m)[jt]s?(x)', 'scripts/*.test.mjs', 'scripts/review/**/*.test.mjs', '../scripts/**/*.{test,spec}.?(c|m)[jt]s?(x)']
   }

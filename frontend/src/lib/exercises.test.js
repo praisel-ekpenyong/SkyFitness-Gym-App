@@ -191,7 +191,6 @@ describe('curated secondary muscles (smOf, mgOf)', () => {
   const raw = id => EXDB.find(e => e.id === id)
 
   it('drops a removed muscle from the secondaries and adds the curated ones', () => {
-    // 0001 3/4 sit-up: catalogue sm is hip flexors and lower back; the crunch row removes both and adds obliques.
     expect(raw('0001').sm).toEqual(['hip flexors', 'lower back'])
     expect(smOf(raw('0001'))).toEqual(['obliques'])
   })
@@ -209,7 +208,6 @@ describe('curated secondary muscles (smOf, mgOf)', () => {
   })
 
   it('keeps the main group when no curation removes it', () => {
-    // 0085 barbell romanian deadlift: curated, but nothing removed.
     expect(mgOf(raw('0085'))).toBe(raw('0085').mg)
     expect(mgOf({ id: 'c-custom', mg: 'hip flexors' })).toBe('hip flexors')
     expect(mgOf({ id: 'c-custom' })).toBeUndefined()

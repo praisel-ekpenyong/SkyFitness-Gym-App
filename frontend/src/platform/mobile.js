@@ -53,7 +53,6 @@ function reminderNotifications(S) {
     }))
 }
 
-// What is scheduled now, so a save that leaves the reminder unchanged (every set tap) does not reschedule it.
 let scheduledKey = null
 
 export function __resetReminderForTests() {
@@ -86,7 +85,6 @@ export async function syncReminder(S, interactive = false) {
 }
 
 // WKWebView can't do blob-URL downloads, so the backup goes out through the OS share sheet
-// (Files, AirDrop, mail, …) from a temp file instead.
 export async function shareExport(json, filename) {
   const { Filesystem, Directory, Encoding } = await import('@capacitor/filesystem')
   const { Share } = await import('@capacitor/share')

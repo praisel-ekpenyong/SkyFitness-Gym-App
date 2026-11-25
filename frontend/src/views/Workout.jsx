@@ -113,7 +113,6 @@ function ExerciseBlock({ entryIdx, compact, isCurrent = true, arrived = false, r
     if (col.eff) return onField(i, col.f, stepEffort(col.eff, s[col.f], dir))
     onField(i, col.f, Math.max(0, Math.round(((s[col.f] || 0) + dir * col.step) * 100) / 100))
   }
-  // On blur, not on change: typing "10" passes through "1".
   const settleEffort = (s, i, col) => {
     const v = floorEffort(col.eff, s[col.f])
     if (v !== s[col.f]) onField(i, col.f, v)
@@ -212,8 +211,6 @@ function ExerciseBlock({ entryIdx, compact, isCurrent = true, arrived = false, r
   </section>
 }
 
-/* ---------- active workout ---------- */
-// Opens the finish sheet on open-finish, including when a hold this sent completes the last set.
 const send = command => {
   const res = useStore.getState().act(command, send)
   if (res.effects.some(e => e.type === 'open-finish')) workoutCompleteSheet()
@@ -331,7 +328,6 @@ function ActiveWorkout() {
     if (!isSuperset) { pairShown.current = null; return }
     const arrived = pairShown.current !== stepKey
     pairShown.current = stepKey
-    // A pair just opened: start at the top, so its banner and first exercise show, as a new single exercise does.
     if (arrived) { if (typeof window.scrollTo === 'function') window.scrollTo(0, 0); return }
     const el = exRefs.current[cur]
     if (el && typeof el.scrollIntoView === 'function') el.scrollIntoView({ behavior: 'smooth', block: 'nearest' })

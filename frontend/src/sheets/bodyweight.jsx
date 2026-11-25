@@ -15,7 +15,6 @@ const update = (...a) => useStore.getState().update(...a)
 const ui = () => useUI.getState()
 const toast = m => ui().toast(m)
 
-/* ============================ weight input (shared: body weight, target weight) ============================ */
 const W_LO = 1
 const W_STEP = 0.1
 /** Ceiling of a weigh-in or target weight, for the given unit. */
@@ -47,7 +46,6 @@ function WeightInput({ value, setValue, unit, label }) {
   )
 }
 
-/* ============================ body weight ============================ */
 function BwSheet({ required, onDone, close }) {
   const st = useStore(s => s.S)
   const unit = st.unit
@@ -123,7 +121,6 @@ export function bwSheet(opts = {}) {
   return h
 }
 
-/* ============================ goal weight ============================ */
 function GoalSheet({ close }) {
   const st = S()
   const bw = latestWeighIn(st)

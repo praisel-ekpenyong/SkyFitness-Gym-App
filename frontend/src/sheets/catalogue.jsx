@@ -186,9 +186,6 @@ export function CustomExForm({ existing, prefill, onDone, close }) {
     if (dup) { toast(t('“{0}” already exists', dup.n)); return }
     const trimmedDesc = desc.trim().slice(0, 1000)
     const finalSm = primary === 'cardio' ? [] : secondaries
-    // The form shows a stored plain Shoulders (or a bodypart-only legacy
-    // exercise) as the muscles it counts for. Save those back only when the
-    // lifter changes the pick, so untouched muscles stay as stored (ADR 0024).
     const pickChanged = primary !== initialPick.primary
       || finalSm.length !== initialPick.secondaries.length
       || finalSm.some(m => !initialPick.secondaries.includes(m))

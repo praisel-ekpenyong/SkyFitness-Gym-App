@@ -1,5 +1,3 @@
-// Restore admission: what a backup file must look like, and the cleaning it gets before
-// normalizeState turns it into a Profile (ADR 0027).
 
 import { RESTORE_TOP_KEYS } from './restore-keys.js'
 import { isNewerProfile } from './upgrades.js'

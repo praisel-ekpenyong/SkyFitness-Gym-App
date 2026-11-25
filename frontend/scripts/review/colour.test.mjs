@@ -19,7 +19,6 @@ describe('audit colour parser', () => {
     close(parseColor('color(srgb 1 1 1 / 0.25)'), [255, 255, 255, 0.25])
   })
   it('reads a real color-mix() result as light, not near-black', () => {
-    // color-mix(in srgb, #ffffff 50%, #000000) is reported as color(srgb 0.5 0.5 0.5)
     close(parseColor('color(srgb 0.5 0.5 0.5)'), [127.5, 127.5, 127.5, 1])
     const [r, g, b] = parseColor('color(srgb 0.843137 0.760784 0.964706)')
     expect(Math.min(r, g, b)).toBeGreaterThan(190)

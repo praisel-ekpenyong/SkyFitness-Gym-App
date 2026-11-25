@@ -13,7 +13,6 @@ const RULE = 'typescript/no-floating-promises'
 let root
 afterEach(() => rmSync(root, { recursive: true, force: true }))
 
-// A copy of the fixture (hit.js holds two no-floating-promises hits) with the given baseline.
 function project(baseline) {
   root = mkdtempSync(join(tmpdir(), 'lint-baseline-'))
   cpSync(fixture, root, { recursive: true })

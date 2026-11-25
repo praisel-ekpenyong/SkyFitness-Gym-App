@@ -2,7 +2,6 @@ import { join } from 'node:path'
 import { ESLint } from 'eslint'
 import { describe, expect, it } from 'vitest'
 
-// The environment selectors in eslint.config.js (CODING_STANDARDS.md "Configuration").
 const root = join(import.meta.dirname, '..')
 const eslint = new ESLint({ cwd: root })
 
@@ -11,7 +10,6 @@ async function lint(code, path) {
   return r.messages.filter(m => m.ruleId === 'no-restricted-syntax')
 }
 
-// ESLint loads the whole config on first use, slow on a busy machine.
 describe('environment selectors', { timeout: 60000 }, () => {
   it('fail an environment read in an ordinary src file', async () => {
     expect(await lint('export const a = import.meta.env.MODE\nexport const b = process.env.X\n', 'src/views/Fixture.jsx')).toHaveLength(2)

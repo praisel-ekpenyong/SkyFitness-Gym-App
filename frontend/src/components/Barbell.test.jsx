@@ -17,7 +17,6 @@ afterEach(async () => {
   container.remove()
 })
 
-// One side of the bar, inner plate first: [tone, size] per plate.
 async function plates(weight, unit) {
   await act(async () => { root.render(<Barbell weight={weight} unit={unit} />) })
   const side = container.querySelectorAll('.bbell-side')[1]

@@ -1,5 +1,3 @@
-// The Profile's value fields. normalizeState cleans them on every way in (boot, sync, Restore),
-// so there is one clean function per field and one clock.
 
 import { cleanSex } from '../sex.js'
 import { cleanBirthYear } from '../birth-year.js'

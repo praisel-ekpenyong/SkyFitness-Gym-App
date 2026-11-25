@@ -136,7 +136,6 @@ describe('applyHypertrophyPlan', () => {
     const incs = S => S.routines.flatMap(r => r.ex).filter(e => e.inc != null).map(e => e.inc)
     expect(incs(kg).length).toBeGreaterThan(0)
     incs(kg).forEach(i => expect(i).toBe(2.5))
-    // 2.5 kg snaps to the nearest 2.5 lb plate step, not 5.5 (docs-review 15).
     incs(lb).forEach(i => expect(i).toBe(5))
   })
 

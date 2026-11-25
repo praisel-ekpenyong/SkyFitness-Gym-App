@@ -1,6 +1,4 @@
 // @vitest-environment happy-dom
-// Strength levels: the sex profile field travels with Export and Restore, Reset clears it,
-// the plan file never carries it, and an invalid stored value reads as not set.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useStore } from './useStore.js'
 import { DEF, normalizeState } from '../lib/profile/index.js'

@@ -6,7 +6,6 @@ import { buildCompletedWorkout } from './active-finish.js'
 import { effortSummary, effortWeeks, effortHistogram } from './effort.js'
 import { assertClock, mondayIndexOf } from './dates.js'
 
-// A forgotten or misplaced clock must throw, never turn into NaN dates (CODING_STANDARDS "Function signatures").
 describe('clock arguments fail loudly', () => {
   const bad = [undefined, null, NaN, '2026-01-01', new Date(0)]
   const S = { workouts: [] }

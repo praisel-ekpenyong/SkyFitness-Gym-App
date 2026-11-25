@@ -1,6 +1,3 @@
-// Parses a computed CSS colour into [r, g, b, a] (channels 0-255, alpha 0-1).
-// Handles rgb()/rgba() in comma and space syntax and color(srgb ...) (what browsers report for color-mix()).
-// Anything else throws: a colour the audit cannot read must never be measured as black.
 export function parseColor(input) {
   const s = String(input).trim().toLowerCase()
   const bad = () => { throw new Error(`audit: unsupported colour syntax "${input}"`) }

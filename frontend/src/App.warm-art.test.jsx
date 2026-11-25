@@ -43,8 +43,6 @@ afterEach(async () => {
   vi.clearAllMocks()
 })
 
-// Runs every timer due in the next minute, so a timer fallback would fire, then
-// waits for the media-warm import that a fired callback starts.
 const settle = () => act(async () => {
   await vi.advanceTimersByTimeAsync(60_000)
   await vi.dynamicImportSettled()

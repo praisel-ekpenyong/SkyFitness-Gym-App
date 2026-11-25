@@ -2,9 +2,6 @@ import { describe, it, expect } from 'vitest'
 import { matchExercise } from './import-csv.js'
 import { EXIDX } from './exercises.js'
 
-// The names other apps actually export, and the catalogue entry each has to land on.
-// Everything here was reported as arriving in the app as a *custom* exercise (issue #74):
-// the alias table is the intended place to fix that, so these pin it.
 const MAPS = {
   Treadmill: '3666',
   'Goblet Squat': '1760',

@@ -104,7 +104,6 @@ export const getProgressionItems = sessionProgressionItems
  */
 function useFigureFit() {
   const [tight, setTight] = useState(false)
-  // A new callback identity when `tight` flips makes React re-run it, so a resize reset re-measures.
   const measureFigure = useCallback(el => {
     if (tight || !el) return
     if ([...el.querySelectorAll('.tile .v')].some(v => v.scrollWidth > v.clientWidth)) setTight(true)

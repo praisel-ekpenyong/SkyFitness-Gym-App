@@ -1,8 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { admit, normalizeState, sanitizeRestorePayload, SCHEMA_VERSION } from './index.js'
 
-// A future DEF that gained a field inside `reminder`, one level deeper inside it, and a new nested
-// default object. No Profile on disk has any of them.
 vi.mock('./def.js', async importOriginal => {
   const { DEF } = await importOriginal()
   return {
