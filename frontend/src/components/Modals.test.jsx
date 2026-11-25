@@ -3,39 +3,8 @@ import { createRoot } from 'react-dom/client'
 import { parseHTML } from 'linkedom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import Modals from './Modals.jsx'
+import { useUI } from '../store/useUI.js'
 
-const mocks = vi.hoisted(() => {
-  const listeners = new Set()
-  const state = {
-    sheets: [],
-    closeSheet(id) {
-      state.sheets = state.sheets.filter(sheet => sheet.id !== id)
-      listeners.forEach(listener => listener())
-    },
-  }
-  return {
-    state,
-    subscribe(listener) {
-      listeners.add(listener)
-      return () => listeners.delete(listener)
-    },
-    setSheets(sheets) {
-      state.sheets = sheets
-      listeners.forEach(listener => listener())
-    },
-  }
-})
-
-vi.mock('../store/useUI.js', async () => {
-  const React = await import('react')
-  const useUI = (selector = state => state) => React.useSyncExternalStore(
-    mocks.subscribe,
-    () => selector(mocks.state),
-    () => selector(mocks.state),
-  )
-  useUI.getState = () => mocks.state
-  return { useUI }
-})
 
 let dom
 let root
@@ -67,7 +36,7 @@ function installDom() {
 }
 
 async function setSheets(sheets) {
-  await act(async () => { mocks.setSheets(sheets) })
+  await act(async () => { useUI.setState({ sheets }) })
 }
 
 async function popstate() {
@@ -84,7 +53,7 @@ function mouse(target, type, clientY) {
 }
 
 beforeEach(async () => {
-  mocks.state.sheets = []
+  useUI.setState({ sheets: [] })
   installDom()
   await act(async () => { root.render(React.createElement(Modals)) })
 })
@@ -107,9 +76,9 @@ describe('Modals sheet history accounting', () => {
 
     await setSheets([summary])
     await popstate()
-    expect(mocks.state.sheets).toEqual([summary])
+    expect(useUI.getState().sheets).toEqual([summary])
 
-    await act(async () => { mocks.state.closeSheet('summary') })
+    await act(async () => { useUI.getState().closeSheet('summary') })
     expect(historyMock.go).not.toHaveBeenCalled()
   })
 
@@ -126,11 +95,11 @@ describe('Modals sheet history accounting', () => {
     await setSheets([sheet('one'), sheet('two')])
     await popstate()
 
-    expect(mocks.state.sheets.map(item => item.id)).toEqual(['one'])
+    expect(useUI.getState().sheets.map(item => item.id)).toEqual(['one'])
     expect(historyMock.pushState).toHaveBeenCalledTimes(2)
 
     await popstate()
-    expect(mocks.state.sheets).toEqual([])
+    expect(useUI.getState().sheets).toEqual([])
     expect(historyMock.go).not.toHaveBeenCalled()
   })
 
@@ -138,7 +107,7 @@ describe('Modals sheet history accounting', () => {
     await setSheets([sheet('open')])
     await popstate()
 
-    expect(mocks.state.sheets).toEqual([])
+    expect(useUI.getState().sheets).toEqual([])
     expect(historyMock.go).not.toHaveBeenCalled()
   })
 
@@ -174,7 +143,7 @@ describe('Modals mouse dragging', () => {
     })
 
     expect(sheetEl.style.transform).toBe('')
-    expect(mocks.state.sheets).toHaveLength(1)
+    expect(useUI.getState().sheets).toHaveLength(1)
   })
 
   it('releases a drag when mouseup occurs outside the sheet', async () => {
@@ -193,7 +162,7 @@ describe('Modals mouse dragging', () => {
 
     await act(async () => { mouse(sheetEl, 'mousemove', 120) })
     expect(sheetEl.style.transform).toBe('')
-    expect(mocks.state.sheets).toHaveLength(1)
+    expect(useUI.getState().sheets).toHaveLength(1)
   })
 })
 

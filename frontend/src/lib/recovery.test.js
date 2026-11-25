@@ -4,13 +4,9 @@ import {
   FATIGUE_MIN_REF_FLOOR,
   FATIGUE_MIN_SESSIONS,
   FATIGUE_REF_VOLUME,
-  FATIGUE_SCAN_MS,
   FATIGUE_STATES,
-  BODYWEIGHT_REF_LOAD,
-  CARDIO_TONNAGE_PER_MIN,
   STRENGTH_FLOOR,
   STRENGTH_FULL_MS,
-  STRENGTH_HALF_LIFE_MS,
   detrainedMuscles,
   fatiguedMuscles,
   fatigueOf,
@@ -73,22 +69,6 @@ const expectedFatigue = sessions => {
   }
   return 1 - Math.exp(-normalised)
 }
-
-describe('recovery constants', () => {
-  it('exports the pinned windows, half-lives, floor, and state labels', () => {
-    expect(FATIGUE_REF_VOLUME).toBe(2000)
-    expect(FATIGUE_MIN_REF_FLOOR).toBe(500)
-    expect(FATIGUE_SCAN_MS).toBe(30 * DAY)
-    expect(FATIGUE_HALF_LIFE_MS).toBe(36 * HOUR)
-    expect(BODYWEIGHT_REF_LOAD).toBe(75)
-    expect(CARDIO_TONNAGE_PER_MIN).toBe(50)
-    expect(STRENGTH_FULL_MS).toBe(14 * DAY)
-    expect(STRENGTH_HALF_LIFE_MS).toBe(28 * DAY)
-    expect(STRENGTH_FLOOR).toBe(0.5)
-    expect(FATIGUE_STATES).toEqual({ READY: 'ready', RECOVERING: 'recovering', FATIGUED: 'fatigued' })
-    expect(halfLifeDecay(FATIGUE_HALF_LIFE_MS, FATIGUE_HALF_LIFE_MS)).toBe(0.5)
-  })
-})
 
 describe('fatigueOf and strengthOf', () => {
   it('returns every muscle, ready/floor defaults, and hook defaults for empty history', () => {

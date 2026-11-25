@@ -297,6 +297,8 @@ export function sessionProgress(A) {
 
 /**
  * Build a Target seed when replacing an exercise in a Routine or ActiveWorkout.
+ * With a Routine, only that Routine's history seeds, else the default config (ADR 0011);
+ * without one, the last session seeds, with Best over the weight for loaded exercises.
  * @param {Profile} S
  * @param {string} exId
  * @param {string | null | undefined} routineId
@@ -305,8 +307,8 @@ export function sessionProgress(A) {
  */
 export function seedForReplacement(S, exId, routineId, setsCount) {
   const base = defaultConfig(exId)
-  const last = lastSessionInRoutine(S, exId, routineId) || lastSession(S, exId)
-  const bestWeight = best(S, exId)
+  const last = routineId ? lastSessionInRoutine(S, exId, routineId) : lastSession(S, exId)
+  const bestWeight = routineId ? 0 : best(S, exId)
   const seed = {
     ...base,
     ...(last?.target || {}),

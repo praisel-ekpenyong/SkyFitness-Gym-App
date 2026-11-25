@@ -19,6 +19,7 @@ Introduce `frontend/src/lib/routines.js` as the deep domain module encapsulating
 
 1. **`actRoutine(S, command)`**: The single pure command interface for mutating routine state on profile drafts. Supported commands:
    - `create`: Allocates a unique ID (`uid()`), localized default name (`t('New routine')`), default glyph (`DEFAULT_GLYPH`), and empty exercise collection. Appends to `S.routines` and returns `{ ok: true, result: routine }`.
+   - `import` (2026-11-25): Adds a whole Routine (name, glyph, optional progression style, rows) under a fresh `uid()`, building every row the way `addExercise` does (Mode defaults, clean note, fresh `rowId`) and normalizing supersets via `cleanupSg`. Shared-plan merge and the starter plan call it; they remap exercise ids and convert units first. Returns `{ ok: true, result: routine }`.
    - `delete`: Removes the routine from `S.routines` and atomically detaches it from `S.week` and `S.dayPlan` via `detachRoutine(S, routineId)`. Returns `{ ok: true }`. Returns `{ ok: false }` for unrecognized routine IDs.
    - `rename`: Updates routine name.
    - `setGlyph`: Updates routine glyph/emoji.

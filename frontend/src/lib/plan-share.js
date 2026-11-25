@@ -5,6 +5,7 @@ import { uid, fmtNum, fmtSigned, exCount, fmtSec } from './format.js'
 import { todayISO, DAYN } from './dates.js'
 import { t } from './i18n-core.js'
 import { sanitizeUnit, targetIn } from './units.js'
+import { actRoutine } from './routines.js'
 
 /** @typedef {import('./types.js').Profile} Profile */
 /** @typedef {import('./types.js').Routine} Routine */
@@ -150,15 +151,9 @@ export function mergePlan(s, bundle, { schedule } = {}) {
   /** @type {Record<string, string>} */
   const ridMap = {}
   bundle.routines.forEach(r => {
-    const nid = uid()
-    ridMap[r.id] = nid
-    s.routines.push({
-      id: nid,
-      name: r.name || t('Shared routine'),
-      emoji: r.emoji,
-      ...(r.prog ? { prog: r.prog } : {}),
-      ex: (r.ex || []).map(e => ({ ...targetIn(e, fileUnit, unit), id: (e.id && exIdMap[e.id]) || e.id, rowId: uid() }))
-    })
+    const ex = (r.ex || []).map(e => ({ ...targetIn(e, fileUnit, unit), id: (e.id && exIdMap[e.id]) || e.id }))
+    const { result } = actRoutine(s, { type: 'import', routine: { name: r.name || t('Shared routine'), emoji: r.emoji, prog: r.prog, ex } })
+    if (result?.id) ridMap[r.id] = result.id
   })
   if (schedule) {
     WEEK_ORDER.forEach(d => { delete s.week[d] })
