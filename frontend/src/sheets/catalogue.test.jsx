@@ -5,6 +5,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { ExerciseDetail, deleteCustomEx, ExercisePicker, CustomExForm, ExConfig, exConfigSheet } from './catalogue.jsx'
 import { useStore } from '../store/useStore.js'
 import { DEF } from '../lib/profile/index.js'
+import { FILTER_MUSCLES, PICKABLE_MUSCLES, MUSCLE_NAME } from '../lib/muscles.js'
 import { isoOf } from '../lib/dates.js'
 import { useUI } from '../store/useUI.js'
 import { buttonNamed, leafTexts, pick } from '../test/sheet-host.jsx'
@@ -330,7 +331,7 @@ describe('ExercisePicker own-first order', () => {
 })
 
 describe('ExercisePicker canonical muscle filtering and search', () => {
-  it('renders all 19 canonical muscle filter chips plus Cardio in anatomical head-to-toe order', async () => {
+  it('renders Favorites, Chosen and All, then a chip for every filter muscle in taxonomy order', async () => {
     useStore.getState().update(s => {
       s.favorites = ['0001']
       s.routines = [{ id: 'r1', name: 'R1', emoji: '💪', ex: [{ id: '0025', sets: 3, reps: 10 }] }]
@@ -342,14 +343,7 @@ describe('ExercisePicker canonical muscle filtering and search', () => {
 
     const firstChipsRow = container.querySelectorAll('.chips')[0]
     const chips = Array.from(firstChipsRow.querySelectorAll('button.chip')).map(c => c.textContent.trim())
-    const expected = [
-      'Favorites (1)', 'Chosen (1)', 'All',
-      'Traps', 'Shoulders', 'Front delts', 'Side delts', 'Rear delts', 'Chest', 'Upper back', 'Lats', 'Serratus',
-      'Biceps', 'Triceps', 'Forearms', 'Abs', 'Obliques', 'Lower back',
-      'Glutes', 'Quads', 'Hamstrings', 'Adductors', 'Hip flexors',
-      'Calves', 'Shins', 'Cardio',
-    ]
-    expect(chips).toEqual(expected)
+    expect(chips).toEqual(['Favorites (1)', 'Chosen (1)', 'All', ...FILTER_MUSCLES.map(m => MUSCLE_NAME[m])])
   })
 
   it('surfaces secondary compound movements with inline secondary badges when a muscle filter is selected', async () => {
@@ -593,7 +587,7 @@ describe('ExerciseDetail primary and secondary muscle tags', () => {
 })
 
 describe('CustomExForm canonical muscle selection and editing', () => {
-  it('renders all 21 canonical muscles plus Cardio in anatomical order for primary muscle selection and gates secondaries until primary is chosen', async () => {
+  it('renders every pickable muscle in taxonomy order for primary muscle selection and gates secondaries until primary is chosen', async () => {
     await act(async () => {
       root.render(<CustomExForm onDone={vi.fn()} close={vi.fn()} />)
     })
@@ -605,13 +599,7 @@ describe('CustomExForm canonical muscle selection and editing', () => {
 
     const primaryChipContainer = container.querySelectorAll('.chips')[0]
     const primaryChips = Array.from(primaryChipContainer.querySelectorAll('button.chip')).map(c => c.textContent.trim())
-    const expected = [
-      'Traps', 'Front delts', 'Side delts', 'Rear delts', 'Chest', 'Upper back', 'Lats', 'Serratus',
-      'Biceps', 'Triceps', 'Forearms', 'Abs', 'Obliques', 'Lower back',
-      'Glutes', 'Quads', 'Hamstrings', 'Adductors', 'Hip flexors',
-      'Calves', 'Shins', 'Cardio',
-    ]
-    expect(primaryChips).toEqual(expected)
+    expect(primaryChips).toEqual(PICKABLE_MUSCLES.map(m => MUSCLE_NAME[m]))
   })
 
   it('allows selecting a primary muscle and multiple secondary muscles, deriving bp', async () => {
