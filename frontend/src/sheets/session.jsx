@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { Fragment, useCallback, useEffect, useState } from 'react'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { EXIDX, exOr } from '../lib/exercises.js'
@@ -99,12 +99,15 @@ export const workoutCompleteSheet = () => ui().openSheet(close => <WorkoutComple
 export const getProgressionItems = sessionProgressionItems
 
 
+/**
+ * @returns {[(el: HTMLElement | null) => void, boolean]}
+ */
 function useFigureFit() {
-  const ref = useRef(null)
   const [tight, setTight] = useState(false)
-  useLayoutEffect(() => {
-    if (tight || !ref.current) return
-    if ([...ref.current.querySelectorAll('.tile .v')].some(v => v.scrollWidth > v.clientWidth)) setTight(true)
+  // A new callback identity when `tight` flips makes React re-run it, so a resize reset re-measures.
+  const measureFigure = useCallback(el => {
+    if (tight || !el) return
+    if ([...el.querySelectorAll('.tile .v')].some(v => v.scrollWidth > v.clientWidth)) setTight(true)
   }, [tight])
   useEffect(() => {
     let width = window.innerWidth
@@ -112,7 +115,7 @@ function useFigureFit() {
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
   }, [])
-  return { ref, tight }
+  return [measureFigure, tight]
 }
 
 /**
@@ -132,7 +135,7 @@ export function FinishSummary({ w, prs, e1prs = [], routineSync = null, close })
   const load = loadOfWorkouts([w])
   const sum = workoutSummary(st, w)
   const warmUps = sum.warmups
-  const fig = useFigureFit()
+  const [measureFigure, tight] = useFigureFit()
 
   const onDismiss = () => {
     if (syncChecked && routineSync?.routineId && routineSync?.syncedEx) {
@@ -146,7 +149,7 @@ export function FinishSummary({ w, prs, e1prs = [], routineSync = null, close })
   return <div className="finish">
     <h3 className="finish-title">{t('Workout logged')}</h3>
     <div className="finish-kicker">{[w.name, fmtDate(w.d, true)].filter(Boolean).join(' · ')}</div>
-    <div ref={fig.ref} className={'tiles finish-kpis' + (fig.tight ? ' tight' : '')}>
+    <div ref={measureFigure} className={'tiles finish-kpis' + (tight ? ' tight' : '')}>
       <div className="tile"><div className="l">{t('Duration')}</div><div className="v">
         {fmtDurParts(sum.durationMs ?? 0).map(([n, u], i) => <Fragment key={i}>{i > 0 && ' '}{n}<span className="u">{u}</span></Fragment>)}
       </div></div>

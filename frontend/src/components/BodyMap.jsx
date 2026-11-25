@@ -6,12 +6,15 @@ import { t } from '../lib/i18n.js'
 let CACHE = null
 let PENDING = null
 
+// Kept out of the hook: the React Compiler cannot compile a dynamic import().
+const loadBodyPaths = () => import('../lib/body-paths.js').then(m => (CACHE = m.default))
+
 function useBodyPaths() {
   const [paths, setPaths] = useState(CACHE)
   useEffect(() => {
     if (CACHE) return
     let alive = true
-    PENDING = PENDING || import('../lib/body-paths.js').then(m => (CACHE = m.default))
+    PENDING = PENDING || loadBodyPaths()
     PENDING.then(p => { if (alive) setPaths(p) }).catch(() => {})
     return () => { alive = false }
   }, [])
@@ -54,7 +57,7 @@ export default function BodyMap({ load = {}, thresholds, body = 'male', onMuscle
   const paths = useBodyPaths()
   const levels = levelsOf(load, thresholds)
   const g = paths && (paths[body] || paths.male)
-  const primaryOf = slug => (g.front.p[slug] ? 'front' : 'back')
+  const primaryOf = slug => (g?.front.p[slug] ? 'front' : 'back')
   const trainedCount = !onMuscle ? Object.keys(load || {}).filter(k => (load[k] || 0) > 0).length : 0
   const staticAriaLabel = !onMuscle
     ? (trainedCount > 0 ? t('Trained muscles map ({0} muscles trained)', trainedCount) : t('Trained muscles map'))

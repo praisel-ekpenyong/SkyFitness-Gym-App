@@ -225,8 +225,7 @@
     "typescript/no-misused-promises": 1
   },
   "src/views/Library.jsx": {
-    "jsx-a11y/prefer-tag-over-role": 2,
-    "react-hooks/exhaustive-deps": 1
+    "jsx-a11y/prefer-tag-over-role": 2
   },
   "src/views/Plan.jsx": {
     "typescript/no-floating-promises": 1,

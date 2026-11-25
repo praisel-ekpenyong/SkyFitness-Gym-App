@@ -38,8 +38,8 @@ in review. Each rule is an imperative that names its one legal exception, and a
   keeps only what oxlint cannot do: the official `eslint-plugin-react-hooks`
   compiler rules, and `no-restricted-syntax` selectors (oxlint has no AST
   selectors). Ten compiler rules are on at error (see "Render stays pure"): six
-  with 0 hits, and `static-components`, `purity`, `refs`, and
-  `memo-dependencies` baselined in `frontend/eslint-suppressions.json`.
+  with 0 hits (`refs` and `memo-dependencies` included), and `static-components` and
+  `purity` baselined in `frontend/eslint-suppressions.json`.
   `react-hooks/todo` stays off. The `no-restricted-syntax` selectors run from
   one table in `frontend/eslint.config.js`, with their hits baselined in the same
   suppressions file. A rule runs in one tool, never two.
@@ -374,28 +374,30 @@ subscription rules for both are under "The state caps".
 Write components the React Compiler can compile: read no ref and call no impure
 function (`Date.now()`, `Math.random()`) in render, define no component inside a
 component, set no state during render or synchronously in an effect, and derive
-no state from props in an effect. Exception: the two files with a dynamic
-`import()` (`App.jsx` and `components/BodyMap.jsx`) will need `'use no memo'`,
-or a moved import, when the compiler lands; no file carries it today.
-`react-hooks/todo` stays off for that reason.
+no state from props in an effect. Keep a dynamic `import()` out of a component
+or hook (`App.jsx` and `components/BodyMap.jsx` hold theirs in a module-level
+function): the compiler refuses a function that holds one. `react-hooks/todo`
+stays off for that reason.
 
 **Why:** NumberField in `components/ui.jsx` wrote a ref in render, and a render
 React discarded dropped the lifter's half-typed draft (#135, fixed).
-`sheets/session.jsx` (line 149) still reads a ref in render. `components/TabBar.jsx` (line 33) and `sheets/history.jsx` (line 286) use a
+`sheets/session.jsx` read a ref in render (fixed). `components/TabBar.jsx` (line 33) and `sheets/history.jsx` (line 286) use a
 component defined in render, so it remounts every render and loses state.
 `views/Home.jsx` (line 37) bakes `Date.now()` into a memo keyed on `[S]`.
 **Runs:** ESLint, `eslint-plugin-react-hooks` 7.1.1, at error with no hits:
 `react-hooks/set-state-in-effect`, `react-hooks/no-deriving-state-in-effects`,
 `react-hooks/set-state-in-render`, `react-hooks/immutability`,
 `react-hooks/preserve-manual-memoization`, `react-hooks/globals`. At error with
-`frontend/eslint-suppressions.json`: `static-components` (9 hits, 2 files),
-`purity` (5), `refs` (2, 1 file), `memo-dependencies` (1); all counts
-re-measured 2026-11-24, `refs` after #135 with `eslint-plugin-react-hooks` 7.1.1.
-**To add:** `babel-plugin-react-compiler` on the Vite React plugin: 91 of 98 functions compiled
-before #135, and the 7 refusals were the four `refs` hits (two now fixed), the two dynamic imports and
-the one `memo-dependencies` hit. The Babel plugin does not wait for the state
-ratchets below; the two are independent. oxlint's own `react/*` copies of these
-rules stay off.
+`frontend/eslint-suppressions.json`: `static-components` (9 hits, 2 files) and
+`purity` (5); `refs` and `memo-dependencies` have no hits left (#122). Counts
+re-measured 2026-11-25 with `eslint-plugin-react-hooks` 7.1.1.
+**Runs:** `babel-plugin-react-compiler` through `@rolldown/plugin-babel` and
+`reactCompilerPreset` in `frontend/vite.config.js`, so `vite build` and Vitest
+both compile components (`src/lib/` and test files are excluded). It does not
+wait for the state ratchets below; the two are independent. oxlint's own
+`react/*` copies of these rules stay off. The compiler hoists a property read
+out of a closure, so guard one that can run on a null (`g?.front` in
+`components/BodyMap.jsx`).
 
 ### React Doctor: a score floor that only rises
 
@@ -414,7 +416,10 @@ positives; only the ref in `components/ui.jsx:15` was real.
 `frontend/doctor.config.mjs` excluding `scripts/` and tests, disabling
 `.oxlintrc.json` adoption (already covered by `npm run lint`), and ignoring
 `react-doctor/no-json-parse-stringify-clone` and
-`react-doctor/only-export-components`. `check-react-doctor-floor.test.mjs` in
+`react-doctor/only-export-components`. The `react-hooks-js/static-components` and
+`react-hooks-js/purity` hits are baselined in `frontend/eslint-suppressions.json`
+and ratcheted by `npm run lint`; React Doctor cannot see that baseline, so it
+ignores them too once the Babel plugin is on. `check-react-doctor-floor.test.mjs` in
 `npm test` holds the failing fixture for a score below the floor. Confirming each
 finding is a judgement call, no tooth.
 
@@ -852,12 +857,12 @@ names every one:
 | Tool | Runs today | To add |
 |---|---|---|
 | Vitest guard tests, in `npm test` | `purity.test.js`, `import-cycles.test.js`, `design-tokens.test.js`, `design-lint.test.js`, `env.test.js`, `i18n-lint.test.js`, `sheets/dialog-names.test.jsx`, `docs.test.js`, `platform/storage.test.js` (the 800ms debounce), `comments.test.js`, `effect-types.test.js`, the `warmArt` test (`App.warm-art.test.jsx`), the `flush()` test (`store/useStore.flush.test.jsx`), the save round-trip tests (`sheets/catalogue.test.jsx`, `views/RoutineEdit.test.jsx`), `lib/profile/profile-keys.test.js` | |
-| ESLint 10, `npm run lint` after the oxlint ratchet (CI only) | `react-hooks/set-state-in-effect`, `react-hooks/no-deriving-state-in-effects`, `react-hooks/set-state-in-render`, `react-hooks/immutability`, `react-hooks/preserve-manual-memoization`, `react-hooks/globals`, all at error, 0 hits. `static-components` (9 hits, 2 files), `purity` (5), `refs` (2, 1 file), `memo-dependencies` (1), at error with `frontend/eslint-suppressions.json`. `react-hooks/todo` stays off. `no-restricted-syntax` selectors, one table in `frontend/eslint.config.js`: One-owner (`LB_TO_KG` and the `2.2046` and `0.4535` literals at 0 suppressions, inline `Math.round(x * 10) / 10`, `(getDay() + 6) % 7`, `\|\| 'kg'`), `% 60`, local dates, store selectors, the `lib/` clock, `import.meta.env` and `process.env`, the CommonJS shim, and `vi.mock` scope in tests. Ratchet: `frontend/eslint-suppressions.json` | nothing |
-| oxlint, ratchet in the pre-commit hook and in `npm run lint` (CI) | `correctness` category, `react/rules-of-hooks`, `react/exhaustive-deps`, `complexity`, restricted globals and properties (including `Date.now` in `lib/`), `unicorn/no-array-sort`, `unicorn/no-array-reverse`, `react/no-array-index-key`, `jsx-a11y/click-events-have-key-events`, `jsx-a11y/no-static-element-interactions`, `jsx-a11y/prefer-tag-over-role`, `jsx-a11y/no-autofocus`, all at error. Ratchet: `frontend/lint-baseline.json`, checked by `scripts/check-lint-baseline.mjs` with its failing fixture in `npm test` | nothing |
+| ESLint 10, `npm run lint` after the oxlint ratchet (CI only) | `react-hooks/set-state-in-effect`, `react-hooks/no-deriving-state-in-effects`, `react-hooks/set-state-in-render`, `react-hooks/immutability`, `react-hooks/preserve-manual-memoization`, `react-hooks/globals`, all at error, 0 hits. `static-components` (9 hits, 2 files) and `purity` (5), at error with `frontend/eslint-suppressions.json`. `react-hooks/todo` stays off. `no-restricted-syntax` selectors, one table in `frontend/eslint.config.js`: One-owner (`LB_TO_KG` and the `2.2046` and `0.4535` literals at 0 suppressions, inline `Math.round(x * 10) / 10`, `(getDay() + 6) % 7`, `\|\| 'kg'`), `% 60`, local dates, store selectors, the `lib/` clock, `import.meta.env` and `process.env`, the CommonJS shim, and `vi.mock` scope in tests. Ratchet: `frontend/eslint-suppressions.json` | nothing |
+| oxlint, ratchet in the pre-commit hook and in `npm run lint` (CI) | `correctness` category, `react/rules-of-hooks`, `react/exhaustive-deps`, `no-throw-literal`, `prefer-promise-reject-errors`, `complexity`, restricted globals and properties (including `Date.now` in `lib/`), `unicorn/no-array-sort`, `unicorn/no-array-reverse`, `react/no-array-index-key`, `jsx-a11y/click-events-have-key-events`, `jsx-a11y/no-static-element-interactions`, `jsx-a11y/prefer-tag-over-role`, `jsx-a11y/no-autofocus`, all at error. Ratchet: `frontend/lint-baseline.json`, checked by `scripts/check-lint-baseline.mjs` with its failing fixture in `npm test` | nothing |
 | tsc | `frontend/tsconfig.json` (`strict`, `allowJs`, `checkJs` over app code), `npm run typecheck` in the hook and CI. Ratchet: `frontend/tsc-baseline.json`, checked by `frontend/scripts/check-tsc-baseline.mjs` with its failing fixture in `npm test` | tests joining `tsconfig.json` (last) |
 | oxlint type-aware (`oxlint-tsgolint` 7.0.2008, `--type-aware` in the same ratchet) | `typescript/no-floating-promises` (15 hits, 10 files) and `no-misused-promises` (12 hits, 11 files) at error with `frontend/lint-baseline.json`; `only-throw-error`, `switch-exhaustiveness-check`, `no-explicit-any`, `no-non-null-assertion`, `ban-ts-comment` at error, 0 hits. Failing fixture: `check-lint-baseline.test.mjs` with a floating promise | `no-unsafe-*`, `no-unnecessary-condition` and branded `Kg` / `Lb` types (deferred until typedefs exist) |
 | `frontend/scripts/check-frontend-state.mjs`, in `npm test` | The `use-state` cap, with its failing fixture. Ratchet: `frontend/frontend-state-allowlist.json` | nothing |
-| Babel and CI | `npm run test:fatigue-probe`, `npm run build`, and the `React Doctor` floor (`frontend/react-doctor-floor.json`, checked by `frontend/scripts/check-react-doctor-floor.mjs` with its failing fixture in `npm test`) | `babel-plugin-react-compiler` |
+| Babel and CI | `babel-plugin-react-compiler` (done, #122), `npm run test:fatigue-probe`, `npm run build`, and the `React Doctor` floor (`frontend/react-doctor-floor.json`, checked by `frontend/scripts/check-react-doctor-floor.mjs` with its failing fixture in `npm test`) | |
 
 `npm run test:fatigue-probe` stays out of `npm test` on purpose: the workflow
 says it is too slow for the unit suite.
@@ -865,7 +870,7 @@ says it is too slow for the unit suite.
 **Build order**, cheapest and highest value first:
 
 1. The six zero-hit `react-hooks` compiler rules are on at error, and
-   `static-components`, `purity`, `refs`, and `memo-dependencies` are on at
+   `static-components` and `purity` are on at
    error with `frontend/eslint-suppressions.json`. Fix the small real hits
    first: 4 bare store reads, 1 selector `[]`, 1 UTC day key, the `LB_TO_KG` copies.
 2. The ESLint `no-restricted-syntax` selector table with its allowlists runs.
@@ -880,8 +885,6 @@ says it is too slow for the unit suite.
    the hook and CI; the JSDoc `@typedef`s are in and oxlint's type-aware rows are on.
 5. The guard tests still to add.
 6. Rename `lib/` to `.ts`, then the rest, then tests.
-7. `babel-plugin-react-compiler`, after the ESLint compiler rules are green.
-   Add `'use no memo'` (or move the import) in `App.jsx` and
-   `components/BodyMap.jsx` first.
+7. `babel-plugin-react-compiler` (done, #122).
 8. React Doctor is on as its own CI step named `React Doctor`, with
    `frontend/react-doctor-floor.json` (see its rule above).

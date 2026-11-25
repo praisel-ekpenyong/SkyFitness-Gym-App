@@ -175,7 +175,7 @@ export default [
     plugins: { 'react-hooks': reactHooks },
     // Compiler rules at error. react-hooks/todo stays off. Do not spread
     // recommended: that also turns on rules-of-hooks and exhaustive-deps.
-    // static-components, purity, refs, and memo-dependencies still hit; those
+    // static-components and purity still hit; those
     // hits are baselined in eslint-suppressions.json.
     rules: {
       'react-hooks/set-state-in-effect': 'error',
