@@ -4,7 +4,8 @@ import {
   evaluateSessionProgression,
   sessionProgressionItems,
   prescriptionIcon,
-  prescriptionStyle
+  prescriptionStyle,
+  nextPrescription
 } from './progression.js'
 
 describe('evaluateSetMilestone', () => {
@@ -787,6 +788,37 @@ describe('evaluateSetMilestone', () => {
         ]
       }
       expect(evaluateSetMilestone(entry, 0)).toBeNull()
+    })
+  })
+
+  describe('Judging against the Prescription\'s rep target', () => {
+    /** A bodyweight rep climb whose Prescription moved past the frozen Target. */
+    const climb = (/** @type {'linear' | 'double' | 'greyskull'} */ policy, /** @type {number} */ reps) => ({
+      id: 'push-up',
+      target: { id: 'push-up', mode: 'reps', reps: 8, weight: 0, prog: policy, sets: 3 },
+      plan: { policy, kind: 'up', weight: 0, reps: 12 },
+      sets: Array.from({ length: 3 }, () => ({ r: reps, w: 0, done: true }))
+    })
+    const prescriptionAfter = (/** @type {ReturnType<typeof climb>} */ entry) => nextPrescription(
+      { unit: 'kg', workouts: [{ id: 'w1', d: '2026-11-20', start: 0, end: 1, name: '', bw: null, unit: 'kg', routineId: null, entries: [entry] }] },
+      entry.target
+    )
+
+    it.each(['linear', 'double', 'greyskull'])('shows no %s hit below the prescribed reps when they exceed the frozen Target', policy => {
+      const entry = climb(/** @type {'linear' | 'double' | 'greyskull'} */ (policy), 9)
+      expect(prescriptionAfter(entry)).toMatchObject({ kind: 'hold', reps: 12 })
+      expect(evaluateSetMilestone(entry, 0, { state: { unit: 'kg' } })).toBeNull()
+    })
+
+    it.each(['linear', 'double', 'greyskull'])('shows a %s hit against the prescribed reps when they are reached', policy => {
+      const entry = climb(/** @type {'linear' | 'double' | 'greyskull'} */ (policy), 12)
+      expect(prescriptionAfter(entry).kind).toBe('up')
+      expect(evaluateSetMilestone(entry, 0, { state: { unit: 'kg' } })).toMatchObject({ kind: 'hit', reps: 12, targetReps: 12 })
+    })
+
+    it.each(['linear', 'double', 'greyskull'])('shows nothing on the last %s set while the Prescription holds', policy => {
+      const entry = climb(/** @type {'linear' | 'double' | 'greyskull'} */ (policy), 9)
+      expect(evaluateSetMilestone(entry, 2, { state: { unit: 'kg' } })).toBeNull()
     })
   })
 
