@@ -9,14 +9,7 @@ import { ReorderExercisesSheet } from '../sheets/edit-workout.jsx'
 import { buttonNamed } from '../test/sheet-host.jsx'
 import { entry, resetViewTestState, renderWorkoutApp, cleanupViewTest } from '../test/view-harness.jsx'
 
-vi.mock('../platform/sound.js', () => ({
-  beep: vi.fn(),
-  vibrate: vi.fn(),
-  playSetComplete: vi.fn(),
-  playTimerWarning: vi.fn(),
-  playTimerComplete: vi.fn(),
-  playWorkoutComplete: vi.fn(),
-}))
+vi.mock('../platform/sound.js', async orig => (await import('../test/platform-mocks.js')).mockSound(await orig()))
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true
 

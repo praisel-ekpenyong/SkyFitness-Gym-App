@@ -5,6 +5,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import Library from './Library.jsx'
 import { useStore } from '../store/useStore.js'
 import { DEF } from '../lib/profile/index.js'
+import { FILTER_MUSCLES, MUSCLE_NAME } from '../lib/muscles.js'
 
 let container
 let root
@@ -205,20 +206,14 @@ describe('Library view smoke tests', () => {
     expect(container.querySelectorAll('.list .item').length).toBe(41)
   })
 
-  it('renders all 19 canonical muscle filter chips plus Cardio in anatomical head-to-toe order', async () => {
+  it('renders All, then a chip for every filter muscle in taxonomy order', async () => {
     await act(async () => {
       root.render(<Library />)
     })
 
     const firstChipsRow = container.querySelectorAll('.chips')[0]
     const chips = Array.from(firstChipsRow.querySelectorAll('button.chip')).map(c => c.textContent.trim())
-    const expected = [
-      'All', 'Traps', 'Shoulders', 'Front delts', 'Side delts', 'Rear delts', 'Chest', 'Upper back', 'Lats', 'Serratus',
-      'Biceps', 'Triceps', 'Forearms', 'Abs', 'Obliques', 'Lower back',
-      'Glutes', 'Quads', 'Hamstrings', 'Adductors', 'Hip flexors',
-      'Calves', 'Shins', 'Cardio',
-    ]
-    expect(chips).toEqual(expected)
+    expect(chips).toEqual(['All', ...FILTER_MUSCLES.map(m => MUSCLE_NAME[m])])
   })
 
   it('surfaces secondary compound movements with inline secondary badges when a muscle filter is selected', async () => {

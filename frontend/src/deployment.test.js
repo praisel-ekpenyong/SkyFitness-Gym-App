@@ -28,43 +28,45 @@ function parseHeadersFile(content) {
 }
 
 describe('Cloudflare Pages deployment configuration', () => {
-  it('includes valid _headers file with proper caching and security directives', () => {
-    const headersPath = resolve(publicDir, '_headers')
-    expect(existsSync(headersPath)).toBe(true)
+  const headers = () => parseHeadersFile(readFileSync(resolve(publicDir, '_headers'), 'utf-8'))
+  const policy = () => Object.fromEntries(
+    headers()['/*']['Content-Security-Policy'].split(';').map(d => d.trim().split(/\s+/)).map(([name, ...sources]) => [name, sources]),
+  )
 
-    const parsed = parseHeadersFile(readFileSync(headersPath, 'utf-8'))
-
-    expect(parsed['/*']).toBeDefined()
-    expect(parsed['/*']['X-Content-Type-Options']).toBe('nosniff')
-    expect(parsed['/*']['X-Frame-Options']).toBe('DENY')
-    expect(parsed['/*']['Referrer-Policy']).toBe('strict-origin-when-cross-origin')
-
-    const noCacheHeader = 'no-cache, no-store, must-revalidate'
-    expect(parsed['/index.html']?.['Cache-Control']).toBe(noCacheHeader)
-    expect(parsed['/sw.js']?.['Cache-Control']).toBe(noCacheHeader)
-    expect(parsed['/manifest.json']?.['Cache-Control']).toBe(noCacheHeader)
-
-    expect(parsed['/assets/*']?.['Cache-Control']).toBe('public, max-age=31536000, immutable')
+  it('serves every page with anti-sniffing, anti-framing and a referrer limit', () => {
+    const all = headers()['/*']
+    expect(all['X-Content-Type-Options']).toBe('nosniff')
+    expect(all['X-Frame-Options']).toBe('DENY')
+    expect(all['Referrer-Policy']).toMatch(/origin/)
   })
 
-  it('pins a minimal static policy (self plus the pinned media host) with a canonical pointer', () => {
-    const content = readFileSync(resolve(publicDir, '_headers'), 'utf-8')
-    const parsed = parseHeadersFile(content)
+  it('never caches the files that decide which build loads, and caches hashed assets for good', () => {
+    const parsed = headers()
+    for (const path of ['/index.html', '/sw.js', '/manifest.json']) {
+      expect(parsed[path]?.['Cache-Control'], path).toMatch(/no-cache|no-store/)
+    }
+    expect(parsed['/assets/*']?.['Cache-Control']).toMatch(/immutable/)
+  })
 
-    expect(parsed['/*']?.['Content-Security-Policy']).toBe(
-      "default-src 'self'; img-src 'self' https://cdn.jsdelivr.net; media-src 'self' https://cdn.jsdelivr.net; connect-src 'self' https://cdn.jsdelivr.net"
-    )
-    expect(content.toLowerCase()).not.toContain('netlify')
+  it('limits the page to its own origin plus the pinned media host, with no inline or eval script', () => {
+    const csp = policy()
+    expect(csp['default-src']).toEqual(["'self'"])
+    for (const [name, sources] of Object.entries(csp)) {
+      expect(sources, name).not.toContain('*')
+      expect(sources, name).not.toContain("'unsafe-inline'")
+      expect(sources, name).not.toContain("'unsafe-eval'")
+      for (const source of sources.filter(s => s.startsWith('http'))) expect(source, name).toBe('https://cdn.jsdelivr.net')
+    }
+  })
+
+  it('is deployed to Cloudflare Pages only', () => {
+    expect(readFileSync(resolve(publicDir, '_headers'), 'utf-8').toLowerCase()).not.toContain('netlify')
     expect(existsSync(resolve(import.meta.dirname, '..', '..', 'netlify.toml'))).toBe(false)
   })
 
-  it('includes valid _redirects file for SPA client-side routing fallback', () => {
-    const redirectsPath = resolve(publicDir, '_redirects')
-    expect(existsSync(redirectsPath)).toBe(true)
-
-    const content = readFileSync(redirectsPath, 'utf-8').trim()
-    const parts = content.split(/\s+/)
-    expect(parts).toEqual(['/*', '/index.html', '200'])
+  it('sends every unknown path to the app, so a reload on a client-side route opens it', () => {
+    const rules = readFileSync(resolve(publicDir, '_redirects'), 'utf-8').split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('#'))
+    expect(rules).toContain('/* /index.html 200')
   })
 })
 

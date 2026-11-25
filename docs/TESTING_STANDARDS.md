@@ -189,7 +189,18 @@ test. Two of them can be mechanical.
 
 **Runs:** the seams this doc names are where the existing suite already
 asserts. `lib/active-workout.test.js` imports `act` and `sessionView` from
-`active-workout.js`, not the files under `lib/active-*`.
+`active-workout.js`, not the files under `lib/active-*`. ESLint
+`no-restricted-syntax` (`noActiveInternalImports` in `frontend/eslint.config.js`,
+fixture in `frontend/scripts/eslint-test-rules.test.mjs`) fails any test import
+from `lib/active-*` (`active-act.js`, `active-finish.js`, `active-session.js`,
+`active-sets.js`, `active-toggle.js`); the 1 existing hit
+(`lib/clock-args.test.js`) is baselined in `frontend/eslint-suppressions.json`
+until `act` accepts `now`.
+
+**Runs:** ESLint `no-restricted-syntax` (`noTestSnapshots` in
+`frontend/eslint.config.js`, fixture in
+`frontend/scripts/eslint-test-rules.test.mjs`) fails `toMatchSnapshot()` and
+`toMatchInlineSnapshot()` in tests (0 hits).
 
 **Runs:** ESLint `no-restricted-syntax` in test files (`noOwnModuleMock` in
 `frontend/eslint.config.js`) fails `vi.mock` of a relative path unless the path

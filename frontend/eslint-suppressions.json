@@ -24,6 +24,11 @@
       "count": 1
     }
   },
+  "src/lib/clock-args.test.js": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
   "src/lib/effort.js": {
     "no-restricted-syntax": {
       "count": 1
