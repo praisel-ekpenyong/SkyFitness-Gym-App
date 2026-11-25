@@ -7,21 +7,8 @@ import { useUI } from './useUI.js'
 import { DEF, SCHEMA_VERSION } from '../lib/profile/index.js'
 import { LOCAL_KEY, __setSinksForTests, __setLocalWriteForTests, flush } from '../platform/storage.js'
 
-vi.mock('../platform/sound.js', () => ({
-  beep: vi.fn(),
-  vibrate: vi.fn(),
-  playSetComplete: vi.fn(),
-  playTimerWarning: vi.fn(),
-  playTimerComplete: vi.fn(),
-  playWorkoutComplete: vi.fn(),
-}))
-vi.mock('../platform/mobile.js', () => ({
-  MOBILE: false,
-  nativeLoad: vi.fn(async () => null),
-  nativeSave: vi.fn(async () => {}),
-  syncReminder: vi.fn(async () => true),
-  shareExport: vi.fn(async () => {}),
-}))
+vi.mock('../platform/sound.js', async orig => (await import('../test/platform-mocks.js')).mockSound(await orig()))
+vi.mock('../platform/mobile.js', async orig => (await import('../test/platform-mocks.js')).mockMobile(await orig()))
 
 const cloneDef = () => JSON.parse(JSON.stringify(DEF))
 

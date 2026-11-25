@@ -6,7 +6,7 @@ import Settings from './Settings.jsx'
 import { useStore } from '../store/useStore.js'
 import { DEF } from '../lib/profile/index.js'
 
-vi.mock('../platform/mobile.js', () => ({ MOBILE: true, shareExport: vi.fn(), syncReminder: vi.fn(async () => true) }))
+vi.mock('../platform/mobile.js', async orig => (await import('../test/platform-mocks.js')).mockMobile(await orig(), { MOBILE: true }))
 vi.mock('react-router-dom', () => ({ useNavigate: () => vi.fn() }))
 vi.mock('../platform/wakelock.js', () => ({ wakeLockSupported: () => true }))
 vi.mock('../sheets/plan-tools.jsx', () => ({ loadStarterPlan: vi.fn(), loadHypertrophyPlan: vi.fn() }))
