@@ -275,6 +275,19 @@ function prescribedSeconds(entry) {
   return positive(entry?.target?.sec) ?? null
 }
 
+/**
+ * The Prescription's rep target for an Entry or a SessionReading: the plan's reps, then the goal
+ * (a SessionReading's `goal`, else the Target's reps), then the config's reps.
+ * The Milestone cue judges against it too, so the two never disagree (ADR 0018).
+ * @param {Partial<Entry> | SessionReading | null | undefined} entry
+ * @param {Partial<Target>} cfg
+ * @returns {number}
+ */
+export function prescribedReps(entry, cfg) {
+  const goal = entry && 'goal' in entry ? entry.goal : undefined
+  return positive(entry?.plan?.reps) ?? positive(goal) ?? positive(entry?.target?.reps) ?? positive(cfg.reps) ?? 0
+}
+
 /** @param {SessionReading} session @param {Partial<Target>} cfg @returns {number} */
 function sessionSeconds(session, cfg) {
   return prescribedSeconds(session) ?? positive(cfg.sec) ?? MIN_TIME_SEC
@@ -443,7 +456,7 @@ function timePrescription({ policy, cfg, inc, sessions, last, deloadAt }) {
  * @returns {Prescription}
  */
 function loadlessPrescription({ policy, cfg, last }) {
-  const prescribed = positive(last.plan?.reps) ?? positive(last.goal) ?? positive(cfg.reps) ?? 0
+  const prescribed = prescribedReps(last, cfg)
   const planSets = positive(last.plan?.sets)
   const baseSets = cfg.sets == null ? null : Math.max(1, cfg.sets)
   const workingSets = Math.max(1, planSets ?? baseSets ?? last.count ?? 1)
@@ -740,13 +753,6 @@ function resolvePolicy(entry, mode, routine) {
   return policyFor(cfg, routine, mode)
 }
 
-/** @param {Entry} entry @param {Partial<Target>} target @returns {unknown} */
-function legacyTargetRepsOf(entry, target) {
-  if ('r' in target) return target.r
-  if ('reps' in entry) return entry.reps
-  return 'r' in entry ? entry.r : undefined
-}
-
 /** @param {SetRow} setRow @param {string} key @returns {unknown} */
 function legacySetField(setRow, key) {
   return key in setRow ? /** @type {Record<string, unknown>} */ (setRow)[key] : undefined
@@ -782,12 +788,11 @@ export function evaluateSetMilestone(entry, setIdx, context = {}) {
   const workRows = entry.sets.filter(isWorkSet)
   const plannedCount = plannedSetCount(entry, target, workRows.length)
   const workIdx = workRows.indexOf(setRow)
-  const legacyTargetReps = legacyTargetRepsOf(entry, target)
+  const targetReps = prescribedReps(entry, target)
   const legacySetReps = legacySetField(setRow, 'reps')
   const legacySetSec = legacySetField(setRow, 'seconds')
 
   if (policy === 'linear') {
-    const targetReps = Number(target.reps ?? legacyTargetReps ?? (entry.plan && entry.plan.reps)) || 0
     if (targetReps <= 0) return null
 
     const reps = Number(setRow.r ?? legacySetReps) || 0
@@ -844,7 +849,6 @@ export function evaluateSetMilestone(entry, setIdx, context = {}) {
   }
 
   if (policy === 'double') {
-    const targetReps = Number(target.reps ?? legacyTargetReps ?? (entry.plan && entry.plan.reps)) || 0
     if (targetReps <= 0) return null
 
     const reps = Number(setRow.r ?? legacySetReps) || 0
@@ -894,7 +898,6 @@ export function evaluateSetMilestone(entry, setIdx, context = {}) {
   }
 
   if (policy === 'greyskull') {
-    const targetReps = Number(target.reps ?? legacyTargetReps ?? (entry.plan && entry.plan.reps)) || 0
     if (targetReps <= 0) return null
 
     const reps = Number(setRow.r ?? legacySetReps) || 0

@@ -206,3 +206,16 @@ describe('a Set stamped in another unit from its Entry', () => {
     expect(session.target.weight).toBe(60)
   })
 })
+
+describe('a bodyweight session with no plan reps is judged on the reps it targeted', () => {
+  it('holds at the logged session\'s target, not the config\'s lower reps', () => {
+    const cfg = { id: 'push-up', mode: 'reps', reps: 6, weight: 0, bodyweight: true, sets: 3, prog: 'linear' }
+    const entry = {
+      id: 'push-up',
+      target: { id: 'push-up', mode: 'reps', reps: 10, weight: 0, sets: 3, prog: 'linear' },
+      sets: Array.from({ length: 3 }, () => ({ r: 8, w: 0, done: true }))
+    }
+    const S = { unit: 'kg', workouts: [{ id: 'w1', d: '2026-11-20', start: 0, end: 1, name: '', bw: null, unit: 'kg', routineId: null, entries: [entry] }] }
+    expect(nextPrescription(S, cfg)).toMatchObject({ kind: 'hold', reps: 10 })
+  })
+})
