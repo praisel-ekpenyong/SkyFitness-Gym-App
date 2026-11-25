@@ -73,6 +73,13 @@ Act like a lifter. Find elements by role, label, or text. Assert what they
 see, or the command that was sent. No snapshots, no class names, no reaching
 into hooks for state the screen does not show.
 
+Query with `@testing-library/react`: `within(container).getByRole('button',
+{ name: 'Add note' })`, `getByText`, `fireEvent`. When a control has no
+accessible name to find it by, give it a real `aria-label` or role in the
+component first. A state shown only by a class (the Finish key's `done`) may be
+asserted by that class, with the reason in the assertion message. Not the
+tag, the nesting, or the icon.
+
 One component test per behaviour, not one per component. If the behaviour can
 move into a function, move it and delete the component test.
 
