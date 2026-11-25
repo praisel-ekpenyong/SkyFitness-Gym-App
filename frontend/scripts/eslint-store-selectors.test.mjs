@@ -11,7 +11,7 @@ async function messages(code) {
   return r.messages.filter(m => m.ruleId === 'no-restricted-syntax')
 }
 
-describe('store selector rules', { timeout: 30000 }, () => {
+describe('store selector and write rules', { timeout: 30000 }, () => {
   it.each([
     ['useStore()', 'const { S } = useStore()'],
     ['useUI()', 'const { closeSheet } = useUI()'],
@@ -21,6 +21,9 @@ describe('store selector rules', { timeout: 30000 }, () => {
     ['a fallback {} in a selector', 'const a = useUI(s => s.map ?? {})'],
     ['a direct write to s.active', 'update(s => { s.active = null })'],
     ['a direct write to s.routines', 'update(s => { s.routines = [] })'],
+    ['a write through another draft name', 'update(S => { S.active = null })'],
+    ['a computed write', "update(s => { s['active'] = null })"],
+    ['a write through the state slice', 'update(s => { s.S.active = null })'],
   ])('fails %s', async (_name, code) => {
     expect(await messages(code)).toHaveLength(1)
   })

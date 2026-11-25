@@ -76,10 +76,16 @@ const CLOCK_SYNTAX = [{
   selector: "NewExpression[callee.name='Date'][arguments.length=0]",
   message: 'lib/ takes the clock as an argument; new Date() reads it. Read the clock at the edge.',
 }]
-const DIRECT_PROTECTED_WRITE = {
-  selector: "AssignmentExpression[left.type='MemberExpression'][left.object.name='s'][left.property.name=/^(active|routines)$/]",
-  message: 'Only lib/ and store/ write s.active or s.routines; call a named store entry point instead.',
-}
+const DIRECT_PROTECTED_WRITE = [
+  {
+    selector: "AssignmentExpression[left.type='MemberExpression'][left.property.name=/^(active|routines)$/]",
+    message: 'Only lib/ and store/ assign .active or .routines; call a named store entry point instead.',
+  },
+  {
+    selector: "AssignmentExpression[left.type='MemberExpression'][left.computed=true][left.property.value=/^(active|routines)$/]",
+    message: 'Only lib/ and store/ assign .active or .routines; call a named store entry point instead.',
+  },
+]
 
 // `\x2F` is a slash: an esquery regex cannot contain one.
 const noOwnModuleMock = {
@@ -95,7 +101,7 @@ const restrictedSyntax = [
   { selectors: [noCommonJsShim] },
   { selectors: UTC_SYNTAX, exempt: ['src/lib/plans/scenarios.js'] },
   { selectors: STORE_SYNTAX },
-  { selectors: [DIRECT_PROTECTED_WRITE], files: [SRC], exempt: ['src/lib/**', 'src/store/**', ...TESTS] },
+  { selectors: DIRECT_PROTECTED_WRITE, files: [SRC], exempt: ['src/lib/**', 'src/store/**', ...TESTS] },
   { selectors: DAY_KEY_SYNTAX, files: [SRC], exempt: ['src/lib/dates.js', 'src/lib/format.js', ...TESTS] },
   { selectors: LB_SYNTAX, exempt: ['src/lib/units.js', 'src/lib/units.test.js'] },
   { selectors: WEEKDAY_SYNTAX, exempt: ['src/lib/dates.js', 'src/lib/dates.test.js'] },
