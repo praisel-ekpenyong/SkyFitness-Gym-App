@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { buildPlanBundle, parsePlan, mergePlan, planPrintHTML } from './plan-share.js'
 import { EXDB } from './exercises.js'
+import { actRoutine } from './routines.js'
 
 const BARBELL_BENCH = EXDB.find(e => e.bp === 'chest' && e.eq === 'barbell')?.id || '0025'
 const PUSH_UP = EXDB.find(e => e.eq === 'body weight')?.id || '0047'
@@ -286,6 +287,24 @@ describe('plan-share engine', () => {
       expect(state2.customEx[0].sm).toEqual(['lats', 'biceps'])
     })
 
+    it('builds imported rows the way a hand-built Routine row is built, keeping name, glyph and progression', () => {
+      const state = { unit: 'kg', routines: [], customEx: [], week: {} }
+      const bundle = {
+        unit: 'kg',
+        routines: [{ id: 'r1', name: 'Pull', emoji: 'pullup', prog: 'double', ex: [{ id: '0027', sets: 4, reps: 8 }, { id: '0031', sets: 3 }] }],
+        week: {},
+        customEx: [],
+      }
+      mergePlan(state, bundle)
+      const [routine] = state.routines
+      expect(routine).toMatchObject({ name: 'Pull', emoji: 'pullup', prog: 'double' })
+      const handBuilt = { routines: [{ id: 'h', name: 'H', ex: [] }] }
+      bundle.routines[0].ex.forEach(({ id, ...target }) => actRoutine(handBuilt, { type: 'addExercise', routineId: 'h', exId: id, target }))
+      const withoutRowId = ex => ex.map(({ rowId, ...rest }) => rest)
+      expect(withoutRowId(routine.ex)).toEqual(withoutRowId(handBuilt.routines[0].ex))
+      expect(routine.ex.every(e => typeof e.rowId === 'string' && e.rowId)).toBe(true)
+    })
+
     it('round-trips routine exercise notes across buildPlanBundle, parsePlan, and mergePlan', () => {
       const original = {
         routines: [
@@ -337,7 +356,7 @@ describe('plan-share engine', () => {
       const state = { unit: 'kg', routines: [], customEx: [], week: {} }
       mergePlan(state, lbPlan)
       expect(state.routines[0].ex.map(({ rowId, ...rest }) => rest)).toEqual([
-        { id: BARBELL_BENCH, sets: 3, reps: 5, weight: 61.2, inc: 2.5 },
+        { id: BARBELL_BENCH, sets: 3, reps: 5, weight: 61.2, inc: 2.5, mode: 'reps' },
         { id: 'plank', sets: 3, mode: 'time', sec: 45, weight: 4.5, inc: 5 },
       ])
       expect(state.routines[0].ex.every(e => typeof e.rowId === 'string' && e.rowId)).toBe(true)

@@ -183,6 +183,54 @@ describe('Routine Domain Module (lib/routines.js)', () => {
     })
   })
 
+  describe('actRoutine: import', () => {
+    it('adds a whole Routine with a fresh id, keeping its name, glyph and progression style', () => {
+      const res = actRoutine(S, {
+        type: 'import',
+        routine: { id: 'foreign-id', name: 'Legs', emoji: 'legs', prog: 'linear', ex: [{ id: '0043', sets: 4, reps: 8 }] },
+      })
+      expect(res.ok).toBe(true)
+      expect(S.routines).toHaveLength(2)
+      expect(S.routines[1]).toBe(res.result)
+      expect(res.result.id).not.toBe('foreign-id')
+      expect(res.result.id).not.toBe('r-push')
+      expect(res.result).toMatchObject({ name: 'Legs', emoji: 'legs', prog: 'linear' })
+    })
+
+    it('builds each row the way addExercise builds one, with a fresh rowId', () => {
+      const rows = [
+        { id: '0001', sets: 5, reps: 5, weight: 100, rowId: 'stale' },
+        { id: '0025', mode: 'time', notes: '  pause  ' },
+        { id: '0002' },
+      ]
+      const res = actRoutine(S, { type: 'import', routine: { name: 'Mixed', ex: rows } })
+      const built = actRoutine(S, { type: 'create' }).result
+      rows.forEach(({ id, ...target }) => actRoutine(S, { type: 'addExercise', routineId: built.id, exId: id, target }))
+      const withoutRowId = (/** @type {any[]} */ ex) => ex.map(({ rowId, ...rest }) => rest)
+      expect(withoutRowId(res.result.ex)).toEqual(withoutRowId(built.ex))
+      expect(res.result.ex.every(e => typeof e.rowId === 'string' && e.rowId && e.rowId !== 'stale')).toBe(true)
+      expect(new Set(res.result.ex.map(e => e.rowId)).size).toBe(3)
+    })
+
+    it('leaves out a progression style the Routine does not have', () => {
+      const res = actRoutine(S, { type: 'import', routine: { name: 'Plain', emoji: 'barbell', ex: [] } })
+      expect(res.result).not.toHaveProperty('prog')
+      expect(res.result.ex).toEqual([])
+    })
+
+    it('keeps a superset pair and drops a lone superset tag', () => {
+      const res = actRoutine(S, {
+        type: 'import',
+        routine: { name: 'SS', ex: [{ id: '0001', sg: 'a' }, { id: '0002', sg: 'a' }, { id: '0003', sg: 'b' }] },
+      })
+      expect(res.result.ex.map(e => e.sg)).toEqual(['a', 'a', undefined])
+    })
+
+    it('refuses a Profile with no Routine list', () => {
+      expect(actRoutine({}, { type: 'import', routine: { name: 'X', ex: [] } })).toStrictEqual({ ok: false })
+    })
+  })
+
   describe('actRoutine: removeExercise', () => {
     it('splices entry and calls cleanupSg on routine.ex', () => {
       S.routines[0].ex[0].sg = 'sg-0-1'
