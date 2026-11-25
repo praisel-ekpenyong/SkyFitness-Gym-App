@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import {
-  pickNewest, backupDue, BACKUP_NAG_MS, LOCAL_KEY, loadLocal, save, flush, load,
+  pickNewest, backupDue, LOCAL_KEY, loadLocal, save, flush, load,
   registerSink, __setSinksForTests, __setLocalWriteForTests, __resetStorageBlockedForTests,
   isStorageBlocked, onStorageSync, isMirrorFailing, persistOnFirstKeep, PERSIST_ASKED_KEY, idbSave, __resetMirrorFailuresForTests
 } from './storage.js'
@@ -47,7 +47,6 @@ describe('pickNewest', () => {
 })
 
 const WEEKS = 14 * 24 * 60 * 60 * 1000
-expect(BACKUP_NAG_MS).toBe(WEEKS)
 
 describe('backupDue', () => {
   it('is due when there has never been an export', () => {

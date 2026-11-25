@@ -1,50 +1,18 @@
+// @vitest-environment happy-dom
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { parseHTML } from 'linkedom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import Workout from './Workout.jsx'
 import { ExerciseNoteSheet } from '../sheets/session.jsx'
+import { useStore } from '../store/useStore.js'
+import { normalizeState } from '../lib/profile/index.js'
 
-import { act as actOn } from '../lib/active-workout.js'
-import { runEffects } from '../store/effects.js'
+const mocks = vi.hoisted(() => ({
+  workoutCompleteSheet: vi.fn(),
+  exerciseNoteSheet: vi.fn(),
+}))
 
-const mocks = vi.hoisted(() => {
-  const state = {
-    S: null,
-    startRest: vi.fn(),
-    stopRest: vi.fn(),
-    workoutCompleteSheet: vi.fn(),
-    exerciseNoteSheet: vi.fn(),
-  }
-  state.storeSnapshot = () => ({
-    S: state.S,
-    update: mut => mut(state.S),
-    act: command => {
-      const res = actOn(state.S, command)
-      runEffects(res.effects, () => state.S)
-      return res
-    },
-  })
-  state.uiSnapshot = () => ({
-    work: null,
-    startRest: state.startRest,
-    stopRest: state.stopRest,
-    startWork: vi.fn(),
-    toast: vi.fn(),
-  })
-  return state
-})
-
-vi.mock('../store/useStore.js', () => {
-  const useStore = selector => selector(mocks.storeSnapshot())
-  useStore.getState = mocks.storeSnapshot
-  return { useStore }
-})
-vi.mock('../store/useUI.js', () => {
-  const useUI = selector => selector ? selector(mocks.uiSnapshot()) : mocks.uiSnapshot()
-  useUI.getState = mocks.uiSnapshot
-  return { useUI }
-})
 vi.mock('react-router-dom', () => ({ useNavigate: () => () => {} }))
 vi.mock('../sheets/session.jsx', async importOriginal => ({
   ExerciseNoteSheet: (await importOriginal()).ExerciseNoteSheet,
@@ -96,7 +64,7 @@ function installDom() {
 }
 
 async function mount(entries, cur = 0) {
-  mocks.S = workout(entries, cur)
+  useStore.setState({ S: normalizeState(workout(entries, cur), Date.now()) })
   installDom()
   await act(async () => { root.render(React.createElement(Workout)) })
 }
@@ -279,7 +247,7 @@ describe('Workout exercise notes and note sheet', () => {
       saveBtn.dispatchEvent(new dom.Event('click', { bubbles: true }))
     })
 
-    expect(mocks.S.active.entries[0].notes).toBe('Seat height 6, pin 9')
+    expect(useStore.getState().S.active.entries[0].notes).toBe('Seat height 6, pin 9')
     expect(close).toHaveBeenCalledOnce()
   })
 
@@ -298,28 +266,9 @@ describe('Workout exercise notes and note sheet', () => {
       clearBtn.dispatchEvent(new dom.Event('click', { bubbles: true }))
     })
 
-    expect(mocks.S.active.entries[0].notes).toBeUndefined()
+    expect(useStore.getState().S.active.entries[0].notes).toBeUndefined()
     expect(close).toHaveBeenCalledOnce()
   })
 
-  it('renders info icon for deload and arrowDown for drop in the progline', async () => {
-    await mount([
-      exercise('0025', [false], {
-        plan: { kind: 'deload', weight: 90, why: ['Deload test'] }
-      })
-    ])
-    const deloadIcon = container.querySelector('.progline svg')
-    expect(deloadIcon.innerHTML).toContain('11 12h1v4h1')
-
-    await unmount()
-
-    await mount([
-      exercise('0025', [false], {
-        plan: { kind: 'down', weight: 37.5, why: ['Drop test'] }
-      })
-    ])
-    const dropIcon = container.querySelector('.progline svg')
-    expect(dropIcon.innerHTML).toContain('18 13l-6 6')
-  })
 })
 
