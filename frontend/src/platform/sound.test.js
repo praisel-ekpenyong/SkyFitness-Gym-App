@@ -123,6 +123,13 @@ describe('sound and haptics engine', () => {
       expect(resumedCount).toBe(1)
     })
 
+    it('resumes a context once, not on every cue, while the browser keeps it running', () => {
+      beep(true, 880)
+      beep(true, 880)
+      beep(true, 880)
+      expect(resumedCount).toBe(1)
+    })
+
     it('resumes the context again when the browser suspends it later, as iOS does after backgrounding', () => {
       beep(true, 880)
       const resumedFirst = resumedCount
