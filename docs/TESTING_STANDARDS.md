@@ -168,6 +168,11 @@ Fake the thing we do not own:
   as an argument.
 - Network, if a test ever has to touch it. The app has no API.
 
+A fake keeps the real API's failure modes and starting state: an `AudioContext`
+starts suspended, and `localStorage` throws on quota (`platform/storage.test.js`).
+A fake that always succeeds leaves the test unable to fail for the bug the browser
+produces.
+
 An injected test clock is a **local** timestamp (`new Date(2026, 6, 1, 12).getTime()`),
 not `Date.UTC(...)`: day keys derived from it must not shift with the runner's
 timezone. CI re-runs `stats-selectors.test.js` at UTC+14 for this reason.
@@ -205,7 +210,7 @@ asserts. `lib/active-workout.test.js` imports `act` and `sessionView` from
 `no-restricted-syntax` (`noActiveInternalImports` in `frontend/eslint.config.js`,
 fixture in `frontend/scripts/eslint-test-rules.test.mjs`) fails any test import
 from `lib/active-*` (`active-act.js`, `active-finish.js`, `active-session.js`,
-`active-sets.js`, `active-toggle.js`); the 1 existing hit
+`active-sets.js`, `active-toggle.js`); the <!-- ratchet: eslint-selector-suppressions.json#Import act and sessionView from lib/active-workout.js, not lib/active-* internals (ADR 0023, TESTING_STANDARDS.md). -->1 hit in 1 file<!-- /ratchet -->
 (`lib/clock-args.test.js`) is baselined in `frontend/eslint-selector-suppressions.json`
 until `act` accepts `now`.
 
