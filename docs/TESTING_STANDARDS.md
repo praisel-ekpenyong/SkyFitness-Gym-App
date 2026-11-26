@@ -168,6 +168,10 @@ Fake the thing we do not own:
   as an argument.
 - Network, if a test ever has to touch it. The app has no API.
 
+An injected test clock is a **local** timestamp (`new Date(2026, 6, 1, 12).getTime()`),
+not `Date.UTC(...)`: day keys derived from it must not shift with the runner's
+timezone. CI re-runs `stats-selectors.test.js` at UTC+14 for this reason.
+
 Do not fake `act`, `admit`, progression, or the catalogue to test a caller
 that is supposed to use them. A real Profile fixture is shorter than a mock
 and fails when the rule changes.
@@ -213,10 +217,10 @@ until `act` accepts `now`.
 (0 hits).
 
 **Runs:** ESLint `no-restricted-syntax` in test files (`noOwnModuleMock` in
-`frontend/eslint.config.js`, pinned with `vi.mock('./x.js')` in
-`frontend/scripts/env-lint.test.mjs`) fails `vi.mock` of a relative path unless
-the path is inside `platform/`:
-`CallExpression[callee.object.name='vi'][callee.property.name='mock'][arguments.0.value=/^\.(?!.*platform\x2F)/]`
+`frontend/eslint.config.js`, pinned with `vi.mock('./x.js')` and
+`vi.doMock('./x.js')` in `frontend/scripts/env-lint.test.mjs`) fails `vi.mock`
+and `vi.doMock` of a relative path unless the path is inside `platform/`:
+`CallExpression[callee.object.name='vi'][callee.property.name=/^(mock|doMock)$/][arguments.0.value=/^\.(?!.*platform\x2F)/]`
 (`\x2F` is a slash: an esquery regex cannot contain one). The lookahead lets
 any path through `platform/` pass, so the exemption is in the selector, not in
 prose. Mocking
@@ -228,6 +232,14 @@ modules (`../components/BodyMap.jsx` in `views/Plan.test.jsx`,
 `lib/profile/admit-defaults.test.js`). Those 30 are baselined in
 `frontend/eslint-suppressions.json` and only shrink. A new test that mocks its
 own module fails.
+
+**Runs:** ESLint's suppressions count hits per rule, so a file with one
+suppressed hit could swap that selector for a bare `useStore()` and still be
+green. `frontend/scripts/check-eslint-selectors.mjs` (in `npm run lint`) re-lints
+the suppressed files with an empty suppressions file and ratchets every
+`no-restricted-syntax` hit by its selector message in
+`frontend/eslint-selector-suppressions.json`; a swap now fails as a new selector
+and a stale entry. Fixture: `frontend/scripts/check-eslint-selectors.test.mjs`.
 
 **Runs, with the rule in `CODING_STANDARDS.md`:** a round-trip test per saving
 control ("Default decides") in `sheets/catalogue.test.jsx` and

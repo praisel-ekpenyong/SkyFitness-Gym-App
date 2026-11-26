@@ -7,7 +7,8 @@ import { isoOf } from './dates.js'
 import { switchTrainingStyle, setVolumeRange, clearVolumeRanges } from './volume-ranges.js'
 
 const DAY = 24 * 60 * 60 * 1000
-const NOW = Date.UTC(2026, 6, 1, 12)
+// Local noon: day keys derived from this clock must not shift with the runner's timezone.
+const NOW = new Date(2026, 6, 1, 12).getTime()
 
 const LIFT = { id: 'lift', n: 'Bench', bp: 'chest', tg: 'pectorals', sm: [], eq: 'barbell' }
 const CARDIO = { id: 'run', n: 'Run', bp: 'cardio', tg: 'cardio', sm: [], mode: 'cardio' }

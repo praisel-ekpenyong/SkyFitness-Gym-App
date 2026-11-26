@@ -89,7 +89,7 @@ const DIRECT_PROTECTED_WRITE = [
 
 // `\x2F` is a slash: an esquery regex cannot contain one.
 const noOwnModuleMock = {
-  selector: "CallExpression[callee.object.name='vi'][callee.property.name='mock'][arguments.0.value=/^\\.(?!.*platform\\x2F)/]",
+  selector: "CallExpression[callee.object.name='vi'][callee.property.name=/^(mock|doMock)$/][arguments.0.value=/^\\.(?!.*platform\\x2F)/]",
   message: 'Do not vi.mock our own modules; mock only the boundary (platform/, localStorage, Capacitor).',
 }
 const noTestSnapshots = {
@@ -158,7 +158,7 @@ function restrictedSyntaxBlocks() {
 }
 
 export default [
-  { ignores: ['dist/', 'android/', 'ios/', 'public/', 'coverage/'] },
+  { ignores: ['dist/', 'android/', 'ios/', 'public/', 'coverage/', 'scripts/fixtures/eslint-selectors/**'] },
   // A disable comment never hides a hit (ADR 0034): inline config is off, and `npm run lint` fails on the warning it leaves.
   { linterOptions: { noInlineConfig: true } },
   {

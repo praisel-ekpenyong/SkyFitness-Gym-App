@@ -43,8 +43,15 @@ describe('environment selectors', { timeout: 60000 }, () => {
   })
 
   it('still run the other selectors in tests and the test harness', async () => {
-    const code = "const __dirname = 1\nexport const a = s % 60\nexport const b = u || 'kg'\nvi.mock('./x.js')\n"
-    expect(await lint(code, 'src/views/Fixture.test.jsx')).toHaveLength(4)
-    expect(await lint(code, 'src/test/fixture.jsx')).toHaveLength(4)
+    const code = "const __dirname = 1\nexport const a = s % 60\nexport const b = u || 'kg'\nvi.mock('./x.js')\nvi.doMock('./x.js')\n"
+    expect(await lint(code, 'src/views/Fixture.test.jsx')).toHaveLength(5)
+    expect(await lint(code, 'src/test/fixture.jsx')).toHaveLength(5)
+  })
+
+  it('fail vi.doMock of an own module, not just vi.mock', async () => {
+    const hits = await lint("vi.doMock('../store/useStore.js')\n", 'src/views/Fixture.test.jsx')
+    expect(hits).toHaveLength(1)
+    expect(hits[0].message).toMatch(/Do not vi.mock our own modules/)
+    expect(await lint("vi.doMock('../platform/sound.js')\n", 'src/views/Fixture.test.jsx')).toEqual([])
   })
 })

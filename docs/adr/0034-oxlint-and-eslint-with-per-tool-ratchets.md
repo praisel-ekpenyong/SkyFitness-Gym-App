@@ -48,3 +48,7 @@ The Decision said a disable comment for a ratcheted rule is illegal, but nothing
 ## Amendment 2026-11-25: ESLint left the pre-commit hook
 
 The Context line saying ESLint runs "in CI and the pre-commit hook" is superseded. `.githooks/pre-commit` now runs the oxlint ratchet (`node scripts/check-lint-baseline.mjs`) and `npm run typecheck` (the tsc ratchet); ESLint runs only in CI as the second half of `npm run lint`. `CODING_STANDARDS.md` states the same split. No rule moved between the two tools, and neither ratchet file changed.
+
+## Amendment 2026-11-26: ESLint suppressions are ratcheted per selector
+
+`frontend/eslint-suppressions.json` counts hits per file per rule, so a file with a `no-restricted-syntax` entry could swap one selector for a different one without changing the count and stay green. `frontend/scripts/check-eslint-selectors.mjs` re-lints only the suppressed files with `--suppressions-location` pointing at an empty file, and ratchets every `no-restricted-syntax` hit by selector message in `frontend/eslint-selector-suppressions.json`. Compiler-rule hits stay on ESLint's per-rule ratchet: their messages carry line numbers and snippets, so keying on them fails on harmless edits. It fails on a new selector and on a stale entry; `npm run lint:selectors:baseline` lowers it. Fixture: `frontend/scripts/check-eslint-selectors.test.mjs`. `noOwnModuleMock` also matches `vi.doMock` now, pinned alongside `vi.mock` in `frontend/scripts/env-lint.test.mjs`.
