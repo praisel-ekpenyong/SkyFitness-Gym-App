@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process'
-import { readFileSync } from 'node:fs'
+import { readFileSync, existsSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseSync } from 'rolldown/experimental'
@@ -41,8 +41,10 @@ describe('comments', () => {
 
   it('in non-test source name no ticket or issue number', () => {
     const files = sourceFiles()
-    expect(files).toContain('frontend/src/lib/import-csv.js')
-    expect(files).toContain('scripts/fetch-media.mjs')
+    expect(files.length).toBeGreaterThan(0)
+    expect(files.every(f => !/\.(test|spec)\./.test(f) && existsSync(join(ROOT, f)))).toBe(true)
+    expect(files.some(f => f.startsWith('frontend/src/'))).toBe(true)
+    expect(files.some(f => f.startsWith('scripts/'))).toBe(true)
     expect(files.flatMap(f => ticketIdsIn(f))).toEqual([])
   })
 })

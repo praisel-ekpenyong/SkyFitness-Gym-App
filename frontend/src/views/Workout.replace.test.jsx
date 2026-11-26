@@ -133,13 +133,34 @@ describe('Workout unperformed entry replacement', () => {
     expect(A.entries[0].id).toBe('1002')
   })
 
-  it('replaces immediately from footer replace button for single exercise', () => {
+  it('puts the footer-picked exercise and its saved config into the Active workout', () => {
     view = renderWorkoutApp([entry('1001', [{ w: 60, r: 5, done: false }])])
 
     click(footerReplaceButton())
 
+    // Supporting evidence only: unperformed sets skip confirmation and open the picker.
     expect(mocks.confirmSheet).not.toHaveBeenCalled()
     expect(mocks.exercisePicker).toHaveBeenCalledOnce()
+
+    const newEx = { id: '1002', n: 'Incline Bench Press' }
+    act(() => {
+      mocks.exercisePicker.mock.calls[0][0](newEx)
+    })
+    act(() => {
+      mocks.exConfigSheet.mock.calls[0][1].onSave({ sets: 3, reps: 8, weight: 50 })
+    })
+
+    const A = useStore.getState().S.active
+    expect(A.entries[0]).toEqual({
+      id: '1002',
+      target: { sets: 3, reps: 8, weight: 50 },
+      plan: null,
+      sets: [
+        expect.objectContaining({ w: 50, r: 8, done: false }),
+        expect.objectContaining({ w: 50, r: 8, done: false }),
+        expect.objectContaining({ w: 50, r: 8, done: false }),
+      ],
+    })
   })
 
   it('seeds config with routine context and planned non-warmup sets', () => {

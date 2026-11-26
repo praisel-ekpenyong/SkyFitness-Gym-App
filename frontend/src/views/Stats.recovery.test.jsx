@@ -3,10 +3,11 @@ import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Window } from 'happy-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { recapSheet } from '../sheets/history.jsx'
 import Stats from './Stats.jsx'
+import Modals from '../components/Modals.jsx'
 import { isoOf } from '../lib/dates.js'
 import { useStore } from '../store/useStore.js'
+import { useUI } from '../store/useUI.js'
 import { DEF, normalizeState } from '../lib/profile/index.js'
 
 const DAY = 86400000
@@ -24,10 +25,15 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('react-router-dom', () => ({ useNavigate: () => () => {} }))
 vi.mock('../sheets/bodyweight.jsx', () => ({ bwSheet: () => {}, goalSheet: () => {} }))
-vi.mock('../sheets/history.jsx', () => ({
-  calendarSheet: () => {}, recapSheet: vi.fn(), workoutDetailSheet: () => {},
-  WorkoutRow: () => React.createElement('div'),
-}))
+vi.mock('../sheets/history.jsx', async importOriginal => {
+  const actual = await importOriginal()
+  return {
+    ...actual,
+    calendarSheet: () => {},
+    workoutDetailSheet: () => {},
+    WorkoutRow: () => React.createElement('div'),
+  }
+})
 vi.mock('../sheets/volume.jsx', () => ({ volumeRangesSheet: vi.fn() }))
 vi.mock('../components/LineChart.jsx', () => ({ default: props => React.createElement('div', { 'data-chart-days': props.points.map(p => p.d).join(',') }) }))
 vi.mock('../components/Heatmap.jsx', () => ({ default: () => React.createElement('div') }))
@@ -55,6 +61,8 @@ vi.mock('../components/BodyMap.jsx', () => ({
 let dom
 let root
 let container
+let modalRoot
+let modalContainer
 
 function iso(timestamp) {
   return isoOf(new Date(timestamp))
@@ -127,6 +135,21 @@ async function unmountStats() {
   dom = null
 }
 
+async function mountSheetHost() {
+  modalContainer = document.createElement('div')
+  document.body.append(modalContainer)
+  modalRoot = createRoot(modalContainer)
+  await act(async () => { modalRoot.render(React.createElement(Modals)) })
+}
+
+async function unmountSheetHost() {
+  if (!modalRoot) return
+  await act(async () => { modalRoot.unmount() })
+  modalContainer.remove()
+  modalRoot = null
+  modalContainer = null
+}
+
 function muscleCard() {
   return [...container.querySelectorAll('.card')].find(card =>
     [...card.querySelectorAll('.seg button')].some(button =>
@@ -161,10 +184,13 @@ beforeEach(() => {
   vi.useFakeTimers()
   vi.setSystemTime(BASE_NOW)
   resetFixture()
+  useUI.setState({ sheets: [] })
 })
 
 afterEach(async () => {
+  await unmountSheetHost()
   await unmountStats()
+  useUI.setState({ sheets: [] })
   vi.useRealTimers()
   vi.restoreAllMocks()
 })
@@ -242,14 +268,30 @@ describe('Stats muscle recovery view runtime', () => {
     expect(lastMap().load).not.toBe(first)
   })
 
-  it('tapping This month tile opens the monthly recap sheet', async () => {
+  it('tapping This month opens the real monthly recap sheet with its rendered content', async () => {
     await mountStats()
+    await mountSheetHost()
+
     const monthTile = [...container.querySelectorAll('.tile')].find(tile =>
       tile.textContent.includes('This month')
     )
     expect(monthTile).toBeTruthy()
     await click(monthTile)
-    expect(recapSheet).toHaveBeenCalled()
+
+    // The real opener pushed a sheet onto the UI stack — not a stub call.
+    const sheets = useUI.getState().sheets
+    expect(sheets).toHaveLength(1)
+    expect(sheets[0].render).toBeTypeOf('function')
+
+    // The sheet renders the actual monthly recap, not an empty placeholder.
+    const dialog = modalContainer.querySelector('[role="dialog"]')
+    expect(dialog).toBeTruthy()
+    const recap = dialog.textContent
+    expect(recap).toContain('January 2026')
+    expect(recap).toContain('So far')
+    for (const label of ['Workouts', 'Time trained', 'Volume', 'Sets']) {
+      expect(recap).toContain(label)
+    }
   })
 })
 

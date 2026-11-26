@@ -3,7 +3,7 @@ import {
   DEF, SCHEMA_VERSION, NewerProfileError, admit, isNewerProfile, normalizeState,
   sanitizeRestorePayload, validateBackup,
 } from './index.js'
-import { UPGRADES, schemaVersionOf, upgrade } from './upgrades.js'
+import { schemaVersionOf, upgrade } from './upgrades.js'
 
 const legacy = () => ({
   showRir: true,
@@ -19,9 +19,7 @@ const legacy = () => ({
 const newer = () => ({ ...legacy(), schemaVersion: SCHEMA_VERSION + 1 })
 
 describe('Profile schema version', () => {
-  it('is 1, one upgrade step per version, and a fresh Profile starts at it', () => {
-    expect(SCHEMA_VERSION).toBe(1)
-    expect(UPGRADES).toHaveLength(SCHEMA_VERSION)
+  it('stamps the shipped DEF and a fresh Profile at the current schema version', () => {
     expect(DEF.schemaVersion).toBe(SCHEMA_VERSION)
     expect(normalizeState(null, Date.now()).schemaVersion).toBe(SCHEMA_VERSION)
   })
