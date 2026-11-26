@@ -31,4 +31,32 @@ describe('test guardrail selectors', { timeout: 30000 }, () => {
   ])('passes %s in tests', async (_name, code) => {
     expect(await messages(code)).toHaveLength(0)
   })
+
+  describe('UI tests find elements the way a lifter does', () => {
+    const ui = 'src/views/sample.test.jsx'
+
+    it.each([
+      ['a class selector', "container.querySelector('.sheet')\n"],
+      ['a nested class selector', "container.querySelectorAll('li .row')\n"],
+      ['an id selector', "document.querySelector('#timer')\n"],
+      ['a class attribute selector', "container.querySelector('[class~=done]')\n"],
+      ['toHaveClass', "expect(button).toHaveClass('done')\n"],
+      ['classList', "expect(button.classList.contains('done')).toBe(true)\n"],
+      ['className', "expect(button.className).toContain('done')\n"],
+    ])('fails %s in a .test.jsx', async (_name, code) => {
+      expect(await messages(code, ui)).toHaveLength(1)
+    })
+
+    it.each([
+      ['a role attribute selector', "container.querySelector('[role=\"checkbox\"]')\n"],
+      ['a tag selector', "container.querySelector('button')\n"],
+      ['a lookup by role', "within(container).getByRole('button', { name: 'Add note' })\n"],
+    ])('passes %s in a .test.jsx', async (_name, code) => {
+      expect(await messages(code, ui)).toHaveLength(0)
+    })
+
+    it('leaves a non-UI .test.js alone', async () => {
+      expect(await messages("sheet.classList.add('open')\n", 'src/lib/sample.test.js')).toHaveLength(0)
+    })
+  })
 })

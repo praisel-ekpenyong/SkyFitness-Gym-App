@@ -98,42 +98,158 @@
   },
   "src/views/Plan.test.jsx": {
     "no-restricted-syntax": {
-      "Do not vi.mock our own modules; mock only the boundary (platform/, localStorage, Capacitor).": 1
+      "Do not vi.mock our own modules; mock only the boundary (platform/, localStorage, Capacitor).": 1,
+      "Find elements by role, label or text, not by CSS class or id (TESTING_STANDARDS.md). Give the control an aria-label or role in the component first.": 10,
+      "Do not assert on a CSS class (TESTING_STANDARDS.md). Assert what the lifter sees; a state shown only by a class gets the reason in the assertion message.": 2
     }
   },
   "src/views/RoutineEdit.test.jsx": {
     "no-restricted-syntax": {
-      "Do not vi.mock our own modules; mock only the boundary (platform/, localStorage, Capacitor).": 2
+      "Do not vi.mock our own modules; mock only the boundary (platform/, localStorage, Capacitor).": 2,
+      "Find elements by role, label or text, not by CSS class or id (TESTING_STANDARDS.md). Give the control an aria-label or role in the component first.": 11,
+      "Do not assert on a CSS class (TESTING_STANDARDS.md). Assert what the lifter sees; a state shown only by a class gets the reason in the assertion message.": 3
     }
   },
   "src/views/Settings.mobile.test.jsx": {
     "no-restricted-syntax": {
-      "Do not vi.mock our own modules; mock only the boundary (platform/, localStorage, Capacitor).": 4
+      "Do not vi.mock our own modules; mock only the boundary (platform/, localStorage, Capacitor).": 4,
+      "Find elements by role, label or text, not by CSS class or id (TESTING_STANDARDS.md). Give the control an aria-label or role in the component first.": 1
     }
   },
   "src/views/Settings.test.jsx": {
     "no-restricted-syntax": {
-      "Do not vi.mock our own modules; mock only the boundary (platform/, localStorage, Capacitor).": 4
+      "Do not vi.mock our own modules; mock only the boundary (platform/, localStorage, Capacitor).": 4,
+      "Find elements by role, label or text, not by CSS class or id (TESTING_STANDARDS.md). Give the control an aria-label or role in the component first.": 6
     }
   },
   "src/views/Stats.recovery.test.jsx": {
     "no-restricted-syntax": {
-      "Do not vi.mock our own modules; mock only the boundary (platform/, localStorage, Capacitor).": 7
+      "Do not vi.mock our own modules; mock only the boundary (platform/, localStorage, Capacitor).": 7,
+      "Find elements by role, label or text, not by CSS class or id (TESTING_STANDARDS.md). Give the control an aria-label or role in the component first.": 19
     }
   },
   "src/views/Stats.streak.test.jsx": {
     "no-restricted-syntax": {
-      "Do not vi.mock our own modules; mock only the boundary (platform/, localStorage, Capacitor).": 6
+      "Do not vi.mock our own modules; mock only the boundary (platform/, localStorage, Capacitor).": 6,
+      "Find elements by role, label or text, not by CSS class or id (TESTING_STANDARDS.md). Give the control an aria-label or role in the component first.": 6
     }
   },
   "src/views/Workout.console.test.jsx": {
     "no-restricted-syntax": {
-      "Do not vi.mock our own modules; mock only the boundary (platform/, localStorage, Capacitor).": 3
+      "Do not vi.mock our own modules; mock only the boundary (platform/, localStorage, Capacitor).": 3,
+      "Find elements by role, label or text, not by CSS class or id (TESTING_STANDARDS.md). Give the control an aria-label or role in the component first.": 6,
+      "Do not assert on a CSS class (TESTING_STANDARDS.md). Assert what the lifter sees; a state shown only by a class gets the reason in the assertion message.": 2
     }
   },
   "src/views/Workout.replace.test.jsx": {
     "no-restricted-syntax": {
-      "Do not vi.mock our own modules; mock only the boundary (platform/, localStorage, Capacitor).": 2
+      "Do not vi.mock our own modules; mock only the boundary (platform/, localStorage, Capacitor).": 2,
+      "Find elements by role, label or text, not by CSS class or id (TESTING_STANDARDS.md). Give the control an aria-label or role in the component first.": 1
+    }
+  },
+  "src/App.boot.test.jsx": {
+    "no-restricted-syntax": {
+      "Find elements by role, label or text, not by CSS class or id (TESTING_STANDARDS.md). Give the control an aria-label or role in the component first.": 1
+    }
+  },
+  "src/components/Barbell.test.jsx": {
+    "no-restricted-syntax": {
+      "Find elements by role, label or text, not by CSS class or id (TESTING_STANDARDS.md). Give the control an aria-label or role in the component first.": 1,
+      "Do not assert on a CSS class (TESTING_STANDARDS.md). Assert what the lifter sees; a state shown only by a class gets the reason in the assertion message.": 2
+    }
+  },
+  "src/components/Media.cdn-only.test.jsx": {
+    "no-restricted-syntax": {
+      "Find elements by role, label or text, not by CSS class or id (TESTING_STANDARDS.md). Give the control an aria-label or role in the component first.": 3
+    }
+  },
+  "src/components/Media.test.jsx": {
+    "no-restricted-syntax": {
+      "Find elements by role, label or text, not by CSS class or id (TESTING_STANDARDS.md). Give the control an aria-label or role in the component first.": 18,
+      "Do not assert on a CSS class (TESTING_STANDARDS.md). Assert what the lifter sees; a state shown only by a class gets the reason in the assertion message.": 1
+    }
+  },
+  "src/components/Modals.test.jsx": {
+    "no-restricted-syntax": {
+      "Find elements by role, label or text, not by CSS class or id (TESTING_STANDARDS.md). Give the control an aria-label or role in the component first.": 2
+    }
+  },
+  "src/components/TabBar.test.jsx": {
+    "no-restricted-syntax": {
+      "Do not assert on a CSS class (TESTING_STANDARDS.md). Assert what the lifter sees; a state shown only by a class gets the reason in the assertion message.": 1
+    }
+  },
+  "src/components/accessibility.test.jsx": {
+    "no-restricted-syntax": {
+      "Find elements by role, label or text, not by CSS class or id (TESTING_STANDARDS.md). Give the control an aria-label or role in the component first.": 1
+    }
+  },
+  "src/sheets.calendar.test.jsx": {
+    "no-restricted-syntax": {
+      "Find elements by role, label or text, not by CSS class or id (TESTING_STANDARDS.md). Give the control an aria-label or role in the component first.": 3
+    }
+  },
+  "src/sheets/session.progression-summary.test.jsx": {
+    "no-restricted-syntax": {
+      "Find elements by role, label or text, not by CSS class or id (TESTING_STANDARDS.md). Give the control an aria-label or role in the component first.": 26,
+      "Do not assert on a CSS class (TESTING_STANDARDS.md). Assert what the lifter sees; a state shown only by a class gets the reason in the assertion message.": 7
+    }
+  },
+  "src/sheets/session.routine-sync.test.jsx": {
+    "no-restricted-syntax": {
+      "Find elements by role, label or text, not by CSS class or id (TESTING_STANDARDS.md). Give the control an aria-label or role in the component first.": 5
+    }
+  },
+  "src/sheets/session.test.jsx": {
+    "no-restricted-syntax": {
+      "Find elements by role, label or text, not by CSS class or id (TESTING_STANDARDS.md). Give the control an aria-label or role in the component first.": 21,
+      "Do not assert on a CSS class (TESTING_STANDARDS.md). Assert what the lifter sees; a state shown only by a class gets the reason in the assertion message.": 10
+    }
+  },
+  "src/store/blocked-storage.test.jsx": {
+    "no-restricted-syntax": {
+      "Find elements by role, label or text, not by CSS class or id (TESTING_STANDARDS.md). Give the control an aria-label or role in the component first.": 1
+    }
+  },
+  "src/store/newer-profile.test.jsx": {
+    "no-restricted-syntax": {
+      "Find elements by role, label or text, not by CSS class or id (TESTING_STANDARDS.md). Give the control an aria-label or role in the component first.": 1
+    }
+  },
+  "src/store/restore-sanitize.test.jsx": {
+    "no-restricted-syntax": {
+      "Find elements by role, label or text, not by CSS class or id (TESTING_STANDARDS.md). Give the control an aria-label or role in the component first.": 1
+    }
+  },
+  "src/views/Home.test.jsx": {
+    "no-restricted-syntax": {
+      "Find elements by role, label or text, not by CSS class or id (TESTING_STANDARDS.md). Give the control an aria-label or role in the component first.": 17,
+      "Do not assert on a CSS class (TESTING_STANDARDS.md). Assert what the lifter sees; a state shown only by a class gets the reason in the assertion message.": 2
+    }
+  },
+  "src/views/Workout.elapsed.test.jsx": {
+    "no-restricted-syntax": {
+      "Find elements by role, label or text, not by CSS class or id (TESTING_STANDARDS.md). Give the control an aria-label or role in the component first.": 1
+    }
+  },
+  "src/views/Workout.inter-exercise-rest.test.jsx": {
+    "no-restricted-syntax": {
+      "Find elements by role, label or text, not by CSS class or id (TESTING_STANDARDS.md). Give the control an aria-label or role in the component first.": 5
+    }
+  },
+  "src/views/Workout.manual-rest.test.jsx": {
+    "no-restricted-syntax": {
+      "Find elements by role, label or text, not by CSS class or id (TESTING_STANDARDS.md). Give the control an aria-label or role in the component first.": 2
+    }
+  },
+  "src/views/Workout.milestones.test.jsx": {
+    "no-restricted-syntax": {
+      "Do not assert on a CSS class (TESTING_STANDARDS.md). Assert what the lifter sees; a state shown only by a class gets the reason in the assertion message.": 2
+    }
+  },
+  "src/views/Workout.test.jsx": {
+    "no-restricted-syntax": {
+      "Do not assert on a CSS class (TESTING_STANDARDS.md). Assert what the lifter sees; a state shown only by a class gets the reason in the assertion message.": 2
     }
   }
 }
