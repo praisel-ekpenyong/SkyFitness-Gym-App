@@ -536,6 +536,14 @@ describe('Training log: last Workout of a Routine', () => {
     expect(lastWorkoutInRoutine(S, 'push').start).toBe(2000)
     expect(lastWorkoutInRoutine(S, 'legs')).toBe(null)
   })
+
+  it.each([false, true])('ranks the later date first even when its start stamp is earlier (log reversed: %s)', reversed => {
+    const edited = { d: '2026-11-09', start: 1000, routineId: 'push', entries: [lift([work(70)])], note: 'date edited forward' }
+    const earlier = { d: '2026-11-08', start: 2000, routineId: 'push', entries: [lift([work(60)])] }
+    const S = { unit: 'kg', workouts: reversed ? [edited, earlier] : [earlier, edited] }
+    expect(lastWorkoutInRoutine(S, 'push').note).toBe('date edited forward')
+    expect(lastSession(S, 'bench').sets.map(s => s.w)).toEqual([70])
+  })
 })
 
 describe('Training log: an exercise in two Entries of one Workout', () => {

@@ -199,6 +199,18 @@ describe('evaluateSetMilestone', () => {
       expect(evaluateSetMilestone(entry, 0)).toBeNull()
     })
 
+    it.each([
+      ['plan.policy', { plan: { policy: 'off' } }],
+      ['target.policy', { target: { policy: 'off' } }],
+      ['prog', { prog: 'off' }],
+      ['policy', { policy: 'off' }]
+    ])('reads an old Entry whose progression policy is only in %s', (_field, legacy) => {
+      const base = { id: 'barbell-bench-press', target: { mode: 'reps', reps: 5, weight: 60 }, sets: [{ r: 5, w: 60, done: true }] }
+      expect(evaluateSetMilestone(base, 0), 'with no policy set, reps mode defaults to linear and cues the set').not.toBeNull()
+      const entry = { ...base, ...legacy, target: { ...base.target, ...legacy.target } }
+      expect(evaluateSetMilestone(entry, 0)).toBeNull()
+    })
+
     it('defaults to linear progression for reps-mode exercises when no policy is set', () => {
       const entry = {
         id: 'barbell-bench-press',
