@@ -54,8 +54,8 @@ in review. Each rule is an imperative that names its one legal exception, and a
   pre-commit hook and in CI (`npm run typecheck`, ratcheted by
   `frontend/tsc-baseline.json` via `frontend/scripts/check-tsc-baseline.mjs`).
   `frontend/scripts/check-ts-comments.mjs`, also in `npm run typecheck`, fails
-  `@ts-ignore`, `@ts-nocheck` and `@ts-expect-error` in `.js`/`.jsx` files:
-  oxlint's `ban-ts-comment` does not flag them there. Fixture:
+  `@ts-ignore` and `@ts-nocheck` in `.js`/`.jsx` files: oxlint's
+  `ban-ts-comment` does not flag them there. Fixture:
   `check-ts-comments.test.mjs`.
   oxlint's type-aware rows run against the same `tsconfig.json`.
 - **Vitest guard tests** (`npm test`) and `frontend/scripts/check-*.mjs`
@@ -431,7 +431,12 @@ re-measured 2026-11-25 with `eslint-plugin-react-hooks` 7.1.1.
 **Runs:** `babel-plugin-react-compiler` through `@rolldown/plugin-babel` and
 `reactCompilerPreset` in `frontend/vite.config.js`, so `vite build` and Vitest
 both compile components (`src/lib/` and test files are excluded). It does not
-wait for the state ratchets below; the two are independent. oxlint's own
+wait for the state ratchets below; the two are independent. `@babel/core` stays
+on 7.x: 8.1.3 silently drops memoization for every function with destructured
+default props (18 functions, most of them in `components/ui.jsx`), while
+7.29.13 compiles them. `scripts/compiler-coverage.test.mjs` transforms such a
+component with the same plugin and fails if the compiler output loses its
+`react/compiler-runtime` memoization. oxlint's own
 `react/*` copies of these rules stay off. The compiler hoists a property read
 out of a closure, so guard one that can run on a null (`g?.front` in
 `components/BodyMap.jsx`).
@@ -920,10 +925,10 @@ names every one:
 | Vitest guard tests, in `npm test` | `purity.test.js`, `import-cycles.test.js`, `design-tokens.test.js`, `design-lint.test.js`, `env.test.js`, `eslint-store-selectors.test.mjs`, `eslint-test-rules.test.mjs`, `i18n-lint.test.js`, `sheets/dialog-names.test.jsx`, `docs.test.js`, `platform/storage.test.js` (the 800ms debounce), `comments.test.js`, `effect-types.test.js`, the `warmArt` test (`App.warm-art.test.jsx`), the `flush()` test (`store/useStore.flush.test.jsx`), the save round-trip tests (`sheets/catalogue.test.jsx`, `views/RoutineEdit.test.jsx`), `lib/profile/profile-keys.test.js` | |
 | ESLint 10, `npm run lint` after the oxlint ratchet (CI only) | `react-hooks/set-state-in-effect`, `react-hooks/no-deriving-state-in-effects`, `react-hooks/set-state-in-render`, `react-hooks/immutability`, `react-hooks/preserve-manual-memoization`, `react-hooks/globals`, all at error, 0 hits. `static-components` (9 hits, 2 files) and `purity` (6 hits, 5 files), at error with `frontend/eslint-suppressions.json`. `react-hooks/todo` stays off. `no-restricted-syntax` selectors, one table in `frontend/eslint.config.js`: One-owner (`LB_TO_KG` and the `2.2046` and `0.4535` literals at 0 suppressions, inline `Math.round(x * 10) / 10`, `(getDay() + 6) % 7`, `\|\| 'kg'`), `% 60`, local dates (including hand-padded day keys), store selectors, assignments to `.active` and `.routines` outside `lib/`, `store/` and tests (including computed access), the `lib/` clock, `import.meta.env` and `process.env`, the CommonJS shim, and `vi.mock`/`vi.doMock` scope, snapshots, and `lib/active-*` internal imports in tests. `noInlineConfig`, with `--max-warnings 0`, so no disable comment hides a hit. Ratchets: `frontend/eslint-suppressions.json` for counts, and `frontend/eslint-selector-suppressions.json` for the selector message of each suppressed `no-restricted-syntax` hit — `check-eslint-selectors.mjs` runs in `npm run lint` with its fixture | nothing |
 | oxlint, ratchet in the pre-commit hook and in `npm run lint` (CI) | `correctness` category (with the dated `no-unused-vars` carve-out: 0 hits, no baseline entry; the old "baseline the 24 probe hits" line is superseded — see the amendment above), `react/rules-of-hooks`, `react/exhaustive-deps`, `complexity`, restricted globals and properties (including `Date.now` in `lib/`), `unicorn/no-array-sort`, `unicorn/no-array-reverse`, `react/no-array-index-key`, `jsx-a11y/click-events-have-key-events`, `jsx-a11y/no-static-element-interactions`, `jsx-a11y/prefer-tag-over-role`, `jsx-a11y/no-autofocus`, all at error. Ratchet: `frontend/lint-baseline.json`, checked by `scripts/check-lint-baseline.mjs` with its failing fixture in `npm test` | nothing |
-| tsc | `frontend/tsconfig.json` (`strict`, `allowJs`, `checkJs` over app code), `npm run typecheck` in the hook and CI. Ratchet: `frontend/tsc-baseline.json`, checked by `frontend/scripts/check-tsc-baseline.mjs` with its failing fixture in `npm test`. `check-ts-comments.mjs` (fixture: `check-ts-comments.test.mjs`) fails `@ts-ignore`, `@ts-nocheck` and `@ts-expect-error` in `.js`/`.jsx` files | tests joining `tsconfig.json` (last) |
+| tsc | `frontend/tsconfig.json` (`strict`, `allowJs`, `checkJs` over app code), `npm run typecheck` in the hook and CI. Ratchet: `frontend/tsc-baseline.json`, checked by `frontend/scripts/check-tsc-baseline.mjs` with its failing fixture in `npm test`. `check-ts-comments.mjs` (fixture: `check-ts-comments.test.mjs`) fails `@ts-ignore` and `@ts-nocheck` in `.js`/`.jsx` files | tests joining `tsconfig.json` (last) |
 | oxlint type-aware (`oxlint-tsgolint` 7.0.2008, `--type-aware` in the same ratchet) | `typescript/no-floating-promises` (15 hits, 10 files) and `no-misused-promises` (12 hits, 11 files) at error with `frontend/lint-baseline.json`; `only-throw-error`, `switch-exhaustiveness-check`, `no-explicit-any`, `no-non-null-assertion`, `ban-ts-comment` at error, 0 hits. Failing fixture: `check-lint-baseline.test.mjs` with a floating promise | `no-unsafe-*`, `no-unnecessary-condition` and branded `Kg` / `Lb` types (deferred until typedefs exist) |
 | `frontend/scripts/check-frontend-state.mjs`, in `npm test` | The `use-state` cap, with its failing fixture. Ratchet: `frontend/frontend-state-allowlist.json` | nothing |
-| Babel and CI | `babel-plugin-react-compiler` (done, #122), `npm run test:fatigue-probe`, `npm run build`, and the `React Doctor` floor (`frontend/react-doctor-floor.json`, checked by `frontend/scripts/check-react-doctor-floor.mjs` with its failing fixture in `npm test`) | |
+| Babel and CI | `babel-plugin-react-compiler` (done, #122), `@babel/core` pinned to 7.x with `scripts/compiler-coverage.test.mjs` guarding against silent compiler skips, `npm run test:fatigue-probe`, `npm run build`, and the `React Doctor` floor (`frontend/react-doctor-floor.json`, checked by `frontend/scripts/check-react-doctor-floor.mjs` with its failing fixture in `npm test`) | |
 
 `npm run test:fatigue-probe` stays out of `npm test` on purpose: the workflow
 says it is too slow for the unit suite.

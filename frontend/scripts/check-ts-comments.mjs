@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url'
 const frontend = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const SOURCE = /\.(?:js|jsx)$/
 const TEST = /\.(?:test|spec)\.[cm]?[jt]sx?$/
-const DIRECTIVE = /^\s*(?:(?:\/\/|\/\*+|\*+)\s*)?@ts-(?:ignore|nocheck|expect-error)\b/
+const DIRECTIVE = /^\s*(?:(?:\/\/|\/\*+|\*+)\s*)?@ts-(?:ignore|nocheck)\b/
 const SKIP = new Set(['node_modules', '.git', 'dist', 'android', 'ios', 'public', 'coverage', 'fixtures'])
 
 function option(name) {

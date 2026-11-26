@@ -1451,6 +1451,32 @@ describe('ExConfig round trip: pick, save to the routine, change the Setting, re
     })
   })
 
+  describe('Rest: follows the Setting until a duration is picked', () => {
+    it('stores a picked duration that equals the Setting, so a later Setting change does not move it', async () => {
+      useStore.getState().update(s => { s.restSec = 90 })
+      await openEntry(bench, { sets: 3, reps: 8, weight: 60 })
+      await pick(container, 'Rest duration', '90s')
+      await save()
+      expect(entry().rest).toBe(90)
+
+      useStore.getState().update(s => { s.restSec = 120 })
+      await openEntry(bench, entry())
+      expect(leafTexts(buttonNamed(container, 'Rest duration'))).toContain('90s')
+    })
+
+    it('stores nothing for Default, so the entry follows a later Setting change', async () => {
+      useStore.getState().update(s => { s.restSec = 90 })
+      await openEntry(bench, { sets: 3, reps: 8, weight: 60, rest: 120 })
+      await pick(container, 'Rest duration', 'Default (90s)')
+      await save()
+      expect(entry()).not.toHaveProperty('rest')
+
+      useStore.getState().update(s => { s.restSec = 120 })
+      await openEntry(bench, entry())
+      expect(leafTexts(buttonNamed(container, 'Rest duration'))).toContain('Default (120s)')
+    })
+  })
+
   describe('controls that follow no Setting store what is picked', () => {
     it('Reps per side stores side when on and nothing when off', async () => {
       await openEntry(bench, { sets: 3, reps: 8, weight: 20, mode: 'reps' })

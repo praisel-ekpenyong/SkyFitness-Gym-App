@@ -52,5 +52,6 @@ describe('environment selectors', { timeout: 60000 }, () => {
     const hits = await lint("vi.doMock('../store/useStore.js')\n", 'src/views/Fixture.test.jsx')
     expect(hits).toHaveLength(1)
     expect(hits[0].message).toMatch(/Do not vi.mock our own modules/)
+    expect(await lint("vi.doMock('../platform/sound.js')\n", 'src/views/Fixture.test.jsx')).toEqual([])
   })
 })
