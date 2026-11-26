@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { readFileSync, readdirSync, statSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { dirname, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -10,6 +10,16 @@ const BANNED_PACKAGES = ['react', 'react-dom', 'zustand', '@capacitor']
 const BANNED_GLOBALS = ['localStorage', 'sessionStorage', 'document', 'window', 'navigator', 'indexedDB', 'Capacitor']
 
 const GLOBAL_ALLOWLIST = {}
+
+function allowlistProblems(allowlist) {
+  const problems = []
+  for (const [rel, entry] of Object.entries(allowlist)) {
+    const path = join(LIB, rel)
+    if (!existsSync(path) || !statSync(path).isFile()) problems.push(`${rel} must be an existing file`)
+    if (!entry.reason?.trim()) problems.push(`${rel} must have a reason`)
+  }
+  return problems
+}
 
 const SPECIFIER = /\bfrom\s*['"]([^'"]+)['"]|\bimport\s*\(\s*['"]([^'"]+)['"]|^\s*import\s+['"]([^'"]+)['"]/gm
 const GLOBAL_USE = new RegExp(`(?<![\\w$.])(${BANNED_GLOBALS.join('|')})(?![\\w$])`, 'g')
@@ -152,9 +162,20 @@ describe('lib/ stays pure and owns no browser or UI edge', () => {
   })
 
   it('allowlists only files that exist, each with a reason', () => {
-    for (const [rel, entry] of Object.entries(GLOBAL_ALLOWLIST)) {
-      expect(statSync(join(LIB, rel)).isFile()).toBe(true)
-      expect(entry.reason.trim()).not.toBe('')
-    }
+    expect(allowlistProblems(GLOBAL_ALLOWLIST)).toEqual([])
+  })
+
+  it('accepts an allowlisted file that exists and has a reason', () => {
+    expect(allowlistProblems({ 'dates.js': { reason: 'clock owner' } })).toEqual([])
+  })
+
+  it('rejects an allowlist entry for a file that does not exist', () => {
+    expect(allowlistProblems({ 'no-such-file.js': { reason: 'x' } }))
+      .toEqual(['no-such-file.js must be an existing file'])
+  })
+
+  it('rejects an allowlist entry with a blank reason', () => {
+    expect(allowlistProblems({ 'dates.js': { reason: '  ' } }))
+      .toEqual(['dates.js must have a reason'])
   })
 })

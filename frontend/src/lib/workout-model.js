@@ -32,14 +32,6 @@ export function modeOf(cfg) {
   return isCardio(cfg && cfg.id) ? 'cardio' : 'reps'
 }
 /**
- * Report whether an exercise config logs timed holds.
- *
- * @param {Partial<Target> | null | undefined} cfg - Exercise config passed to modeOf.
- * @returns {boolean} True when the resolved mode is 'time'.
- */
-export const isTimed = cfg => modeOf(cfg) === 'time'
-
-/**
  * Report whether an exercise is logged as bodyweight work.
  *
  * @param {Partial<Target> | null | undefined} cfg - Exercise config with optional bodyweight flag and id.

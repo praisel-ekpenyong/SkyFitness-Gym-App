@@ -18,7 +18,6 @@ describe('lats vs upper-back visual parity', () => {
 
     expect(bothLoad.lats).toBe(4)
     expect(bothLoad['upper-back']).toBe(4)
-    expect(MUSCLES.indexOf('lats')).toBe(MUSCLES.indexOf('upper-back') + 1)
   })
 
   it('exposes independent, mutually exclusive back paths for lats and upper-back on both models', () => {

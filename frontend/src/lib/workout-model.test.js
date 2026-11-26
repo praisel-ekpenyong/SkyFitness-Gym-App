@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { modeOf, isTimed, defaultConfig, buildSets, freestyleConfig, isBw, sideReps, repStep, cascadeWeight, insertWarmupRow, removeRowAt, workSetsDone, hasWork, isExerciseDone, sessionProgress, seedForReplacement, cleanNote } from './workout-model.js'
+import { modeOf, defaultConfig, buildSets, freestyleConfig, isBw, sideReps, repStep, cascadeWeight, insertWarmupRow, removeRowAt, workSetsDone, hasWork, isExerciseDone, sessionProgress, seedForReplacement, cleanNote } from './workout-model.js'
 import { isWorkSet, isPerformed, workSets, doneWorkSets } from './workout-sets.js'
 import { fmtSec, exLine } from './format.js'
 import { setLabel } from './set-label.js'
@@ -30,11 +30,6 @@ describe('modeOf', () => {
   it('ignores a mode it does not know rather than trusting a bad file', () => {
     expect(modeOf({ id: LIFT, mode: 'nonsense' })).toBe('reps')
     expect(modeOf({ id: CARDIO, mode: '' })).toBe('cardio')
-  })
-
-  it('exposes the timed check', () => {
-    expect(isTimed({ id: LIFT, mode: 'time' })).toBe(true)
-    expect(isTimed({ id: LIFT })).toBe(false)
   })
 })
 
