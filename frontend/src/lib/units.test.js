@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { produce } from 'immer'
 import {
-  LB_TO_KG,
   round1,
   sanitizeUnit,
   normalizeWeight,
@@ -16,8 +15,12 @@ import {
 
 describe('units module', () => {
   describe('constants & rounding', () => {
-    it('exports canonical LB_TO_KG conversion constant', () => {
-      expect(LB_TO_KG).toBeCloseTo(0.45359237, 8)
+    it('reads a pound load in kilograms at the canonical conversion rate', () => {
+      const pounds = 100
+      // Expectation comes from the canonical rate as a literal, not from the
+      // module's own factor, so a wrong conversion result fails here.
+      const expectedKg = round1(pounds * 0.45359237)
+      expect(normalizeWeight(pounds, 'lb', 'kg')).toBe(expectedKg)
     })
 
     it('rounds numbers to 1 decimal place', () => {
