@@ -881,16 +881,10 @@ our own modules. Exception: a module in `platform/`, which is the boundary. A
 test must be able to fail for a bug a lifter or a caller would see. If you can't
 name the bug, don't write the test (a judgement call, no tooth).
 
-**Runs:** ESLint `no-restricted-syntax` in the test files
-(`frontend/eslint.config.js`, failing fixtures in
-`frontend/scripts/eslint-store-selectors.test.mjs` and
-`frontend/scripts/eslint-test-rules.test.mjs`), scoped in
-[`docs/TESTING_STANDARDS.md`](./docs/TESTING_STANDARDS.md):
-- `noOwnModuleMock` fails `vi.mock` and `vi.doMock` of a relative path that is not in `platform/` (<!-- ratchet: eslint-selector-suppressions.json#Do not vi.mock our own modules; mock only the boundary (platform/, localStorage, Capacitor). -->29 hits in 8 files<!-- /ratchet -->, baselined in `frontend/eslint-selector-suppressions.json`).
-- `noTestSnapshots` fails Vitest snapshot matchers (`toMatchSnapshot`, `toMatchInlineSnapshot`, `toMatchFileSnapshot`, `toThrowErrorMatchingSnapshot`, `toThrowErrorMatchingInlineSnapshot`; 0 hits).
-- `noActiveInternalImports` fails test imports from `lib/active-*` (`active-act.js`, `active-finish.js`, `active-session.js`, `active-sets.js`, `active-toggle.js`) outside `lib/active-workout.js` (<!-- ratchet: eslint-selector-suppressions.json#Import act and sessionView from lib/active-workout.js, not lib/active-* internals (ADR 0023, TESTING_STANDARDS.md). -->1 hit in 1 file<!-- /ratchet -->, `frontend/src/lib/clock-args.test.js`, baselined in `frontend/eslint-selector-suppressions.json`).
-
-**Runs:** `frontend/scripts/check-eslint-selectors.mjs` (in `npm run lint`) ratchets the suppressed `no-restricted-syntax` hits by selector message, so swapping a suppressed selector for a different one in the same file fails even though the per-rule count is unchanged; fixture: `check-eslint-selectors.test.mjs`.
+**Runs:** ESLint `no-restricted-syntax` selectors on test files (own-module mocks,
+snapshots, `lib/active-*` imports), ratcheted by `check-eslint-selectors.mjs` in
+`npm run lint`. Each selector, its hit count and its failing fixture are kept in one
+place, "Teeth" in [`docs/TESTING_STANDARDS.md`](./docs/TESTING_STANDARDS.md).
 
 Worked examples, the seam table, and the red flags:
 [`docs/TESTING_STANDARDS.md`](./docs/TESTING_STANDARDS.md).
