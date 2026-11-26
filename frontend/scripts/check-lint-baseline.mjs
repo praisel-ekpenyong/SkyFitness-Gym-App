@@ -14,8 +14,8 @@ function option(name) {
 
 const ruleName = code => code.replace(/^([^(]+)\((.+)\)$/, '$1/$2')
 
-function lint(root) {
-  const r = spawnSync(process.execPath, [oxlintBin, '--type-aware', '--format', 'json', '-c', join(root, '.oxlintrc.json'), '.'], { cwd: root, encoding: 'utf8' })
+function run(root, config, args) {
+  const r = spawnSync(process.execPath, [oxlintBin, ...args, '--format', 'json', '-c', join(root, config), '.'], { cwd: root, encoding: 'utf8' })
   let report
   try { report = JSON.parse(r.stdout) } catch {
     throw new Error(`oxlint did not report JSON (exit ${r.status}):\n${r.stderr || r.stdout}`)
@@ -29,6 +29,13 @@ function lint(root) {
       message: d.message,
     }
   })
+}
+
+// Two passes, one ratchet: .oxlintrc.json lints app code and ignores tests;
+// .oxlintrc.tests.json lints only the test rules (jest/*) and has no type-aware rows.
+function lint(root) {
+  const tests = existsSync(join(root, '.oxlintrc.tests.json')) ? run(root, '.oxlintrc.tests.json', []) : []
+  return [...run(root, '.oxlintrc.json', ['--type-aware']), ...tests]
 }
 
 const SOURCE = /\.(?:[cm]?js|jsx|[cm]?ts|tsx)$/
