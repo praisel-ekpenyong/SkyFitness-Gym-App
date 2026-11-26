@@ -13,8 +13,7 @@ function option(name) {
   return i === -1 ? undefined : process.argv[i + 1]
 }
 
-// Suppressed messages are invisible to ESLint's own count-per-rule ratchet. Run the
-// same files with an empty suppressions file so each selector can be counted by its message.
+// ESLint's suppressions hide the messages this ratchet needs; see ADR 0034.
 function lint(root, paths) {
   const dir = mkdtempSync(join(tmpdir(), 'sky-eslint-selectors-'))
   const empty = join(dir, 'eslint-suppressions.json')
