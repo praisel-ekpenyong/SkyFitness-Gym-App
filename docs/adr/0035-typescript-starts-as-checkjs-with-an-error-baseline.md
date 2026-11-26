@@ -20,3 +20,7 @@ Sky is JavaScript: `frontend/` has no `.ts` file and no `tsconfig`. The target i
 - No `.ts` file lands before the checker does, so no TypeScript file is unchecked.
 - `typescript/no-unsafe-*` stays off until the typedefs exist: it would fire thousands of times and mean nothing.
 - Nothing is installed by this ADR; `typescript`, `@types/react` and the baseline arrive with the first ticket.
+
+## Amendment 2026-11-26: `@ts-*` directives are banned in checked files
+
+`typescript/ban-ts-comment` in `.oxlintrc.json` does not flag `@ts-ignore`, `@ts-nocheck` or `@ts-expect-error` in `.js` files, so a clean file could silently opt out of `checkJs`. `frontend/scripts/check-ts-comments.mjs` (in `npm run typecheck`, so it runs in the pre-commit hook and CI) fails any of those directives in a `.js`/`.jsx` file. Tests and fixtures are excluded because `tsconfig.json` excludes them. Fixture: `frontend/scripts/check-ts-comments.test.mjs`.

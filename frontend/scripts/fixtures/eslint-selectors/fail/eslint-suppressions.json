@@ -1,0 +1,8 @@
+{
+  "allowed.js": {
+    "no-restricted-syntax": { "count": 1 }
+  },
+  "swapped.js": {
+    "no-restricted-syntax": { "count": 1 }
+  }
+}
