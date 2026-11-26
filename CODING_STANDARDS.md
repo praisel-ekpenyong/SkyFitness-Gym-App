@@ -60,6 +60,14 @@ in review. Each rule is an imperative that names its one legal exception, and a
   oxlint's type-aware rows run against the same `tsconfig.json`.
 - **Vitest guard tests** (`npm test`) and `frontend/scripts/check-*.mjs`
   scripts cover what no linter can express.
+- **Doc count claims** in this file and `docs/TESTING_STANDARDS.md` sit inside an
+  HTML comment whose body names the source and key (`ratchet: source#key`) and
+  whose content is a claim such as `N hits in M files`.
+  `frontend/scripts/check-doc-counts.mjs`, run by `npm test`, reads the number
+  and file count from the named ratchet JSON, so a stale claim fails the suite.
+  `npm run doc-counts:baseline` refreshes marked claims; fixture:
+  `check-doc-counts.test.mjs`. Historical probe numbers and zero-hit claims are
+  left as prose: neither has a live JSON entry to check against.
 
 **Amendment 2026-11-25 (`eslint/no-unused-vars` carve-out, closing the count gap from issue #102).** The historical line "recount `no-unused-vars` under `correctness` and baseline the 24 probe hits" is **superseded** and must not be followed. `frontend/.oxlintrc.json` keeps ESLint's old options for the rule (`args: none`, `caughtErrors: none`, `ignoreRestSiblings: true`), so the configured rule reports 0 hits and has no entry in `frontend/lint-baseline.json`. Do not seed 24 entries by hand: a recorded count above the configured rule's real count is stale, and every ratchet fails on a stale entry ([ADR 0034 amendment 2026-11-25](./docs/adr/0034-oxlint-and-eslint-with-per-tool-ratchets.md)).
 
@@ -158,14 +166,14 @@ pure helpers or move decision trees into domain reducers. Exception: a function
 already over 15 sits in `frontend/lint-baseline.json`, may not grow, and leaves
 the file when it is split. A disable comment is never the way out.
 
-**Why:** 54 functions in 29 files are over the bar today. The worst is
+**Why:** <!-- ratchet: lint-baseline.json#eslint/complexity -->51 functions in 29 files<!-- /ratchet --> are over the bar today. The worst is
 `evaluateSetMilestone` in `lib/progression.js` (83, line 521), then
 `evaluateSessionProgression` (74), `parseWorkoutCSV` in `lib/import-csv.js`
 (66) and `Home.jsx` (62). A function that size has branches no test reaches.
 **Runs:** oxlint `eslint/complexity` at error (`max: 15`, `variant: 'modified'`),
-tests excluded. Its 55 hits in 30 files (measured 2026-11-24) sit in
+tests excluded. Its <!-- ratchet: lint-baseline.json#eslint/complexity -->51 hits in 29 files<!-- /ratchet --> sit in
 `frontend/lint-baseline.json` and may only fall. `scripts/review/audit.mjs` is
-the one past the issue's 54 functions in 29 files.
+the one added after the issue's count.
 
 ## Errors
 
@@ -210,10 +218,9 @@ Exception: none.
 reaches the code that records it (`isMirrorFailing()` for the mobile file
 mirror). `nativeSave` in `platform/mobile.js` is not a hit: it rejects on a
 failed write and `nativeSink` awaits it.
-**Runs:** oxlint `typescript/no-floating-promises` (15 hits in 10 files) and
-`typescript/no-misused-promises` (12 hits in 11 files), type-aware, at error
-(counts measured 2026-11-25 with oxlint 1.95.0, `oxlint-tsgolint` 7.0.2008 and
-`frontend/tsconfig.json`, app code and `scripts/`). The old hits are in
+**Runs:** oxlint `typescript/no-floating-promises` (<!-- ratchet: lint-baseline.json#typescript/no-floating-promises -->15 hits in 10 files<!-- /ratchet -->) and
+`typescript/no-misused-promises` (<!-- ratchet: lint-baseline.json#typescript/no-misused-promises -->12 hits in 11 files<!-- /ratchet -->), type-aware, at error
+(`frontend/tsconfig.json`, app code and `scripts/`). The old hits are in
 `frontend/lint-baseline.json`, and a new one fails
 `npm run lint`.
 
@@ -425,9 +432,8 @@ component defined in render, so it remounts every render and loses state.
 `react-hooks/set-state-in-effect`, `react-hooks/no-deriving-state-in-effects`,
 `react-hooks/set-state-in-render`, `react-hooks/immutability`,
 `react-hooks/preserve-manual-memoization`, `react-hooks/globals`. At error with
-`frontend/eslint-suppressions.json`: `static-components` (9 hits, 2 files) and
-`purity` (6 hits, 5 files); `refs` and `memo-dependencies` have no hits left (#122). Counts
-re-measured 2026-11-25 with `eslint-plugin-react-hooks` 7.1.1.
+`frontend/eslint-suppressions.json`: `static-components` (<!-- ratchet: eslint-suppressions.json#react-hooks/static-components -->9 hits in 2 files<!-- /ratchet -->) and
+`purity` (<!-- ratchet: eslint-suppressions.json#react-hooks/purity -->6 hits in 5 files<!-- /ratchet -->); `refs` and `memo-dependencies` have no hits left (#122).
 **Runs:** `babel-plugin-react-compiler` through `@rolldown/plugin-babel` and
 `reactCompilerPreset` in `frontend/vite.config.js`, so `vite build` and Vitest
 both compile components (`src/lib/` and test files are excluded). It does not
@@ -454,7 +460,7 @@ Exception: none.
 positives; only the ref in `components/ui.jsx:15` was real.
 **Runs:** the `React Doctor` step in `.github/workflows/test.yml` calls
 `frontend/scripts/check-react-doctor-floor.mjs` against
-`frontend/react-doctor-floor.json` (`{ "score": 57 }`), with
+`frontend/react-doctor-floor.json` (`{ "score": <!-- ratchet: react-doctor-floor.json#score -->57<!-- /ratchet --> }`), with
 `frontend/doctor.config.mjs` excluding `scripts/` and tests, disabling
 `.oxlintrc.json` adoption (already covered by `npm run lint`), and ignoring
 `react-doctor/no-json-parse-stringify-clone` and
@@ -485,8 +491,8 @@ active, which looped the render (#136, fixed).
 run from `npm test` (`check-frontend-state.test.mjs`, with a failing fixture),
 with shrink-only counts in `frontend/frontend-state-allowlist.json`:
 
-- `frontend/src/sheets/catalogue.jsx`: 12
-- `frontend/src/views/Stats.jsx`: 10
+- `frontend/src/sheets/catalogue.jsx`: <!-- ratchet: frontend-state-allowlist.json#src/sheets/catalogue.jsx -->12<!-- /ratchet -->
+- `frontend/src/views/Stats.jsx`: <!-- ratchet: frontend-state-allowlist.json#src/views/Stats.jsx -->10<!-- /ratchet -->
 
 A file at 4 passes. A new file over 4 fails, and so does an allowlist count above
 the real count or an entry at or under 4 (drop it).
@@ -517,8 +523,7 @@ Exception: none.
 **Why:** `components/RestTimer.jsx` (line 15) omits `on` on purpose behind
 `[!!on]`. A stale value read in a timer was the bug in `2cc8dd5` (mute during a
 rest did not silence it) and `f6db88f` (the week streak went stale).
-**Runs:** oxlint `react/exhaustive-deps` at error. Its 12 hits (6 files,
-measured 2026-11-24) sit in `frontend/lint-baseline.json` and may only fall.
+**Runs:** oxlint `react/exhaustive-deps` at error. Its <!-- ratchet: lint-baseline.json#react-hooks/exhaustive-deps -->11 hits in 5 files<!-- /ratchet --> sit in `frontend/lint-baseline.json` and may only fall.
 
 ### Lists keep stable keys; interactive elements are real elements
 
@@ -531,11 +536,10 @@ display list (barbell plates, instruction steps) may key by index.
 editable Routine rows in `views/RoutineEdit.jsx` (line 70) key on `rowId`, so a
 row keeps what the lifter typed when the list shifts. Clickable `div` rows ship
 without a keyboard path; the a11y hit list is the count.
-**Runs:** oxlint `react/no-array-index-key` at error. Its 16 hits (10 files,
-re-measured 2026-11-24) sit in `frontend/lint-baseline.json` and may only fall.
+**Runs:** oxlint `react/no-array-index-key` at error. Its <!-- ratchet: lint-baseline.json#react/no-array-index-key -->15 hits in 9 files<!-- /ratchet --> sit in `frontend/lint-baseline.json` and may only fall.
 **Runs:** oxlint `jsx-a11y/click-events-have-key-events`,
 `jsx-a11y/no-static-element-interactions`, `jsx-a11y/prefer-tag-over-role` and
-`jsx-a11y/no-autofocus` (57 hits in 19 files, re-measured 2026-11-24), in
+`jsx-a11y/no-autofocus` (<!-- ratchet: lint-baseline.json#jsx-a11y/* -->54 hits in 19 files<!-- /ratchet -->), in
 `frontend/lint-baseline.json`.
 
 ### Sort a copy, never the state
@@ -547,8 +551,8 @@ selector. Exception: an array built in the same function.
 **Why:** `lib/strength-exercises.js` (line 56) and `lib/profile/workouts.js`
 (line 24) sort in place.
 **Runs:** oxlint `unicorn/no-array-sort` and `unicorn/no-array-reverse` at error.
-27 hits in 16 files (22 `no-array-sort` in 13 files, 5 `no-array-reverse` in
-4 files, re-measured 2026-11-24) sit in `frontend/lint-baseline.json` and may
+<!-- ratchet: lint-baseline.json#unicorn/no-array-sort -->22 hits in 13 files<!-- /ratchet --> and
+<!-- ratchet: lint-baseline.json#unicorn/no-array-reverse -->5 hits in 4 files<!-- /ratchet --> sit in `frontend/lint-baseline.json` and may
 only fall. None were autofixed.
 
 ## Entities, actions, and interaction design
@@ -675,16 +679,15 @@ different rep cap.
 each failing outside its owner with a message naming the owner:
 `Identifier[name='LB_TO_KG']` and the literals `2.2046` and `0.4535` (0 hits; the
 copies in `lib/import-csv.js` and `lib/bodyweight.js` are fixed);
-`LogicalExpression[right.value='kg']` (18 hits in 7 files, exempt in `lib/units.js`); the inline
+`LogicalExpression[right.value='kg']` (<!-- ratchet: eslint-selector-suppressions.json#No `|| 'kg'` fallback: S.unit is cleaned by PROFILE_CLEAN; other units go through lib/units.js (sanitizeUnit, entryUnit). -->18 hits in 7 files<!-- /ratchet -->, exempt in `lib/units.js`); the inline
 `Math.round(x * 10) / 10`, selector
 `BinaryExpression[operator='/'][right.value=10][left.callee.object.name='Math'][left.callee.property.name='round'][left.arguments.0.operator='*'][left.arguments.0.right.value=10]`
-(16 hits in 9 files outside `lib/units.js`, re-measured 2026-11-25 after the
-`round1` copies were deleted);
+(<!-- ratchet: eslint-selector-suppressions.json#Round to one decimal with round1 from lib/units.js, not Math.round(x * 10) / 10. -->17 hits in 10 files<!-- /ratchet --> outside `lib/units.js`);
 `(getDay() + 6) % 7`, selector
 `BinaryExpression[operator='%'][right.value=7][left.type='BinaryExpression'][left.operator='+'][left.right.value=6][left.left.callee.property.name='getDay']`
-(3 hits outside `lib/dates.js`: `components/Heatmap.jsx`, `sheets/history.jsx`
+(<!-- ratchet: eslint-selector-suppressions.json#Get the Monday-first weekday from lib/dates.js (mondayIndexOf), not (getDay() + 6) % 7. -->3 hits in 3 files<!-- /ratchet --> outside `lib/dates.js`: `components/Heatmap.jsx`, `sheets/history.jsx`
 and `views/Home.jsx`). The `% 7` selector does not hit `padded.length % 7`
-(`sheets/history.jsx`). Counts as of 2026-11-25. Every hit is baselined in
+(`sheets/history.jsx`). Every hit is baselined in
 `frontend/eslint-suppressions.json`; `frontend/scripts/owner-selectors.test.mjs`
 pins each selector and its owner. The `|| 'kg'` count falls as callers read the
 cleaned `S.unit`. Epley and the timestamp copies are judgement calls, no tooth;
@@ -811,9 +814,10 @@ with a reason until that code moves into `platform/`: `store/useUI.js` and
 `main.jsx` (`Notification` and `navigator.serviceWorker`). Tests that clear
 `localStorage` are an overrides entry for `**/*.test.js` and `**/*.test.jsx`;
 `ignorePatterns` still skips tests. Non-owner hits in `scripts/` and
-`vite.config.js` sit in `frontend/lint-baseline.json` and may only fall: 53
-`eslint/no-restricted-globals` and 4 `eslint/no-restricted-properties`, 57 hits
-in 12 files (`console`, `localStorage` in the review scripts, and
+`vite.config.js` sit in `frontend/lint-baseline.json` and may only fall:
+<!-- ratchet: lint-baseline.json#eslint/no-restricted-globals -->54 hits in 13 files<!-- /ratchet --> for `eslint/no-restricted-globals` and
+<!-- ratchet: lint-baseline.json#eslint/no-restricted-properties -->6 hits in 4 files<!-- /ratchet --> for `eslint/no-restricted-properties`
+(`console`, `localStorage` in the review scripts, and
 `navigator.serviceWorker` in `scripts/review/offline.mjs` and
 `scripts/review/audit.mjs`). No non-owner `fetch` hit remains inside `frontend/`.
 
@@ -884,9 +888,9 @@ name the bug, don't write the test (a judgement call, no tooth).
 `frontend/scripts/eslint-store-selectors.test.mjs` and
 `frontend/scripts/eslint-test-rules.test.mjs`), scoped in
 [`docs/TESTING_STANDARDS.md`](./docs/TESTING_STANDARDS.md):
-- `noOwnModuleMock` fails `vi.mock` and `vi.doMock` of a relative path that is not in `platform/` (30 hits in 9 files, 2026-11-25, baselined in `frontend/eslint-suppressions.json`).
+- `noOwnModuleMock` fails `vi.mock` and `vi.doMock` of a relative path that is not in `platform/` (<!-- ratchet: eslint-selector-suppressions.json#Do not vi.mock our own modules; mock only the boundary (platform/, localStorage, Capacitor). -->29 hits in 8 files<!-- /ratchet -->, baselined in `frontend/eslint-selector-suppressions.json`).
 - `noTestSnapshots` fails Vitest snapshot matchers (`toMatchSnapshot`, `toMatchInlineSnapshot`, `toMatchFileSnapshot`, `toThrowErrorMatchingSnapshot`, `toThrowErrorMatchingInlineSnapshot`; 0 hits).
-- `noActiveInternalImports` fails test imports from `lib/active-*` (`active-act.js`, `active-finish.js`, `active-session.js`, `active-sets.js`, `active-toggle.js`) outside `lib/active-workout.js` (1 hit in `frontend/src/lib/clock-args.test.js`, baselined in `frontend/eslint-suppressions.json`).
+- `noActiveInternalImports` fails test imports from `lib/active-*` (`active-act.js`, `active-finish.js`, `active-session.js`, `active-sets.js`, `active-toggle.js`) outside `lib/active-workout.js` (<!-- ratchet: eslint-selector-suppressions.json#Import act and sessionView from lib/active-workout.js, not lib/active-* internals (ADR 0023, TESTING_STANDARDS.md). -->1 hit in 1 file<!-- /ratchet -->, `frontend/src/lib/clock-args.test.js`, baselined in `frontend/eslint-selector-suppressions.json`).
 
 **Runs:** `frontend/scripts/check-eslint-selectors.mjs` (in `npm run lint`) ratchets the suppressed `no-restricted-syntax` hits by selector message, so swapping a suppressed selector for a different one in the same file fails even though the per-rule count is unchanged; fixture: `check-eslint-selectors.test.mjs`.
 
@@ -923,12 +927,13 @@ names every one:
 | Tool | Runs today | To add |
 |---|---|---|
 | Vitest guard tests, in `npm test` | `purity.test.js`, `import-cycles.test.js`, `design-tokens.test.js`, `design-lint.test.js`, `env.test.js`, `eslint-store-selectors.test.mjs`, `eslint-test-rules.test.mjs`, `i18n-lint.test.js`, `sheets/dialog-names.test.jsx`, `docs.test.js`, `platform/storage.test.js` (the 800ms debounce), `comments.test.js`, `effect-types.test.js`, the `warmArt` test (`App.warm-art.test.jsx`), the `flush()` test (`store/useStore.flush.test.jsx`), the save round-trip tests (`sheets/catalogue.test.jsx`, `views/RoutineEdit.test.jsx`), `lib/profile/profile-keys.test.js` | |
-| ESLint 10, `npm run lint` after the oxlint ratchet (CI only) | `react-hooks/set-state-in-effect`, `react-hooks/no-deriving-state-in-effects`, `react-hooks/set-state-in-render`, `react-hooks/immutability`, `react-hooks/preserve-manual-memoization`, `react-hooks/globals`, all at error, 0 hits. `static-components` (9 hits, 2 files) and `purity` (6 hits, 5 files), at error with `frontend/eslint-suppressions.json`. `react-hooks/todo` stays off. `no-restricted-syntax` selectors, one table in `frontend/eslint.config.js`: One-owner (`LB_TO_KG` and the `2.2046` and `0.4535` literals at 0 suppressions, inline `Math.round(x * 10) / 10`, `(getDay() + 6) % 7`, `\|\| 'kg'`), `% 60`, local dates (including hand-padded day keys), store selectors, assignments to `.active` and `.routines` outside `lib/`, `store/` and tests (including computed access), the `lib/` clock, `import.meta.env` and `process.env`, the CommonJS shim, and `vi.mock`/`vi.doMock` scope, snapshots, and `lib/active-*` internal imports in tests. `noInlineConfig`, with `--max-warnings 0`, so no disable comment hides a hit. Ratchets: `frontend/eslint-suppressions.json` for counts, and `frontend/eslint-selector-suppressions.json` for the selector message of each suppressed `no-restricted-syntax` hit — `check-eslint-selectors.mjs` runs in `npm run lint` with its fixture | nothing |
+| ESLint 10, `npm run lint` after the oxlint ratchet (CI only) | `react-hooks/set-state-in-effect`, `react-hooks/no-deriving-state-in-effects`, `react-hooks/set-state-in-render`, `react-hooks/immutability`, `react-hooks/preserve-manual-memoization`, `react-hooks/globals`, all at error, 0 hits. `static-components` (<!-- ratchet: eslint-suppressions.json#react-hooks/static-components -->9 hits in 2 files<!-- /ratchet -->) and `purity` (<!-- ratchet: eslint-suppressions.json#react-hooks/purity -->6 hits in 5 files<!-- /ratchet -->), at error with `frontend/eslint-suppressions.json`. `react-hooks/todo` stays off. `no-restricted-syntax` selectors, one table in `frontend/eslint.config.js`: One-owner (`LB_TO_KG` and the `2.2046` and `0.4535` literals at 0 suppressions, inline `Math.round(x * 10) / 10`, `(getDay() + 6) % 7`, `\|\| 'kg'`), `% 60`, local dates (including hand-padded day keys), store selectors, assignments to `.active` and `.routines` outside `lib/`, `store/` and tests (including computed access), the `lib/` clock, `import.meta.env` and `process.env`, the CommonJS shim, and `vi.mock`/`vi.doMock` scope, snapshots, and `lib/active-*` internal imports in tests. `noInlineConfig`, with `--max-warnings 0`, so no disable comment hides a hit. Ratchets: `frontend/eslint-suppressions.json` for counts, and `frontend/eslint-selector-suppressions.json` for the selector message of each suppressed `no-restricted-syntax` hit — `check-eslint-selectors.mjs` runs in `npm run lint` with its fixture | nothing |
 | oxlint, ratchet in the pre-commit hook and in `npm run lint` (CI) | `correctness` category (with the dated `no-unused-vars` carve-out: 0 hits, no baseline entry; the old "baseline the 24 probe hits" line is superseded — see the amendment above), `react/rules-of-hooks`, `react/exhaustive-deps`, `complexity`, restricted globals and properties (including `Date.now` in `lib/`), `unicorn/no-array-sort`, `unicorn/no-array-reverse`, `react/no-array-index-key`, `jsx-a11y/click-events-have-key-events`, `jsx-a11y/no-static-element-interactions`, `jsx-a11y/prefer-tag-over-role`, `jsx-a11y/no-autofocus`, all at error. Ratchet: `frontend/lint-baseline.json`, checked by `scripts/check-lint-baseline.mjs` with its failing fixture in `npm test` | nothing |
 | tsc | `frontend/tsconfig.json` (`strict`, `allowJs`, `checkJs` over app code), `npm run typecheck` in the hook and CI. Ratchet: `frontend/tsc-baseline.json`, checked by `frontend/scripts/check-tsc-baseline.mjs` with its failing fixture in `npm test`. `check-ts-comments.mjs` (fixture: `check-ts-comments.test.mjs`) fails `@ts-ignore` and `@ts-nocheck` in `.js`/`.jsx` files | tests joining `tsconfig.json` (last) |
-| oxlint type-aware (`oxlint-tsgolint` 7.0.2008, `--type-aware` in the same ratchet) | `typescript/no-floating-promises` (15 hits, 10 files) and `no-misused-promises` (12 hits, 11 files) at error with `frontend/lint-baseline.json`; `only-throw-error`, `switch-exhaustiveness-check`, `no-explicit-any`, `no-non-null-assertion`, `ban-ts-comment` at error, 0 hits. Failing fixture: `check-lint-baseline.test.mjs` with a floating promise | `no-unsafe-*`, `no-unnecessary-condition` and branded `Kg` / `Lb` types (deferred until typedefs exist) |
+| oxlint type-aware (`oxlint-tsgolint` 7.0.2008, `--type-aware` in the same ratchet) | `typescript/no-floating-promises` (<!-- ratchet: lint-baseline.json#typescript/no-floating-promises -->15 hits in 10 files<!-- /ratchet -->) and `no-misused-promises` (<!-- ratchet: lint-baseline.json#typescript/no-misused-promises -->12 hits in 11 files<!-- /ratchet -->) at error with `frontend/lint-baseline.json`; `only-throw-error`, `switch-exhaustiveness-check`, `no-explicit-any`, `no-non-null-assertion`, `ban-ts-comment` at error, 0 hits. Failing fixture: `check-lint-baseline.test.mjs` with a floating promise | `no-unsafe-*`, `no-unnecessary-condition` and branded `Kg` / `Lb` types (deferred until typedefs exist) |
 | `frontend/scripts/check-frontend-state.mjs`, in `npm test` | The `use-state` cap, with its failing fixture. Ratchet: `frontend/frontend-state-allowlist.json` | nothing |
 | Babel and CI | `babel-plugin-react-compiler` (done, #122), `@babel/core` pinned to 7.x with `scripts/compiler-coverage.test.mjs` guarding against silent compiler skips, `npm run test:fatigue-probe`, `npm run build`, and the `React Doctor` floor (`frontend/react-doctor-floor.json`, checked by `frontend/scripts/check-react-doctor-floor.mjs` with its failing fixture in `npm test`) | |
+| Doc count claims | `CODING_STANDARDS.md` and `docs/TESTING_STANDARDS.md`: `<!-- ratchet: source#key -->` claims checked against the named ratchet JSON by `frontend/scripts/check-doc-counts.mjs` in `npm test`, refreshed by `npm run doc-counts:baseline`, with failing fixture `check-doc-counts.test.mjs` | nothing |
 
 `npm run test:fatigue-probe` stays out of `npm test` on purpose: the workflow
 says it is too slow for the unit suite.
