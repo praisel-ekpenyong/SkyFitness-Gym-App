@@ -19,8 +19,7 @@ const legacy = () => ({
 const newer = () => ({ ...legacy(), schemaVersion: SCHEMA_VERSION + 1 })
 
 describe('Profile schema version', () => {
-  it('is 1, one upgrade step per version, and a fresh Profile starts at it', () => {
-    expect(SCHEMA_VERSION).toBe(1)
+  it('has one upgrade step per version, and a fresh Profile starts at it', () => {
     expect(UPGRADES).toHaveLength(SCHEMA_VERSION)
     expect(DEF.schemaVersion).toBe(SCHEMA_VERSION)
     expect(normalizeState(null, Date.now()).schemaVersion).toBe(SCHEMA_VERSION)

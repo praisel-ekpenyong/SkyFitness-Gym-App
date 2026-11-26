@@ -59,11 +59,6 @@
       "count": 1
     }
   },
-  "src/lib/profile/admit-defaults.test.js": {
-    "no-restricted-syntax": {
-      "count": 1
-    }
-  },
   "src/lib/progression.js": {
     "no-restricted-syntax": {
       "count": 8
