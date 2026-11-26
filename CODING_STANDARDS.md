@@ -420,7 +420,12 @@ re-measured 2026-11-25 with `eslint-plugin-react-hooks` 7.1.1.
 **Runs:** `babel-plugin-react-compiler` through `@rolldown/plugin-babel` and
 `reactCompilerPreset` in `frontend/vite.config.js`, so `vite build` and Vitest
 both compile components (`src/lib/` and test files are excluded). It does not
-wait for the state ratchets below; the two are independent. oxlint's own
+wait for the state ratchets below; the two are independent. `@babel/core` stays
+on 7.x: 8.1.3 silently drops memoization for every function with destructured
+default props (18 functions, most of them in `components/ui.jsx`), while
+7.29.13 compiles them. `scripts/compiler-coverage.test.mjs` transforms such a
+component with the same plugin and fails if the compiler output loses its
+`react/compiler-runtime` memoization. oxlint's own
 `react/*` copies of these rules stay off. The compiler hoists a property read
 out of a closure, so guard one that can run on a null (`g?.front` in
 `components/BodyMap.jsx`).
@@ -910,7 +915,7 @@ names every one:
 | tsc | `frontend/tsconfig.json` (`strict`, `allowJs`, `checkJs` over app code), `npm run typecheck` in the hook and CI. Ratchet: `frontend/tsc-baseline.json`, checked by `frontend/scripts/check-tsc-baseline.mjs` with its failing fixture in `npm test` | tests joining `tsconfig.json` (last) |
 | oxlint type-aware (`oxlint-tsgolint` 7.0.2008, `--type-aware` in the same ratchet) | `typescript/no-floating-promises` (15 hits, 10 files) and `no-misused-promises` (12 hits, 11 files) at error with `frontend/lint-baseline.json`; `only-throw-error`, `switch-exhaustiveness-check`, `no-explicit-any`, `no-non-null-assertion`, `ban-ts-comment` at error, 0 hits. Failing fixture: `check-lint-baseline.test.mjs` with a floating promise | `no-unsafe-*`, `no-unnecessary-condition` and branded `Kg` / `Lb` types (deferred until typedefs exist) |
 | `frontend/scripts/check-frontend-state.mjs`, in `npm test` | The `use-state` cap, with its failing fixture. Ratchet: `frontend/frontend-state-allowlist.json` | nothing |
-| Babel and CI | `babel-plugin-react-compiler` (done, #122), `npm run test:fatigue-probe`, `npm run build`, and the `React Doctor` floor (`frontend/react-doctor-floor.json`, checked by `frontend/scripts/check-react-doctor-floor.mjs` with its failing fixture in `npm test`) | |
+| Babel and CI | `babel-plugin-react-compiler` (done, #122), `@babel/core` pinned to 7.x with `scripts/compiler-coverage.test.mjs` guarding against silent compiler skips, `npm run test:fatigue-probe`, `npm run build`, and the `React Doctor` floor (`frontend/react-doctor-floor.json`, checked by `frontend/scripts/check-react-doctor-floor.mjs` with its failing fixture in `npm test`) | |
 
 `npm run test:fatigue-probe` stays out of `npm test` on purpose: the workflow
 says it is too slow for the unit suite.

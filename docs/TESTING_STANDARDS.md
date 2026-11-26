@@ -168,6 +168,10 @@ Fake the thing we do not own:
   as an argument.
 - Network, if a test ever has to touch it. The app has no API.
 
+An injected test clock is a **local** timestamp (`new Date(2026, 6, 1, 12).getTime()`),
+not `Date.UTC(...)`: day keys derived from it must not shift with the runner's
+timezone. CI re-runs `stats-selectors.test.js` at UTC+14 for this reason.
+
 Do not fake `act`, `admit`, progression, or the catalogue to test a caller
 that is supposed to use them. A real Profile fixture is shorter than a mock
 and fails when the rule changes.

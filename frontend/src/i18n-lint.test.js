@@ -69,7 +69,6 @@ const ALLOW = [
  */
 const EXEMPT = [
   { file: 'components/ErrorBoundary.jsx', text: 'Tap again to discard', reason: 'inline two-step local confirm in components/ErrorBoundary.jsx (first tap relabels, second discards); the sheet host may be part of the crashed tree' },
-  { file: 'sheets/catalogue.jsx', text: 'Remove from routine', reason: 'the onDelete prop callback is gated by the danger confirm in sheets/catalogue.jsx before it removes from views/RoutineEdit.jsx' },
 ]
 
 function sourceFiles() {
