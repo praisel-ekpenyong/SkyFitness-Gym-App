@@ -886,7 +886,7 @@ test must be able to fail for a bug a lifter or a caller would see. If you can't
 name the bug, don't write the test (a judgement call, no tooth).
 
 **Runs:** ESLint `no-restricted-syntax` selectors on test files (own-module mocks,
-snapshots, `lib/active-*` imports), ratcheted by `check-eslint-selectors.mjs` in
+snapshots, `lib/active-*` imports, class and id queries in UI tests), ratcheted by `check-eslint-selectors.mjs` in
 `npm run lint`. Each selector, its hit count and its failing fixture are kept in one
 place, "Teeth" in [`docs/TESTING_STANDARDS.md`](./docs/TESTING_STANDARDS.md).
 

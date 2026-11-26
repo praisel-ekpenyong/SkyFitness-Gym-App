@@ -4,14 +4,49 @@
       "count": 1
     }
   },
+  "src/App.boot.test.jsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/components/Barbell.test.jsx": {
+    "no-restricted-syntax": {
+      "count": 3
+    }
+  },
   "src/components/Heatmap.jsx": {
     "no-restricted-syntax": {
       "count": 1
     }
   },
+  "src/components/Media.cdn-only.test.jsx": {
+    "no-restricted-syntax": {
+      "count": 3
+    }
+  },
+  "src/components/Media.test.jsx": {
+    "no-restricted-syntax": {
+      "count": 19
+    }
+  },
+  "src/components/Modals.test.jsx": {
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
   "src/components/TabBar.jsx": {
     "react-hooks/static-components": {
       "count": 5
+    }
+  },
+  "src/components/TabBar.test.jsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/components/accessibility.test.jsx": {
+    "no-restricted-syntax": {
+      "count": 1
     }
   },
   "src/lib/active-finish.js": {
@@ -84,6 +119,11 @@
       "count": 7
     }
   },
+  "src/sheets.calendar.test.jsx": {
+    "no-restricted-syntax": {
+      "count": 3
+    }
+  },
   "src/sheets/bodyweight.jsx": {
     "no-restricted-syntax": {
       "count": 1
@@ -95,19 +135,49 @@
     }
   },
   "src/sheets/history.jsx": {
-    "react-hooks/static-components": {
-      "count": 4
-    },
     "no-restricted-syntax": {
       "count": 1
     },
     "react-hooks/purity": {
       "count": 1
+    },
+    "react-hooks/static-components": {
+      "count": 4
     }
   },
   "src/sheets/profile.jsx": {
     "react-hooks/purity": {
       "count": 2
+    }
+  },
+  "src/sheets/session.progression-summary.test.jsx": {
+    "no-restricted-syntax": {
+      "count": 33
+    }
+  },
+  "src/sheets/session.routine-sync.test.jsx": {
+    "no-restricted-syntax": {
+      "count": 5
+    }
+  },
+  "src/sheets/session.test.jsx": {
+    "no-restricted-syntax": {
+      "count": 31
+    }
+  },
+  "src/store/blocked-storage.test.jsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/store/newer-profile.test.jsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/store/restore-sanitize.test.jsx": {
+    "no-restricted-syntax": {
+      "count": 1
     }
   },
   "src/views/Home.jsx": {
@@ -118,14 +188,19 @@
       "count": 1
     }
   },
+  "src/views/Home.test.jsx": {
+    "no-restricted-syntax": {
+      "count": 19
+    }
+  },
   "src/views/Plan.test.jsx": {
     "no-restricted-syntax": {
-      "count": 1
+      "count": 13
     }
   },
   "src/views/RoutineEdit.test.jsx": {
     "no-restricted-syntax": {
-      "count": 2
+      "count": 16
     }
   },
   "src/views/Settings.jsx": {
@@ -135,30 +210,55 @@
   },
   "src/views/Settings.mobile.test.jsx": {
     "no-restricted-syntax": {
-      "count": 4
+      "count": 5
     }
   },
   "src/views/Settings.test.jsx": {
     "no-restricted-syntax": {
-      "count": 4
+      "count": 10
     }
   },
   "src/views/Stats.recovery.test.jsx": {
     "no-restricted-syntax": {
-      "count": 7
+      "count": 26
     }
   },
   "src/views/Stats.streak.test.jsx": {
     "no-restricted-syntax": {
-      "count": 6
+      "count": 12
     }
   },
   "src/views/Workout.console.test.jsx": {
     "no-restricted-syntax": {
-      "count": 3
+      "count": 11
+    }
+  },
+  "src/views/Workout.elapsed.test.jsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/views/Workout.inter-exercise-rest.test.jsx": {
+    "no-restricted-syntax": {
+      "count": 5
+    }
+  },
+  "src/views/Workout.manual-rest.test.jsx": {
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "src/views/Workout.milestones.test.jsx": {
+    "no-restricted-syntax": {
+      "count": 2
     }
   },
   "src/views/Workout.replace.test.jsx": {
+    "no-restricted-syntax": {
+      "count": 3
+    }
+  },
+  "src/views/Workout.test.jsx": {
     "no-restricted-syntax": {
       "count": 2
     }
