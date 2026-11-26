@@ -773,11 +773,9 @@ sheets and components, and their attribute text (`aria-label`, `title`,
 
 ### Deep modules
 
-Prefer deep modules: small interface, deep implementation.
+Every `lib/` module is a **deep module**: a small **interface** over a hidden implementation. Tests cross the **seam** and nothing else. A test-only export is a **seam leak**. A module that only re-exports is a **middle man**. Exception: none.
 
-Avoid shallow modules: large interface with many methods that just pass through
-to thin implementation. When designing, ask: can I reduce the number of methods?
-Can I simplify the parameters? Can I hide more complexity inside?
+**Why:** `lib/active-workout.js` was a middle man before ADR 0023: five re-exports, 17 store wrappers, and about 95 render tests checking domain rules through React. It is now one deep module, `act` and `sessionView`.
 
 **Judgement call, no tooth.**
 
