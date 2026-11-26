@@ -23,4 +23,11 @@ describe('eslint selector ratchet', () => {
     expect(r.stderr).toContain('swapped.js')
     expect(r.stderr).toContain('banned selector')
   })
+
+  it('fails when a recorded selector no longer occurs', () => {
+    const r = run(join(fixtures, 'stale'))
+    expect(r.status).toBe(1)
+    expect(r.stderr).toContain('clean.js')
+    expect(r.stderr).toContain('stale')
+  })
 })
