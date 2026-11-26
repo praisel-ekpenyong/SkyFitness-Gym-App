@@ -239,6 +239,13 @@ and a stale entry. Fixture: `frontend/scripts/check-eslint-selectors.test.mjs`.
 control ("Default decides") in `sheets/catalogue.test.jsx` and
 `views/RoutineEdit.test.jsx`.
 
+**Runs:** oxlint with `frontend/.oxlintrc.tests.json` (the `jest` plugin) fails a test
+with no assertion (`expect-expect`; `expect` and the `close` and `drainNative`
+helpers count), an assertion a branch can skip (`no-conditional-expect`), a
+focused or disabled test, and two tests with one title. It runs in the same
+ratchet as app code (`npm run lint`, the pre-commit hook), at 0 hits. Fixture:
+`frontend/scripts/check-lint-baseline.test.mjs`, which copies the real config.
+
 **Runs:** the closed effect and command sets
 (`frontend/src/effect-types.test.js`).
 

@@ -86,9 +86,8 @@ describe('FinishSummary Progression Summary', () => {
     const bodyMap = container.querySelector('svg.bodymap, [aria-label*="muscle"], .bodymap')
     expect(prSection).not.toBeNull()
     expect(prSection.compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-    if (bodyMap) {
-      expect(card.compareDocumentPosition(bodyMap) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-    }
+    expect(bodyMap).not.toBeNull()
+    expect(card.compareDocumentPosition(bodyMap) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 
   it('excludes exercises with zero performed work sets from the progression summary', async () => {
