@@ -206,7 +206,7 @@ asserts. `lib/active-workout.test.js` imports `act` and `sessionView` from
 fixture in `frontend/scripts/eslint-test-rules.test.mjs`) fails any test import
 from `lib/active-*` (`active-act.js`, `active-finish.js`, `active-session.js`,
 `active-sets.js`, `active-toggle.js`); the 1 existing hit
-(`lib/clock-args.test.js`) is baselined in `frontend/eslint-suppressions.json`
+(`lib/clock-args.test.js`) is baselined in `frontend/eslint-selector-suppressions.json`
 until `act` accepts `now`.
 
 **Runs:** ESLint `no-restricted-syntax` (`noTestSnapshots` in
@@ -225,13 +225,7 @@ and `vi.doMock` of a relative path unless the path is inside `platform/`:
 any path through `platform/` pass, so the exemption is in the selector, not in
 prose. Mocking
 `platform/sound.js`, `localStorage`, and Capacitor stays legal: those are the
-boundary. The rule is wider than `lib/` and `store/`: 30 calls in 9 files
-(2026-11-25; 39 when the rule was scoped on 2026-11-24) mock one of our own
-modules (`../components/BodyMap.jsx` in `views/Plan.test.jsx`,
-`../sheets/confirm.jsx` in `views/Settings.test.jsx`, `./def.js` in
-`lib/profile/admit-defaults.test.js`). Those 30 are baselined in
-`frontend/eslint-suppressions.json` and only shrink. A new test that mocks its
-own module fails.
+boundary. The rule is wider than `lib/` and `store/`: <!-- ratchet: eslint-selector-suppressions.json#Do not vi.mock our own modules; mock only the boundary (platform/, localStorage, Capacitor). -->29 calls in 8 files<!-- /ratchet --> (39 when the rule was scoped on 2026-11-24) mock one of our own modules (`../components/BodyMap.jsx` in `views/Plan.test.jsx`, `../sheets/confirm.jsx` in `views/Settings.test.jsx`). Those 29 are baselined in `frontend/eslint-selector-suppressions.json` and only shrink. A new test that mocks its own module fails.
 
 **Runs:** ESLint's suppressions count hits per rule, so a file with one
 suppressed hit could swap that selector for a bare `useStore()` and still be
