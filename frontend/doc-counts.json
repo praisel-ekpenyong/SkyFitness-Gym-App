@@ -1,0 +1,27 @@
+{
+  "CODING_STANDARDS.md": {
+    "lint-baseline.json#eslint/complexity": 2,
+    "lint-baseline.json#typescript/no-floating-promises": 2,
+    "lint-baseline.json#typescript/no-misused-promises": 2,
+    "eslint-suppressions.json#react-hooks/static-components": 2,
+    "eslint-suppressions.json#react-hooks/purity": 2,
+    "react-doctor-floor.json#score": 1,
+    "frontend-state-allowlist.json#src/sheets/catalogue.jsx": 1,
+    "frontend-state-allowlist.json#src/views/Stats.jsx": 1,
+    "lint-baseline.json#react-hooks/exhaustive-deps": 1,
+    "lint-baseline.json#react/no-array-index-key": 1,
+    "lint-baseline.json#jsx-a11y/*": 1,
+    "lint-baseline.json#unicorn/no-array-sort": 1,
+    "lint-baseline.json#unicorn/no-array-reverse": 1,
+    "eslint-selector-suppressions.json#No `|| 'kg'` fallback: S.unit is cleaned by PROFILE_CLEAN; other units go through lib/units.js (sanitizeUnit, entryUnit).": 1,
+    "eslint-selector-suppressions.json#Round to one decimal with round1 from lib/units.js, not Math.round(x * 10) / 10.": 1,
+    "eslint-selector-suppressions.json#Get the Monday-first weekday from lib/dates.js (mondayIndexOf), not (getDay() + 6) % 7.": 1,
+    "lint-baseline.json#eslint/no-restricted-globals": 1,
+    "lint-baseline.json#eslint/no-restricted-properties": 1,
+    "eslint-selector-suppressions.json#Do not vi.mock our own modules; mock only the boundary (platform/, localStorage, Capacitor).": 1,
+    "eslint-selector-suppressions.json#Import act and sessionView from lib/active-workout.js, not lib/active-* internals (ADR 0023, TESTING_STANDARDS.md).": 1
+  },
+  "docs/TESTING_STANDARDS.md": {
+    "eslint-selector-suppressions.json#Do not vi.mock our own modules; mock only the boundary (platform/, localStorage, Capacitor).": 1
+  }
+}
