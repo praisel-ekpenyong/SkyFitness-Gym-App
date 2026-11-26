@@ -24,11 +24,11 @@ afterEach(async () => {
 })
 
 describe('Thumb component', () => {
-  it('renders dumbbell icon when ex has no img', async () => {
+  it('renders an icon when ex has no img', async () => {
     await act(async () => {
       root.render(<Thumb ex={{ id: 'c1', n: 'Custom' }} />)
     })
-    expect(container.querySelector('.thumb-x')).toBeTruthy()
+    expect(container.querySelector('.thumb-x svg'), 'the no-image fallback must draw an icon, not just an empty box').toBeTruthy()
   })
 
   it('renders img with local path by default and falls back to CDN onError', async () => {

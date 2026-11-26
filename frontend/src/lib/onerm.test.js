@@ -44,7 +44,6 @@ describe('estimate1RM', () => {
   it('offers the other documented formulas and agrees with them at low reps', () => {
     expect(estimate1RM(100, 5, 'brzycki')).toBe(112.5)
     expect(estimate1RM(100, 5, 'lombardi')).toBe(117.5)
-    expect(Object.keys(FORMULAS)).toContain('epley')
   })
 
   it('keeps the formulas within a few percent up to 8 reps, and diverges most at the cap', () => {

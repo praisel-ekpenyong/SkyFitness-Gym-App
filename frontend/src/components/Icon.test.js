@@ -22,7 +22,7 @@ function namedIcons() {
 }
 
 describe('Icon', () => {
-  it('draws every icon the app names: an unknown name renders nothing', () => {
+  it('names every icon used by the app', () => {
     const missing = namedIcons().filter(u => !ICON_NAMES.includes(u.name)).map(u => `${u.name} at ${u.where}`)
     expect(missing, 'Add the glyph to components/Icon.jsx (DESIGN.md › Icons) or use an existing name').toEqual([])
   })

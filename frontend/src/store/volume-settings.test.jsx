@@ -11,7 +11,7 @@ import { buildPlanBundle, parsePlan, mergePlan } from '../lib/plan-share.js'
 vi.mock('../platform/sound.js', async orig => (await import('../test/platform-mocks.js')).mockSound(await orig()))
 vi.mock('../platform/mobile.js', async orig => (await import('../test/platform-mocks.js')).mockMobile(await orig()))
 
-const NOW = Date.UTC(2026, 6, 1, 12)
+const NOW = new Date(2026, 6, 1, 12).getTime()
 const cloneDef = () => JSON.parse(JSON.stringify(DEF))
 const ranges = () => {
   const { muscles } = selectStatsOverview(useStore.getState().S, { now: NOW }).weeklyVolume
