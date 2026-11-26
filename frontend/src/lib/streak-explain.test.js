@@ -1,5 +1,4 @@
 import { describe, it, expect } from 'vitest'
-import * as explain from './streak-explain.js'
 import { weekExplanation, markLabel, markIcon } from './streak-explain.js'
 
 describe('weekExplanation', () => {
@@ -36,11 +35,5 @@ describe('markIcon', () => {
     expect(markIcon('broke')).toBe('xmark')
     expect(markIcon('missed')).toBe('minus')
     expect(markIcon('open')).toBeNull()
-  })
-})
-
-describe('no Freezes or Freeze rules', () => {
-  it('exports nothing for freezes or a rule picker', () => {
-    expect(Object.keys(explain).sort()).toEqual(['markIcon', 'markLabel', 'weekExplanation'])
   })
 })

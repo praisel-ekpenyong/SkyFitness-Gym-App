@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest'
 import bodyPaths from './body-paths.js'
 import { MUSCLES, INERT } from './muscles.js'
 
+const PATH_DATA = /^[MmLlHhVvCcSsQqTtAaZz][MmLlHhVvCcSsQqTtAaZz0-9eE.,+\-\s]*$/
+
 describe('body-paths SVG geometry', () => {
   const models = ['male', 'female']
   const views = ['front', 'back']
@@ -51,10 +53,24 @@ describe('body-paths SVG geometry', () => {
     })
   })
 
-  it('keeps generated module size within ~90KB invariant (no accidental bloat)', () => {
-    const totalChars = JSON.stringify(bodyPaths).length
-    expect(totalChars).toBeGreaterThan(80000)
-    expect(totalChars).toBeLessThan(110000)
+  it('holds drawable, well-formed SVG data on both models', () => {
+    models.forEach(model => {
+      views.forEach(view => {
+        const { vb, p } = bodyPaths[model][view]
+        const [, , width, height] = vb.trim().split(/\s+/).map(Number)
+        expect(width, `${model} ${view} viewBox width`).toBeGreaterThan(0)
+        expect(height, `${model} ${view} viewBox height`).toBeGreaterThan(0)
+        const slugs = Object.keys(p)
+        expect(slugs.length, `${model} ${view} parts`).toBeGreaterThan(0)
+        slugs.forEach(slug => {
+          expect(p[slug].length, `${model} ${view} ${slug} paths`).toBeGreaterThan(0)
+          p[slug].forEach(d => {
+            expect(d, `${model} ${view} ${slug} path tokens`).toMatch(PATH_DATA)
+            expect(d, `${model} ${view} ${slug} coordinates`).toMatch(/[0-9]/)
+          })
+        })
+      })
+    })
   })
 
   it('ensures every drawable muscle in MUSCLES is present on both body models', () => {

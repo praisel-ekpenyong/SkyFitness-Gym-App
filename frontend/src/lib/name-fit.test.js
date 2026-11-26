@@ -41,15 +41,16 @@ describe('the stacked layout in CSS', () => {
     return out
   }
   const cases = [['hero', 'home.css', '.home-hero-body'], ['card', 'screens.css', '.rt-card']]
+  const BREAKPOINTS = ['phone', 'tablet', 'desktop']
 
   for (const [layout, file, selector] of cases) {
     it(`${selector} stacks inside each layout's media range only`, () => {
       const media = blocks(css(file))
-      expect(Object.keys(NAME_LAYOUTS[layout].at)).toEqual(Object.keys(NAME_MEDIA))
-      for (const [name, query] of Object.entries(NAME_MEDIA)) {
+      expect(Object.keys(NAME_LAYOUTS[layout].at)).toEqual(BREAKPOINTS)
+      for (const name of BREAKPOINTS) {
         const rule = `${selector}.name-stacked-${name}`
         const holders = media.filter(b => b.body.includes(rule)).map(b => b.media)
-        expect(holders, rule).toEqual([query])
+        expect(holders, rule).toEqual([NAME_MEDIA[name]])
       }
       expect(css(file)).not.toMatch(new RegExp(selector.replace('.', '\\.') + '\\.stack\\b'))
     })
