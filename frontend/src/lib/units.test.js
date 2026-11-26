@@ -17,10 +17,9 @@ describe('units module', () => {
   describe('constants & rounding', () => {
     it('reads a pound load in kilograms at the canonical conversion rate', () => {
       const pounds = 100
-      // Expectation comes from the canonical rate as a literal, not from the
-      // module's own factor, so a wrong conversion result fails here.
-      const expectedKg = round1(pounds * 0.45359237)
-      expect(normalizeWeight(pounds, 'lb', 'kg')).toBe(expectedKg)
+      // 100 lb at the canonical 0.45359237 kg/lb rate, rounded to 1 decimal.
+      // Literal expectation: independent of the module's factor and round1.
+      expect(normalizeWeight(pounds, 'lb', 'kg')).toBe(45.4)
     })
 
     it('rounds numbers to 1 decimal place', () => {

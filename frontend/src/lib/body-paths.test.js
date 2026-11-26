@@ -53,7 +53,7 @@ describe('body-paths SVG geometry', () => {
     })
   })
 
-  it('holds drawable, well-formed SVG data on both models', () => {
+  it('holds non-empty SVG path data with allowable tokens and numeric coordinates on both models', () => {
     models.forEach(model => {
       views.forEach(view => {
         const { vb, p } = bodyPaths[model][view]
