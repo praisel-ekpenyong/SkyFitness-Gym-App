@@ -139,7 +139,7 @@ describe('fatigueOf and strengthOf', () => {
   })
 
   it('decays each weighted stimulus exactly at 36 hours and by sqrt-half at 18 hours', () => {
-    for (const age of [FATIGUE_HALF_LIFE_MS, FATIGUE_HALF_LIFE_MS / 2]) {
+    for (const [age, primaryDecay] of [[FATIGUE_HALF_LIFE_MS, 0.5], [FATIGUE_HALF_LIFE_MS / 2, 0.5 ** 0.5]]) {
       const fatigue = fatigueOf([doneWorkoutAt(WEIGHTED.id, NOW - age)], NOW)
       const expectedDecay = 0.5 ** (age / FATIGUE_HALF_LIFE_MS)
       for (const [slug, weight] of Object.entries(WEIGHTED_WEIGHTS)) {
@@ -148,18 +148,10 @@ describe('fatigueOf and strengthOf', () => {
           10,
         )
       }
-      if (age === FATIGUE_HALF_LIFE_MS) {
-        expect(fatigue[WEIGHTED_PRIMARY_SLUG]).toBeCloseTo(
-          1 - Math.exp(-V * 0.5 / FATIGUE_REF_VOLUME),
-          10,
-        )
-      }
-      if (age === FATIGUE_HALF_LIFE_MS / 2) {
-        expect(fatigue[WEIGHTED_PRIMARY_SLUG]).toBeCloseTo(
-          1 - Math.exp(-V * (0.5 ** 0.5) / FATIGUE_REF_VOLUME),
-          10,
-        )
-      }
+      expect(fatigue[WEIGHTED_PRIMARY_SLUG]).toBeCloseTo(
+        1 - Math.exp(-V * primaryDecay / FATIGUE_REF_VOLUME),
+        10,
+      )
     }
   })
 

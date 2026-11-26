@@ -271,9 +271,11 @@ describe('display-ready values', () => {
   it('rounds loads and pre-sizes top-set dots', () => {
     const st = selectExerciseStats(profile(), LIFT.id, { now: NOW, catalogue })
     expect(Number.isInteger(st.best * 10)).toBe(true)
-    for (const p of st.points) {
-      if (p.m != null) expect(p.m).toBeGreaterThanOrEqual(0)
-      if (p.m != null) expect(p.m).toBeLessThanOrEqual(1)
+    const sized = st.points.filter(p => p.m != null)
+    expect(sized.length, 'the lift has top-set dots to size').toBeGreaterThan(0)
+    for (const p of sized) {
+      expect(p.m).toBeGreaterThanOrEqual(0)
+      expect(p.m).toBeLessThanOrEqual(1)
     }
     const rpe = selectExerciseStats({ ...profile(), effort: 'rpe' }, LIFT.id, { now: NOW, catalogue })
     expect(rpe.points.length).toBe(st.points.length)

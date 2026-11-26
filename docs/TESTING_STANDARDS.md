@@ -146,6 +146,9 @@ Red flags:
 - Test name describes HOW not WHAT
 - Verifying by reaching past the interface: reading a private field, or a
   structure no caller sees.
+- A **seam leak**: a function exported only so a test can import it. Test it
+  through the interface (`act`, the `lib/` function a caller uses), or move the
+  behaviour behind one.
 - Testing a trivial function (one-liner, simple mapping, string concatenation) where the test just mirrors the code — these tests add no confidence and break on any refactor
 - A view test that mocks `act` and checks the mock was called with a
   hand-built argument, when `act` itself is where the rule lives. Test `act`.
@@ -167,6 +170,11 @@ Fake the thing we do not own:
   `vi.setSystemTime` inside a pure function that should have taken the time
   as an argument.
 - Network, if a test ever has to touch it. The app has no API.
+
+A fake keeps the real API's failure modes and starting state: an `AudioContext`
+starts suspended, and `localStorage` throws on quota (`platform/storage.test.js`).
+A fake that always succeeds leaves the test unable to fail for the bug the browser
+produces.
 
 An injected test clock is a **local** timestamp (`new Date(2026, 6, 1, 12).getTime()`),
 not `Date.UTC(...)`: day keys derived from it must not shift with the runner's
@@ -205,7 +213,7 @@ asserts. `lib/active-workout.test.js` imports `act` and `sessionView` from
 `no-restricted-syntax` (`noActiveInternalImports` in `frontend/eslint.config.js`,
 fixture in `frontend/scripts/eslint-test-rules.test.mjs`) fails any test import
 from `lib/active-*` (`active-act.js`, `active-finish.js`, `active-session.js`,
-`active-sets.js`, `active-toggle.js`); the 1 existing hit
+`active-sets.js`, `active-toggle.js`); the <!-- ratchet: eslint-selector-suppressions.json#Import act and sessionView from lib/active-workout.js, not lib/active-* internals (ADR 0023, TESTING_STANDARDS.md). -->1 hit in 1 file<!-- /ratchet -->
 (`lib/clock-args.test.js`) is baselined in `frontend/eslint-selector-suppressions.json`
 until `act` accepts `now`.
 
@@ -247,6 +255,13 @@ and a stale entry. Fixture: `frontend/scripts/check-eslint-selectors.test.mjs`.
 **Runs, with the rule in `CODING_STANDARDS.md`:** a round-trip test per saving
 control ("Default decides") in `sheets/catalogue.test.jsx` and
 `views/RoutineEdit.test.jsx`.
+
+**Runs:** oxlint with `frontend/.oxlintrc.tests.json` (the `jest` plugin) fails a test
+with no assertion (`expect-expect`; `expect` and the `close` and `drainNative`
+helpers count), an assertion a branch can skip (`no-conditional-expect`), a
+focused or disabled test, and two tests with one title. It runs in the same
+ratchet as app code (`npm run lint`, the pre-commit hook), at 0 hits. Fixture:
+`frontend/scripts/check-lint-baseline.test.mjs`, which copies the real config.
 
 **Runs:** the closed effect and command sets
 (`frontend/src/effect-types.test.js`).

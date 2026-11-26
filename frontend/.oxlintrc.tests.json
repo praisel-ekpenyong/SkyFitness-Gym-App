@@ -1,0 +1,20 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["jest"],
+  "categories": { "correctness": "off" },
+  "ignorePatterns": [
+    "dist/**",
+    "android/**",
+    "ios/**",
+    "public/**",
+    "coverage/**",
+    "scripts/fixtures/**"
+  ],
+  "rules": {
+    "jest/expect-expect": ["error", { "assertFunctionNames": ["expect", "close", "drainNative"] }],
+    "jest/no-conditional-expect": "error",
+    "jest/no-focused-tests": "error",
+    "jest/no-disabled-tests": "error",
+    "jest/no-identical-title": "error"
+  }
+}
