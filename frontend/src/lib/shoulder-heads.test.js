@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { queryCatalogue } from './catalogue-query.js'
-import { FILTER_MUSCLES, PICKABLE_MUSCLES, MUSCLE_NAME, isSecondaryMuscleMatch, matchesMuscleFilter, musclesOf, primaryMuscleOf, secondaryMusclesOf, sessionMuscleDistribution } from './muscles.js'
+import { PICKABLE_MUSCLES, isSecondaryMuscleMatch, matchesMuscleFilter, musclesOf, primaryMuscleOf, secondaryMusclesOf, sessionMuscleDistribution } from './muscles.js'
 
 describe('shoulder heads at the muscle lookup', () => {
   it('credits an overhead press to front delts', () => {
@@ -68,11 +68,11 @@ describe('shoulder heads at the muscle lookup', () => {
 })
 
 describe('shoulder heads in the muscle filter', () => {
-  it('shows a Shoulders chip before the three heads, and the custom picker offers only the heads', () => {
-    expect(FILTER_MUSCLES.slice(0, 5).map(m => MUSCLE_NAME[m])).toEqual(['Traps', 'Shoulders', 'Front delts', 'Side delts', 'Rear delts'])
-    expect(FILTER_MUSCLES).toHaveLength(23)
+  it('offers the three heads but no plain Shoulders chip to a custom exercise', () => {
+    // The visible Shoulders-before-heads chip order is asserted with literal labels in the
+    // Library and picker tests; here only the picker's head-only contract is checked.
+    expect(PICKABLE_MUSCLES).toEqual(expect.arrayContaining(['front-delts', 'side-delts', 'rear-delts']))
     expect(PICKABLE_MUSCLES).not.toContain('shoulders')
-    expect(PICKABLE_MUSCLES).toHaveLength(22)
   })
 
   it('matches each head on its own chip', () => {

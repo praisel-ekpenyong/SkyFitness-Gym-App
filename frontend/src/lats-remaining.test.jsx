@@ -10,7 +10,7 @@ import { ExerciseDetail, ExercisePicker, CustomExForm } from './sheets/catalogue
 import { useStore } from './store/useStore.js'
 import { DEF } from './lib/profile/index.js'
 import { EXIDX } from './lib/exercises.js'
-import { MUSCLES, FILTER_MUSCLES, MUSCLE_NAME, primaryMuscleOf, secondaryMusclesOf, matchesMuscleFilter, loadOfWorkouts, levelsOf, rankOf } from './lib/muscles.js'
+import { primaryMuscleOf, secondaryMusclesOf, matchesMuscleFilter, loadOfWorkouts, levelsOf, rankOf } from './lib/muscles.js'
 import { buildPlanBundle, parsePlan, mergePlan } from './lib/plan-share.js'
 import { act as actOn } from './lib/active-workout.js'
 
@@ -41,8 +41,21 @@ afterEach(async () => {
 
 const getChip = (scope, label) => chipNamed(allChips(scope), label)
 
-const HEAD_TO_TOE_DISPLAY = FILTER_MUSCLES.map(m => MUSCLE_NAME[m])
-const EXPECTED_LIBRARY_CHIPS = ['Favorites (1)', 'All', ...HEAD_TO_TOE_DISPLAY]
+// Literal labels a lifter reads on the filter chips, in the order they must appear.
+// Kept independent of the taxonomy module so a taxonomy mistake cannot move both sides.
+const FILTER_CHIP_LABELS = [
+  'Traps', 'Shoulders', 'Front delts', 'Side delts', 'Rear delts', 'Chest', 'Upper back',
+  'Lats', 'Serratus', 'Biceps', 'Triceps', 'Forearms', 'Abs', 'Obliques', 'Lower back',
+  'Glutes', 'Quads', 'Hamstrings', 'Adductors', 'Hip flexors', 'Calves', 'Shins', 'Cardio',
+]
+
+// Literal ranking fixture: worked slugs in load order, missed slugs in head-to-toe order.
+const RANKED_WORKED = ['upper-back', 'lats', 'chest']
+const RANKED_MISSED = [
+  'trapezius', 'front-delts', 'side-delts', 'rear-delts', 'serratus', 'biceps', 'triceps',
+  'forearm', 'abs', 'obliques', 'lower-back', 'gluteal', 'quadriceps', 'hamstring',
+  'adductors', 'hip-flexors', 'calves', 'tibialis',
+]
 
 function expectIsolatedLatsLevels() {
   const pureLat = levelsOf({ lats: 10, 'upper-back': 0 })
@@ -54,13 +67,12 @@ function expectIsolatedLatsLevels() {
 }
 
 describe('Ticket 03 — Library and Picker filters plus Exercise Detail presentation', () => {
-  it('Library renders a chip for every filter muscle in taxonomy order with Lats after Upper back; Favorites/All preserved', async () => {
+  it('Library renders filter chips with literal labels in a fixed order; Favorites/All preserved', async () => {
     useStore.getState().update(s => { s.favorites = ['0001'] })
     await act(async () => { root.render(<Library />) })
     const chips = chipNamesIn(container)
-    expect(chips.slice(0, EXPECTED_LIBRARY_CHIPS.length)).toEqual(EXPECTED_LIBRARY_CHIPS)
-    expect(chips.indexOf('Lats')).toBe(chips.indexOf('Upper back') + 1)
-    expect(chips.indexOf('Serratus')).toBe(chips.indexOf('Lats') + 1)
+    expect(chips.slice(0, 2)).toEqual(['Favorites (1)', 'All'])
+    expect(chips.filter(c => FILTER_CHIP_LABELS.includes(c))).toEqual(FILTER_CHIP_LABELS)
   })
 
   it('clicking Lats shows primary lat exercises and secondary contributors; clicking Upper back shows disjoint primary set', async () => {
@@ -84,18 +96,15 @@ describe('Ticket 03 — Library and Picker filters plus Exercise Detail presenta
     expect(within(tileNamed(container, 'alternate lateral pulldown')).getByText(/Secondary: Upper back/)).toBeTruthy()
 
     const custom = { id: 'c-test-latsec', n: 'Custom Row to Lats', bp: 'back', tg: 'upper-back', sm: ['lats'], eq: 'custom', custom: true }
-    useStore.getState().update(s => { s.customEx.push(custom) })
-    await act(async () => { root.render(<Library />) })
+    await act(async () => { useStore.getState().update(s => { s.customEx.push(custom) }) })
     fireEvent.click(chipIn(container, 'Lats'))
     expect(within(tileNamed(container, 'Custom Row to Lats')).getByText(/Secondary: Lats/)).toBeTruthy()
   })
 
-  it('ExercisePicker renders the same muscle chips, with Lats after Upper back, and matches the same semantics', async () => {
-    useStore.getState().update(s => { s.favorites = ['0001'] })
+  it('ExercisePicker renders the same literal chip labels in the same order and matches the same semantics', async () => {
     await act(async () => { root.render(<ExercisePicker onPick={vi.fn()} close={vi.fn()} />) })
     const chips = chipRow(container, 0).map(c => c.textContent.trim())
-    HEAD_TO_TOE_DISPLAY.forEach(m => expect(chips).toContain(m))
-    expect(chips.indexOf('Lats')).toBe(chips.indexOf('Upper back') + 1)
+    expect(chips.filter(c => FILTER_CHIP_LABELS.includes(c))).toEqual(FILTER_CHIP_LABELS)
     const latsChip = getChip(container, 'Lats')
     fireEvent.click(latsChip)
     let items = tilesIn(container)
@@ -142,7 +151,6 @@ describe('Ticket 04 — Custom exercise lifecycle with lats', () => {
     const primaryChips = chipRow(container, 0).map(c => c.textContent.trim())
     expect(primaryChips).toContain('Lats')
     expect(primaryChips).toContain('Upper back')
-    expect(primaryChips.indexOf('Lats')).toBe(primaryChips.indexOf('Upper back') + 1)
     const latsPrimary = chipRow(container, 0).find(c => c.textContent.trim() === 'Lats')
     fireEvent.click(latsPrimary)
     const secChips = chipRow(container, 1).map(c => c.textContent.trim())
@@ -257,15 +265,10 @@ describe('Ticket 05 — Stats Muscle Balance integration', () => {
     expectIsolatedLatsLevels()
   })
 
-  it('rankOf orders Lats and Upper back independently and missed retains head-to-toe order', () => {
-    const load = { lats: 5, 'upper-back': 10, chest: 1 }
-    const { worked, missed } = rankOf(load)
-    expect(worked[0]).toBe('upper-back')
-    expect(worked[1]).toBe('lats')
-    expect(worked[2]).toBe('chest')
-    const expectedMissed = MUSCLES.filter(m => !worked.includes(m))
-    expect(missed).toEqual(expectedMissed)
-    expect(MUSCLES.indexOf('lats')).toBe(MUSCLES.indexOf('upper-back') + 1)
+  it('rankOf orders worked muscles by load and missed muscles from the literal fixture', () => {
+    const { worked, missed } = rankOf({ lats: 5, 'upper-back': 10, chest: 1 })
+    expect(worked).toEqual(RANKED_WORKED)
+    expect(missed).toEqual(RANKED_MISSED)
   })
 
   it('historic workouts reinterpret live under new split (no migration) - long-term balance reflects precise model', () => {

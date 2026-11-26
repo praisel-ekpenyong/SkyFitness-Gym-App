@@ -220,26 +220,15 @@ describe('map load with warm-up phases', () => {
 })
 
 describe('canonical muscle filter taxonomy & extraction helpers', () => {
-  it('defines FILTER_MUSCLES with 21 anatomical muscles in head-to-toe order plus a Shoulders chip and cardio', async () => {
-    const { MUSCLES, FILTER_MUSCLES, MUSCLE_NAME } = await import('./muscles.js')
-    expect(MUSCLES).toEqual([
-      'trapezius', 'front-delts', 'side-delts', 'rear-delts', 'chest', 'upper-back', 'lats', 'serratus',
-      'biceps', 'triceps', 'forearm',
-      'abs', 'obliques', 'lower-back',
-      'gluteal', 'quadriceps', 'hamstring', 'adductors', 'hip-flexors',
-      'calves', 'tibialis',
+  it('ranks worked muscles by load and missed muscles from a literal fixture', async () => {
+    const { rankOf } = await import('./muscles.js')
+    const { worked, missed } = rankOf({ 'front-delts': 4, chest: 2, gluteal: 1 })
+    expect(worked).toEqual(['front-delts', 'chest', 'gluteal'])
+    expect(missed).toEqual([
+      'trapezius', 'side-delts', 'rear-delts', 'upper-back', 'lats', 'serratus', 'biceps',
+      'triceps', 'forearm', 'abs', 'obliques', 'lower-back', 'quadriceps', 'hamstring',
+      'adductors', 'hip-flexors', 'calves', 'tibialis',
     ])
-    expect(MUSCLES).toHaveLength(21)
-    expect(MUSCLES.indexOf('lats')).toBe(MUSCLES.indexOf('upper-back') + 1)
-    expect(MUSCLES.indexOf('serratus')).toBe(MUSCLES.indexOf('lats') + 1)
-    expect(MUSCLE_NAME['lats']).toBe('Lats')
-    expect(FILTER_MUSCLES).toHaveLength(23)
-    expect(FILTER_MUSCLES.filter(m => m !== 'shoulders').slice(0, 21)).toEqual(MUSCLES)
-    expect(FILTER_MUSCLES[1]).toBe('shoulders')
-    expect(FILTER_MUSCLES[22]).toBe('cardio')
-    FILTER_MUSCLES.forEach(slug => {
-      expect(MUSCLE_NAME[slug]).toBeTruthy()
-    })
   })
 
   it('correctly extracts primary muscle from catalogue exercises and custom exercises', async () => {
