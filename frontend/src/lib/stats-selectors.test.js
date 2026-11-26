@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest'
 import { selectStatsOverview, selectExerciseStats } from './stats-selectors.js'
-import { MUSCLES } from './muscles.js'
 import { STRENGTH_FLOOR } from './recovery.js'
 import { toScale } from './effort.js'
 import { isoOf } from './dates.js'
@@ -8,6 +7,13 @@ import { switchTrainingStyle, setVolumeRange, clearVolumeRanges } from './volume
 
 const DAY = 24 * 60 * 60 * 1000
 const NOW = Date.UTC(2026, 6, 1, 12)
+
+// Literal muscle fixture: independent of the taxonomy module's own MUSCLES export.
+const MUSCLE_SLUGS = [
+  'trapezius', 'front-delts', 'side-delts', 'rear-delts', 'chest', 'upper-back', 'lats',
+  'serratus', 'biceps', 'triceps', 'forearm', 'abs', 'obliques', 'lower-back', 'gluteal',
+  'quadriceps', 'hamstring', 'adductors', 'hip-flexors', 'calves', 'tibialis',
+]
 
 const LIFT = { id: 'lift', n: 'Bench', bp: 'chest', tg: 'pectorals', sm: [], eq: 'barbell' }
 const CARDIO = { id: 'run', n: 'Run', bp: 'cardio', tg: 'cardio', sm: [], mode: 'cardio' }
@@ -56,7 +62,7 @@ describe('empties', () => {
     expect(over.muscles.rated).toBe(false)
     expect(over.muscles.hardActive).toBe(false)
     expect(over.muscles.worked).toEqual([])
-    expect(over.muscles.missed).toEqual(MUSCLES)
+    expect(over.muscles.missed).toEqual(MUSCLE_SLUGS)
     expect(over.effort).toBe(null)
     expect(Object.values(over.fatigue.values).every(v => v === 0)).toBe(true)
     expect(Object.values(over.strength.values).every(v => v === STRENGTH_FLOOR)).toBe(true)
@@ -495,7 +501,7 @@ describe('weekly volume', () => {
   it('reads an empty week as zero done against the Standard volume ranges, with count-only muscles unranged', () => {
     const over = selectStatsOverview({ workouts: [] }, { now: NOW, catalogue })
     const { muscles } = over.weeklyVolume
-    expect(Object.keys(muscles).sort()).toEqual([...MUSCLES].sort())
+    expect(Object.keys(muscles).sort()).toEqual([...MUSCLE_SLUGS].sort())
     expect(muscles.chest).toEqual({ done: 0, projected: null, range: [10, 20], verdict: 'below', edited: false })
     expect(muscles['side-delts'].range).toEqual([8, 20])
     expect(muscles.gluteal.range).toEqual([4, 16])

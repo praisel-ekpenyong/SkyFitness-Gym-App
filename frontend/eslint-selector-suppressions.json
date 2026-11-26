@@ -54,11 +54,6 @@
       "No `|| 'kg'` fallback: S.unit is cleaned by PROFILE_CLEAN; other units go through lib/units.js (sanitizeUnit, entryUnit).": 1
     }
   },
-  "src/lib/profile/admit-defaults.test.js": {
-    "no-restricted-syntax": {
-      "Do not vi.mock our own modules; mock only the boundary (platform/, localStorage, Capacitor).": 1
-    }
-  },
   "src/lib/progression.js": {
     "no-restricted-syntax": {
       "No `|| 'kg'` fallback: S.unit is cleaned by PROFILE_CLEAN; other units go through lib/units.js (sanitizeUnit, entryUnit).": 5,

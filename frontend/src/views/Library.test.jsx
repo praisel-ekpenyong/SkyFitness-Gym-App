@@ -6,9 +6,16 @@ import Library from './Library.jsx'
 import { useStore } from '../store/useStore.js'
 import { DEF } from '../lib/profile/index.js'
 import { useUI } from '../store/useUI.js'
-import { FILTER_MUSCLES, MUSCLE_NAME } from '../lib/muscles.js'
 import { fireEvent, within } from '@testing-library/react'
 import { chipIn, chipNamesIn, search, tileNamed, tilesIn } from '../test/library-queries.js'
+
+// The labels a lifter reads on the filter chips, in the order they must appear.
+// Literal on purpose: a taxonomy mistake must not move the component and its expectation together.
+const FILTER_CHIP_LABELS = [
+  'Traps', 'Shoulders', 'Front delts', 'Side delts', 'Rear delts', 'Chest', 'Upper back',
+  'Lats', 'Serratus', 'Biceps', 'Triceps', 'Forearms', 'Abs', 'Obliques', 'Lower back',
+  'Glutes', 'Quads', 'Hamstrings', 'Adductors', 'Hip flexors', 'Calves', 'Shins', 'Cardio',
+]
 
 let container
 let root
@@ -122,9 +129,11 @@ describe('Library view smoke tests', () => {
     expect(tilesIn(container)).toHaveLength(40)
   })
 
-  it('renders All, then a chip for every filter muscle in taxonomy order', async () => {
+  it('renders All, then the muscle filter chips with literal labels in a fixed order', async () => {
     await render()
-    expect(chipNamesIn(container).slice(0, FILTER_MUSCLES.length + 1)).toEqual(['All', ...FILTER_MUSCLES.map(m => MUSCLE_NAME[m])])
+    const chips = chipNamesIn(container)
+    expect(chips[0]).toBe('All')
+    expect(chips.filter(c => FILTER_CHIP_LABELS.includes(c))).toEqual(FILTER_CHIP_LABELS)
   })
 
   it('surfaces secondary compound movements with inline secondary badges when a muscle filter is selected', async () => {

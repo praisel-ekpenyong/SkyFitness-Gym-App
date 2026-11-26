@@ -5,13 +5,21 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { ExerciseDetail, deleteCustomEx, ExercisePicker, CustomExForm, ExConfig, exConfigSheet } from './catalogue.jsx'
 import { useStore } from '../store/useStore.js'
 import { DEF } from '../lib/profile/index.js'
-import { FILTER_MUSCLES, PICKABLE_MUSCLES, MUSCLE_NAME } from '../lib/muscles.js'
 import { isoOf } from '../lib/dates.js'
 import { useUI } from '../store/useUI.js'
 import { buttonNamed, leafTexts, pick } from '../test/sheet-host.jsx'
 import { fireEvent, within } from '@testing-library/react'
 import { allChips, chipNamed, chipRow, chipRows, isOn, primaryAction, typeInto } from '../test/catalogue-queries.js'
 import { tilesIn } from '../test/library-queries.js'
+
+// Literal labels a lifter sees, in the order the chips must appear. Independent of the
+// taxonomy module so a mistake there cannot move both the sheet and its expectation.
+const FILTER_CHIP_LABELS = [
+  'Traps', 'Shoulders', 'Front delts', 'Side delts', 'Rear delts', 'Chest', 'Upper back',
+  'Lats', 'Serratus', 'Biceps', 'Triceps', 'Forearms', 'Abs', 'Obliques', 'Lower back',
+  'Glutes', 'Quads', 'Hamstrings', 'Adductors', 'Hip flexors', 'Calves', 'Shins', 'Cardio',
+]
+const PICKABLE_CHIP_LABELS = FILTER_CHIP_LABELS.filter(label => label !== 'Shoulders')
 
 let container
 let root
@@ -300,7 +308,7 @@ describe('ExercisePicker own-first order', () => {
 })
 
 describe('ExercisePicker canonical muscle filtering and search', () => {
-  it('renders Favorites, Chosen and All, then a chip for every filter muscle in taxonomy order', async () => {
+  it('renders Favorites, Chosen and All, then muscle filter chips with literal labels in a fixed order', async () => {
     useStore.getState().update(s => {
       s.favorites = ['0001']
       s.routines = [{ id: 'r1', name: 'R1', emoji: '💪', ex: [{ id: '0025', sets: 3, reps: 10 }] }]
@@ -311,7 +319,8 @@ describe('ExercisePicker canonical muscle filtering and search', () => {
     })
 
     const chips = chipRow(container, 0).map(c => c.textContent.trim())
-    expect(chips).toEqual(['Favorites (1)', 'Chosen (1)', 'All', ...FILTER_MUSCLES.map(m => MUSCLE_NAME[m])])
+    expect(chips.slice(0, 3)).toEqual(['Favorites (1)', 'Chosen (1)', 'All'])
+    expect(chips.filter(c => FILTER_CHIP_LABELS.includes(c))).toEqual(FILTER_CHIP_LABELS)
   })
 
   it('surfaces secondary compound movements with inline secondary badges when a muscle filter is selected', async () => {
@@ -503,7 +512,7 @@ describe('ExerciseDetail primary and secondary muscle tags', () => {
 })
 
 describe('CustomExForm canonical muscle selection and editing', () => {
-  it('renders every pickable muscle in taxonomy order for primary muscle selection and gates secondaries until primary is chosen', async () => {
+  it('renders every pickable muscle with literal labels in a fixed order and gates secondaries until primary is chosen', async () => {
     await act(async () => {
       root.render(<CustomExForm onDone={vi.fn()} close={vi.fn()} />)
     })
@@ -514,7 +523,7 @@ describe('CustomExForm canonical muscle selection and editing', () => {
     expect(chipRows(container).length).toBe(1)
 
     const primaryChips = chipRow(container, 0).map(c => c.textContent.trim())
-    expect(primaryChips).toEqual(PICKABLE_MUSCLES.map(m => MUSCLE_NAME[m]))
+    expect(primaryChips.filter(c => PICKABLE_CHIP_LABELS.includes(c))).toEqual(PICKABLE_CHIP_LABELS)
   })
 
   it('allows selecting a primary muscle and multiple secondary muscles, deriving bp', async () => {
