@@ -33,6 +33,10 @@ in review. Each rule is an imperative that names its one legal exception, and a
   `.oxlintrc.json` (oxlint's categories are global, so they are switched off one
   by one), so only the rows below are rules. Its own `react/*` copies of the
   compiler rules are off too.
+  A second config, `frontend/.oxlintrc.tests.json`, runs in the same ratchet and lints
+  test files with the `jest` plugin: `expect-expect`, `no-conditional-expect`,
+  `no-focused-tests`, `no-disabled-tests` and `no-identical-title`, at error with 0
+  hits and no baseline entries. It has no type-aware rows.
 - **ESLint 10** runs after the oxlint ratchet in `npm run lint`, and only in CI:
   `frontend/eslint.config.js`. The pre-commit hook does not call ESLint. It
   keeps only what oxlint cannot do: the official `eslint-plugin-react-hooks`
@@ -773,11 +777,9 @@ sheets and components, and their attribute text (`aria-label`, `title`,
 
 ### Deep modules
 
-Prefer deep modules: small interface, deep implementation.
+Every `lib/` module is a **deep module**: a small **interface** over a hidden implementation. Tests cross the **seam** and nothing else. A test-only export is a **seam leak**. A module that only re-exports is a **middle man**. Exception: none.
 
-Avoid shallow modules: large interface with many methods that just pass through
-to thin implementation. When designing, ask: can I reduce the number of methods?
-Can I simplify the parameters? Can I hide more complexity inside?
+**Why:** `lib/active-workout.js` was a middle man before ADR 0023: five re-exports, 17 store wrappers, and about 95 render tests checking domain rules through React. It is now one deep module, `act` and `sessionView`.
 
 **Judgement call, no tooth.**
 
@@ -883,16 +885,10 @@ our own modules. Exception: a module in `platform/`, which is the boundary. A
 test must be able to fail for a bug a lifter or a caller would see. If you can't
 name the bug, don't write the test (a judgement call, no tooth).
 
-**Runs:** ESLint `no-restricted-syntax` in the test files
-(`frontend/eslint.config.js`, failing fixtures in
-`frontend/scripts/eslint-store-selectors.test.mjs` and
-`frontend/scripts/eslint-test-rules.test.mjs`), scoped in
-[`docs/TESTING_STANDARDS.md`](./docs/TESTING_STANDARDS.md):
-- `noOwnModuleMock` fails `vi.mock` and `vi.doMock` of a relative path that is not in `platform/` (<!-- ratchet: eslint-selector-suppressions.json#Do not vi.mock our own modules; mock only the boundary (platform/, localStorage, Capacitor). -->29 hits in 8 files<!-- /ratchet -->, baselined in `frontend/eslint-selector-suppressions.json`).
-- `noTestSnapshots` fails Vitest snapshot matchers (`toMatchSnapshot`, `toMatchInlineSnapshot`, `toMatchFileSnapshot`, `toThrowErrorMatchingSnapshot`, `toThrowErrorMatchingInlineSnapshot`; 0 hits).
-- `noActiveInternalImports` fails test imports from `lib/active-*` (`active-act.js`, `active-finish.js`, `active-session.js`, `active-sets.js`, `active-toggle.js`) outside `lib/active-workout.js` (<!-- ratchet: eslint-selector-suppressions.json#Import act and sessionView from lib/active-workout.js, not lib/active-* internals (ADR 0023, TESTING_STANDARDS.md). -->1 hit in 1 file<!-- /ratchet -->, `frontend/src/lib/clock-args.test.js`, baselined in `frontend/eslint-selector-suppressions.json`).
-
-**Runs:** `frontend/scripts/check-eslint-selectors.mjs` (in `npm run lint`) ratchets the suppressed `no-restricted-syntax` hits by selector message, so swapping a suppressed selector for a different one in the same file fails even though the per-rule count is unchanged; fixture: `check-eslint-selectors.test.mjs`.
+**Runs:** ESLint `no-restricted-syntax` selectors on test files (own-module mocks,
+snapshots, `lib/active-*` imports), ratcheted by `check-eslint-selectors.mjs` in
+`npm run lint`. Each selector, its hit count and its failing fixture are kept in one
+place, "Teeth" in [`docs/TESTING_STANDARDS.md`](./docs/TESTING_STANDARDS.md).
 
 Worked examples, the seam table, and the red flags:
 [`docs/TESTING_STANDARDS.md`](./docs/TESTING_STANDARDS.md).
@@ -928,7 +924,7 @@ names every one:
 |---|---|---|
 | Vitest guard tests, in `npm test` | `purity.test.js`, `import-cycles.test.js`, `design-tokens.test.js`, `design-lint.test.js`, `env.test.js`, `eslint-store-selectors.test.mjs`, `eslint-test-rules.test.mjs`, `i18n-lint.test.js`, `sheets/dialog-names.test.jsx`, `docs.test.js`, `platform/storage.test.js` (the 800ms debounce), `comments.test.js`, `effect-types.test.js`, the `warmArt` test (`App.warm-art.test.jsx`), the `flush()` test (`store/useStore.flush.test.jsx`), the save round-trip tests (`sheets/catalogue.test.jsx`, `views/RoutineEdit.test.jsx`), `lib/profile/profile-keys.test.js` | |
 | ESLint 10, `npm run lint` after the oxlint ratchet (CI only) | `react-hooks/set-state-in-effect`, `react-hooks/no-deriving-state-in-effects`, `react-hooks/set-state-in-render`, `react-hooks/immutability`, `react-hooks/preserve-manual-memoization`, `react-hooks/globals`, all at error, 0 hits. `static-components` (<!-- ratchet: eslint-suppressions.json#react-hooks/static-components -->9 hits in 2 files<!-- /ratchet -->) and `purity` (<!-- ratchet: eslint-suppressions.json#react-hooks/purity -->6 hits in 5 files<!-- /ratchet -->), at error with `frontend/eslint-suppressions.json`. `react-hooks/todo` stays off. `no-restricted-syntax` selectors, one table in `frontend/eslint.config.js`: One-owner (`LB_TO_KG` and the `2.2046` and `0.4535` literals at 0 suppressions, inline `Math.round(x * 10) / 10`, `(getDay() + 6) % 7`, `\|\| 'kg'`), `% 60`, local dates (including hand-padded day keys), store selectors, assignments to `.active` and `.routines` outside `lib/`, `store/` and tests (including computed access), the `lib/` clock, `import.meta.env` and `process.env`, the CommonJS shim, and `vi.mock`/`vi.doMock` scope, snapshots, and `lib/active-*` internal imports in tests. `noInlineConfig`, with `--max-warnings 0`, so no disable comment hides a hit. Ratchets: `frontend/eslint-suppressions.json` for counts, and `frontend/eslint-selector-suppressions.json` for the selector message of each suppressed `no-restricted-syntax` hit — `check-eslint-selectors.mjs` runs in `npm run lint` with its fixture | nothing |
-| oxlint, ratchet in the pre-commit hook and in `npm run lint` (CI) | `correctness` category (with the dated `no-unused-vars` carve-out: 0 hits, no baseline entry; the old "baseline the 24 probe hits" line is superseded — see the amendment above), `react/rules-of-hooks`, `react/exhaustive-deps`, `complexity`, restricted globals and properties (including `Date.now` in `lib/`), `unicorn/no-array-sort`, `unicorn/no-array-reverse`, `react/no-array-index-key`, `jsx-a11y/click-events-have-key-events`, `jsx-a11y/no-static-element-interactions`, `jsx-a11y/prefer-tag-over-role`, `jsx-a11y/no-autofocus`, all at error. Ratchet: `frontend/lint-baseline.json`, checked by `scripts/check-lint-baseline.mjs` with its failing fixture in `npm test` | nothing |
+| oxlint, ratchet in the pre-commit hook and in `npm run lint` (CI) | `correctness` category (with the dated `no-unused-vars` carve-out: 0 hits, no baseline entry; the old "baseline the 24 probe hits" line is superseded — see the amendment above), `react/rules-of-hooks`, `react/exhaustive-deps`, `complexity`, restricted globals and properties (including `Date.now` in `lib/`), `unicorn/no-array-sort`, `unicorn/no-array-reverse`, `react/no-array-index-key`, `jsx-a11y/click-events-have-key-events`, `jsx-a11y/no-static-element-interactions`, `jsx-a11y/prefer-tag-over-role`, `jsx-a11y/no-autofocus`, all at error. `frontend/.oxlintrc.tests.json` adds the `jest` rules `expect-expect`, `no-conditional-expect`, `no-focused-tests`, `no-disabled-tests` and `no-identical-title` on test files, 0 hits. Ratchet: `frontend/lint-baseline.json`, checked by `scripts/check-lint-baseline.mjs` with its failing fixture in `npm test` | nothing |
 | tsc | `frontend/tsconfig.json` (`strict`, `allowJs`, `checkJs` over app code), `npm run typecheck` in the hook and CI. Ratchet: `frontend/tsc-baseline.json`, checked by `frontend/scripts/check-tsc-baseline.mjs` with its failing fixture in `npm test`. `check-ts-comments.mjs` (fixture: `check-ts-comments.test.mjs`) fails `@ts-ignore` and `@ts-nocheck` in `.js`/`.jsx` files | tests joining `tsconfig.json` (last) |
 | oxlint type-aware (`oxlint-tsgolint` 7.0.2008, `--type-aware` in the same ratchet) | `typescript/no-floating-promises` (<!-- ratchet: lint-baseline.json#typescript/no-floating-promises -->15 hits in 10 files<!-- /ratchet -->) and `no-misused-promises` (<!-- ratchet: lint-baseline.json#typescript/no-misused-promises -->12 hits in 11 files<!-- /ratchet -->) at error with `frontend/lint-baseline.json`; `only-throw-error`, `switch-exhaustiveness-check`, `no-explicit-any`, `no-non-null-assertion`, `ban-ts-comment` at error, 0 hits. Failing fixture: `check-lint-baseline.test.mjs` with a floating promise | `no-unsafe-*`, `no-unnecessary-condition` and branded `Kg` / `Lb` types (deferred until typedefs exist) |
 | `frontend/scripts/check-frontend-state.mjs`, in `npm test` | The `use-state` cap, with its failing fixture. Ratchet: `frontend/frontend-state-allowlist.json` | nothing |
