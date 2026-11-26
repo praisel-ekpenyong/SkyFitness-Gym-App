@@ -58,7 +58,7 @@ describe('sound and haptics engine', () => {
 
     class FakeAudioContext {
       constructor() {
-        this.state = 'running'
+        this.state = 'suspended'
         this.currentTime = 100
         this.destination = destination
         audioContextInstances.push(this)
@@ -118,13 +118,18 @@ describe('sound and haptics engine', () => {
       expect(osc.stoppedAt).toBeGreaterThan(osc.startedAt)
     })
 
-    it('resumes suspended AudioContext on iOS/Safari autoplay policies', () => {
-      beep(true, 880)
-      const ctx = audioContextInstances[0]
-      ctx.state = 'suspended'
-
+    it('resumes the context a browser creates suspended under its autoplay policy', () => {
       beep(true, 880)
       expect(resumedCount).toBe(1)
+    })
+
+    it('resumes the context again when the browser suspends it later, as iOS does after backgrounding', () => {
+      beep(true, 880)
+      const resumedFirst = resumedCount
+      audioContextInstances[0].state = 'suspended'
+
+      beep(true, 880)
+      expect(resumedCount).toBe(resumedFirst + 1)
     })
 
     it('swallows errors gracefully when AudioContext fails or throws', () => {
