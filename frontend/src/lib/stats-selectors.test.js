@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { selectStatsOverview, selectExerciseStats } from './stats-selectors.js'
+import { selectStatsOverview, selectExerciseStats, selectFatigue } from './stats-selectors.js'
 import { STRENGTH_FLOOR } from './recovery.js'
 import { toScale } from './effort.js'
 import { isoOf } from './dates.js'
@@ -53,6 +53,9 @@ describe('now is required', () => {
     expect(() => selectStatsOverview(S, { now: null })).toThrow()
     expect(() => selectExerciseStats(S, LIFT.id, {})).toThrow()
     expect(() => selectExerciseStats(S, LIFT.id)).toThrow()
+    for (const now of [undefined, null, NaN, '2026-07-01']) {
+      expect(() => selectFatigue(S, now)).toThrow(/selectFatigue: now is required/)
+    }
   })
 })
 
@@ -345,6 +348,25 @@ describe('body-weight log readings', () => {
 })
 
 describe('muscle attribution prefers the logged snapshot', () => {
+  it('matches the Stats overview fatigue reading for the same Profile and clock', () => {
+    const S = profile()
+
+    expect(selectFatigue(S, NOW)).toEqual(selectStatsOverview(S, { now: NOW }).fatigue)
+  })
+
+  it('reads fatigue from a deleted exercise snapshot through the focused selector', () => {
+    const workout = workoutAt('deleted', 1, [doneSet(60, 5)])
+    workout.entries[0].n = 'Old bench'
+    workout.entries[0].muscleWeights = { quadriceps: 1 }
+    const S = { unit: 'kg', workouts: [workout] }
+
+    const fatigue = selectFatigue(S, NOW)
+
+    expect(Object.keys(fatigue)).toEqual(['values', 'states'])
+    expect(fatigue.values.quadriceps).toBeGreaterThan(0)
+    expect(fatigue.values.chest).toBe(0)
+  })
+
   it('attributes load, fatigue and latest-trained by logged muscleWeights when they differ from the catalogue', () => {
     const S = { unit: 'kg', workouts: [workoutAt(LIFT.id, 2, [doneSet(50, 5)])] }
     S.workouts[0].entries[0].muscleWeights = { quadriceps: 1 }

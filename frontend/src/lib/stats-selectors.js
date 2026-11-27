@@ -140,6 +140,21 @@ function resolveBodyweightKg(S, override) {
   return Number.isFinite(n) && n > 0 ? n : null
 }
 
+/**
+ * @param {Profile | null | undefined} S
+ * @param {number} now
+ * @param {Workout[]} attributed
+ * @param {number | null} bodyweightKg
+ * @returns {{ values: Record<string, number>, states: Record<string, string> }}
+ */
+function fatigueReading(S, now, attributed, bodyweightKg) {
+  const values = fatigueOf(attributed, now, { bodyweightKg, unit: S?.unit })
+  const states = Object.fromEntries(
+    MUSCLES.map(slug => [slug, fatigueStateOf(values[slug])]),
+  )
+  return { values, states }
+}
+
 /** @param {Workout[]} workouts @returns {SetRow[]} */
 function workSetsOf(workouts) {
   /** @type {SetRow[]} */
@@ -217,6 +232,20 @@ function weeklyVolumeOf(S, today, muscleCatalogue) {
 }
 
 /**
+ * Fatigue values and states for the Profile's completed Workouts.
+ * @param {Profile | null | undefined} S
+ * @param {number} now
+ * @returns {{ values: Record<string, number>, states: Record<string, string> }}
+ */
+export function selectFatigue(S, now) {
+  const current = requireNow('selectFatigue', now)
+  const catalogue = resolveCatalogue(S, undefined)
+  const muscleCatalogue = muscleCatalogueOf(S, catalogue)
+  const attributed = projectWorkouts(S?.workouts || [], muscleCatalogue)
+  return fatigueReading(S, current, attributed, resolveBodyweightKg(S, undefined))
+}
+
+/**
  * Compute overview stats for the Stats view.
  * @param {Profile | null | undefined} S
  * @param {{ now?: number, catalogue?: StatsCatalogue, muscleDays?: number, effortDays?: number, bodyweightDays?: number, hardOnly?: boolean, bodyweightKg?: number | null }} [opts={}]
@@ -232,9 +261,8 @@ export function selectStatsOverview(S, opts = {}) {
   const workouts = S?.workouts || []
   const attributed = projectWorkouts(workouts, muscleCatalogue)
 
-  const fatOpts = { bodyweightKg, unit: S?.unit }
-  const fatigueValues = fatigueOf(attributed, now, fatOpts)
-  const strengthValues = strengthOf(attributed, now, fatOpts)
+  const fatigue = fatigueReading(S, now, attributed, bodyweightKg)
+  const strengthValues = strengthOf(attributed, now, { bodyweightKg, unit: S?.unit })
   const trainedAt = lastTrainedByMuscle(attributed)
   /** @type {Record<string, number | null>} */
   const latest = Object.fromEntries(MUSCLES.map(slug =>
@@ -245,10 +273,6 @@ export function selectStatsOverview(S, opts = {}) {
     return [slug, ts == null ? null : Math.max(0, Math.floor((now - ts) / DAY_MS / 7))]
   }))
   const { worked: strengthOrder } = rankOf(strengthValues)
-
-  const fatigueStates = Object.fromEntries(
-    MUSCLES.map(slug => [slug, fatigueStateOf(fatigueValues[slug])]),
-  )
 
   const today = isoOf(new Date(now))
   const muscleWin = muscleDays === 7
@@ -325,7 +349,7 @@ export function selectStatsOverview(S, opts = {}) {
       missed,
       top: worked.slice(0, 5),
     },
-    fatigue: { values: fatigueValues, states: fatigueStates },
+    fatigue,
     weeklyVolume: weeklyVolumeOf(S, today, muscleCatalogue),
     strengthLevels: strengthLevelsOf(S, now),
     strength: {
