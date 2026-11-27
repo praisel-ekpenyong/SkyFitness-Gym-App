@@ -13,7 +13,7 @@ import { exLine } from '../lib/format.js'
 import { t, dateLocale } from '../lib/i18n.js'
 import { exOr } from '../lib/exercises.js'
 import { loadOfRoutine, loadOfActive, rankOf, MUSCLE_NAME } from '../lib/muscles.js'
-import { selectStatsOverview } from '../lib/stats-selectors.js'
+import { selectFatigue } from '../lib/stats-selectors.js'
 import { streakOf } from '../lib/streak.js'
 import { FATIGUE_LEVELS } from '../lib/recovery-view.js'
 import { bwSheet, goalSheet } from '../sheets/bodyweight.jsx'
@@ -34,10 +34,10 @@ function muscleNames(load, n = 3) {
 }
 
 function RecoveryMap({ S }) {
-  const overview = useMemo(() => selectStatsOverview(S, { now: Date.now() }), [S])
-  const tired = Object.keys(overview.fatigue.states).filter(m => overview.fatigue.states[m] !== 'ready')
+  const fatigue = useMemo(() => selectFatigue(S, Date.now()), [S])
+  const tired = Object.keys(fatigue.states).filter(m => fatigue.states[m] !== 'ready')
   return <>
-    <div className="home-hero-map"><BodyMap className="hm-fatigue" load={overview.fatigue.values} thresholds={FATIGUE_LEVELS} body={S.body} /></div>
+    <div className="home-hero-map"><BodyMap className="hm-fatigue" load={fatigue.values} thresholds={FATIGUE_LEVELS} body={S.body} /></div>
     <div className="home-hero-note">{tired.length
       ? t('Still recovering: {0}', tired.slice(0, 3).map(m => t(MUSCLE_NAME[m])).join(' · '))
       : t('Every muscle is recovered.')}</div>
