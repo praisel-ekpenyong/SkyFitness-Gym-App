@@ -1,7 +1,29 @@
 import { useEffect, useId, useLayoutEffect, useRef } from 'react'
 import { useUI } from '../store/useUI.js'
-import { createSheetHistoryState, transitionSheetHistory } from '../lib/sheet-history.js'
+import { createSheetHistory } from '../platform/sheet-history.js'
 import { createBrowserHistoryAdapter } from '../platform/browser-history.js'
+
+/**
+ * @param {(sheets: Array<{ id: string, locked?: boolean }>) => void} handler
+ * @returns {() => void}
+ */
+const subscribeSheets = handler => useUI.subscribe((state, prev) => {
+  if (state.sheets !== prev.sheets) handler(state.sheets)
+})
+
+// The host injects the three Adapters. The real hardware-Back handle is installed
+// by a later ticket; until then only the identity-exact install contract is needed here.
+export function createModalsHost() {
+  return {
+    sheets: {
+      subscribe: subscribeSheets,
+      getSheets: () => useUI.getState().sheets,
+      closeSheet: (/** @type {string} */ id) => useUI.getState().closeSheet(id),
+    },
+    history: createBrowserHistoryAdapter(),
+    back: { install: () => () => {} },
+  }
+}
 
 function Sheet({ sheet, covered }) {
   const closeSheet = useUI(s => s.closeSheet)
@@ -163,9 +185,11 @@ function Sheet({ sheet, covered }) {
   )
 }
 
-export default function Modals() {
+/**
+ * @param {{ host?: ReturnType<typeof createModalsHost> }} props
+ */
+export default function Modals({ host } = {}) {
   const sheets = useUI(s => s.sheets)
-  const historyState = useRef(createSheetHistoryState())
   const modalRoot = useRef(null)
   const open = sheets.length > 0
 
@@ -195,33 +219,12 @@ export default function Modals() {
     }
   }, [open])
 
+  // One attach for the whole component: the Module owns both subscriptions and the
+  // Back handle, and the disposer is idempotent on unmount.
   useEffect(() => {
-    const browserHistory = createBrowserHistoryAdapter()
-    const result = transitionSheetHistory(historyState.current, {
-      type: 'sheets-changed',
-      sheets,
-      href: browserHistory.href(),
-    })
-    historyState.current = result.state
-    for (const effect of result.effects) {
-      if (effect.type === 'push') browserHistory.push()
-      if (effect.type === 'rewind') browserHistory.rewind(effect.count)
-    }
-  }, [sheets])
-
-  useEffect(() => {
-    const browserHistory = createBrowserHistoryAdapter()
-    const onPop = () => {
-      const { sheets, closeSheet } = useUI.getState()
-      const result = transitionSheetHistory(historyState.current, { type: 'pop', sheets, href: browserHistory.href() })
-      historyState.current = result.state
-      for (const effect of result.effects) {
-        if (effect.type === 'close') closeSheet(effect.id)
-        if (effect.type === 'rewind') browserHistory.rewind(effect.count)
-      }
-    }
-    return browserHistory.onPop(onPop)
-  }, [])
+    const dispose = createSheetHistory(host ?? createModalsHost())
+    return dispose
+  }, [host])
 
   useEffect(() => {
     if (!sheets.length) return
