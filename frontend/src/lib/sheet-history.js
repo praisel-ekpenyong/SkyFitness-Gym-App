@@ -1,17 +1,32 @@
-/** @typedef {{ openedAt: string, backEligible: boolean }} SheetHistoryEntry */
+/** @typedef {{ sheetId: string, openedHref: string, backEligible: boolean }} SheetHistoryEntry */
 /** @typedef {{ id: string, locked?: boolean }} SheetDescriptor */
-/** @typedef {{ sheetCount: number, entries: SheetHistoryEntry[], pushedEntries: number, pendingProgrammaticPops: number }} SheetHistoryState */
-/** @typedef {{ type: 'sheets-changed', sheetCount: number, href: string } | { type: 'pop', sheets: SheetDescriptor[] }} SheetHistoryAction */
+/** @typedef {{ sheetIds: string[], entries: SheetHistoryEntry[], pendingProgrammaticPops: number }} SheetHistoryState */
+/** @typedef {{ type: 'sheets-changed', sheets: SheetDescriptor[], href: string } | { type: 'pop', sheets: SheetDescriptor[], href: string }} SheetHistoryAction */
 /** @typedef {{ type: 'push' } | { type: 'rewind', count: number } | { type: 'close', id: string }} SheetHistoryEffect */
 
 /** @returns {SheetHistoryState} */
 export function createSheetHistoryState() {
   return {
-    sheetCount: 0,
+    sheetIds: [],
     entries: [],
-    pushedEntries: 0,
     pendingProgrammaticPops: 0,
   }
+}
+
+/**
+ * @param {SheetHistoryEntry[]} entries
+ * @param {string} href
+ * @returns {number}
+ */
+function drainTombstones(entries, href) {
+  let count = 0
+  while (entries.length > 0) {
+    const top = entries[entries.length - 1]
+    if (top.backEligible || top.openedHref !== href) break
+    entries.pop()
+    count++
+  }
+  return count
 }
 
 /**
@@ -21,40 +36,30 @@ export function createSheetHistoryState() {
  */
 export function transitionSheetHistory(state, action) {
   if (action.type === 'sheets-changed') {
-    const sheetCount = action.sheetCount
-    if (sheetCount > state.sheetCount) {
-      const added = sheetCount - state.sheetCount
-      return {
-        state: {
-          ...state,
-          sheetCount,
-          entries: [
-            ...state.entries,
-            ...Array.from({ length: added }, () => ({ openedAt: action.href, backEligible: true })),
-          ],
-          pushedEntries: state.pushedEntries + added,
-        },
-        effects: Array.from({ length: added }, () => ({ type: 'push' })),
-      }
+    const sheetIds = action.sheets.map(sheet => sheet.id)
+    const nextIds = new Set(sheetIds)
+    const previousIds = new Set(state.sheetIds)
+    const closedIds = state.sheetIds.filter(id => !nextIds.has(id))
+    const openedSheets = action.sheets.filter(sheet => !previousIds.has(sheet.id))
+    const entries = state.entries.map(entry =>
+      closedIds.includes(entry.sheetId) ? { ...entry, backEligible: false } : entry
+    )
+    for (const sheet of openedSheets) {
+      entries.push({ sheetId: sheet.id, openedHref: action.href, backEligible: true })
     }
 
-    if (sheetCount < state.sheetCount) {
-      const closed = state.entries.slice(sheetCount)
-      const entries = state.entries.slice(0, sheetCount)
-      const rewind = closed.filter(entry => entry.backEligible && entry.openedAt === action.href).length
-      return {
-        state: {
-          ...state,
-          sheetCount,
-          entries,
-          pushedEntries: Math.max(0, state.pushedEntries - rewind),
-          pendingProgrammaticPops: state.pendingProgrammaticPops + (rewind > 0 ? 1 : 0),
-        },
-        effects: rewind > 0 ? [{ type: 'rewind', count: rewind }] : [],
-      }
+    const rewind = closedIds.length ? drainTombstones(entries, action.href) : 0
+    /** @type {SheetHistoryEffect[]} */
+    const effects = openedSheets.map(() => ({ type: 'push' }))
+    if (rewind > 0) effects.push({ type: 'rewind', count: rewind })
+    return {
+      state: {
+        sheetIds,
+        entries,
+        pendingProgrammaticPops: state.pendingProgrammaticPops + (rewind > 0 ? 1 : 0),
+      },
+      effects,
     }
-
-    return { state, effects: [] }
   }
 
   if (action.type === 'pop') {
@@ -64,26 +69,25 @@ export function transitionSheetHistory(state, action) {
         effects: [],
       }
     }
-    if (state.pushedEntries <= 0) return { state, effects: [] }
+    if (state.entries.length === 0) return { state, effects: [] }
 
-    let entryIndex = -1
-    for (let i = state.entries.length - 1; i >= 0; i--) {
-      if (state.entries[i].backEligible) {
-        entryIndex = i
-        break
-      }
-    }
-    const entries = state.entries.map((entry, index) =>
-      index === entryIndex ? { ...entry, backEligible: false } : entry
-    )
+    const popped = state.entries[state.entries.length - 1]
+    const entries = state.entries.slice(0, -1)
     const top = action.sheets[action.sheets.length - 1]
+    const rewind = drainTombstones(entries, action.href)
+    /** @type {SheetHistoryEffect[]} */
+    const effects = []
+    if (popped.backEligible && top?.id === popped.sheetId && !top.locked) {
+      effects.push({ type: 'close', id: top.id })
+    }
+    if (rewind > 0) effects.push({ type: 'rewind', count: rewind })
     return {
       state: {
         ...state,
         entries,
-        pushedEntries: state.pushedEntries - 1,
+        pendingProgrammaticPops: state.pendingProgrammaticPops + (rewind > 0 ? 1 : 0),
       },
-      effects: entryIndex >= 0 && top && !top.locked ? [{ type: 'close', id: top.id }] : [],
+      effects,
     }
   }
 
