@@ -111,7 +111,7 @@
   },
   "src/lib/strength-level.js": {
     "no-restricted-syntax": {
-      "count": 2
+      "count": 1
     }
   },
   "src/lib/training-log.js": {

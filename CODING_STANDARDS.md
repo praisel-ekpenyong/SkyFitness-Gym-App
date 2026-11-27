@@ -683,7 +683,7 @@ different rep cap.
 each failing outside its owner with a message naming the owner:
 `Identifier[name='LB_TO_KG']` and the literals `2.2046` and `0.4535` (0 hits; the
 copies in `lib/import-csv.js` and `lib/bodyweight.js` are fixed);
-`LogicalExpression[right.value='kg']` (<!-- ratchet: eslint-selector-suppressions.json#No `|| 'kg'` fallback: S.unit is cleaned by PROFILE_CLEAN; other units go through lib/units.js (sanitizeUnit, entryUnit). -->18 hits in 7 files<!-- /ratchet -->, exempt in `lib/units.js`); the inline
+`LogicalExpression[right.value='kg']` (<!-- ratchet: eslint-selector-suppressions.json#No `|| 'kg'` fallback: S.unit is cleaned by PROFILE_CLEAN; other units go through lib/units.js (sanitizeUnit, entryUnit). -->17 hits in 6 files<!-- /ratchet -->, exempt in `lib/units.js`); the inline
 `Math.round(x * 10) / 10`, selector
 `BinaryExpression[operator='/'][right.value=10][left.callee.object.name='Math'][left.callee.property.name='round'][left.arguments.0.operator='*'][left.arguments.0.right.value=10]`
 (<!-- ratchet: eslint-selector-suppressions.json#Round to one decimal with round1 from lib/units.js, not Math.round(x * 10) / 10. -->17 hits in 10 files<!-- /ratchet --> outside `lib/units.js`);
