@@ -4,6 +4,7 @@ import { workoutTimestamp, DAY_MS } from './dates.js'
 import { weighIns as weighInsInUnit, sessionBodyweight } from './bodyweight.js'
 import { cleanSex } from './sex.js'
 import { ageCoefficientOf } from './birth-year.js'
+import { sanitizeUnit } from './units.js'
 
 /** @typedef {import('./types.js').Profile} Profile */
 /** @typedef {import('./types.js').Workout} Workout */
@@ -61,7 +62,7 @@ const positiveOf = value => {
 const round2 = value => Math.round(value * 100) / 100
 
 /** @param {Profile | null | undefined} S @returns {Unit} */
-const profileUnit = S => S?.unit || 'kg'
+const profileUnit = S => sanitizeUnit(S?.unit)
 
 /**
  * Body-weight log entries with a usable weight, oldest first, in the Profile unit.
