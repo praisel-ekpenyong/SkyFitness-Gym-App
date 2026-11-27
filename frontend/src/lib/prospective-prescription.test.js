@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 import { readProspectivePrescription } from './prospective-prescription.js'
 import { act } from './active-workout.js'
 import { sessionProgressionItems } from './progression.js'
-import { workoutTimestamp } from './dates.js'
 
 /** @param {Array<any>} entries @param {Record<string, any>} [overrides] */
 const activeOf = (entries, overrides = {}) => ({
@@ -166,7 +165,7 @@ describe('the Session boundary and the summary read the one Prospective Prescrip
 
     // The existing summary seams through the reading instead of building its own stand-in in
     // the Profile unit, so a mid-session unit change agrees with the cue and the record.
-    const items = sessionProgressionItems(logged, S, workoutTimestamp(logged), reading)
+    const items = sessionProgressionItems(logged, S, reading)
     expect(items).toHaveLength(1)
     expect(items[0].text).toBe('135 lb → 140 lb (+5 lb)')
 
@@ -179,7 +178,7 @@ describe('the Session boundary and the summary read the one Prospective Prescrip
     const active = activeOf([bench(hits(3)), curl])
     const S = { ...profileOf(), active }
     const reading = readProspectivePrescription(active, S)
-    const summary = sessionProgressionItems(reading.workout, S, 0, reading)
+    const summary = sessionProgressionItems(reading.workout, S, reading)
 
     expect(summary.map(i => i.id)).toEqual(['barbell-bench-press', 'dumbbell-curl'])
     // Concrete next targets, independent of the reading: a wrong summary cannot pass these.
@@ -209,7 +208,7 @@ describe('the Session boundary and the summary read the one Prospective Prescrip
       .toEqual(before.entries['barbell-bench-press'].prescription)
     expect(before.entries['barbell-bench-press'].prescription)
       .toMatchObject({ kind: 'up', weight: 62.5 })
-    expect(sessionProgressionItems(logged, S, workoutTimestamp(logged), after)[0].text)
+    expect(sessionProgressionItems(logged, S, after)[0].text)
       .toBe('60 kg → 62.5 kg (+2.5 kg)')
   })
 
@@ -231,7 +230,7 @@ describe('the Session boundary and the summary read the one Prospective Prescrip
       const active = activeOf([entry])
       const S = { ...profileOf({ workouts: history }), active }
       const reading = readProspectivePrescription(active, S)
-      const summary = sessionProgressionItems(reading.workout, S, 0, reading)[0]
+      const summary = sessionProgressionItems(reading.workout, S, reading)[0]
 
       expect(reading.entries['barbell-bench-press'].prescription.kind).toBe(kind)
       expect(summary.kind).toBe(kind)

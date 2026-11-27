@@ -4,7 +4,6 @@ import { isWorkSet, isPerformed, workSets, doneWorkSets, modeForSet } from './wo
 import { resolveSetWeight, normalizeWeight, targetIn, entryUnit, round1 } from './units.js'
 import { fmtNum, fmtSigned } from './format.js'
 import { t } from './i18n.js'
-import { assertClock, isoOf } from './dates.js'
 
 /** @typedef {import('./types.js').Profile} Profile */
 /** @typedef {import('./types.js').Workout} Workout */
@@ -980,62 +979,25 @@ export function prescriptionStyle(kindOrPlan) {
   return kind === 'up' ? 'up' : ''
 }
 
-/** @param {Entry} entry @param {number} now @returns {string} */
-const entryDayKey = (entry, now) => ('d' in entry && typeof entry.d === 'string' && entry.d) || isoOf(new Date(now))
-
 /** @typedef {import('./types.js').ProspectiveReadingLike & { judged: ReturnType<typeof readSession> }} ProspectiveReadingLike */
 
 /**
- * Evaluates a single completed entry against its next prescription, returning a progression descriptor.
- * When the caller supplies a Prospective Prescription `reading`, no second as-if-finished Workout,
- * clock or Prescription judgement is constructed (ADR 0037).
+ * Evaluate a completed Entry against the one Prospective Prescription reading, returning a
+ * progression descriptor. No as-if-finished Workout, fixed future date, placeholder id or second
+ * Prescription judgement is constructed here (ADR 0037).
  *
  * @param {Entry} entry Completed workout entry.
  * @param {Partial<Profile> | null | undefined} state Store state S.
- * @param {{ workout?: Workout | null, routine?: Routine | null, now: number, reading?: ProspectiveReadingLike | null }} context - Workout, routine, reading and the caller's clock.
+ * @param {ProspectiveReadingLike} reading - This Entry's reading from the one seam.
  * @returns {ProgressionDescriptor | null} Progression descriptor or null if no performed work sets.
  */
-export function evaluateSessionProgression(entry, state, context) {
+export function evaluateSessionProgression(entry, state, reading) {
   if (!entry || doneWorkSets(entry).length <= 0) return null
+  if (!reading) throw new TypeError('evaluateSessionProgression requires a Prospective Prescription reading')
 
-  const reading = context?.reading
-  if (!reading) assertClock(context?.now)
-  const now = context.now
-  const workout = context?.workout
-  const routineId = reading?.routineId ?? workout?.routineId
-  const routine = context?.routine ||
-    (routineId ? state?.routines?.find(r => r.id === routineId) : null) ||
-    null
-
-  /** @type {Workout | null} */
-  let dummyWorkout = null
-  let effectiveS = state
-  if (!reading) {
-    if (workout) {
-      effectiveS = stateWithoutDuplicate(workout, state)
-    } else {
-      const inWorkouts = (state?.workouts || []).some(w => (w.entries || []).includes(entry))
-      if (!inWorkouts) {
-        dummyWorkout = {
-          id: 'session-entry-' + entry.id,
-          d: entryDayKey(entry, now),
-          start: 0,
-          end: 0,
-          routineId: null,
-          name: '',
-          bw: null,
-          entries: [entry],
-          unit: state?.unit || 'kg'
-        }
-        effectiveS = { ...(state || {}), workouts: [...(state?.workouts || []), dummyWorkout] }
-      }
-    }
-  }
-
-  const cfg = reading?.cfg || { ...defaultConfig(entry.id), ...(entry.target || {}), id: entry.id }
-  const p = reading?.prescription || nextPrescription(effectiveS || {}, cfg, routine)
-  const unit = reading?.unit || state?.unit || workout?.unit || 'kg'
-  const judged = reading?.judged || readSession(entry, cfg, null, unit)
+  const { prescription: p, cfg, unit, judged } = reading
+  const routineId = reading.routineId
+  const routine = (routineId ? state?.routines?.find(r => r.id === routineId) : null) || null
   const ex = EXIDX[entry.id] || { n: entry.id }
   const exName = ex.n || entry.id
   const policy = p.policy || policyFor(cfg, routine)
@@ -1105,7 +1067,7 @@ export function evaluateSessionProgression(entry, state, context) {
 
   return {
     id: entry.id,
-    d: reading?.d ?? workout?.d ?? dummyWorkout?.d ?? null,
+    d: reading.d ?? null,
     exName,
     policy,
     policyName,
@@ -1123,41 +1085,24 @@ export function evaluateSessionProgression(entry, state, context) {
 }
 
 /**
- * The legacy path without a reading: avoid appending the completed Workout twice.
- * @param {Workout} workout
- * @param {Partial<Profile> | null | undefined} state
- */
-function stateWithoutDuplicate(workout, state) {
-  const workouts = state?.workouts || []
-  return workouts.some(item => item.id === workout.id || item === workout)
-    ? state
-    : { ...(state || {}), workouts: [...workouts, workout] }
-}
-
-/**
- * Derives progression descriptors for all trained exercises in a completed workout.
- * Pass the Prospective Prescription reading to drive every item from the one reading; the
- * workout is then recognised by id in the Training log instead of gaining a second stand-in.
+ * Derives progression descriptors for all trained exercises in a completed workout from the one
+ * Prospective Prescription reading. The finished Workout is recognised by id, never appended as a
+ * second stand-in (ADR 0037).
  *
  * @param {Workout | null | undefined} workout Completed workout.
  * @param {Partial<Profile> | null | undefined} state Store state S.
- * @param {number} now - Caller's clock in milliseconds.
- * @param {{ entries: Record<string, ProspectiveReadingLike> } | null | undefined} [prospective] - The shared reading's per-entry records, when the caller has it.
+ * @param {{ entries: Record<string, ProspectiveReadingLike> }} prospective - The shared reading's per-entry records.
  * @returns {ProgressionDescriptor[]} List of progression descriptors for trained exercises.
  */
-export function sessionProgressionItems(workout, state, now, prospective) {
+export function sessionProgressionItems(workout, state, prospective) {
   if (!workout?.entries) return []
-  const routine = (workout.routineId && state?.routines?.find(r => r.id === workout.routineId)) || null
-  const effectiveS = prospective ? state : stateWithoutDuplicate(workout, state)
-  const readings = prospective?.entries || {}
+  if (!prospective?.entries) throw new TypeError('sessionProgressionItems requires a Prospective Prescription reading')
 
   /** @type {ProgressionDescriptor[]} */
   const items = []
   for (const entry of workout.entries) {
     if (doneWorkSets(entry).length <= 0) continue
-    const item = evaluateSessionProgression(entry, effectiveS, {
-      workout, routine, now, reading: readings[entry.id] || null,
-    })
+    const item = evaluateSessionProgression(entry, state, prospective.entries[entry.id])
     if (item) items.push(item)
   }
   return items

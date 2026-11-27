@@ -56,7 +56,7 @@
   },
   "src/lib/progression.js": {
     "no-restricted-syntax": {
-      "No `|| 'kg'` fallback: S.unit is cleaned by PROFILE_CLEAN; other units go through lib/units.js (sanitizeUnit, entryUnit).": 5,
+      "No `|| 'kg'` fallback: S.unit is cleaned by PROFILE_CLEAN; other units go through lib/units.js (sanitizeUnit, entryUnit).": 3,
       "Round to one decimal with round1 from lib/units.js, not Math.round(x * 10) / 10.": 3
     }
   },
