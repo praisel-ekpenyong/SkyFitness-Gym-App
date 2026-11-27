@@ -650,27 +650,23 @@ export function applyPrescription(sets, p) {
 }
 
 /**
+ * The one Progression judgement for an Entry, read against the canonical as-if-finished Workout.
+ *
+ * `workout` is the Workout returned by the Prospective Prescription reading — either the real one
+ * already in the Training log or the Module's stand-in. There is no fallback: a caller cannot
+ * re-derive a second, divergent judgement from a bare Entry (ADR 0037).
+ *
  * @param {Entry} entry
- * @param {Profile | null | undefined} state
+ * @param {Partial<Profile> | null | undefined} state
+ * @param {Workout} workout
  */
-function projectedVerdict(entry, state) {
+export function readEntryVerdict(entry, state, workout) {
   /** @type {Partial<Profile>} */
   const S = state && typeof state === 'object' ? state : {}
-  const unit = S.unit || 'kg'
-  const routineId = S.active?.routineId ?? null
-  /** @type {Workout} */
-  const workout = {
-    id: 'milestone-projection',
-    d: '9999-12-31',
-    start: 0,
-    end: 0,
-    name: '',
-    bw: null,
-    unit,
-    routineId,
-    entries: [entry]
-  }
-  const effectiveS = { ...S, unit, workouts: [...(S.workouts || []), workout] }
+  const unit = workout.unit || S.unit || 'kg'
+  const routineId = workout.routineId ?? S.active?.routineId ?? null
+  const inLog = (S.workouts || []).some(w => w.id === workout.id)
+  const effectiveS = inLog ? S : { ...S, unit, workouts: [...(S.workouts || []), workout] }
   const routine = routineId ? (S.routines || []).find(r => r.id === routineId) || null : null
   const target = entry?.target || {}
   const cfg = { ...defaultConfig(entry.id), ...target, id: entry.id }
@@ -703,11 +699,11 @@ function projectedVerdict(entry, state) {
     const prevAim = timeAim(prev, cfg, inc)
     if (prescription.sec > prevAim) aimDelta = prescription.sec - prevAim
   }
-  return { prescription, unit, cfg, aimDelta, step }
+  return { prescription, unit, cfg, aimDelta, step, judged: readSession(entry, cfg, workout, unit) }
 }
 
 /**
- * @param {ReturnType<typeof projectedVerdict>} verdict
+ * @param {ReturnType<typeof readEntryVerdict>} verdict
  * @param {{ reps: number, targetReps: number }} extra
  */
 function unlockedCue(verdict, extra) {
@@ -761,7 +757,7 @@ function legacySetField(setRow, key) {
  *
  * @param {Entry} entry - Active workout entry containing `{ target, sets, plan?, id? }`.
  * @param {number} setIdx - Zero-based index of the set in `entry.sets`.
- * @param {{ state?: Profile | null }} [context] - Profile `{ state }`. The routine comes from `state.active` and `state.routines`.
+ * @param {{ state?: Profile | null, reading?: { verdict?: ReturnType<typeof readEntryVerdict>, routineId?: string | null } | null }} [context] - Profile `{ state }` plus this Entry's reading from the Prospective Prescription seam. The policy and the judgement come from that reading, never from a second Active stub.
  * @returns {{ kind: string, label: string, reps?: number, targetReps?: number, sec?: number, targetSec?: number, step?: number, bonusReps?: number, inc?: number, unit?: Unit } | null} Milestone descriptor `{ kind, label, ... }` or null if no milestone.
  */
 export function evaluateSetMilestone(entry, setIdx, context = {}) {
@@ -776,12 +772,17 @@ export function evaluateSetMilestone(entry, setIdx, context = {}) {
   const target = entry.target || {}
   const mode = modeOf({ ...target, id: entry.id })
   const S = context?.state && typeof context.state === 'object' ? context.state : null
-  const routine = S?.active?.routineId
-    ? (S.routines || []).find(r => r.id === S.active?.routineId) || null
-    : null
+  const routineId = context?.reading?.routineId ?? S?.active?.routineId ?? null
+  const routine = routineId ? (S?.routines || []).find(r => r.id === routineId) || null : null
   const policy = resolvePolicy(entry, mode, routine)
 
   if (policy === 'off') return null
+
+  const verdictOf = () => {
+    const verdict = context?.reading?.verdict
+    if (!verdict) throw new TypeError('evaluateSetMilestone requires a Prospective Prescription reading')
+    return verdict
+  }
 
   const workRows = entry.sets.filter(isWorkSet)
   const plannedCount = plannedSetCount(entry, target, workRows.length)
@@ -797,7 +798,7 @@ export function evaluateSetMilestone(entry, setIdx, context = {}) {
     if (reps < targetReps) return null
 
     if (workIdx === plannedCount - 1) {
-      const unlocked = unlockedCue(projectedVerdict(entry, S), { reps, targetReps })
+      const unlocked = unlockedCue(verdictOf(), { reps, targetReps })
       if (unlocked) return unlocked
     }
 
@@ -816,7 +817,7 @@ export function evaluateSetMilestone(entry, setIdx, context = {}) {
     const sec = Number(setRow.sec ?? legacySetSec) || 0
 
     if (workIdx === plannedCount - 1) {
-      const { prescription: p, aimDelta, step } = projectedVerdict(entry, S)
+      const { prescription: p, aimDelta, step } = verdictOf()
       if (p.kind === 'up' && p.sec != null) {
         return {
           kind: 'unlocked',
@@ -861,7 +862,7 @@ export function evaluateSetMilestone(entry, setIdx, context = {}) {
     }
 
     if (workIdx === plannedCount - 1) {
-      const verdict = projectedVerdict(entry, S)
+      const verdict = verdictOf()
       const unlocked = unlockedCue(verdict, { reps, targetReps })
       if (unlocked) return unlocked
       if (verdict.aimDelta > 0) {
@@ -903,7 +904,7 @@ export function evaluateSetMilestone(entry, setIdx, context = {}) {
     const isAMRAP = workIdx === plannedCount - 1
 
     if (isAMRAP) {
-      const verdict = projectedVerdict(entry, S)
+      const verdict = verdictOf()
       const p = verdict.prescription
       if (p.kind === 'up' && Number(p.weight) > 0 && reps >= targetReps) {
         const bonus = reps - targetReps
