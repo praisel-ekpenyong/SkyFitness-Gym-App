@@ -5,30 +5,15 @@ import { EXIDX } from './exercises.js'
 import { exerciseMuscleSnapshot } from './muscles.js'
 import { diffRoutineWithSession } from './routine-sync.js'
 import { sortWorkouts } from './profile/index.js'
+import { freezePrescriptionRecord } from './prescription-record.js'
 
 /** @typedef {import('./types.js').Profile} Profile */
 /** @typedef {import('./types.js').Workout} Workout */
 /** @typedef {import('./types.js').ActiveWorkout} ActiveWorkout */
 /** @typedef {import('./types.js').Entry} Entry */
 /** @typedef {import('./types.js').Unit} Unit */
-/** @typedef {import('./types.js').Prescription} Prescription */
-/** @typedef {import('./types.js').PrescriptionRecord} PrescriptionRecord */
 /** @typedef {import('./types.js').MuscleSnapshot} MuscleSnapshot */
 /** @typedef {ReturnType<typeof diffRoutineWithSession> & { routineId: string, routineName: string }} RoutineSync */
-
-/**
- * @param {Prescription | PrescriptionRecord | null | undefined} plan
- * @returns {PrescriptionRecord | null}
- */
-function planRecord(plan) {
-  if (!plan || typeof plan !== 'object') return null
-  /** @type {PrescriptionRecord} */
-  const out = { kind: plan.kind }
-  for (const key of /** @type {const} */ (['weight', 'reps', 'sec', 'sets'])) {
-    if (plan[key] != null) out[key] = plan[key]
-  }
-  return out
-}
 
 /**
  * Freeze an ActiveWorkout into a finished Workout record.
@@ -50,7 +35,7 @@ export function buildCompletedWorkout(active, { end, unit, snapshotFor }) {
     if (note) {
       completed.notes = note.slice(0, 500)
     }
-    const plan = planRecord(entry.plan)
+    const plan = freezePrescriptionRecord(entry.plan)
     if (plan) completed.plan = plan
     const snapshot = typeof snapshotFor === 'function' ? snapshotFor(entry) : null
     if (snapshot && typeof snapshot === 'object' && !Array.isArray(snapshot) && Object.keys(snapshot).length) {
