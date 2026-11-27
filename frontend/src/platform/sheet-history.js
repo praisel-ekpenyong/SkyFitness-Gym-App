@@ -46,6 +46,7 @@ export function createSheetHistory(host) {
       if (effect.type === 'push') host.history.push()
       else if (effect.type === 'rewind') host.history.rewind(effect.count)
       else if (effect.type === 'close') host.sheets.closeSheet(effect.id)
+      else throw new TypeError('Unknown sheet history effect')
     }
   }
 

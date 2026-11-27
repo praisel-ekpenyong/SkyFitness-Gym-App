@@ -11,6 +11,7 @@ function harness(initial = []) {
   const sheetListeners = new Set()
   let popHandler = null
   let handle = null
+  let backInstalls = 0
   const calls = { push: [], rewind: [], close: [] }
 
   const emitSheets = () => {
@@ -45,6 +46,7 @@ function harness(initial = []) {
 
   const backAdapter = {
     install: listener => {
+      backInstalls += 1
       handle = listener
       return () => { if (handle === listener) handle = null }
     },
@@ -60,6 +62,7 @@ function harness(initial = []) {
     openSheets: next => { sheets = next; emitSheets() },
     closeSheet: id => sheetsAdapter.closeSheet(id),
     sheetListenerCount: () => sheetListeners.size,
+    backInstalls: () => backInstalls,
     hasPopListener: () => popHandler !== null,
     hasHandle: () => handle !== null,
   }
@@ -68,6 +71,7 @@ function harness(initial = []) {
 describe('createSheetHistory attach seam', () => {
   it('installs one Back handle at attach time and reports only whether a press was consumed', () => {
     const h = harness()
+    expect(h.backInstalls()).toBe(1)
     expect(h.hasHandle()).toBe(true)
     expect(h.handle()).toBe(false)
     expect(h.calls.rewind).toEqual([])

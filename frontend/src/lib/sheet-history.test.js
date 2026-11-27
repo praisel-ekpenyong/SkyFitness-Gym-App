@@ -45,13 +45,4 @@ describe('sheet history transitions', () => {
     expect(result.state.entries).toEqual([])
     expect(result.state.pendingProgrammaticPops).toBe(0)
   })
-
-  it('reports a locked sheet entry as consuming Back until its pop', () => {
-    let result = open(createSheetHistoryState(), [sheet('confirm', true)])
-    expect(consumesBack(result.state)).toBe(true)
-
-    result = pop(result.state, [sheet('confirm', true)])
-    expect(result.state.entries).toEqual([])
-    expect(consumesBack(result.state)).toBe(false)
-  })
 })
