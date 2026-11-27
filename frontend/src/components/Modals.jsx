@@ -1,5 +1,6 @@
 import { useEffect, useId, useLayoutEffect, useRef } from 'react'
 import { useUI } from '../store/useUI.js'
+import { createSheetHistoryState, transitionSheetHistory } from '../lib/sheet-history.js'
 
 function Sheet({ sheet, covered }) {
   const closeSheet = useUI(s => s.closeSheet)
@@ -163,11 +164,7 @@ function Sheet({ sheet, covered }) {
 
 export default function Modals() {
   const sheets = useUI(s => s.sheets)
-  const closeSheet = useUI(s => s.closeSheet)
-  const prevLen = useRef(0)
-  const suppressPop = useRef(false)
-  const pushedEntries = useRef(0)
-  const sheetEntries = useRef([])
+  const historyState = useRef(createSheetHistoryState())
   const modalRoot = useRef(null)
   const open = sheets.length > 0
 
@@ -198,43 +195,30 @@ export default function Modals() {
   }, [open])
 
   useEffect(() => {
-    const prev = prevLen.current
-    prevLen.current = sheets.length
-    if (sheets.length > prev) {
-      for (let i = prev; i < sheets.length; i++) {
-        sheetEntries.current.push({ openedAt: location.href, live: true })
-        history.pushState({ skySheet: true }, '')
-        pushedEntries.current++
-      }
-    } else if (sheets.length < prev) {
-      const closedEntries = sheetEntries.current.splice(sheets.length, prev - sheets.length)
-      const rewind = closedEntries.filter(entry =>
-        entry.live && !(typeof entry.openedAt === 'string' && location.href !== entry.openedAt)).length
-      if (rewind > 0) {
-        pushedEntries.current = Math.max(0, pushedEntries.current - rewind)
-        suppressPop.current = true
-        history.go(-rewind)
-      }
+    const result = transitionSheetHistory(historyState.current, {
+      type: 'sheets-changed',
+      sheetCount: sheets.length,
+      href: location.href,
+    })
+    historyState.current = result.state
+    for (const effect of result.effects) {
+      if (effect.type === 'push') history.pushState({ skySheet: true }, '')
+      if (effect.type === 'rewind') history.go(-effect.count)
     }
   }, [sheets.length])
 
   useEffect(() => {
     const onPop = () => {
-      if (suppressPop.current) { suppressPop.current = false; return }
-      if (pushedEntries.current <= 0) return
-      pushedEntries.current--
-      for (let i = sheetEntries.current.length - 1; i >= 0; i--) {
-        if (sheetEntries.current[i].live) {
-          sheetEntries.current[i].live = false
-          break
-        }
+      const { sheets, closeSheet } = useUI.getState()
+      const result = transitionSheetHistory(historyState.current, { type: 'pop', sheets })
+      historyState.current = result.state
+      for (const effect of result.effects) {
+        if (effect.type === 'close') closeSheet(effect.id)
       }
-      const top = sheets[sheets.length - 1]
-      if (top && !top.locked) closeSheet(top.id)
     }
     window.addEventListener('popstate', onPop)
     return () => window.removeEventListener('popstate', onPop)
-  }, [sheets, closeSheet])
+  }, [])
 
   useEffect(() => {
     if (!sheets.length) return

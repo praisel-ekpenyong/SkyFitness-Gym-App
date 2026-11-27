@@ -63,6 +63,8 @@ describe('Back with sheets open', () => {
     await act(async () => { useUI.getState().closeSheet('summary') })
     await settle()
     expect(page()).toBe('workout')
+    await back()
+    expect(page()).toBe('home')
   })
 })
 
@@ -79,6 +81,17 @@ describe('closing sheets from the screen', () => {
     await setSheets([sheet('one'), sheet('two')])
     await setSheets([])
     await settle()
+    expect(page()).toBe('workout')
+  })
+
+  it('does not treat an explicit-close rewind as Back for a later sheet', async () => {
+    await setSheets([sheet('first')])
+    await setSheets([])
+    await settle()
+
+    await setSheets([sheet('second')])
+    await back()
+    expect(ids()).toEqual([])
     expect(page()).toBe('workout')
   })
 
