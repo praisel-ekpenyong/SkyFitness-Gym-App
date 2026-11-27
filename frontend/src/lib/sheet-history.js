@@ -1,4 +1,4 @@
-/** @typedef {{ sheetId: string, openedAt: string, backEligible: boolean }} SheetHistoryEntry */
+/** @typedef {{ sheetId: string, openedHref: string, backEligible: boolean }} SheetHistoryEntry */
 /** @typedef {{ id: string, locked?: boolean }} SheetDescriptor */
 /** @typedef {{ sheetIds: string[], entries: SheetHistoryEntry[], pendingProgrammaticPops: number }} SheetHistoryState */
 /** @typedef {{ type: 'sheets-changed', sheets: SheetDescriptor[], href: string } | { type: 'pop', sheets: SheetDescriptor[], href: string }} SheetHistoryAction */
@@ -22,7 +22,7 @@ function drainTombstones(entries, href) {
   let count = 0
   while (entries.length > 0) {
     const top = entries[entries.length - 1]
-    if (top.backEligible || top.openedAt !== href) break
+    if (top.backEligible || top.openedHref !== href) break
     entries.pop()
     count++
   }
@@ -45,7 +45,7 @@ export function transitionSheetHistory(state, action) {
       closedIds.includes(entry.sheetId) ? { ...entry, backEligible: false } : entry
     )
     for (const sheet of openedSheets) {
-      entries.push({ sheetId: sheet.id, openedAt: action.href, backEligible: true })
+      entries.push({ sheetId: sheet.id, openedHref: action.href, backEligible: true })
     }
 
     const rewind = closedIds.length ? drainTombstones(entries, action.href) : 0

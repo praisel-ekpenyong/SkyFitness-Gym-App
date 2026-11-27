@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
+import { screen } from '@testing-library/dom'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import Modals from './Modals.jsx'
 import { useUI } from '../store/useUI.js'
@@ -58,9 +59,12 @@ describe('Back with sheets open', () => {
     await setSheets([sheet('lower'), sheet('upper')])
     await act(async () => { useUI.getState().closeSheet('lower') })
     expect(ids()).toEqual(['upper'])
+    expect(screen.queryByRole('dialog', { name: 'lower' })).toBeNull()
+    expect(screen.getByRole('dialog', { name: 'upper' })).toBeTruthy()
 
     await back()
     expect(ids()).toEqual([])
+    expect(screen.queryByRole('dialog', { name: 'upper' })).toBeNull()
     expect(page()).toBe('workout')
     await back()
     expect(page()).toBe('home')
@@ -114,6 +118,7 @@ describe('closing sheets from the screen', () => {
     await settle()
 
     expect(ids()).toEqual([])
+    expect(screen.queryByRole('dialog', { name: 'upper' })).toBeNull()
     expect(page()).toBe('workout')
     await back()
     expect(page()).toBe('home')
@@ -127,6 +132,7 @@ describe('closing sheets from the screen', () => {
 
     await back()
     expect(ids()).toEqual([])
+    expect(screen.queryByRole('dialog', { name: 'top' })).toBeNull()
     expect(page()).toBe('workout')
     await back()
     expect(page()).toBe('home')
