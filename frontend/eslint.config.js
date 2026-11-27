@@ -101,6 +101,17 @@ const noActiveInternalImports = {
   message: 'Import act and sessionView from lib/active-workout.js, not lib/active-* internals (ADR 0023, TESTING_STANDARDS.md).',
 }
 
+const UI_TEST_QUERY_MESSAGE = 'Find elements by role, label or text, not by CSS class or id (TESTING_STANDARDS.md). Give the control an aria-label or role in the component first.'
+const UI_TEST_CLASS_MESSAGE = 'Do not assert on a CSS class (TESTING_STANDARDS.md). Assert what the lifter sees; a state shown only by a class gets the reason in the assertion message.'
+const noCssQueryInUiTests = [
+  {
+    selector: "CallExpression[callee.property.name=/^querySelector(All)?$/][arguments.0.value=/^[.#]|\\s[.#]|\\[class/]",
+    message: UI_TEST_QUERY_MESSAGE,
+  },
+  { selector: "CallExpression[callee.property.name='toHaveClass']", message: UI_TEST_CLASS_MESSAGE },
+  { selector: 'MemberExpression[property.name=/^(classList|className)$/]', message: UI_TEST_CLASS_MESSAGE },
+]
+
 const TESTS = ['**/*.test.*', '**/*.spec.*', 'src/test/**']
 const SOURCE = '**/*.{js,jsx,mjs}'
 const SRC = 'src/**/*.{js,jsx,mjs}'
@@ -121,6 +132,7 @@ const restrictedSyntax = [
   { selectors: [importMetaEnvExcept('DEV')], files: ['src/components/Modals.jsx'] },
   { selectors: [processEnv], files: [SRC], exempt: ['src/lib/env.js', ...TESTS] },
   { selectors: [noOwnModuleMock, noTestSnapshots, noActiveInternalImports], files: TESTS },
+  { selectors: noCssQueryInUiTests, files: ['src/**/*.test.jsx'] },
 ]
 
 // Flat config gives a file the options of the last block that sets a rule, so overlapping

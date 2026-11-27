@@ -106,4 +106,40 @@ describe('check-lint-baseline', () => {
       expect(check().code).toBe(0)
     })
   })
+
+  describe('test files', () => {
+    const passing = { 'hit.js': { [RULE]: 2 } }
+    const realTestConfig = readFileSync(join(here, '..', '.oxlintrc.tests.json'), 'utf8')
+
+    function withTest(source) {
+      project(passing)
+      writeFileSync(join(root, '.oxlintrc.tests.json'), realTestConfig)
+      writeFileSync(join(root, 'weak.test.js'), source)
+    }
+
+    it('fails a test with no assertion', () => {
+      withTest("import { it } from 'vitest'\nit('does a thing', () => {})\n")
+      const r = check()
+      expect(r.code).toBe(1)
+      expect(r.out).toContain('weak.test.js')
+      expect(r.out).toContain('jest/expect-expect')
+    })
+
+    it('fails an assertion that a branch can skip', () => {
+      withTest("import { it, expect } from 'vitest'\nit('checks it', () => {\n  const x = [1]\n  if (x.length) expect(x[0]).toBe(1)\n})\n")
+      const r = check()
+      expect(r.code).toBe(1)
+      expect(r.out).toContain('jest/no-conditional-expect')
+    })
+
+    it('fails a focused test', () => {
+      withTest("import { it, expect } from 'vitest'\nit.only('checks it', () => { expect(1).toBe(1) })\n")
+      expect(check().out).toContain('jest/no-focused-tests')
+    })
+
+    it('passes a test that asserts', () => {
+      withTest("import { it, expect } from 'vitest'\nit('checks it', () => { expect(1).toBe(1) })\n")
+      expect(check().code).toBe(0)
+    })
+  })
 })
