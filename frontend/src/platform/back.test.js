@@ -1,97 +1,120 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest'
-import { decideBack, makeBackHandler, EXIT_WINDOW } from './back.js'
+import { createHardwareBackAdapter, EXIT_WINDOW } from './back.js'
 
-describe('decideBack', () => {
-  it('dismisses the top sheet before touching history', () => {
-    expect(decideBack({ top: { id: 's1' }, canGoBack: true, exitArmed: false })).toBe('sheet')
-  })
-
-  it('lets a locked sheet swallow the press', () => {
-    expect(decideBack({ top: { id: 's1', locked: true }, canGoBack: true, exitArmed: true })).toBe('ignore')
-  })
-
-  it('walks history when nothing is open', () => {
-    expect(decideBack({ top: undefined, canGoBack: true, exitArmed: false })).toBe('history')
-  })
-
-  it('arms the exit at the bottom of the stack, and exits on the second press', () => {
-    expect(decideBack({ top: undefined, canGoBack: false, exitArmed: false })).toBe('arm-exit')
-    expect(decideBack({ top: undefined, canGoBack: false, exitArmed: true })).toBe('exit')
-  })
-})
-
-function harness() {
-  const calls = { closed: [], toasts: [], back: 0, exit: 0 }
-  let sheets = []
+// The Adapter's seam is install(handle): it wires one native listener and hands the
+// Module's handle the press. Everything it does is observed through the injected
+// history/exit/toast edges — never through a decision word.
+function harness({ consumed = false } = {}) {
+  let state = { consumed }
   let now = 1000
-  const handler = makeBackHandler({
-    getSheets: () => sheets,
-    closeSheet: id => { calls.closed.push(id); sheets = sheets.filter(s => s.id !== id) },
+  let handler = null
+  let removals = 0
+  let installs = 0
+  let handleCalls = 0
+  const calls = { goBack: 0, toasts: [], exit: 0 }
+  const adapter = createHardwareBackAdapter({
+    listen: fn => {
+      installs++
+      handler = fn
+      return () => { removals++; handler = null }
+    },
+    goBack: () => { calls.goBack++ },
     toast: m => calls.toasts.push(m),
-    goBack: () => { calls.back++ },
     exit: () => { calls.exit++ },
     now: () => now,
   })
-  return { calls, handler, setSheets: s => { sheets = s }, tick: ms => { now += ms } }
+  const dispose = adapter.install(() => { handleCalls++; return state.consumed })
+  return {
+    calls,
+    dispose,
+    press: (ev = {}) => handler?.(ev),
+    handleCalls: () => handleCalls,
+    setConsumed: value => { state.consumed = value },
+    tick: ms => { now += ms },
+    installs: () => installs,
+    removals: () => removals,
+    hasHandler: () => handler !== null,
+  }
 }
 
-describe('makeBackHandler', () => {
-  it('closes stacked sheets one press at a time', () => {
+describe('hardware-Back Adapter install seam', () => {
+  it('wires one native listener at install and removes it on dispose', () => {
     const h = harness()
-    h.setSheets([{ id: 'a' }, { id: 'b' }])
-    expect(h.handler({ canGoBack: true })).toBe('sheet')
-    expect(h.handler({ canGoBack: true })).toBe('sheet')
-    expect(h.calls.closed).toEqual(['b', 'a'])
-    expect(h.calls.back).toBe(0)
+    expect(h.installs()).toBe(1)
+    expect(h.hasHandler()).toBe(true)
+    h.press({ canGoBack: true })
+    expect(h.handleCalls()).toBe(1)
+
+    h.dispose()
+    h.dispose()
+    expect(h.removals()).toBe(1)
+    expect(h.hasHandler()).toBe(false)
+    const before = h.handleCalls()
+    h.press({ canGoBack: true })
+    expect(h.handleCalls()).toBe(before)
   })
 
-  it('does not close a locked sheet, and does not arm the exit behind it', () => {
-    const h = harness()
-    h.setSheets([{ id: 'a', locked: true }])
-    expect(h.handler({ canGoBack: false })).toBe('ignore')
-    expect(h.calls.closed).toEqual([])
+  it('leaves history and exit alone when the Module consumed the press', () => {
+    const h = harness({ consumed: true })
+    h.press({ canGoBack: true })
+    expect(h.calls.goBack).toBe(0)
     expect(h.calls.toasts).toEqual([])
     expect(h.calls.exit).toBe(0)
   })
 
-  it('goes back a page while the WebView still has app history', () => {
+  it('a locked sheet consumes the press without arming exit', () => {
+    const h = harness({ consumed: true })
+    h.press({ canGoBack: false })
+    h.setConsumed(false)
+    h.tick(EXIT_WINDOW + 1)
+    h.press({ canGoBack: false })
+    expect(h.calls.exit).toBe(0)
+    expect(h.calls.toasts).toHaveLength(1)
+  })
+
+  it('walks app history when the press was not consumed', () => {
     const h = harness()
-    expect(h.handler({ canGoBack: true })).toBe('history')
-    expect(h.calls.back).toBe(1)
+    h.press({ canGoBack: true })
+    expect(h.calls.goBack).toBe(1)
+    expect(h.calls.toasts).toEqual([])
     expect(h.calls.exit).toBe(0)
   })
 
   it('warns once, then exits on a second press inside the window', () => {
     const h = harness()
-    expect(h.handler({ canGoBack: false })).toBe('arm-exit')
+    h.press({ canGoBack: false })
     expect(h.calls.toasts).toHaveLength(1)
     expect(h.calls.exit).toBe(0)
     h.tick(EXIT_WINDOW - 1)
-    expect(h.handler({ canGoBack: false })).toBe('exit')
+    h.press({ canGoBack: false })
     expect(h.calls.exit).toBe(1)
   })
 
   it('re-arms rather than exiting once the window has passed', () => {
     const h = harness()
-    h.handler({ canGoBack: false })
+    h.press({ canGoBack: false })
     h.tick(EXIT_WINDOW + 1)
-    expect(h.handler({ canGoBack: false })).toBe('arm-exit')
+    h.press({ canGoBack: false })
     expect(h.calls.exit).toBe(0)
     expect(h.calls.toasts).toHaveLength(2)
   })
 
-  it('disarms the exit as soon as another press does real work', () => {
+  it('disarms the exit when another press does real work', () => {
     const h = harness()
-    h.handler({ canGoBack: false })
-    h.setSheets([{ id: 'a' }])
-    expect(h.handler({ canGoBack: true })).toBe('sheet')
-    expect(h.handler({ canGoBack: false })).toBe('arm-exit')
+    h.press({ canGoBack: false })
+    h.setConsumed(true)
+    h.press({ canGoBack: false })
+    h.setConsumed(false)
+    h.press({ canGoBack: false })
     expect(h.calls.exit).toBe(0)
+    expect(h.calls.toasts).toHaveLength(2)
   })
 
-  it('treats a missing event payload as no history', () => {
+  it('treats a missing event payload as no app history', () => {
     const h = harness()
-    expect(h.handler()).toBe('arm-exit')
+    h.press()
+    expect(h.calls.goBack).toBe(0)
+    expect(h.calls.toasts).toHaveLength(1)
   })
 })
