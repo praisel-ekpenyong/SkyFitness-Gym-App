@@ -2,6 +2,7 @@ import { useEffect, useId, useLayoutEffect, useRef } from 'react'
 import { useUI } from '../store/useUI.js'
 import { createSheetHistory } from '../platform/sheet-history.js'
 import { createBrowserHistoryAdapter } from '../platform/browser-history.js'
+import { createHardwareBackAdapter } from '../platform/back.js'
 
 /**
  * @param {(sheets: Array<{ id: string, locked?: boolean }>) => void} handler
@@ -11,8 +12,7 @@ const subscribeSheets = handler => useUI.subscribe((state, prev) => {
   if (state.sheets !== prev.sheets) handler(state.sheets)
 })
 
-// The host injects the three Adapters. The real hardware-Back handle is installed
-// by a later ticket; until then only the identity-exact install contract is needed here.
+// The three Adapters the Module installs against.
 export function createModalsHost() {
   return {
     sheets: {
@@ -21,7 +21,7 @@ export function createModalsHost() {
       closeSheet: (/** @type {string} */ id) => useUI.getState().closeSheet(id),
     },
     history: createBrowserHistoryAdapter(),
-    back: { install: () => () => {} },
+    back: createHardwareBackAdapter(),
   }
 }
 

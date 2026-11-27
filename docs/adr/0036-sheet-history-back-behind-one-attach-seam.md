@@ -21,3 +21,4 @@ One deep Module owns sheet-versus-history state and effects behind a single Inte
 - State is committed before effects run, because closing a sheet re-enters the sheets subscription synchronously.
 - The happy-dom history test becomes the Interface test; assertions on effect arrays and on `decideBack` return strings go with the old Interface rather than being layered over the new one.
 - A locked sheet consumes the Back press without closing; the hardware Adapter must not treat that as a cue to arm exit.
+- 2026-11-27: `platform/back.js` also executes one `history.back()` when a hardware press was not consumed, so app-history traversal is unchanged. That is an effect, not a sheet-versus-history decision, which stays in the Module.

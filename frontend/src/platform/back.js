@@ -5,44 +5,91 @@ import { t } from '../lib/i18n.js'
 
 export const EXIT_WINDOW = 2000
 
-export function decideBack({ top, canGoBack, exitArmed }) {
-  if (top) return top.locked ? 'ignore' : 'sheet'
-  if (canGoBack) return 'history'
-  return exitArmed ? 'exit' : 'arm-exit'
+async function capacitorApp() {
+  const { App } = await import('@capacitor/app')
+  return App
 }
 
-export function makeBackHandler({ getSheets, closeSheet, toast, goBack, exit, now = Date.now }) {
-  let armedAt = -Infinity
-  return (ev = {}) => {
-    const sheets = getSheets()
-    const action = decideBack({
-      top: sheets[sheets.length - 1],
-      canGoBack: !!ev.canGoBack,
-      exitArmed: now() - armedAt < EXIT_WINDOW,
-    })
-    if (action !== 'arm-exit') armedAt = -Infinity
-    if (action === 'sheet') closeSheet(sheets[sheets.length - 1].id)
-    else if (action === 'history') goBack()
-    else if (action === 'arm-exit') { armedAt = now(); toast(t('Press back again to exit')) }
-    else if (action === 'exit') exit()
-    return action
+/**
+ * Registers the native backButton listener and resolves to its disposer. Web builds
+ * have no native Back, so they get a no-op disposer.
+ * @param {(ev: { canGoBack?: boolean }) => void} handler
+ * @returns {Promise<() => void>}
+ */
+async function listenBackButton(handler) {
+  if (!MOBILE) return () => {}
+  try {
+    const App = await capacitorApp()
+    const sub = await App.addListener('backButton', handler)
+    return () => { void sub.remove() }
+  } catch (e) {
+    return () => {}
   }
 }
 
-export async function initBackButton() {
-  if (!MOBILE) return () => {}
+async function exitApp() {
   try {
-    const { App } = await import('@capacitor/app')
-    const handler = makeBackHandler({
-      getSheets: () => useUI.getState().sheets,
-      closeSheet: id => useUI.getState().closeSheet(id),
-      toast: msg => useUI.getState().toast(msg),
-      goBack: () => window.history.back(),
-      exit: () => App.exitApp(),
-    })
-    const sub = await App.addListener('backButton', handler)
-    return () => sub.remove()
-  } catch (e) {
-    return () => {}
+    const App = await capacitorApp()
+    await App.exitApp()
+  } catch (e) {}
+}
+
+/**
+ * @typedef {object} HardwareBackDeps
+ * @property {(handler: (ev: { canGoBack?: boolean }) => void) => (() => void) | Promise<() => void>} [listen]
+ * @property {() => void} [goBack]
+ * @property {(msg: string) => void} [toast]
+ * @property {() => void} [exit]
+ * @property {() => number} [now]
+ */
+
+/**
+ * The hardware-Back Adapter for the sheet-history Module. `install` takes the
+ * Module's one Back handle and returns an idempotent disposer.
+ * @param {HardwareBackDeps} [deps]
+ */
+export function createHardwareBackAdapter({
+  listen = listenBackButton,
+  goBack = () => window.history.back(),
+  toast = msg => useUI.getState().toast(msg),
+  exit = exitApp,
+  now = Date.now,
+} = {}) {
+  return {
+    /**
+     * @param {() => boolean} handle - the Module's Back handle
+     * @returns {() => void} idempotent disposer, unregistering only this listener
+     */
+    install: handle => {
+      let disposed = false
+      /** @type {(() => void) | null} */
+      let remove = null
+      let armedAt = -Infinity
+
+      /** @param {{ canGoBack?: boolean }} [ev] */
+      const onBack = ev => {
+        if (disposed) return
+        if (handle()) { armedAt = -Infinity; return }
+        if (ev?.canGoBack) { armedAt = -Infinity; goBack(); return }
+        if (now() - armedAt < EXIT_WINDOW) { armedAt = -Infinity; void exit(); return }
+        armedAt = now()
+        toast(t('Press back again to exit'))
+      }
+
+      const registration = listen(onBack)
+      /** @param {() => void} remover */
+      const attach = remover => {
+        if (disposed) remover()
+        else remove = remover
+      }
+      if (registration instanceof Promise) void registration.then(attach).catch(() => {})
+      else attach(registration)
+
+      return () => {
+        if (disposed) return
+        disposed = true
+        remove?.()
+      }
+    },
   }
 }
