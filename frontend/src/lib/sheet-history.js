@@ -30,6 +30,16 @@ function drainTombstones(entries, href) {
 }
 
 /**
+ * Whether the Module still owns a browser entry a Back press should consume.
+ * A locked sheet consumes its press too: only its closing is suppressed.
+ * @param {SheetHistoryState} state
+ * @returns {boolean}
+ */
+export function consumesBack(state) {
+  return state.pendingProgrammaticPops > 0 || state.entries.length > 0
+}
+
+/**
  * @param {SheetHistoryState} state
  * @param {SheetHistoryAction} action
  * @returns {{ state: SheetHistoryState, effects: SheetHistoryEffect[] }}
