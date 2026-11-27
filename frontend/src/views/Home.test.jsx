@@ -181,6 +181,37 @@ describe('Home hero routine exercise count binding (05)', () => {
   })
 })
 
+describe('Home recovery map', () => {
+  it('renders the muscle recovery state from completed Workouts', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    try {
+      vi.setSystemTime(new Date(2026, 6, 1, 12))
+      useStore.getState().update(s => {
+        s.routines = []
+        s.week = {}
+        s.dayPlan = {}
+        s.active = null
+        s.bodyweight = []
+        s.workouts = [{
+          id: 'w-bench',
+          d: todayISO(),
+          start: Date.now(),
+          entries: [{
+            id: '0025',
+            sets: Array.from({ length: 6 }, () => ({ done: true, w: 100, r: 5 })),
+          }],
+        }]
+      })
+
+      await act(async () => { root.render(<Home />) })
+
+      expect(container.textContent).toMatch(/Still recovering: .*Chest/)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+})
+
 describe('Home declarative weekly progress card (non-gamified PRODUCT.md voice)', () => {
   it('renders declarative progress without streaks or flame iconography', async () => {
     const today = todayISO()
