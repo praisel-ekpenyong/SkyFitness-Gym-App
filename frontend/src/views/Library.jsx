@@ -56,7 +56,7 @@ export default function Library() {
       <div className="item ex-create" role="button" tabIndex={0} onClick={() => customExSheet(null, ex => exerciseDetailSheet(ex), q.trim())}
         onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); customExSheet(null, ex => exerciseDetailSheet(ex), q.trim()) } }}>
         <div className="thumb thumb-x"><Icon name="plus" /></div>
-        <div className="grow"><div className="tt">{t('Create your own exercise')}</div><div className="ss">{t('Name and target muscles, no animation')}</div></div>
+        <div className="grow"><div className="tt">{t('Create your own exercise')}</div><div className="ss">{t('Name it and choose a primary muscle; secondary muscles are optional. No animation.')}</div></div>
       </div>
       {rows.slice(0, shown).map(row => {
         const e = row.exercise
@@ -86,7 +86,7 @@ export default function Library() {
           </div>
           <div className="ex-foot">
             {best > 0 ? <span className="ex-best-v">{fmtNum(best)} <span className="u">{S.unit}</span></span> : <span />}
-            <Button size="sm" variant="ghost" icon="plus" onClick={ev => { ev.stopPropagation(); addToRoutineSheet(e) }}>{t('Plan')}</Button>
+            <Button size="sm" variant="ghost" icon="plus" onClick={ev => { ev.stopPropagation(); addToRoutineSheet(e) }}>{t('Add to a routine')}</Button>
           </div>
         </div>
       })}

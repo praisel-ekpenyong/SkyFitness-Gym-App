@@ -79,13 +79,13 @@ describe('Library view smoke tests', () => {
     expect(Array.isArray(useStore.getState().S.favorites)).toBe(true)
   })
 
-  it('puts a star before Plan in each row and toggles favorite state without opening the detail sheet', async () => {
+  it('puts the add-to-routine action after the star and toggles favorite state without opening the detail sheet', async () => {
     await render()
 
     const [row] = tilesIn(container)
     const starBtn = star(row)
-    const planBtn = within(row).getByRole('button', { name: 'Plan' })
-    expect(starBtn.compareDocumentPosition(planBtn) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    const addToRoutineButton = within(row).getByRole('button', { name: 'Add to a routine' })
+    expect(starBtn.compareDocumentPosition(addToRoutineButton) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
 
     expect(starBtn.getAttribute('aria-label')).toBe('Add to favorites')
     expect(useStore.getState().S.favorites).toEqual([])

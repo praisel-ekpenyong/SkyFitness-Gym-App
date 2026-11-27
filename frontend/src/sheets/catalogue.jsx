@@ -97,7 +97,7 @@ export function ExerciseDetail({ ex, close }) {
     {best > 0 && <div className="small row best-line"><Icon name="trophy" /><span>{t('Best')} <b>{fmtVol(best, st.unit)}</b>{last ? ` · ${t('last {0} · {1}', fmtDate(last.d), last.sets.map(s => setLabel(ex.id, s, last.target)).join(', '))}` : ''}</span></div>}
     {strength && <ExerciseStrengthLine reading={strength} unit={st.unit} />}
     <div className="gap8" />
-    <Button variant="primary" icon="plus" onClick={() => addToRoutineSheet(ex)}>{t('Add to my plan')}</Button>
+    <Button variant="primary" icon="plus" onClick={() => addToRoutineSheet(ex)}>{t('Add to a routine')}</Button>
     {ex.custom && <div className="split">
       <Button icon="pencil" onClick={() => { close(); customExSheet(ex) }}>{t('Edit')}</Button>
       <Button variant="danger" icon="trash" onClick={() => deleteCustomEx(ex, close)}>{t('Delete')}</Button>
@@ -323,7 +323,7 @@ export function ExercisePicker({ onPick }) {
       {filter !== '★' && <div className="item" role="button" tabIndex={0} onClick={() => customExSheet(null, ex => onPick(ex), q.trim())}
         onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); customExSheet(null, ex => onPick(ex), q.trim()) } }}>
         <div className="thumb thumb-x"><Icon name="plus" /></div>
-        <div className="grow"><div className="tt">{t('Create your own exercise')}</div><div className="ss">{t('Name and target muscles, no animation')}</div></div>
+        <div className="grow"><div className="tt">{t('Create your own exercise')}</div><div className="ss">{t('Name it and choose a primary muscle; secondary muscles are optional. No animation.')}</div></div>
       </div>}
       {f.slice(0, shown).map(row => {
         const e = row.exercise
