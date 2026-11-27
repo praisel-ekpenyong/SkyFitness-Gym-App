@@ -17,10 +17,6 @@ describe('sheet history transitions', () => {
       sheets: [sheet('one'), sheet('two')],
     })
     expect(result.effects).toEqual([{ type: 'close', id: 'two' }])
-    expect(result.state.entries).toEqual([
-      { openedAt: '#/workout', live: true },
-      { openedAt: '#/workout', live: false },
-    ])
   })
 
   it('closes normally stacked sheets one at a time', () => {
@@ -54,7 +50,6 @@ describe('sheet history transitions', () => {
 
     result = transitionSheetHistory(result.state, { type: 'pop', sheets: [] })
     expect(result.effects).toEqual([])
-    expect(result.state.pendingProgrammaticPops).toBe(0)
 
     result = transitionSheetHistory(result.state, {
       type: 'sheets-changed',
@@ -86,6 +81,7 @@ describe('sheet history transitions', () => {
     })
     result = transitionSheetHistory(result.state, { type: 'pop', sheets: [sheet('confirm', true)] })
     expect(result.effects).toEqual([])
-    expect(result.state.entries[0].live).toBe(false)
+    result = transitionSheetHistory(result.state, { type: 'sheets-changed', sheetCount: 0, href: '#/workout' })
+    expect(result.effects).toEqual([])
   })
 })

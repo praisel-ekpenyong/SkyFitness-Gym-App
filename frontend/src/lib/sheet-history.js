@@ -1,4 +1,4 @@
-/** @typedef {{ openedAt: string, live: boolean }} SheetHistoryEntry */
+/** @typedef {{ openedAt: string, backEligible: boolean }} SheetHistoryEntry */
 /** @typedef {{ id: string, locked?: boolean }} SheetDescriptor */
 /** @typedef {{ sheetCount: number, entries: SheetHistoryEntry[], pushedEntries: number, pendingProgrammaticPops: number }} SheetHistoryState */
 /** @typedef {{ type: 'sheets-changed', sheetCount: number, href: string } | { type: 'pop', sheets: SheetDescriptor[] }} SheetHistoryAction */
@@ -30,7 +30,7 @@ export function transitionSheetHistory(state, action) {
           sheetCount,
           entries: [
             ...state.entries,
-            ...Array.from({ length: added }, () => ({ openedAt: action.href, live: true })),
+            ...Array.from({ length: added }, () => ({ openedAt: action.href, backEligible: true })),
           ],
           pushedEntries: state.pushedEntries + added,
         },
@@ -41,7 +41,7 @@ export function transitionSheetHistory(state, action) {
     if (sheetCount < state.sheetCount) {
       const closed = state.entries.slice(sheetCount)
       const entries = state.entries.slice(0, sheetCount)
-      const rewind = closed.filter(entry => entry.live && entry.openedAt === action.href).length
+      const rewind = closed.filter(entry => entry.backEligible && entry.openedAt === action.href).length
       return {
         state: {
           ...state,
@@ -68,13 +68,13 @@ export function transitionSheetHistory(state, action) {
 
     let entryIndex = -1
     for (let i = state.entries.length - 1; i >= 0; i--) {
-      if (state.entries[i].live) {
+      if (state.entries[i].backEligible) {
         entryIndex = i
         break
       }
     }
     const entries = state.entries.map((entry, index) =>
-      index === entryIndex ? { ...entry, live: false } : entry
+      index === entryIndex ? { ...entry, backEligible: false } : entry
     )
     const top = action.sheets[action.sheets.length - 1]
     return {
