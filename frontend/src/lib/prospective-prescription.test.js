@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { readProspectivePrescription } from './prospective-prescription.js'
+import { act } from './active-workout.js'
+import { sessionProgressionItems } from './progression.js'
+import { workoutTimestamp } from './dates.js'
 
 /** @param {Array<any>} entries @param {Record<string, any>} [overrides] */
 const activeOf = (entries, overrides = {}) => ({
@@ -22,6 +25,9 @@ const profileOf = (overrides = {}) => ({
   routines: [{ id: 'r-1', name: 'Push', prog: 'linear', ex: [] }],
   ...overrides,
 })
+
+/** Finish through the public store action (ADR 0023). @param {any} S */
+const finishActive = S => act(S, { type: 'finish' }).result.workout
 
 const bench = (sets, overrides = {}) => ({
   id: 'barbell-bench-press',
@@ -112,5 +118,126 @@ describe('readProspectivePrescription', () => {
 
     expect(JSON.stringify(active)).toBe(activeSnapshot)
     expect(JSON.stringify(profile)).toBe(profileSnapshot)
+  })
+})
+
+describe('the Session boundary and the summary read the one Prospective Prescription', () => {
+  it('records the Prescription the reading guarantees on the finished Entry', () => {
+    // The asked plan is a hold, but a fully hit session advances: the record must follow the
+    // reading (the same advance the cue showed), not the stale plan carried on the Active Entry.
+    const active = activeOf([bench(hits(3), { plan: { kind: 'hold', weight: 60 } })])
+    const S = { ...profileOf(), active }
+    const reading = readProspectivePrescription(active, S)
+
+    const workout = finishActive(S)
+
+    expect(reading.entries['barbell-bench-press'].plan).toEqual({ kind: 'up', weight: 62.5 })
+    expect(workout.entries[0].plan).toEqual(reading.entries['barbell-bench-press'].plan)
+  })
+
+  it('records a Deload consistently with the reading', () => {
+    const misses = Array.from({ length: 3 }, (_, i) => ({
+      id: 'w-miss-' + i, d: '2026-06-1' + i, start: 0, end: 1, routineId: 'r-1', name: '',
+      bw: null, unit: 'kg',
+      entries: [bench([{ r: 2, w: 60, done: true }, { r: 2, w: 60, done: true }, { r: 2, w: 60, done: true }])],
+    }))
+    const active = activeOf([bench([{ r: 2, w: 60, done: true }, { r: 2, w: 60, done: true }, { r: 2, w: 60, done: true }])])
+    const S = { ...profileOf({ workouts: misses }), active }
+    const reading = readProspectivePrescription(active, S)
+
+    const workout = finishActive(S)
+
+    expect(reading.entries['barbell-bench-press'].plan.kind).toBe('deload')
+    expect(workout.entries[0].plan).toEqual(reading.entries['barbell-bench-press'].plan)
+  })
+
+  it('reads the finished Workout by id and the Active unit for the summary', () => {
+    const entry = bench([{ r: 5, w: 135, done: true }, { r: 5, w: 135, done: true }, { r: 5, w: 135, done: true }], {
+      target: { mode: 'reps', reps: 5, weight: 135, prog: 'linear', sets: 3, inc: 5 },
+    })
+    const logged = {
+      id: 'a-1', d: '2026-06-15', start: 1000, end: 2000, routineId: 'r-1', name: 'Push day',
+      bw: null, unit: 'lb', entries: [entry],
+    }
+    const S = profileOf({ unit: 'kg', workouts: [logged] })
+    const reading = readProspectivePrescription(logged, S)
+
+    expect(reading.workout).toBe(logged)
+
+    // The existing summary seams through the reading instead of building its own stand-in in
+    // the Profile unit, so a mid-session unit change agrees with the cue and the record.
+    const items = sessionProgressionItems(logged, S, workoutTimestamp(logged), reading)
+    expect(items).toHaveLength(1)
+    expect(items[0].text).toBe('135 lb → 140 lb (+5 lb)')
+
+    const workout = finishActive({ ...S, active: { ...logged, end: undefined } })
+    expect(workout.entries[0].plan).toEqual({ kind: 'up', weight: 140 })
+  })
+
+  it('lists the same next Prescription in the summary as the cue and the record', () => {
+    const curl = { id: 'dumbbell-curl', target: { mode: 'reps', reps: 10, weight: 14, prog: 'linear', sets: 2 }, sets: [{ r: 10, w: 14, done: true }, { r: 10, w: 14, done: true }] }
+    const active = activeOf([bench(hits(3)), curl])
+    const S = { ...profileOf(), active }
+    const reading = readProspectivePrescription(active, S)
+    const summary = sessionProgressionItems(reading.workout, S, 0, reading)
+
+    expect(summary.map(i => i.id)).toEqual(['barbell-bench-press', 'dumbbell-curl'])
+    // Concrete next targets, independent of the reading: a wrong summary cannot pass these.
+    expect(summary.map(i => i.text)).toEqual([
+      '60 kg → 62.5 kg (+2.5 kg)',
+      '14 kg → 16.5 kg (+2.5 kg)',
+    ])
+
+    const workout = finishActive(S)
+    expect(workout.entries.map(e => e.plan)).toEqual([
+      { kind: 'up', weight: 62.5 },
+      { kind: 'up', weight: 16.5 },
+    ])
+  })
+
+  it('does not count the finished Workout twice in the Training log reading', () => {
+    const logged = {
+      id: 'a-1', d: '2026-06-15', start: 1000, end: 2000, routineId: 'r-1', name: '',
+      bw: null, unit: 'kg', entries: [bench(hits(3))],
+    }
+    const S = profileOf({ workouts: [logged] })
+    const before = readProspectivePrescription({ ...logged, end: null }, S)
+    const after = readProspectivePrescription(logged, S)
+
+    expect(after.workout).toBe(logged)
+    expect(after.entries['barbell-bench-press'].prescription)
+      .toEqual(before.entries['barbell-bench-press'].prescription)
+    expect(before.entries['barbell-bench-press'].prescription)
+      .toMatchObject({ kind: 'up', weight: 62.5 })
+    expect(sessionProgressionItems(logged, S, workoutTimestamp(logged), after)[0].text)
+      .toBe('60 kg → 62.5 kg (+2.5 kg)')
+  })
+
+  it('describes a Hold, a Drop and a Deload the same way across the three readers', () => {
+    const drop = bench([
+      { r: 6, w: 24, done: true }, { r: 6, w: 24, done: true }, { r: 5, w: 24, done: true },
+    ], { target: { mode: 'reps', reps: 12, repsMin: 8, weight: 24, prog: 'double', sets: 3, inc: 2 } })
+    const cases = [
+      { entry: bench([{ r: 4, w: 60, done: true }, { r: 4, w: 60, done: true }, { r: 4, w: 60, done: true }]), kind: 'hold', text: 'Hold at 60 kg to solidify volume' },
+      { entry: drop, kind: 'down', text: 'Drop 2 kg, back to 8 reps' },
+      { entry: bench([{ r: 2, w: 60, done: true }, { r: 2, w: 60, done: true }, { r: 2, w: 60, done: true }]), kind: 'deload', stalls: 3, text: 'Deload to 55 kg' },
+    ]
+    for (const { entry, kind, text, stalls = 0 } of cases) {
+      const history = Array.from({ length: stalls }, (_, i) => ({
+        id: 'w-' + i, d: '2026-06-1' + i, start: 0, end: 1, routineId: 'r-1', name: '',
+        bw: null, unit: 'kg',
+        entries: [bench(Array.from({ length: 3 }, () => ({ r: 2, w: 60, done: true })))],
+      }))
+      const active = activeOf([entry])
+      const S = { ...profileOf({ workouts: history }), active }
+      const reading = readProspectivePrescription(active, S)
+      const summary = sessionProgressionItems(reading.workout, S, 0, reading)[0]
+
+      expect(reading.entries['barbell-bench-press'].prescription.kind).toBe(kind)
+      expect(summary.kind).toBe(kind)
+      const workout = finishActive(S)
+      expect(workout.entries[0].plan.kind).toBe(kind)
+      expect(summary.text).toBe(text)
+    }
   })
 })

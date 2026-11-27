@@ -51,13 +51,14 @@ const EMPTY_ACTIVE = {
 }
 
 /**
- * Copy an Entry with the structured-clone primitive so freezing the reading never freezes the
- * caller's Active workout. Entries are plain profile data, so cloning cannot drop behaviour.
+ * Copy an Entry so freezing the reading never freezes the caller's Active workout. The boundary
+ * calls the reading inside a store action, where entries may be proxy drafts that structuredClone
+ * cannot copy; a top-level spread is enough because the reading freezes only the top level.
  * @param {Entry} entry
  * @returns {Entry}
  */
 function freezeEntryPlan(entry) {
-  const copy = structuredClone(entry)
+  const copy = { ...entry }
   const plan = freezePrescriptionRecord(entry.plan)
   if (plan) copy.plan = plan
   else delete copy.plan

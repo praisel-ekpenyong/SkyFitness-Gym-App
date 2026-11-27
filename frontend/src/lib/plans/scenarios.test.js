@@ -35,16 +35,18 @@ describe('scenario 1: baseline, 8 clean weeks', () => {
   it('progresses Monday and Friday lateral raises on separate streams, with no deload', () => {
     ;['Upper', 'Pull'].forEach(day => {
       const raise = entriesOf(S, day, '0178')
-      expect(raise[0].plan.kind, day).toBe('first')
+      // The first finished Entry records the next Prescription the summary showed.
+      expect(raise[0].plan.kind, day).toBe('up')
       expect(kinds(raise), day).toContain('up')
       expect(kinds(raise), day).not.toContain('deload')
       expect(work(raise.at(-1))[0].w, day).toBeGreaterThan(work(raise[0])[0].w)
-      expect(weakest(raise.at(-1)), day).toBeGreaterThan(weakest(raise[firstIndex(raise, 'up')]))
+      // Compare reps once the working weight is reached; the first session is the light baseline.
+      expect(weakest(raise.at(-1)), day).toBeGreaterThan(weakest(raise[1]))
     })
   })
 
   it('reads Monday and Thursday bench as separate streams, so their weights can drift apart', () => {
-    expect(entriesOf(S, 'Push', '0025')[0].plan.kind).toBe('first')
+    expect(entriesOf(S, 'Push', '0025')[0].plan.kind).toBe('hold')
   })
 })
 
@@ -54,7 +56,7 @@ describe('scenario 1b: isolation total-reps target', () => {
 
   it('holds below the top of the range, then deloads a lifter the plan would step up', () => {
     expect(work(raise[0]).map(s => s.r)).toEqual([14, 13, 12, 11])
-    expect(kinds(raise)).toEqual(['first', 'hold', 'hold', 'hold', 'hold', 'deload'])
+    expect(kinds(raise)).toEqual(['hold', 'hold', 'hold', 'hold', 'deload', 'up'])
   })
 })
 
@@ -66,14 +68,15 @@ describe('scenario 2: illness', () => {
   const ill = generateHistory({ weeks: 8, lifter, day: sick })
   const control = generateHistory({ weeks: 8, lifter, day: skipped })
 
-  it('drops one Increment the session after the sick one', () => {
+  it('resumes at the dropped Increment the session after the sick one', () => {
     const push = ill.routines.find(r => r.name === 'Push').id
     const sessions = ill.workouts.filter(w => w.routineId === push)
     const sickDay = sessions.findIndex(w => w.d === '2026-09-24')
     const after = sessions[sickDay + 1]
     expect(sickDay).toBe(2)
     expect(after.d).toBe('2026-10-01')
-    expect(after.entries.find(e => e.id === '0194').plan).toMatchObject({ kind: 'down', weight: 22.5 })
+    // The sick session records the Drop the summary showed; the next Target resumes at 22.5.
+    expect(after.entries.find(e => e.id === '0194').plan).toMatchObject({ kind: 'hold', weight: 22.5 })
     expect(entriesOf(control, 'Push', '0194').some(e => e.plan?.weight === 22.5 && e.plan.kind === 'down')).toBe(false)
   })
 })
@@ -82,8 +85,8 @@ describe('scenario 3: leg ramp', () => {
   const ramp = ({ week, routine }) => (week < 2 && ['Lower', 'Legs'].includes(routine.name) ? { dropSets: 1 } : {})
   const S = generateHistory({ weeks: 5, day: ramp })
 
-  it('reads a skipped ramp set as missed reps, so the squat holds through the ramp', () => {
-    expect(kinds(entriesOf(S, 'Lower', '0043')).slice(0, 4)).toEqual(['first', 'hold', 'hold', 'up'])
+  it('reads a skipped ramp set as missed reps before the squat advances', () => {
+    expect(kinds(entriesOf(S, 'Lower', '0043')).slice(0, 4)).toEqual(['hold', 'hold', 'up', 'up'])
   })
 })
 
@@ -93,12 +96,12 @@ describe('scenario 4: exam week', () => {
     : {})
   const S = generateHistory({ weeks: 7, day: exam })
 
-  it('resumes at the last working weights the week after', () => {
+  it('advances again the week after the reduced exam week', () => {
     const bench = entriesOf(S, 'Upper', '0025')
     expect(work(bench[4])).toHaveLength(1)
-    expect(bench[5].plan).toMatchObject({ kind: 'hold', weight: 70 })
+    expect(bench[5].plan).toMatchObject({ kind: 'up', weight: 72.5, reps: 5 })
     const squat = entriesOf(S, 'Lower', '0043')
-    expect(squat[5].plan).toMatchObject({ kind: 'hold', weight: 70 })
+    expect(squat[5].plan).toMatchObject({ kind: 'up', weight: 72.5 })
   })
 })
 

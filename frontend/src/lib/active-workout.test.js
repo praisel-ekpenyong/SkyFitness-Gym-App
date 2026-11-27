@@ -670,7 +670,7 @@ describe('finishing a workout', () => {
     expect(w).toEqual({
       id: 'active-1', d: '2026-08-08', start: 1000, end: w.end, routineId: 'routine-1', name: 'Push', bw: 80,
       unit: 'kg',
-      entries: [{ id: '0025', sets: [{ done: true, w: 60, r: 8 }], target: { sets: 1, reps: 8 } }],
+      entries: [{ id: '0025', plan: { kind: 'up', weight: 62.5 }, sets: [{ done: true, w: 60, r: 8 }], target: { sets: 1, reps: 8 } }],
     })
     expect(typeof w.end).toBe('number')
   })

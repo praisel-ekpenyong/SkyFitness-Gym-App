@@ -37,6 +37,16 @@
  */
 
 /**
+ * The fields the Progression summary reads off one entry of the shared reading (ADR 0037).
+ * @typedef {Object} ProspectiveReadingLike
+ * @property {Prescription} prescription
+ * @property {Unit} unit
+ * @property {Target} cfg
+ * @property {string | null} [d]
+ * @property {string | null} [routineId]
+ */
+
+/**
  * One dated body-weight entry in `profile.bodyweight`.
  * @typedef {Object} WeighIn
  * @property {string} d - Calendar day key (`YYYY-MM-DD`).
