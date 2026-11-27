@@ -128,6 +128,67 @@ describe('Workout milestone badges', () => {
     expect(milestones()).toHaveLength(0)
   })
 
+  it('reads the cue through the Prospective Prescription when the Active unit differs from the Profile unit', () => {
+    const entry = {
+      id: 'barbell-bench-press',
+      target: { mode: 'reps', reps: 5, weight: 135, prog: 'linear', sets: 2, inc: 5 },
+      sets: [
+        { r: 5, w: 135, done: false },
+        { r: 5, w: 135, done: false },
+      ]
+    }
+    view = renderWorkout([entry])
+
+    act(() => {
+      useStore.setState(s => ({ S: { ...s.S, active: { ...s.S.active, unit: 'lb' }, unit: 'kg' } }))
+    })
+
+    toggleSet(0)
+    toggleSet(1)
+
+    expect(labelOf(1)).toBe('All sets hit! +5 lb unlocked next session')
+  })
+
+  it('reads the cue from the logged Workout when the Active id is already in the Training log', () => {
+    const entry = {
+      id: 'barbell-bench-press',
+      target: { mode: 'reps', reps: 5, weight: 60, prog: 'linear', sets: 2 },
+      sets: [
+        { r: 5, w: 60, done: false },
+        { r: 5, w: 60, done: false },
+      ]
+    }
+    view = renderWorkout([entry])
+
+    act(() => {
+      useStore.setState(s => ({
+        S: {
+          ...s.S,
+          workouts: [{
+            id: 'view-test',
+            d: '2026-08-10',
+            start: 0,
+            end: 1,
+            routineId: null,
+            name: '',
+            bw: null,
+            unit: 'kg',
+            entries: [{
+              id: 'barbell-bench-press',
+              target: { mode: 'reps', reps: 5, weight: 60, prog: 'linear', sets: 2 },
+              sets: [{ r: 3, w: 60, done: true }, { r: 3, w: 60, done: true }]
+            }]
+          }]
+        }
+      }))
+    })
+
+    toggleSet(0)
+    toggleSet(1)
+
+    expect(labelOf(1)).toBe('5/5 reps')
+  })
+
   it('immediately and reactively removes the badge when a set is unchecked', () => {
     const entry = {
       id: 'barbell-bench-press',
