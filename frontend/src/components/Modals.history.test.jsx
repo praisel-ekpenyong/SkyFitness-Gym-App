@@ -54,6 +54,18 @@ describe('Back with sheets open', () => {
     expect(page()).toBe('workout')
   })
 
+  it('closes the visible top sheet before skipping a lower-sheet tombstone', async () => {
+    await setSheets([sheet('lower'), sheet('upper')])
+    await act(async () => { useUI.getState().closeSheet('lower') })
+    expect(ids()).toEqual(['upper'])
+
+    await back()
+    expect(ids()).toEqual([])
+    expect(page()).toBe('workout')
+    await back()
+    expect(page()).toBe('home')
+  })
+
   it('does not close a locked sheet, and does not take the lifter off the page when it is closed later', async () => {
     await setSheets([sheet('confirm')])
     await setSheets([sheet('summary', { locked: true })])
@@ -93,6 +105,31 @@ describe('closing sheets from the screen', () => {
     await back()
     expect(ids()).toEqual([])
     expect(page()).toBe('workout')
+  })
+
+  it('drains a lower tombstone when the remaining top sheet is explicitly closed', async () => {
+    await setSheets([sheet('lower'), sheet('upper')])
+    await act(async () => { useUI.getState().closeSheet('lower') })
+    await act(async () => { useUI.getState().closeSheet('upper') })
+    await settle()
+
+    expect(ids()).toEqual([])
+    expect(page()).toBe('workout')
+    await back()
+    expect(page()).toBe('home')
+  })
+
+  it('skips multiple lower tombstones in order when the top sheet closes on Back', async () => {
+    await setSheets([sheet('first'), sheet('second'), sheet('top')])
+    await act(async () => { useUI.getState().closeSheet('first') })
+    await act(async () => { useUI.getState().closeSheet('second') })
+    expect(ids()).toEqual(['top'])
+
+    await back()
+    expect(ids()).toEqual([])
+    expect(page()).toBe('workout')
+    await back()
+    expect(page()).toBe('home')
   })
 
   it('does not pull the lifter back when the app has already moved to another page', async () => {

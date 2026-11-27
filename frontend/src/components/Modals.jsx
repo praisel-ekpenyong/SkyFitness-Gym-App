@@ -197,7 +197,7 @@ export default function Modals() {
   useEffect(() => {
     const result = transitionSheetHistory(historyState.current, {
       type: 'sheets-changed',
-      sheetCount: sheets.length,
+      sheets,
       href: location.href,
     })
     historyState.current = result.state
@@ -205,15 +205,16 @@ export default function Modals() {
       if (effect.type === 'push') history.pushState({ skySheet: true }, '')
       if (effect.type === 'rewind') history.go(-effect.count)
     }
-  }, [sheets.length])
+  }, [sheets])
 
   useEffect(() => {
     const onPop = () => {
       const { sheets, closeSheet } = useUI.getState()
-      const result = transitionSheetHistory(historyState.current, { type: 'pop', sheets })
+      const result = transitionSheetHistory(historyState.current, { type: 'pop', sheets, href: location.href })
       historyState.current = result.state
       for (const effect of result.effects) {
         if (effect.type === 'close') closeSheet(effect.id)
+        if (effect.type === 'rewind') history.go(-effect.count)
       }
     }
     window.addEventListener('popstate', onPop)
