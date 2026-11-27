@@ -355,11 +355,11 @@ describe('bodyweight progression runs', () => {
     for (let i = 0; i < 6; i++) run(i)
 
     const added = run(6)
-    expect(added.plan).toMatchObject({ kind: 'up', reps: 10, sets: 4 })
+    expect(added.plan).toMatchObject({ kind: 'hold', reps: 10, sets: 4 })
     expect(added.sets).toHaveLength(4)
 
     const climbed = run(7)
-    expect(climbed.plan).toMatchObject({ kind: 'up', reps: 11, sets: 4 })
+    expect(climbed.plan).toMatchObject({ kind: 'hold', reps: 11, sets: 4 })
     expect(climbed.sets).toHaveLength(4)
     expect(climbed.sets.every(s => s.r === 11)).toBe(true)
   })
@@ -483,7 +483,7 @@ describe('Prescription records and the finish boundary', () => {
 
     const completed = finish(S)
     expect(completed.entries[0].plan).toEqual({
-      kind: 'hold', weight: 40, reps: 11,
+      kind: 'hold', weight: 40, reps: 12,
     })
   })
 
@@ -510,7 +510,7 @@ describe('Prescription records and the finish boundary', () => {
     expect(second.entries[0].sets.map(s => s.r)).toEqual([11, 11, 11])
   })
 
-  it('the add-time deload survives the finish boundary', () => {
+  it('the add-time plan advances back to 30s at the finish boundary', () => {
     const routine = {
       id: 'r1', name: 'Push',
       ex: [{ id: LIFT, mode: 'time', sets: 2, sec: 45, prog: 'time' }],
@@ -528,10 +528,10 @@ describe('Prescription records and the finish boundary', () => {
     first.entries[0].sets.forEach(s => { s.done = true })
 
     const done = finish(S)
-    expect(done.entries[0].plan).toMatchObject({ kind: 'deload', sec: 25 })
+    expect(done.entries[0].plan).toMatchObject({ kind: 'up', sec: 30 })
 
     const second = begin(S, 'r1', '2026-01-11')
-    expect(second.entries[0].plan).toMatchObject({ kind: 'up', sec: 30 })
+    expect(second.entries[0].plan).toMatchObject({ kind: 'hold', sec: 30 })
     expect(second.entries[0].sets.map(s => s.sec)).toEqual([30, 30])
   })
 

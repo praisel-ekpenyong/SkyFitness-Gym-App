@@ -666,7 +666,8 @@ export function readEntryVerdict(entry, state, workout) {
   const unit = workout.unit || S.unit || 'kg'
   const routineId = workout.routineId ?? S.active?.routineId ?? null
   const inLog = (S.workouts || []).some(w => w.id === workout.id)
-  const effectiveS = inLog ? S : { ...S, unit, workouts: [...(S.workouts || []), workout] }
+  // ADR 0037: the reading keeps the Workout's unit, including after it is logged.
+  const effectiveS = inLog ? { ...S, unit } : { ...S, unit, workouts: [...(S.workouts || []), workout] }
   const routine = routineId ? (S.routines || []).find(r => r.id === routineId) || null : null
   const target = entry?.target || {}
   const cfg = { ...defaultConfig(entry.id), ...target, id: entry.id }
@@ -982,54 +983,59 @@ export function prescriptionStyle(kindOrPlan) {
 /** @param {Entry} entry @param {number} now @returns {string} */
 const entryDayKey = (entry, now) => ('d' in entry && typeof entry.d === 'string' && entry.d) || isoOf(new Date(now))
 
+/** @typedef {import('./types.js').ProspectiveReadingLike & { judged: ReturnType<typeof readSession> }} ProspectiveReadingLike */
+
 /**
  * Evaluates a single completed entry against its next prescription, returning a progression descriptor.
+ * When the caller supplies a Prospective Prescription `reading`, no second as-if-finished Workout,
+ * clock or Prescription judgement is constructed (ADR 0037).
  *
  * @param {Entry} entry Completed workout entry.
  * @param {Partial<Profile> | null | undefined} state Store state S.
- * @param {{ workout?: Workout | null, routine?: Routine | null, now: number }} context - Workout, routine and the caller's clock.
+ * @param {{ workout?: Workout | null, routine?: Routine | null, now: number, reading?: ProspectiveReadingLike | null }} context - Workout, routine, reading and the caller's clock.
  * @returns {ProgressionDescriptor | null} Progression descriptor or null if no performed work sets.
  */
 export function evaluateSessionProgression(entry, state, context) {
   if (!entry || doneWorkSets(entry).length <= 0) return null
 
-  assertClock(context?.now)
+  const reading = context?.reading
+  if (!reading) assertClock(context?.now)
   const now = context.now
   const workout = context?.workout
+  const routineId = reading?.routineId ?? workout?.routineId
   const routine = context?.routine ||
-    (workout?.routineId ? state?.routines?.find(r => r.id === workout.routineId) : null) ||
+    (routineId ? state?.routines?.find(r => r.id === routineId) : null) ||
     null
 
   /** @type {Workout | null} */
   let dummyWorkout = null
   let effectiveS = state
-  if (workout) {
-    const inWorkouts = (state?.workouts || []).some(w => w.id === workout.id || w === workout)
-    if (!inWorkouts) {
-      effectiveS = { ...(state || {}), workouts: [...(state?.workouts || []), workout] }
-    }
-  } else {
-    const inWorkouts = (state?.workouts || []).some(w => (w.entries || []).includes(entry))
-    if (!inWorkouts) {
-      dummyWorkout = {
-        id: 'session-entry-' + entry.id,
-        d: entryDayKey(entry, now),
-        start: 0,
-        end: 0,
-        routineId: null,
-        name: '',
-        bw: null,
-        entries: [entry],
-        unit: state?.unit || 'kg'
+  if (!reading) {
+    if (workout) {
+      effectiveS = stateWithoutDuplicate(workout, state)
+    } else {
+      const inWorkouts = (state?.workouts || []).some(w => (w.entries || []).includes(entry))
+      if (!inWorkouts) {
+        dummyWorkout = {
+          id: 'session-entry-' + entry.id,
+          d: entryDayKey(entry, now),
+          start: 0,
+          end: 0,
+          routineId: null,
+          name: '',
+          bw: null,
+          entries: [entry],
+          unit: state?.unit || 'kg'
+        }
+        effectiveS = { ...(state || {}), workouts: [...(state?.workouts || []), dummyWorkout] }
       }
-      effectiveS = { ...(state || {}), workouts: [...(state?.workouts || []), dummyWorkout] }
     }
   }
 
-  const cfg = { ...defaultConfig(entry.id), ...(entry.target || {}), id: entry.id }
-  const p = nextPrescription(effectiveS || {}, cfg, routine)
-  const unit = state?.unit || workout?.unit || 'kg'
-  const judged = readSession(entry, cfg, null, unit)
+  const cfg = reading?.cfg || { ...defaultConfig(entry.id), ...(entry.target || {}), id: entry.id }
+  const p = reading?.prescription || nextPrescription(effectiveS || {}, cfg, routine)
+  const unit = reading?.unit || state?.unit || workout?.unit || 'kg'
+  const judged = reading?.judged || readSession(entry, cfg, null, unit)
   const ex = EXIDX[entry.id] || { n: entry.id }
   const exName = ex.n || entry.id
   const policy = p.policy || policyFor(cfg, routine)
@@ -1099,7 +1105,7 @@ export function evaluateSessionProgression(entry, state, context) {
 
   return {
     id: entry.id,
-    d: workout?.d ?? dummyWorkout?.d ?? null,
+    d: reading?.d ?? workout?.d ?? dummyWorkout?.d ?? null,
     exName,
     policy,
     policyName,
@@ -1117,26 +1123,41 @@ export function evaluateSessionProgression(entry, state, context) {
 }
 
 /**
+ * The legacy path without a reading: avoid appending the completed Workout twice.
+ * @param {Workout} workout
+ * @param {Partial<Profile> | null | undefined} state
+ */
+function stateWithoutDuplicate(workout, state) {
+  const workouts = state?.workouts || []
+  return workouts.some(item => item.id === workout.id || item === workout)
+    ? state
+    : { ...(state || {}), workouts: [...workouts, workout] }
+}
+
+/**
  * Derives progression descriptors for all trained exercises in a completed workout.
+ * Pass the Prospective Prescription reading to drive every item from the one reading; the
+ * workout is then recognised by id in the Training log instead of gaining a second stand-in.
  *
  * @param {Workout | null | undefined} workout Completed workout.
  * @param {Partial<Profile> | null | undefined} state Store state S.
  * @param {number} now - Caller's clock in milliseconds.
+ * @param {{ entries: Record<string, ProspectiveReadingLike> } | null | undefined} [prospective] - The shared reading's per-entry records, when the caller has it.
  * @returns {ProgressionDescriptor[]} List of progression descriptors for trained exercises.
  */
-export function sessionProgressionItems(workout, state, now) {
+export function sessionProgressionItems(workout, state, now, prospective) {
   if (!workout?.entries) return []
   const routine = (workout.routineId && state?.routines?.find(r => r.id === workout.routineId)) || null
-  const workouts = state?.workouts || []
-  const effectiveS = workouts.some(item => item.id === workout.id || item === workout)
-    ? state
-    : { ...(state || {}), workouts: [...workouts, workout] }
+  const effectiveS = prospective ? state : stateWithoutDuplicate(workout, state)
+  const readings = prospective?.entries || {}
 
   /** @type {ProgressionDescriptor[]} */
   const items = []
   for (const entry of workout.entries) {
     if (doneWorkSets(entry).length <= 0) continue
-    const item = evaluateSessionProgression(entry, effectiveS, { workout, routine, now })
+    const item = evaluateSessionProgression(entry, effectiveS, {
+      workout, routine, now, reading: readings[entry.id] || null,
+    })
     if (item) items.push(item)
   }
   return items

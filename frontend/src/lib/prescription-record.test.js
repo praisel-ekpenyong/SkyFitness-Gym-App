@@ -63,16 +63,17 @@ describe('the Session boundary shares the freeze', () => {
     return act(S, { type: 'finish' }).result.workout
   }
 
-  it('freezes a Prescription derived from the Target through the shared primitive', () => {
+  it('writes the Prospective Prescription record through the shared primitive', () => {
     const workout = finishWith({
       kind: 'up', policy: 'double', weight: 40, reps: 11, sets: 3, why: ['hit'], by: 5,
     })
-    expect(workout.entries[0].plan).toEqual({ kind: 'up', weight: 40, reps: 11, sets: 3 })
+    // A fully hit session advances; the boundary records the reading's next Prescription.
+    expect(workout.entries[0].plan).toEqual({ kind: 'up', weight: 42.5 })
   })
 
-  it('leaves an entry written before the record existed with no plan', () => {
+  it('derives the record from the Target for an entry written before plans existed', () => {
     const workout = finishWith(null)
-    expect(workout.entries[0].plan).toBeUndefined()
+    expect(workout.entries[0].plan).toEqual({ kind: 'up', weight: 42.5 })
     expect(workout.entries[0].target).toEqual(target)
   })
 })
