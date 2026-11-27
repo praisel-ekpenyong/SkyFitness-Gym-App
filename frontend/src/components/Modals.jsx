@@ -1,6 +1,7 @@
 import { useEffect, useId, useLayoutEffect, useRef } from 'react'
 import { useUI } from '../store/useUI.js'
 import { createSheetHistoryState, transitionSheetHistory } from '../lib/sheet-history.js'
+import { createBrowserHistoryAdapter } from '../platform/browser-history.js'
 
 function Sheet({ sheet, covered }) {
   const closeSheet = useUI(s => s.closeSheet)
@@ -195,30 +196,31 @@ export default function Modals() {
   }, [open])
 
   useEffect(() => {
+    const browserHistory = createBrowserHistoryAdapter()
     const result = transitionSheetHistory(historyState.current, {
       type: 'sheets-changed',
       sheets,
-      href: location.href,
+      href: browserHistory.href(),
     })
     historyState.current = result.state
     for (const effect of result.effects) {
-      if (effect.type === 'push') history.pushState({ skySheet: true }, '')
-      if (effect.type === 'rewind') history.go(-effect.count)
+      if (effect.type === 'push') browserHistory.push()
+      if (effect.type === 'rewind') browserHistory.rewind(effect.count)
     }
   }, [sheets])
 
   useEffect(() => {
+    const browserHistory = createBrowserHistoryAdapter()
     const onPop = () => {
       const { sheets, closeSheet } = useUI.getState()
-      const result = transitionSheetHistory(historyState.current, { type: 'pop', sheets, href: location.href })
+      const result = transitionSheetHistory(historyState.current, { type: 'pop', sheets, href: browserHistory.href() })
       historyState.current = result.state
       for (const effect of result.effects) {
         if (effect.type === 'close') closeSheet(effect.id)
-        if (effect.type === 'rewind') history.go(-effect.count)
+        if (effect.type === 'rewind') browserHistory.rewind(effect.count)
       }
     }
-    window.addEventListener('popstate', onPop)
-    return () => window.removeEventListener('popstate', onPop)
+    return browserHistory.onPop(onPop)
   }, [])
 
   useEffect(() => {
