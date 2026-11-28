@@ -211,7 +211,7 @@ describe('format utility module', () => {
     it('exLine formats planned routine exercise lines', () => {
       expect(exLine({ sets: 3, reps: 10, weight: 60 }, 'kg')).toBe('3 × 10 · 60 kg')
       expect(exLine({ sets: 3, sec: 45, mode: 'time' }, 'kg')).toBe('3 × 0:45')
-      expect(exLine({ sets: 1, min: 20, speed: 9, mode: 'cardio' }, 'kg')).toBe('1 × 20 min @ 9 km/h')
+      expect(exLine({ sets: 1, min: 20, speed: 9, mode: 'cardio' }, 'kg')).toBe('20 min @ 9 km/h')
       expect(exLine({ sets: 3, reps: 16, weight: 0, side: true }, 'kg')).toBe('3 × 16 · 8/side')
     })
   })

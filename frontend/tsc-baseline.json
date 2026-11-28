@@ -27,7 +27,7 @@
   "src/platform/storage.js": 28,
   "src/platform/wakelock.js": 5,
   "src/sheets/bodyweight.jsx": 26,
-  "src/sheets/catalogue.jsx": 142,
+  "src/sheets/catalogue.jsx": 140,
   "src/sheets/confirm.jsx": 10,
   "src/sheets/history.jsx": 47,
   "src/sheets/import.jsx": 11,

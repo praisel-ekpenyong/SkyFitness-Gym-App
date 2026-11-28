@@ -10,7 +10,7 @@ import {
 import { toggleActiveSet } from './active-toggle.js'
 import { completeActiveSession } from './active-finish.js'
 import { sessionView } from './session-view.js'
-import { setsDone } from './workout-model.js'
+import { setsDone, ROW_DEFAULTS } from './workout-model.js'
 import { exOr, isKnownExercise } from './exercises.js'
 
 /** @typedef {import('./types.js').Profile} Profile */
@@ -88,7 +88,7 @@ function startHold(S, { entry = -1, set = -1 }) {
   const ref = holdRef(S.active, entry, set)
   if (!ref || !S.active) return refused()
   const e = S.active.entries[entry]
-  return applied(true, [effect('hold:start', { sec: e.sets[set].sec || 45, label: exOr(e.id).n, ref })])
+  return applied(true, [effect('hold:start', { sec: e.sets[set].sec || ROW_DEFAULTS.time.sec, label: exOr(e.id).n, ref })])
 }
 
 /**

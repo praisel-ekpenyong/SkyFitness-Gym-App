@@ -9,6 +9,30 @@ const CARDIO = EXDB.find(e => e.bp === 'cardio')?.id || '2330'
 
 describe('plan-share engine', () => {
   describe('buildPlanBundle', () => {
+    const every = {
+      sets: 3, reps: 8, repsMin: 6, repsMax: 12, side: true, weight: 20, sec: 30, min: 15, speed: 9,
+      prog: 'double', inc: 5, bodyweight: true, rest: 90, sg: 'sg-1', notes: 'slow',
+      rowId: 'row-1', name: 'Shown', n: 'Frozen',
+    }
+    const exported = target => buildPlanBundle({ routines: [{ id: 'r1', name: 'A', ex: [target] }] }).routines[0].ex[0]
+    const common = { sets: 3, bodyweight: true, rest: 90, sg: 'sg-1', notes: 'slow' }
+
+    it('exports only what a reps Target carries', () => {
+      expect(exported({ ...every, id: BARBELL_BENCH, mode: 'reps' })).toEqual({
+        ...common, id: BARBELL_BENCH, reps: 8, repsMin: 6, repsMax: 12, side: true, weight: 20, prog: 'double', inc: 5,
+      })
+    })
+
+    it('exports only what a timed Target carries', () => {
+      expect(exported({ ...every, id: BARBELL_BENCH, mode: 'time' })).toEqual({
+        ...common, id: BARBELL_BENCH, mode: 'time', sec: 30, weight: 20, prog: 'double', inc: 5,
+      })
+    })
+
+    it('exports only what a cardio Target carries', () => {
+      expect(exported({ ...every, id: CARDIO, mode: 'cardio', bodyweight: false })).toEqual({ ...common, bodyweight: false, id: CARDIO, min: 15, speed: 9 })
+    })
+
     it('creates a sanitized plan bundle with referenced customs and ordered week schedule', () => {
       const S = {
         routines: [

@@ -66,6 +66,44 @@ export const ROW_DEFAULTS = Object.freeze({
   reps: Object.freeze({ reps: 10, weight: 0 }),
 })
 export const SETS_DEFAULTS = Object.freeze({ cardio: 1, time: 3, reps: 3 })
+/** @type {readonly LoggingMode[]} */
+const EVERY_MODE = ['reps', 'time', 'cardio']
+/**
+ * Which Modes carry each Target field. An empty list marks a field that stays out of a
+ * Target's carried fields. Typed by `keyof Target`, so typecheck fails until a new field is listed.
+ * @type {Readonly<Record<keyof Target, readonly LoggingMode[]>>}
+ */
+const FIELD_MODES = {
+  id: EVERY_MODE,
+  sets: EVERY_MODE,
+  mode: EVERY_MODE,
+  bodyweight: EVERY_MODE,
+  rest: EVERY_MODE,
+  sg: EVERY_MODE,
+  notes: EVERY_MODE,
+  reps: ['reps'],
+  repsMin: ['reps'],
+  repsMax: ['reps'],
+  side: ['reps'],
+  weight: ['reps', 'time'],
+  prog: ['reps', 'time'],
+  inc: ['reps', 'time'],
+  sec: ['time'],
+  min: ['cardio'],
+  speed: ['cardio'],
+  rowId: [],
+  name: [],
+  n: [],
+}
+/**
+ * The fields of `target` that a Mode carries, without the absent ones. Value rules stay with the caller.
+ * @param {Partial<Record<keyof Target, unknown>>} target
+ * @param {LoggingMode} mode
+ * @returns {Target}
+ */
+export const pickTargetFields = (target, mode) => /** @type {Target} */ (Object.fromEntries(
+  Object.entries(target).filter(([key, value]) => value != null && FIELD_MODES[/** @type {keyof Target} */ (key)]?.includes(mode))
+))
 /** The Rest durations, in seconds, that Settings and an exercise's config offer. */
 export const REST_CHOICES = Object.freeze([60, 90, 120, 150, 180])
 /**

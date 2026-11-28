@@ -1,7 +1,7 @@
 
 import { EXIDX, isBodyweightEq } from './exercises.js'
-import { modeOf, isBw, isPerSide, sideReps, cleanNote, ownRest } from './workout-model.js'
-import { uid, fmtNum, fmtSigned, exCount, fmtSec } from './format.js'
+import { modeOf, cleanNote, ownRest, pickTargetFields } from './workout-model.js'
+import { uid, exCount, exLine } from './format.js'
 import { todayISO, DAYN } from './dates.js'
 import { t } from './i18n-core.js'
 import { sanitizeUnit, targetIn } from './units.js'
@@ -24,31 +24,25 @@ function normalizeSm(sm) {
 
 /** @param {Target} e @returns {Target} */
 function cleanEx(e) {
-  /** @type {Target} */
-  const o = { id: e.id, sets: e.sets }
   const mode = modeOf(e)
-  if (mode === 'cardio') {
-    if (e.min != null) o.min = e.min
-    if (e.speed != null) o.speed = e.speed
-  } else if (mode === 'time') {
-    o.mode = 'time'
-    if (e.sec != null) o.sec = e.sec
-    if (e.weight) o.weight = e.weight
-  } else {
-    if (e.reps != null) o.reps = e.reps
-    if (e.weight) o.weight = e.weight
-  }
-  if (e.bodyweight != null && e.bodyweight !== isBodyweightEq(e.id)) o.bodyweight = e.bodyweight
-  if (e.side && mode !== 'time' && mode !== 'cardio') o.side = true
-  if (e.prog) o.prog = e.prog
-  if (e.inc != null && e.inc > 0) o.inc = e.inc
-  if (e.repsMin != null) o.repsMin = e.repsMin
-  if (e.repsMax != null) o.repsMax = e.repsMax
-  const rest = ownRest(e)
+  const o = pickTargetFields(e, mode)
+  o.id = e.id
+  o.sets = e.sets
+  if (mode === 'time') o.mode = mode
+  else delete o.mode
+  if (!o.weight) delete o.weight
+  if (o.bodyweight === isBodyweightEq(e.id)) delete o.bodyweight
+  if (o.side) o.side = true
+  else delete o.side
+  if (!o.prog) delete o.prog
+  if (!(Number(o.inc) > 0)) delete o.inc
+  const rest = ownRest(o)
   if (rest != null) o.rest = rest
-  if (e.sg) o.sg = e.sg
-  const notes = cleanNote(e.notes)
+  else delete o.rest
+  if (!o.sg) delete o.sg
+  const notes = cleanNote(o.notes)
   if (notes) o.notes = notes
+  else delete o.notes
   return o
 }
 
@@ -170,20 +164,6 @@ export function mergePlan(s, bundle, { schedule } = {}) {
 const esc = str => String(str == null ? '' : str)
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 
-/** @param {Target} e @param {Unit} unit @returns {string} */
-function scheme(e, unit) {
-  const sets = e.sets || 1
-  const mode = modeOf(e)
-  if (mode === 'cardio') {
-    const body = `${e.min || 20} min @ ${fmtNum(e.speed || 8)} km/h`
-    return sets > 1 ? `${sets} × ${body}` : body
-  }
-  let s = mode === 'time' ? `${sets} × ${fmtSec(e.sec || 45)}` : `${sets} × ${e.reps ?? 10}`
-  if (e.weight) s += ` · ${isBw(e) ? fmtSigned(e.weight) : fmtNum(e.weight)} ${unit}`
-  if (mode !== 'time' && isPerSide(e)) s += ` · ${t('{0}/side', fmtNum(sideReps(e.reps ?? 10)))}`
-  return s
-}
-
 /** @param {Target[]} ex @returns {Target[][]} */
 function units(ex) {
   /** @type {Target[][]} */
@@ -203,7 +183,7 @@ function routineHTML(r, unit) {
       const ex = e.id ? EXIDX[e.id] : undefined
       const name = ex ? ex.n : t('Unknown exercise')
       const part = ex && ex.bp && ex.bp !== 'cardio' ? `<span class="part">${esc(ex.bp)}</span>` : ''
-      return `<div class="ex"><div class="ex-n">${esc(name)}${part}</div><div class="ex-s">${esc(scheme(e, unit))}</div></div>`
+      return `<div class="ex"><div class="ex-n">${esc(name)}${part}</div><div class="ex-s">${esc(exLine(e, unit))}</div></div>`
     }).join('')
     return u.length > 1
       ? `<div class="ss"><div class="ss-tag">${esc(t('Superset'))}</div><div class="ss-items">${items}</div></div>`

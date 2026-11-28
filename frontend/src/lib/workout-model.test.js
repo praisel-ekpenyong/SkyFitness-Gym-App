@@ -302,7 +302,12 @@ describe('exLine', () => {
     expect(exLine({ id: LIFT, sets: 3, reps: 10, weight: 60 }, 'kg')).toBe('3 × 10 · 60 kg')
     expect(exLine({ id: LIFT, sets: 3, sec: 45, mode: 'time' }, 'kg')).toBe('3 × 0:45')
     expect(exLine({ id: LIFT, sets: 2, sec: 90, weight: 20, mode: 'time' }, 'kg')).toBe('2 × 1:30 · 20 kg')
-    expect(exLine({ id: CARDIO, sets: 1, min: 20, speed: 8 }, 'kg')).toBe('1 × 20 min @ 8 km/h')
+    expect(exLine({ id: CARDIO, sets: 1, min: 20, speed: 8 }, 'kg')).toBe('20 min @ 8 km/h')
+    expect(exLine({ id: CARDIO, sets: 3, min: 5, speed: 12 }, 'kg')).toBe('3 × 5 min @ 12 km/h')
+  })
+  it('reads a missing rep count as the default, split included', () => {
+    expect(exLine({ id: LIFT, sets: 3 }, 'kg')).toBe('3 × 10')
+    expect(exLine({ id: LIFT, sets: 3, side: true }, 'kg')).toBe('3 × 10 · 5/side')
   })
 })
 

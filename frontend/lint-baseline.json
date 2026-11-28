@@ -122,9 +122,6 @@
   "src/lib/onerm.js": {
     "eslint/complexity": 1
   },
-  "src/lib/plan-share.js": {
-    "eslint/complexity": 1
-  },
   "src/lib/plans/scenarios.js": {
     "eslint/complexity": 1
   },
