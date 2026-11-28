@@ -109,6 +109,7 @@ describe('Workout unperformed entry replacement', () => {
     tapInSheet('Replace')
 
     expect(activeEntries()[0].id).toBe('1002')
+    expect(openSheets()).toEqual([])
   })
 
   it('puts the footer-picked exercise and its saved config into the Active workout', () => {

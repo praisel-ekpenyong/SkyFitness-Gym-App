@@ -130,6 +130,22 @@ describe('RoutineEdit exercise config', () => {
   })
 })
 
+describe('RoutineEdit Add exercise', () => {
+  it('keeps the picker open after Add to routine, so several exercises can be added in a row', async () => {
+    await renderEditor()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add exercise' }))
+    pickExercise('barbell bench press')
+    tapInSheet('Add to routine')
+
+    expect(within(topSheet()).getByRole('heading', { name: 'Add exercise' })).toBeTruthy()
+    pickExercise('barbell clean and press')
+    tapInSheet('Add to routine')
+
+    expect(routine().ex.map(e => e.id)).toEqual(['0001', '0002', '0003', '0025', '0028'])
+  })
+})
+
 describe('RoutineEdit exercise replacement', () => {
   it('Replace exercise picks a new one in place, seeds its Target, and keeps the superset group', async () => {
     await renderEditor()
@@ -150,8 +166,6 @@ describe('RoutineEdit exercise replacement', () => {
     expect(routine().ex[1]).toMatchObject({ id: '0002', sg: 'sg-0-1' })
     expect(routine().ex[2].id).toBe('0003')
     expect(routine().ex[2]).not.toHaveProperty('sg')
-    // The picker stays open after its pick is saved; close it to read the routine underneath.
-    fireEvent.keyDown(window, { key: 'Escape' })
     expect(openSheets()).toEqual([])
     expect(screen.getByText('barbell clean and press')).toBeTruthy()
     expect(screen.queryByText('3/4 sit-up')).toBeNull()
@@ -183,6 +197,19 @@ describe('RoutineEdit exercise replacement', () => {
     fireEvent.keyDown(window, { key: 'Escape' })
 
     expect(openSheets()).toEqual([])
+    expect(routine().ex).toEqual(before)
+  })
+
+  it('cancelling the replacement\'s config sheet goes back to the picker and leaves the routine as it was', async () => {
+    const before = JSON.parse(JSON.stringify(routine().ex))
+    await renderEditor()
+
+    openRow('3/4 sit-up')
+    tapInSheet('Replace exercise')
+    pickExercise('barbell clean and press')
+    fireEvent.keyDown(window, { key: 'Escape' })
+
+    expect(within(topSheet()).getByRole('heading', { name: 'Add exercise' })).toBeTruthy()
     expect(routine().ex).toEqual(before)
   })
 
