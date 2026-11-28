@@ -1,23 +1,13 @@
 // @vitest-environment happy-dom
 import { act } from 'react'
+import { fireEvent, screen, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { replaceActiveExerciseFlow } from '../sheets/session.jsx'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
-import { entry, resetViewTestState, seedActiveWorkout, renderWorkoutApp, cleanupViewTest } from '../test/view-harness.jsx'
+import { entry, resetViewTestState, renderWorkoutApp, cleanupViewTest } from '../test/view-harness.jsx'
+import { openSheets, pickExercise, sheetField, tapInSheet, topSheet, typeInSheet } from '../test/sheet-host.jsx'
 
-const mocks = vi.hoisted(() => ({
-  confirmSheet: vi.fn(),
-  exercisePicker: vi.fn(),
-  exConfigSheet: vi.fn(),
-  finishWorkout: vi.fn(),
-  workoutCompleteSheet: vi.fn(),
-  startFlow: vi.fn(),
-}))
-
-vi.mock('../sheets/confirm.jsx', () => ({ confirmSheet: mocks.confirmSheet }))
-vi.mock('../sheets/exercise-picker.jsx', async (importOriginal) => ({ ...await importOriginal(), exercisePicker: mocks.exercisePicker }))
-vi.mock('../sheets/exercise-config.jsx', async (importOriginal) => ({ ...await importOriginal(), exConfigSheet: mocks.exConfigSheet }))
 vi.mock('../platform/sound.js', async orig => (await import('../test/platform-mocks.js')).mockSound(await orig()))
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true
@@ -48,13 +38,20 @@ function click(el) {
   })
 }
 
+const activeEntries = () => useStore.getState().S.active.entries
+const sheetHeading = () => within(topSheet()).getByRole('heading', { level: 3 }).textContent
+const confirmShown = () => screen.queryByRole('alertdialog') !== null
+
+/** Starts the replace flow straight from the session sheet's export, with the Workout and sheet host on screen. */
+function startFlow(entries, send = command => useStore.getState().act(command)) {
+  view = renderWorkoutApp(entries)
+  act(() => { replaceActiveExerciseFlow(0, send) })
+}
+
 beforeEach(() => {
   vi.useFakeTimers()
   resetViewTestState()
   view = null
-  mocks.confirmSheet.mockClear()
-  mocks.exercisePicker.mockClear()
-  mocks.exConfigSheet.mockClear()
 })
 
 afterEach(() => {
@@ -94,35 +91,24 @@ describe('Workout exercise replacement controls', () => {
 })
 
 describe('Workout unperformed entry replacement', () => {
-  it('replaces immediately without confirmation sheet (header button)', () => {
+  it('replaces straight from the picker, with Replace as the config sheet\'s save action (header button)', () => {
     view = renderWorkoutApp([entry('1001', [{ w: 60, r: 5, done: false }, { w: 60, r: 5, done: false }])])
 
     click(headerReplaceButton())
 
-    expect(mocks.confirmSheet).not.toHaveBeenCalled()
-    expect(mocks.exercisePicker).toHaveBeenCalledOnce()
+    expect(confirmShown()).toBe(false)
+    expect(sheetHeading()).toBe('Add exercise')
+    pickExercise('band lying straight leg raise')
 
-    const newEx = { id: '1002', n: 'Incline Bench Press' }
-    act(() => {
-      mocks.exercisePicker.mock.calls[0][0](newEx)
-    })
+    expect(sheetHeading()).toBe('band lying straight leg raise')
+    expect(sheetField('Sets').value).toBe('2')
+    const actions = within(topSheet()).getAllByRole('button').map(b => b.textContent.trim())
+    expect(actions).toContain('Replace')
+    for (const absent of ['Save', 'Add to routine', 'Replace exercise', 'Remove from routine']) expect(actions).not.toContain(absent)
 
-    expect(mocks.exConfigSheet).toHaveBeenCalledOnce()
-    const [exArg, { existing: existingArg, onSave, onDelete: onDeleteArg, routine: routineArg, initial: seedArg, onReplace: onReplaceArg, actionLabel: actionLabelArg }] = mocks.exConfigSheet.mock.calls[0]
-    expect(exArg).toEqual(newEx)
-    expect(existingArg).toBeUndefined()
-    expect(onDeleteArg).toBeUndefined()
-    expect(routineArg).toBeUndefined()
-    expect(seedArg).toEqual(expect.objectContaining({ sets: 2 }))
-    expect(onReplaceArg).toBeUndefined()
-    expect(actionLabelArg).toBe('Replace')
+    tapInSheet('Replace')
 
-    act(() => {
-      onSave({ sets: 3, reps: 8, weight: 50 })
-    })
-
-    const A = useStore.getState().S.active
-    expect(A.entries[0].id).toBe('1002')
+    expect(activeEntries()[0].id).toBe('1002')
   })
 
   it('puts the footer-picked exercise and its saved config into the Active workout', () => {
@@ -130,22 +116,16 @@ describe('Workout unperformed entry replacement', () => {
 
     click(footerReplaceButton())
 
-    // Supporting evidence only: unperformed sets skip confirmation and open the picker.
-    expect(mocks.confirmSheet).not.toHaveBeenCalled()
-    expect(mocks.exercisePicker).toHaveBeenCalledOnce()
+    expect(confirmShown()).toBe(false)
+    pickExercise('band lying straight leg raise')
+    typeInSheet('Sets', 3)
+    typeInSheet('Reps', 8)
+    typeInSheet('Weight (kg)', 50)
+    tapInSheet('Replace')
 
-    const newEx = { id: '1002', n: 'Incline Bench Press' }
-    act(() => {
-      mocks.exercisePicker.mock.calls[0][0](newEx)
-    })
-    act(() => {
-      mocks.exConfigSheet.mock.calls[0][1].onSave({ sets: 3, reps: 8, weight: 50 })
-    })
-
-    const A = useStore.getState().S.active
-    expect(A.entries[0]).toEqual({
+    expect(activeEntries()[0]).toEqual({
       id: '1002',
-      target: { sets: 3, reps: 8, weight: 50 },
+      target: { sets: 3, reps: 8, weight: 50, mode: 'reps' },
       plan: null,
       sets: [
         expect.objectContaining({ w: 50, r: 8, done: false }),
@@ -155,7 +135,7 @@ describe('Workout unperformed entry replacement', () => {
     })
   })
 
-  it('seeds config with routine context and planned non-warmup sets', () => {
+  it('seeds config from the routine\'s history and planned work sets, and follows the routine\'s rule', () => {
     const routineId = 'routine-legs'
     view = renderWorkoutApp([
       {
@@ -170,7 +150,7 @@ describe('Workout unperformed entry replacement', () => {
     ])
     act(() => {
       useStore.getState().update(s => {
-        s.routines = [{ id: routineId, name: 'Leg Day', ex: [{ id: '1001', sets: 3 }] }]
+        s.routines = [{ id: routineId, name: 'Leg Day', prog: 'double', ex: [{ id: '1001', sets: 3 }] }]
         s.workouts = [
           {
             d: '2026-10-01',
@@ -183,60 +163,39 @@ describe('Workout unperformed entry replacement', () => {
     })
 
     click(headerReplaceButton())
+    pickExercise('band squat row')
 
-    const newEx = { id: '1003', n: 'Leg Press' }
-    act(() => {
-      mocks.exercisePicker.mock.calls[0][0](newEx)
-    })
+    expect(sheetField('Sets').value).toBe('2')
+    expect(sheetField('Reps').value).toBe('12')
+    expect(sheetField('Weight (kg)').value).toBe('100')
+    expect(within(topSheet()).getByText('Follow the routine (Double progression)')).toBeTruthy()
 
-    expect(mocks.exConfigSheet).toHaveBeenCalledOnce()
-    const [, { onSave, routine: routineArg, initial: seedArg, actionLabel: actionLabelArg }] = mocks.exConfigSheet.mock.calls[0]
-    expect(routineArg).toEqual(expect.objectContaining({ id: routineId }))
-    expect(seedArg).toEqual(expect.objectContaining({ sets: 2, reps: 12, weight: 100 }))
-    expect(actionLabelArg).toBe('Replace')
+    tapInSheet('Replace')
 
-    act(() => {
-      onSave({ sets: 2, reps: 10, weight: 120 })
-    })
-
-    expect(useStore.getState().S.active.entries[0].id).toBe('1003')
+    expect(activeEntries()[0].id).toBe('1003')
   })
 })
 
 describe('Workout performed entry replacement', () => {
-  it('shows confirmation sheet before proceeding to picker', () => {
+  it('asks before opening the picker, then replaces', () => {
     view = renderWorkoutApp([
       entry('1001', [{ w: 60, r: 5, done: true }, { w: 60, r: 5, done: false }])
     ])
 
     click(headerReplaceButton())
 
-    expect(mocks.confirmSheet).toHaveBeenCalledOnce()
-    expect(mocks.exercisePicker).not.toHaveBeenCalled()
+    const confirm = screen.getByRole('alertdialog')
+    expect(within(confirm).getByRole('heading').textContent).toBe('Replace band single leg split squat?')
+    expect(within(confirm).getByText('The sets you logged for this exercise in this session will be lost.')).toBeTruthy()
+    expect(screen.queryByRole('heading', { name: 'Add exercise' })).toBeNull()
 
-    const confirmOpts = mocks.confirmSheet.mock.calls[0][0]
-    expect(confirmOpts.title).toContain('Replace')
-    expect(confirmOpts.message).toBe('The sets you logged for this exercise in this session will be lost.')
-    expect(confirmOpts.confirmText).toBe('Replace')
-    expect(confirmOpts.danger).toBe(true)
+    tapInSheet('Replace')
 
-    act(() => {
-      confirmOpts.onConfirm()
-    })
+    expect(sheetHeading()).toBe('Add exercise')
+    pickExercise('band lying straight leg raise')
+    tapInSheet('Replace')
 
-    expect(mocks.exercisePicker).toHaveBeenCalledOnce()
-
-    const newEx = { id: '1002', n: 'Incline Bench Press' }
-    act(() => {
-      mocks.exercisePicker.mock.calls[0][0](newEx)
-    })
-
-    expect(mocks.exConfigSheet).toHaveBeenCalledOnce()
-    act(() => {
-      mocks.exConfigSheet.mock.calls[0][1].onSave({ sets: 2, reps: 8, weight: 50 })
-    })
-
-    expect(useStore.getState().S.active.entries[0].id).toBe('1002')
+    expect(activeEntries()[0].id).toBe('1002')
   })
 
   it('leaves the entry untouched if replacement is cancelled', () => {
@@ -245,73 +204,62 @@ describe('Workout performed entry replacement', () => {
     ])
 
     click(headerReplaceButton())
+    tapInSheet('Cancel')
 
-    expect(mocks.confirmSheet).toHaveBeenCalledOnce()
-    expect(mocks.exercisePicker).not.toHaveBeenCalled()
-
-    expect(useStore.getState().S.active.entries[0].id).toBe('1001')
+    expect(openSheets()).toEqual([])
+    expect(activeEntries()).toEqual([expect.objectContaining({ id: '1001', sets: [expect.objectContaining({ w: 60, r: 5, done: true })] })])
   })
 })
 
 describe('Replace goes through the view\'s sender', () => {
   it('sends the replaceExercise command through the sender it was given, so its effects run', () => {
-    seedActiveWorkout([entry('1001')])
     const sent = []
     const send = command => { sent.push(command.type); return useStore.getState().act(command, send) }
 
-    replaceActiveExerciseFlow(0, send)
-    act(() => { mocks.exercisePicker.mock.calls[0][0]({ id: '1002', n: 'Incline Bench Press' }) })
-    act(() => { mocks.exConfigSheet.mock.calls[0][1].onSave({ sets: 1, reps: 10, weight: 40 }) })
+    startFlow([entry('1001')], send)
+    pickExercise('band lying straight leg raise')
+    tapInSheet('Replace')
 
     expect(sent).toEqual(['replaceExercise'])
-    expect(useStore.getState().S.active.entries[0].id).toBe('1002')
+    expect(activeEntries()[0].id).toBe('1002')
   })
 })
 
 describe('Hold timer halted on replace', () => {
+  const startHold = () => act(() => { useUI.getState().startWork(30, 'Plank', vi.fn(), () => true) })
+
   it('halts any running hold timer prior to replacement when no confirmation is needed', () => {
-    seedActiveWorkout([entry('1001')])
-    const timerCallback = vi.fn()
-    useUI.getState().startWork(30, 'Plank', timerCallback, () => true)
+    view = renderWorkoutApp([entry('1001')])
+    startHold()
     expect(useUI.getState().work).not.toBeNull()
 
-    replaceActiveExerciseFlow(0, command => useStore.getState().act(command))
+    act(() => { replaceActiveExerciseFlow(0, command => useStore.getState().act(command)) })
 
     expect(useUI.getState().work).toBeNull()
   })
 
   it('does not halt hold timer when confirmation sheet is shown, only halts when confirmed', () => {
-    seedActiveWorkout([
-      entry('1001', [{ w: 60, r: 5, done: true }])
-    ])
-    const timerCallback = vi.fn()
-    useUI.getState().startWork(30, 'Plank', timerCallback, () => true)
+    view = renderWorkoutApp([entry('1001', [{ w: 60, r: 5, done: true }])])
+    startHold()
+
+    act(() => { replaceActiveExerciseFlow(0, command => useStore.getState().act(command)) })
+
+    expect(confirmShown()).toBe(true)
     expect(useUI.getState().work).not.toBeNull()
 
-    replaceActiveExerciseFlow(0, command => useStore.getState().act(command))
-
-    expect(mocks.confirmSheet).toHaveBeenCalledOnce()
-    expect(useUI.getState().work).not.toBeNull()
-
-    const confirmOpts = mocks.confirmSheet.mock.calls[0][0]
-    act(() => {
-      confirmOpts.onConfirm()
-    })
+    tapInSheet('Replace')
 
     expect(useUI.getState().work).toBeNull()
   })
 
   it('leaves hold timer running if confirmation is cancelled', () => {
-    seedActiveWorkout([
-      entry('1001', [{ w: 60, r: 5, done: true }])
-    ])
-    const timerCallback = vi.fn()
-    useUI.getState().startWork(30, 'Plank', timerCallback, () => true)
-    expect(useUI.getState().work).not.toBeNull()
+    view = renderWorkoutApp([entry('1001', [{ w: 60, r: 5, done: true }])])
+    startHold()
 
-    replaceActiveExerciseFlow(0, command => useStore.getState().act(command))
+    act(() => { replaceActiveExerciseFlow(0, command => useStore.getState().act(command)) })
+    expect(confirmShown()).toBe(true)
+    tapInSheet('Cancel')
 
-    expect(mocks.confirmSheet).toHaveBeenCalledOnce()
     expect(useUI.getState().work).not.toBeNull()
   })
 })
@@ -323,28 +271,14 @@ describe('Superset replacement flow', () => {
       { ...entry('1002'), sg: 'g1' }
     ])
 
-    const header0 = headerReplaceButton(0)
-    const header1 = headerReplaceButton(1)
-    expect(header0).toBeTruthy()
-    expect(header1).toBeTruthy()
+    expect(headerReplaceButton(0)).toBeTruthy()
+    click(headerReplaceButton(1))
 
-    click(header1)
+    expect(confirmShown()).toBe(false)
+    pickExercise('band squat row')
+    tapInSheet('Replace')
 
-    expect(mocks.confirmSheet).not.toHaveBeenCalled()
-    expect(mocks.exercisePicker).toHaveBeenCalledOnce()
-
-    const newEx = { id: '1003', n: 'Cable Row' }
-    act(() => {
-      mocks.exercisePicker.mock.calls[0][0](newEx)
-    })
-
-    act(() => {
-      mocks.exConfigSheet.mock.calls[0][1].onSave({ sets: 1, reps: 10, weight: 40 })
-    })
-
-    const A = useStore.getState().S.active
-    expect(A.entries[0].id).toBe('1001')
-    expect(A.entries[1].id).toBe('1003')
+    expect(activeEntries().map(e => [e.id, e.sg])).toEqual([['1001', 'g1'], ['1003', 'g1']])
   })
 
   it('footer replace button in a superset prompts which exercise to replace', () => {
@@ -363,20 +297,10 @@ describe('Superset replacement flow', () => {
 
     click(items[1])
 
-    expect(mocks.exercisePicker).toHaveBeenCalledOnce()
+    pickExercise('band squat row')
+    tapInSheet('Replace')
 
-    const newEx = { id: '1003', n: 'Cable Row' }
-    act(() => {
-      mocks.exercisePicker.mock.calls[0][0](newEx)
-    })
-
-    act(() => {
-      mocks.exConfigSheet.mock.calls[0][1].onSave({ sets: 1, reps: 10, weight: 40 })
-    })
-
-    const A = useStore.getState().S.active
-    expect(A.entries[0].id).toBe('1001')
-    expect(A.entries[1].id).toBe('1003')
+    expect(activeEntries().map(e => [e.id, e.sg])).toEqual([['1001', 'g1'], ['1003', 'g1']])
   })
 })
 

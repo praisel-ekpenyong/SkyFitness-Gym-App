@@ -6,13 +6,12 @@ import RoutineEdit from './RoutineEdit.jsx'
 import { useStore } from '../store/useStore.js'
 import { DEF } from '../lib/profile/index.js'
 import { useUI } from '../store/useUI.js'
-import { buttonNamed, leafTexts, pick } from '../test/sheet-host.jsx'
+import Modals from '../components/Modals.jsx'
+import { fireEvent, screen, within } from '@testing-library/react'
+import { buttonNamed, leafTexts, openSheets, pick, pickExercise, sheetField, tapInSheet, topSheet, typeInSheet } from '../test/sheet-host.jsx'
 
 const mocks = vi.hoisted(() => ({
   nav: vi.fn(),
-  exConfigSheet: vi.fn(),
-  exercisePicker: vi.fn(),
-  confirmSheet: vi.fn(),
 }))
 
 vi.mock('react-router-dom', () => ({
@@ -20,12 +19,17 @@ vi.mock('react-router-dom', () => ({
   useParams: () => ({ id: 'r-test-1' }),
 }))
 
-vi.mock('../sheets/exercise-config.jsx', () => ({ exConfigSheet: mocks.exConfigSheet }))
-vi.mock('../sheets/exercise-picker.jsx', () => ({ exercisePicker: mocks.exercisePicker }))
-vi.mock('../sheets/confirm.jsx', () => ({ confirmSheet: mocks.confirmSheet }))
 
 let container
 let root
+
+const routine = () => useStore.getState().S.routines.find(x => x.id === 'r-test-1')
+
+/** The routine editor with the sheet host, so its sheets open as a lifter sees them. */
+const renderEditor = () => act(async () => { root.render(<><RoutineEdit /><Modals /></>) })
+
+/** Taps the routine row that shows this exercise. */
+const openRow = name => fireEvent.click(screen.getByText(name))
 
 beforeEach(() => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true
@@ -65,8 +69,6 @@ beforeEach(() => {
   document.body.appendChild(container)
   root = createRoot(container)
   mocks.nav.mockReset()
-  mocks.exConfigSheet.mockReset()
-  mocks.exercisePicker.mockReset()
 })
 
 afterEach(async () => {
@@ -77,162 +79,128 @@ afterEach(async () => {
   vi.restoreAllMocks()
 })
 
-describe('RoutineEdit exercise replacement', () => {
-  it('opens exConfigSheet with an onReplace callback when clicking an exercise', async () => {
-    await act(async () => {
-      root.render(<RoutineEdit />)
-    })
+describe('RoutineEdit exercise config', () => {
+  it('tapping an exercise opens its config sheet with its Target, Save, Replace and Remove', async () => {
+    await renderEditor()
 
-    const items = container.querySelectorAll('.list .item')
-    expect(items.length).toBe(3)
+    openRow('3/4 sit-up')
 
-    await act(async () => {
-      items[0].dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
-
-    expect(mocks.exConfigSheet).toHaveBeenCalledTimes(1)
-    const [ex, { existing: e, onReplace }] = mocks.exConfigSheet.mock.calls[0]
-    expect(ex.id).toBe('0001')
-    expect(e.id).toBe('0001')
-    expect(e.sets).toBe(4)
-    expect(typeof onReplace).toBe('function')
-  })
-
-  it('tapping onReplace launches exercisePicker and replaces exercise in-place preserving superset sg', async () => {
-    await act(async () => {
-      root.render(<RoutineEdit />)
-    })
-
-    const items = container.querySelectorAll('.list .item')
-    await act(async () => {
-      items[0].dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
-
-    const [, { onReplace }] = mocks.exConfigSheet.mock.calls[0]
-
-    await act(async () => {
-      onReplace()
-    })
-
-    expect(mocks.exercisePicker).toHaveBeenCalledTimes(1)
-    const pickerCallback = mocks.exercisePicker.mock.calls[0][0]
-    expect(typeof pickerCallback).toBe('function')
-
-    const newEx = { id: '0028', n: 'Replacement Lift', bp: 'chest', tg: 'chest', eq: 'barbell' }
-    await act(async () => {
-      pickerCallback(newEx)
-    })
-
-    expect(mocks.exConfigSheet).toHaveBeenCalledTimes(2)
-    const [replEx, { existing: replExisting, onSave: replOnSave, initial: replInitial }] = mocks.exConfigSheet.mock.calls[1]
-    expect(replEx.id).toBe('0028')
-    expect(replExisting).toBeUndefined()
-    expect(replInitial).toMatchObject({
-      sets: 4,
-      weight: 65,
-    })
-
-    await act(async () => {
-      replOnSave({ sets: 4, reps: 8, weight: 65, mode: 'reps' })
-    })
-
-    const updatedRoutine = useStore.getState().S.routines.find(x => x.id === 'r-test-1')
-    expect(updatedRoutine.ex.length).toBe(3)
-    expect(updatedRoutine.ex[0]).toEqual({
-      id: '0028',
-      sg: 'sg-0-1',
-      sets: 4,
-      reps: 8,
-      weight: 65,
-      mode: 'reps',
-      rowId: expect.any(String),
-    })
-    expect(updatedRoutine.ex[1].id).toBe('0002')
-    expect(updatedRoutine.ex[1].sg).toBe('sg-0-1')
-    expect(updatedRoutine.ex[2].id).toBe('0003')
-    expect(updatedRoutine.ex[2].sg).toBeUndefined()
+    expect(within(topSheet()).getByRole('heading', { name: '3/4 sit-up' })).toBeTruthy()
+    expect(sheetField('Sets').value).toBe('4')
+    expect(sheetField('Reps').value).toBe('10')
+    for (const name of ['Save', 'Replace exercise', 'Remove from routine']) {
+      expect(within(topSheet()).getByRole('button', { name })).toBeTruthy()
+    }
   })
 
   it('saving an exercise replaces its settings, so a setting turned off is cleared', async () => {
-    const st = useStore.getState().S
-    const seeded = JSON.parse(JSON.stringify(st))
-    Object.assign(seeded.routines[0].ex[0], { side: true, rest: 150, prog: 'double', repsMin: 8, inc: 1.25, bodyweight: true, notes: 'Slow eccentric' })
+    const seeded = JSON.parse(JSON.stringify(useStore.getState().S))
+    Object.assign(seeded.routines[0].ex[0], { side: true, rest: 150, prog: 'double', repsMin: 8, notes: 'Slow eccentric' })
     useStore.getState().replaceState(seeded)
-    await act(async () => {
-      root.render(<RoutineEdit />)
-    })
+    await renderEditor()
 
-    const items = container.querySelectorAll('.list .item')
-    await act(async () => {
-      items[0].dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
-    const [, { onSave }] = mocks.exConfigSheet.mock.calls[0]
-    await act(async () => {
-      onSave({ sets: 3, mode: 'reps', reps: 10, weight: 20 })
-    })
+    openRow('3/4 sit-up')
+    fireEvent.click(within(topSheet()).getByRole('switch', { name: 'Reps per side' }))
+    tapInSheet(/^Rest duration/)
+    tapInSheet(/^Default/)
+    tapInSheet(/^Rule/)
+    tapInSheet(/^Follow the routine/)
+    fireEvent.change(within(topSheet()).getByRole('textbox', { name: 'Notes and cues' }), { target: { value: '' } })
+    tapInSheet('Decrease Sets')
+    tapInSheet('Save')
 
-    const saved = useStore.getState().S.routines.find(x => x.id === 'r-test-1').ex[0]
-    expect(saved).toEqual({ id: '0001', sg: 'sg-0-1', sets: 3, mode: 'reps', reps: 10, weight: 20, rowId: expect.any(String) })
+    expect(openSheets()).toEqual([])
+    expect(routine().ex[0]).toEqual({ id: '0001', sg: 'sg-0-1', sets: 3, mode: 'reps', reps: 10, weight: 20, rowId: expect.any(String) })
   })
 
-  it('replaces a non-superset exercise without adding an sg property', async () => {
-    await act(async () => {
-      root.render(<RoutineEdit />)
-    })
+  it('Remove from routine asks first, then takes only that exercise out', async () => {
+    await renderEditor()
 
-    const items = container.querySelectorAll('.list .item')
-    await act(async () => {
-      items[2].dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    openRow('air bike')
+    tapInSheet('Remove from routine')
 
-    const [, { onReplace }] = mocks.exConfigSheet.mock.calls[0]
-    await act(async () => {
-      onReplace()
-    })
+    expect(within(topSheet()).getByRole('heading', { name: 'Remove air bike?' })).toBeTruthy()
+    expect(routine().ex.map(e => e.id)).toEqual(['0001', '0002', '0003'])
 
-    const pickerCallback = mocks.exercisePicker.mock.calls[0][0]
-    const newEx = { id: '0029', n: 'Another Lift', bp: 'back', tg: 'lats', eq: 'cable' }
-    await act(async () => {
-      pickerCallback(newEx)
-    })
+    tapInSheet('Remove')
 
-    const [, { onSave: replOnSave, initial: replInitial }] = mocks.exConfigSheet.mock.calls[1]
-    expect(replInitial.sets).toBe(3)
+    expect(openSheets()).toEqual([])
+    expect(routine().ex.map(e => e.id)).toEqual(['0001', '0002'])
+    expect(screen.queryByText('air bike')).toBeNull()
+  })
+})
 
-    await act(async () => {
-      replOnSave({ sets: 3, reps: 10, weight: 40, mode: 'reps' })
-    })
+describe('RoutineEdit exercise replacement', () => {
+  it('Replace exercise picks a new one in place, seeds its Target, and keeps the superset group', async () => {
+    await renderEditor()
 
-    const updatedRoutine = useStore.getState().S.routines.find(x => x.id === 'r-test-1')
-    expect(updatedRoutine.ex.length).toBe(3)
-    expect(updatedRoutine.ex[2]).toEqual({
-      id: '0029',
-      sets: 3,
-      reps: 10,
-      weight: 40,
-      mode: 'reps',
-      rowId: expect.any(String),
-    })
-    expect(updatedRoutine.ex[2].sg).toBeUndefined()
+    openRow('3/4 sit-up')
+    tapInSheet('Replace exercise')
+    pickExercise('barbell clean and press')
+
+    expect(within(topSheet()).getByRole('heading', { name: 'barbell clean and press' })).toBeTruthy()
+    expect(sheetField('Sets').value).toBe('4')
+    expect(sheetField('Weight (kg)').value).toBe('65')
+    expect(within(topSheet()).queryByRole('button', { name: 'Replace exercise' })).toBeNull()
+    typeInSheet('Reps', 8)
+    tapInSheet('Add to routine')
+
+    expect(routine().ex).toHaveLength(3)
+    expect(routine().ex[0]).toEqual({ id: '0028', sg: 'sg-0-1', sets: 4, reps: 8, weight: 65, mode: 'reps', rowId: expect.any(String) })
+    expect(routine().ex[1]).toMatchObject({ id: '0002', sg: 'sg-0-1' })
+    expect(routine().ex[2].id).toBe('0003')
+    expect(routine().ex[2]).not.toHaveProperty('sg')
+    // The picker stays open after its pick is saved; close it to read the routine underneath.
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(openSheets()).toEqual([])
+    expect(screen.getByText('barbell clean and press')).toBeTruthy()
+    expect(screen.queryByText('3/4 sit-up')).toBeNull()
   })
 
-  it('does not alter routine exercises if replacement is cancelled before saving', async () => {
-    await act(async () => {
-      root.render(<RoutineEdit />)
-    })
+  it('replaces a non-superset exercise without adding a superset group', async () => {
+    await renderEditor()
 
-    const items = container.querySelectorAll('.list .item')
-    await act(async () => {
-      items[0].dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    openRow('air bike')
+    tapInSheet('Replace exercise')
+    pickExercise('barbell clean-grip front squat')
 
-    const [, { onReplace }] = mocks.exConfigSheet.mock.calls[0]
-    await act(async () => {
-      onReplace()
-    })
+    expect(sheetField('Sets').value).toBe('3')
+    typeInSheet('Reps', 10)
+    typeInSheet('Weight (kg)', 40)
+    tapInSheet('Add to routine')
 
-    const routine = useStore.getState().S.routines.find(x => x.id === 'r-test-1')
-    expect(routine.ex[0].id).toBe('0001')
+    expect(routine().ex).toHaveLength(3)
+    expect(routine().ex[2]).toEqual({ id: '0029', sets: 3, reps: 10, weight: 40, mode: 'reps', rowId: expect.any(String) })
+  })
+
+  it('leaves the routine as it was when the picker is closed without a pick', async () => {
+    const before = JSON.parse(JSON.stringify(routine().ex))
+    await renderEditor()
+
+    openRow('3/4 sit-up')
+    tapInSheet('Replace exercise')
+    expect(within(topSheet()).getByRole('heading', { name: 'Add exercise' })).toBeTruthy()
+    fireEvent.keyDown(window, { key: 'Escape' })
+
+    expect(openSheets()).toEqual([])
+    expect(routine().ex).toEqual(before)
+  })
+
+  it('clears notes on replacement so outgoing notes do not pollute the new exercise', async () => {
+    useStore.getState().update(s => {
+      s.routines.find(x => x.id === 'r-test-1').ex[0].notes = 'Outgoing machine setup cue'
+    })
+    await renderEditor()
+
+    openRow('3/4 sit-up')
+    tapInSheet('Replace exercise')
+    pickExercise('barbell clean and press')
+
+    expect(within(topSheet()).getByRole('textbox', { name: 'Notes and cues' }).value).toBe('')
+    tapInSheet('Add to routine')
+
+    expect(routine().ex[0].id).toBe('0028')
+    expect(routine().ex[0]).not.toHaveProperty('notes')
   })
 })
 
@@ -263,50 +231,11 @@ describe('RoutineEdit exercise notes display and replacement', () => {
     expect(secondPreview).toBeNull()
   })
 
-  it('clears notes on exercise replacement so outgoing notes do not pollute the new exercise', async () => {
-    useStore.getState().update(s => {
-      const r = s.routines.find(x => x.id === 'r-test-1')
-      r.ex[0].notes = 'Outgoing machine setup cue'
-    })
-
-    await act(async () => {
-      root.render(<RoutineEdit />)
-    })
-
-    const items = container.querySelectorAll('.list .item')
-    await act(async () => {
-      items[0].dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
-
-    const [, { onReplace }] = mocks.exConfigSheet.mock.calls[0]
-    await act(async () => {
-      onReplace()
-    })
-
-    const pickerCallback = mocks.exercisePicker.mock.calls[0][0]
-    const newEx = { id: '0028', n: 'New Exercise', bp: 'chest', tg: 'chest', eq: 'barbell' }
-    await act(async () => {
-      pickerCallback(newEx)
-    })
-
-    const [, { existing: replExisting, onSave: replOnSave, initial: replInitial }] = mocks.exConfigSheet.mock.calls[1]
-    expect(replExisting).toBeUndefined()
-    expect(replInitial?.notes).toBeFalsy()
-
-    await act(async () => {
-      replOnSave({ sets: 4, reps: 10, weight: 60, mode: 'reps' })
-    })
-
-    const updatedRoutine = useStore.getState().S.routines.find(x => x.id === 'r-test-1')
-    expect(updatedRoutine.ex[0].id).toBe('0028')
-    expect(updatedRoutine.ex[0].notes).toBeUndefined()
-  })
 })
 
 describe('RoutineEdit delete key', () => {
   it('is a red text key, not a filled danger button, and still asks first', async () => {
-    mocks.confirmSheet.mockReset()
-    await act(async () => { root.render(<RoutineEdit />) })
+    await renderEditor()
 
     const del = [...container.querySelectorAll('button')].find(b => b.textContent === 'Delete')
     expect(del.classList.contains('rt-delete')).toBe(true)
@@ -314,12 +243,10 @@ describe('RoutineEdit delete key', () => {
     expect(del.classList.contains('danger')).toBe(false)
 
     await act(async () => { del.click() })
-    expect(mocks.confirmSheet).toHaveBeenCalledTimes(1)
-    expect(mocks.confirmSheet.mock.calls[0][0].danger).toBe(true)
+    expect(within(topSheet()).getByRole('heading', { name: 'Delete routine?' })).toBeTruthy()
+    expect(routine()).toBeDefined()
 
-    await act(async () => {
-      mocks.confirmSheet.mock.calls[0][0].onConfirm()
-    })
+    tapInSheet('Delete')
     expect(useStore.getState().S.routines.find(x => x.id === 'r-test-1')).toBeUndefined()
     expect(mocks.nav).toHaveBeenCalledWith('/plan')
   })
@@ -405,7 +332,6 @@ describe('RoutineEdit metadata changes', () => {
 })
 
 describe('RoutineEdit round trip: pick, save, read the routine', () => {
-  const routine = () => useStore.getState().S.routines.find(x => x.id === 'r-test-1')
   const linkButtons = () => container.querySelectorAll('button[aria-label="Superset with exercise above"]')
 
   it('Progression stores the rule picked, the one shown when the routine has none included', async () => {

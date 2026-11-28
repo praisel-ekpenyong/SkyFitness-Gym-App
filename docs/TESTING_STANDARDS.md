@@ -233,12 +233,12 @@ and `vi.doMock` of a relative path unless the path is inside `platform/`:
 any path through `platform/` pass, so the exemption is in the selector, not in
 prose. Mocking
 `platform/sound.js`, `localStorage`, and Capacitor stays legal: those are the
-boundary. The rule is wider than `lib/` and `store/`: <!-- ratchet: eslint-selector-suppressions.json#Do not vi.mock our own modules; mock only the boundary (platform/, localStorage, Capacitor). -->30 calls in 8 files<!-- /ratchet --> (39 when the rule was scoped on 2026-11-24) mock one of our own modules (`../components/BodyMap.jsx` in `views/Plan.test.jsx`, `../sheets/confirm.jsx` in `views/Settings.test.jsx`). Those 29 are baselined in `frontend/eslint-selector-suppressions.json` and only shrink. A new test that mocks its own module fails.
+boundary. The rule is wider than `lib/` and `store/`: <!-- ratchet: eslint-selector-suppressions.json#Do not vi.mock our own modules; mock only the boundary (platform/, localStorage, Capacitor). -->24 calls in 6 files<!-- /ratchet --> (39 when the rule was scoped on 2026-11-24) mock one of our own modules (`../components/BodyMap.jsx` in `views/Plan.test.jsx`, `../sheets/confirm.jsx` in `views/Settings.test.jsx`). Those calls are baselined in `frontend/eslint-selector-suppressions.json` and only shrink. A new test that mocks its own module fails.
 
 **Runs:** ESLint `no-restricted-syntax` on `src/**/*.test.jsx` (`noCssQueryInUiTests` in
 `frontend/eslint.config.js`, fixture in `frontend/scripts/eslint-test-rules.test.mjs`)
 fails `querySelector` and `querySelectorAll` with a class, id or class-attribute
-selector (<!-- ratchet: eslint-selector-suppressions.json#Find elements by role, label or text, not by CSS class or id (TESTING_STANDARDS.md). Give the control an aria-label or role in the component first. -->169 hits in 25 files<!-- /ratchet -->), and `toHaveClass`, `classList` and `className`
+selector (<!-- ratchet: eslint-selector-suppressions.json#Find elements by role, label or text, not by CSS class or id (TESTING_STANDARDS.md). Give the control an aria-label or role in the component first. -->163 hits in 25 files<!-- /ratchet -->), and `toHaveClass`, `classList` and `className`
 (<!-- ratchet: eslint-selector-suppressions.json#Do not assert on a CSS class (TESTING_STANDARDS.md). Assert what the lifter sees; a state shown only by a class gets the reason in the assertion message. -->34 hits in 11 files<!-- /ratchet -->). A tag or a role attribute selector passes. Those hits are baselined in
 `frontend/eslint-selector-suppressions.json` and only shrink; a new test that queries by
 class fails. The fix is the one the section above gives: query by role, label or text,
