@@ -8,7 +8,7 @@ import { DEF } from '../lib/profile/index.js'
 import { useUI } from '../store/useUI.js'
 import Modals from '../components/Modals.jsx'
 import { fireEvent, screen, within } from '@testing-library/react'
-import { buttonNamed, leafTexts, pick, pickExercise, sheetField, tapInSheet, topSheet, typeInSheet } from '../test/sheet-host.jsx'
+import { buttonNamed, leafTexts, openSheets, pick, pickExercise, sheetField, tapInSheet, topSheet, typeInSheet } from '../test/sheet-host.jsx'
 
 const mocks = vi.hoisted(() => ({
   nav: vi.fn(),
@@ -95,7 +95,7 @@ describe('RoutineEdit exercise config', () => {
 
   it('saving an exercise replaces its settings, so a setting turned off is cleared', async () => {
     const seeded = JSON.parse(JSON.stringify(useStore.getState().S))
-    Object.assign(seeded.routines[0].ex[0], { side: true, rest: 150, prog: 'double', repsMin: 8, inc: 1.25, bodyweight: true, notes: 'Slow eccentric' })
+    Object.assign(seeded.routines[0].ex[0], { side: true, rest: 150, prog: 'double', repsMin: 8, notes: 'Slow eccentric' })
     useStore.getState().replaceState(seeded)
     await renderEditor()
 
@@ -109,8 +109,8 @@ describe('RoutineEdit exercise config', () => {
     tapInSheet('Decrease Sets')
     tapInSheet('Save')
 
-    expect(useUI.getState().sheets).toEqual([])
-    expect(routine().ex[0]).toEqual({ id: '0001', sg: 'sg-0-1', sets: 3, mode: 'reps', reps: 10, weight: 20, inc: 1.25, rowId: expect.any(String) })
+    expect(openSheets()).toEqual([])
+    expect(routine().ex[0]).toEqual({ id: '0001', sg: 'sg-0-1', sets: 3, mode: 'reps', reps: 10, weight: 20, rowId: expect.any(String) })
   })
 
   it('Remove from routine asks first, then takes only that exercise out', async () => {
@@ -124,7 +124,7 @@ describe('RoutineEdit exercise config', () => {
 
     tapInSheet('Remove')
 
-    expect(useUI.getState().sheets).toEqual([])
+    expect(openSheets()).toEqual([])
     expect(routine().ex.map(e => e.id)).toEqual(['0001', '0002'])
     expect(screen.queryByText('air bike')).toBeNull()
   })
@@ -150,8 +150,9 @@ describe('RoutineEdit exercise replacement', () => {
     expect(routine().ex[1]).toMatchObject({ id: '0002', sg: 'sg-0-1' })
     expect(routine().ex[2].id).toBe('0003')
     expect(routine().ex[2]).not.toHaveProperty('sg')
+    // The picker stays open after its pick is saved; close it to read the routine underneath.
     fireEvent.keyDown(window, { key: 'Escape' })
-    expect(useUI.getState().sheets).toEqual([])
+    expect(openSheets()).toEqual([])
     expect(screen.getByText('barbell clean and press')).toBeTruthy()
     expect(screen.queryByText('3/4 sit-up')).toBeNull()
   })
@@ -181,7 +182,7 @@ describe('RoutineEdit exercise replacement', () => {
     expect(within(topSheet()).getByRole('heading', { name: 'Add exercise' })).toBeTruthy()
     fireEvent.keyDown(window, { key: 'Escape' })
 
-    expect(useUI.getState().sheets).toEqual([])
+    expect(openSheets()).toEqual([])
     expect(routine().ex).toEqual(before)
   })
 

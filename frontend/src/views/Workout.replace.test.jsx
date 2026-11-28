@@ -6,7 +6,7 @@ import { replaceActiveExerciseFlow } from '../sheets/session.jsx'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { entry, resetViewTestState, renderWorkoutApp, cleanupViewTest } from '../test/view-harness.jsx'
-import { pickExercise, sheetField, tapInSheet, topSheet, typeInSheet } from '../test/sheet-host.jsx'
+import { openSheets, pickExercise, sheetField, tapInSheet, topSheet, typeInSheet } from '../test/sheet-host.jsx'
 
 vi.mock('../platform/sound.js', async orig => (await import('../test/platform-mocks.js')).mockSound(await orig()))
 
@@ -206,7 +206,7 @@ describe('Workout performed entry replacement', () => {
     click(headerReplaceButton())
     tapInSheet('Cancel')
 
-    expect(useUI.getState().sheets).toEqual([])
+    expect(openSheets()).toEqual([])
     expect(activeEntries()).toEqual([expect.objectContaining({ id: '1001', sets: [expect.objectContaining({ w: 60, r: 5, done: true })] })])
   })
 })

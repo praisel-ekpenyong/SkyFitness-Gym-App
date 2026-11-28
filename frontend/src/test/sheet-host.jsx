@@ -2,6 +2,8 @@ import { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { fireEvent, screen, within } from '@testing-library/react'
 import { useUI } from '../store/useUI.js'
+import { typeInto } from './catalogue-queries.js'
+import { search } from './library-queries.js'
 
 const textsOf = el => [...el.querySelectorAll('*')].filter(n => !n.children.length).map(n => n.textContent)
 
@@ -28,11 +30,15 @@ export async function pick(scope, title, option) {
   await pickInSheet(option)
 }
 
-/** The sheet a lifter is looking at: the last dialog the sheet host shows. */
+/** Every sheet the sheet host shows, bottom to top. */
+export const openSheets = () => [...screen.queryAllByRole('dialog'), ...screen.queryAllByRole('alertdialog')]
+  .sort((a, b) => a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1)
+
+/** The sheet a lifter is looking at: the last one the sheet host shows. */
 export function topSheet() {
-  const open = [...screen.queryAllByRole('dialog'), ...screen.queryAllByRole('alertdialog')]
+  const open = openSheets()
   if (!open.length) throw new Error('No sheet is open')
-  return open.sort((a, b) => a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1).at(-1)
+  return open.at(-1)
 }
 
 /** Taps the button of that name in the sheet on top. */
@@ -40,16 +46,14 @@ export function tapInSheet(name) {
   fireEvent.click(within(topSheet()).getByRole('button', { name }))
 }
 
-/** The number field of that name in the sheet on top, such as Sets, Reps or Weight (kg). */
+/** The text field of that name in the sheet on top, such as Sets, Reps or Weight (kg). */
 export const sheetField = name => within(topSheet()).getByRole('textbox', { name })
 
-/** Types a value into the number field of that name in the sheet on top. */
-export function typeInSheet(name, value) {
-  fireEvent.change(sheetField(name), { target: { value: String(value) } })
-}
+/** Types a value into the text field of that name in the sheet on top. */
+export const typeInSheet = (name, value) => typeInto(sheetField(name), String(value))
 
 /** Finds an exercise in the picker on top by searching its name, then taps its tile. */
 export function pickExercise(name) {
-  fireEvent.change(within(topSheet()).getByRole('textbox', { name: 'Search exercises' }), { target: { value: name } })
+  search(topSheet(), name)
   tapInSheet(name)
 }
