@@ -233,7 +233,7 @@ and `vi.doMock` of a relative path unless the path is inside `platform/`:
 any path through `platform/` pass, so the exemption is in the selector, not in
 prose. Mocking
 `platform/sound.js`, `localStorage`, and Capacitor stays legal: those are the
-boundary. The rule is wider than `lib/` and `store/`: <!-- ratchet: eslint-selector-suppressions.json#Do not vi.mock our own modules; mock only the boundary (platform/, localStorage, Capacitor). -->29 calls in 8 files<!-- /ratchet --> (39 when the rule was scoped on 2026-11-24) mock one of our own modules (`../components/BodyMap.jsx` in `views/Plan.test.jsx`, `../sheets/confirm.jsx` in `views/Settings.test.jsx`). Those 29 are baselined in `frontend/eslint-selector-suppressions.json` and only shrink. A new test that mocks its own module fails.
+boundary. The rule is wider than `lib/` and `store/`: <!-- ratchet: eslint-selector-suppressions.json#Do not vi.mock our own modules; mock only the boundary (platform/, localStorage, Capacitor). -->30 calls in 8 files<!-- /ratchet --> (39 when the rule was scoped on 2026-11-24) mock one of our own modules (`../components/BodyMap.jsx` in `views/Plan.test.jsx`, `../sheets/confirm.jsx` in `views/Settings.test.jsx`). Those 29 are baselined in `frontend/eslint-selector-suppressions.json` and only shrink. A new test that mocks its own module fails.
 
 **Runs:** ESLint `no-restricted-syntax` on `src/**/*.test.jsx` (`noCssQueryInUiTests` in
 `frontend/eslint.config.js`, fixture in `frontend/scripts/eslint-test-rules.test.mjs`)
@@ -253,7 +253,7 @@ the suppressed files with an empty suppressions file and ratchets every
 and a stale entry. Fixture: `frontend/scripts/check-eslint-selectors.test.mjs`.
 
 **Runs, with the rule in `CODING_STANDARDS.md`:** a round-trip test per saving
-control ("Default decides") in `sheets/catalogue.test.jsx` and
+control ("Default decides") in `sheets/exercise-config.test.jsx` and
 `views/RoutineEdit.test.jsx`.
 
 **Runs:** oxlint with `frontend/.oxlintrc.tests.json` (the `jest` plugin) fails a test

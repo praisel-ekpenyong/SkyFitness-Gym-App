@@ -104,7 +104,7 @@
   },
   "src/views/RoutineEdit.test.jsx": {
     "no-restricted-syntax": {
-      "Do not vi.mock our own modules; mock only the boundary (platform/, localStorage, Capacitor).": 2,
+      "Do not vi.mock our own modules; mock only the boundary (platform/, localStorage, Capacitor).": 3,
       "Find elements by role, label or text, not by CSS class or id (TESTING_STANDARDS.md). Give the control an aria-label or role in the component first.": 11,
       "Do not assert on a CSS class (TESTING_STANDARDS.md). Assert what the lifter sees; a state shown only by a class gets the reason in the assertion message.": 3
     }
@@ -135,14 +135,14 @@
   },
   "src/views/Workout.console.test.jsx": {
     "no-restricted-syntax": {
-      "Do not vi.mock our own modules; mock only the boundary (platform/, localStorage, Capacitor).": 3,
+      "Do not vi.mock our own modules; mock only the boundary (platform/, localStorage, Capacitor).": 2,
       "Find elements by role, label or text, not by CSS class or id (TESTING_STANDARDS.md). Give the control an aria-label or role in the component first.": 6,
       "Do not assert on a CSS class (TESTING_STANDARDS.md). Assert what the lifter sees; a state shown only by a class gets the reason in the assertion message.": 2
     }
   },
   "src/views/Workout.replace.test.jsx": {
     "no-restricted-syntax": {
-      "Do not vi.mock our own modules; mock only the boundary (platform/, localStorage, Capacitor).": 2,
+      "Do not vi.mock our own modules; mock only the boundary (platform/, localStorage, Capacitor).": 3,
       "Find elements by role, label or text, not by CSS class or id (TESTING_STANDARDS.md). Give the control an aria-label or role in the component first.": 1
     }
   },

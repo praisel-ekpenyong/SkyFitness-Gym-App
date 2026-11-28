@@ -31,6 +31,7 @@ const HISTORICAL = new Set([
   'docs/adr/0006-active-workout-lifecycle.md: lib/finish-workout.js',
   'docs/adr/0019-read-time-unit-normalization-across-history.md: lib/progression.js::sessionsFor',
   'docs/adr/0019-read-time-unit-normalization-across-history.md: lib/stats-selectors.js::selectExerciseStats',
+  'docs/adr/0030-routine-domain-behind-act-routine.md: sheets/catalogue.jsx',
 ])
 
 describe('docs paths', () => {
