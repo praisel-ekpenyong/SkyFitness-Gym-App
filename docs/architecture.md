@@ -8,6 +8,8 @@ Sky is a single-page React 19 app with **no backend**. One zustand store (`front
 
 Navigation is a HashRouter over `/home /plan /plan/r/:id /workout /stats /history /library /settings`. There are no context providers: cross-cutting ephemeral state (sheet stack, toasts, rest/hold countdowns) lives in a second store, `store/useUI.js`.
 
+The Exercise picker stays open after Add to routine, so a lifter can add several exercises in a row. A Replace, in the routine editor or the Active workout, closes the picker once the replacement is saved; cancelling the config sheet returns to the picker to choose again. `views/RoutineEdit.test.jsx` and `views/Workout.replace.test.jsx` drive both through the sheet host.
+
 ## Catalogue browsing (`lib/catalogue-query.js`)
 
 The Library page and ExercisePicker share one pure query module for catalogue reads. `queryCatalogue({ profile, scope, search, equipment })` owns the policy for combining the built-in catalogue with custom exercises, resolving canonical muscle filters, searching names and muscle metadata, applying Favorites or Chosen scope, deriving usage counts, and producing equipment facets. It returns enriched rows with the original exercise plus favorite, usage, primary-muscle, and match-attribution facts.

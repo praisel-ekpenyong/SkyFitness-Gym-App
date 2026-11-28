@@ -309,7 +309,7 @@ export function replaceActiveExerciseFlow(idx, send) {
 
   const proceedToPicker = () => {
     if (useUI.getState().work) useUI.getState().stopWork()
-    exercisePicker(newEx => {
+    const picker = exercisePicker(newEx => {
       if (!newEx) return
       const s = useStore.getState().S
       const act = s?.active
@@ -317,7 +317,10 @@ export function replaceActiveExerciseFlow(idx, send) {
       const plannedCount = workSets(entry).length || (entry.sets || []).length
       const seed = seedForReplacement(s, newEx.id, act?.routineId, plannedCount)
       exConfigSheet(newEx, {
-        onSave: cfg => send({ type: 'replaceExercise', entry: idx, exId: newEx.id, target: cfg }),
+        onSave: cfg => {
+          picker.close()
+          send({ type: 'replaceExercise', entry: idx, exId: newEx.id, target: cfg })
+        },
         routine,
         initial: seed,
         actionLabel: t('Replace'),

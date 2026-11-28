@@ -91,4 +91,9 @@ export function ExercisePicker({ onPick }) {
     {f.length > shown && <><div className="gap8" /><Button onClick={() => setShown(s => s + 50)}>{t('Show more')}</Button></>}
   </>
 }
+/**
+ * Opens the Exercise picker. It stays open after a pick; the caller closes it with the returned handle.
+ * @param {(ex: import('../lib/types.js').CustomExercise) => void} onPick - Called with the exercise the lifter taps.
+ * @returns {{ id: string, close: () => void }} The picker's sheet handle.
+ */
 export const exercisePicker = onPick => ui().openSheet(close => <ExercisePicker onPick={onPick} close={close} />)

@@ -76,20 +76,19 @@ export default function RoutineEdit() {
             onSave: cfg => actRoutine({ type: 'replaceExercise', routineId: id, index: i, exId: ex.id, target: cfg }),
             onDelete: () => actRoutine({ type: 'removeExercise', routineId: id, index: i }),
             routine: r,
-            onReplace: () => exercisePicker(newEx => {
-              const initial = seedForReplacement(S, newEx.id, id, item.sets)
-              exConfigSheet(newEx, {
-                onSave: cfg => actRoutine({
-                  type: 'replaceExercise',
-                  routineId: id,
-                  index: i,
-                  exId: newEx.id,
-                  target: cfg,
-                }),
-                routine: r,
-                initial,
+            onReplace: () => {
+              const picker = exercisePicker(newEx => {
+                const initial = seedForReplacement(S, newEx.id, id, item.sets)
+                exConfigSheet(newEx, {
+                  onSave: cfg => {
+                    picker.close()
+                    actRoutine({ type: 'replaceExercise', routineId: id, index: i, exId: newEx.id, target: cfg })
+                  },
+                  routine: r,
+                  initial,
+                })
               })
-            }),
+            },
           })
         }}>
           <Thumb ex={ex} />

@@ -32,14 +32,14 @@
   "src/sheets/custom-exercise.jsx": 16,
   "src/sheets/exercise-config.jsx": 86,
   "src/sheets/exercise-detail.jsx": 17,
-  "src/sheets/exercise-picker.jsx": 11,
+  "src/sheets/exercise-picker.jsx": 10,
   "src/sheets/history.jsx": 47,
   "src/sheets/import.jsx": 11,
   "src/sheets/plan-tools.jsx": 19,
   "src/sheets/profile.jsx": 23,
   "src/sheets/routine.jsx": 3,
   "src/sheets/schedule.jsx": 18,
-  "src/sheets/session.jsx": 39,
+  "src/sheets/session.jsx": 38,
   "src/sheets/volume.jsx": 24,
   "src/store/effects.js": 15,
   "src/store/useStore.js": 19,
@@ -47,8 +47,8 @@
   "src/views/Home.jsx": 17,
   "src/views/Library.jsx": 9,
   "src/views/Plan.jsx": 4,
-  "src/views/RoutineEdit.jsx": 15,
+  "src/views/RoutineEdit.jsx": 13,
   "src/views/Settings.jsx": 62,
   "src/views/Stats.jsx": 71,
-  "src/views/Workout.jsx": 106
+  "src/views/Workout.jsx": 105
 }
