@@ -8,10 +8,11 @@ const sheet = (id, locked = false) => ({ id, locked })
 // browser-history Adapter whose rewind fires its pop listener, and the *real*
 // hardware Adapter with its native listener captured. A press goes native -> Adapter
 // -> Module -> effects, and we assert only what closed and where history landed.
-function harness(initial = []) {
+function harness(initial = [], { deferPops = false } = {}) {
   let sheets = initial
   let native = null
   let popHandler = null
+  let queuedPops = []
   const sheetListeners = new Set()
   const calls = { push: [], rewind: [], close: [], goBack: 0, toasts: [], exit: 0 }
 
@@ -31,7 +32,9 @@ function harness(initial = []) {
     push: () => calls.push.push('entry'),
     rewind: count => {
       calls.rewind.push(count)
-      for (let i = 0; i < count; i++) popHandler?.()
+      const fire = () => { for (let i = 0; i < count; i++) popHandler?.() }
+      if (deferPops) queuedPops.push(fire)
+      else fire()
     },
     onPop: l => { popHandler = l; return () => { if (popHandler === l) popHandler = null } },
   }
@@ -49,6 +52,11 @@ function harness(initial = []) {
     dispose,
     press: (ev = {}) => native?.(ev),
     openSheets: next => { sheets = next; emitSheets() },
+    flushPops: () => {
+      const queued = queuedPops
+      queuedPops = []
+      for (const fire of queued) fire()
+    },
   }
 }
 
@@ -90,5 +98,21 @@ describe('hardware Back through the one attach seam', () => {
     expect(h.calls.exit).toBe(0)
     h.press({ canGoBack: false })
     expect(h.calls.exit).toBe(1)
+  })
+
+  it('absorbs a Back press while its own rewind is in flight, leaving history aligned', () => {
+    const h = harness([sheet('goal')], { deferPops: true })
+    h.openSheets([])
+    expect(h.calls.rewind).toEqual([1])
+
+    h.press({ canGoBack: true })
+    expect(h.calls.rewind).toEqual([1])
+    expect(h.calls.close).toEqual([])
+    expect(h.calls.goBack).toBe(0)
+    expect(h.calls.exit).toBe(0)
+
+    h.flushPops()
+    expect(h.calls.rewind).toEqual([1])
+    expect(h.calls.close).toEqual([])
   })
 })

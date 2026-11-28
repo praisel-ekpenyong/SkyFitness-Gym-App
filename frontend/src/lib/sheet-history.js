@@ -40,6 +40,17 @@ export function consumesBack(state) {
 }
 
 /**
+ * Whether the Module's own rewind is still in flight. A Back press in that window is
+ * absorbed without moving history: the pending pop is the one that must be consumed,
+ * or the browser walks one entry too far.
+ * @param {SheetHistoryState} state
+ * @returns {boolean}
+ */
+export function isProgrammaticRewindPending(state) {
+  return state.pendingProgrammaticPops > 0
+}
+
+/**
  * @param {SheetHistoryState} state
  * @param {SheetHistoryAction} action
  * @returns {{ state: SheetHistoryState, effects: SheetHistoryEffect[] }}

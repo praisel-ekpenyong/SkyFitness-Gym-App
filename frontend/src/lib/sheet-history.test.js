@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { consumesBack, createSheetHistoryState, transitionSheetHistory } from './sheet-history.js'
+import { consumesBack, createSheetHistoryState, isProgrammaticRewindPending, transitionSheetHistory } from './sheet-history.js'
 
 const sheet = (id, locked = false) => ({ id, locked })
 
@@ -32,6 +32,17 @@ describe('sheet history transitions', () => {
     expect(absorbed.state.pendingProgrammaticPops).toBe(0)
     expect(absorbed.state.entries).toEqual(result.state.entries)
     expect(consumesBack(absorbed.state)).toBe(false)
+  })
+
+  it('reports an in-flight programmatic rewind until its own pop is absorbed', () => {
+    let result = open(createSheetHistoryState(), [sheet('goal')])
+    expect(isProgrammaticRewindPending(result.state)).toBe(false)
+
+    result = open(result.state, [])
+    expect(isProgrammaticRewindPending(result.state)).toBe(true)
+
+    const absorbed = pop(result.state, [])
+    expect(isProgrammaticRewindPending(absorbed.state)).toBe(false)
   })
 
   it('does not queue a programmatic rewind for a sheet closed after navigation', () => {

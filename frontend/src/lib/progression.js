@@ -922,7 +922,7 @@ export function evaluateSetMilestone(entry, setIdx, context = {}) {
         return unlockedCue(verdict, { reps, targetReps })
       }
       if (p.kind === 'up' && reps >= targetReps) return unlockedCue(verdict, { reps, targetReps })
-      if (reps >= targetReps && readSession(entry, verdict.cfg, null, verdict.unit).ok) {
+      if (reps >= targetReps && verdict.judged.ok) {
         return {
           kind: 'hit',
           label: t('{0}/{1} reps', reps, targetReps),
