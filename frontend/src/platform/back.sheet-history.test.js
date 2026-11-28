@@ -71,12 +71,24 @@ describe('hardware Back through the one attach seam', () => {
     expect(h.calls.exit).toBe(0)
   })
 
-  it('a locked sheet consumes the press without closing or arming exit', () => {
+  it('a locked sheet consumes the press without closing or moving history', () => {
     const h = harness([sheet('confirm', true)])
     h.press({ canGoBack: false })
     expect(h.calls.close).toEqual([])
-    // The Module consumes by rewinding its own entry; the Adapter walks no history.
-    expect(h.calls.rewind).toEqual([1])
+    // The Module consumes by keeping the sheet's own history entry; the Adapter walks no history.
+    expect(h.calls.rewind).toEqual([])
+    expect(h.calls.goBack).toBe(0)
+    expect(h.calls.toasts).toEqual([])
+    expect(h.calls.exit).toBe(0)
+  })
+
+  it('a locked sheet keeps consuming repeated hardware Back presses without arming exit', () => {
+    const h = harness([sheet('confirm', true)])
+    h.press({ canGoBack: false })
+    h.press({ canGoBack: false })
+    h.press({ canGoBack: false })
+    expect(h.calls.close).toEqual([])
+    expect(h.calls.rewind).toEqual([])
     expect(h.calls.goBack).toBe(0)
     expect(h.calls.toasts).toEqual([])
     expect(h.calls.exit).toBe(0)
