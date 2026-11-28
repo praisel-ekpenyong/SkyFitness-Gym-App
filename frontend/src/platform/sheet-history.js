@@ -1,7 +1,7 @@
 // The one interpreter of sheet-versus-history decisions. The pure transition lives in
 // lib/sheet-history.js; this module owns the two subscriptions, the Back handle and the
 // order in which effects reach the injected Adapters. Nothing here imports the store.
-import { createSheetHistoryState, consumesBack, isProgrammaticRewindPending, transitionSheetHistory } from '../lib/sheet-history.js'
+import { backRewindsHistory, createSheetHistoryState, consumesBack, isProgrammaticRewindPending, transitionSheetHistory } from '../lib/sheet-history.js'
 
 /** @typedef {{ id: string, locked?: boolean }} SheetDescriptor */
 /**
@@ -64,7 +64,8 @@ export function createSheetHistory(host) {
     // A hardware press is the same Back as a browser pop: step one browser entry
     // through the one interpreter, which closes the sheet and drains tombstones.
     const consumed = consumesBack(state)
-    if (consumed) host.history.rewind(1)
+    // A locked sheet keeps its own history entry: consume the press without rewinding it.
+    if (consumed && backRewindsHistory(state)) host.history.rewind(1)
     return consumed
   }
 

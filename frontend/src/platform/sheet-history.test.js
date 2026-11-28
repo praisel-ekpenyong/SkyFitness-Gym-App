@@ -82,11 +82,22 @@ describe('createSheetHistory attach seam', () => {
     expect(h.calls.rewind).toEqual([1])
   })
 
-  it('does not close a locked sheet, but still consumes its Back press', () => {
+  it('does not close a locked sheet, and keeps consuming its Back press', () => {
     const h = harness([sheet('confirm', true)])
     expect(h.handle()).toBe(true)
     expect(h.calls.close).toEqual([])
-    expect(h.handle()).toBe(false)
+    expect(h.calls.rewind).toEqual([])
+    expect(h.handle()).toBe(true)
+  })
+
+  it('absorbs a browser pop on a locked sheet by re-pushing its entry', () => {
+    const h = harness([sheet('confirm', true)])
+    expect(h.calls.push).toHaveLength(1)
+    h.pop()
+    expect(h.calls.close).toEqual([])
+    expect(h.calls.push).toHaveLength(2)
+    expect(h.calls.rewind).toEqual([])
+    expect(h.handle()).toBe(true)
   })
 
   it('pushes once per opened sheet then rewinds once for drained tombstones', () => {

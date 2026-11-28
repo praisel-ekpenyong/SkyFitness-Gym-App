@@ -105,6 +105,20 @@ describe('Back with sheets open', () => {
     await back()
     expect(page()).toBe('home')
   })
+
+  it('keeps a locked sheet on its entry through repeated browser Back presses', async () => {
+    await setSheets([sheet('confirm', { locked: true })])
+    await back()
+    expect(ids()).toEqual(['confirm'])
+    expect(page()).toBe('sheet')
+    await back()
+    expect(ids()).toEqual(['confirm'])
+    expect(page()).toBe('sheet')
+    await back()
+    expect(ids()).toEqual(['confirm'])
+    expect(page()).toBe('sheet')
+    expect(await hardwareBack()).toBe(true)
+  })
 })
 
 describe('closing sheets from the screen', () => {
@@ -180,11 +194,20 @@ describe('hardware Back through the installed handle', () => {
     expect(location.hash).toBe('#/workout')
   })
 
-  it('a locked sheet consumes the press without closing or leaving the page', async () => {
+  it('a locked sheet keeps its history entry and does not leave the page', async () => {
     await setSheets([sheet('confirm', { locked: true })])
     expect(await hardwareBack()).toBe(true)
     expect(ids()).toEqual(['confirm'])
-    expect(page()).toBe('workout')
+    expect(page()).toBe('sheet')
+  })
+
+  it('a locked sheet keeps consuming repeated presses without leaving the page', async () => {
+    await setSheets([sheet('confirm', { locked: true })])
+    expect(await hardwareBack()).toBe(true)
+    expect(await hardwareBack()).toBe(true)
+    expect(await hardwareBack()).toBe(true)
+    expect(ids()).toEqual(['confirm'])
+    expect(page()).toBe('sheet')
   })
 
   it('reports an unconsumed press when no sheet is open', async () => {
