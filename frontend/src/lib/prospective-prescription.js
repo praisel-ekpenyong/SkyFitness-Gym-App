@@ -5,7 +5,8 @@
  * and returns one immutable value: the canonical as-if-finished Workout, per-entry readings keyed
  * for Milestone cue lookup, and the same readings grouped for the Progression summary.
  */
-import { readEntryVerdict } from './progression.js'
+import { judgeNextPrescription, readSession } from './progression.js'
+import { defaultConfig } from './workout-model.js'
 import { freezePrescriptionRecord } from './prescription-record.js'
 import { sanitizeUnit } from './units.js'
 
@@ -17,6 +18,7 @@ import { sanitizeUnit } from './units.js'
 /** @typedef {import('./types.js').Target} Target */
 /** @typedef {import('./types.js').Prescription} Prescription */
 /** @typedef {import('./types.js').PrescriptionRecord} PrescriptionRecord */
+/** @typedef {import('./types.js').Routine} Routine */
 
 /**
  * @typedef {Object} ProspectiveReading
@@ -24,14 +26,13 @@ import { sanitizeUnit } from './units.js'
  * @property {Entry} entry - The Entry in the canonical Workout.
  * @property {string} d - The canonical Workout's day key.
  * @property {string | null} routineId - The canonical Workout's Routine id, the cue's policy source.
- * @property {ReturnType<typeof readEntryVerdict>} verdict - The shared judgement the cue reads.
  * @property {Prescription} prescription - The one Progression judgement.
  * @property {PrescriptionRecord | null} plan - The frozen record the boundary would write next.
  * @property {Unit} unit - The Active workout's unit.
  * @property {Target} cfg - The config the judgement used.
- * @property {ReturnType<typeof readEntryVerdict>['judged']} judged - The one Hit rule's reading.
- * @property {number} aimDelta - Rep/hold aim movement, when the Prescription holds.
- * @property {number} step - Load or hold increase, when the Prescription advances.
+ * @property {ReturnType<typeof readSession>} judged - The one Hit rule's reading of this Entry.
+ * @property {number} progress - Rep progress or hold-aim progress, when the Prescription holds at the same working value.
+ * @property {number} step - Load or hold increase as delivered, when the Prescription advances.
  */
 
 /**
@@ -88,22 +89,45 @@ function standInWorkout(active, S) {
 }
 
 /**
- * @param {Entry} entry
+ * What every Entry is judged against: the Profile as if the session had just ended, with the
+ * canonical Workout in the Training log and read in its unit (also after the Session boundary has
+ * logged it), and the Routine behind the session (ADR 0037).
  * @param {Partial<Profile>} S
  * @param {Workout} workout
+ * @param {boolean} logged
+ * @returns {{ finished: Partial<Profile>, unit: Unit, routine: Routine | null }}
+ */
+function judgingContext(S, workout, logged) {
+  const unit = sanitizeUnit(workout.unit || S.unit)
+  const finished = logged ? { ...S, unit } : { ...S, unit, workouts: [...(S.workouts || []), workout] }
+  const routineId = workout.routineId ?? S.active?.routineId ?? null
+  const routine = routineId ? (S.routines || []).find(r => r.id === routineId) || null : null
+  return { finished, unit, routine }
+}
+
+/**
+ * @param {Entry} entry
+ * @param {Partial<Profile>} finished - The Profile as if the session had just ended.
+ * @param {Workout} workout
+ * @param {Routine | null} routine
+ * @param {Unit} unit - The Workout's unit, else the Profile's.
  * @returns {ProspectiveReading}
  */
-function readingFor(entry, S, workout) {
-  const verdict = readEntryVerdict(entry, S, workout)
+function readingFor(entry, finished, workout, routine, unit) {
+  const cfg = { ...defaultConfig(entry.id), ...(entry.target || {}), id: entry.id }
+  const { prescription, step, progress } = judgeNextPrescription(finished, cfg, routine)
   return {
     id: entry.id,
     entry,
     d: workout.d,
     routineId: workout.routineId,
-    // `verdict` is the cue seam; the flattened copy serves the summary/boundary readers.
-    verdict,
-    ...verdict,
-    plan: freezePrescriptionRecord(verdict.prescription)
+    prescription,
+    step,
+    progress,
+    unit,
+    cfg,
+    judged: readSession(entry, cfg, workout, unit),
+    plan: freezePrescriptionRecord(prescription)
   }
 }
 
@@ -122,13 +146,14 @@ export function readProspectivePrescription(active, profile) {
   // Once the Session boundary has written this workout, read it instead of appending a stand-in.
   const logged = active ? (S.workouts || []).find(w => w.id === A.id) : null
   const workout = logged || standInWorkout(A, S)
+  const { finished, unit, routine } = judgingContext(S, workout, !!logged)
 
   /** @type {Record<string, ProspectiveReading>} */
   const byEntry = {}
   /** @type {ProspectiveReading[]} */
   const items = []
   for (const entry of workout.entries) {
-    const reading = readingFor(entry, S, workout)
+    const reading = readingFor(entry, finished, workout, routine, unit)
     byEntry[entry.id] = reading
     items.push(reading)
   }

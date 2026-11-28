@@ -1,5 +1,5 @@
 import { EXIDX } from './exercises.js'
-import { isWarmupRow, modeOf, repStep, makeRow, isBw, defaultConfig } from './workout-model.js'
+import { isWarmupRow, modeOf, repStep, makeRow, isBw } from './workout-model.js'
 import { isWorkSet, isPerformed, workSets, doneWorkSets, modeForSet } from './workout-sets.js'
 import { resolveSetWeight, normalizeWeight, targetIn, entryUnit, round1 } from './units.js'
 import { fmtNum, fmtSigned } from './format.js'
@@ -38,6 +38,21 @@ import { t } from './i18n.js'
  *   plan?: PrescriptionRecord | Prescription | null,
  * }} SessionReading
  */
+
+/**
+ * A policy's judgement: the Prescription and the facts it was decided on, so the Milestone cue
+ * reads what the policy decided instead of deriving it again (ADR 0018, 0037).
+ * `step` is the load or hold added by an advance, as delivered (ADR 0011); `progress` is the
+ * Rep progress or hold-aim progress a hold at the same working value records.
+ * @typedef {{ prescription: Prescription, step: number, progress: number }} Judgement
+ */
+
+/**
+ * @param {Prescription} prescription
+ * @param {{ step?: number, progress?: number }} [facts]
+ * @returns {Judgement}
+ */
+const judgement = (prescription, facts = {}) => ({ prescription, step: facts.step ?? 0, progress: facts.progress ?? 0 })
 
 /**
  * @typedef {{
@@ -426,31 +441,36 @@ function workingLoad(last, cfg) {
 
 /**
  * @param {{ policy: ProgressionPolicy, cfg: Partial<Target>, inc: number, sessions: SessionReading[], last: SessionReading, deloadAt: number }} args
- * @returns {Prescription}
+ * @returns {Judgement}
  */
 function timePrescription({ policy, cfg, inc, sessions, last, deloadAt }) {
   if (timeHit(last, cfg)) {
-    const sec = round1(Math.max(sessionSeconds(last, cfg), weakestPerformed(last)) + inc)
-    return { policy, kind: 'up', sec, why: ['Held every set for the full time — target up by {0}s.', inc] }
+    const base = Math.max(sessionSeconds(last, cfg), weakestPerformed(last))
+    const sec = round1(base + inc)
+    return judgement({ policy, kind: 'up', sec, why: ['Held every set for the full time — target up by {0}s.', inc] }, { step: round1(sec - base) })
   }
+  const prev = sessions.length >= 2 ? sessions[sessions.length - 2] : null
+  /** @param {number} sec */
+  const progressTo = sec => (prev ? Math.max(0, sec - timeAim(prev, cfg, inc)) : 0)
   const start = runStart(sessions, s => sessionSeconds(s, cfg))
   const noProgress = timeNoProgress(sessions, start, cfg, inc)
   const weak = weakestPerformed(last)
   const base = weak > 0 ? weak : sessionSeconds(last, cfg)
   const stalled = deloadIfStalled(base, 5, noProgress, deloadAt)
   if (stalled?.tag === 'hold') {
-    return { policy, kind: 'hold', sec: Math.max(MIN_TIME_SEC, clampTimeSec(base)), why: ['Already at the shortest hold — same target again.'] }
+    const sec = Math.max(MIN_TIME_SEC, clampTimeSec(base))
+    return judgement({ policy, kind: 'hold', sec, why: ['Already at the shortest hold — same target again.'] }, { progress: progressTo(sec) })
   }
   if (stalled?.tag === 'deload') {
-    return { policy, kind: 'deload', sec: stalled.at, why: ['No progress in {0} Workouts — back off to {1}s and build up again.', noProgress, stalled.at] }
+    return judgement({ policy, kind: 'deload', sec: stalled.at, why: ['No progress in {0} Workouts — back off to {1}s and build up again.', noProgress, stalled.at] })
   }
   const aim = timeAim(last, cfg, inc)
-  return { policy, kind: 'hold', sec: aim, why: ['Last time came up short — aim for {0}s and build from there.', aim] }
+  return judgement({ policy, kind: 'hold', sec: aim, why: ['Last time came up short — aim for {0}s and build from there.', aim] }, { progress: progressTo(aim) })
 }
 
 /**
  * @param {{ policy: ProgressionPolicy, cfg: Partial<Target>, last: SessionReading }} args
- * @returns {Prescription}
+ * @returns {Judgement}
  */
 function loadlessPrescription({ policy, cfg, last }) {
   const prescribed = prescribedReps(last, cfg)
@@ -459,18 +479,18 @@ function loadlessPrescription({ policy, cfg, last }) {
   const workingSets = Math.max(1, planSets ?? baseSets ?? last.count ?? 1)
   const carrySets = planSets != null ? { sets: workingSets } : {}
   const hit = prescribed > 0 && last.enough && last.low >= prescribed
-  if (!hit) return { policy, kind: 'hold', weight: 0, reps: Math.max(1, prescribed), ...carrySets, why: ['Bodyweight — same target again until every set is clean.'] }
+  if (!hit) return judgement({ policy, kind: 'hold', weight: 0, reps: Math.max(1, prescribed), ...carrySets, why: ['Bodyweight — same target again until every set is clean.'] })
   const goal = Math.max(prescribed, last.low || 0)
   const top = positive(cfg.repsMax) ?? 0
   if (top > 0 && goal >= top) {
     const sets = workingSets + 1
     const planReps = cfg.reps === 0 ? 1 : (cfg.reps || top)
     const bottom = Math.max(1, Math.min(planReps, top))
-    if (sets <= MAX_BW_SETS) return { policy, kind: 'up', weight: 0, reps: bottom, sets, why: ['{0} reps in every set — add a set and go back to {1}.', goal, bottom] }
-    return { policy, kind: 'hold', weight: 0, reps: goal, ...carrySets, why: ['{0} sets of {1} — time to add weight or move to a harder variation.', workingSets, goal] }
+    if (sets <= MAX_BW_SETS) return judgement({ policy, kind: 'up', weight: 0, reps: bottom, sets, why: ['{0} reps in every set — add a set and go back to {1}.', goal, bottom] })
+    return judgement({ policy, kind: 'hold', weight: 0, reps: goal, ...carrySets, why: ['{0} sets of {1} — time to add weight or move to a harder variation.', workingSets, goal] })
   }
   const next = goal + repStep(cfg)
-  return { policy, kind: 'up', weight: 0, reps: next, ...carrySets, why: ['Bodyweight — every rep last time, so go for {0} this time.', next] }
+  return judgement({ policy, kind: 'up', weight: 0, reps: next, ...carrySets, why: ['Bodyweight — every rep last time, so go for {0} this time.', next] })
 }
 
 /** @param {SessionReading} session @param {number} bottom @returns {boolean} */
@@ -496,7 +516,7 @@ function bouncedBack(sessions, start, load, bottom) {
 
 /**
  * @param {{ policy: ProgressionPolicy, cfg: Partial<Target>, inc: number, unit: Unit, sessions: SessionReading[], last: SessionReading, deloadAt: number, w: number }} args
- * @returns {Prescription}
+ * @returns {Judgement}
  */
 function doublePrescription({ policy, cfg, inc, unit, sessions, last, deloadAt, w }) {
   const top = Math.max(1, positive(cfg.reps) ?? (last.goal || 10))
@@ -509,17 +529,20 @@ function doublePrescription({ policy, cfg, inc, unit, sessions, last, deloadAt, 
   const start = runStart(sessions, load)
   if (last.ok) {
     if (bouncedBack(sessions, start, load, bottom) && sessions.slice(start).filter(s => s.ok).length < 2) {
-      return { policy, kind: 'hold', weight: w, reps: top, why: ['Top again: one more time at this weight before adding {0} {1}, since the last jump was too big.', inc, unit] }
+      return judgement({ policy, kind: 'hold', weight: w, reps: top, why: ['Top again: one more time at this weight before adding {0} {1}, since the last jump was too big.', inc, unit] })
     }
     const nextW = round1(w + inc)
-    return { policy, kind: 'up', weight: nextW, reps: bottom, why: ['Top of the rep range in every set — {0} {1} more, back to {2} reps.', inc, unit, bottom] }
+    return judgement({ policy, kind: 'up', weight: nextW, reps: bottom, why: ['Top of the rep range in every set — {0} {1} more, back to {2} reps.', inc, unit, bottom] }, { step: round1(nextW - w) })
   }
 
   const drop = belowRange(last, bottom)
   const noProgress = doubleNoProgress(sessions, start, range)
   if (!drop && noProgress < deloadAt) {
     const aim = aimUp(range, last.low)
-    return { policy, kind: 'hold', weight: w, reps: aim, why: ['Same weight — aim for {0} reps this time.', aim] }
+    // Rep progress is measured against the previous session only when it was at the same load.
+    const prev = sessions.length >= 2 ? sessions[sessions.length - 2] : null
+    const progress = prev && load(prev) === load(last) ? Math.max(0, aim - aimUp(range, prev.low)) : 0
+    return judgement({ policy, kind: 'hold', weight: w, reps: aim, why: ['Same weight — aim for {0} reps this time.', aim] }, { progress })
   }
 
   const next = drop ? round1(w - inc) : deloadTo(w, inc)
@@ -532,84 +555,88 @@ function doublePrescription({ policy, cfg, inc, unit, sessions, last, deloadAt, 
           : 'First set {0} reps, below the {1}–{2} range. Already at the lightest load — same weight again.',
         first, bottom, top]
       : ['No progress in {0} Workouts. Already at the lightest load — build reps.', noProgress]
-    return { policy, kind: 'hold', weight: w, reps: bottom, why }
+    return judgement({ policy, kind: 'hold', weight: w, reps: bottom, why })
   }
   if (!drop) {
-    return { policy, kind: 'deload', weight: at, reps: bottom, why: ['No progress in {0} Workouts — deload to {1} {2}, back to {3} reps.', noProgress, at, unit, bottom] }
+    return judgement({ policy, kind: 'deload', weight: at, reps: bottom, why: ['No progress in {0} Workouts — deload to {1} {2}, back to {3} reps.', noProgress, at, unit, bottom] })
   }
   const by = at > next ? round2(w - at) : inc
-  return { policy, kind: 'down', weight: at, reps: bottom, by, why: ['First set {0} reps, below the {1}–{2} range. {3} {4} less, back to {1} reps.', first, bottom, top, by, unit] }
+  return judgement({ policy, kind: 'down', weight: at, reps: bottom, by, why: ['First set {0} reps, below the {1}–{2} range. {3} {4} less, back to {1} reps.', first, bottom, top, by, unit] })
 }
 
 /**
  * @param {{ policy: ProgressionPolicy, inc: number, unit: Unit, cfg: Partial<Target>, sessions: SessionReading[], last: SessionReading, deloadAt: number, w: number }} args
- * @returns {Prescription}
+ * @returns {Judgement}
  */
 function linearPrescription({ policy, inc, unit, cfg, sessions, last, deloadAt, w }) {
   const stalls = stallCount(linearRun(sessions, last, cfg))
   if (last.ok) {
-    return { policy, kind: 'up', weight: round1(w + inc), why: ['Every rep last time — {0} {1} more.', inc, unit] }
+    const weight = round1(w + inc)
+    return judgement({ policy, kind: 'up', weight, why: ['Every rep last time — {0} {1} more.', inc, unit] }, { step: round1(weight - w) })
   }
   if (stalls >= deloadAt) {
     const stalled = deloadIfStalled(w, inc, stalls, deloadAt)
     if (!stalled || stalled.tag === 'hold') {
-      return { policy, kind: 'hold', weight: w, why: ['Already at the minimum load — same weight again.'] }
+      return judgement({ policy, kind: 'hold', weight: w, why: ['Already at the minimum load — same weight again.'] })
     }
-    return { policy, kind: 'deload', weight: stalled.at, why: stalls > 1
+    return judgement({ policy, kind: 'deload', weight: stalled.at, why: stalls > 1
       ? ['Missed reps {0} Workouts running — reset to {1} {2} and work back up.', stalls, stalled.at, unit]
-      : ['Missed reps — reset to {0} {1} and work back up.', stalled.at, unit] }
+      : ['Missed reps — reset to {0} {1} and work back up.', stalled.at, unit] })
   }
-  return { policy, kind: 'hold', weight: w, why: ['Missed reps last time — same weight again ({0} of {1} to go).', deloadAt - stalls, deloadAt] }
+  return judgement({ policy, kind: 'hold', weight: w, why: ['Missed reps last time — same weight again ({0} of {1} to go).', deloadAt - stalls, deloadAt] })
 }
 
 /**
  * @param {{ policy: ProgressionPolicy, inc: number, unit: Unit, cfg: Partial<Target>, sessions: SessionReading[], last: SessionReading, deloadAt: number, w: number }} args
- * @returns {Prescription}
+ * @returns {Judgement}
  */
 function greyskullPrescription({ policy, inc, unit, cfg, sessions, last, deloadAt, w }) {
   const stalls = stallCount(sessions)
   if (last.ok) {
     const dbl = last.goal > 0 && (last.amrap ?? 0) >= last.goal * 2
     const step = dbl ? inc * 2 : inc
-    return {
-      policy, kind: 'up', weight: round1(w + step),
+    const weight = round1(w + step)
+    return judgement({
+      policy, kind: 'up', weight,
       why: dbl
         ? ['Last set hit {0} reps — twice the target, so take a double jump of {1} {2}.', last.amrap ?? 0, step, unit]
         : ['Every rep last time — {0} {1} more.', step, unit]
-    }
+    }, { step: round1(weight - w) })
   }
   if (stalls >= deloadAt) {
     const stalled = deloadIfStalled(w, inc, stalls, deloadAt)
     if (!stalled || stalled.tag === 'hold') {
-      return { policy, kind: 'hold', weight: w, why: ['Already at the minimum load — same weight again.'] }
+      return judgement({ policy, kind: 'hold', weight: w, why: ['Already at the minimum load — same weight again.'] })
     }
-    return { policy, kind: 'deload', weight: stalled.at, why: stalls > 1
+    return judgement({ policy, kind: 'deload', weight: stalled.at, why: stalls > 1
       ? ['Missed reps {0} Workouts running — reset to {1} {2} and work back up.', stalls, stalled.at, unit]
-      : ['Missed reps — reset to {0} {1} and work back up.', stalled.at, unit] }
+      : ['Missed reps — reset to {0} {1} and work back up.', stalled.at, unit] })
   }
-  return { policy, kind: 'hold', weight: w, why: ['Missed reps last time — same weight again ({0} of {1} to go).', deloadAt - stalls, deloadAt] }
+  return judgement({ policy, kind: 'hold', weight: w, why: ['Missed reps last time — same weight again ({0} of {1} to go).', deloadAt - stalls, deloadAt] })
 }
 
 /**
- * Derive the next Prescription for `cfg` in `routine` from the Profile's log.
+ * Judge the next Prescription for `cfg` in `routine` from the Profile's log: the Prescription and
+ * the step and progress the policy decided it on. The Prospective Prescription reads this, so the
+ * Milestone cue never derives a second judgement (ADR 0018, 0037).
  * @param {Partial<Profile>} S
  * @param {Target} cfg
  * @param {Routine | null | undefined} [routine]
- * @returns {Prescription}
+ * @returns {Judgement}
  */
-export function nextPrescription(S, cfg, routine) {
+export function judgeNextPrescription(S, cfg, routine) {
   const mode = modeOf(cfg)
   const policy = policyFor(cfg, routine, mode)
   const unit = S.unit || 'kg'
   const inc = positive(cfg.inc) ?? (mode === 'time' ? DEFAULT_SEC_INCREMENT : defaultIncrement(cfg.id ?? '', unit))
-  if (policy === 'off') return { policy, kind: 'off' }
+  if (policy === 'off') return judgement({ policy, kind: 'off' })
 
   const logged = cfg.id ? sessionsFor(S, cfg.id, cfg) : []
   const sessions = logged.filter(s => inStream(s, cfg, mode))
   const last = sessions[sessions.length - 1]
   if (!last) {
     const why = logged.length ? 'New target. This session sets the baseline.' : 'Nothing logged yet — this session sets the baseline.'
-    return { policy, kind: 'first', why: [why] }
+    return judgement({ policy, kind: 'first', why: [why] })
   }
 
   const deloadAt = DELOAD_AFTER[policy] || 3
@@ -620,6 +647,17 @@ export function nextPrescription(S, cfg, routine) {
   if (policy === 'double') return doublePrescription({ policy, inc, unit, cfg, sessions, last, deloadAt, w })
   if (policy === 'greyskull') return greyskullPrescription({ policy, inc, unit, cfg, sessions, last, deloadAt, w })
   return linearPrescription({ policy, inc, unit, cfg, sessions, last, deloadAt, w })
+}
+
+/**
+ * Derive the next Prescription for `cfg` in `routine` from the Profile's log.
+ * @param {Partial<Profile>} S
+ * @param {Target} cfg
+ * @param {Routine | null | undefined} [routine]
+ * @returns {Prescription}
+ */
+export function nextPrescription(S, cfg, routine) {
+  return judgeNextPrescription(S, cfg, routine).prescription
 }
 
 /**
@@ -649,61 +687,13 @@ export function applyPrescription(sets, p) {
 }
 
 /**
- * The one Progression judgement for an Entry, read against the canonical as-if-finished Workout.
- *
- * `workout` is the Workout returned by the Prospective Prescription reading — either the real one
- * already in the Training log or the Module's stand-in. There is no fallback: a caller cannot
- * re-derive a second, divergent judgement from a bare Entry (ADR 0037).
- *
- * @param {Entry} entry
- * @param {Partial<Profile> | null | undefined} state
- * @param {Workout} workout
+ * The part of one Entry's Prospective Prescription reading the Milestone cue reads: the policy's
+ * judgement, the unit it is stated in, and the Entry's own session reading.
+ * @typedef {Judgement & { unit: Unit, judged: SessionReading, routineId?: string | null }} PolicyReading
  */
-export function readEntryVerdict(entry, state, workout) {
-  /** @type {Partial<Profile>} */
-  const S = state && typeof state === 'object' ? state : {}
-  const unit = workout.unit || S.unit || 'kg'
-  const routineId = workout.routineId ?? S.active?.routineId ?? null
-  const inLog = (S.workouts || []).some(w => w.id === workout.id)
-  // ADR 0037: the reading keeps the Workout's unit, including after it is logged.
-  const effectiveS = inLog ? { ...S, unit } : { ...S, unit, workouts: [...(S.workouts || []), workout] }
-  const routine = routineId ? (S.routines || []).find(r => r.id === routineId) || null : null
-  const target = entry?.target || {}
-  const cfg = { ...defaultConfig(entry.id), ...target, id: entry.id }
-  const prescription = nextPrescription(effectiveS, cfg, routine)
-  const mode = modeOf(cfg)
-  const sessions = sessionsFor(effectiveS, entry.id, cfg).filter(s => inStream(s, cfg, mode))
-  const last = sessions[sessions.length - 1]
-  const prev = sessions.length >= 2 ? sessions[sessions.length - 2] : null
-  let aimDelta = 0
-  let step = 0
-  if (prescription.kind === 'up' && mode === 'time' && last && prescription.sec != null) {
-    const base = Math.max(sessionSeconds(last, cfg), weakestPerformed(last))
-    step = Math.round((prescription.sec - base) * 10) / 10
-  }
-  if (prescription.kind === 'up' && mode !== 'time' && positive(prescription.weight)) {
-    const working = readSession(entry, cfg, workout, unit).weight || 0
-    step = Math.round(((prescription.weight ?? 0) - working) * 10) / 10
-  }
-  const sameLoad = prev && last && loadOf(prev, cfg.weight) === loadOf(last, cfg.weight)
-  if (prescription.kind === 'hold' && sameLoad && mode === 'reps' && prescription.reps != null) {
-    const top = Math.max(1, positive(cfg.reps) ?? 10)
-    const cfgMin = positive(cfg.repsMin)
-    const bottom = cfgMin != null ? Math.min(cfgMin, top) : Math.max(1, top - 2)
-    const stepRep = repStep(cfg)
-    const prevAim = Math.min(top, Math.max(bottom, (prev.low || 0) + stepRep))
-    if (prescription.reps > prevAim) aimDelta = prescription.reps - prevAim
-  }
-  if (prescription.kind === 'hold' && prev && mode === 'time' && prescription.sec != null) {
-    const inc = positive(cfg.inc) ?? DEFAULT_SEC_INCREMENT
-    const prevAim = timeAim(prev, cfg, inc)
-    if (prescription.sec > prevAim) aimDelta = prescription.sec - prevAim
-  }
-  return { prescription, unit, cfg, aimDelta, step, judged: readSession(entry, cfg, workout, unit) }
-}
 
 /**
- * @param {ReturnType<typeof readEntryVerdict>} verdict
+ * @param {PolicyReading} verdict
  * @param {{ reps: number, targetReps: number }} extra
  */
 function unlockedCue(verdict, extra) {
@@ -725,28 +715,6 @@ function unlockedCue(verdict, extra) {
   }
 }
 
-/** @param {unknown} v @returns {ProgressionPolicy | undefined} */
-const asPolicy = v => (v === 'off' || v === 'linear' || v === 'greyskull' || v === 'double' || v === 'time' ? v : undefined)
-
-/**
- * @param {Entry} entry
- * @param {LoggingMode} mode
- * @param {Routine | null} routine
- * @returns {ProgressionPolicy}
- */
-function resolvePolicy(entry, mode, routine) {
-  const target = entry?.target || {}
-  const planPolicy = entry?.plan && 'policy' in entry.plan ? asPolicy(entry.plan.policy) : undefined
-  const targetPolicy = 'policy' in target ? asPolicy(target.policy) : undefined
-  const entryProg = 'prog' in entry ? asPolicy(entry.prog) : undefined
-  const entryPolicy = 'policy' in entry ? asPolicy(entry.policy) : undefined
-  const cfg = {
-    ...target,
-    prog: planPolicy || target.prog || entryProg || targetPolicy || entryPolicy
-  }
-  return policyFor(cfg, routine, mode)
-}
-
 /** @param {SetRow} setRow @param {string} key @returns {unknown} */
 function legacySetField(setRow, key) {
   return key in setRow ? /** @type {Record<string, unknown>} */ (setRow)[key] : undefined
@@ -757,7 +725,7 @@ function legacySetField(setRow, key) {
  *
  * @param {Entry} entry - Active workout entry containing `{ target, sets, plan?, id? }`.
  * @param {number} setIdx - Zero-based index of the set in `entry.sets`.
- * @param {{ state?: Profile | null, reading?: { verdict?: ReturnType<typeof readEntryVerdict>, routineId?: string | null } | null }} [context] - Profile `{ state }` plus this Entry's reading from the Prospective Prescription seam. The policy and the judgement come from that reading, never from a second Active stub.
+ * @param {{ state?: Profile | null, reading?: PolicyReading | null }} [context] - This Entry's reading from the Prospective Prescription seam. The policy and the judgement come from that reading, never from a second Active stub.
  * @returns {{ kind: string, label: string, reps?: number, targetReps?: number, sec?: number, targetSec?: number, step?: number, bonusReps?: number, inc?: number, unit?: Unit } | null} Milestone descriptor `{ kind, label, ... }` or null if no milestone.
  */
 export function evaluateSetMilestone(entry, setIdx, context = {}) {
@@ -769,20 +737,14 @@ export function evaluateSetMilestone(entry, setIdx, context = {}) {
 
   if (!isPerformed(setRow) || isWarmupRow(setRow)) return null
 
-  const target = entry.target || {}
-  const mode = modeOf({ ...target, id: entry.id })
-  const S = context?.state && typeof context.state === 'object' ? context.state : null
-  const routineId = context?.reading?.routineId ?? S?.active?.routineId ?? null
-  const routine = routineId ? (S?.routines || []).find(r => r.id === routineId) || null : null
-  const policy = resolvePolicy(entry, mode, routine)
-
+  const verdict = context?.reading
+  if (!verdict) throw new TypeError('evaluateSetMilestone requires a Prospective Prescription reading')
+  // The cue reads the policy the judgement used, so it cannot cue a session the Prescription reads differently.
+  const policy = verdict.prescription.policy
   if (policy === 'off') return null
 
-  const verdictOf = () => {
-    const verdict = context?.reading?.verdict
-    if (!verdict) throw new TypeError('evaluateSetMilestone requires a Prospective Prescription reading')
-    return verdict
-  }
+  const target = entry.target || {}
+  const verdictOf = () => verdict
 
   const workRows = entry.sets.filter(isWorkSet)
   const plannedCount = plannedSetCount(entry, target, workRows.length)
@@ -817,7 +779,7 @@ export function evaluateSetMilestone(entry, setIdx, context = {}) {
     const sec = Number(setRow.sec ?? legacySetSec) || 0
 
     if (workIdx === plannedCount - 1) {
-      const { prescription: p, aimDelta, step } = verdictOf()
+      const { prescription: p, progress, step } = verdictOf()
       if (p.kind === 'up' && p.sec != null) {
         return {
           kind: 'unlocked',
@@ -826,11 +788,11 @@ export function evaluateSetMilestone(entry, setIdx, context = {}) {
           targetSec
         }
       }
-      if (aimDelta > 0) {
+      if (progress > 0) {
         return {
           kind: 'progress',
-          label: t('Hold progress ({0}s)', fmtSigned(aimDelta)),
-          step: aimDelta,
+          label: t('Hold progress ({0}s)', fmtSigned(progress)),
+          step: progress,
           sec,
           targetSec
         }
@@ -865,11 +827,11 @@ export function evaluateSetMilestone(entry, setIdx, context = {}) {
       const verdict = verdictOf()
       const unlocked = unlockedCue(verdict, { reps, targetReps })
       if (unlocked) return unlocked
-      if (verdict.aimDelta > 0) {
+      if (verdict.progress > 0) {
         return {
           kind: 'progress',
-          label: t('Rep progress ({0})', fmtSigned(verdict.aimDelta)),
-          step: verdict.aimDelta,
+          label: t('Rep progress ({0})', fmtSigned(verdict.progress)),
+          step: verdict.progress,
           reps,
           targetReps
         }

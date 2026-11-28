@@ -271,7 +271,7 @@ _Avoid_: projected prescription, preview prescription, predicted target
 The exact step a fully hit session adds — bigger for lower-body lifts, overridable per exercise. It is added to the working value as logged, not snapped from zero; only a Deload is snapped to the equipment or timer grid. For add-time the step is seconds.
 
 **Rep progress**:
-A session's weakest planned Work set reaching its aim — the previous weakest plus one rep step, clamped to the Target's rep range. Rep progress is not a Hit (the Target top is the Hit); it is the evidence that a double-progression climb is still moving, and it clears the Stall count.
+A session's weakest planned Work set reaching its aim — the previous weakest plus one rep step, clamped to the Target's rep range. Rep progress is not a Hit (the Target top is the Hit); it is the evidence that a double-progression climb is still moving, and it clears the Stall count. The Milestone cue shows how far the session moved the aim, as the double-progression policy recorded it; a bounce-guard hold and Bodyweight progression record none.
 
 **Stall**:
 For linear, consecutive Misses after the current Run's baseline; a Deload starts a new Run. For Greyskull, every Miss — a reset at the reduced load is part of the program. For double progression and add-time, consecutive sessions in the current Run, after its baseline, that neither reach the Target top nor show progress — Rep progress for double, for add-time the weakest hold reaching the aim `min(working, previous weakest + Increment)`. A progress session clears the count. A Drop starts a new Run, so it clears the count too.
