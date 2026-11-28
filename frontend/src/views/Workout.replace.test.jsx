@@ -124,6 +124,7 @@ describe('Workout unperformed entry replacement', () => {
     typeInSheet('Weight (kg)', 50)
     tapInSheet('Replace')
 
+    expect(openSheets()).toEqual([])
     expect(activeEntries()[0]).toEqual({
       id: '1002',
       target: { sets: 3, reps: 8, weight: 50, mode: 'reps' },
@@ -196,6 +197,7 @@ describe('Workout performed entry replacement', () => {
     pickExercise('band lying straight leg raise')
     tapInSheet('Replace')
 
+    expect(openSheets()).toEqual([])
     expect(activeEntries()[0].id).toBe('1002')
   })
 
@@ -209,6 +211,19 @@ describe('Workout performed entry replacement', () => {
 
     expect(openSheets()).toEqual([])
     expect(activeEntries()).toEqual([expect.objectContaining({ id: '1001', sets: [expect.objectContaining({ w: 60, r: 5, done: true })] })])
+  })
+})
+
+describe('Workout replacement cancelled at the config sheet', () => {
+  it('goes back to the picker and leaves the entry as it was', () => {
+    view = renderWorkoutApp([entry('1001', [{ w: 60, r: 5, done: false }])])
+
+    click(headerReplaceButton())
+    pickExercise('band lying straight leg raise')
+    fireEvent.keyDown(window, { key: 'Escape' })
+
+    expect(sheetHeading()).toBe('Add exercise')
+    expect(activeEntries()).toEqual([expect.objectContaining({ id: '1001', sets: [expect.objectContaining({ w: 60, r: 5, done: false })] })])
   })
 })
 
@@ -279,6 +294,7 @@ describe('Superset replacement flow', () => {
     pickExercise('band squat row')
     tapInSheet('Replace')
 
+    expect(openSheets()).toEqual([])
     expect(activeEntries().map(e => [e.id, e.sg])).toEqual([['1001', 'g1'], ['1003', 'g1']])
   })
 
@@ -301,6 +317,7 @@ describe('Superset replacement flow', () => {
     pickExercise('band squat row')
     tapInSheet('Replace')
 
+    expect(openSheets()).toEqual([])
     expect(activeEntries().map(e => [e.id, e.sg])).toEqual([['1001', 'g1'], ['1003', 'g1']])
   })
 })
