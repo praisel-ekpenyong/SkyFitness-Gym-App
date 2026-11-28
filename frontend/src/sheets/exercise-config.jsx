@@ -47,6 +47,20 @@ function RestRow({ c, setC, profileRest }) {
     options={[{ value: '', label: t('Default ({0})', t('{0}s', profileRest)) }, ...choices.map(v => ({ value: v, label: t('{0}s', v) }))]} />
 }
 
+/**
+ * The number in a field, or null when the field holds none.
+ * @param {unknown} v
+ * @returns {number | null}
+ */
+const typedNumber = v => v == null || v === '' || !Number.isFinite(Number(v)) ? null : Number(v)
+/**
+ * A count shown on screen: a 0 saves as 1, the nearest valid value; only a missing one takes `fallback`.
+ * @param {unknown} v
+ * @param {number} fallback
+ * @returns {number}
+ */
+const countOr = (v, fallback) => { const n = typedNumber(v); return n === null ? fallback : Math.max(1, Math.round(n)) }
+
 export function ExConfig({ ex, existing, onSave, onDelete, close, routine, initial, onReplace, actionLabel }) {
   const st = useStore(s => s.S)
   const cardio = isCardio(ex.id)
@@ -63,8 +77,8 @@ export function ExConfig({ ex, existing, onSave, onDelete, close, routine, initi
   const setMode = m => setC(x => ({ ...defaultConfig(ex.id, m), ...x, mode: m }))
   const save = () => {
     close()
-    const sets = Math.max(1, Math.round(c.sets) || (cardio ? 1 : 3))
-    const typed = Math.max(1, Math.round(c.reps) || ROW_DEFAULTS.reps.reps)
+    const sets = countOr(c.sets, cardio ? 1 : 3)
+    const typed = countOr(c.reps, ROW_DEFAULTS.reps.reps)
     const reps = perSide ? Math.ceil(typed / 2) * 2 : typed
     const weight = Math.max(0, c.weight || 0)
     const double = mode === 'reps' && policyFor({ ...c, id: ex.id }, routine, 'reps') === 'double'
@@ -72,9 +86,9 @@ export function ExConfig({ ex, existing, onSave, onDelete, close, routine, initi
     onSave(pickTargetFields({
       sets,
       mode: cardio ? undefined : mode,
-      min: Math.max(1, Math.round(c.min) || ROW_DEFAULTS.cardio.min),
-      speed: Math.max(0, c.speed || ROW_DEFAULTS.cardio.speed),
-      sec: Math.max(1, Math.round(c.sec) || ROW_DEFAULTS.time.sec),
+      min: countOr(c.min, ROW_DEFAULTS.cardio.min),
+      speed: Math.max(0, typedNumber(c.speed) ?? ROW_DEFAULTS.cardio.speed),
+      sec: countOr(c.sec, ROW_DEFAULTS.time.sec),
       reps,
       weight,
       side: perSide || undefined,

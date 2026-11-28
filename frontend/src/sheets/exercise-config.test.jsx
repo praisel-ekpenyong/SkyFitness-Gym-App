@@ -705,6 +705,28 @@ describe('ExConfig round trip: pick, save to the routine, change the Setting, re
       await save()
       expect(entry()).toMatchObject(expected)
     })
+
+    // A zero the lifter can see is saved as shown where it is a real value (speed), and as the
+    // nearest valid value, 1, where it is not. It never becomes a default they did not see.
+    it.each([
+      ['Speed (km/h)', steps, { sets: 1, min: 20, speed: 8 }, { speed: 0 }],
+      ['Intervals', steps, { sets: 2, min: 20, speed: 8 }, { sets: 1 }],
+      ['Minutes', steps, { sets: 1, min: 20, speed: 8 }, { min: 1 }],
+      ['Sets', bench, { sets: 3, reps: 8, weight: 60, mode: 'reps' }, { sets: 1 }],
+      ['Reps', bench, { sets: 3, reps: 8, weight: 60, mode: 'reps' }, { reps: 1 }],
+      ['Seconds', bench, { sets: 3, sec: 45, weight: 0, mode: 'time' }, { sec: 1 }],
+    ])('%s typed as 0 is saved as shown, or as 1 where 0 is not valid', async (label, ex, stored, expected) => {
+      await openEntry(ex, stored)
+      fireEvent.change(within(container).getByLabelText(label), { target: { value: '0' } })
+      await save()
+      expect(entry()).toMatchObject(expected)
+    })
+
+    it('a cardio Target with no speed saves the default speed', async () => {
+      await openEntry(steps, { sets: 1, min: 20 })
+      await save()
+      expect(entry()).toMatchObject({ min: 20, speed: 8 })
+    })
   })
 })
 
