@@ -1,5 +1,5 @@
 import { dateLocale, t } from './i18n-core.js'
-import { modeOf, isBw, isPerSide, sideReps } from './workout-model.js'
+import { modeOf, isBw, isPerSide, sideReps, ROW_DEFAULTS } from './workout-model.js'
 
 /** @typedef {import('./types.js').Target} Target */
 /** @typedef {import('./types.js').Unit} Unit */
@@ -94,8 +94,12 @@ export function exLine(cfg, unit) {
   const mode = modeOf(cfg)
   const n = cfg.sets || 1
   const load = cfg.weight ? ' · ' + (isBw(cfg) ? fmtSigned(cfg.weight) : fmtNum(cfg.weight)) + ' ' + unit : ''
-  if (mode === 'cardio') return `${n} × ${cfg.min || 20} min @ ${fmtNum(cfg.speed || 8)} km/h`
-  if (mode === 'time') return `${n} × ${fmtSec(cfg.sec || 45)}${load}`
-  const split = isPerSide(cfg) ? ' · ' + t('{0}/side', fmtNum(sideReps(cfg.reps))) : ''
-  return `${n} × ${cfg.reps}${load}${split}`
+  if (mode === 'cardio') {
+    const body = `${cfg.min || ROW_DEFAULTS.cardio.min} min @ ${fmtNum(cfg.speed || ROW_DEFAULTS.cardio.speed)} km/h`
+    return n > 1 ? `${n} × ${body}` : body
+  }
+  if (mode === 'time') return `${n} × ${fmtSec(cfg.sec || ROW_DEFAULTS.time.sec)}${load}`
+  const reps = cfg.reps ?? ROW_DEFAULTS.reps.reps
+  const split = isPerSide(cfg) ? ' · ' + t('{0}/side', fmtNum(sideReps(reps))) : ''
+  return `${n} × ${reps}${load}${split}`
 }

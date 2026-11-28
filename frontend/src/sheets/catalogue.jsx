@@ -5,7 +5,7 @@ import { fmtNum, fmtVol, exCount, sentenceCase } from '../lib/format.js'
 import { fmtDate } from '../lib/dates.js'
 import { setLabel } from '../lib/set-label.js'
 import { best as bestOf, best1RM, lastSession } from '../lib/training-log.js'
-import { defaultConfig, modeOf, isBw, isPerSide, sideReps, ownRest, REST_CHOICES } from '../lib/workout-model.js'
+import { defaultConfig, modeOf, isBw, isPerSide, sideReps, ownRest, REST_CHOICES, ROW_DEFAULTS, pickTargetFields } from '../lib/workout-model.js'
 import * as catalogueWrites from '../lib/catalogue-writes.js'
 import { t, instrFor } from '../lib/i18n.js'
 import { nav } from '../platform/nav.js'
@@ -379,7 +379,7 @@ function ProgressionFields({ ex, mode, c, setC, routine, unit }) {
     {active !== 'off' && <div className="row cfgrow cfg-note">
       <Stepper label={mode === 'time' ? t('Step (seconds)') : t('Step ({0})', unit)} value={inc}
         step={mode === 'time' ? 5 : 1.25} decimal={mode !== 'time'} onChange={v => setC(x => ({ ...x, inc: v }))} />
-      {active === 'double' && <Stepper label={t('Reps from')} value={c.repsMin || Math.max(1, (c.reps || 10) - 2)}
+      {active === 'double' && <Stepper label={t('Reps from')} value={c.repsMin || Math.max(1, (c.reps || ROW_DEFAULTS.reps.reps) - 2)}
         step={1} decimal={false} onChange={v => setC(x => ({ ...x, repsMin: v }))} />}
     </div>}
   </>
@@ -410,25 +410,28 @@ export function ExConfig({ ex, existing, onSave, onDelete, close, routine, initi
   const save = () => {
     close()
     const sets = Math.max(1, Math.round(c.sets) || (cardio ? 1 : 3))
-    const prog = {}
-    if (c.prog) prog.prog = c.prog
-    if (c.inc > 0) prog.inc = c.inc
-    const flags = {}
-    if (bw !== isBodyweightEq(ex.id)) flags.bodyweight = bw
+    const typed = Math.max(1, Math.round(c.reps) || ROW_DEFAULTS.reps.reps)
+    const reps = perSide ? Math.ceil(typed / 2) * 2 : typed
+    const weight = Math.max(0, c.weight || 0)
+    const double = mode === 'reps' && policyFor({ ...c, id: ex.id }, routine, 'reps') === 'double'
     const trimmedNotes = typeof c.notes === 'string' ? c.notes.trim().slice(0, 500) : ''
-    const noteProp = trimmedNotes ? { notes: trimmedNotes } : {}
-    const rest = ownRest(c)
-    const restProp = rest != null ? { rest } : {}
-    if (cardio) onSave({ sets, min: Math.max(1, Math.round(c.min) || 20), speed: Math.max(0, c.speed || 8), ...restProp, ...noteProp })
-    else if (mode === 'time') onSave({ sets, mode: 'time', sec: Math.max(1, Math.round(c.sec) || 45), weight: Math.max(0, c.weight || 0), ...flags, ...prog, ...restProp, ...noteProp })
-    else {
-      const typed = Math.max(1, Math.round(c.reps) || 10)
-      const reps = perSide ? Math.ceil(typed / 2) * 2 : typed
-      const out = { sets, mode: 'reps', reps, weight: Math.max(0, c.weight || 0), ...flags, ...(perSide ? { side: true } : {}), ...prog, ...restProp, ...noteProp }
-      if (policyFor({ ...c, id: ex.id }, routine, 'reps') === 'double') out.repsMin = Math.min(reps, Math.max(1, Math.round(c.repsMin) || Math.max(1, reps - 2)))
-      if (bw && !(out.weight > 0) && c.repsMax > 0) out.repsMax = Math.max(reps, Math.round(c.repsMax))
-      onSave(out)
-    }
+    onSave(pickTargetFields({
+      sets,
+      mode: cardio ? undefined : mode,
+      min: Math.max(1, Math.round(c.min) || ROW_DEFAULTS.cardio.min),
+      speed: Math.max(0, c.speed || ROW_DEFAULTS.cardio.speed),
+      sec: Math.max(1, Math.round(c.sec) || ROW_DEFAULTS.time.sec),
+      reps,
+      weight,
+      side: perSide || undefined,
+      bodyweight: !cardio && bw !== isBodyweightEq(ex.id) ? bw : undefined,
+      prog: c.prog || undefined,
+      inc: c.inc > 0 ? c.inc : undefined,
+      repsMin: double ? Math.min(reps, Math.max(1, Math.round(c.repsMin) || Math.max(1, reps - 2))) : undefined,
+      repsMax: bw && !(weight > 0) && c.repsMax > 0 ? Math.max(reps, Math.round(c.repsMax)) : undefined,
+      rest: ownRest(c),
+      notes: trimmedNotes || undefined,
+    }, mode))
   }
   return <>
     <h3>{ex.n}</h3>

@@ -170,12 +170,12 @@ pure helpers or move decision trees into domain reducers. Exception: a function
 already over 15 sits in `frontend/lint-baseline.json`, may not grow, and leaves
 the file when it is split. A disable comment is never the way out.
 
-**Why:** <!-- ratchet: lint-baseline.json#eslint/complexity -->51 functions in 29 files<!-- /ratchet --> are over the bar today. The worst is
+**Why:** <!-- ratchet: lint-baseline.json#eslint/complexity -->50 functions in 28 files<!-- /ratchet --> are over the bar today. The worst is
 `evaluateSetMilestone` in `lib/progression.js` (83, line 521), then
 `evaluateSessionProgression` (74), `parseWorkoutCSV` in `lib/import-csv.js`
 (66) and `Home.jsx` (62). A function that size has branches no test reaches.
 **Runs:** oxlint `eslint/complexity` at error (`max: 15`, `variant: 'modified'`),
-tests excluded. Its <!-- ratchet: lint-baseline.json#eslint/complexity -->51 hits in 29 files<!-- /ratchet --> sit in
+tests excluded. Its <!-- ratchet: lint-baseline.json#eslint/complexity -->50 hits in 28 files<!-- /ratchet --> sit in
 `frontend/lint-baseline.json` and may only fall. `scripts/review/audit.mjs` is
 the one added after the issue's count.
 
