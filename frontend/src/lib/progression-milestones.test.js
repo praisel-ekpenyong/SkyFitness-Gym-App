@@ -247,11 +247,12 @@ describe('evaluateSetMilestone', () => {
       ['target.policy', { target: { policy: 'off' } }],
       ['prog', { prog: 'off' }],
       ['policy', { policy: 'off' }]
-    ])('reads an old Entry whose progression policy is only in %s', (_field, legacy) => {
+    ])('cues an old Entry whose progression policy is only in %s as its Prescription reads it', (_field, legacy) => {
       const base = { id: 'barbell-bench-press', target: { mode: 'reps', reps: 5, weight: 60 }, sets: [{ r: 5, w: 60, done: true }] }
-      expect(cue(base, 0), 'with no policy set, reps mode defaults to linear and cues the set').not.toBeNull()
       const entry = { ...base, ...legacy, target: { ...base.target, ...legacy.target } }
-      expect(cue(entry, 0)).toBeNull()
+      expect(summary(entry).policy, 'the Prescription reads the policy from the Target and Routine only').toBe('linear')
+      expect(cue(entry, 0)).toEqual(cue(base, 0))
+      expect(cue(entry, 0)).not.toBeNull()
     })
 
     it('defaults to linear progression for reps-mode exercises when no policy is set', () => {
@@ -588,6 +589,20 @@ describe('evaluateSetMilestone', () => {
       const target = { mode: 'reps', reps: 12, repsMin: 8, weight: 40, prog: 'double', sets: 3 }
       const at = (id, d, w, reps) => ({ id, d, entries: [{ id: 'dumbbell-curl', target, sets: reps.map(r => ({ r, w, done: true })) }] })
       const workouts = [at('w1', '2026-01-01', 40, [12, 12, 12]), at('w2', '2026-01-02', 42.5, [7, 6, 6])]
+      const entry = { id: 'dumbbell-curl', target, sets: [12, 12, 12].map(r => ({ r, w: 40, done: true })) }
+      const state = { unit: 'kg', workouts }
+      expect(cue(entry, 2, { state })).toEqual({ kind: 'hit', label: '12/12 reps', reps: 12, targetReps: 12 })
+      expect(summary(entry, state).text).toBe('Aim for 12 reps at 40 kg')
+    })
+
+    it('shows the plain hit when the bounce guard holds after an earlier session at the lighter load', () => {
+      const target = { mode: 'reps', reps: 12, repsMin: 8, weight: 40, prog: 'double', sets: 3 }
+      const at = (id, d, w, reps) => ({ id, d, entries: [{ id: 'dumbbell-curl', target, sets: reps.map(r => ({ r, w, done: true })) }] })
+      const workouts = [
+        at('w1', '2026-01-01', 40, [12, 12, 12]),
+        at('w2', '2026-01-02', 42.5, [7, 6, 6]),
+        at('w3', '2026-01-03', 40, [10, 10, 10]),
+      ]
       const entry = { id: 'dumbbell-curl', target, sets: [12, 12, 12].map(r => ({ r, w: 40, done: true })) }
       const state = { unit: 'kg', workouts }
       expect(cue(entry, 2, { state })).toEqual({ kind: 'hit', label: '12/12 reps', reps: 12, targetReps: 12 })

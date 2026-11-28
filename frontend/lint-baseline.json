@@ -132,7 +132,7 @@
     "unicorn/no-array-sort": 1
   },
   "src/lib/progression.js": {
-    "eslint/complexity": 7
+    "eslint/complexity": 6
   },
   "src/lib/recovery.js": {
     "unicorn/no-array-sort": 1

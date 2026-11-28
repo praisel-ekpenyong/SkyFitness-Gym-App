@@ -170,12 +170,12 @@ pure helpers or move decision trees into domain reducers. Exception: a function
 already over 15 sits in `frontend/lint-baseline.json`, may not grow, and leaves
 the file when it is split. A disable comment is never the way out.
 
-**Why:** <!-- ratchet: lint-baseline.json#eslint/complexity -->50 functions in 30 files<!-- /ratchet --> are over the bar today. The worst is
+**Why:** <!-- ratchet: lint-baseline.json#eslint/complexity -->49 functions in 30 files<!-- /ratchet --> are over the bar today. The worst is
 `evaluateSetMilestone` in `lib/progression.js` (83, line 521), then
 `evaluateSessionProgression` (74), `parseWorkoutCSV` in `lib/import-csv.js`
 (66) and `Home.jsx` (62). A function that size has branches no test reaches.
 **Runs:** oxlint `eslint/complexity` at error (`max: 15`, `variant: 'modified'`),
-tests excluded. Its <!-- ratchet: lint-baseline.json#eslint/complexity -->50 hits in 30 files<!-- /ratchet --> sit in
+tests excluded. Its <!-- ratchet: lint-baseline.json#eslint/complexity -->49 hits in 30 files<!-- /ratchet --> sit in
 `frontend/lint-baseline.json` and may only fall. `scripts/review/audit.mjs` is
 the one added after the issue's count.
 
@@ -684,10 +684,10 @@ different rep cap.
 each failing outside its owner with a message naming the owner:
 `Identifier[name='LB_TO_KG']` and the literals `2.2046` and `0.4535` (0 hits; the
 copies in `lib/import-csv.js` and `lib/bodyweight.js` are fixed);
-`LogicalExpression[right.value='kg']` (<!-- ratchet: eslint-selector-suppressions.json#No `|| 'kg'` fallback: S.unit is cleaned by PROFILE_CLEAN; other units go through lib/units.js (sanitizeUnit, entryUnit). -->15 hits in 6 files<!-- /ratchet -->, exempt in `lib/units.js`); the inline
+`LogicalExpression[right.value='kg']` (<!-- ratchet: eslint-selector-suppressions.json#No `|| 'kg'` fallback: S.unit is cleaned by PROFILE_CLEAN; other units go through lib/units.js (sanitizeUnit, entryUnit). -->14 hits in 6 files<!-- /ratchet -->, exempt in `lib/units.js`); the inline
 `Math.round(x * 10) / 10`, selector
 `BinaryExpression[operator='/'][right.value=10][left.callee.object.name='Math'][left.callee.property.name='round'][left.arguments.0.operator='*'][left.arguments.0.right.value=10]`
-(<!-- ratchet: eslint-selector-suppressions.json#Round to one decimal with round1 from lib/units.js, not Math.round(x * 10) / 10. -->17 hits in 10 files<!-- /ratchet --> outside `lib/units.js`);
+(<!-- ratchet: eslint-selector-suppressions.json#Round to one decimal with round1 from lib/units.js, not Math.round(x * 10) / 10. -->15 hits in 10 files<!-- /ratchet --> outside `lib/units.js`);
 `(getDay() + 6) % 7`, selector
 `BinaryExpression[operator='%'][right.value=7][left.type='BinaryExpression'][left.operator='+'][left.right.value=6][left.left.callee.property.name='getDay']`
 (<!-- ratchet: eslint-selector-suppressions.json#Get the Monday-first weekday from lib/dates.js (mondayIndexOf), not (getDay() + 6) % 7. -->3 hits in 3 files<!-- /ratchet --> outside `lib/dates.js`: `components/Heatmap.jsx`, `sheets/history.jsx`
