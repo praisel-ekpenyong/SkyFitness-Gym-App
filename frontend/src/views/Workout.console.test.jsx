@@ -7,7 +7,6 @@ import { useStore } from '../store/useStore.js'
 vi.mock('../sheets/session.jsx', () => ({
   startFlow: vi.fn(), finishWorkout: vi.fn(), workoutCompleteSheet: vi.fn(), exerciseNoteSheet: vi.fn(), replaceActiveExerciseFlow: vi.fn(),
 }))
-vi.mock('../sheets/catalogue.jsx', () => ({ exercisePicker: vi.fn(), exConfigSheet: vi.fn(), exerciseDetailSheet: vi.fn() }))
 vi.mock('../sheets/confirm.jsx', () => ({ confirmSheet: vi.fn() }))
 
 const BENCH = '0025'

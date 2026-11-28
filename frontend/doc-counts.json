@@ -6,7 +6,7 @@
     "eslint-suppressions.json#react-hooks/static-components": 2,
     "eslint-suppressions.json#react-hooks/purity": 2,
     "react-doctor-floor.json#score": 1,
-    "frontend-state-allowlist.json#src/sheets/catalogue.jsx": 1,
+    "frontend-state-allowlist.json#src/sheets/custom-exercise.jsx": 1,
     "frontend-state-allowlist.json#src/views/Stats.jsx": 1,
     "lint-baseline.json#react-hooks/exhaustive-deps": 1,
     "lint-baseline.json#react/no-array-index-key": 1,

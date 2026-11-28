@@ -129,7 +129,7 @@
       "count": 1
     }
   },
-  "src/sheets/catalogue.jsx": {
+  "src/sheets/exercise-detail.jsx": {
     "react-hooks/purity": {
       "count": 1
     }
@@ -200,7 +200,7 @@
   },
   "src/views/RoutineEdit.test.jsx": {
     "no-restricted-syntax": {
-      "count": 16
+      "count": 17
     }
   },
   "src/views/Settings.jsx": {
@@ -230,7 +230,7 @@
   },
   "src/views/Workout.console.test.jsx": {
     "no-restricted-syntax": {
-      "count": 11
+      "count": 10
     }
   },
   "src/views/Workout.elapsed.test.jsx": {
@@ -255,7 +255,7 @@
   },
   "src/views/Workout.replace.test.jsx": {
     "no-restricted-syntax": {
-      "count": 3
+      "count": 4
     }
   },
   "src/views/Workout.test.jsx": {
