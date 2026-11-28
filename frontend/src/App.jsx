@@ -6,7 +6,6 @@ import { todayISO } from './lib/dates.js'
 import { t } from './lib/i18n.js'
 import { setLang, useLang } from './platform/i18n.js'
 import { setNav } from './platform/nav.js'
-import { initBackButton } from './platform/back.js'
 import { useWakeLock } from './platform/wakelock.js'
 import { startFlow } from './sheets/session.jsx'
 import Icon from './components/Icon.jsx'
@@ -123,10 +122,5 @@ function Shell() {
 export default function App() {
   const boot = useStore(s => s.boot)
   useEffect(() => { boot() }, [boot])
-  useEffect(() => {
-    let stop = null, gone = false
-    initBackButton().then(fn => { if (gone) fn(); else stop = fn })
-    return () => { gone = true; stop?.() }
-  }, [])
   return <HashRouter><Shell /></HashRouter>
 }

@@ -4,11 +4,54 @@ import {
   evaluateSessionProgression,
   sessionProgressionItems,
   prescriptionIcon,
-  prescriptionStyle,
-  nextPrescription
+  prescriptionStyle
 } from './progression.js'
+import { readProspectivePrescription } from './prospective-prescription.js'
+import { sanitizeUnit } from './units.js'
 
-const NOW = Date.parse('2026-06-15T12:00:00Z')
+/**
+ * Drive the Milestone cue through its one public seam: build the Prospective Prescription reading
+ * from the Entry and Profile, then ask the cue for a set. Callers that already supply a reading
+ * (the differential seam tests) and invalid-input cases keep their original arguments.
+ * @param {any} entry
+ * @param {number} setIdx
+ * @param {Record<string, any>} [context]
+ */
+const cue = (entry, setIdx, context = {}) => {
+  if (context?.reading || !entry || typeof entry !== 'object' || !Array.isArray(entry.sets)) {
+    return evaluateSetMilestone(entry, setIdx, context)
+  }
+  const state = context?.state && typeof context.state === 'object'
+    ? context.state
+    : { unit: 'kg', workouts: [] }
+  const active = {
+    id: 'a-1', d: '2026-06-15', start: 0,
+    routineId: state.active?.routineId ?? null,
+    name: '', bw: null,
+    unit: sanitizeUnit(state.active?.unit ?? state.unit),
+    cur: 0, entries: [entry]
+  }
+  const reading = readProspectivePrescription(active, state).entries[entry.id]
+  return evaluateSetMilestone(entry, setIdx, { ...context, reading })
+}
+
+/**
+ * Drive the Progression summary through its one public seam: build the reading from a real Active
+ * workout and the Profile, then ask the summary about the Entry. No stand-in Workout is built here.
+ * @param {any} entry
+ * @param {Record<string, any>} [state]
+ */
+const summary = (entry, state = { unit: 'kg', workouts: [] }) => {
+  const active = {
+    id: 'a-summary', d: '2026-06-15', start: 0,
+    routineId: state.active?.routineId ?? null,
+    name: '', bw: null,
+    unit: sanitizeUnit(state.active?.unit ?? state.unit),
+    cur: 0, entries: [entry]
+  }
+  const reading = readProspectivePrescription(active, state)
+  return evaluateSessionProgression(entry, state, reading.entries[entry.id])
+}
 
 describe('evaluateSetMilestone', () => {
   describe('Linear progression', () => {
@@ -21,7 +64,7 @@ describe('evaluateSetMilestone', () => {
           { r: 5, w: 60, done: false }
         ]
       }
-      const milestone = evaluateSetMilestone(entry, 0)
+      const milestone = cue(entry, 0)
       expect(milestone).toEqual({
         kind: 'hit',
         label: '5/5 reps',
@@ -39,7 +82,7 @@ describe('evaluateSetMilestone', () => {
           { r: 5, w: 60, done: false }
         ]
       }
-      const milestone = evaluateSetMilestone(entry, 0)
+      const milestone = cue(entry, 0)
       expect(milestone).toEqual({
         kind: 'hit',
         label: '6/5 reps',
@@ -56,7 +99,7 @@ describe('evaluateSetMilestone', () => {
           { r: 4, w: 60, done: true }
         ]
       }
-      const milestone = evaluateSetMilestone(entry, 0)
+      const milestone = cue(entry, 0)
       expect(milestone).toBeNull()
     })
 
@@ -68,7 +111,7 @@ describe('evaluateSetMilestone', () => {
           { r: 5, w: 60, done: false }
         ]
       }
-      const milestone = evaluateSetMilestone(entry, 0)
+      const milestone = cue(entry, 0)
       expect(milestone).toBeNull()
     })
 
@@ -82,10 +125,10 @@ describe('evaluateSetMilestone', () => {
           { r: 5, w: 60, done: false }
         ]
       }
-      const warmupMilestone = evaluateSetMilestone(entry, 0)
+      const warmupMilestone = cue(entry, 0)
       expect(warmupMilestone).toBeNull()
 
-      const workMilestone = evaluateSetMilestone(entry, 1)
+      const workMilestone = cue(entry, 1)
       expect(workMilestone).toEqual({
         kind: 'hit',
         label: '5/5 reps',
@@ -104,7 +147,7 @@ describe('evaluateSetMilestone', () => {
           { r: 5, w: 60, done: true }
         ]
       }
-      const milestone = evaluateSetMilestone(entry, 2, { unit: 'kg', inc: 2.5 })
+      const milestone = cue(entry, 2, { unit: 'kg', inc: 2.5 })
       expect(milestone).toEqual({
         kind: 'unlocked',
         label: 'All sets hit! +2.5 kg unlocked next session',
@@ -124,7 +167,7 @@ describe('evaluateSetMilestone', () => {
           { r: 5, w: 135, done: true }
         ]
       }
-      const milestone = evaluateSetMilestone(entry, 1, { state: { unit: 'lb' } })
+      const milestone = cue(entry, 1, { state: { unit: 'lb' } })
       expect(milestone.label).toBe('All sets hit! +5 lb unlocked next session')
     })
 
@@ -134,7 +177,7 @@ describe('evaluateSetMilestone', () => {
         target: { mode: 'reps', reps: 15, repsMax: 15, weight: 0, bodyweight: true, prog: 'linear', sets: 6 },
         sets: Array.from({ length: 6 }, () => ({ r: 15, w: 0, done: true }))
       }
-      const milestone = evaluateSetMilestone(entry, 5, { state: { unit: 'kg' } })
+      const milestone = cue(entry, 5, { state: { unit: 'kg' } })
       expect(milestone.label).toBe('15/15 reps')
     })
 
@@ -147,7 +190,7 @@ describe('evaluateSetMilestone', () => {
           { r: 10, w: 0, done: true }
         ]
       }
-      const milestone = evaluateSetMilestone(entry, 1)
+      const milestone = cue(entry, 1)
       expect(milestone).toEqual({
         kind: 'unlocked',
         label: 'All sets hit! Next target unlocked',
@@ -166,7 +209,7 @@ describe('evaluateSetMilestone', () => {
           { r: 5, w: 60, done: true }
         ]
       }
-      const milestone = evaluateSetMilestone(entry, 2)
+      const milestone = cue(entry, 2)
       expect(milestone).toEqual({
         kind: 'hit',
         label: '5/5 reps',
@@ -184,7 +227,7 @@ describe('evaluateSetMilestone', () => {
           { r: 5, w: 60, done: true }
         ]
       }
-      const milestone = evaluateSetMilestone(entry, 1, { state: { unit: 'kg' } })
+      const milestone = cue(entry, 1, { state: { unit: 'kg' } })
       expect(milestone.label).toBe('All sets hit! +2.5 kg unlocked next session')
     })
 
@@ -196,7 +239,7 @@ describe('evaluateSetMilestone', () => {
           { r: 5, w: 60, done: true }
         ]
       }
-      expect(evaluateSetMilestone(entry, 0)).toBeNull()
+      expect(cue(entry, 0)).toBeNull()
     })
 
     it.each([
@@ -206,9 +249,9 @@ describe('evaluateSetMilestone', () => {
       ['policy', { policy: 'off' }]
     ])('reads an old Entry whose progression policy is only in %s', (_field, legacy) => {
       const base = { id: 'barbell-bench-press', target: { mode: 'reps', reps: 5, weight: 60 }, sets: [{ r: 5, w: 60, done: true }] }
-      expect(evaluateSetMilestone(base, 0), 'with no policy set, reps mode defaults to linear and cues the set').not.toBeNull()
+      expect(cue(base, 0), 'with no policy set, reps mode defaults to linear and cues the set').not.toBeNull()
       const entry = { ...base, ...legacy, target: { ...base.target, ...legacy.target } }
-      expect(evaluateSetMilestone(entry, 0)).toBeNull()
+      expect(cue(entry, 0)).toBeNull()
     })
 
     it('defaults to linear progression for reps-mode exercises when no policy is set', () => {
@@ -219,7 +262,7 @@ describe('evaluateSetMilestone', () => {
           { r: 8, w: 50, done: true }
         ]
       }
-      expect(evaluateSetMilestone(entry, 0)).toEqual({
+      expect(cue(entry, 0)).toEqual({
         kind: 'unlocked',
         label: 'All sets hit! +2.5 kg unlocked next session',
         inc: 2.5,
@@ -239,7 +282,7 @@ describe('evaluateSetMilestone', () => {
           { sec: 45, done: true }
         ]
       }
-      const milestone = evaluateSetMilestone(entry, 0, { state: { unit: 'kg' } })
+      const milestone = cue(entry, 0, { state: { unit: 'kg' } })
       expect(milestone.label).toBe('All sets hit! +5s unlocked next session')
     })
 
@@ -252,7 +295,7 @@ describe('evaluateSetMilestone', () => {
           { sec: 45, done: false }
         ]
       }
-      const milestone = evaluateSetMilestone(entry, 0)
+      const milestone = cue(entry, 0)
       expect(milestone.label).toBe('50s hold')
     })
 
@@ -264,7 +307,7 @@ describe('evaluateSetMilestone', () => {
           { sec: 40, done: true }
         ]
       }
-      const milestone = evaluateSetMilestone(entry, 0)
+      const milestone = cue(entry, 0)
       expect(milestone).toBeNull()
     })
 
@@ -276,7 +319,7 @@ describe('evaluateSetMilestone', () => {
           { sec: 45, done: false }
         ]
       }
-      expect(evaluateSetMilestone(entry, 0)).toBeNull()
+      expect(cue(entry, 0)).toBeNull()
     })
 
     it('returns null for warm-up timed hold sets', () => {
@@ -287,7 +330,7 @@ describe('evaluateSetMilestone', () => {
           { sec: 45, done: true, phase: 'warmup' }
         ]
       }
-      expect(evaluateSetMilestone(entry, 0)).toBeNull()
+      expect(cue(entry, 0)).toBeNull()
     })
 
     it('reads add-time from the routine on the profile', () => {
@@ -303,7 +346,7 @@ describe('evaluateSetMilestone', () => {
         active: { routineId: 'r1' },
         routines: [{ id: 'r1', prog: 'time' }]
       }
-      const milestone = evaluateSetMilestone(entry, 0, { state })
+      const milestone = cue(entry, 0, { state })
       expect(milestone.label).toBe('All sets hit! +5s unlocked next session')
     })
 
@@ -315,7 +358,7 @@ describe('evaluateSetMilestone', () => {
           { sec: 45, done: true }
         ]
       }
-      expect(evaluateSetMilestone(entry, 0)).toBeNull()
+      expect(cue(entry, 0)).toBeNull()
     })
   })
 
@@ -330,7 +373,7 @@ describe('evaluateSetMilestone', () => {
           { r: 8, w: 14, done: false }
         ]
       }
-      const milestone = evaluateSetMilestone(entry, 0)
+      const milestone = cue(entry, 0)
       expect(milestone).toEqual({
         kind: 'hit',
         label: '12/12 reps · On track',
@@ -348,7 +391,7 @@ describe('evaluateSetMilestone', () => {
           { r: 10, w: 14, done: false }
         ]
       }
-      const milestone = evaluateSetMilestone(entry, 0)
+      const milestone = cue(entry, 0)
       expect(milestone).toEqual({
         kind: 'hit',
         label: '13/12 reps · On track',
@@ -367,7 +410,7 @@ describe('evaluateSetMilestone', () => {
           { r: 12, w: 14, done: true }
         ]
       }
-      const milestone = evaluateSetMilestone(entry, 2, { unit: 'kg', inc: 2.5 })
+      const milestone = cue(entry, 2, { unit: 'kg', inc: 2.5 })
       expect(milestone).toEqual({
         kind: 'unlocked',
         label: 'All sets hit! +2.5 kg unlocked next session',
@@ -387,7 +430,7 @@ describe('evaluateSetMilestone', () => {
           { r: 8, w: 0, done: true }
         ]
       }
-      const milestone = evaluateSetMilestone(entry, 1)
+      const milestone = cue(entry, 1)
       expect(milestone).toEqual({
         kind: 'unlocked',
         label: 'All sets hit! Next target unlocked',
@@ -405,7 +448,7 @@ describe('evaluateSetMilestone', () => {
           { r: 12, w: 30, done: true }
         ]
       }
-      const milestone = evaluateSetMilestone(entry, 1, { state: { unit: 'lb' } })
+      const milestone = cue(entry, 1, { state: { unit: 'lb' } })
       expect(milestone.label).toBe('All sets hit! +5 lb unlocked next session')
     })
 
@@ -419,7 +462,7 @@ describe('evaluateSetMilestone', () => {
           { r: 12, w: 14, done: true }
         ]
       }
-      const milestone = evaluateSetMilestone(entry, 2)
+      const milestone = cue(entry, 2)
       expect(milestone).toEqual({
         kind: 'hit',
         label: '12/12 reps',
@@ -437,7 +480,7 @@ describe('evaluateSetMilestone', () => {
           { r: 12, w: 14, done: true }
         ]
       }
-      const milestone = evaluateSetMilestone(entry, 1, { state: { unit: 'kg' } })
+      const milestone = cue(entry, 1, { state: { unit: 'kg' } })
       expect(milestone.label).toBe('All sets hit! +2.5 kg unlocked next session')
     })
 
@@ -450,7 +493,7 @@ describe('evaluateSetMilestone', () => {
           { r: 12, w: 14, done: true }
         ]
       }
-      const milestone = evaluateSetMilestone(entry, 1)
+      const milestone = cue(entry, 1)
       expect(milestone).toEqual({
         kind: 'hit',
         label: '12/12 reps',
@@ -477,7 +520,7 @@ describe('evaluateSetMilestone', () => {
           { r: 12, w: 14, done: false }
         ]
       }
-      const milestone = evaluateSetMilestone(entry, 0, { state: { unit: 'kg', workouts: [prior] } })
+      const milestone = cue(entry, 0, { state: { unit: 'kg', workouts: [prior] } })
       expect(milestone).toBeNull()
     })
 
@@ -496,7 +539,7 @@ describe('evaluateSetMilestone', () => {
         target: { mode: 'reps', reps: 12, repsMin: 8, weight: 14, prog: 'double', sets: 1 },
         sets: [{ r: 9, w: 14, done: true }]
       }
-      const milestone = evaluateSetMilestone(entry, 0, { state: { unit: 'kg', workouts: [otherShape] } })
+      const milestone = cue(entry, 0, { state: { unit: 'kg', workouts: [otherShape] } })
       expect(milestone).toBeNull()
     })
 
@@ -518,7 +561,7 @@ describe('evaluateSetMilestone', () => {
           { r: 12, w: 14, done: true }
         ]
       }
-      const milestone = evaluateSetMilestone(entry, 1, { state: { unit: 'kg', workouts: [prior] } })
+      const milestone = cue(entry, 1, { state: { unit: 'kg', workouts: [prior] } })
       expect(milestone.label).toBe('Rep progress (+1)')
     })
 
@@ -537,7 +580,7 @@ describe('evaluateSetMilestone', () => {
         target: { mode: 'reps', reps: 12, repsMin: 8, weight: 14, prog: 'double', sets: 1 },
         sets: [{ r: 9, w: 14, done: true }]
       }
-      const milestone = evaluateSetMilestone(entry, 0, { state: { unit: 'kg', workouts: [prior] } })
+      const milestone = cue(entry, 0, { state: { unit: 'kg', workouts: [prior] } })
       expect(milestone.label).toBe('Rep progress (+1)')
     })
 
@@ -547,8 +590,8 @@ describe('evaluateSetMilestone', () => {
       const workouts = [at('w1', '2026-01-01', 40, [12, 12, 12]), at('w2', '2026-01-02', 42.5, [7, 6, 6])]
       const entry = { id: 'dumbbell-curl', target, sets: [12, 12, 12].map(r => ({ r, w: 40, done: true })) }
       const state = { unit: 'kg', workouts }
-      expect(evaluateSetMilestone(entry, 2, { state })).toEqual({ kind: 'hit', label: '12/12 reps', reps: 12, targetReps: 12 })
-      expect(evaluateSessionProgression(entry, state, { now: NOW }).text).toBe('Aim for 12 reps at 40 kg')
+      expect(cue(entry, 2, { state })).toEqual({ kind: 'hit', label: '12/12 reps', reps: 12, targetReps: 12 })
+      expect(summary(entry, state).text).toBe('Aim for 12 reps at 40 kg')
     })
 
     it('badges the per-side rep step when that aim moved', () => {
@@ -566,7 +609,7 @@ describe('evaluateSetMilestone', () => {
         target: { mode: 'reps', reps: 24, repsMin: 16, weight: 10, prog: 'double', side: true, sets: 1 },
         sets: [{ r: 18, w: 10, done: true }]
       }
-      const milestone = evaluateSetMilestone(entry, 0, { state: { unit: 'kg', workouts: [prior] } })
+      const milestone = cue(entry, 0, { state: { unit: 'kg', workouts: [prior] } })
       expect(milestone.label).toBe('Rep progress (+2)')
     })
 
@@ -578,7 +621,7 @@ describe('evaluateSetMilestone', () => {
           { r: 8, w: 14, done: true }
         ]
       }
-      expect(evaluateSetMilestone(entry, 0, { prevWeakest: 8 })).toBeNull()
+      expect(cue(entry, 0, { prevWeakest: 8 })).toBeNull()
     })
 
     it('returns null for warm-up sets under double progression', () => {
@@ -590,7 +633,7 @@ describe('evaluateSetMilestone', () => {
           { r: 12, w: 14, done: true }
         ]
       }
-      expect(evaluateSetMilestone(entry, 0)).toBeNull()
+      expect(cue(entry, 0)).toBeNull()
     })
 
     it('immediately unlocks on a single-set double progression exercise when hitting rep ceiling', () => {
@@ -601,7 +644,7 @@ describe('evaluateSetMilestone', () => {
           { r: 12, w: 14, done: true }
         ]
       }
-      const milestone = evaluateSetMilestone(entry, 0, { unit: 'kg', inc: 2.5 })
+      const milestone = cue(entry, 0, { unit: 'kg', inc: 2.5 })
       expect(milestone).toEqual({
         kind: 'unlocked',
         label: 'All sets hit! +2.5 kg unlocked next session',
@@ -624,7 +667,7 @@ describe('evaluateSetMilestone', () => {
           { sec: 0, done: false }
         ]
       }
-      const milestone = evaluateSetMilestone(entry, 0, { state: { unit: 'kg' } })
+      const milestone = cue(entry, 0, { state: { unit: 'kg' } })
       expect(milestone.label).toBe('25s hold')
     })
 
@@ -635,7 +678,7 @@ describe('evaluateSetMilestone', () => {
         plan: { kind: 'hold', sec: 50 },
         sets: [{ sec: 47, done: true }]
       }
-      expect(evaluateSetMilestone(entry, 0, { state: { unit: 'kg' } })).toBeNull()
+      expect(cue(entry, 0, { state: { unit: 'kg' } })).toBeNull()
     })
 
     it('badges hold progress on the last planned set when the hold aim moved', () => {
@@ -653,7 +696,7 @@ describe('evaluateSetMilestone', () => {
         target: { mode: 'time', sec: 45, prog: 'time', sets: 1 },
         sets: [{ sec: 40, done: true }]
       }
-      const milestone = evaluateSetMilestone(entry, 0, { state: { unit: 'kg', workouts: [prior] } })
+      const milestone = cue(entry, 0, { state: { unit: 'kg', workouts: [prior] } })
       expect(milestone.label).toBe('Hold progress (+5s)')
     })
   })
@@ -669,7 +712,7 @@ describe('evaluateSetMilestone', () => {
           { r: 5, w: 60, done: false }
         ]
       }
-      const milestone = evaluateSetMilestone(entry, 0)
+      const milestone = cue(entry, 0)
       expect(milestone).toEqual({
         kind: 'hit',
         label: '5/5 reps',
@@ -686,7 +729,7 @@ describe('evaluateSetMilestone', () => {
           { r: 4, w: 60, done: true }
         ]
       }
-      expect(evaluateSetMilestone(entry, 0)).toBeNull()
+      expect(cue(entry, 0)).toBeNull()
     })
 
     it('returns AMRAP target-beaten milestone cue when final set exceeds target reps', () => {
@@ -699,7 +742,7 @@ describe('evaluateSetMilestone', () => {
           { r: 8, w: 60, done: true }
         ]
       }
-      const milestone = evaluateSetMilestone(entry, 2, { state: { unit: 'kg' } })
+      const milestone = cue(entry, 2, { state: { unit: 'kg' } })
       expect(milestone.label).toBe('AMRAP +3 · +2.5 kg unlocked next session')
     })
 
@@ -713,7 +756,7 @@ describe('evaluateSetMilestone', () => {
           { r: 10, w: 60, done: true }
         ]
       }
-      const milestone = evaluateSetMilestone(entry, 2, { state: { unit: 'kg' } })
+      const milestone = cue(entry, 2, { state: { unit: 'kg' } })
       expect(milestone.label).toBe('AMRAP +5 · +5 kg unlocked next session')
     })
 
@@ -727,7 +770,7 @@ describe('evaluateSetMilestone', () => {
           { r: 11, w: 135, done: true }
         ]
       }
-      const milestone = evaluateSetMilestone(entry, 2, { state: { unit: 'lb' } })
+      const milestone = cue(entry, 2, { state: { unit: 'lb' } })
       expect(milestone.label).toBe('AMRAP +6 · +10 lb unlocked next session')
     })
 
@@ -741,7 +784,7 @@ describe('evaluateSetMilestone', () => {
           { r: 5, w: 60, done: true }
         ]
       }
-      const milestone = evaluateSetMilestone(entry, 2, { state: { unit: 'kg' } })
+      const milestone = cue(entry, 2, { state: { unit: 'kg' } })
       expect(milestone.label).toBe('All sets hit! +2.5 kg unlocked next session')
     })
 
@@ -751,7 +794,7 @@ describe('evaluateSetMilestone', () => {
         target: { mode: 'reps', reps: 10, weight: 0, prog: 'greyskull', sets: 1 },
         sets: [{ r: 10, done: true }]
       }
-      const milestone = evaluateSetMilestone(entry, 0, { state: { unit: 'kg' } })
+      const milestone = cue(entry, 0, { state: { unit: 'kg' } })
       expect(milestone.label).toBe('All sets hit! Next target unlocked')
     })
 
@@ -762,7 +805,7 @@ describe('evaluateSetMilestone', () => {
         target: { mode: 'reps', reps: 15, weight: 0, prog: 'greyskull', sets: 6, repsMax: 15 },
         sets
       }
-      const milestone = evaluateSetMilestone(entry, 5, { state: { unit: 'kg' } })
+      const milestone = cue(entry, 5, { state: { unit: 'kg' } })
       expect(milestone.label).toBe('15/15 reps')
     })
 
@@ -776,7 +819,7 @@ describe('evaluateSetMilestone', () => {
           { r: 15, w: 60, done: true }
         ]
       }
-      expect(evaluateSetMilestone(entry, 2, { state: { unit: 'kg' } })).toBeNull()
+      expect(cue(entry, 2, { state: { unit: 'kg' } })).toBeNull()
     })
 
     it('returns null when final AMRAP set falls short of target reps', () => {
@@ -789,7 +832,7 @@ describe('evaluateSetMilestone', () => {
           { r: 4, w: 60, done: true }
         ]
       }
-      expect(evaluateSetMilestone(entry, 2)).toBeNull()
+      expect(cue(entry, 2)).toBeNull()
     })
 
     it('returns null for warm-up sets under Greyskull LP', () => {
@@ -801,7 +844,7 @@ describe('evaluateSetMilestone', () => {
           { r: 5, w: 60, done: true }
         ]
       }
-      expect(evaluateSetMilestone(entry, 0)).toBeNull()
+      expect(cue(entry, 0)).toBeNull()
     })
   })
 
@@ -813,37 +856,150 @@ describe('evaluateSetMilestone', () => {
       plan: { policy, kind: 'up', weight: 0, reps: 12 },
       sets: Array.from({ length: 3 }, () => ({ r: reps, w: 0, done: true }))
     })
-    const prescriptionAfter = (/** @type {ReturnType<typeof climb>} */ entry) => nextPrescription(
-      { unit: 'kg', workouts: [{ id: 'w1', d: '2026-11-20', start: 0, end: 1, name: '', bw: null, unit: 'kg', routineId: null, entries: [entry] }] },
-      entry.target
-    )
+    const prescriptionAfter = (/** @type {ReturnType<typeof climb>} */ entry) => readProspectivePrescription(
+      {
+        id: 'a-1', d: '2026-11-20', start: 0, routineId: null, name: '', bw: null,
+        unit: 'kg', cur: 0, entries: [entry]
+      },
+      { unit: 'kg', workouts: [] }
+    ).entries[entry.id].prescription
 
     it.each(['linear', 'double', 'greyskull'])('shows no %s hit below the prescribed reps when they exceed the frozen Target', policy => {
       const entry = climb(/** @type {'linear' | 'double' | 'greyskull'} */ (policy), 9)
       expect(prescriptionAfter(entry)).toMatchObject({ kind: 'hold', reps: 12 })
-      expect(evaluateSetMilestone(entry, 0, { state: { unit: 'kg' } })).toBeNull()
+      expect(cue(entry, 0, { state: { unit: 'kg' } })).toBeNull()
     })
 
     it.each(['linear', 'double', 'greyskull'])('shows a %s hit against the prescribed reps when they are reached', policy => {
       const entry = climb(/** @type {'linear' | 'double' | 'greyskull'} */ (policy), 12)
       expect(prescriptionAfter(entry).kind).toBe('up')
-      expect(evaluateSetMilestone(entry, 0, { state: { unit: 'kg' } })).toMatchObject({ kind: 'hit', reps: 12, targetReps: 12 })
+      expect(cue(entry, 0, { state: { unit: 'kg' } })).toMatchObject({ kind: 'hit', reps: 12, targetReps: 12 })
     })
 
     it.each(['linear', 'double', 'greyskull'])('shows nothing on the last %s set while the Prescription holds', policy => {
       const entry = climb(/** @type {'linear' | 'double' | 'greyskull'} */ (policy), 9)
-      expect(evaluateSetMilestone(entry, 2, { state: { unit: 'kg' } })).toBeNull()
+      expect(cue(entry, 2, { state: { unit: 'kg' } })).toBeNull()
+    })
+
+    it('reads its Progression judgement from the Prospective Prescription seam', () => {
+      const entry = {
+        id: 'barbell-bench-press',
+        target: { mode: 'reps', reps: 5, weight: 135, prog: 'linear', sets: 2, inc: 5 },
+        sets: [{ r: 5, w: 135, done: true }, { r: 5, w: 135, done: true }]
+      }
+      const active = {
+        id: 'a-1', d: '2026-11-20', start: 0, routineId: null, name: '', bw: null,
+        unit: 'lb', cur: 0, entries: [entry]
+      }
+      const reading = readProspectivePrescription(active, { unit: 'kg', workouts: [] }).entries[entry.id]
+
+      const milestone = cue(entry, 1, { state: { unit: 'kg' }, reading })
+      expect(milestone.label).toBe('All sets hit! +5 lb unlocked next session')
+    })
+
+    it('reads Rep progress from the Prospective Prescription seam', () => {
+      const prior = {
+        id: 'w1',
+        d: '2026-01-01',
+        entries: [{
+          id: 'dumbbell-curl',
+          target: { mode: 'reps', reps: 12, repsMin: 8, weight: 14, prog: 'double', sets: 1 },
+          sets: [{ r: 8, w: 14, done: true }]
+        }]
+      }
+      const entry = {
+        id: 'dumbbell-curl',
+        target: { mode: 'reps', reps: 12, repsMin: 8, weight: 14, prog: 'double', sets: 1 },
+        sets: [{ r: 9, w: 14, done: true }]
+      }
+      const active = {
+        id: 'a-1', d: '2026-06-15', start: 0, routineId: null, name: '', bw: null,
+        unit: 'kg', cur: 0, entries: [entry]
+      }
+      const reading = readProspectivePrescription(active, { unit: 'kg', workouts: [prior] }).entries[entry.id]
+      const bare = { unit: 'kg', workouts: [] }
+
+      // Without the seam there is no prior session to progress against.
+      expect(cue(entry, 0, { state: bare })).toBeNull()
+      expect(cue(entry, 0, { state: bare, reading }).label).toBe('Rep progress (+1)')
+    })
+
+    it('reads the Greyskull AMRAP bonus from the Prospective Prescription seam', () => {
+      const entry = {
+        id: 'barbell-bench-press',
+        target: { mode: 'reps', reps: 5, weight: 135, prog: 'greyskull', sets: 3, inc: 5 },
+        sets: [
+          { r: 5, w: 135, done: true },
+          { r: 5, w: 135, done: true },
+          { r: 11, w: 135, done: true }
+        ]
+      }
+      const active = {
+        id: 'a-1', d: '2026-11-20', start: 0, routineId: null, name: '', bw: null,
+        unit: 'lb', cur: 0, entries: [entry]
+      }
+      const reading = readProspectivePrescription(active, { unit: 'kg', workouts: [] }).entries[entry.id]
+
+      const milestone = cue(entry, 2, { state: { unit: 'kg' }, reading })
+      expect(milestone.label).toBe('AMRAP +6 · +10 lb unlocked next session')
+    })
+
+    it('resolves the cue policy from the reading routine, not the Active stub', () => {
+      const entry = {
+        id: 'barbell-bench-press',
+        target: { mode: 'reps', reps: 5, weight: 60, sets: 3 },
+        sets: [
+          { r: 5, w: 60, done: true },
+          { r: 5, w: 60, done: true },
+          { r: 8, w: 60, done: true }
+        ]
+      }
+      const logged = {
+        id: 'a-1', d: '2026-11-20', start: 0, end: 1, routineId: 'r-greyskull',
+        name: '', bw: null, unit: 'kg', entries: [entry]
+      }
+      const state = {
+        unit: 'kg', workouts: [logged],
+        routines: [{ id: 'r-greyskull', prog: 'greyskull' }, { id: 'r-linear', prog: 'linear' }],
+        active: { id: 'a-1', routineId: 'r-linear' }
+      }
+      const reading = readProspectivePrescription(state.active, state).entries[entry.id]
+
+      const milestone = cue(entry, 2, { state, reading })
+      expect(milestone.label).toBe('AMRAP +3 · +2.5 kg unlocked next session')
+    })
+
+    it('keeps Warm-ups and sub-target sets neutral with a Prospective Prescription reading', () => {
+      const entry = {
+        id: 'barbell-bench-press',
+        target: { mode: 'reps', reps: 5, weight: 135, prog: 'linear', sets: 2, inc: 5 },
+        sets: [
+          { r: 5, w: 135, done: true, phase: 'warmup' },
+          { r: 4, w: 135, done: true },
+          { r: 5, w: 135, done: true }
+        ]
+      }
+      const active = {
+        id: 'a-1', d: '2026-11-20', start: 0, routineId: null, name: '', bw: null,
+        unit: 'lb', cur: 0, entries: [entry]
+      }
+      const reading = readProspectivePrescription(active, { unit: 'kg', workouts: [] }).entries[entry.id]
+      const context = { state: { unit: 'kg' }, reading }
+
+      expect(cue(entry, 0, context)).toBeNull()
+      expect(cue(entry, 1, context)).toBeNull()
+      expect(cue(entry, 2, context).label).toBe('5/5 reps')
     })
   })
 
   describe('Edge cases and stability', () => {
     it('returns null for missing, invalid, or out-of-range inputs', () => {
-      expect(evaluateSetMilestone(null, 0)).toBeNull()
-      expect(evaluateSetMilestone({}, 0)).toBeNull()
-      expect(evaluateSetMilestone({ sets: [] }, 0)).toBeNull()
-      expect(evaluateSetMilestone({ sets: [{ done: true }] }, -1)).toBeNull()
-      expect(evaluateSetMilestone({ sets: [{ done: true }] }, 2)).toBeNull()
-      expect(evaluateSetMilestone({ target: { reps: 0 }, sets: [{ r: 5, done: true }] }, 0)).toBeNull()
+      expect(cue(null, 0)).toBeNull()
+      expect(cue({}, 0)).toBeNull()
+      expect(cue({ sets: [] }, 0)).toBeNull()
+      expect(cue({ sets: [{ done: true }] }, -1)).toBeNull()
+      expect(cue({ sets: [{ done: true }] }, 2)).toBeNull()
+      expect(cue({ target: { reps: 0 }, sets: [{ r: 5, done: true }] }, 0)).toBeNull()
     })
 
     it('does not mutate the entry or its sets', () => {
@@ -855,7 +1011,7 @@ describe('evaluateSetMilestone', () => {
         ]
       }
       const snapshot = JSON.stringify(entry)
-      evaluateSetMilestone(entry, 0)
+      cue(entry, 0)
       expect(JSON.stringify(entry)).toBe(snapshot)
     })
   })
@@ -877,6 +1033,20 @@ describe('evaluateSessionProgression and sessionProgressionItems', () => {
     ]
   }
 
+  it('refuses to judge a summary without the one Prospective Prescription reading', () => {
+    const entry = {
+      id: '0025',
+      target: { sets: 3, reps: 5, weight: 60, prog: 'linear' },
+      sets: [{ w: 60, r: 5, done: true }]
+    }
+    expect(() => evaluateSessionProgression(entry, baseState))
+      .toThrow(/evaluateSessionProgression requires a Prospective Prescription reading/)
+
+    const workout = { id: 'w-legacy', routineId: 'r-push', entries: [entry] }
+    expect(() => sessionProgressionItems(workout, baseState))
+      .toThrow(/sessionProgressionItems requires a Prospective Prescription reading/)
+  })
+
   it('evaluates linear progression load increase with advance indicator and formatted delta', () => {
     const entry = {
       id: '0025',
@@ -887,7 +1057,7 @@ describe('evaluateSessionProgression and sessionProgressionItems', () => {
         { w: 60, r: 5, done: true }
       ]
     }
-    const item = evaluateSessionProgression(entry, baseState, { now: NOW })
+    const item = summary(entry, baseState)
     expect(item).not.toBeNull()
     expect(item.id).toBe('0025')
     expect(item.policy).toBe('linear')
@@ -910,7 +1080,7 @@ describe('evaluateSessionProgression and sessionProgressionItems', () => {
         { w: 80, r: 5, done: true }
       ]
     }
-    const item = evaluateSessionProgression(entry, baseState, { now: NOW })
+    const item = summary(entry, baseState)
     expect(item.label).toBe('60 kg → 62.5 kg (+2.5 kg)')
   })
 
@@ -924,7 +1094,7 @@ describe('evaluateSessionProgression and sessionProgressionItems', () => {
         { w: 24, r: 9, done: true }
       ]
     }
-    const item = evaluateSessionProgression(entry, baseState, { now: NOW })
+    const item = summary(entry, baseState)
     expect(item).not.toBeNull()
     expect(item.policy).toBe('double')
     expect(item.kind).toBe('hold')
@@ -943,7 +1113,7 @@ describe('evaluateSessionProgression and sessionProgressionItems', () => {
         { w: 0, r: 10, done: true }
       ]
     }
-    const item = evaluateSessionProgression(entry, baseState, { now: NOW })
+    const item = summary(entry, baseState)
     expect(item).not.toBeNull()
     expect(item.kind).toBe('up')
     expect(item.kind === 'up').toBe(true)
@@ -963,7 +1133,7 @@ describe('evaluateSessionProgression and sessionProgressionItems', () => {
         { w: 0, r: 15, done: true }
       ]
     }
-    const item = evaluateSessionProgression(entry, baseState, { now: NOW })
+    const item = summary(entry, baseState)
     expect(item).not.toBeNull()
     expect(item.kind).toBe('up')
     expect(item.kind === 'up').toBe(true)
@@ -982,7 +1152,7 @@ describe('evaluateSessionProgression and sessionProgressionItems', () => {
         { w: 0, r: 9, done: true }
       ]
     }
-    const item = evaluateSessionProgression(entry, baseState, { now: NOW })
+    const item = summary(entry, baseState)
     expect(item).not.toBeNull()
     expect(item.kind).toBe('hold')
     expect(item.kind === 'up').toBe(false)
@@ -999,7 +1169,7 @@ describe('evaluateSessionProgression and sessionProgressionItems', () => {
         { sec: 45, done: true }
       ]
     }
-    const item = evaluateSessionProgression(entry, baseState, { now: NOW })
+    const item = summary(entry, baseState)
     expect(item).not.toBeNull()
     expect(item.kind).toBe('up')
     expect(item.kind === 'up').toBe(true)
@@ -1025,7 +1195,7 @@ describe('evaluateSessionProgression and sessionProgressionItems', () => {
       target: { sets: 3, reps: 5, weight: 100, prog: 'linear' },
       sets: [{ w: 100, r: 3, done: true }]
     }
-    const item = evaluateSessionProgression(entry, state, { now: NOW })
+    const item = summary(entry, state)
     expect(item).not.toBeNull()
     expect(item.kind).toBe('deload')
     expect(item.kind === 'up').toBe(false)
@@ -1051,7 +1221,7 @@ describe('evaluateSessionProgression and sessionProgressionItems', () => {
       target: { sets: 3, reps: 12, repsMin: 8, weight: 40, prog: 'double', inc: 2.5 },
       sets: [{ w: 40, r: 9, done: true }, { w: 40, r: 9, done: true }, { w: 40, r: 9, done: true }]
     }
-    const item = evaluateSessionProgression(entry, state, { now: NOW })
+    const item = summary(entry, state)
     expect(item).not.toBeNull()
     expect(item.kind).toBe('deload')
     expect(item.label).toBe('Deload to 35 kg, back to 8 reps')
@@ -1075,7 +1245,7 @@ describe('evaluateSessionProgression and sessionProgressionItems', () => {
       target: { sets: 3, reps: 12, repsMin: 8, weight: 4, prog: 'double', inc: 2.5 },
       sets: [{ w: 4, r: 9, done: true }, { w: 4, r: 9, done: true }, { w: 4, r: 9, done: true }]
     }
-    const item = evaluateSessionProgression(entry, state, { now: NOW })
+    const item = summary(entry, state)
     expect(item).not.toBeNull()
     expect(item.kind).toBe('deload')
     expect(item.label).toBe('Deload to 2.5 kg, back to 8 reps')
@@ -1099,7 +1269,7 @@ describe('evaluateSessionProgression and sessionProgressionItems', () => {
       target: { sets: 3, sec: 60, prog: 'time', inc: 5, mode: 'time' },
       sets: [{ sec: 50, done: true }, { sec: 50, done: true }, { sec: 50, done: true }]
     }
-    const item = evaluateSessionProgression(entry, state, { now: NOW })
+    const item = summary(entry, state)
     expect(item).not.toBeNull()
     expect(item.kind).toBe('deload')
     expect(item.label).toBe('Deload to 45s')
@@ -1111,7 +1281,7 @@ describe('evaluateSessionProgression and sessionProgressionItems', () => {
       target: { sets: 3, reps: 12, repsMin: 8, weight: 24, prog: 'double', inc: 2 },
       sets: [{ w: 24, r: 6, done: true }, { w: 24, r: 6, done: true }, { w: 24, r: 5, done: true }]
     }
-    const item = evaluateSessionProgression(entry, baseState, { now: NOW })
+    const item = summary(entry, baseState)
     expect(item.kind).toBe('down')
     expect(item.kind === 'up').toBe(false)
     expect(item.iconName).toBe('arrowDown')
@@ -1124,7 +1294,7 @@ describe('evaluateSessionProgression and sessionProgressionItems', () => {
       target: { sets: 3, reps: 12, repsMin: 8, weight: 4, prog: 'double', inc: 2.5 },
       sets: [{ w: 4, r: 6, done: true }, { w: 4, r: 6, done: true }, { w: 4, r: 6, done: true }]
     }
-    const item = evaluateSessionProgression(entry, baseState, { now: NOW })
+    const item = summary(entry, baseState)
     expect(item.weight).toBe(2.5)
     expect(item.label).toBe('Drop 1.5 kg, back to 8 reps')
   })
@@ -1135,7 +1305,7 @@ describe('evaluateSessionProgression and sessionProgressionItems', () => {
       target: { sets: 3, reps: 12, repsMin: 8, weight: 24, prog: 'double', inc: 1.25 },
       sets: [{ w: 24, r: 6, done: true }, { w: 24, r: 6, done: true }, { w: 24, r: 5, done: true }]
     }
-    expect(evaluateSessionProgression(entry, baseState, { now: NOW }).label).toBe('Drop 1.25 kg, back to 8 reps')
+    expect(summary(entry, baseState).label).toBe('Drop 1.25 kg, back to 8 reps')
   })
 
   it('names the Drop in lb when the history was logged in kg', () => {
@@ -1144,7 +1314,7 @@ describe('evaluateSessionProgression and sessionProgressionItems', () => {
       target: { sets: 3, reps: 12, repsMin: 8, weight: 110, prog: 'double', inc: 5 },
       sets: [{ w: 50, r: 6, done: true, unit: 'kg' }, { w: 50, r: 6, done: true, unit: 'kg' }, { w: 50, r: 5, done: true, unit: 'kg' }]
     }
-    const item = evaluateSessionProgression(entry, { ...baseState, unit: 'lb' }, { now: NOW })
+    const item = summary(entry, { ...baseState, unit: 'lb' })
     expect(item.kind).toBe('down')
     expect(item.label).toBe('Drop 5 lb, back to 8 reps')
   })
@@ -1155,7 +1325,7 @@ describe('evaluateSessionProgression and sessionProgressionItems', () => {
       target: { sets: 3, reps: 5, weight: 60, prog: 'linear' },
       sets: [{ w: 60, r: 4, done: true }]
     }
-    const item = evaluateSessionProgression(entry, baseState, { now: NOW })
+    const item = summary(entry, baseState)
     expect(item).not.toBeNull()
     expect(item.kind).toBe('hold')
     expect(item.kind === 'up').toBe(false)
@@ -1171,7 +1341,7 @@ describe('evaluateSessionProgression and sessionProgressionItems', () => {
         { w: 60, r: 5, done: false }
       ]
     }
-    expect(evaluateSessionProgression(entry, baseState, { now: NOW })).toBeNull()
+    expect(summary(entry, baseState)).toBeNull()
   })
 
   it('sessionProgressionItems maps all trained exercises in a completed workout', () => {
@@ -1207,7 +1377,15 @@ describe('evaluateSessionProgression and sessionProgressionItems', () => {
       ]
     }
 
-    const items = sessionProgressionItems(workout, baseState, NOW)
+    const active = {
+      id: workout.id, d: '2026-06-15', start: 0,
+      routineId: workout.routineId,
+      name: '', bw: null,
+      unit: baseState.unit,
+      cur: 0, entries: workout.entries
+    }
+    const reading = readProspectivePrescription(active, baseState)
+    const items = sessionProgressionItems(workout, baseState, reading)
     expect(items.length).toBe(2)
     expect(items[0].id).toBe('0025')
     expect(items[0].label).toBe('60 kg → 62.5 kg (+2.5 kg)')

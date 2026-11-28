@@ -263,6 +263,10 @@ _Avoid_: suggestion
 The resolved Prescription frozen onto a finished Entry as `plan` (`kind`, `weight`, `reps`, `sec`, `sets`), so later sessions can see what was actually asked. Entries written before it existed derive the same reading from their Target and sets.
 _Avoid_: storing a stall counter
 
+**Prospective Prescription**:
+The Prescription a session would record at the Session boundary if it finished now, read from the Active workout and the Training log while the session is still in progress. Milestone cues, the Progression summary and the boundary read the same Prescription, so what is shown mid-session cannot diverge from what is recorded.
+_Avoid_: projected prescription, preview prescription, predicted target
+
 **Increment**:
 The exact step a fully hit session adds — bigger for lower-body lifts, overridable per exercise. It is added to the working value as logged, not snapped from zero; only a Deload is snapped to the equipment or timer grid. For add-time the step is seconds.
 

@@ -45,3 +45,5 @@ A replacement ADR states the decision as it stands, checked against the code, an
 | [0033](0033-double-progression-drops-below-the-range.md) | Double progression drops on a first set below the range | Accepted |
 | [0034](0034-oxlint-and-eslint-with-per-tool-ratchets.md) | oxlint is the main linter, ESLint keeps what oxlint cannot do, and each tool has one ratchet | Accepted |
 | [0035](0035-typescript-starts-as-checkjs-with-an-error-baseline.md) | TypeScript starts as a strict checkJs pass with a per-file error baseline | Accepted |
+| [0036](0036-sheet-history-back-behind-one-attach-seam.md) | Sheet-history Back decisions behind one attach seam | Accepted |
+| [0037](0037-prospective-prescription-is-one-canonical-reading.md) | Prospective Prescription is one canonical reading | Accepted |

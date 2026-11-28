@@ -3,6 +3,7 @@ import { normalizeState } from './profile/index.js'
 import { streakOf } from './streak.js'
 import { trainedWeeks } from './history.js'
 import { buildCompletedWorkout } from './active-finish.js'
+import { readProspectivePrescription } from './prospective-prescription.js'
 import { effortSummary, effortWeeks, effortHistogram } from './effort.js'
 import { assertClock, mondayIndexOf } from './dates.js'
 
@@ -16,7 +17,10 @@ describe('clock arguments fail loudly', () => {
     effortSummary: now => effortSummary(S, 7, now),
     effortWeeks: now => effortWeeks(S, 7, now),
     effortHistogram: now => effortHistogram(S, 7, now),
-    buildCompletedWorkout: end => buildCompletedWorkout({ entries: [] }, { end, unit: 'kg' }),
+    buildCompletedWorkout: end => buildCompletedWorkout(
+      { entries: [] },
+      { end, unit: 'kg', prospective: readProspectivePrescription({ entries: [] }, {}) },
+    ),
   }
   for (const [name, call] of Object.entries(cases)) {
     it(`${name} throws a TypeError on a non-finite clock`, () => {

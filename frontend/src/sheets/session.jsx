@@ -3,7 +3,7 @@ import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { EXIDX, exOr } from '../lib/exercises.js'
 import { fmtNum, fmtVol, fmtDurParts } from '../lib/format.js'
-import { fmtDate, todayISO, workoutTimestamp } from '../lib/dates.js'
+import { fmtDate, todayISO } from '../lib/dates.js'
 import { latestWeighIn } from '../lib/bodyweight.js'
 import { sessionView } from '../lib/active-workout.js'
 import { seedForReplacement } from '../lib/workout-model.js'
@@ -11,6 +11,7 @@ import { exerciseDisplayName } from '../lib/routine-sync.js'
 import { workSets } from '../lib/workout-sets.js'
 import { workoutSummary } from '../lib/workout-summary.js'
 import { sessionProgressionItems, prescriptionStyle } from '../lib/progression.js'
+import { readProspectivePrescription } from '../lib/prospective-prescription.js'
 import { t } from '../lib/i18n.js'
 import { nav } from '../platform/nav.js'
 import Icon from '../components/Icon.jsx'
@@ -149,7 +150,9 @@ export function FinishSummary({ w, prs, e1prs = [], routineSync = null, close })
   const st = useStore(s => s.S)
   const [syncChecked, setSyncChecked] = useState(false)
   const [selectedMuscle, setSelectedMuscle] = useState(null)
-  const progressionItems = sessionProgressionItems(w, st, workoutTimestamp(w))
+  // ADR 0037: the logged Workout is read by id, so no second stand-in is appended.
+  const prospective = readProspectivePrescription(w, st)
+  const progressionItems = sessionProgressionItems(w, st, prospective)
   const load = loadOfWorkouts([w])
   const sum = workoutSummary(st, w)
   const warmUps = sum.warmups

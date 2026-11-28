@@ -4,7 +4,6 @@ import { isWorkSet, isPerformed, workSets, doneWorkSets, modeForSet } from './wo
 import { resolveSetWeight, normalizeWeight, targetIn, entryUnit, round1 } from './units.js'
 import { fmtNum, fmtSigned } from './format.js'
 import { t } from './i18n.js'
-import { assertClock, isoOf } from './dates.js'
 
 /** @typedef {import('./types.js').Profile} Profile */
 /** @typedef {import('./types.js').Workout} Workout */
@@ -650,27 +649,24 @@ export function applyPrescription(sets, p) {
 }
 
 /**
+ * The one Progression judgement for an Entry, read against the canonical as-if-finished Workout.
+ *
+ * `workout` is the Workout returned by the Prospective Prescription reading — either the real one
+ * already in the Training log or the Module's stand-in. There is no fallback: a caller cannot
+ * re-derive a second, divergent judgement from a bare Entry (ADR 0037).
+ *
  * @param {Entry} entry
- * @param {Profile | null | undefined} state
+ * @param {Partial<Profile> | null | undefined} state
+ * @param {Workout} workout
  */
-function projectedVerdict(entry, state) {
+export function readEntryVerdict(entry, state, workout) {
   /** @type {Partial<Profile>} */
   const S = state && typeof state === 'object' ? state : {}
-  const unit = S.unit || 'kg'
-  const routineId = S.active?.routineId ?? null
-  /** @type {Workout} */
-  const workout = {
-    id: 'milestone-projection',
-    d: '9999-12-31',
-    start: 0,
-    end: 0,
-    name: '',
-    bw: null,
-    unit,
-    routineId,
-    entries: [entry]
-  }
-  const effectiveS = { ...S, unit, workouts: [...(S.workouts || []), workout] }
+  const unit = workout.unit || S.unit || 'kg'
+  const routineId = workout.routineId ?? S.active?.routineId ?? null
+  const inLog = (S.workouts || []).some(w => w.id === workout.id)
+  // ADR 0037: the reading keeps the Workout's unit, including after it is logged.
+  const effectiveS = inLog ? { ...S, unit } : { ...S, unit, workouts: [...(S.workouts || []), workout] }
   const routine = routineId ? (S.routines || []).find(r => r.id === routineId) || null : null
   const target = entry?.target || {}
   const cfg = { ...defaultConfig(entry.id), ...target, id: entry.id }
@@ -703,11 +699,11 @@ function projectedVerdict(entry, state) {
     const prevAim = timeAim(prev, cfg, inc)
     if (prescription.sec > prevAim) aimDelta = prescription.sec - prevAim
   }
-  return { prescription, unit, cfg, aimDelta, step }
+  return { prescription, unit, cfg, aimDelta, step, judged: readSession(entry, cfg, workout, unit) }
 }
 
 /**
- * @param {ReturnType<typeof projectedVerdict>} verdict
+ * @param {ReturnType<typeof readEntryVerdict>} verdict
  * @param {{ reps: number, targetReps: number }} extra
  */
 function unlockedCue(verdict, extra) {
@@ -761,7 +757,7 @@ function legacySetField(setRow, key) {
  *
  * @param {Entry} entry - Active workout entry containing `{ target, sets, plan?, id? }`.
  * @param {number} setIdx - Zero-based index of the set in `entry.sets`.
- * @param {{ state?: Profile | null }} [context] - Profile `{ state }`. The routine comes from `state.active` and `state.routines`.
+ * @param {{ state?: Profile | null, reading?: { verdict?: ReturnType<typeof readEntryVerdict>, routineId?: string | null } | null }} [context] - Profile `{ state }` plus this Entry's reading from the Prospective Prescription seam. The policy and the judgement come from that reading, never from a second Active stub.
  * @returns {{ kind: string, label: string, reps?: number, targetReps?: number, sec?: number, targetSec?: number, step?: number, bonusReps?: number, inc?: number, unit?: Unit } | null} Milestone descriptor `{ kind, label, ... }` or null if no milestone.
  */
 export function evaluateSetMilestone(entry, setIdx, context = {}) {
@@ -776,12 +772,17 @@ export function evaluateSetMilestone(entry, setIdx, context = {}) {
   const target = entry.target || {}
   const mode = modeOf({ ...target, id: entry.id })
   const S = context?.state && typeof context.state === 'object' ? context.state : null
-  const routine = S?.active?.routineId
-    ? (S.routines || []).find(r => r.id === S.active?.routineId) || null
-    : null
+  const routineId = context?.reading?.routineId ?? S?.active?.routineId ?? null
+  const routine = routineId ? (S?.routines || []).find(r => r.id === routineId) || null : null
   const policy = resolvePolicy(entry, mode, routine)
 
   if (policy === 'off') return null
+
+  const verdictOf = () => {
+    const verdict = context?.reading?.verdict
+    if (!verdict) throw new TypeError('evaluateSetMilestone requires a Prospective Prescription reading')
+    return verdict
+  }
 
   const workRows = entry.sets.filter(isWorkSet)
   const plannedCount = plannedSetCount(entry, target, workRows.length)
@@ -797,7 +798,7 @@ export function evaluateSetMilestone(entry, setIdx, context = {}) {
     if (reps < targetReps) return null
 
     if (workIdx === plannedCount - 1) {
-      const unlocked = unlockedCue(projectedVerdict(entry, S), { reps, targetReps })
+      const unlocked = unlockedCue(verdictOf(), { reps, targetReps })
       if (unlocked) return unlocked
     }
 
@@ -816,7 +817,7 @@ export function evaluateSetMilestone(entry, setIdx, context = {}) {
     const sec = Number(setRow.sec ?? legacySetSec) || 0
 
     if (workIdx === plannedCount - 1) {
-      const { prescription: p, aimDelta, step } = projectedVerdict(entry, S)
+      const { prescription: p, aimDelta, step } = verdictOf()
       if (p.kind === 'up' && p.sec != null) {
         return {
           kind: 'unlocked',
@@ -861,7 +862,7 @@ export function evaluateSetMilestone(entry, setIdx, context = {}) {
     }
 
     if (workIdx === plannedCount - 1) {
-      const verdict = projectedVerdict(entry, S)
+      const verdict = verdictOf()
       const unlocked = unlockedCue(verdict, { reps, targetReps })
       if (unlocked) return unlocked
       if (verdict.aimDelta > 0) {
@@ -903,7 +904,7 @@ export function evaluateSetMilestone(entry, setIdx, context = {}) {
     const isAMRAP = workIdx === plannedCount - 1
 
     if (isAMRAP) {
-      const verdict = projectedVerdict(entry, S)
+      const verdict = verdictOf()
       const p = verdict.prescription
       if (p.kind === 'up' && Number(p.weight) > 0 && reps >= targetReps) {
         const bonus = reps - targetReps
@@ -921,7 +922,7 @@ export function evaluateSetMilestone(entry, setIdx, context = {}) {
         return unlockedCue(verdict, { reps, targetReps })
       }
       if (p.kind === 'up' && reps >= targetReps) return unlockedCue(verdict, { reps, targetReps })
-      if (reps >= targetReps && readSession(entry, verdict.cfg, null, verdict.unit).ok) {
+      if (reps >= targetReps && verdict.judged.ok) {
         return {
           kind: 'hit',
           label: t('{0}/{1} reps', reps, targetReps),
@@ -978,57 +979,25 @@ export function prescriptionStyle(kindOrPlan) {
   return kind === 'up' ? 'up' : ''
 }
 
-/** @param {Entry} entry @param {number} now @returns {string} */
-const entryDayKey = (entry, now) => ('d' in entry && typeof entry.d === 'string' && entry.d) || isoOf(new Date(now))
+/** @typedef {import('./types.js').ProspectiveReadingLike & { judged: ReturnType<typeof readSession> }} ProspectiveReadingLike */
 
 /**
- * Evaluates a single completed entry against its next prescription, returning a progression descriptor.
+ * Evaluate a completed Entry against the one Prospective Prescription reading, returning a
+ * progression descriptor. No as-if-finished Workout, fixed future date, placeholder id or second
+ * Prescription judgement is constructed here (ADR 0037).
  *
  * @param {Entry} entry Completed workout entry.
  * @param {Partial<Profile> | null | undefined} state Store state S.
- * @param {{ workout?: Workout | null, routine?: Routine | null, now: number }} context - Workout, routine and the caller's clock.
+ * @param {ProspectiveReadingLike} reading - This Entry's reading from the one seam.
  * @returns {ProgressionDescriptor | null} Progression descriptor or null if no performed work sets.
  */
-export function evaluateSessionProgression(entry, state, context) {
+export function evaluateSessionProgression(entry, state, reading) {
   if (!entry || doneWorkSets(entry).length <= 0) return null
+  if (!reading) throw new TypeError('evaluateSessionProgression requires a Prospective Prescription reading')
 
-  assertClock(context?.now)
-  const now = context.now
-  const workout = context?.workout
-  const routine = context?.routine ||
-    (workout?.routineId ? state?.routines?.find(r => r.id === workout.routineId) : null) ||
-    null
-
-  /** @type {Workout | null} */
-  let dummyWorkout = null
-  let effectiveS = state
-  if (workout) {
-    const inWorkouts = (state?.workouts || []).some(w => w.id === workout.id || w === workout)
-    if (!inWorkouts) {
-      effectiveS = { ...(state || {}), workouts: [...(state?.workouts || []), workout] }
-    }
-  } else {
-    const inWorkouts = (state?.workouts || []).some(w => (w.entries || []).includes(entry))
-    if (!inWorkouts) {
-      dummyWorkout = {
-        id: 'session-entry-' + entry.id,
-        d: entryDayKey(entry, now),
-        start: 0,
-        end: 0,
-        routineId: null,
-        name: '',
-        bw: null,
-        entries: [entry],
-        unit: state?.unit || 'kg'
-      }
-      effectiveS = { ...(state || {}), workouts: [...(state?.workouts || []), dummyWorkout] }
-    }
-  }
-
-  const cfg = { ...defaultConfig(entry.id), ...(entry.target || {}), id: entry.id }
-  const p = nextPrescription(effectiveS || {}, cfg, routine)
-  const unit = state?.unit || workout?.unit || 'kg'
-  const judged = readSession(entry, cfg, null, unit)
+  const { prescription: p, cfg, unit, judged } = reading
+  const routineId = reading.routineId
+  const routine = (routineId ? state?.routines?.find(r => r.id === routineId) : null) || null
   const ex = EXIDX[entry.id] || { n: entry.id }
   const exName = ex.n || entry.id
   const policy = p.policy || policyFor(cfg, routine)
@@ -1098,7 +1067,7 @@ export function evaluateSessionProgression(entry, state, context) {
 
   return {
     id: entry.id,
-    d: workout?.d ?? dummyWorkout?.d ?? null,
+    d: reading.d ?? null,
     exName,
     policy,
     policyName,
@@ -1116,26 +1085,24 @@ export function evaluateSessionProgression(entry, state, context) {
 }
 
 /**
- * Derives progression descriptors for all trained exercises in a completed workout.
+ * Derives progression descriptors for all trained exercises in a completed workout from the one
+ * Prospective Prescription reading. The finished Workout is recognised by id, never appended as a
+ * second stand-in (ADR 0037).
  *
  * @param {Workout | null | undefined} workout Completed workout.
  * @param {Partial<Profile> | null | undefined} state Store state S.
- * @param {number} now - Caller's clock in milliseconds.
+ * @param {{ entries: Record<string, ProspectiveReadingLike> }} prospective - The shared reading's per-entry records.
  * @returns {ProgressionDescriptor[]} List of progression descriptors for trained exercises.
  */
-export function sessionProgressionItems(workout, state, now) {
+export function sessionProgressionItems(workout, state, prospective) {
   if (!workout?.entries) return []
-  const routine = (workout.routineId && state?.routines?.find(r => r.id === workout.routineId)) || null
-  const workouts = state?.workouts || []
-  const effectiveS = workouts.some(item => item.id === workout.id || item === workout)
-    ? state
-    : { ...(state || {}), workouts: [...workouts, workout] }
+  if (!prospective?.entries) throw new TypeError('sessionProgressionItems requires a Prospective Prescription reading')
 
   /** @type {ProgressionDescriptor[]} */
   const items = []
   for (const entry of workout.entries) {
     if (doneWorkSets(entry).length <= 0) continue
-    const item = evaluateSessionProgression(entry, effectiveS, { workout, routine, now })
+    const item = evaluateSessionProgression(entry, state, prospective.entries[entry.id])
     if (item) items.push(item)
   }
   return items

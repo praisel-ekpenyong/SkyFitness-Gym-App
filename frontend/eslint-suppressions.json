@@ -96,7 +96,7 @@
   },
   "src/lib/progression.js": {
     "no-restricted-syntax": {
-      "count": 8
+      "count": 6
     }
   },
   "src/lib/stats-selectors.js": {

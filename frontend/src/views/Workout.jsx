@@ -24,6 +24,7 @@ import { Button, Check, NumberField, dotted } from '../components/ui.jsx'
 import { glyphOf } from '../lib/glyphs.js'
 import { isWarmupRow } from '../lib/workout-model.js'
 import { evaluateSetMilestone, prescriptionIcon, prescriptionStyle } from '../lib/progression.js'
+import { readProspectivePrescription } from '../lib/prospective-prescription.js'
 import { primaryMuscleName } from '../lib/muscles.js'
 
 function StartChooser() {
@@ -66,6 +67,7 @@ function ExerciseBlock({ entryIdx, compact, isCurrent = true, arrived = false, r
   const working = useUI(s => s.work)
   const holding = useUI(s => !!s.work)
   const entry = S.active.entries[entryIdx]
+  const prospective = readProspectivePrescription(S.active, S)
   const ex = exOr(entry.id)
   const mode = modeOf({ ...(entry.target || {}), id: entry.id })
   const cardio = mode === 'cardio'
@@ -173,7 +175,8 @@ function ExerciseBlock({ entryIdx, compact, isCurrent = true, arrived = false, r
         const warmBefore = i > 0 && isWarmupRow(entry.sets[i - 1])
         const isFirstWarmup = warm && !warmBefore
         const phaseNum = entry.sets.slice(0, i + 1).filter(x => isWarmupRow(x) === warm).length
-        const milestone = evaluateSetMilestone(entry, i, { state: S })
+        const reading = prospective?.entries?.[entry.id]
+        const milestone = evaluateSetMilestone(entry, i, { state: S, reading })
         const open = i === openRow
         const rowName = warm ? t('Warm-up set {0}', phaseNum) : t('Set {0} of {1}', phaseNum, workTotal)
         return <div key={s.id}>
