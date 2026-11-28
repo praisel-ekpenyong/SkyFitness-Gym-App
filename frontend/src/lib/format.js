@@ -95,7 +95,7 @@ export function exLine(cfg, unit) {
   const n = cfg.sets || 1
   const load = cfg.weight ? ' · ' + (isBw(cfg) ? fmtSigned(cfg.weight) : fmtNum(cfg.weight)) + ' ' + unit : ''
   if (mode === 'cardio') {
-    const body = `${cfg.min || ROW_DEFAULTS.cardio.min} min @ ${fmtNum(cfg.speed || ROW_DEFAULTS.cardio.speed)} km/h`
+    const body = `${cfg.min || ROW_DEFAULTS.cardio.min} min @ ${fmtNum(cfg.speed ?? ROW_DEFAULTS.cardio.speed)} km/h`
     return n > 1 ? `${n} × ${body}` : body
   }
   if (mode === 'time') return `${n} × ${fmtSec(cfg.sec || ROW_DEFAULTS.time.sec)}${load}`
