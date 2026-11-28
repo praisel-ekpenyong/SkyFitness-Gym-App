@@ -54,7 +54,7 @@ const ALLOW = [
   { file: 'views/Stats.jsx', text: "fmtNum(b.n) + ' · ' + b.percent", reason: 'numeric count and percent joined with a separator' },
   { file: 'views/Stats.jsx', text: "' · ' + fmtVol(ex.current", reason: 'separator, number and unit, no words' },
   { file: 'views/Workout.jsx', text: "' · ' + t('rescheduled')", reason: 'separator before a whole t() string' },
-  { file: 'sheets/catalogue.jsx', text: "` · ${t('last {0}", reason: 'separator before a whole t() string' },
+  { file: 'sheets/exercise-detail.jsx', text: "` · ${t('last {0}", reason: 'separator before a whole t() string' },
   { file: 'components/LineChart.jsx', text: "' · ' + hover.note", reason: 'separator before the point note' },
   { file: 'sheets/plan-tools.jsx', text: "' · ' + exCount(bundle.exerciseCount)", reason: 'separator before a whole t() string' },
   { file: 'sheets/plan-tools.jsx', text: "' · ' + t(bundle.scheduledDays", reason: 'separator before a whole t() string' },
@@ -352,19 +352,40 @@ function confirms(node, ctx, seen) {
   return false
 }
 
-/** Whether this call is a danger confirm, a chooser whose clicks confirm, or a same-file function that does. */
+/**
+ * The function `ctx.file` imports by the local `name`, with its own file's context, or null.
+ * As in importerPropAttrs, only a relative path that joins to a file of the project counts,
+ * so an import this cannot resolve proves nothing and the call fails closed.
+ */
+function importedHandler(name, ctx) {
+  for (const n of ctx.ast.body) {
+    if (n.type !== 'ImportDeclaration') continue
+    const sp = n.specifiers.find(s => s.type === 'ImportSpecifier' && s.local.name === name)
+    if (!sp) continue
+    const file = posix.join(posix.dirname(ctx.file), n.source.value)
+    if (!(file in ctx.project)) return null
+    const other = contextOf(file, ctx.project)
+    const fn = other.handlers.get(sp.imported.name)
+    return fn ? { fn, ctx: other } : null
+  }
+  return null
+}
+
+/** Whether this call is a danger confirm, a chooser whose clicks confirm, or a function (same-file or imported) that does. */
 function callConfirms(node, ctx, seen) {
   if (isDangerConfirmCall(node) || isUndoNode(node)) return true
   if (chooserConfirms(node, ctx, seen)) return true
   if (node.callee.type !== 'Identifier') return false
-  const fn = ctx.handlers.get(node.callee.name)
-  if (!fn) return false
-  const param = forwardedParam(fn)
+  const local = ctx.handlers.get(node.callee.name)
+  const found = local ? { fn: local, ctx } : importedHandler(node.callee.name, ctx)
+  if (!found) return false
+  const param = forwardedParam(found.fn)
   if (param) return node.arguments.length > 0 && confirms(node.arguments[0], ctx, seen)
-  if (seen.has(node.callee.name)) return false
-  seen.add(node.callee.name)
-  const ok = functionConfirms(fn, ctx, seen)
-  seen.delete(node.callee.name)
+  const key = found.ctx === ctx ? node.callee.name : `import:${found.ctx.file}:${node.callee.name}`
+  if (seen.has(key)) return false
+  seen.add(key)
+  const ok = functionConfirms(found.fn, found.ctx, seen)
+  seen.delete(key)
   return ok
 }
 
@@ -672,6 +693,19 @@ describe('action labels follow Action consistency rules 5 and 6', () => {
     expect(hits(importer(`const a = <Other onRemove={() => ${confirm}} />`))).toEqual(['confirm'])
     expect(hits(`import { EditSheet } from '../sheets/other.jsx'\nconst a = <EditSheet onRemove={() => ${confirm}} />`)).toEqual(['confirm'])
     expect(hits()).toEqual(['confirm'])
+  })
+
+  // A sheet calls a delete helper that another sheet module exports; the confirm lives there.
+  it('follows a call into the function another file exports', () => {
+    const helper = ok => `export function removeThing(x) {\n  ${ok ? 'confirmSheet({ confirmText: t(\'Delete\'), danger: true })' : 'destroy(x)'}\n}`
+    const sheet = from => `import { removeThing } from '${from}'\nconst a = <Button variant="danger" onClick={() => removeThing(x)}>{t('Delete')}</Button>`
+    const hits = (code, other) => actionHitsIn('sheets/a.jsx', { 'sheets/a.jsx': code, 'sheets/b.jsx': other }).map(h => h.rule)
+    expect(hits(sheet('./b.jsx'), helper(true))).toEqual([])
+    expect(hits(sheet('./b.jsx'), helper(false))).toEqual(['confirm'])
+    // An import that does not resolve to a project file, or names no function there, proves nothing.
+    expect(hits(sheet('./c.jsx'), helper(true))).toEqual(['confirm'])
+    expect(hits(sheet('./b'), helper(true))).toEqual(['confirm'])
+    expect(hits(sheet('./b.jsx'), 'export const removeThing = 1')).toEqual(['confirm'])
   })
 
   it('exempted entry (passes)', () => {

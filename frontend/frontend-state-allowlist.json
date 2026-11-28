@@ -1,7 +1,7 @@
 {
-  "src/sheets/catalogue.jsx": {
-    "count": 12,
-    "reason": "Over the cap when rule 1 landed: the 1RM sheet, the exercise editor, the picker and the counter sheet share one file."
+  "src/sheets/custom-exercise.jsx": {
+    "count": 5,
+    "reason": "Over the cap since the custom exercise form left the old catalogue sheet module (12 there): the form's name, its starting muscle pick, the primary muscle, the secondary muscles and the description."
   },
   "src/views/Stats.jsx": {
     "count": 10,

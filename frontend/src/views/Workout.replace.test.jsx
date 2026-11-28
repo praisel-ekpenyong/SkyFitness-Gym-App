@@ -10,22 +10,14 @@ const mocks = vi.hoisted(() => ({
   confirmSheet: vi.fn(),
   exercisePicker: vi.fn(),
   exConfigSheet: vi.fn(),
-  exerciseDetailSheet: vi.fn(),
   finishWorkout: vi.fn(),
   workoutCompleteSheet: vi.fn(),
   startFlow: vi.fn(),
 }))
 
 vi.mock('../sheets/confirm.jsx', () => ({ confirmSheet: mocks.confirmSheet }))
-vi.mock('../sheets/catalogue.jsx', async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...actual,
-    exercisePicker: mocks.exercisePicker,
-    exConfigSheet: mocks.exConfigSheet,
-    exerciseDetailSheet: mocks.exerciseDetailSheet,
-  }
-})
+vi.mock('../sheets/exercise-picker.jsx', async (importOriginal) => ({ ...await importOriginal(), exercisePicker: mocks.exercisePicker }))
+vi.mock('../sheets/exercise-config.jsx', async (importOriginal) => ({ ...await importOriginal(), exConfigSheet: mocks.exConfigSheet }))
 vi.mock('../platform/sound.js', async orig => (await import('../test/platform-mocks.js')).mockSound(await orig()))
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true

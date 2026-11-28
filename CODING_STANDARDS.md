@@ -170,12 +170,12 @@ pure helpers or move decision trees into domain reducers. Exception: a function
 already over 15 sits in `frontend/lint-baseline.json`, may not grow, and leaves
 the file when it is split. A disable comment is never the way out.
 
-**Why:** <!-- ratchet: lint-baseline.json#eslint/complexity -->50 functions in 28 files<!-- /ratchet --> are over the bar today. The worst is
+**Why:** <!-- ratchet: lint-baseline.json#eslint/complexity -->50 functions in 30 files<!-- /ratchet --> are over the bar today. The worst is
 `evaluateSetMilestone` in `lib/progression.js` (83, line 521), then
 `evaluateSessionProgression` (74), `parseWorkoutCSV` in `lib/import-csv.js`
 (66) and `Home.jsx` (62). A function that size has branches no test reaches.
 **Runs:** oxlint `eslint/complexity` at error (`max: 15`, `variant: 'modified'`),
-tests excluded. Its <!-- ratchet: lint-baseline.json#eslint/complexity -->50 hits in 28 files<!-- /ratchet --> sit in
+tests excluded. Its <!-- ratchet: lint-baseline.json#eslint/complexity -->50 hits in 30 files<!-- /ratchet --> sit in
 `frontend/lint-baseline.json` and may only fall. `scripts/review/audit.mjs` is
 the one added after the issue's count.
 
@@ -384,7 +384,7 @@ what it follows.
 so the exercise later followed Settings when the lifter changed it. `fb53d9b`: a
 save that merged into the old entry let cleared settings survive.
 **Runs:** one round-trip test per saving control: pick, save, change the Setting,
-assert the entry. `frontend/src/sheets/catalogue.test.jsx` covers the config
+assert the entry. `frontend/src/sheets/exercise-config.test.jsx` covers the config
 sheet: Rest and the progression Rule (Default stores nothing; a pick equal to
 what it follows is kept), Step in the weight unit and in seconds (a value
 stepped back to the default is kept), the bodyweight switch (only a difference
@@ -495,7 +495,7 @@ active, which looped the render (#136, fixed).
 run from `npm test` (`check-frontend-state.test.mjs`, with a failing fixture),
 with shrink-only counts in `frontend/frontend-state-allowlist.json`:
 
-- `frontend/src/sheets/catalogue.jsx`: <!-- ratchet: frontend-state-allowlist.json#src/sheets/catalogue.jsx -->12<!-- /ratchet -->
+- `frontend/src/sheets/custom-exercise.jsx`: <!-- ratchet: frontend-state-allowlist.json#src/sheets/custom-exercise.jsx -->5<!-- /ratchet -->
 - `frontend/src/views/Stats.jsx`: <!-- ratchet: frontend-state-allowlist.json#src/views/Stats.jsx -->10<!-- /ratchet -->
 
 A file at 4 passes. A new file over 4 fails, and so does an allowlist count above
@@ -543,7 +543,7 @@ without a keyboard path; the a11y hit list is the count.
 **Runs:** oxlint `react/no-array-index-key` at error. Its <!-- ratchet: lint-baseline.json#react/no-array-index-key -->15 hits in 9 files<!-- /ratchet --> sit in `frontend/lint-baseline.json` and may only fall.
 **Runs:** oxlint `jsx-a11y/click-events-have-key-events`,
 `jsx-a11y/no-static-element-interactions`, `jsx-a11y/prefer-tag-over-role` and
-`jsx-a11y/no-autofocus` (<!-- ratchet: lint-baseline.json#jsx-a11y/* -->54 hits in 19 files<!-- /ratchet -->), in
+`jsx-a11y/no-autofocus` (<!-- ratchet: lint-baseline.json#jsx-a11y/* -->54 hits in 20 files<!-- /ratchet -->), in
 `frontend/lint-baseline.json`.
 
 ### Sort a copy, never the state
@@ -566,7 +566,8 @@ only fall. None were autofixed.
 Filters must stay in sync with the shape of the data they filter. When a new
 field is added to an entity that affects what something is (status, category,
 bodypart, equipment, shoulder heads), every filter in `lib/catalogue-query.js`,
-badge in `sheets/catalogue.jsx`, and aggregate in `lib/stats-selectors.js` must be
+badge in `sheets/exercise-detail.jsx`, `sheets/exercise-picker.jsx` and
+`sheets/exercise-config.jsx`, and aggregate in `lib/stats-selectors.js` must be
 updated to take the new field into account. Drift between filters and entity
 definitions produces silently wrong results.
 
@@ -922,7 +923,7 @@ names every one:
 
 | Tool | Runs today | To add |
 |---|---|---|
-| Vitest guard tests, in `npm test` | `purity.test.js`, `import-cycles.test.js`, `design-tokens.test.js`, `design-lint.test.js`, `env.test.js`, `eslint-store-selectors.test.mjs`, `eslint-test-rules.test.mjs`, `i18n-lint.test.js`, `sheets/dialog-names.test.jsx`, `docs.test.js`, `platform/storage.test.js` (the 800ms debounce), `comments.test.js`, `effect-types.test.js`, the `warmArt` test (`App.warm-art.test.jsx`), the `flush()` test (`store/useStore.flush.test.jsx`), the save round-trip tests (`sheets/catalogue.test.jsx`, `views/RoutineEdit.test.jsx`), `lib/profile/profile-keys.test.js` | |
+| Vitest guard tests, in `npm test` | `purity.test.js`, `import-cycles.test.js`, `design-tokens.test.js`, `design-lint.test.js`, `env.test.js`, `eslint-store-selectors.test.mjs`, `eslint-test-rules.test.mjs`, `i18n-lint.test.js`, `sheets/dialog-names.test.jsx`, `docs.test.js`, `platform/storage.test.js` (the 800ms debounce), `comments.test.js`, `effect-types.test.js`, the `warmArt` test (`App.warm-art.test.jsx`), the `flush()` test (`store/useStore.flush.test.jsx`), the save round-trip tests (`sheets/exercise-config.test.jsx`, `views/RoutineEdit.test.jsx`), `lib/profile/profile-keys.test.js` | |
 | ESLint 10, `npm run lint` after the oxlint ratchet (CI only) | `react-hooks/set-state-in-effect`, `react-hooks/no-deriving-state-in-effects`, `react-hooks/set-state-in-render`, `react-hooks/immutability`, `react-hooks/preserve-manual-memoization`, `react-hooks/globals`, all at error, 0 hits. `static-components` (<!-- ratchet: eslint-suppressions.json#react-hooks/static-components -->9 hits in 2 files<!-- /ratchet -->) and `purity` (<!-- ratchet: eslint-suppressions.json#react-hooks/purity -->6 hits in 5 files<!-- /ratchet -->), at error with `frontend/eslint-suppressions.json`. `react-hooks/todo` stays off. `no-restricted-syntax` selectors, one table in `frontend/eslint.config.js`: One-owner (`LB_TO_KG` and the `2.2046` and `0.4535` literals at 0 suppressions, inline `Math.round(x * 10) / 10`, `(getDay() + 6) % 7`, `\|\| 'kg'`), `% 60`, local dates (including hand-padded day keys), store selectors, assignments to `.active` and `.routines` outside `lib/`, `store/` and tests (including computed access), the `lib/` clock, `import.meta.env` and `process.env`, the CommonJS shim, and `vi.mock`/`vi.doMock` scope, snapshots, and `lib/active-*` internal imports in tests. `noInlineConfig`, with `--max-warnings 0`, so no disable comment hides a hit. Ratchets: `frontend/eslint-suppressions.json` for counts, and `frontend/eslint-selector-suppressions.json` for the selector message of each suppressed `no-restricted-syntax` hit — `check-eslint-selectors.mjs` runs in `npm run lint` with its fixture | nothing |
 | oxlint, ratchet in the pre-commit hook and in `npm run lint` (CI) | `correctness` category (with the dated `no-unused-vars` carve-out: 0 hits, no baseline entry; the old "baseline the 24 probe hits" line is superseded — see the amendment above), `react/rules-of-hooks`, `react/exhaustive-deps`, `complexity`, restricted globals and properties (including `Date.now` in `lib/`), `unicorn/no-array-sort`, `unicorn/no-array-reverse`, `react/no-array-index-key`, `jsx-a11y/click-events-have-key-events`, `jsx-a11y/no-static-element-interactions`, `jsx-a11y/prefer-tag-over-role`, `jsx-a11y/no-autofocus`, all at error. `frontend/.oxlintrc.tests.json` adds the `jest` rules `expect-expect`, `no-conditional-expect`, `no-focused-tests`, `no-disabled-tests` and `no-identical-title` on test files, 0 hits. Ratchet: `frontend/lint-baseline.json`, checked by `scripts/check-lint-baseline.mjs` with its failing fixture in `npm test` | nothing |
 | tsc | `frontend/tsconfig.json` (`strict`, `allowJs`, `checkJs` over app code), `npm run typecheck` in the hook and CI. Ratchet: `frontend/tsc-baseline.json`, checked by `frontend/scripts/check-tsc-baseline.mjs` with its failing fixture in `npm test`. `check-ts-comments.mjs` (fixture: `check-ts-comments.test.mjs`) fails `@ts-ignore` and `@ts-nocheck` in `.js`/`.jsx` files | tests joining `tsconfig.json` (last) |

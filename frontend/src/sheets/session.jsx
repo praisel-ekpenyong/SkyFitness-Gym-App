@@ -21,7 +21,8 @@ import SessionMuscleDistribution from '../components/SessionMuscleDistribution.j
 import { loadOfWorkouts, MUSCLE_NAME } from '../lib/muscles.js'
 import { confirmSheet } from './confirm.jsx'
 import { bwSheet } from './bodyweight.jsx'
-import { exercisePicker, exConfigSheet } from './catalogue.jsx'
+import { exercisePicker } from './exercise-picker.jsx'
+import { exConfigSheet } from './exercise-config.jsx'
 import { S, ui, toast } from './store-helpers.js'
 
 /** @typedef {import('../lib/types.js').Routine} Routine */

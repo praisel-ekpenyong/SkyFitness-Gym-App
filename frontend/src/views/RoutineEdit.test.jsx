@@ -20,10 +20,8 @@ vi.mock('react-router-dom', () => ({
   useParams: () => ({ id: 'r-test-1' }),
 }))
 
-vi.mock('../sheets/catalogue.jsx', () => ({
-  exConfigSheet: mocks.exConfigSheet,
-  exercisePicker: mocks.exercisePicker,
-}))
+vi.mock('../sheets/exercise-config.jsx', () => ({ exConfigSheet: mocks.exConfigSheet }))
+vi.mock('../sheets/exercise-picker.jsx', () => ({ exercisePicker: mocks.exercisePicker }))
 vi.mock('../sheets/confirm.jsx', () => ({ confirmSheet: mocks.confirmSheet }))
 
 let container

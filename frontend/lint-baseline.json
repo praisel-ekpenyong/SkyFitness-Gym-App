@@ -173,16 +173,24 @@
   "src/platform/wakelock.js": {
     "typescript/no-floating-promises": 2
   },
+  "src/sheets/add-to-routine.jsx": {
+    "jsx-a11y/click-events-have-key-events": 2,
+    "jsx-a11y/no-static-element-interactions": 2
+  },
   "src/sheets/bodyweight.jsx": {
     "unicorn/no-array-reverse": 1
   },
-  "src/sheets/catalogue.jsx": {
-    "eslint/complexity": 4,
-    "jsx-a11y/click-events-have-key-events": 2,
-    "jsx-a11y/no-static-element-interactions": 2,
-    "jsx-a11y/prefer-tag-over-role": 2,
-    "react/no-array-index-key": 2,
+  "src/sheets/exercise-config.jsx": {
+    "eslint/complexity": 2,
     "unicorn/no-array-sort": 1
+  },
+  "src/sheets/exercise-detail.jsx": {
+    "eslint/complexity": 1,
+    "react/no-array-index-key": 2
+  },
+  "src/sheets/exercise-picker.jsx": {
+    "eslint/complexity": 1,
+    "jsx-a11y/prefer-tag-over-role": 2
   },
   "src/sheets/history.jsx": {
     "eslint/complexity": 1,

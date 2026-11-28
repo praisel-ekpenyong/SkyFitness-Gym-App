@@ -26,3 +26,13 @@ export const typeInto = (field, value) => fireEvent.change(field, { target: { va
 /** The sheet's main action: Save, Add to routine or Create exercise. */
 export const primaryAction = container =>
   within(container).getByRole('button', { name: /^(Save|Add to routine|Create exercise)$/ })
+
+
+// Literal labels a lifter sees, in the order the chips must appear. Independent of the
+// taxonomy module so a mistake there cannot move both the sheet and its expectation.
+export const FILTER_CHIP_LABELS = [
+  'Traps', 'Shoulders', 'Front delts', 'Side delts', 'Rear delts', 'Chest', 'Upper back',
+  'Lats', 'Serratus', 'Biceps', 'Triceps', 'Forearms', 'Abs', 'Obliques', 'Lower back',
+  'Glutes', 'Quads', 'Hamstrings', 'Adductors', 'Hip flexors', 'Calves', 'Shins', 'Cardio',
+]
+export const PICKABLE_CHIP_LABELS = FILTER_CHIP_LABELS.filter(label => label !== 'Shoulders')
